@@ -490,6 +490,18 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    def get_wcs_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return self.get_wcs(self.get_name_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
     def get_bounding_box(self):
 
         """
@@ -547,6 +559,30 @@ class DataSet(object):
 
         # Return the maximum pixelscale
         return pixelscale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_pixelscale_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_wcs(self.min_pixelscale_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_pixelscale_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_wcs(self.max_pixelscale_name)
 
     # -----------------------------------------------------------------
 

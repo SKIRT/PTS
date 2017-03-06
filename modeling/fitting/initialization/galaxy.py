@@ -59,12 +59,6 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         # The ski file
         self.ski = None
 
-        # The deprojections
-        #self.deprojections = dict()
-
-        # The instruments
-        #self.instruments = dict()
-
         # The table of weights for each band
         self.weights = None
 

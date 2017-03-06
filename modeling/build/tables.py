@@ -69,6 +69,21 @@ class RepresentationsTable(SmartTable):
         # Return the representations
         return representations
 
+    # -----------------------------------------------------------------
+
+    def add_entry(self, name, model_name):
+
+        """
+        This function ...
+        :param name:
+        :param model_name:
+        :return:
+        """
+
+        # Add row
+        values = [name, model_name]
+        self.add_row(values)
+
 # -----------------------------------------------------------------
 
 class ModelsTable(SmartTable):

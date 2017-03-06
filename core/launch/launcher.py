@@ -500,3 +500,94 @@ class SKIRTLauncher(Configurable):
         self.simulation.retrieve_types = self.config.retrieve_types
 
 # -----------------------------------------------------------------
+
+class SimpleSKIRTLauncher(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self):
+
+        """
+        The constructor ...
+        """
+
+        # The SKIRT execution context
+        self.skirt = SkirtExec()
+
+    # -----------------------------------------------------------------
+
+    def run(self, ski_path, out_path, wcs, total_flux, kernel, instrument_name=None):
+
+        """
+        This function ...
+        :param ski_path:
+        :param out_path:
+        :param wcs:
+        :param total_flux:
+        :param kernel:
+        :param instrument_name:
+        :return:
+        """
+
+        from ...magic.core.frame import Frame
+        from ..simulation.arguments import SkirtArguments
+
+        # Create a SkirtArguments object
+        arguments = SkirtArguments()
+
+        # Adjust the parameters
+        arguments.ski_pattern = ski_path
+        arguments.output_path = out_path
+        arguments.single = True  # we expect a single simulation from the ski pattern
+
+        # Inform the user
+        log.info("Running a SKIRT simulation with " + str(fs.name(ski_path)) + " ...")
+
+        # Run the simulation
+        simulation = self.skirt.run(arguments, silent=False if log.is_debug() else True)
+
+        # Get the simulation prefix
+        prefix = simulation.prefix()
+
+        # Get the (frame)instrument name
+        if instrument_name is None:
+
+            # Get the name of the unique instrument (give an error if there are more instruments)
+            instrument_names = simulation.parameters().get_instrument_names()
+            assert len(instrument_names) == 1
+            instrument_name = instrument_names[0]
+
+        # Determine the name of the SKIRT output FITS file
+        fits_name = prefix + "_" + instrument_name + "_total.fits"
+
+        # Determine the path to the output FITS file
+        fits_path = fs.join(out_path, fits_name)
+
+        # Check if the output contains the "disk_earth_total.fits" file
+        if not fs.is_file(fits_path): raise RuntimeError("Something went wrong with the " + prefix + " simulation: output FITS file missing")
+
+        # Open the simulated frame
+        simulated_frame = Frame.from_file(fits_path)
+
+        # Set the coordinate system of the disk image
+        simulated_frame.wcs = wcs
+
+        # Debugging
+        log.debug("Rescaling the " + prefix + " image to a flux density of " + str(total_flux) + " ...")
+
+        # Rescale to the 3.6um flux density
+        simulated_frame *= total_flux.value / simulated_frame.sum()
+        simulated_frame.unit = total_flux.unit
+
+        # Debugging
+        log.debug("Convolving the " + prefix + " image ...")
+
+        # Convolve the frame to the PACS 160 resolution
+        simulated_frame.convolve(kernel)
+
+        # Return the frame
+        return simulated_frame
+
+# -----------------------------------------------------------------

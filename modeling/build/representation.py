@@ -20,8 +20,6 @@ from .component import BuildComponent
 from ....core.tools import tables
 from ....core.tools import filesystem as fs
 from ...basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument
-from ....core.data.sun import Sun
-from ....magic.tools import wavelengths
 from ....core.tools.logging import log
 from ....core.prep.wavelengthgrids import WavelengthGridGenerator
 from ....core.prep.dustgrids import DustGridGenerator
@@ -29,7 +27,6 @@ from ....core.basics.range import RealRange, QuantityRange
 from ...component.galaxy import GalaxyModelingComponent
 from ....core.basics.unit import parse_unit as u
 from ...build.component import get_stellar_component_names, get_dust_component_names, load_stellar_component, load_dust_component
-from ....core.filter.filter import parse_filter
 from ..basics.models import DeprojectionModel3D
 from ..basics.projection import EdgeOnProjection, FaceOnProjection, GalaxyProjection
 from ...magic.basics.coordinatesystem import CoordinateSystem
@@ -112,7 +109,10 @@ class RepresentationBuilder(BuildComponent):
         """
 
         # Call the setup function of the base class
-        GalaxyModelingComponent.setup(self, **kwargs)
+        super(RepresentationBuilder, self).setup(self, **kwargs)
+
+        # Create the model definition
+        self.definition = self.get_model_definition(self.config.model_name)
 
         # Create a WavelengthGridGenerator
         self.wg_generator = WavelengthGridGenerator()
@@ -146,6 +146,112 @@ class RepresentationBuilder(BuildComponent):
 
         # load dust deprojections
         self.load_dust_deprojections()
+
+    # -----------------------------------------------------------------
+
+    def load_stellar_deprojections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the stellar deprojections ...")
+
+        # Loop over the stellar components
+        for name in get_stellar_component_names(self.config.path, self.model_name):
+
+            # Load the component
+            component = load_stellar_component(self.config.path, self.model_name, name)
+
+            # Set deprojection
+            if "deprojection" in component:
+
+                # Get title
+                title = component.parameters.title
+
+                # Add to the dictionary of deprojections
+                self.deprojections[(name, title)] = component.deprojection
+
+            # Check if this is a new component, add geometry, SED and normalization all at once
+            if "geometry" in component.parameters:
+
+                # Get title
+                title = component.parameters.title
+
+                # Check whether this is a read FITS geometry
+                geometry_type = component.parameters.geometry
+                if geometry_type != "ReadFitsGeometry": continue
+
+                # Get properties for each of the three classes
+                geometry_properties = component.properties["geometry"]
+
+                # Get the path of the input map
+                filepath = geometry_properties["filename"]
+
+                # Get the scale height
+                scale_height = geometry_properties["axialScale"]
+
+                # Create the deprojection
+                wcs = CoordinateSystem.from_file(filepath)
+                deprojection = self.create_deprojection_for_wcs(wcs, filepath, scale_height)
+
+                # Add to the dictionary
+                self.deprojections[(name, title)] = deprojection
+
+    # -----------------------------------------------------------------
+
+    def load_dust_deprojections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the dust deprojections ...")
+
+        # Loop over the dust components
+        for name in get_dust_component_names(self.config.path, self.model_name):
+
+            # Load the component
+            component = load_dust_component(self.config.path, self.model_name, name)
+
+            # Set deprojection
+            if "deprojection" in component:
+
+                # Get title
+                title = component.parameters.title
+
+                # Add to the dictionary of deprojections
+                self.deprojections[(name, title)] = component.deprojection
+
+            # Check if this is a new dust component, add geometry, mix and normalization all at once
+            if "geometry" in component.parameters:
+
+                # Get title
+                title = component.parameters.title
+
+                # Check whether this is a read FITS geometry
+                geometry_type = component.parameters.geometry
+                if geometry_type != "ReadFitsGeometry": continue
+
+                # Get properties for each of the three classes
+                geometry_properties = component.properties["geometry"]
+
+                # Get the path of the input map
+                filepath = geometry_properties["filename"]
+
+                # Get the scale height
+                scale_height = geometry_properties["axialScale"]
+
+                # Create the deprojection
+                wcs = CoordinateSystem.from_file(filepath)
+                deprojection = self.create_deprojection_for_wcs(wcs, filepath, scale_height)
+
+                # Add to the dictionary
+                self.deprojections[(name, title)] = deprojection
 
     # -----------------------------------------------------------------
 
@@ -272,106 +378,6 @@ class RepresentationBuilder(BuildComponent):
 
     # -----------------------------------------------------------------
 
-    def load_stellar_deprojections(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the stellar deprojections ...")
-
-        # Loop over the stellar components
-        for name in get_stellar_component_names(self.config.path, self.model_name):
-
-            # Load the component
-            component = load_stellar_component(self.config.path, self.model_name, name)
-
-            # Set deprojection
-            if "deprojection" in component:
-
-                # Get title
-                title = component.parameters.title
-
-                # Add to the dictionary of deprojections
-                self.deprojections[(name, title)] = component.deprojection
-
-            # Check if this is a new component, add geometry, SED and normalization all at once
-            if "geometry" in component.parameters:
-
-                # Get title
-                title = component.parameters.title
-
-                # Check whether this is a read FITS geometry
-                geometry_type = component.parameters.geometry
-                if geometry_type != "ReadFitsGeometry": continue
-
-                # Get properties for each of the three classes
-                geometry_properties = component.properties["geometry"]
-
-                # Get the path of the input map
-                filepath = geometry_properties["filename"]
-
-                # Create the deprojection
-                wcs = CoordinateSystem.from_file(filepath)
-                deprojection = DeprojectionModel3D.from_wcs(wcs, galaxy_center, distance, pa, inclination, filepath, scale_height)
-
-                # Add to the dictionary
-                self.deprojections[(name, title)] = component.deprojection
-
-    # -----------------------------------------------------------------
-
-    def load_dust_deprojections(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the dust deprojections ...")
-
-        # Loop over the dust components
-        for name in get_dust_component_names(self.config.path, self.model_name):
-
-            # Load the component
-            component = load_dust_component(self.config.path, self.model_name, name)
-
-            # Set deprojection
-            if "deprojection" in component:
-
-                # Get title
-                title = component.parameters.title
-
-                # Add to the dictionary of deprojections
-                self.deprojections[(name, title)] = component.deprojection
-
-            # Check if this is a new dust component, add geometry, mix and normalization all at once
-            if "geometry" in component.parameters:
-
-                # Get title
-                title = component.parameters.title
-
-                # Check whether this is a read FITS geometry
-                geometry_type = component.parameters.geometry
-                if geometry_type != "ReadFitsGeometry": continue
-
-                # Get properties for each of the three classes
-                geometry_properties = component.properties["geometry"]
-
-                # Get the path of the input map
-                filepath = geometry_properties["filename"]
-
-                # Create the deprojection
-                wcs = CoordinateSystem.from_file(filepath)
-                deprojection = DeprojectionModel3D.from_wcs(wcs, galaxy_center, distance, pa, inclination, filepath, scale_height)
-
-                # Add to the dictionary
-                self.deprojections[(name, title)] = component.deprojection
-
-    # -----------------------------------------------------------------
-
     def write(self):
 
         """
@@ -385,14 +391,14 @@ class RepresentationBuilder(BuildComponent):
         # 1. Write the instruments
         self.write_instruments()
 
-        # 4. Write the weights table
-        self.write_weights()
-
         # 6. Write the wavelength grids
         self.write_wavelength_grids()
 
         # 7. Write the dust grids
         self.write_dust_grids()
+
+        # Write the representations table
+        self.write_table()
 
     # -----------------------------------------------------------------
 
@@ -414,36 +420,6 @@ class RepresentationBuilder(BuildComponent):
 
         # Write the simple instrument
         self.instruments["simple"].saveto(self.fitting_run.simple_instrument_path)
-
-    # -----------------------------------------------------------------
-
-    def write_ski(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the ski file to " + self.fitting_run.template_ski_path + " ...")
-
-        # Save the ski template file
-        self.ski.save()
-
-    # -----------------------------------------------------------------
-
-    def write_weights(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the table with weights to " + self.fitting_run.weights_table_path + " ...")
-
-        # Write the table with weights
-        self.weights.saveto(self.fitting_run.weights_table_path)
 
     # -----------------------------------------------------------------
 
@@ -500,5 +476,17 @@ class RepresentationBuilder(BuildComponent):
 
         # Write the dust grids table
         tables.write(self.dg_generator.table, self.fitting_run.dust_grids_table_path)
+
+    # -----------------------------------------------------------------
+
+    def write_table(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        table = self.representations_table
+        table.add_entry()
 
 # -----------------------------------------------------------------

@@ -13,6 +13,13 @@ from pts.core.basics.configuration import ConfigurationDefinition
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
+# The filter for decomposition
+# TODO: let the choices be the filters for which there is data !!
+definition.add_optional("filter", "filter", "filter for which to use the data for decomposition", default="IRAC I1")
+
+# The method
+definition.add_optional("method", "string", "method for decomposition", default="s4G", choices=["s4g", "fit", "imfit"])
+
 # Add optional
 choices = dict()
 choices["azimuth"] = "azimuth angle and y flattening"

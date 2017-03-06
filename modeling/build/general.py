@@ -85,39 +85,6 @@ class GeneralBuilder(BuildComponent):
 
     # -----------------------------------------------------------------
 
-    def create_deprojection_for_map(self, map, filename, scaleheight):
-
-        """
-        This function ...
-        :param map:
-        :param filename:
-        :param scaleheight
-        :return:
-        """
-
-        # Get the WCS
-        reference_wcs = map.wcs
-
-        #filename = None
-        #hz = None
-
-        # Get the galaxy distance, the inclination and position angle
-        distance = self.galaxy_properties.distance
-        inclination = self.galaxy_properties.inclination
-        pa = self.earth_projection.position_angle
-
-        # Get center coordinate of galaxy
-        galaxy_center = self.galaxy_properties.center
-
-        # Create deprojection
-        # wcs, galaxy_center, distance, pa, inclination, filepath, scale_height
-        deprojection = DeprojectionModel3D.from_wcs(reference_wcs, galaxy_center, distance, pa, inclination, filename, scaleheight)
-
-        # Return the deprojection
-        return deprojection
-
-    # -----------------------------------------------------------------
-
     @abstractmethod
     def build_additional(self):
 

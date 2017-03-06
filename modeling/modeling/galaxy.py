@@ -34,7 +34,8 @@ from .base import ModelerBase
 from ..config.parameters import units as parameter_units
 from ..config.parameters import default_ranges, types, parameter_descriptions
 from ...core.basics.unit import parse_unit as u
-from ..build.builder import ModelBuilder
+from ..build.model import ModelBuilder
+from ..build.representation import RepresentationBuilder
 
 # -----------------------------------------------------------------
 
@@ -151,13 +152,13 @@ class GalaxyModeler(ModelerBase):
         # 7. Make the maps
         self.make_maps()
 
-        # 8. Build model
-        self.build_model()
+        # 8. Build model and its representations
+        self.build()
 
-        # 8. Do the fitting
+        # 9. Do the fitting
         self.fit()
 
-        # 9. Writing
+        # 10. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -608,6 +609,24 @@ class GalaxyModeler(ModelerBase):
 
     # -----------------------------------------------------------------
 
+    def build(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Building the model and its representations ...")
+
+        # Build model
+        self.build_model()
+
+        # Build representations
+        self.build_representations()
+
+    # -----------------------------------------------------------------
+
     def build_model(self):
 
         """
@@ -622,18 +641,52 @@ class GalaxyModeler(ModelerBase):
         config = dict()
 
         # Set model name
-        config["name"] = "model_a"
+        config["name"] = self.model_name
 
         # Create the builder
         builder = ModelBuilder(config)
 
         # Add an entry to the history
-        self.history.add_entry(FittingConfigurer.command_name())
+        self.history.add_entry(ModelBuilder.command_name())
 
         # Set the working directory
         builder.config.path = self.modeling_path
 
         # Run the model builder
+        builder.run()
+
+        # Mark the end and save the history file
+        self.history.mark_end()
+        self.history.save()
+
+    # -----------------------------------------------------------------
+
+    def build_representations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Building the representations ...")
+
+        # Create configuration
+        config = dict()
+
+        # Set name for representation
+        config["name"] = self.representation_name
+
+        # Set model name
+        config["model_name"] = self.model_name
+
+        # Create the builder
+        builder = RepresentationBuilder(config)
+
+        # Add an entry to the history
+        self.history.add_entry(RepresentationBuilder.command_name())
+
+        # Run the builder
         builder.run()
 
         # Mark the end and save the history file
@@ -660,6 +713,9 @@ class GalaxyModeler(ModelerBase):
 
         # Set the model name
         config["model_name"] = self.model_name
+
+        # Set the representation name
+        config["representation_name"] = self.representation_name
 
         # Set free parameters
         config["parameters"] = free_parameters[self.modeling_config.method]

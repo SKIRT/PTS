@@ -382,10 +382,10 @@ class GalaxyModelingComponent(ModelingComponent):
             dataset.add_path(name, result_path)
 
             # Check whether a truncation mask is available
-            mask_path = self.truncation_mask_path(name)
+            #mask_path = self.truncation_mask_path(name)
 
             # Add the mask path
-            if mask_path is not None: dataset.add_mask_path(name, mask_path)
+            #if mask_path is not None: dataset.add_mask_path(name, mask_path)
 
         # Return the dataset
         return dataset
@@ -627,6 +627,18 @@ class GalaxyModelingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def disk_position_angle(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.disk_ellipse.angle
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def truncation_ellipse(self):
 
         """
@@ -699,6 +711,40 @@ class GalaxyModelingComponent(ModelingComponent):
         #"""
 
         #return CoordinateSystem.from_file(self.reference_wcs_path)
+
+    # -----------------------------------------------------------------
+
+    def highest_resolution_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dataset.min_pixelscale_wcs
+
+    # -----------------------------------------------------------------
+
+    def lowest_resolution_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dataset.max_pixelscale_wcs
+
+    # -----------------------------------------------------------------
+
+    def wcs_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return self.dataset.get_wcs_for_filter(fltr)
 
     # -----------------------------------------------------------------
 

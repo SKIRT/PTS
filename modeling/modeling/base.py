@@ -68,6 +68,7 @@ class ModelerBase(Configurable):
         # Fixed names for the fitting run and the model
         self.fitting_run_name = "run_1"
         self.model_name = "model_a"
+        self.representation_name = "highres"
 
     # -----------------------------------------------------------------
 
