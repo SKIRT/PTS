@@ -89,6 +89,42 @@ class GalaxyProjection(object):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_deprojection(cls, deprojection, distance, azimuth):
+
+        """
+        This function ...
+        :param deprojection:
+        :param distance:
+        :param azimuth:
+        :return:
+        """
+
+        pixels_x = deprojection.x_size
+        pixels_y = deprojection.y_size
+
+        pixelscale = deprojection.pixelscale
+
+        # In pixel
+        x_center = deprojection.x_center
+        y_center = deprojection.y_center
+
+        # To physical
+        center_x = x_center * pixelscale
+        center_y = y_center * pixelscale
+
+        # Detemrine field of view
+        field_x = pixelscale * pixels_x
+        field_y = pixelscale * pixels_y
+
+        inclination = deprojection.inclination
+        position_angle = deprojection.position_angle
+
+        # Create and return a new class instance
+        return cls(distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_file(cls, path):
 
         """
@@ -135,6 +171,17 @@ class GalaxyProjection(object):
 
         # Return the projection
         return projection
+
+    # -----------------------------------------------------------------
+
+    def to_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        raise NotImplementedError("Not implemented")
 
     # -----------------------------------------------------------------
 
@@ -214,6 +261,38 @@ class FaceOnProjection(GalaxyProjection):
         # Call the constructor
         return cls(distance, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
 
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_deprojection(cls, deprojection, distance):
+
+        """
+        This function ...
+        :param deprojection:
+        :param distance:
+        :return:
+        """
+
+        pixels_x = deprojection.x_size
+        pixels_y = deprojection.y_size
+
+        pixelscale = deprojection.pixelscale
+
+        # In pixel
+        x_center = deprojection.x_center
+        y_center = deprojection.y_center
+
+        # To physical
+        center_x = x_center * pixelscale
+        center_y = y_center * pixelscale
+
+        # Detemrine field of view
+        field_x = pixelscale * pixels_x
+        field_y = pixelscale * pixels_y
+
+        # Create and return
+        return cls(distance, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+
 # -----------------------------------------------------------------
 
 class EdgeOnProjection(GalaxyProjection):
@@ -253,6 +332,38 @@ class EdgeOnProjection(GalaxyProjection):
 
         # Get derived properties
         pixels_x, pixels_y, center_x, center_y, field_x, field_y = get_relevant_wcs_properties(wcs, center, distance)
+
+        # Call the constructor
+        return cls(distance, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_deprojection(cls, deprojection, distance):
+
+        """
+        This function ...
+        :param deprojection:
+        :param distance:
+        :return:
+        """
+
+        pixels_x = deprojection.x_size
+        pixels_y = deprojection.y_size
+
+        pixelscale = deprojection.pixelscale
+
+        # In pixel
+        x_center = deprojection.x_center
+        y_center = deprojection.y_center
+
+        # To physical
+        center_x = x_center * pixelscale
+        center_y = y_center * pixelscale
+
+        # Detemrine field of view
+        field_x = pixelscale * pixels_x
+        field_y = pixelscale * pixels_y
 
         # Call the constructor
         return cls(distance, pixels_x, pixels_y, center_x, center_y, field_x, field_y)

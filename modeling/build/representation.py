@@ -17,19 +17,53 @@ from astropy.units import dimensionless_angles
 
 # Import the relevant PTS classes and modules
 from .component import BuildComponent
-from ....core.tools import tables
-from ....core.tools import filesystem as fs
-from ...basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument
-from ....core.tools.logging import log
-from ....core.prep.wavelengthgrids import WavelengthGridGenerator
-from ....core.prep.dustgrids import DustGridGenerator
-from ....core.basics.range import RealRange, QuantityRange
-from ...component.galaxy import GalaxyModelingComponent
-from ....core.basics.unit import parse_unit as u
-from ...build.component import get_stellar_component_names, get_dust_component_names, load_stellar_component, load_dust_component
-from ..basics.models import DeprojectionModel3D
+from ...core.tools import tables
+from ...core.tools import filesystem as fs
+from ..basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument
+from ...core.tools.logging import log
+from ...core.prep.wavelengthgrids import WavelengthGridGenerator
+from ...core.prep.dustgrids import DustGridGenerator
+from ...core.basics.range import RealRange, QuantityRange
+from ...core.basics.unit import parse_unit as u
+from ..build.component import get_stellar_component_names, get_dust_component_names, load_stellar_component, load_dust_component
 from ..basics.projection import EdgeOnProjection, FaceOnProjection, GalaxyProjection
 from ...magic.basics.coordinatesystem import CoordinateSystem
+from ...core.basics.configuration import prompt_string
+from ...core.basics.quantity import represent_quantity
+
+# -----------------------------------------------------------------
+
+class Representation(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, name, model_name, path):
+
+        """
+        This function ...
+        :param name:
+        :param model_name:
+        :param path:
+        """
+
+        self.name = name
+        self.model_name = model_name
+        self.path = path
+
+        self.projections_path = fs.create_directory_in(self.path, "projections")
+        self.instruments_path = fs.create_directory_in(self.path, "instruments")
+
+        # Individual projection paths
+        self.earth_projection_path = fs.join(self.projections_path, "earth.proj")
+        self.edgeon_projection_path = fs.join(self.projections_path, "edgeon.proj")
+        self.faceon_projection_path = fs.join(self.projections_path, "faceon.proj")
+
+        # Individual instrument paths
+        self.sed_instrument_path = fs.join(self.instruments_path, "sed.instr")
+        self.frame_instrument_path = fs.join(self.instruments_path, "frame.instr")
+        self.simple_instrument_path = fs.join(self.instruments_path, "simple.instr")
 
 # -----------------------------------------------------------------
 
@@ -54,8 +88,14 @@ class RepresentationBuilder(BuildComponent):
         # The model definition
         self.definition = None
 
+        # The representation
+        self.representation = None
+
         # The deprojections
         self.deprojections = dict()
+
+        # The reference deprojection
+        self.reference_deprojection = None
 
         # The projections
         self.projections = dict()
@@ -83,6 +123,9 @@ class RepresentationBuilder(BuildComponent):
         # 2. Load the deprojections
         self.load_deprojections()
 
+        # Prompt for the resolution of this representation
+        self.prompt_resolution()
+
         # 3. Create the wavelength grids
         self.create_wavelength_grids()
 
@@ -109,16 +152,32 @@ class RepresentationBuilder(BuildComponent):
         """
 
         # Call the setup function of the base class
-        super(RepresentationBuilder, self).setup(self, **kwargs)
+        super(RepresentationBuilder, self).setup(**kwargs)
 
         # Create the model definition
         self.definition = self.get_model_definition(self.config.model_name)
+
+        # Create the representation
+        path = fs.create_directory_in(self.representations_path, self.config.name)
+        self.representation = Representation(self.config.name, self.config.model_name, path)
 
         # Create a WavelengthGridGenerator
         self.wg_generator = WavelengthGridGenerator()
 
         # Create the DustGridGenerator
         self.dg_generator = DustGridGenerator()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def representation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.representation.name
 
     # -----------------------------------------------------------------
 
@@ -130,7 +189,7 @@ class RepresentationBuilder(BuildComponent):
         :return:
         """
 
-        return self.config.model_name
+        return self.representation.model_name
 
     # -----------------------------------------------------------------
 
@@ -140,6 +199,9 @@ class RepresentationBuilder(BuildComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Loading the deprojections used for the model ...")
 
         # Load stellar deprojections
         self.load_stellar_deprojections()
@@ -255,6 +317,48 @@ class RepresentationBuilder(BuildComponent):
 
     # -----------------------------------------------------------------
 
+    def prompt_resolution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Dictionary for the options
+        options = dict()
+
+        lowest_pixelscale = None
+        lowest_pixelscale_name = None
+        lowest_pixelscale_title = None
+
+        # Loop over the different deprojection models
+        for name, title in self.deprojections:
+
+            # Determine name and description
+            option = name
+            pixelscale = self.deprojections[(name, title)].pixelscale
+            if lowest_pixelscale is None or pixelscale < lowest_pixelscale:
+                lowest_pixelscale = pixelscale
+                lowest_pixelscale_name = name
+                lowest_pixelscale_title = title
+            description = "pixelscale of the " + title.lower() + " input map (" + represent_quantity() + ")"
+
+            # Add the option
+            options[option] = description
+
+        # name, description, choices=None, default=None
+        answer = prompt_string("reference map", "input map to use as the reference for the resolution of the model representation", choices=options, default=lowest_pixelscale_name)
+
+        # Set the reference deprojection
+        answer_title = None
+        for name, title in self.deprojections:
+            if name == answer:
+                answer_title = title
+                break
+        self.reference_deprojection = self.deprojections[(answer, answer_title)]
+
+    # -----------------------------------------------------------------
+
     def create_wavelength_grids(self):
 
         """
@@ -292,17 +396,25 @@ class RepresentationBuilder(BuildComponent):
 
         # Create the 'earth' projection system
         azimuth = 0.0
-        self.projections["earth"] = GalaxyProjection.from_wcs(self.reference_wcs, self.galaxy_properties.center,
-                                                              self.galaxy_properties.distance,
-                                                              self.galaxy_properties.inclination, azimuth, self.disk_pa)
+        self.projections["earth"] = GalaxyProjection.from_deprojection(self.reference_deprojection, self.galaxy_distance, azimuth)
 
         # Create the face-on projection system
-        self.projections["faceon"] = FaceOnProjection.from_wcs(self.reference_wcs, self.galaxy_properties.center,
-                                                               self.galaxy_properties.distance)
+        self.projections["faceon"] = FaceOnProjection.from_deprojection(self.reference_deprojection, self.galaxy_distance)
 
         # Create the edge-on projection system
-        self.projections["edgeon"] = EdgeOnProjection.from_wcs(self.reference_wcs, self.galaxy_properties.center,
-                                                               self.galaxy_properties.distance)
+        self.projections["edgeon"] = EdgeOnProjection.from_deprojection(self.reference_deprojection, self.galaxy_distance)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def earth_projection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.projections["earth"]
 
     # -----------------------------------------------------------------
 
@@ -388,17 +500,41 @@ class RepresentationBuilder(BuildComponent):
         # Inform the user
         log.info("Writing ...")
 
+        # Write the projections
+        self.write_projections()
+
         # 1. Write the instruments
         self.write_instruments()
 
-        # 6. Write the wavelength grids
+        # 2. Write the wavelength grids
         self.write_wavelength_grids()
 
-        # 7. Write the dust grids
+        # 3. Write the dust grids
         self.write_dust_grids()
 
-        # Write the representations table
+        # 4. Write the representations table
         self.write_table()
+
+    # -----------------------------------------------------------------
+
+    def write_projections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the projection systems ...")
+
+        # Write the earth projection system
+        self.projections["earth"].saveto(self.representation.earth_projection_path)
+
+        # Write the edgeon projection system
+        self.projections["edgeon"].saveto(self.representation.edgeon_projection_path)
+
+        # Write the faceon projection system
+        self.projections["faceon"].saveto(self.representation.faceon_projection_path)
 
     # -----------------------------------------------------------------
 
@@ -413,13 +549,13 @@ class RepresentationBuilder(BuildComponent):
         log.info("Writing the SED, frame and simple instruments ...")
 
         # Write the SED instrument
-        self.instruments["SED"].saveto(self.fitting_run.sed_instrument_path)
+        self.instruments["SED"].saveto(self.representation.sed_instrument_path)
 
         # Write the frame instrument
-        self.instruments["frame"].saveto(self.fitting_run.frame_instrument_path)
+        self.instruments["frame"].saveto(self.representation.frame_instrument_path)
 
         # Write the simple instrument
-        self.instruments["simple"].saveto(self.fitting_run.simple_instrument_path)
+        self.instruments["simple"].saveto(self.representation.simple_instrument_path)
 
     # -----------------------------------------------------------------
 
@@ -486,7 +622,11 @@ class RepresentationBuilder(BuildComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the representations table ...")
+
         table = self.representations_table
-        table.add_entry()
+        table.add_entry(self.representation_name, self.model_name)
+        table.save()
 
 # -----------------------------------------------------------------

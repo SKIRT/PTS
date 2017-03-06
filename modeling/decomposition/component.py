@@ -51,6 +51,11 @@ class DecompositionComponent(GalaxyModelingComponent):
         # The path to the components/residuals directory
         self.components_residuals_path = None
 
+        # The paths to the different galaxy projections
+        self.earth_projection_path = None
+        self.edgeon_projection_path = None
+        self.faceon_projection_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -69,5 +74,10 @@ class DecompositionComponent(GalaxyModelingComponent):
 
         # Set ...
         self.components_residuals_path = fs.create_directory_in(self.components_path, "residuals")
+
+        # The paths to the different galaxy projections
+        self.earth_projection_path = fs.join(self.components_projections_path, "earth.proj")
+        self.edgeon_projection_path = fs.join(self.components_projections_path, "edgeon.proj")
+        self.faceon_projection_path = fs.join(self.components_projections_path, "faceon.proj")
 
 # -----------------------------------------------------------------

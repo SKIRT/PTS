@@ -102,12 +102,13 @@ class FittingRun(object):
         self.prob_path = fs.create_directory_in(self.path, "prob")
 
         # Set the path to the fit/instruments directory
-        self.instruments_path = fs.create_directory_in(self.path, "instruments")
+        #self.instruments_path = fs.create_directory_in(self.path, "instruments")
 
         # Set the path to the SED and frame instrument
-        self.sed_instrument_path = fs.join(self.instruments_path, "sed.instr")
-        self.frame_instrument_path = fs.join(self.instruments_path, "frame.instr")
-        self.simple_instrument_path = fs.join(self.instruments_path, "simple.instr")
+        # NOW MOVED TO REPRESENTATION
+        #self.sed_instrument_path = fs.join(self.instruments_path, "sed.instr")
+        #self.frame_instrument_path = fs.join(self.instruments_path, "frame.instr")
+        #self.simple_instrument_path = fs.join(self.instruments_path, "simple.instr")
 
         # Set the path to the fit/geometries directory
         self.geometries_path = fs.create_directory_in(self.path, "geometries")

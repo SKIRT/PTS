@@ -108,9 +108,10 @@ class GalaxyModelingComponent(ModelingComponent):
         self.disk_model_path = None
 
         # The paths to the different galaxy projections
-        self.earth_projection_path = None
-        self.edgeon_projection_path = None
-        self.faceon_projection_path = None
+        # NOW MOVED TO DECOMPOSITIONCOMPONENT
+        #self.earth_projection_path = None
+        #self.edgeon_projection_path = None
+        #self.faceon_projection_path = None
 
         # The path to the components/images directory
         self.components_images_path = None
@@ -209,9 +210,10 @@ class GalaxyModelingComponent(ModelingComponent):
         self.disk_model_path = fs.join(self.components_models_path, "disk.mod")
 
         # The paths to the different galaxy projections
-        self.earth_projection_path = fs.join(self.components_projections_path, "earth.proj")
-        self.edgeon_projection_path = fs.join(self.components_projections_path, "edgeon.proj")
-        self.faceon_projection_path = fs.join(self.components_projections_path, "faceon.proj")
+        # NOW MOVED TO DECOMPOSITIONCOMPONENT
+        #self.earth_projection_path = fs.join(self.components_projections_path, "earth.proj")
+        #self.edgeon_projection_path = fs.join(self.components_projections_path, "edgeon.proj")
+        #self.faceon_projection_path = fs.join(self.components_projections_path, "faceon.proj")
 
         # Set the path to the components/images directory
         self.components_images_path = fs.create_directory_in(self.components_path, "images")
