@@ -71,7 +71,7 @@ class GalaxyModelingComponent(ModelingComponent):
         self.maps_path = None
         self.components_path = None
         self.deprojection_path = None
-        self.models_path = None
+        self.build_path = None
 
         # The path to the DustPedia observed SED
         self.observed_sed_dustpedia_path = None
@@ -124,7 +124,7 @@ class GalaxyModelingComponent(ModelingComponent):
         self.truncation_masks_path = None
 
         # The path to the truncation mask of the reference image (and rebinned images in the dataset)
-        self.reference_mask_path = None
+        #self.reference_mask_path = None
 
         # The path to the data/seds directory
         self.data_seds_path = None
@@ -172,7 +172,7 @@ class GalaxyModelingComponent(ModelingComponent):
         self.maps_path = fs.create_directory_in(self.config.path, "maps")
         self.components_path = fs.create_directory_in(self.config.path, "components")
         self.deprojection_path = fs.create_directory_in(self.config.path, "deprojection")
-        self.models_path = fs.create_directory_in(self.config.path, "model")
+        self.build_path = fs.create_directory_in(self.config.path, "build")
 
         # Set the path to the DustPedia observed SED
         self.observed_sed_dustpedia_path = fs.join(self.data_path, "fluxes.dat")
@@ -225,7 +225,7 @@ class GalaxyModelingComponent(ModelingComponent):
         self.truncation_masks_path = fs.create_directory_in(self.truncation_path, "masks")
 
         # The path to the truncation mask of the reference image (and rebinned images in the dataset)
-        self.reference_mask_path = fs.join(self.truncation_masks_path, "reference.fits")
+        #self.reference_mask_path = fs.join(self.truncation_masks_path, "reference.fits")
 
         # Set ...
         self.data_seds_path = fs.create_directory_in(self.data_path, "SEDs")
@@ -312,52 +312,51 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def wcs_reference_filter(self):
+    #@lazyproperty
+    #def wcs_reference_filter(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
-        return self.preparation_statistics.rebinning_filter
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def wcs_reference_image_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.dataset.get_name_for_filter(self.wcs_reference_filter)
+        #return self.preparation_statistics.rebinning_filter
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def fwhm_reference_filter(self):
+    #@lazyproperty
+    #def wcs_reference_image_name(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
-        return self.preparation_statistics.convolution_filter
+        #return self.dataset.get_name_for_filter(self.wcs_reference_filter)
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def fwhm_reference_image_name(self):
+    #@lazyproperty
+    #def fwhm_reference_filter(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
+        #return self.preparation_statistics.convolution_filter
 
-        return self.dataset.get_name_for_filter(self.fwhm_reference_filter)
+    # -----------------------------------------------------------------
+
+    #@lazyproperty
+    #def fwhm_reference_image_name(self):
+
+        #"""
+        #This function ...
+        #:return:
+        #"""
+
+        #return self.dataset.get_name_for_filter(self.fwhm_reference_filter)
 
     # -----------------------------------------------------------------
 
@@ -393,26 +392,26 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def masked_halpha_frame(self):
+    #@lazyproperty
+    #def masked_halpha_frame(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
         # Get the frame
-        frame = self.halpha_frame.copy()
+        #frame = self.halpha_frame.copy()
 
         # Check whether the reference truncation mask is present
-        if not fs.is_file(self.reference_mask_path): raise IOError("The truncation mask has not been created")
+        #if not fs.is_file(self.reference_mask_path): raise IOError("The truncation mask has not been created")
 
         # Mask the image
-        mask = Mask.from_file(self.reference_mask_path)
-        frame[mask] = 0.0
+        #mask = Mask.from_file(self.reference_mask_path)
+        #frame[mask] = 0.0
 
         # Return the frame
-        return frame
+        #return frame
 
     # -----------------------------------------------------------------
 
@@ -527,26 +526,26 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def masked_disk_frame(self):
+    #@lazyproperty
+    #def masked_disk_frame(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
         # Get the disk frame
-        frame = self.disk_frame.copy()
+        #frame = self.disk_frame.copy()
 
         # Check whether the reference truncation mask is present
-        if not fs.is_file(self.reference_mask_path): raise IOError("The truncation mask has not been created")
+        #if not fs.is_file(self.reference_mask_path): raise IOError("The truncation mask has not been created")
 
         # Mask the disk frame
-        mask = Mask.from_file(self.reference_mask_path)
-        frame[mask] = 0.0
+        #mask = Mask.from_file(self.reference_mask_path)
+        #frame[mask] = 0.0
 
         # Return the frame
-        return frame
+        #return frame
 
     # -----------------------------------------------------------------
 
@@ -569,26 +568,26 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def masked_bulge_frame(self):
+    #@lazyproperty
+    #def masked_bulge_frame(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
         # Get the bulge frame
-        frame = self.bulge_frame.copy()
+        #frame = self.bulge_frame.copy()
 
         # Check whether the reference truncation mask is present
-        if not fs.is_file(self.reference_mask_path): raise IOError("The truncation mask has not been created")
+        #if not fs.is_file(self.reference_mask_path): raise IOError("The truncation mask has not been created")
 
         # Mask the bulge frame
-        mask = Mask.from_file(self.reference_mask_path)
-        frame[mask] = 0.0
+        #mask = Mask.from_file(self.reference_mask_path)
+        #frame[mask] = 0.0
 
         # Return the frame
-        return frame
+        #return frame
 
     # -----------------------------------------------------------------
 
@@ -678,28 +677,28 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def reference_wcs_path(self):
+    #@lazyproperty
+    #def reference_wcs_path(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
-        reference_path = fs.join(self.prep_path, self.wcs_reference_image_name, "result.fits")
-        return reference_path
+        #reference_path = fs.join(self.prep_path, self.wcs_reference_image_name, "result.fits")
+        #return reference_path
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def reference_wcs(self):
+    #@lazyproperty
+    #def reference_wcs(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
-        return CoordinateSystem.from_file(self.reference_wcs_path)
+        #return CoordinateSystem.from_file(self.reference_wcs_path)
 
     # -----------------------------------------------------------------
 
@@ -750,40 +749,40 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def truncation_mask_path(self, image_name):
+    #def truncation_mask_path(self, image_name):
 
-        """
-        This function ...
-        :param image_name:
-        :return:
-        """
+        #"""
+        #This function ...
+        #:param image_name:
+        #:return:
+        #"""
 
         # Check whether mask is present with image name, or else use the reference mask file
-        path = fs.join(self.truncation_masks_path, image_name + ".fits")
-        if not fs.is_file(path): path = self.reference_mask_path
+        #path = fs.join(self.truncation_masks_path, image_name + ".fits")
+        #if not fs.is_file(path): path = self.reference_mask_path
 
         # Return None if truncation has not been performed yet
-        if not fs.is_file(path): return None
-        else: return path
+        #if not fs.is_file(path): return None
+        #else: return path
 
     # -----------------------------------------------------------------
 
-    def truncation_mask(self, image_name):
+    #def truncation_mask(self, image_name):
 
-        """
-        This function ...
-        :param image_name:
-        :return:
-        """
+        #"""
+        #This function ...
+        #:param image_name:
+        #:return:
+        #"""
 
         # Get the path to the truncation mask
-        path = self.truncation_mask_path(image_name)
+        #path = self.truncation_mask_path(image_name)
 
         # Return None if no mask is present
-        if path is None: return None
+        #if path is None: return None
 
         # Else, return the mask
-        return Mask.from_file(path)
+        #return Mask.from_file(path)
 
     # -----------------------------------------------------------------
 
@@ -854,84 +853,84 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def earth_projection(self):
+    #@lazyproperty
+    #def earth_projection(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
         # Check whether the file is present
-        if not fs.is_file(self.earth_projection_path): raise IOError("The earth projection file is not present. Run the 'decompose' step to create it")
+        #if not fs.is_file(self.earth_projection_path): raise IOError("The earth projection file is not present. Run the 'decompose' step to create it")
 
         # Load the projection
-        projection = GalaxyProjection.from_file(self.earth_projection_path)
+        #projection = GalaxyProjection.from_file(self.earth_projection_path)
 
         # Return the projection
-        return projection
+        #return projection
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def edgeon_projection(self):
+    #@lazyproperty
+    #def edgeon_projection(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
         # Check whether the file is present
-        if not fs.is_file(self.edgeon_projection_path): raise IOError("The edgeon projection file is not present. Run the 'decompose' step to create it")
+        #if not fs.is_file(self.edgeon_projection_path): raise IOError("The edgeon projection file is not present. Run the 'decompose' step to create it")
 
         # Load the projection
-        projection = GalaxyProjection.from_file(self.edgeon_projection_path)
+        #projection = GalaxyProjection.from_file(self.edgeon_projection_path)
 
         # Return the projection
-        return projection
+        #return projection
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def faceon_projection(self):
+    #@lazyproperty
+    #def faceon_projection(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
         # Check whether the file is present
-        if not fs.is_file(self.faceon_projection_path): raise IOError("The faceon projection file is not present. Run the 'decompose' step to create it")
+        #if not fs.is_file(self.faceon_projection_path): raise IOError("The faceon projection file is not present. Run the 'decompose' step to create it")
 
         # Load the projection
-        projection = GalaxyProjection.from_file(self.faceon_projection_path)
+        #projection = GalaxyProjection.from_file(self.faceon_projection_path)
 
         # Return the projection
-        return projection
+        #return projection
 
     # -----------------------------------------------------------------
 
-    def create_instrument(self, instrument_type, projection):
+    #def create_instrument(self, instrument_type, projection):
 
-        """
-        This function ...
-        :param instrument_type: "frame", "SED", "simple", or "full"
-        :param projection: "earth", "faceon", or "edgeon"
-        :return:
-        """
+        #"""
+        #This function ...
+        #:param instrument_type: "frame", "SED", "simple", or "full"
+        #:param projection: "earth", "faceon", or "edgeon"
+        #:return:
+        #"""
 
         # Determine the instrument class
-        if instrument_type == "SED": instrument_class = SEDInstrument
-        elif instrument_type == "frame": instrument_class = FrameInstrument
-        elif instrument_type == "simple": instrument_class = SimpleInstrument
-        elif instrument_type == "full": instrument_class = FullInstrument
-        else: raise ValueError("Invalid instrument type: " + instrument_type)
+        #if instrument_type == "SED": instrument_class = SEDInstrument
+        #elif instrument_type == "frame": instrument_class = FrameInstrument
+        #elif instrument_type == "simple": instrument_class = SimpleInstrument
+        #elif instrument_type == "full": instrument_class = FullInstrument
+        #else: raise ValueError("Invalid instrument type: " + instrument_type)
 
         # Create the instrument and return it
-        if projection == "earth": return instrument_class.from_projection(self.earth_projection)
-        elif projection == "faceon": return instrument_class.from_projection(self.faceon_projection)
-        elif projection == "edgeon": return instrument_class.from_projection(self.edgeon_projection)
-        else: raise ValueError("Invalid projection: " + projection)
+        #if projection == "earth": return instrument_class.from_projection(self.earth_projection)
+        #elif projection == "faceon": return instrument_class.from_projection(self.faceon_projection)
+        #elif projection == "edgeon": return instrument_class.from_projection(self.edgeon_projection)
+        #else: raise ValueError("Invalid projection: " + projection)
 
     # -----------------------------------------------------------------
 

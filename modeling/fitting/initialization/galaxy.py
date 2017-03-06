@@ -26,12 +26,11 @@ from ....core.tools.logging import log
 from ....core.prep.wavelengthgrids import WavelengthGridGenerator
 from ....core.prep.dustgrids import DustGridGenerator
 from ....core.basics.range import RealRange, QuantityRange
-from ....core.basics.configuration import write_mapping
-from ....core.basics.map import Map
 from ...component.galaxy import GalaxyModelingComponent
 from ..tables import WeightsTable
 from ....core.basics.unit import parse_unit as u
 from ...build.component import get_stellar_component_names, get_dust_component_names, load_stellar_component, load_dust_component
+from ....core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
@@ -60,12 +59,11 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         # The ski file
         self.ski = None
 
-        # The stellar and dust components
-        self.stellar_components = dict()
-        self.dust_components = dict()
+        # The deprojections
+        #self.deprojections = dict()
 
         # The instruments
-        self.instruments = dict()
+        #self.instruments = dict()
 
         # The table of weights for each band
         self.weights = None
@@ -77,9 +75,6 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         # The wavelength grid and dust grid generators
         self.wg_generator = None
         self.dg_generator = None
-
-        # The fixed parameters map
-        self.fixed = Map()
 
     # -----------------------------------------------------------------
 
@@ -97,14 +92,17 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         # 2. Load the ski file
         self.load_ski()
 
+        # 3. Set the stellar and dust components
+        self.set_components()
+
         # 3. Create the wavelength grids
-        self.create_wavelength_grids()
+        #self.create_wavelength_grids()
 
         # 4. Create the instruments
-        self.create_instruments()
+        #self.create_instruments()
 
         # 5. Create the dust grids
-        self.create_dust_grids()
+        #self.create_dust_grids()
 
         # 6. Adjust the ski template
         self.adjust_ski()
@@ -146,11 +144,6 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         # Create the table to contain the weights
         self.weights = WeightsTable()
 
-        # Set general fixed parameters
-        self.fixed["distance"] = self.galaxy_distance
-        self.fixed["inclination"] = self.galaxy_inclination
-        self.fixed["position_angle"] = self.galaxy_position_angle
-
     # -----------------------------------------------------------------
 
     @property
@@ -173,6 +166,214 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         """
 
         self.ski = self.fitting_run.ski_template
+
+    # -----------------------------------------------------------------
+
+    def set_components(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the stellar and dust components ...")
+
+        # 1. Set stellar components
+        self.set_stellar_components()
+
+        # 2. Set dust components
+        self.set_dust_components()
+
+    # -----------------------------------------------------------------
+
+    def set_stellar_components(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the stellar components ...")
+
+        # Loop over the stellar components
+        for name in get_stellar_component_names(self.config.path, self.model_name):
+
+            # Load the component
+            component = load_stellar_component(self.config.path, self.model_name, name)
+
+            # Set geometry
+            if "model" in component:
+
+                # Get title
+                title = component.parameters.title
+
+                # Set the geometry
+                self.ski.set_stellar_component_geometry(title, component.model)
+
+            # Set deprojection
+            elif "deprojection" in component:
+
+                # Get title
+                title = component.parameters.title
+
+                # Set the deprojection geometry
+                self.ski.set_stellar_component_geometry(title, component.deprojection)
+
+                # Add to the dictionary of deprojections
+                #self.deprojections[(name, title)] = component.deprojection
+
+            # Check if this is a new component, add geometry, SED and normalization all at once
+            if "geometry" in component.parameters:
+
+                # Get title
+                title = component.parameters.title
+
+                # Get class names
+                geometry_type = component.parameters.geometry
+                sed_type = component.parameters.sed
+                normalization_type = component.parameters.normalization
+
+                # Get properties for each of the three classes
+                geometry_properties = component.properties["geometry"]
+                sed_properties = component.properties["sed"]
+                normalization_properties = component.properties["normalization"]
+
+                # Create stellar component
+                self.ski.create_new_stellar_component(title, geometry_type, geometry_properties, sed_type, sed_properties, normalization_type, normalization_properties)
+
+            # Existing component, with MAPPINGS template
+            elif "sfr" in component.parameters:
+
+                # Get title
+                title = component.parameters.title
+
+                # Get SED properties
+                metallicity = component.parameters.metallicity
+                compactness = component.parameters.compactness
+                pressure = component.parameters.pressure
+                covering_factor = component.parameters.covering_factor
+
+                # Get normalization
+                fltr = parse_filter(component.parameters.filter)
+                luminosity = component.parameters.luminosity
+
+                # Set SED
+                self.ski.set_stellar_component_mappingssed(title, metallicity, compactness, pressure, covering_factor)  # SED
+
+                # Set center wavelength of the filter as normalization wavelength (keeps label)
+                self.ski.set_stellar_component_normalization_wavelength(title, fltr.center)
+
+                # Set spectral luminosity at that wavelength (keeps label)
+                self.ski.set_stellar_component_luminosity(title, luminosity)
+
+                # Scale height doesn't need to be set as parameter, this is already in the deprojection model
+
+            # Existing component, no MAPPINGS
+            else:
+
+                # Get title
+                title = component.parameters.title
+
+                # Get SED properties
+                template = component.parameters.template
+                age = component.parameters.age
+                metallicity = component.parameters.metallicity
+
+                # Get normalization
+                fltr = parse_filter(component.parameters.filter)
+                luminosity = component.parameters.luminosity
+
+                # Set SED
+                self.ski.set_stellar_component_sed(title, template, age, metallicity)
+
+                # Set center wavelength of the filter as normalization wavelength (keeps label)
+                self.ski.set_stellar_component_normalization_wavelength(title, fltr.center)
+
+                # Set spectral luminosity at that wavelength (keeps label)
+                self.ski.set_stellar_component_luminosity(title, luminosity)
+
+                # Scale height doesn't need to be set as parameter, this is already in the deprojection model
+
+    # -----------------------------------------------------------------
+
+    def set_dust_components(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the dust components ...")
+
+        # Loop over the dust components
+        for name in get_dust_component_names(self.config.path, self.model_name):
+
+            # Load the component
+            component = load_dust_component(self.config.path, self.model_name, name)
+
+            # Set geometry
+            if "model" in component:
+
+                # Get title
+                title = component.parameters.title
+
+                # Set the geometry
+                self.ski.set_dust_component_geometry(title, component.model)
+
+            # Set deprojection
+            elif "deprojection" in component:
+
+                # Get title
+                title = component.parameters.title
+
+                # Set the deprojection geometry
+                self.ski.set_dust_component_geometry(title, component.deprojection)
+
+                # Add to the dictionary of deprojections
+                #self.deprojections[(name, title)] = component.deprojection
+
+            # Check if this is a new dust component, add geometry, mix and normalization all at once
+            if "geometry" in component.parameters:
+
+                # Get title
+                title = component.parameters.title
+
+                # Get class names
+                geometry_type = component.parameters.geometry
+                mix_type = component.parameters.sed
+                normalization_type = component.parameters.normalization
+
+                # Get properties for each of the three classes
+                geometry_properties = component.properties["geometry"]
+                mix_properties = component.properties["mix"]
+                normalization_properties = component.properties["normalization"]
+
+                # Create stellar component
+                self.ski.create_new_dust_component(title, geometry_type, geometry_properties, mix_type, mix_properties, normalization_type, normalization_properties)
+
+            # Existing component, THEMIS dust mix
+            elif "hydrocarbon_pops" in component.parameters:
+
+                # Get title
+                title = component.parameters.title
+
+                # Get parameters
+                mass = component.parameters.mass
+                hydrocarbon_pops = component.parameters.hydrocarbon_pops
+                enstatite_pops = component.parameters.enstatite_pops
+                forsterite_pops = component.parameters.forsterite_pops
+
+                # Set the dust mix
+                self.ski.set_dust_component_themis_mix(title, hydrocarbon_pops, enstatite_pops, forsterite_pops)  # dust mix
+
+                # Set the dust mass (keeps label)
+                self.ski.set_dust_component_mass(title, mass)
+
+            # Existing component, not THEMIS dust mix
+            else: raise NotImplementedError("Only THEMIS dust mixes are implemented at this moment")
 
     # -----------------------------------------------------------------
 
@@ -296,7 +497,7 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         self.ski.set_file_wavelength_grid("wavelengths.txt")
 
         # Set the stellar and dust components
-        self.set_components()
+        #self.set_components()
 
         # Set the dust emissivity
         self.set_dust_emissivity()
@@ -312,271 +513,6 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
 
         # Disable all writing options
         self.ski.disable_all_writing_options()
-
-    # -----------------------------------------------------------------
-
-    def set_components(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Setting the stellar and dust components ...")
-
-        # Set stellar components
-        self.set_stellar_components()
-
-        # Set dust components
-        self.set_dust_components()
-
-    # -----------------------------------------------------------------
-
-    def set_stellar_components(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Setting the stellar components ...")
-
-        # Loop over the stellar components
-        for name in get_stellar_component_names(self.config.path, self.model_name):
-
-            # Load the component
-            component = load_stellar_component(self.config.path, self.model_name, name)
-
-            # Set
-            #self.stellar_components[name] = component
-
-            # Set geometry
-            if "model" in component:
-
-                self.ski.set_stellar_component_geometry(component.model)
-
-            # Set deprojection
-            if "deprojection" in component:
-
-                # Also
-                self.ski.set_stellar_component_geometry(component.deprojection)
-
-            # Check if this is a new component
-            if "geometry" in component.parameters:
-
-                #definition.add_required("name", "string", "name for this stellar component")
-                #definition.add_optional("description", "string", "description for the component")
-                #definition.add_optional("geometry", "string", "SKIRT base geometry for the component",
-                #                        self.smile.concrete_geometries)
-                #definition.add_optional("sed", "string", "SED template for the component",
-                #                        self.smile.concrete_stellar_seds)
-                #definition.add_optional("normalization", "string", "normalization for the component",
-                #                        self.smile.concrete_stellar_normalizations)
-
-            # Check if this is a MAPPINGS template
-            elif "sfr" in component.parameters:
-
-                metallicity = component.parameters.metallicity
-                compactness = component.parameters.compactness
-                pressure = component.parameters.pressure
-                covering_factor = component.parameters.covering_factor
-
-                luminosity = component.parameters.luminosity
-
-                # Set SED and luminosity
-                #self.ski.set_stellar_component_geometry("Ionizing stars", deprojection)
-                self.ski.set_stellar_component_mappingssed("Ionizing stars", metallicity, compactness, pressure, covering_factor)  # SED
-
-                # SET NORMALIZATION (IS FREE PARAMETER)
-                self.ski.set_stellar_component_normalization_wavelength("Ionizing stars", self.fuv_filter.centerwavelength() * u("micron"))
-                self.ski.set_labeled_value("fuv_ionizing", luminosity)  # keep label
-
-                # Scale height doesn't need to be set as parameter, this is already in the deprojection model
-
-            # Not mappings
-            else:
-
-                template = component.parameters.template
-                age = component.parameters.age
-                metallicity = component.parameters.metallicity
-
-                luminosity = component.parameters.luminosity
-
-                # Set SED and luminosity
-                self.ski.set_stellar_component_sed(title, template, age, metallicity)
-                self.ski.set_stellar_component_luminosity(title, luminosity, wavelength)
-
-                # Scale height doesn't need to be set as parameter, this is already in the deprojection model
-
-            # Set properties
-            if "properties" in component:
-
-    # -----------------------------------------------------------------
-
-    def set_dust_components(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Setting the dust components ...")
-
-        # Loop over the dust components
-        for name in get_dust_component_names(self.config.path, self.model_name):
-
-            # Load the component
-            component = load_dust_component(self.config.path, self.model_name, name)
-
-            # Set
-            #self.dust_components[name] = component
-
-    # -----------------------------------------------------------------
-
-    def set_bulge_component(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Configuring the bulge component ...")
-
-        # Set the parameters of the bulge
-        self.ski.set_stellar_component_geometry("Evolved stellar bulge", self.bulge_model)
-        self.ski.set_stellar_component_sed("Evolved stellar bulge", bulge_template, bulge_age, bulge_metallicity) # SED
-        #self.ski.set_stellar_component_luminosity("Evolved stellar bulge", luminosity, self.i1) # normalization by band
-        self.ski.set_stellar_component_luminosity("Evolved stellar bulge", luminosity, self.i1_filter.centerwavelength() * u("micron"))
-
-    # -----------------------------------------------------------------
-
-    def set_old_stellar_component(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Configuring the old stellar component ...")
-
-        ## NEW: SET FIXED PARAMETERS
-        self.fixed["metallicity"] = disk_metallicity
-        self.fixed["old_scaleheight"] = scale_height
-        self.fixed["i1_old"] = luminosity
-        ##
-
-        # Set the parameters of the evolved stellar component
-        #deprojection = self.deprojection.copy()
-        #deprojection.filename = self.old_stellar_map_filename
-        #deprojection.scale_height = scale_height
-        #self.deprojections["old stars"] = deprojection
-
-        # Adjust the ski file
-        self.ski.set_stellar_component_geometry("Evolved stellar disk", deprojection)
-        self.ski.set_stellar_component_sed("Evolved stellar disk", disk_template, disk_age, disk_metallicity) # SED
-        #self.ski.set_stellar_component_luminosity("Evolved stellar disk", luminosity, self.i1) # normalization by band
-        self.ski.set_stellar_component_luminosity("Evolved stellar disk", luminosity, self.i1_filter.centerwavelength() * u("micron"))
-
-    # -----------------------------------------------------------------
-
-    def set_young_stellar_component(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Configuring the young stellar component ...")
-
-        ## NEW: SET FIXED PARAMETERS
-        self.fixed["young_scaleheight"] = scale_height
-        ##
-
-        # Set the parameters of the young stellar component
-        #deprojection = self.deprojection.copy()
-        #deprojection.filename = self.young_stellar_map_filename
-        #deprojection.scale_height = scale_height
-        #self.deprojections["young stars"] = deprojection
-
-        # Adjust the ski file
-        self.ski.set_stellar_component_geometry("Young stars", deprojection)
-        self.ski.set_stellar_component_sed("Young stars", young_template, young_age, young_metallicity) # SED
-        #self.ski.set_stellar_component_luminosity("Young stars", luminosity, self.fuv) # normalization by band
-        #self.ski_template.set_stellar_component_luminosity("Young stars", luminosity, self.fuv_filter.centerwavelength() * u("micron"))
-
-        # SET NORMALIZATION (IS FREE PARAMETER)
-        self.ski.set_stellar_component_normalization_wavelength("Young stars", self.fuv_filter.centerwavelength() * u("micron"))
-        self.ski.set_labeled_value("fuv_young", luminosity)
-
-    # -----------------------------------------------------------------
-
-    def set_ionizing_stellar_component(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Configuring the ionizing stellar component ...")
-
-        ## NEW: SET FIXED PARAMETERS
-        self.fixed["ionizing_scaleheight"] = scale_height
-        self.fixed["sfr_compactness"] = ionizing_compactness
-        self.fixed["sfr_covering"] = ionizing_covering_factor
-        self.fixed["sfr_pressure"] = ionizing_pressure
-        ##
-
-        # Set the parameters of the ionizing stellar component
-        #deprojection = self.deprojection.copy()
-        #deprojection.filename = self.ionizing_stellar_map_filename
-        #deprojection.scale_height = scale_height
-        #self.deprojections["ionizing stars"] = deprojection
-
-        # Adjust the ski file
-        self.ski.set_stellar_component_geometry("Ionizing stars", deprojection)
-        self.ski.set_stellar_component_mappingssed("Ionizing stars", ionizing_metallicity, ionizing_compactness, ionizing_pressure, ionizing_covering_factor) # SED
-        #self.ski.set_stellar_component_luminosity("Ionizing stars", luminosity, self.fuv) # normalization by band
-        #self.ski_template.set_stellar_component_luminosity("Ionizing stars", luminosity, self.fuv_filter.centerwavelength() * Unit("micron"))
-
-        # SET NORMALIZATION (IS FREE PARAMETER)
-        self.ski.set_stellar_component_normalization_wavelength("Ionizing stars", self.fuv_filter.centerwavelength() * u("micron"))
-        self.ski.set_labeled_value("fuv_ionizing", luminosity) # keep label
-
-    # -----------------------------------------------------------------
-
-    def set_dust_component(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Configuring the dust component ...")
-
-        ## NEW: SET FIXED PARAMETERS
-        self.fixed["dust_scaleheight"] = scale_height
-        ##
-
-        # Set the parameters of the dust component
-        #deprojection = self.deprojection.copy()
-        #deprojection.filename = self.dust_map_filename
-        #deprojection.scale_height = scale_height
-        #self.deprojections["dust"] = deprojection
-
-        # Adjust the ski file
-        self.ski.set_dust_component_geometry(0, deprojection)
-        self.ski.set_dust_component_themis_mix(0, hydrocarbon_pops, enstatite_pops, forsterite_pops) # dust mix
-        #self.ski_template.set_dust_component_mass(0, dust_mass) # dust mass
-
-        self.ski.set_labeled_value("dust_mass", dust_mass) # keep label
 
     # -----------------------------------------------------------------
 
@@ -700,9 +636,6 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         # 2. Write the ski file
         self.write_ski()
 
-        # 3. Write the fixed parameters
-        self.write_fixed()
-
         # 4. Write the weights table
         self.write_weights()
 
@@ -747,21 +680,6 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
 
         # Save the ski template file
         self.ski.save()
-
-    # -----------------------------------------------------------------
-
-    def write_fixed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the fixed parameter values to " + self.fitting_run.fixed_parameters_path + " ...")
-
-        # Write the fixed parameters map
-        with open(self.fitting_run.fixed_parameters_path, 'w') as f: write_mapping(f, self.fixed)
 
     # -----------------------------------------------------------------
 

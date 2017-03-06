@@ -20,6 +20,11 @@ from .general import GeneralBuilder
 
 # -----------------------------------------------------------------
 
+titles = dict()
+titles["disk"] = "Dust disk"
+
+# -----------------------------------------------------------------
+
 class DustBuilder(GeneralBuilder):
     
     """
@@ -124,6 +129,9 @@ class DustBuilder(GeneralBuilder):
         setter = InteractiveConfigurationSetter("dust disk")
         config = setter.run(definition)
 
+        # Set the title
+        config.title = titles["disk"]
+
         # Set the parameters
         self.parameters["disk"] = config
 
@@ -152,7 +160,7 @@ class DustBuilder(GeneralBuilder):
         log.info("Creating the deprojection model for the dust disk ...")
 
         # Create the deprojection model
-        deprojection = self.create_deprojection_for_map(self.maps["disk"])
+        deprojection = self.create_deprojection_for_map(self.maps["disk"], filename, self.parameters["disk"].scale_height)
 
         # Set the deprojection model
         self.deprojections["disk"] = deprojection
@@ -204,8 +212,8 @@ class DustBuilder(GeneralBuilder):
 
         # Create definition
         definition = ConfigurationDefinition()
-        definition.add_required("name", "string", "name for this stellar component")
-        definition.add_optional("description", "string", "description for the component")
+        definition.add_required("name", "string", "name for this dust component")
+        definition.add_optional("title", "string", "short description for this component")
         definition.add_optional("geometry", "string", "SKIRT base geometry for the component", self.smile.concrete_geometries)
         definition.add_optional("normalization", "string", "normalization for the component", self.smile.concrete_dust_normalizations)
         definition.add_optional("mix", "string", "dust mix for the component", self.smile.concrete_dust_mixes)

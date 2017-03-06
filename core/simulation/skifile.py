@@ -25,7 +25,6 @@ from ..filter.filter import parse_filter, Filter
 from ..tools import archive as arch
 from ..tools import filesystem as fs
 from ..tools.stringify import str_from_bool, str_from_angle
-from ..basics.quantity import represent_quantity
 from ..tools import xml
 
 # -----------------------------------------------------------------
@@ -735,6 +734,8 @@ class SkiFile:
         if self.oligochromatic(): warnings.warn("The simulation is already oligochromatic")
         else:
 
+            from ..basics.quantity import represent_quantity
+
             simulation = self.tree.xpath("//PanMonteCarloSimulation")[0]
             simulation.tag = "OligoMonteCarloSimulation"
 
@@ -1220,6 +1221,53 @@ class SkiFile:
         # Loop over the dust component IDs
         for id_i in self.get_dust_component_ids(): self.remove_dust_component(id_i)
 
+    ## This function creates a new stellar component
+    def create_new_stellar_component(self, component_id, geometry_type, geometry_properties, sed_type, sed_properties, normalization_type, normalization_properties):
+
+        # Panchromatic simulation
+        if self.panchromatic():
+
+            # Get the stellar system
+            stellar_system = self.get_stellar_system()
+
+            # Get the 'components' element
+            stellar_components_parent = stellar_system.xpath("components")
+
+            # Create the new stellar component
+            component = stellar_components_parent.makeelement("PanStellarComp", attrs)
+
+            # Add the component ID
+            comment = etree.Comment(component_id)
+            stellar_components_parent.append(comment)
+
+            # Add the new stellar component
+            stellar_components_parent.append(component)
+
+        # Oligochromatic simulation
+        else: pass
+
+    ## This function creates a new dust component
+    def create_new_dust_component(self, component_id, geometry_type, geometry_properties, mix_type, mix_properties, normalization_type, normalization_properties):
+
+        # Get the dust distribution
+        dust_distribution = self.get_dust_distribution()
+
+        # Check dust distribution type
+        if dust_distribution.tag != "CompDustDistribution": raise ValueError("The dust distribution is not a 'CompDustDistribution', so adding components is not possible")
+
+        # Get the 'components' element
+        dust_components_parent = dust_distribution.xpath("components")
+
+        # Create the new dut component
+        component = dust_components_parent.makeelement("DustComp", attrs)
+
+        # Add the component ID
+        comment = etree.Comment(component_id)
+        dust_components_parent.append(comment)
+
+        # Add the new dust component
+        dust_components_parent.append(component)
+
     ## This function returns all properties of the stellar component with the specified id
     def get_stellar_component_properties(self, component_id):
 
@@ -1254,7 +1302,18 @@ class SkiFile:
         normalization = self.get_stellar_component_normalization(component_id)
 
         # Set the wavelength
-        normalization.set("wavelength", represent_quantity(wavelength))
+        # element, name, value, default_unit=None
+        self.set_quantity(normalization, "wavelength", wavelength)
+
+    ## This function sets the spectral luminosity for the spectral luminosity normalization
+    def set_stellar_component_normalization_spectral_luminosity(self, component_id, luminosity):
+
+        # Get the normalization element
+        normalization = self.get_stellar_component_normalization(component_id)
+
+        # Set the wavelength
+        # element, name, value, default_unit=None
+        self.set_quantity(normalization, "luminosity", luminosity)
 
     ## This function returns the wavelength or filter for normalization of the specified stellar component
     def get_stellar_component_normalization_wavelength_or_filter(self, component_id):
@@ -1311,6 +1370,8 @@ class SkiFile:
     #  - if filter_or_wavelength is a Filter instance, the luminosity [as Astropy quantity] is interpreted as the luminosity in the corresponding band
     #  - if filter_or_wavelength is a wavelength [as an Astropy quantity], the luminosity should be the spectral luminosity [as Astropy quantity] at that wavelength
     def set_stellar_component_luminosity(self, component_id, luminosity, filter_or_wavelength=None):
+
+        from ..basics.quantity import represent_quantity
 
         # Get the stellar component normalization of the component
         normalization = self.get_stellar_component_normalization(component_id)
@@ -1415,7 +1476,7 @@ class SkiFile:
         if not normalization.tag == "DustMassDustCompNormalization": raise ValueError("Dust component normalization is not of type 'DustMassDustCompNormalization")
 
         # Set the new dust mass
-        normalization.set("dustMass", represent_quantity(mass))
+        self.set_quantity(normalization, "dustMass", mass)
 
     ## This function returns the wavelength grid
     def get_wavelength_grid(self):
@@ -1471,6 +1532,8 @@ class SkiFile:
     ## This function sets the wavelength grid to a NestedLogWavelengthGrid
     def set_nestedlog_wavelength_grid(self, min_lambda, max_lambda, points, min_lambda_sub, max_lambda_sub, points_sub, write):
 
+        from ..basics.quantity import represent_quantity
+
         # Get the wavelength grid
         wavelength_grid = self.get_wavelength_grid()
 
@@ -1489,6 +1552,8 @@ class SkiFile:
 
     ## This functions sets the wavelength grid to a LogWavelengthGrid
     def set_log_wavelength_grid(self, min_lambda, max_lambda, points, write):
+
+        from ..basics.quantity import represent_quantity
 
         # Get the wavelength grid
         wavelength_grid = self.get_wavelength_grid()
@@ -1629,6 +1694,8 @@ class SkiFile:
     ## This function sets the geometry of the specified stellar component to a FITS file
     def set_stellar_component_fits_geometry(self, component_id, filename, pixelscale, position_angle, inclination, x_size, y_size, x_center, y_center, scale_height):
 
+        from ..basics.quantity import represent_quantity
+
         # Get the stellar component geometry
         geometry = self.get_stellar_component_geometry(component_id)
 
@@ -1647,6 +1714,8 @@ class SkiFile:
 
     ## This function sets the geometry of the specified dust component to a FITS file
     def set_dust_component_fits_geometry(self, component_id, filename, pixelscale, position_angle, inclination, x_size, y_size, x_center, y_center, scale_height):
+
+        from ..basics.quantity import represent_quantity
 
         # Get the dust component geometry
         geometry = self.get_dust_component_geometry(component_id)
@@ -1944,6 +2013,8 @@ class SkiFile:
     ## This function sets a MAPPINGS SED template for the stellar component with the specified id
     def set_stellar_component_mappingssed(self, component_id, metallicity, compactness, pressure, covering_factor):
 
+        from ..basics.quantity import represent_quantity
+
         # Get the stellar component SED
         sed = self.get_stellar_component_sed(component_id)
 
@@ -2202,6 +2273,8 @@ class SkiFile:
 
     ## This function sets a cartesian dust grid for the dust system
     def set_cartesian_dust_grid(self, min_x, max_x, min_y, max_y, min_z, max_z, x_bins, y_bins, z_bins, mesh_type="linear", ratio=1., write_grid=True):
+
+        from ..basics.quantity import represent_quantity
 
         # Get the dust grid
         grid = self.get_dust_grid()
@@ -2462,6 +2535,8 @@ class SkiFile:
     def add_frame_instrument(self, name, distance, inclination, azimuth, position_angle, field_x, field_y,
                                   pixels_x, pixels_y, center_x, center_y):
 
+        from ..basics.quantity import represent_quantity
+
         # Get the 'instruments' element
         instruments = self.get_instruments(as_list=False)
 
@@ -2475,6 +2550,8 @@ class SkiFile:
     ## This function adds a FullInstrument to the instrument system
     def add_full_instrument(self, name, distance, inclination, azimuth, position_angle, field_x, field_y,
                             pixels_x, pixels_y, center_x, center_y, scattering_levels=0):
+
+        from ..basics.quantity import represent_quantity
 
         # Get the 'instruments' element
         instruments = self.get_instruments(as_list=False)
@@ -2490,6 +2567,8 @@ class SkiFile:
     def add_simple_instrument(self, name, distance, inclination, azimuth, position_angle, field_x, field_y,
                               pixels_x, pixels_y, center_x, center_y):
 
+        from ..basics.quantity import represent_quantity
+
         # Get the 'instruments' element
         instruments = self.get_instruments(as_list=False)
 
@@ -2502,6 +2581,8 @@ class SkiFile:
 
     ## This function adds an SEDInstrument to the instrument system
     def add_sed_instrument(self, name, distance, inclination, azimuth, position_angle):
+
+        from ..basics.quantity import represent_quantity
 
         # Get the 'instruments' element
         instruments = self.get_instruments(as_list=False)
@@ -3117,6 +3198,24 @@ class LabeledSkiFile(SkiFile):
         :return:
         """
 
-        pass
+        # Import here to avoid import errors for this module for users without an Astropy installation
+        from ..basics.quantity import represent_quantity
+        from ..basics.unit import represent_unit, parse_unit
+
+        # Get the property
+        prop = element.get(name)
+
+        # Stringify the value
+        if hasattr(value, "unit"): string = represent_quantity(value)
+        elif default_unit is not None: string = repr(value) + " " + represent_unit(parse_unit(default_unit))
+        else: string = repr(value)
+
+        # Labeled value, add label to stringified quantity
+        if prop.startswith("[") and prop.endswith("]"):
+            label = prop[1:-1].split(":")[0]
+            string = "[" + label + ":" + string + "]"
+
+        # Set the value in the tree element
+        element.set(name, string)
 
 # -----------------------------------------------------------------

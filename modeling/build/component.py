@@ -15,12 +15,13 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import filesystem as fs
-from .table import ModelsTable
+from .tables import ModelsTable, RepresentationsTable
 from ...core.basics.map import Map
 from ...core.basics.configuration import load_mapping
 from ..basics.models import DeprojectionModel3D, load_3d_model
 from ...core.tools.serialization import load_dict
 from ...magic.core.frame import Frame
+from .definition import ModelDefinition
 
 # -----------------------------------------------------------------
 
@@ -42,8 +43,17 @@ class BuildComponent(GalaxyModelingComponent):
         # Call the constructor of the base class
         super(BuildComponent, self).__init__(config, interactive)
 
+        # Path to the models directory
+        self.models_path = None
+
+        # Path to the representations directory
+        self.representations_path = None
+
         # Path to the models table
         self.models_table_path = None
+
+        # Path to the representations table
+        self.representations_table_path = None
 
     # -----------------------------------------------------------------
 
@@ -58,6 +68,9 @@ class BuildComponent(GalaxyModelingComponent):
         # Call the setup function of the base class
         super(BuildComponent, self).setup(**kwargs)
 
+        # Determine the path to the models directory
+        self.models_path = fs.create_directory_in(self.build_path, "models")
+
         # Determine the path to the models table
         self.models_table_path = fs.join(self.models_path, "models.dat")
 
@@ -65,6 +78,31 @@ class BuildComponent(GalaxyModelingComponent):
         if not fs.is_file(self.models_table_path):
             table = ModelsTable()
             table.saveto(self.models_table_path)
+
+        # Determine the path to the representations directory
+        self.representations_path = fs.create_directory_in(self.build_path, "representations")
+
+        # Determine the path to the representations table
+        self.representations_table_path = fs.join(self.representations_path, "representations.dat")
+
+        # Initialize the representations table if necessary
+        if not fs.is_file(self.representations_table_path):
+            table = RepresentationsTable()
+            table.saveto(self.representations_table_path)
+
+    # -----------------------------------------------------------------
+
+    def get_model_definition(self, model_name):
+
+        """
+        This function ...
+        :param model_name:
+        :return:
+        """
+
+        path = self.get_model_path(model_name)
+        if not fs.is_directory(path): raise ValueError("Model does not exist")
+        return ModelDefinition(model_name, path)
 
     # -----------------------------------------------------------------
 
@@ -150,6 +188,67 @@ class BuildComponent(GalaxyModelingComponent):
 
         return fs.directories_in_path(self.get_model_dust_path(model_name), returns="name")
 
+    # -----------------------------------------------------------------
+
+    def get_representation(self, representation_name):
+
+        """
+        This function ...
+        :param representation_name:
+        :return:
+        """
+
+        path = self.get_representation_path(representation_name)
+        if not fs.is_directory(path): raise ValueError("Representation does not exist")
+
+    # -----------------------------------------------------------------
+
+    def get_representation_path(self, representation_name):
+
+        """
+        This function ...
+        :param representation_name:
+        :return:
+        """
+
+        return fs.join(self.representations_path, representation_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def representations_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return RepresentationsTable.from_file(self.representations_table_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def representation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.representations_table.names
+
+    # -----------------------------------------------------------------
+
+    def representations_for_model(self, model_name):
+
+        """
+        This function ...
+        :param model_name:
+        :return:
+        """
+
+        return self.representations_table.representations_for_model(model_name)
+
 # -----------------------------------------------------------------
 
 def get_models_table_path(modeling_path):
@@ -160,7 +259,7 @@ def get_models_table_path(modeling_path):
     :return:
     """
 
-    return fs.join(modeling_path, "models", "models.dat")
+    return fs.join(modeling_path, "build", "models", "models.dat")
 
 # -----------------------------------------------------------------
 
@@ -197,7 +296,7 @@ def get_model_path(modeling_path, model_name):
     :return:
     """
 
-    return fs.join(modeling_path, "models", model_name)
+    return fs.join(modeling_path, "build", "models", model_name)
 
 # -----------------------------------------------------------------
 
@@ -361,5 +460,55 @@ def load_dust_component(modeling_path, model_name, component_name):
 
     # Load the component
     return load_component(path)
+
+# -----------------------------------------------------------------
+
+def get_representations_table_path(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return fs.join(modeling_path, "build", "representations", "representations.dat")
+
+# -----------------------------------------------------------------
+
+def get_representations_table(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    path = get_representations_table_path(modeling_path)
+    return RepresentationsTable.from_file(path)
+
+# -----------------------------------------------------------------
+
+def get_representation_names(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return get_representations_table(modeling_path).names
+
+# -----------------------------------------------------------------
+
+def get_representations_for_model(modeling_path, model_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param model_name:
+    :return:
+    """
+
+    return get_representations_table(modeling_path).representations_for_model(model_name)
 
 # -----------------------------------------------------------------

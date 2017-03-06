@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.build.table Contains the ModelsTable class.
+## \package pts.modeling.build.tables Contains the ModelsTable and RepresentationsTable classes.
 
 # -----------------------------------------------------------------
 
@@ -15,6 +15,59 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ...core.basics.table import SmartTable
 from ...core.tools import arrays, tables
+
+# -----------------------------------------------------------------
+
+class RepresentationsTable(SmartTable):
+        
+    """
+    This class ..."""
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(RepresentationsTable, self).__init__(*args, **kwargs)
+
+        # Add column info
+        self.add_column_info("Name", str, None, "name for the representation")
+        self.add_column_info("Model name", str, None, "name of the model")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return arrays.array_as_list(self["Name"])
+
+    # -----------------------------------------------------------------
+
+    def representations_for_model(self, model_name):
+
+        """
+        This function ...
+        :param model_name:
+        :return:
+        """
+
+        # Get the indices
+        indices = tables.find_indices(self, model_name, column_name="Model name")
+
+        # Get the representations
+        representations = [self["Name"][index] for index in indices]
+
+        # Return the representations
+        return representations
 
 # -----------------------------------------------------------------
 

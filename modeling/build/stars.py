@@ -26,6 +26,14 @@ from .general import GeneralBuilder
 
 # -----------------------------------------------------------------
 
+titles = dict()
+titles["bulge"] = "Evolved stellar bulge"
+titles["old"] = "Evolved stellar disk"
+titles["young"] = "Young stars"
+titles["ionizing"] = "Ionizing stars"
+
+# -----------------------------------------------------------------
+
 class StarsBuilder(GeneralBuilder):
     
     """
@@ -141,7 +149,11 @@ class StarsBuilder(GeneralBuilder):
         assert np.isclose(luminosity_manual.to("W/micron").value, luminosity.to("W/micron").value)
 
         # Set the luminosity
+        config.filter = str(self.i1_filter)
         config.luminosity = luminosity
+
+        # Set the title
+        config.title = titles["bulge"]
 
         # Set the bulge parameters
         self.parameters["bulge"] = config
@@ -230,7 +242,11 @@ class StarsBuilder(GeneralBuilder):
         assert np.isclose(luminosity_manual.to("W/micron").value, luminosity.to("W/micron").value)
 
         # Set the luminosity
+        config.filter = str(self.i1_filter)
         config.luminosity = luminosity
+
+        # Set title
+        config.title = titles["old"]
 
         # Set the parameters
         self.parameters["old"] = config
@@ -331,8 +347,12 @@ class StarsBuilder(GeneralBuilder):
         luminosity = config.fluxdensity.to("W/micron", fltr=self.fuv_filter, distance=self.galaxy_properties.distance)
         assert np.isclose(luminosity_manual.to("W/micron").value, luminosity.to("W/micron").value)
 
-        # Set the luminosity
+        # Set the luminosi
+        config.filter = str(self.fuv_filter)
         config.luminosity = luminosity
+
+        # Set the title
+        config.title = titles["young"]
 
         # Set the parameters
         self.parameters["young"] = config
@@ -441,7 +461,11 @@ class StarsBuilder(GeneralBuilder):
         luminosity = mappings.luminosity_at(self.fuv_filter.pivot)
 
         # Set the luminosity
+        config.filter = str(self.fuv_filter)
         config.luminosity = luminosity
+
+        # Set title
+        config.title = titles["ionizing"]
 
         # Set the parameters
         self.parameters["ionizing"] = config
@@ -527,7 +551,7 @@ class StarsBuilder(GeneralBuilder):
         # Create definition
         definition = ConfigurationDefinition()
         definition.add_required("name", "string", "name for this stellar component")
-        definition.add_optional("description", "string", "description for the component")
+        definition.add_optional("title", "string", "short description for this component")
         definition.add_optional("geometry", "string", "SKIRT base geometry for the component", self.smile.concrete_geometries)
         definition.add_optional("sed", "string", "SED template for the component", self.smile.concrete_stellar_seds)
         definition.add_optional("normalization", "string", "normalization for the component", self.smile.concrete_stellar_normalizations)
