@@ -91,6 +91,7 @@ class SDSSMosaicMaker(Configurable):
         self.poisson_paths = dict()
         self.rebinned_paths = dict()
         self.mosaics_paths = dict()
+        self.result_paths = dict()
 
         # The URLs from where the images were downloaded
         self.urls = dict()
@@ -593,6 +594,8 @@ class SDSSMosaicMaker(Configurable):
         # Inform the user
         log.info("Converting to Jansky ...")
 
+        results = dict()
+
         # Parallel execution
         with ParallelTarget(convert_mosaic_to_jansky, self.config.nprocesses) as target:
 
@@ -603,7 +606,20 @@ class SDSSMosaicMaker(Configurable):
                 mosaics_path = self.mosaics_paths[band]
 
                 # Call the target function
-                target(mosaics_path)
+                result = target(mosaics_path)
+
+                # Set result
+                results[band] = result
+
+        # Load the mosaics
+        for band in self.config.bands:
+
+            results[band].request()
+            output = results[band].output
+
+            result_mosaic_path = output[0]
+
+            self.result_paths[band] = result_mosaic_path
 
     # -----------------------------------------------------------------
 
@@ -621,7 +637,7 @@ class SDSSMosaicMaker(Configurable):
         for band in self.config.bands:
 
             # Load the image
-            image = Image.from_file(result_path)
+            image = Image.from_file(self.result_paths[band])
 
             # Get mosaic and error map
             mosaic_frame = image.frames.primary
@@ -698,7 +714,8 @@ class SDSSMosaicMaker(Configurable):
 
             # Determine path
             id_string = self.ngc_name + "_SDSS_" + band
-            path = fs.join(output_path, id_string + ".fits")
+            #path = fs.join(output_path, id_string + ".fits")
+            path = self.output_path_file(id_string + ".fits")
 
             # Save mosaic frame as FITS file
             self.mosaics[band].saveto(path)
@@ -720,7 +737,8 @@ class SDSSMosaicMaker(Configurable):
 
             # Determine path
             id_string = self.ngc_name + "_SDSS_" + band
-            path = fs.join(output_path, id_string + "_errors.fits")
+            #path = fs.join(output_path, id_string + "_errors.fits")
+            path = self.output_path_file(id_string + "_errors.fits")
 
             # Save error map as FITS file
             self.error_maps[band].saveto(path)
@@ -742,7 +760,8 @@ class SDSSMosaicMaker(Configurable):
 
             # Determine path
             id_string = self.ngc_name + "_SDSS_" + band
-            path = fs.join(output_path, id_string + "_relerrors.fits")
+            #path = fs.join(output_path, id_string + "_relerrors.fits")
+            path = self.output_path_file(id_string + "_relerrors.fits")
 
             # Save relative error map as FITS file
             self.relative_error_maps[band].saveto(path)
@@ -1110,6 +1129,9 @@ def convert_mosaic_to_jansky(mosaics_path):
     # Determine new path and save
     new_path = fs.join(mosaics_path, "mosaic_jansky.fits")
     mosaic.saveto(new_path)
+
+    # Return the new path
+    return new_path
 
 # -----------------------------------------------------------------
 

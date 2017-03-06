@@ -27,12 +27,8 @@ from ...magic.core.dataset import DataSet
 from ...magic.core.frame import Frame
 from ...magic.region.list import SkyRegionList
 from ..basics.models import load_3d_model, load_2d_model
-from ..basics.projection import GalaxyProjection
 from ..basics.properties import GalaxyProperties
-from ...magic.basics.coordinatesystem import CoordinateSystem
-from ...magic.core.mask import Mask
 from ...core.tools.logging import log
-from ..basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument, FullInstrument
 from ...magic.prepare.batch import PreparationStatistics
 from .component import ModelingComponent
 
