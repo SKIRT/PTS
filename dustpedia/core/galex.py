@@ -1353,7 +1353,7 @@ def level_galex_map(filename, average_offset, reproject_path):
     """
 
     # Read in unconvolved file, and apply offset
-    fitsdata_in = open_fits(fitsfile_dir + '/' + filename)
+    fitsdata_in = open_fits(fs.join(fitsfile_dir, filename))
     image_in = fitsdata_in[0].data
     header_in = fitsdata_in[0].header
     fitsdata_in.close()
@@ -1363,7 +1363,7 @@ def level_galex_map(filename, average_offset, reproject_path):
     # Save corrected file
     image_out_hdu = PrimaryHDU(data=image_out, header=header_in)
     image_out_hdulist = HDUList([image_out_hdu])
-    image_out_hdulist.writeto(fitsfile_dir + '/' + filename, clobber=True)
+    image_out_hdulist.writeto(fs.join(fitsfile_dir, filename), clobber=True)
 
 # -----------------------------------------------------------------
 

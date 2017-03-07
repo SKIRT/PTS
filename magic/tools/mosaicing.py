@@ -192,7 +192,8 @@ def filter_non_overlapping(ngc_name, band, fields_path, cutout_center, cutout_wi
     meta_path = generate_meta_file(fields_path)
 
     # Generate overlap file
-    overlap_path = generate_overlap_file(fields_path, cutout_center.ra, cutout_center.dec, cutout_width, meta_path, mode=mode)
+    # path, ra, dec, meta_path, mode='box', width=None, radius=None
+    overlap_path = generate_overlap_file(fields_path, cutout_center.ra, cutout_center.dec, meta_path, mode, cutout_width)
 
     # Get the names of the overlapping image files
     overlap_files = np.genfromtxt(overlap_path, skip_header=3, usecols=[32], dtype=str)
@@ -218,8 +219,7 @@ def reproject(input_path, output_path, metatable_path, header_path):
     """
 
     proj_stats_path = fs.join(input_path, "Proj_Stats.txt")
-    montage.commands.mProjExec(metatable_path, header_path, output_path, proj_stats_path,
-                               raw_dir=input_path, debug=False, exact=True, whole=False)
+    montage.commands.mProjExec(metatable_path, header_path, output_path, proj_stats_path, raw_dir=input_path, debug=False, exact=True, whole=False)
 
     # WHOLE IS IMPORTANT HERE
     # WE ACTUALLY DON'T WANT TO REPROJECT TO THE EXACT PIXELGRID DEFINED BY THE HEADER HERE,
