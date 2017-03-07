@@ -594,7 +594,7 @@ class AttachedPythonSession(RemotePythonSession):
         """
 
         # Execute the line
-        self.execute(line, timeout=timeout, show_output=show_output)
+        return self.execute(line, timeout=timeout, show_output=show_output)
 
     # -----------------------------------------------------------------
 
@@ -613,7 +613,7 @@ class AttachedPythonSession(RemotePythonSession):
         #log.debug(send_command)
 
         # Send the line
-        self.parent.execute(line, show_output=show_output, timeout=timeout, expect=">>>")
+        return self.parent.execute(line, show_output=show_output, timeout=timeout, expect=">>>")
 
         # Sleep for a while so that we are sure that the actual python stuff has reached the interactive python session within the screen
         #time.wait(5) # in seconds

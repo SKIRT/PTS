@@ -55,7 +55,8 @@ class GenerationInfo(object):
         self.index = kwargs.pop("index", None)
         self.method = kwargs.pop("method", None)
         self.wavelength_grid_level = kwargs.pop("wavelength_grid_level", None)
-        self.dust_grid_level = kwargs.pop("dust_grid_level", None)
+        #self.dust_grid_level = kwargs.pop("dust_grid_level", None)
+        self.model_representation = kwargs.pop("model_representation", None)
         self.nsimulations = kwargs.pop("nsimulations", None)
         self.npackages = kwargs.pop("npackages", None)
         self.selfabsorption = kwargs.pop("selfabsorption", None)
@@ -442,7 +443,7 @@ class ParameterExplorer(FittingComponent):
 
         # Get the previous wavelength grid level
         wavelength_grid_level = self.fitting_run.current_wavelength_grid_level
-        dust_grid_level = self.fitting_run.current_dust_grid_level
+        #dust_grid_level = self.fitting_run.current_dust_grid_level
 
         # Determine the wavelength grid level
         #if self.config.refine_wavelengths:
@@ -473,7 +474,7 @@ class ParameterExplorer(FittingComponent):
         self.generation.index = self.generation_index
         self.generation.method = self.config.generation_method
         self.generation.wavelength_grid_level = wavelength_grid_level
-        self.generation.dust_grid_level = dust_grid_level
+        #self.generation.dust_grid_level = dust_grid_level
         self.generation.nsimulations = self.config.nsimulations
         self.generation.npackages = npackages
         self.generation.selfabsorption = selfabsorption
@@ -556,7 +557,10 @@ class ParameterExplorer(FittingComponent):
         if self.fitting_run.has_wavelength_grids: self.set_wavelength_grid()
 
         # Set dust grid
-        if self.fitting_run.has_dust_grids: self.set_dust_grid()
+        #if self.fitting_run.has_dust_grids: self.set_dust_grid()
+
+        # Set model representation
+        self.set_representation()
 
     # -----------------------------------------------------------------
 
@@ -622,7 +626,7 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def set_dust_grid(self):
+    def set_representation(self):
 
         """
         This function ...
@@ -630,10 +634,22 @@ class ParameterExplorer(FittingComponent):
         """
 
         # Debugging
-        log.debug("Setting the dust grid (level " + str(self.generation.dust_grid_level) + ") ...")
+        log.debug("Setting the model representation ...")
+
+    # -----------------------------------------------------------------
+
+    #def set_dust_grid(self):
+
+        #"""
+        #This function ...
+        #:return:
+        #"""
+
+        # Debugging
+        #log.debug("Setting the dust grid (level " + str(self.generation.dust_grid_level) + ") ...")
 
         # Set the dust grid
-        self.ski.set_dust_grid(self.fitting_run.dust_grid_for_level(self.generation.dust_grid_level))
+        #self.ski.set_dust_grid(self.fitting_run.dust_grid_for_level(self.generation.dust_grid_level))
 
     # -----------------------------------------------------------------
 

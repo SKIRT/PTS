@@ -330,8 +330,15 @@ class PTSRemoteLauncher(object):
         python.send_line("inst = cls(config)", show_output=log.is_debug())
 
         # Run the instance
-        if input_dict is not None: python.send_line("inst.run(**input_dict)", show_output=True, timeout=None) # no timeout, this can take a while
-        else: python.send_line("inst.run()", show_output=True, timeout=None) # no timeout, this can take a while
+        if input_dict is not None: output = python.send_line("inst.run(**input_dict)", show_output=True, timeout=None) # no timeout, this can take a while
+        else: output = python.send_line("inst.run()", show_output=True, timeout=None) # no timeout, this can take a while
+
+        # Check the log output
+        last_line = output[-1]
+        if "Error:" in last_line:
+            error_message = last_line.split(": ")[1]
+            error_type = last_line.split(":")[0]
+            raise RuntimeError(error_type + ": " + error_message)
 
         # Set the output
         output_list = None

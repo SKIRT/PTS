@@ -90,10 +90,10 @@ class FittingRun(object):
         self.wavelength_grids_table_path = fs.join(self.wavelength_grids_path, "grids.dat")
 
         # Set the path to the fit/dust grids directory
-        self.dust_grids_path = fs.create_directory_in(self.path, "dust grids")
+        #self.dust_grids_path = fs.create_directory_in(self.path, "dust grids")
 
         # Set the path to the dust grids table
-        self.dust_grids_table_path = fs.join(self.dust_grids_path, "grids.dat")
+        #self.dust_grids_table_path = fs.join(self.dust_grids_path, "grids.dat")
 
         # Set the path to the fit/best directory
         self.best_path = fs.create_directory_in(self.path, "best")
@@ -312,15 +312,15 @@ class FittingRun(object):
 
     # -----------------------------------------------------------------
 
-    @property
-    def has_dust_grids(self):
+    #@property
+    #def has_dust_grids(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
-        return len(fs.files_in_path(self.dust_grids_path, extension="txt")) > 0
+        #return len(fs.files_in_path(self.dust_grids_path, extension="txt")) > 0
 
     # -----------------------------------------------------------------
 
@@ -1080,104 +1080,117 @@ class FittingRun(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def highest_dust_grid_level(self):
+    def current_model_representation(self):
 
         """
         This function ...
         :return:
         """
+
+        if len(self.generations_table) > 0: return self.generations_table["Model representation"][-1]
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    #@lazyproperty
+    #def highest_dust_grid_level(self):
+
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
         # Return the last filename, sorted as integers
-        return int(fs.files_in_path(self.dust_grids_path, not_contains="grids", extension="dg", returns="name", sort=int)[-1])
+        #return int(fs.files_in_path(self.dust_grids_path, not_contains="grids", extension="dg", returns="name", sort=int)[-1])
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def current_dust_grid_level(self):
+    #@lazyproperty
+    #def current_dust_grid_level(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
         # Generations exist
-        if len(self.generations_table) > 0: return self.generations_table["Dust grid level"][-1]
+        #if len(self.generations_table) > 0: return self.generations_table["Dust grid level"][-1]
 
         # Initial value
-        else: return 0
+        #else: return 0
 
     # -----------------------------------------------------------------
 
-    def dust_grid_path_for_level(self, level):
+    #def dust_grid_path_for_level(self, level):
 
-        """
-        This function ...
-        :param level:
-        :return:
-        """
+        #"""
+        #This function ...
+        #:param level:
+        #:return:
+        #"""
 
-        return fs.join(self.dust_grids_path, str(level) + ".dg")
+        #return fs.join(self.dust_grids_path, str(level) + ".dg")
 
     # -----------------------------------------------------------------
 
-    def dust_grid_for_level(self, level):
+    #def dust_grid_for_level(self, level):
 
-        """
-        This function ...
-        :param level:
-        :return:
-        """
+        #"""
+        #This function ...
+        #:param level:
+        #:return:
+        #"""
 
         # Load and return the dust grid
-        return load_grid(self.dust_grid_path_for_level(level))
+        #return load_grid(self.dust_grid_path_for_level(level))
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def sed_instrument(self):
+    #@lazyproperty
+    #def sed_instrument(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
         # Check if the file exists
-        if not fs.is_file(self.sed_instrument_path): raise RuntimeError("The SED instrument file has not been created yet. Run initialize_fit first.")
+        #if not fs.is_file(self.sed_instrument_path): raise RuntimeError("The SED instrument file has not been created yet. Run initialize_fit first.")
 
         # Load the file
-        return load_instrument(self.sed_instrument_path)
+        #return load_instrument(self.sed_instrument_path)
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def frame_instrument(self):
+    #@lazyproperty
+    #def frame_instrument(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
         # Check if the file exists
-        if not fs.is_file(self.frame_instrument_path): raise RuntimeError("The frame instrument file has not been created yet. Run initialize_fit first.")
+        #if not fs.is_file(self.frame_instrument_path): raise RuntimeError("The frame instrument file has not been created yet. Run initialize_fit first.")
 
         # Load the file
-        return load_instrument(self.frame_instrument_path)
+        #return load_instrument(self.frame_instrument_path)
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def simple_instrument(self):
+    #@lazyproperty
+    #def simple_instrument(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
         # Check if the file exists
-        if not fs.is_file(self.simple_instrument_path): raise RuntimeError("The simple instrument file has not been created yet. Run initialize_fit first.")
+        #if not fs.is_file(self.simple_instrument_path): raise RuntimeError("The simple instrument file has not been created yet. Run initialize_fit first.")
 
         # Load the file
-        return load_instrument(self.simple_instrument_path)
+        #return load_instrument(self.simple_instrument_path)
 
 # -----------------------------------------------------------------
 

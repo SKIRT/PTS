@@ -24,6 +24,9 @@ from ...core.basics.configuration import DictConfigurationSetter, combine_config
 from ..config.parameters import parsing_types_for_parameter_types, unit_parsing_type
 from ..config.parameters import default_units, possible_parameter_types_descriptions
 from .run import FittingRun
+from ...core.basics.configuration import prompt_string
+from ..build.component import get_representations_for_model, get_representation_path
+from ..build.representation import Representation
 
 # -----------------------------------------------------------------
 
@@ -53,6 +56,9 @@ class FittingConfigurer(FittingComponent):
 
         # The fitting run
         self.fitting_run = None
+
+        # The initial model representation
+        self.initial_representation = None
 
         # The default ranges
         self.default_ranges = dict()
@@ -139,6 +145,9 @@ class FittingConfigurer(FittingComponent):
         # Create the fitting run
         self.create_fitting_run()
 
+        # Set the initial model representation
+        self.set_representation()
+
         # Get the default ranges
         self.default_ranges = kwargs.pop("default_ranges", dict())
 
@@ -174,6 +183,53 @@ class FittingConfigurer(FittingComponent):
 
         # Create the run directory
         fs.create_directory(self.fitting_run.path)
+
+    # -----------------------------------------------------------------
+
+    def set_representation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the initial model representation ...")
+
+        # Dictionary for the options
+        options = dict()
+
+        #lowest_pixelscale = None
+        #lowest_pixelscale_name = None
+        #lowest_pixelscale_title = None
+
+        highest_pixelscale = None
+        highest_pixelscale_name = None
+        highest_pixelscale_title = None
+
+        # Loop over the different representations for the model
+        for name in get_representations_for_model(self.config.path, self.model_name):
+
+            # Determine name and description
+            #option = name
+            #pixelscale = self.deprojections[(name, title)].pixelscale
+            #if lowest_pixelscale is None or pixelscale < lowest_pixelscale:
+            #    lowest_pixelscale = pixelscale
+            #    lowest_pixelscale_name = name
+            #    lowest_pixelscale_title = title
+            #description = "pixelscale of the " + title.lower() + " input map (" + represent_quantity() + ")"
+
+            option = name
+
+            # Add the option
+            options[option] = description
+
+        # Get the answer
+        name = prompt_string("representation", "initial representation to use for fitting the model", choices=options, default=highest_pixelscale_name)
+
+        # Set the initial representation
+        path = get_representation_path(self.config.path, name)
+        self.initial_representation = Representation(name, self.model_name, path)
 
     # -----------------------------------------------------------------
 

@@ -545,6 +545,19 @@ def get_representation_names(modeling_path):
 
 # -----------------------------------------------------------------
 
+def get_representation_path(modeling_path, name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param name:
+    :return:
+    """
+
+    return fs.join(modeling_path, "build", "representations", name)
+
+# -----------------------------------------------------------------
+
 def get_representations_for_model(modeling_path, model_name):
 
     """

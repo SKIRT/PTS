@@ -252,12 +252,13 @@ class GenerationsTable(SmartTable):
         # If not called from astropy
         if not from_astropy:
 
-            self.add_column_info("Generation name", str, None, "Name for the generation")
-            self.add_column_info("Generation index", int, None, "Index of the generation")
-            self.add_column_info("Launching time", str, None, "Time of launching the generation simulations")
-            self.add_column_info("Method", str, None, "Method used for model generation")
+            self.add_column_info("Generation name", str, None, "name for the generation")
+            self.add_column_info("Generation index", int, None, "index of the generation")
+            self.add_column_info("Launching time", str, None, "time of launching the generation simulations")
+            self.add_column_info("Method", str, None, "method used for model generation")
             self.add_column_info("Wavelength grid level", int, None, "level of the wavelength gid")
-            self.add_column_info("Dust grid level", int, None, "level of the dust grid")
+            #self.add_column_info("Dust grid level", int, None, "level of the dust grid")
+            self.add_column_info("Model representation", str, None, "representation of the model")
             self.add_column_info("Number of simulations", int, None, "number of simulations (individuals) in the generation")
             self.add_column_info("Number of photon packages", int, None, "number of photon packages per wavelength")
             self.add_column_info("Self-absorption", bool, None, "dust self-absorption enabled")
@@ -577,18 +578,19 @@ class GenerationsTable(SmartTable):
         index = generation_info.index
         method = generation_info.method
         wg_level = generation_info.wavelength_grid_level
-        dg_level = generation_info.dust_grid_level
+        #dg_level = generation_info.dust_grid_level
+        representation = generation_info.model_representation
         nsimulations = generation_info.nsimulations
         npackages = generation_info.npackages
         selfabsorption = generation_info.selfabsorption
         transientheating = generation_info.transient_heating
 
         # Call other function
-        self.add_entry_impl(name, index, timestamp, method, wg_level, dg_level, nsimulations, npackages, selfabsorption, transientheating, ranges)
+        self.add_entry_impl(name, index, timestamp, method, wg_level, representation, nsimulations, npackages, selfabsorption, transientheating, ranges)
 
     # -----------------------------------------------------------------
 
-    def add_entry_impl(self, name, index, timestamp, method, wavelength_grid_level, dust_grid_level, nsimulations, npackages,
+    def add_entry_impl(self, name, index, timestamp, method, wavelength_grid_level, representation, nsimulations, npackages,
                   selfabsorption, transientheating, ranges):
 
         """
@@ -598,7 +600,7 @@ class GenerationsTable(SmartTable):
         :param timestamp:
         :param method:
         :param wavelength_grid_level:
-        :param dust_grid_level:
+        :param representation:
         :param nsimulations:
         :param npackages:
         :param selfabsorption:
@@ -607,7 +609,7 @@ class GenerationsTable(SmartTable):
         :return:
         """
 
-        values = [name, index, timestamp, method, wavelength_grid_level, dust_grid_level, nsimulations, npackages, selfabsorption, transientheating]
+        values = [name, index, timestamp, method, wavelength_grid_level, representation, nsimulations, npackages, selfabsorption, transientheating]
 
         # Add the boundaries (min, max) of the parameter ranges as seperate column values
         for label in self.parameter_labels:

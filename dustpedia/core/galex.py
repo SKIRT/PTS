@@ -714,14 +714,14 @@ class GALEXMosaicMaker(Configurable):
         # Inform the user
         log.info("Making mosaics with SWARP ...")
 
-        pixelscale = self.dpdp.get_pixelscale_for_instrument("GALEX")
+        pixelscale_arcsec = self.dpdp.get_pixelscale_for_instrument("GALEX").to("arcsec").value
 
         # Parallel execution
         results = dict()
         with ParallelTarget(mosaic_with_swarp, self.config.nprocesses) as target:
 
             # Loop over the bands and execute
-            for band in self.config.bands: results[band] = target(band, self.cutout_width, pixelscale, self.swarp_paths[band], self.cutout_center)
+            for band in self.config.bands: results[band] = target(band, self.cutout_width, pixelscale_arcsec, self.swarp_paths[band], self.cutout_center)
 
         # Loop over bands, LOAD SWARP RESULT, PRESUMABLY IN COUNTS/S
         for band in self.config.bands:
