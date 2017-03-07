@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
 from astropy.units import dimensionless_angles
+from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from .component import BuildComponent
@@ -50,6 +51,7 @@ class Representation(object):
 
         self.projections_path = fs.create_directory_in(self.path, "projections")
         self.instruments_path = fs.create_directory_in(self.path, "instruments")
+        self.dustgrid_path = fs.create_directory_in(self.path, "dust grid")
 
         # Individual projection paths
         self.earth_projection_path = fs.join(self.projections_path, "earth.proj")
@@ -60,6 +62,42 @@ class Representation(object):
         self.sed_instrument_path = fs.join(self.instruments_path, "sed.instr")
         self.frame_instrument_path = fs.join(self.instruments_path, "frame.instr")
         self.simple_instrument_path = fs.join(self.instruments_path, "simple.instr")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def earth_projection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return GalaxyProjection.from_file(self.earth_projection_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_projection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return EdgeOnProjection.from_file(self.edgeon_projection_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_projection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return FaceOnProjection.from_file(self.faceon_projection_path)
 
 # -----------------------------------------------------------------
 
@@ -324,7 +362,7 @@ class RepresentationBuilder(BuildComponent):
                 lowest_pixelscale = pixelscale
                 lowest_pixelscale_name = name
                 lowest_pixelscale_title = title
-            description = "pixelscale of the " + title.lower() + " input map (" + represent_quantity() + ")"
+            description = "pixelscale of the " + title.lower() + " input map (" + represent_quantity(lowest_pixelscale) + ")"
 
             # Add the option
             options[option] = description

@@ -2054,70 +2054,18 @@ class PTSInstaller(Installer):
 
 # -----------------------------------------------------------------
 
-def find_real_name(module_name, available_packages, real_names, session=None):
+def find_real_name(module_name, available_packages, real_names):
 
     """
     This function ...
     :param module_name:
     :param available_packages:
     :param real_names:
-    :param session:
     :return:
     """
 
     if module_name in available_packages: return module_name, "conda", None
     if module_name in real_names: return real_names[module_name], "conda", None
-
-    #try: from ..tools import google
-    #except ImportError:
-    #    log.warning("Could not load 'google' module")
-    #    return None, None
-
-    # Look for real module name
-    #try:
-    #    log.debug("Looking for information for module '" + module_name + "' on the web ...")
-    #    module_url = google.lucky(module_name)
-    #except Exception:
-    #    if session is not None:
-    #        # use google on the remote end, because there are strange errors when using it on the client end when it has
-    #        # a VPN connection open
-    #        module_url = session.get_simple_property("google", "lucky('" + module_name + "')")
-    #    else: return None, None
-
-    # Debugging
-    #log.debug("Looking for information for module '" + module_name + "' on webpage '" + module_url + "' ...")
-
-    # Check if the url is on the domain of GitHub
-
-    # Search for github.com/ name
-    #try: import requests
-    #except ImportError: return None, None
-
-    #session = requests.session()
-    #r = session.get(module_url)
-    #page_as_string = r.content
-
-    #command = []
-
-    # if "pip install" in page_as_string:
-    #if "pip install" in command:
-
-        # module_name = page_as_string.split("pip install ")[1].split(" ")[0].split("<")[0]
-        #log.debug("Real module name might be '" + module_name + "', available through pip")
-        #if module_name in available_packages:
-        #    return module_name, None
-        #else:
-        #    return module_name, "pip"
-
-    # if "github.com/" in page_as_string:
-    #if "github.com/" in command:
-
-        # module_name = page_as_string.split("github.com/")[1].split("/")[0]
-        #log.debug("Real module name might be '" + module_name + "', available on GitHub")
-        #if module_name in available_packages:
-        #    return module_name, None
-        #else:
-        #    return module_name, "github.com"
 
     # Search on pypi
     from pts.core.tools.pypi import search
@@ -2203,6 +2151,9 @@ def get_installation_commands(dependencies, packages, already_installed, availab
         if module_name in already_installed: continue
         if module_name in real_names and real_names[module_name] in already_installed: continue
 
+        # Double check
+        if module_name.replace("_", "-") in already_installed: continue
+
         # Check if a repository link is defined for this package
         if module_name in repositories:
 
@@ -2214,6 +2165,9 @@ def get_installation_commands(dependencies, packages, already_installed, availab
 
             # Find name, check if available
             install_module_name, via, version = find_real_name(module_name, available_packages, real_names)
+
+            # Triple check
+            if install_module_name in already_installed: continue
 
             # Module is not found
             if install_module_name is None:
@@ -2296,8 +2250,11 @@ def get_installation_commands(dependencies, packages, already_installed, availab
             else: decompress_directory_path = archive.decompress_directory_in_place(filepath, remove=True)
 
             # Set the installation command
-            setup_path = fs.join(decompress_directory_path, "setup.py")
-            command = python_path + " " + setup_path + " install"
+            #setup_path = fs.join(decompress_directory_path, "setup.py")
+            #command = python_path + " " + setup_path + " install"
+
+            # Use pip install ./directory
+            command = pip_path + " install " + decompress_directory_path
             commands[install_module_name] = command
 
             # Add to installed

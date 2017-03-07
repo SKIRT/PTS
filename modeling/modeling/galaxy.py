@@ -195,12 +195,7 @@ class GalaxyModeler(ModelerBase):
         if "fetch_seds" not in self.history: self.get_seds()
 
         # Get the galaxy images
-        if "fetch_images" not in self.history:
-
-            self.get_images()
-            log.warning("The procedure that calculates the Poisson error maps for GALEX and SDSS is now running. "
-                        "Wait for it to finished and resume the modeling afterwards")
-            exit()
+        if "fetch_images" not in self.history: self.get_images_and_exit()
 
     # -----------------------------------------------------------------
 
@@ -260,6 +255,24 @@ class GalaxyModeler(ModelerBase):
 
     # -----------------------------------------------------------------
 
+    def get_images_and_exit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the images
+        self.get_images()
+
+        # If not running in attached remote mode, exit now
+        if not self.config.attached:
+            log.warning("The procedure that calculates the Poisson error maps for GALEX and SDSS is now running. "
+                        "Wait for it to finished and resume the modeling afterwards")
+            exit()
+
+    # -----------------------------------------------------------------
+
     def get_images(self):
 
         """
@@ -307,14 +320,25 @@ class GalaxyModeler(ModelerBase):
         log.info("Preparing the galaxy data ...")
 
         # Initialize the preparation
-        if "initialize_preparation" not in self.history:
-
-            self.initialize_preparation()
-            log.warning("Check the result of the source detection, make adjustments where necessary, and resume the modeling afterwards")
-            exit()
+        if "initialize_preparation" not in self.history: self.initialize_preparation_and_exit()
 
         # Run the preparation
         if "prepare_data" not in self.history: self.prepare()
+
+    # -----------------------------------------------------------------
+
+    def initialize_preparation_and_exit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.initialize_preparation()
+
+        # Give warning and exit
+        log.warning("Check the result of the source detection, make adjustments where necessary, and resume the modeling afterwards")
+        exit()
 
     # -----------------------------------------------------------------
 

@@ -66,6 +66,21 @@ class GalaxyProjection(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # From field of view to pixel scale
+        pixelscale_x  = self.field_x_physical / self.pixels_x
+        pixelscale_y = self.field_y_physical / self.pixels_y
+
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def from_wcs(cls, wcs, center, distance, inclination, azimuth, position_angle):
 

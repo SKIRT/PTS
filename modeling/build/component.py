@@ -545,6 +545,19 @@ def get_representation_names(modeling_path):
 
 # -----------------------------------------------------------------
 
+def get_model_name_for_representation(modeling_path, name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param name:
+    :return:
+    """
+
+    return get_representations_table(modeling_path).model_for_representation(name)
+
+# -----------------------------------------------------------------
+
 def get_representation_path(modeling_path, name):
 
     """
@@ -558,6 +571,24 @@ def get_representation_path(modeling_path, name):
 
 # -----------------------------------------------------------------
 
+def get_representation(modeling_path, name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param name:
+    :return:
+    """
+
+    model_name = get_model_name_for_representation(modeling_path, name)
+    path = get_representation_path(modeling_path, name)
+
+    # Create and return the representation
+    from .representation import Representation
+    return Representation(name, model_name, path)
+
+# -----------------------------------------------------------------
+
 def get_representations_for_model(modeling_path, model_name):
 
     """
@@ -568,5 +599,31 @@ def get_representations_for_model(modeling_path, model_name):
     """
 
     return get_representations_table(modeling_path).representations_for_model(model_name)
+
+# -----------------------------------------------------------------
+
+def get_earth_projection_for_representation(modeling_path, name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param name:
+    :return:
+    """
+
+    return get_representation(modeling_path, name).earth_projection
+
+# -----------------------------------------------------------------
+
+def get_pixelscale_for_representation(modeling_path, name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param name:
+    :return:
+    """
+
+    return get_representation(modeling_path, name).earth_projection.pixelscale
 
 # -----------------------------------------------------------------

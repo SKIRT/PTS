@@ -726,7 +726,8 @@ class GALEXMosaicMaker(Configurable):
         # Loop over bands, LOAD SWARP RESULT, PRESUMABLY IN COUNTS/S
         for band in self.config.bands:
 
-            output = results[band].request()
+            results[band].request()
+            output = results[band].output
             swarp_result_path = output[0]
 
             # Load the resulting frame

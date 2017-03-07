@@ -25,8 +25,9 @@ from ..config.parameters import parsing_types_for_parameter_types, unit_parsing_
 from ..config.parameters import default_units, possible_parameter_types_descriptions
 from .run import FittingRun
 from ...core.basics.configuration import prompt_string
-from ..build.component import get_representations_for_model, get_representation_path
+from ..build.component import get_representations_for_model, get_representation_path, get_pixelscale_for_representation
 from ..build.representation import Representation
+from ...core.basics.quantity import represent_quantity
 
 # -----------------------------------------------------------------
 
@@ -199,27 +200,21 @@ class FittingConfigurer(FittingComponent):
         # Dictionary for the options
         options = dict()
 
-        #lowest_pixelscale = None
-        #lowest_pixelscale_name = None
-        #lowest_pixelscale_title = None
-
         highest_pixelscale = None
         highest_pixelscale_name = None
-        highest_pixelscale_title = None
 
         # Loop over the different representations for the model
         for name in get_representations_for_model(self.config.path, self.model_name):
 
-            # Determine name and description
-            #option = name
-            #pixelscale = self.deprojections[(name, title)].pixelscale
-            #if lowest_pixelscale is None or pixelscale < lowest_pixelscale:
-            #    lowest_pixelscale = pixelscale
-            #    lowest_pixelscale_name = name
-            #    lowest_pixelscale_title = title
-            #description = "pixelscale of the " + title.lower() + " input map (" + represent_quantity() + ")"
+            # Get the pixelscale
+            pixelscale = get_pixelscale_for_representation(self.config.path, name).average
 
+            # Determine name and description
             option = name
+            if highest_pixelscale is None or pixelscale > highest_pixelscale:
+                highest_pixelscale = pixelscale
+                highest_pixelscale_name = name
+            description = "representation '" + highest_pixelscale_name + "' with a pixelscale of '" + represent_quantity(highest_pixelscale) + "'"
 
             # Add the option
             options[option] = description
@@ -249,28 +244,11 @@ class FittingConfigurer(FittingComponent):
         # Add settings
         definition.add_optional("mutation_rate", "real", "mutation rate", 0.02)
         definition.add_optional("crossover_rate", "real", "crossover rate", 0.9)
-        # definition.add_optional("stats_freq", "integer", "frequency of statistics (in number of generations)", 50)
-        # definition.add_optional("best_raw_score", "real", "best score for an individual")
         definition.add_optional("rounddecimal", "integer", "round everything to this decimal place")
         definition.add_optional("mutation_method", "string", "mutation method", choices=["range", "gaussian", "binary"])
-        # definition.add_optional("min_or_max", "string", "minimize or maximize", choices=["minimize", "maximize"])
-        # definition.add_optional("run_id", "string", "identifier for this run", default="run0")
-        # definition.add_optional("database_frequency", "positive_integer",
-        #                        "frequency of appending to the database (in the number of generations)", 1)
-        # definition.add_optional("statistics_frequency", "positive_integer",
-        #                        "frequency of appending to the statistics table", 1)
-
-        # Other
-        # definition.add_optional("output", "directory_path", "output directory")
 
         # Flags
         definition.add_flag("elitism", "enable elitism", True)
-        # definition.add_flag("show", "show results", True)
-        # definition.add_flag("write", "write results", True)
-        # definition.add_flag("plot", "plot results", False)
-        # definition.add_flag("finish",
-        #                    "finish the evolution: set the scores of the last generation but don't generate a new population",
-        #                    False)
 
         # Advanced
         definition.add_optional("nelite_individuals", "positive_integer", "number of individuals to take as elite", 1)

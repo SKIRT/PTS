@@ -71,6 +71,19 @@ class RepresentationsTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def model_for_representation(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        index = tables.find_index(self, name)
+        return self["Model name"][index]
+
+    # -----------------------------------------------------------------
+
     def add_entry(self, name, model_name):
 
         """
