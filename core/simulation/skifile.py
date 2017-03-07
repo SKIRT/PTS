@@ -1233,15 +1233,35 @@ class SkiFile:
             # Get the 'components' element
             stellar_components_parent = stellar_system.xpath("components")
 
-            # Create the new stellar component
-            component = stellar_components_parent.makeelement("PanStellarComp", attrs)
+            # Create elements
+            geometry = self.create_element(geometry_type, geometry_properties)
+            sed = self.create_element(sed_type, sed_properties)
+            normalization = self.create_element(normalization_type, normalization_properties)
+
+            # Create the stellar component
+            stellar_component = stellar_components_parent.makeelement("PanStellarComp", attrs={})
+
+            # Add children
+            geometry_parent = stellar_component.makeelement("geometry", attrs={"type":"Geometry"})
+            sed_parent = stellar_component.makeelement("sed", attrs={"type":"StellarSED"})
+            normalization_parent = stellar_component.makeelement("normalization", attrs={"type":"StellarCompNormalization"})
+
+            # Set actual elements
+            geometry_parent.append(geometry)
+            sed_parent.append(sed)
+            normalization_parent.append(normalization)
+
+            # Set geometry, sed and normalization to the stellar component
+            stellar_component.append(geometry_parent)
+            stellar_component.append(sed_parent)
+            stellar_component.append(normalization_parent)
 
             # Add the component ID
             comment = etree.Comment(component_id)
             stellar_components_parent.append(comment)
 
             # Add the new stellar component
-            stellar_components_parent.append(component)
+            stellar_components_parent.append(stellar_component)
 
         # Oligochromatic simulation
         else: pass
@@ -2858,6 +2878,73 @@ class SkiFile:
         # Set the field of view
         self.set_quantity(instrument, "fieldOfViewX", x_field)
         self.set_quantity(instrument, "fieldOfViewY", y_field)
+
+    # -----------------------------------------------------------------
+
+    def create_element(self, tag, properties):
+
+        """
+        This function ...
+        :param tag:
+        :param properties:
+        :return:
+        """
+
+        from ..tools.stringify import stringify_not_list
+
+        children = dict()
+
+        attrs = {}
+
+        # Loop over the properties, create the children
+        for property_name in properties:
+
+            value = properties[property_name]
+
+            if isinstance(value, tuple):
+
+                child = self.create_element(value[0], value[1])
+                children[property_name] = [child]
+
+            elif isinstance(value, dict):
+
+                # Create list of children
+                children[property_name] = []
+
+                # Create multiple children
+                for key in value:
+                    child = self.create_element(key, value[key])
+                    children[property_name].append(child)
+
+            # Regular value (string, int, float, quantity)
+            else: attrs[property_name] = stringify_not_list(value)
+
+        # Make element
+        # example of attrs:
+        #attrs = {"instrumentName": str(index),
+        #         "pixelsX": str(pixels[0]), "pixelsY": str(pixels[1]), "width": str(size[0]),
+        #         "viewX": str(view[0]), "viewY": str(view[1]), "viewZ": str(view[2]),
+        #         "crossX": str(cross[0]), "crossY": str(cross[1]), "crossZ": str(cross[2]),
+        #         "upX": str(up[0]), "upY": str(up[1]), "upZ": str(up[2]), "focal": str(focal)}
+        #parent.append(parent.makeelement("PerspectiveInstrument", attrs))
+        element = self.tree.makeelement(tag, attrs)
+
+        # Make children
+        for property_name in children:
+
+            attrs = {"type": ""}
+            list_element = element.makeelement(property_name, attrs)
+
+            # Add child elements
+            for child in children[property_name]:
+                # Add to parent
+                list_element.append(child)
+
+            # Add the list element to the base element
+            element.append(list_element)
+
+        # Return the new element
+        return element
 
     # -----------------------------------------------------------------
 

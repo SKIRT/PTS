@@ -82,13 +82,13 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         # 2. Load the ski file
         self.load_ski()
 
-        # Load the model representation
+        # 3. Load the model representation
         self.load_representation()
 
-        # 3. Set the stellar and dust components
+        # 4. Set the stellar and dust components
         self.set_components()
 
-        # 3. Create the wavelength grids
+        # 5. Create the wavelength grids
         self.create_wavelength_grids()
 
         # 6. Adjust the ski template
@@ -223,9 +223,6 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
                 # Set the deprojection geometry
                 self.ski.set_stellar_component_geometry(title, component.deprojection)
 
-                # Add to the dictionary of deprojections
-                #self.deprojections[(name, title)] = component.deprojection
-
             # Check if this is a new component, add geometry, SED and normalization all at once
             if "geometry" in component.parameters:
 
@@ -334,9 +331,6 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
                 # Set the deprojection geometry
                 self.ski.set_dust_component_geometry(title, component.deprojection)
 
-                # Add to the dictionary of deprojections
-                #self.deprojections[(name, title)] = component.deprojection
-
             # Check if this is a new dust component, add geometry, mix and normalization all at once
             if "geometry" in component.parameters:
 
@@ -425,9 +419,6 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
 
         # Set the name of the wavelength grid file
         self.ski.set_file_wavelength_grid("wavelengths.txt")
-
-        # Set the stellar and dust components
-        #self.set_components()
 
         # Set the dust emissivity
         self.set_dust_emissivity()
