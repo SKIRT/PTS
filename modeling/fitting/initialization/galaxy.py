@@ -12,14 +12,10 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.units import dimensionless_angles
-
 # Import the relevant PTS classes and modules
 from ..component import FittingComponent
 from ....core.tools import tables
 from ....core.tools import filesystem as fs
-from ...basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument
 from ....core.data.sun import Sun
 from ....magic.tools import wavelengths
 from ....core.tools.logging import log
@@ -28,6 +24,7 @@ from ...component.galaxy import GalaxyModelingComponent
 from ..tables import WeightsTable
 from ...build.component import get_stellar_component_names, get_dust_component_names, load_stellar_component, load_dust_component
 from ....core.filter.filter import parse_filter
+from ...build.representation import Representation
 
 # -----------------------------------------------------------------
 
@@ -52,6 +49,9 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
 
         # The fitting run
         self.fitting_run = None
+
+        # The initial model representation
+        self.representation = None
 
         # The ski file
         self.ski = None
@@ -81,6 +81,9 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
 
         # 2. Load the ski file
         self.load_ski()
+
+        # Load the model representation
+        self.load_representation()
 
         # 3. Set the stellar and dust components
         self.set_components()
@@ -146,7 +149,25 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Loading the template ski file ...")
+
         self.ski = self.fitting_run.ski_template
+
+    # -----------------------------------------------------------------
+
+    def load_representation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the model representation ...")
+
+        # Load the initial representation
+        self.representation = self.fitting_run.initial_representation
 
     # -----------------------------------------------------------------
 
@@ -383,27 +404,6 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def create_instruments(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the instruments ...")
-
-        # Create an SED instrument
-        self.instruments["SED"] = SEDInstrument.from_projection(self.earth_projection)
-
-        # Create a frame instrument to generate datacube
-        self.instruments["frame"] = FrameInstrument.from_projection(self.earth_projection)
-
-        # Create a simple instrument (SED + frame)
-        self.instruments["simple"] = SimpleInstrument.from_projection(self.earth_projection)
-
-    # -----------------------------------------------------------------
-
     def adjust_ski(self):
 
         """
@@ -418,7 +418,7 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         self.ski.remove_all_instruments()
 
         # Add the instrument
-        self.ski.add_instrument("earth", self.instruments["SED"])
+        self.ski.add_instrument("earth", self.representation.sed_instrument)
 
         # Set the number of photon packages
         self.ski.setpackages(self.config.npackages)
@@ -433,7 +433,7 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         self.set_dust_emissivity()
 
         # Set the lowest-resolution dust grid
-        self.ski.set_dust_grid(self.dg_generator.grids[0])
+        self.ski.set_dust_grid(self.representation.dust_grid)
 
         # Set all-cells dust library
         self.ski.set_allcells_dust_lib()

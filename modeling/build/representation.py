@@ -27,6 +27,7 @@ from ..basics.projection import EdgeOnProjection, FaceOnProjection, GalaxyProjec
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...core.basics.configuration import prompt_string
 from ...core.basics.quantity import represent_quantity
+from ...core.simulation.grids import load_grid
 
 # -----------------------------------------------------------------
 
@@ -45,13 +46,15 @@ class Representation(object):
         :param path:
         """
 
+        # General properties
         self.name = name
         self.model_name = model_name
         self.path = path
 
+        # Directories of the representation
         self.projections_path = fs.create_directory_in(self.path, "projections")
         self.instruments_path = fs.create_directory_in(self.path, "instruments")
-        self.dustgrid_path = fs.create_directory_in(self.path, "dust grid")
+        self.grid_path = fs.create_directory_in(self.path, "grid")
 
         # Individual projection paths
         self.earth_projection_path = fs.join(self.projections_path, "earth.proj")
@@ -62,6 +65,21 @@ class Representation(object):
         self.sed_instrument_path = fs.join(self.instruments_path, "sed.instr")
         self.frame_instrument_path = fs.join(self.instruments_path, "frame.instr")
         self.simple_instrument_path = fs.join(self.instruments_path, "simple.instr")
+
+        # Dust grid file path
+        self.dust_grid_path = fs.join(self.grid_path, "dust_grid.dg")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.earth_projection.pixelscale
 
     # -----------------------------------------------------------------
 
@@ -98,6 +116,54 @@ class Representation(object):
         """
 
         return FaceOnProjection.from_file(self.faceon_projection_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sed_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SEDInstrument.from_file(self.sed_instrument_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def frame_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return FrameInstrument.from_file(self.frame_instrument_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def simple_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return SimpleInstrument.from_file(self.simple_instrument_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return load_grid(self.dust_grid_path)
 
 # -----------------------------------------------------------------
 

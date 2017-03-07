@@ -3688,8 +3688,8 @@ class Remote(object):
         # Execute dummy command
         #self.execute("echo")
         # Send the command
-        self.ssh.sendline("echo")
-        self.ssh.prompt()
+        #self.ssh.sendline("echo")
+        #self.ssh.prompt()
 
         # Get last line
         last = self.ssh.before.split("\r\n")[-1].strip()

@@ -22,14 +22,13 @@ from ...core.launch.memory import MemoryTable
 from .tables import GenerationsTable, ChiSquaredTable, ParametersTable, BestParametersTable
 from ...core.simulation.skifile import LabeledSkiFile
 from ...core.basics.distribution import Distribution
-from ..basics.instruments import load_instrument
 from ..core.model import Model
-from ...core.simulation.grids import load_grid
 from ...core.simulation.skifile import SkiFile
 from ...core.simulation.simulation import SkirtSimulation
 from .tables import ModelProbabilitiesTable
 from ...core.basics.configuration import Configuration
 from ...core.filter.filter import parse_filter
+from ..build.representation import Representation
 
 # -----------------------------------------------------------------
 
@@ -170,6 +169,19 @@ class FittingRun(object):
             best_parameters_table.saveto(self.best_parameters_table_path)
 
     # -----------------------------------------------------------------
+
+    @property
+    def modeling_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fit_path = fs.directory_of(self.path)
+        return fs.directory_of(fit_path)
+
+    # -----------------------------------------------------------------
     # NEW FROM MODELINGCOMPONENT
     # -----------------------------------------------------------------
 
@@ -282,6 +294,18 @@ class FittingRun(object):
         """
 
         return self.fitting_configuration.genetic
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def initial_representation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Representation(self.config.path, )
 
     # -----------------------------------------------------------------
     # END

@@ -675,6 +675,9 @@ class FittingConfigurer(FittingComponent):
                                               self.units_config, self.ranges_config, self.filters_config,
                                               self.genetic_config)
 
+        # Set the name of the initial representation
+        self.fitting_config.initial_representation = self.initial_representation.name
+
         # Set additional settings
         for label in self.settings: self.fitting_config[label] = self.settings[label]
 
