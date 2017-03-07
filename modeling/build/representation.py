@@ -21,10 +21,6 @@ from ...core.tools import tables
 from ...core.tools import filesystem as fs
 from ..basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument
 from ...core.tools.logging import log
-from ...core.prep.wavelengthgrids import WavelengthGridGenerator
-from ...core.prep.dustgrids import DustGridGenerator
-from ...core.basics.range import RealRange, QuantityRange
-from ...core.basics.unit import parse_unit as u
 from ..build.component import get_stellar_component_names, get_dust_component_names, load_stellar_component, load_dust_component
 from ..basics.projection import EdgeOnProjection, FaceOnProjection, GalaxyProjection
 from ...magic.basics.coordinatesystem import CoordinateSystem
@@ -103,9 +99,6 @@ class RepresentationBuilder(BuildComponent):
         # The instruments
         self.instruments = dict()
 
-        # The dust grid generator
-        self.dg_generator = None
-
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -122,11 +115,8 @@ class RepresentationBuilder(BuildComponent):
         # 2. Load the deprojections
         self.load_deprojections()
 
-        # Prompt for the resolution of this representation
+        # 3. Prompt for the resolution of this representation
         self.prompt_resolution()
-
-        # 3. Create the wavelength grids
-        self.create_wavelength_grids()
 
         # 4. Create the projections
         self.create_projections()
@@ -135,7 +125,7 @@ class RepresentationBuilder(BuildComponent):
         self.create_instruments()
 
         # 6. Create the dust grids
-        self.create_dust_grids()
+        self.create_dust_grid()
 
         # 7. Writing
         self.write()
@@ -159,9 +149,6 @@ class RepresentationBuilder(BuildComponent):
         # Create the representation
         path = fs.create_directory_in(self.representations_path, self.config.name)
         self.representation = Representation(self.config.name, self.config.model_name, path)
-
-        # Create the DustGridGenerator
-        self.dg_generator = DustGridGenerator()
 
     # -----------------------------------------------------------------
 
@@ -420,44 +407,7 @@ class RepresentationBuilder(BuildComponent):
         # Inform the user
         log.info("Creating the dust grid ...")
 
-        # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
-        semimajor_angular = self.truncation_ellipse.semimajor  # semimajor axis length of the sky ellipse
-        radius_physical = (semimajor_angular * self.galaxy_properties.distance).to("pc", equivalencies=dimensionless_angles())
 
-        # Get the pixelscale in physical units
-        distance = self.galaxy_properties.distance
-        pixelscale_angular = self.reference_wcs.average_pixelscale.to("deg")  # in deg
-        pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
-
-        # BINTREE: (smallest_cell_pixels, min_level, max_mass_fraction)
-        # Low-resolution: 10., 6, 1e-5
-        # High-resolution: 0.5, 9, 0.5e-6
-
-        # OCTTREE:
-        # Low-resolution: 10., 2, 1e-5
-        # High-resolution: 0.5, 3, 0.5e-6
-
-        # Because we (currently) can't position the grid exactly as the 2D pixels (rotation etc.),
-        # take half of the pixel size to avoid too much interpolation
-        min_scale = self.config.dg.scale_range.min * pixelscale
-        max_scale = self.config.dg.scale_range.max * pixelscale
-        scale_range = QuantityRange(min_scale, max_scale, invert=True)
-
-        # The range of the max mass fraction
-        mass_fraction_range = RealRange(self.config.dg.mass_fraction_range.min, self.config.dg.mass_fraction_range.max, invert=True) # must be inverted
-
-        # Set fixed grid properties
-        self.dg_generator.grid_type = self.config.dg.grid_type # set grid type
-        self.dg_generator.x_radius = radius_physical
-        self.dg_generator.y_radius = radius_physical
-        self.dg_generator.z_radius = 3. * u("kpc")
-
-        # Set options
-        self.dg_generator.show = False
-        self.dg_generator.write = False
-
-        # Generate the dust grids
-        self.dg_generator.run(scale_range=scale_range, level_range=self.config.dg.level_range, mass_fraction_range=mass_fraction_range, ngrids=10)
 
     # -----------------------------------------------------------------
 
@@ -535,7 +485,7 @@ class RepresentationBuilder(BuildComponent):
         """
 
         # Inform the user
-        log.info("Writing the dust grids ...")
+        log.info("Writing the dust grid ...")
 
         # Loop over the grids
         index = 0

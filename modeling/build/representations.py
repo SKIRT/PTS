@@ -22,6 +22,7 @@ from ...core.prep.dustgrids import DustGridGenerator
 from ...core.tools.logging import log
 from ...core.basics.range import QuantityRange, RealRange
 from ...core.basics.unit import parse_unit as u
+from ...core.advanced.dustgridtool import DustGridTool
 
 # -----------------------------------------------------------------
 
@@ -42,7 +43,10 @@ class RepresentationGenerator(BuildComponent):
 
         # Call the constructor of the base class
         super(RepresentationGenerator, self).__init__(config, interactive)
-        
+
+        # The model definition
+        self.definition = None
+
         # The dust grid generator
         self.dg_generator = None
 
@@ -78,8 +82,8 @@ class RepresentationGenerator(BuildComponent):
         # Call the setup function of the base class
         super(RepresentationGenerator, self).setup(**kwargs)
 
-        # Create a WavelengthGridGenerator
-        self.wg_generator = WavelengthGridGenerator()
+        # Create the model definition
+        self.definition = self.get_model_definition(self.config.model_name)
 
         # Create the DustGridGenerator
         self.dg_generator = DustGridGenerator()

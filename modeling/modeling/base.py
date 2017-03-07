@@ -29,6 +29,7 @@ from ..fitting.run import get_generations_table, get_ngenerations, has_unevaluat
 from ...core.remote.moderator import PlatformModerator
 from ...core.tools import stringify
 from ...core.tools.loops import repeat
+from ...core.remote.remote import Remote
 
 # -----------------------------------------------------------------
 
@@ -123,6 +124,21 @@ class ModelerBase(Configurable):
 
         # Load the modeling history
         self.history = load_modeling_history(self.modeling_path)
+
+        # Clear remotes
+        if self.config.clear_remotes:
+            for host_id in self.moderator.all_host_ids:
+
+                # Setup the remote
+                remote = Remote()
+                if not remote.setup(host_id): log.warning("Could not connect to remote host '" + host_id + "'")
+
+                # Clear temporary directory
+                remote.clear_pts_temp()
+
+                # Clear sessions
+                remote.close_all_screen_sessions()
+                remote.close_all_tmux_sessions()
 
         # Deploy SKIRT and PTS
         if self.config.deploy: self.deploy()
