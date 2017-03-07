@@ -31,7 +31,6 @@ from ...core.tools.logging import log
 from .dataprocessing import DustPediaDataProcessing
 from .sample import DustPediaSample
 from ...core.tools import filesystem as fs
-from ...core.tools import time
 from ...core.tools import tables, network
 from ...magic.basics.coordinate import SkyCoordinate
 from ...magic.tools import mosaicing
@@ -39,6 +38,7 @@ from ...core.tools.parallelization import ParallelTarget
 from ...magic.misc import chrisfuncs
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...magic.core.frame import Frame, sum_frames, sum_frames_quadratically
+from ...core.basics.configuration import print_mapping
 
 # -----------------------------------------------------------------
 
@@ -189,6 +189,9 @@ class GALEXMosaicMaker(Configurable):
 
         # Call the setup function of the base class
         super(GALEXMosaicMaker, self).setup(**kwargs)
+
+        # Show the configuration
+        if log.is_debug(): print_mapping(self.config)
 
         # Create the DustPedia sample object
         self.sample = DustPediaSample()
@@ -365,6 +368,9 @@ class GALEXMosaicMaker(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Getting the observation urls in both GALEX bands ...")
+
         # Get the tilenames
         tilenames = self.get_galex_tilenames_for_galaxy()
 
@@ -374,15 +380,17 @@ class GALEXMosaicMaker(Configurable):
         # Search through the URL table to get all the URLS that contain one of the tilenames
         for i in range(len(self.dpdp.galex_url_table)):
 
-            # Stop adding more observations if the maximum has been achieved
-            if self.config.max_nobservations_fuv is not None and len(urls_fuv) == self.config.max_nobservations_fuv: break
-            if self.config.max_nobservations_nuv is not None and len(urls_nuv) == self.config.max_nobservations_nuv: break
-
             # Get the url
             url = self.dpdp.galex_url_table["URL"][i]
 
             # Check whether NUV of FUV observation
             nuv_or_fuv = "nuv" if fs.strip_extension(fs.name(url), double=True).split("-int")[0].split("-")[1] == "nd" else "fuv"
+
+            # Stop adding more observations if the maximum has been achieved
+            if self.config.max_nobservations_fuv is not None: log.debug(str(len(urls_fuv)) + " observations of " + str(self.config.max_nobservations_fuv) + " (max) reached")
+            if self.config.max_nobservations_nuv is not None: log.debug(str(len(urls_nuv)) + " observations of " + str(self.config.max_nobservations_nuv) + " (max) reached")
+            if self.config.max_nobservations_fuv is not None and len(urls_fuv) == self.config.max_nobservations_fuv and nuv_or_fuv == "fuv": continue
+            if self.config.max_nobservations_nuv is not None and len(urls_nuv) == self.config.max_nobservations_nuv and nuv_or_fuv == "nuv": continue
 
             # Loop over all tilenames for this galaxy, find whether the tilename matches the current URL
             for tilename in tilenames:
@@ -391,7 +399,7 @@ class GALEXMosaicMaker(Configurable):
                     else: urls_fuv.append(url)
                     break  # URL added, so no need to look at the other tilenames for this URL
             #else: raise RuntimeError("Tilename was not found in the DustPedia GALEX tile urls table for the url '" + url + "'")
-            else: log.warning("Tilename was not found in the DustPedia GALEX tile urls table for the url '" + url + "'")
+            #else: log.warning("Tilename was not found in the DustPedia GALEX tile urls table for the url '" + url + "'")
 
         # Return the list of URLS
         return urls_nuv, urls_fuv

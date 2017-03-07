@@ -356,7 +356,7 @@ class Remote(object):
             if name is not None: prefix += ", " + name
 
         # Debugging
-        log.debug("[" + self.host_id + "] " + message)
+        log.debug("[" + prefix + "] " + message)
 
     # -----------------------------------------------------------------
 
@@ -375,7 +375,7 @@ class Remote(object):
             if name is not None: prefix += ", " + name
 
         # Give warning
-        log.warning("[" + self.host_id + "] " + message)
+        log.warning("[" + prefix + "] " + message)
 
     # -----------------------------------------------------------------
 
@@ -394,7 +394,7 @@ class Remote(object):
             if name is not None: prefix += ", " + name
 
         # Give error message
-        log.error("[" + self.host_id + "] " + message)
+        log.error("[" + prefix + "] " + message)
 
     # -----------------------------------------------------------------
 
@@ -413,7 +413,7 @@ class Remote(object):
             if name is not None: prefix += ", " + name
 
         # Show success message
-        log.success("[" + self.host_id + "] " + message)
+        log.success("[" + prefix + "] " + message)
 
     # -----------------------------------------------------------------
 

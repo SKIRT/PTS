@@ -27,19 +27,12 @@ elif len(run_names) == 1: definition.add_fixed("name", "name of the fitting run"
 else: definition.add_required("name", "string", "name of the fitting run", choices=run_names)
 
 # Settings for the wavelength grid generation
-#definition.add_section("wg", "settings for the wavelength grids")
-#definition.sections["wg"].add_optional("npoints_range", "integer_range", "the range of the wavelength grid size", "150>500", convert_default=True)
-#definition.sections["wg"].add_optional("ngrids", "integer", "the number of wavelength grids to generate", 10)
-#definition.sections["wg"].add_flag("add_emission_lines", "add emission lines to the wavelength grids", False)
-#definition.sections["wg"].add_optional("min_wavelength", "quantity", "minimum wavelength")
-#definition.sections["wg"].add_optional("max_wavelength", "quantity", "maximum wavelength")
-
-# Settings for the dust grid generation
-#definition.add_section("dg", "settings for the dust grids")
-#definition.sections["dg"].add_optional("grid_type", "string", "the type of dust grid", "bintree", choices=["cartesian", "bintree", "octtree"])
-#definition.sections["dg"].add_optional("scale_range", "real_range", "the range of the number of image pixels to take as the minimum scale in the model (can also be a certain fraction of a pixel)", "0.5>10.", convert_default=True)
-#definition.sections["dg"].add_optional("level_range", "integer_range", "the range of the maximum depth level of the tree", "6>9", convert_default=True)
-#definition.sections["dg"].add_optional("mass_fraction_range", "real_range", "the range of the maximum mass fraction in each cell", "0.5e-6>1e-5", convert_default=True)
+definition.add_section("wg", "settings for the wavelength grids")
+definition.sections["wg"].add_optional("npoints_range", "integer_range", "the range of the wavelength grid size", "150>500", convert_default=True)
+definition.sections["wg"].add_optional("ngrids", "integer", "the number of wavelength grids to generate", 10)
+definition.sections["wg"].add_flag("add_emission_lines", "add emission lines to the wavelength grids", False)
+definition.sections["wg"].add_optional("min_wavelength", "quantity", "minimum wavelength")
+definition.sections["wg"].add_optional("max_wavelength", "quantity", "maximum wavelength")
 
 # Add optional arguments
 definition.add_optional("npackages", "real", "the number of photon packages per wavelength", 2e5)

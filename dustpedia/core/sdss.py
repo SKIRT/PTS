@@ -35,6 +35,7 @@ from ...core.filter.broad import BroadBandFilter
 from ...core.tools import formatting as fmt
 from ...magic.core.frame import Frame, sum_frames, sum_frames_quadratically
 from ...core.tools.parallelization import ParallelTarget
+from ...core.basics.configuration import print_mapping
 
 # -----------------------------------------------------------------
 
@@ -174,6 +175,9 @@ class SDSSMosaicMaker(Configurable):
 
         # Call the setup function of the base class
         super(SDSSMosaicMaker, self).setup(**kwargs)
+
+        # Show the configuration
+        if log.is_debug(): print_mapping(self.config)
 
         # Create the DustPedia sample object
         self.sample = DustPediaSample()
@@ -335,6 +339,7 @@ class SDSSMosaicMaker(Configurable):
             # Limit the number of fields if requested
             limit_band = self.config["max_nobservations_" + band]
             if limit_band is not None:
+                if self.config.max_nobservations_fuv is not None: log.debug("The maximum number of observations for the " + band + " band is " + str(limit_band))
                 new_urls = new_urls[:min(len(new_urls), limit_band)] # Remove the last x fields
 
             # Save the URLS for this band

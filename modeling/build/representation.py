@@ -103,8 +103,7 @@ class RepresentationBuilder(BuildComponent):
         # The instruments
         self.instruments = dict()
 
-        # The wavelength grid and dust grid generators
-        self.wg_generator = None
+        # The dust grid generator
         self.dg_generator = None
 
     # -----------------------------------------------------------------
@@ -160,9 +159,6 @@ class RepresentationBuilder(BuildComponent):
         # Create the representation
         path = fs.create_directory_in(self.representations_path, self.config.name)
         self.representation = Representation(self.config.name, self.config.model_name, path)
-
-        # Create a WavelengthGridGenerator
-        self.wg_generator = WavelengthGridGenerator()
 
         # Create the DustGridGenerator
         self.dg_generator = DustGridGenerator()
@@ -359,31 +355,6 @@ class RepresentationBuilder(BuildComponent):
 
     # -----------------------------------------------------------------
 
-    def create_wavelength_grids(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the wavelength grids ...")
-
-        # Fixed wavelengths (always in the grid)
-        fixed = [self.i1_filter.pivotwavelength(), self.fuv_filter.pivotwavelength()]
-
-        # Set options
-        self.wg_generator.config.show = False
-        self.wg_generator.config.write = False
-
-        # Generate the wavelength grids
-        self.wg_generator.run(npoints_range=self.config.wg.npoints_range, ngrids=self.config.wg.ngrids,
-                              fixed=fixed, add_emission_lines=self.config.wg.add_emission_lines,
-                              min_wavelength=self.config.wg.min_wavelength, max_wavelength=self.config.wg.max_wavelength,
-                              filters=self.fitting_run.fitting_filters)
-
-    # -----------------------------------------------------------------
-
     def create_projections(self):
 
         """
@@ -439,7 +410,7 @@ class RepresentationBuilder(BuildComponent):
 
     # -----------------------------------------------------------------
 
-    def create_dust_grids(self):
+    def create_dust_grid(self):
 
         """
         This function ...
@@ -447,7 +418,7 @@ class RepresentationBuilder(BuildComponent):
         """
 
         # Inform the user
-        log.info("Creating the grids ...")
+        log.info("Creating the dust grid ...")
 
         # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
         semimajor_angular = self.truncation_ellipse.semimajor  # semimajor axis length of the sky ellipse
@@ -506,11 +477,8 @@ class RepresentationBuilder(BuildComponent):
         # 1. Write the instruments
         self.write_instruments()
 
-        # 2. Write the wavelength grids
-        self.write_wavelength_grids()
-
         # 3. Write the dust grids
-        self.write_dust_grids()
+        self.write_dust_grid()
 
         # 4. Write the representations table
         self.write_table()
@@ -559,35 +527,7 @@ class RepresentationBuilder(BuildComponent):
 
     # -----------------------------------------------------------------
 
-    def write_wavelength_grids(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the wavelength grids ...")
-
-        # Loop over the grids
-        index = 0
-        for grid in self.wg_generator.grids:
-
-            # Determine the path to the grid
-            path = fs.join(self.fitting_run.wavelength_grids_path, str(index) + ".txt")
-
-            # Save the wavelength grid
-            grid.to_skirt_input(path)
-
-            # Increment the index
-            index += 1
-
-        # Write the wavelength grids table
-        tables.write(self.wg_generator.table, self.fitting_run.wavelength_grids_table_path)
-
-    # -----------------------------------------------------------------
-
-    def write_dust_grids(self):
+    def write_dust_grid(self):
 
         """
         This function ...
