@@ -127,7 +127,7 @@ class Installer(Configurable):
 
             # Create and setup the remote execution environment
             from ..remote.remote import Remote
-            self.remote = Remote()
+            self.remote = Remote(log_conda=True)
             self.remote.setup(self.config.host_id)
 
             # Fix configuration files
@@ -1587,6 +1587,7 @@ class PTSInstaller(Installer):
         from ..tools import stringify
 
         # Debugging
+        log.debug("")
         log.debug("Dependencies:")
         log.debug("")
         for line in stringify.stringify_list_fancy(dependencies, lines_prefix="   ")[1].split("\n"): log.debug(line)
@@ -1594,6 +1595,9 @@ class PTSInstaller(Installer):
 
         #packages = introspection.installed_python_packages()
         packages = []
+
+        # Inform the user
+        log.info("Activating the '" + self.config.python_name + "' conda environment ...")
 
         # Activate the correct environment
         previous_environment = conda.activate_environment(self.config.python_name, self.conda_executable_path, self.conda_activate_path)
@@ -2428,6 +2432,7 @@ def get_pts_dependencies_remote(remote, pts_package_path, conda_path="conda", pi
     from ..tools import stringify
 
     # Debugging
+    log.debug("")
     log.debug("Dependencies:")
     log.debug("")
     for line in stringify.stringify_list_fancy(dependencies, lines_prefix="   ")[1].split("\n"): log.debug(line)
@@ -2438,6 +2443,9 @@ def get_pts_dependencies_remote(remote, pts_package_path, conda_path="conda", pi
 
     # self.remote.end_python_session()
     # Don't end the python session just yet
+
+    # Inform the user
+    log.info("Activating the '" + conda_environment + "' conda environment ...")
 
     # Change the conda environment
     previous_environment = remote.activate_conda_environment(conda_environment, conda_path, conda_activate_path)

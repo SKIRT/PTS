@@ -783,7 +783,7 @@ class DetachedPythonSession(RemotePythonSession):
         # Determine command
         #command = "tmux new-session -d -n " + self.screen_name + " python > " + self.out_pipe_filepath
 
-        if self.tmux: command = "tmux new -d -n " + self.screen_name + " " + python_command
+        if self.tmux: command = "tmux new -d -s " + self.screen_name + " " + python_command
         elif self.output_path is not None: command = "screen -dmS " + self.screen_name + " -L"
         else: command = "screen -dmS " + self.screen_name
 

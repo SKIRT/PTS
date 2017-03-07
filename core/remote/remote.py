@@ -130,10 +130,11 @@ class Remote(object):
     This function ...
     """
 
-    def __init__(self):
+    def __init__(self, log_conda=False):
 
         """
         The constructor ...
+        :param log_conda:
         :return:
         """
 
@@ -156,6 +157,9 @@ class Remote(object):
 
         # A regular expression object that strips away special unicode characters, used on the remote console output
         self.ansi_escape = re.compile(r'\x1b[^m]*m')
+
+        # Flag
+        self.log_conda = log_conda
 
         # Remember the commands that were executed on the remote host
         self.commands = []
@@ -325,8 +329,14 @@ class Remote(object):
         :return:
         """
 
+        # Generate prefix
+        prefix = self.host_id
+        if self.log_conda:
+            name = self.conda_active_environment_fast()
+            if name is not None: prefix += ", " + name
+
         # Inform the user
-        log.info("[" + self.host_id + "] " + message)
+        log.info("[" + prefix + "] " + message)
 
     # -----------------------------------------------------------------
 
@@ -337,6 +347,12 @@ class Remote(object):
         :param message:
         :return:
         """
+
+        # Generate prefix
+        prefix = self.host_id
+        if self.log_conda:
+            name = self.conda_active_environment_fast()
+            if name is not None: prefix += ", " + name
 
         # Debugging
         log.debug("[" + self.host_id + "] " + message)
@@ -351,6 +367,13 @@ class Remote(object):
         :return:
         """
 
+        # Generate prefix
+        prefix = self.host_id
+        if self.log_conda:
+            name = self.conda_active_environment_fast()
+            if name is not None: prefix += ", " + name
+
+        # Give warning
         log.warning("[" + self.host_id + "] " + message)
 
     # -----------------------------------------------------------------
@@ -363,6 +386,13 @@ class Remote(object):
         :return:
         """
 
+        # Generate prefix
+        prefix = self.host_id
+        if self.log_conda:
+            name = self.conda_active_environment_fast()
+            if name is not None: prefix += ", " + name
+
+        # Give error message
         log.error("[" + self.host_id + "] " + message)
 
     # -----------------------------------------------------------------
@@ -375,6 +405,13 @@ class Remote(object):
         :return:
         """
 
+        # Generate prefix
+        prefix = self.host_id
+        if self.log_conda:
+            name = self.conda_active_environment_fast()
+            if name is not None: prefix += ", " + name
+
+        # Show success message
         log.success("[" + self.host_id + "] " + message)
 
     # -----------------------------------------------------------------
@@ -1755,6 +1792,19 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def create_screen_session(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        command = "screen -dmS " + name
+        self.execute(command)
+
+    # -----------------------------------------------------------------
+
     def close_screen_session(self, name):
 
         """
@@ -1764,6 +1814,17 @@ class Remote(object):
         """
 
         self.kill_screen(name)
+
+    # -----------------------------------------------------------------
+
+    def close_all_screen_sessions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.screen_names(): self.close_screen_session(name)
 
     # -----------------------------------------------------------------
 
@@ -1789,23 +1850,23 @@ class Remote(object):
 
         if not self.is_executable("tmux"): return []
         output = self.execute("tmux ls")
-        return output
+        if len(output) == 1 and output[0] == "failed to connect to server": return []
+        else: return [line.split(":")[0] for line in output]
 
     # -----------------------------------------------------------------
 
-    def tmux_sessions(self):
+    def create_tmux_session(self, name, in_session_command=None):
 
         """
         This function ...
+        :param name:
+        :param in_session_command:
         :return:
         """
 
-        # Initialize dictionary for the sessions
-        sessions = dict()
-
-        # Loop over the output
-        output = self.execute("tmux ls")
-        #for line in output:
+        command = "tmux new -d -s " + name
+        if in_session_command is not None: command += " " + in_session_command
+        self.execute(command)
 
     # -----------------------------------------------------------------
 
@@ -1818,7 +1879,21 @@ class Remote(object):
         """
 
         end_session_command = "tmux kill-session -t " + name
-        self.execute(end_session_command)
+        output = self.execute(end_session_command)
+
+        for line in output:
+            if "session not found" in line: raise ValueError("Session does not exist")
+
+    # -----------------------------------------------------------------
+
+    def close_all_tmux_sessions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.tmux_names(): self.close_tmux_session(name)
 
     # -----------------------------------------------------------------
 
@@ -3595,6 +3670,24 @@ class Remote(object):
                 env = splitted[0].strip()
                 break
         return env
+
+    # -----------------------------------------------------------------
+
+    def conda_active_environment_fast(self):
+
+        """
+        This function ...
+        :param conda_path:
+        :return:
+        """
+
+        # Execute dummy command
+        self.execute("echo")
+
+        # Get last line
+        last = self.ssh.before.split("\r\n")[-1].strip()
+        if last.startswith("(") and last.endswith(")"): return last[1:-1]
+        else: return None
 
     # -----------------------------------------------------------------
 

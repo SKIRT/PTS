@@ -21,6 +21,7 @@ build_model | -- | build.model.ModelBuilder | interactive | Build the model
 build_stars | -- | build.stars.StarsBuilder | interactive | Build stellar components of model
 build_dust | -- | build.dust.DustBuilder | interactive | Build dust components of model
 build_representation | -- | build.representation.RepresentationBuilder | interactive | Build model representation
+generate_representations | -- | build.representations.RepresentationsGenerator | interactive | Generate model representations
 configure_fit | -- | fitting.configuration.FittingConfigurer | arguments | Configure the fitting procedure
 initialize_fit_galaxy | initialize_fit | fitting.initialization.galaxy.GalaxyFittingInitializer | arguments | Do the initialization before starting the fitting
 initialize_fit_sed | initialize_fit | fitting.initialization.sed.SEDFittingInitializer | arguments | Do the initialization before starting the fitting

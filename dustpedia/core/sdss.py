@@ -26,7 +26,6 @@ from ...core.tools.logging import log
 from .dataprocessing import DustPediaDataProcessing
 from .sample import DustPediaSample
 from ...core.tools import filesystem as fs
-from ...core.tools import time
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...magic.core.image import Image
 from ...core.tools import network
@@ -1125,7 +1124,8 @@ def convert_mosaic_to_jansky(mosaics_path):
     log.info("Converting the SDSS mosaic and error map to Jansky per pixel ...")
 
     # Open the mosaic image
-    mosaic_path = fs.join(mosaics_path, "mosaic.fits")
+    #mosaic_path = fs.join(mosaics_path, "mosaic.fits")
+    mosaic_path = fs.join(mosaics_path, "mosaic_nanomaggy.fits")
     mosaic = Image.from_file(mosaic_path)
 
     # Do the conversion

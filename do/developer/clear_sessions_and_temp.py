@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.developer.sessions Check screen/tmux sessions on the remote host.
+## \package pts.do.developer.clear_sessions_and_temp Clear the complete PTS temporary directory and sessions on remote hosts.
 
 # -----------------------------------------------------------------
 
@@ -13,57 +13,43 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
+from pts.core.tools import introspection
+from pts.core.tools import filesystem as fs
 from pts.core.tools.logging import setup_log
 from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
-from pts.core.remote.remote import Remote
 from pts.core.remote.host import find_host_ids
+from pts.core.remote.remote import Remote
 
 # -----------------------------------------------------------------
 
+# Create definition
 definition = ConfigurationDefinition()
-definition.add_optional("remotes", "string_list", "remote host ID", choices=find_host_ids(), default=find_host_ids())
+definition.add_positional_optional("remotes", "string_list", "remote hosts on which to clear", choices=find_host_ids(), default=find_host_ids())
 
-setter = ArgumentConfigurationSetter("sessions")
+# Create setter
+setter = ArgumentConfigurationSetter("clear_sessions_and_temp")
 config = setter.run(definition)
 
 # -----------------------------------------------------------------
 
-# Create logger
+# Set logger
 level = "DEBUG" if config.debug else "INFO"
 log = setup_log(level)
 
 # -----------------------------------------------------------------
 
-# Loop over the remote host
+# Loop over the remote hosts
 for host_id in config.remotes:
 
-    # Create and setup the remote
+    # Setup the remote
     remote = Remote()
-    if not remote.setup(host_id): raise RuntimeError("The remote host '" + host_id + "' is not available at the moment")
+    if not remote.setup(host_id): log.warning("Could not connect to remote host '" + host_id + "'")
 
-    # Get screen names and tmux session names
-    screen_names = remote.screen_names()
-    tmux_names = remote.tmux_names()
+    # Clear temporary directory
+    remote.clear_pts_temp()
 
-    # Inform the user
-    log.info("Closing sessions on remote host '" + host_id + "' ...")
-
-    # Loop over the screens
-    for name in screen_names:
-
-        # Inform the user
-        log.info("Closing screen session '" + name + "' ...")
-
-        # Close
-        remote.close_screen_session(name)
-
-    # Loop over the tmux sessions
-    for name in tmux_names:
-
-        # Inform the user
-        log.info("Closing tmux session '" + name + "' ...")
-
-        # Close
-        remote.close_tmux_session(name)
+    # Clear sessions
+    remote.close_all_screen_sessions()
+    remote.close_all_tmux_sessions()
 
 # -----------------------------------------------------------------

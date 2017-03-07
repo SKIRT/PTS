@@ -390,7 +390,8 @@ class GALEXMosaicMaker(Configurable):
                     if nuv_or_fuv == "nuv": urls_nuv.append(url)
                     else: urls_fuv.append(url)
                     break  # URL added, so no need to look at the other tilenames for this URL
-            else: raise RuntimeError("No tilename was not found in the DustPedia GALEX tile urls table for the url '" + url + "'")
+            #else: raise RuntimeError("Tilename was not found in the DustPedia GALEX tile urls table for the url '" + url + "'")
+            else: log.warning("Tilename was not found in the DustPedia GALEX tile urls table for the url '" + url + "'")
 
         # Return the list of URLS
         return urls_nuv, urls_fuv

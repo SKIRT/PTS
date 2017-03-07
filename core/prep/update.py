@@ -102,7 +102,7 @@ class Updater(Configurable):
         elif self.config.host_id is not None:
 
             # Create and setup the remote execution environment
-            self.remote = Remote()
+            self.remote = Remote(log_conda=True)
             self.remote.setup(self.config.host_id)
 
             # Fix configuration files
