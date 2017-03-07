@@ -158,8 +158,9 @@ class Remote(object):
         # A regular expression object that strips away special unicode characters, used on the remote console output
         self.ansi_escape = re.compile(r'\x1b[^m]*m')
 
-        # Flag
+        # Flags
         self.log_conda = log_conda
+        self.conda_activated = False
 
         # Remember the commands that were executed on the remote host
         self.commands = []
@@ -332,7 +333,7 @@ class Remote(object):
         # Generate prefix
         prefix = self.host_id
         if self.log_conda:
-            name = self.conda_active_environment_fast()
+            name = self.conda_active_environment_fast(assert_activated=self.conda_activated)
             if name is not None: prefix += ", " + name
 
         # Inform the user
@@ -351,7 +352,7 @@ class Remote(object):
         # Generate prefix
         prefix = self.host_id
         if self.log_conda:
-            name = self.conda_active_environment_fast()
+            name = self.conda_active_environment_fast(assert_activated=self.conda_activated)
             if name is not None: prefix += ", " + name
 
         # Debugging
@@ -370,7 +371,7 @@ class Remote(object):
         # Generate prefix
         prefix = self.host_id
         if self.log_conda:
-            name = self.conda_active_environment_fast()
+            name = self.conda_active_environment_fast(assert_activated=self.conda_activated)
             if name is not None: prefix += ", " + name
 
         # Give warning
@@ -389,7 +390,7 @@ class Remote(object):
         # Generate prefix
         prefix = self.host_id
         if self.log_conda:
-            name = self.conda_active_environment_fast()
+            name = self.conda_active_environment_fast(assert_activated=self.conda_activated)
             if name is not None: prefix += ", " + name
 
         # Give error message
@@ -408,7 +409,7 @@ class Remote(object):
         # Generate prefix
         prefix = self.host_id
         if self.log_conda:
-            name = self.conda_active_environment_fast()
+            name = self.conda_active_environment_fast(assert_activated=self.conda_activated)
             if name is not None: prefix += ", " + name
 
         # Show success message
@@ -3673,11 +3674,11 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def conda_active_environment_fast(self):
+    def conda_active_environment_fast(self, assert_activated=False):
 
         """
         This function ...
-        :param conda_path:
+        :param assert_activated
         :return:
         """
 
@@ -3687,19 +3688,25 @@ class Remote(object):
         # Get last line
         last = self.ssh.before.split("\r\n")[-1].strip()
         if last.startswith("(") and last.endswith(")"): return last[1:-1]
+        elif assert_activated: raise RuntimeError("Conda environment cannot be determined from '" + last + "'")
         else: return None
 
     # -----------------------------------------------------------------
 
-    def activate_conda_environment(self, environment_name, conda_path="conda", activate_path="activate"):
+    def activate_conda_environment(self, environment_name, conda_path="conda", activate_path="activate", show_output=False):
 
         """
         This function ...
+        :param environment_name:
+        :param conda_path:
+        :param activate_path:
+        :param show_output:
         :return:
         """
 
         previous = self.conda_active_environment(conda_path=conda_path)
-        self.execute("source " + activate_path + " " + environment_name)
+        self.execute("source " + activate_path + " " + environment_name, show_output=show_output)
+        self.conda_activated = True
         return previous
 
     # -----------------------------------------------------------------
@@ -3713,6 +3720,7 @@ class Remote(object):
         """
 
         self.execute("source " + deactivate_path)
+        self.conda_activated = False
 
     # -----------------------------------------------------------------
 

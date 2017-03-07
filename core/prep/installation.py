@@ -2448,7 +2448,7 @@ def get_pts_dependencies_remote(remote, pts_package_path, conda_path="conda", pi
     log.info("Activating the '" + conda_environment + "' conda environment ...")
 
     # Change the conda environment
-    previous_environment = remote.activate_conda_environment(conda_environment, conda_path, conda_activate_path)
+    previous_environment = remote.activate_conda_environment(conda_environment, conda_path, conda_activate_path, show_output=log.is_debug())
 
     # Get installation commands
     # dependencies, packages, already_installed, available_packages, conda_path="conda",
