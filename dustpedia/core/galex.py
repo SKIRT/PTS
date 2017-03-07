@@ -193,9 +193,8 @@ class GALEXMosaicMaker(Configurable):
         # Show the configuration
         if log.is_debug():
             log.debug("Configuration:")
-            log.debug("")
             print_mapping(self.config, empty_lines=False, indent="  ")
-            log.debug("")
+            print("")
 
         # Create the DustPedia sample object
         self.sample = DustPediaSample()
@@ -391,8 +390,8 @@ class GALEXMosaicMaker(Configurable):
             nuv_or_fuv = "nuv" if fs.strip_extension(fs.name(url), double=True).split("-int")[0].split("-")[1] == "nd" else "fuv"
 
             # Stop adding more observations if the maximum has been achieved
-            if self.config.max_nobservations_fuv is not None: log.debug(str(len(urls_fuv)) + " observations of " + str(self.config.max_nobservations_fuv) + " (max) reached")
-            if self.config.max_nobservations_nuv is not None: log.debug(str(len(urls_nuv)) + " observations of " + str(self.config.max_nobservations_nuv) + " (max) reached")
+            #if self.config.max_nobservations_fuv is not None: log.debug(str(len(urls_fuv)) + " observations of " + str(self.config.max_nobservations_fuv) + " (max) reached")
+            #if self.config.max_nobservations_nuv is not None: log.debug(str(len(urls_nuv)) + " observations of " + str(self.config.max_nobservations_nuv) + " (max) reached")
             if self.config.max_nobservations_fuv is not None and len(urls_fuv) == self.config.max_nobservations_fuv and nuv_or_fuv == "fuv": continue
             if self.config.max_nobservations_nuv is not None and len(urls_nuv) == self.config.max_nobservations_nuv and nuv_or_fuv == "nuv": continue
 

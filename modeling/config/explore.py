@@ -73,8 +73,10 @@ definition.add_flag("visualise", "make visualisations")
 # Model options
 definition.add_optional("npackages_factor", "positive_real", "the factor with which to increase the number of photon packages for the new batch of simulations", 5.)
 definition.add_flag("increase_npackages", "increase the number of photon packages with a certain factor", False)
-definition.add_flag("refine_wavelengths", "increase the resolution of the wavelength grid for the new batch of simulations", False)
-definition.add_flag("refine_dust", "increase the resolution of the dust cell grid for the new batch of simulations", False)
+#definition.add_flag("refine_wavelengths", "increase the resolution of the wavelength grid for the new batch of simulations", False)
+#definition.add_flag("refine_dust", "increase the resolution of the dust cell grid for the new batch of simulations", False)
+definition.add_flag("refine_spectral", "increase the resolution of the wavelength grid for the new batch of simulations", False)
+definition.add_flag("refine_spatial", "increase the spatial resolution of the model for the new batch of simulations")
 definition.add_flag("selfabsorption", "dust self-absorption", None)
 definition.add_flag("transient_heating", "transient (non-LTE) dust heating", None)
 

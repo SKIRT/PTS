@@ -179,9 +179,8 @@ class SDSSMosaicMaker(Configurable):
         # Show the configuration
         if log.is_debug():
             log.debug("Configuration:")
-            log.debug("")
             print_mapping(self.config, empty_lines=False, indent="  ")
-            log.debug("")
+            print("")
 
         # Create the DustPedia sample object
         self.sample = DustPediaSample()

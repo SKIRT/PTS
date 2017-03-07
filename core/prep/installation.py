@@ -1709,6 +1709,9 @@ class PTSInstaller(Installer):
             print(stringify.stringify_list_fancy(already_installed, 100, ", ", "    ")[1])
             print("")
 
+        # Inform he user
+        log.info("Deactivating the conda environment ...")
+
         # Activate the previous environment
         conda.activate_environment(previous_environment, self.conda_executable_path, self.conda_activate_path)
 
@@ -2558,6 +2561,9 @@ def get_pts_dependencies_remote(remote, pts_package_path, conda_path="conda", pi
         print("")
         print(stringify.stringify_list_fancy(already_installed, 100, ", ", "    ")[1])
         print("")
+
+    # Inform he user
+    log.info("Deactivating the conda environment ...")
 
     # Change the environment back
     remote.activate_conda_environment(previous_environment, conda_path, conda_activate_path)

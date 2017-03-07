@@ -371,8 +371,10 @@ class ModelerBase(Configurable):
         # Set other settings
         explorer.config.npackages_factor = self.config.npackages_factor
         explorer.config.increase_npackages = self.config.increase_npackages
-        explorer.config.refine_wavelengths = self.config.refine_wavelengths
-        explorer.config.refine_dust = self.config.refine_dust
+        #explorer.config.refine_wavelengths = self.config.refine_wavelengths
+        explorer.config.refine_spectral = self.config.refine_spectral
+        #explorer.config.refine_dust = self.config.refine_dust
+        explorer.config.refine_spatial = self.config.refine_spatial
         explorer.config.selfabsorption = self.config.selfabsorption
         explorer.config.transient_heating = self.config.transient_heating
 

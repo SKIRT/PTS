@@ -445,14 +445,16 @@ class ParameterExplorer(FittingComponent):
         dust_grid_level = self.fitting_run.current_dust_grid_level
 
         # Determine the wavelength grid level
-        if self.config.refine_wavelengths:
+        #if self.config.refine_wavelengths:
+        if self.config.refine_spectral:
             if wavelength_grid_level == self.fitting_run.highest_wavelength_grid_level: log.warning("Cannot refine wavelength grid: highest level reached (" + str(wavelength_grid_level) + ")")
             else: wavelength_grid_level += 1
 
         # Determine the dust grid level
-        if self.config.refine_dust:
-            if dust_grid_level == self.fitting_run.highest_dust_grid_level: log.warning("Cannot refine dust grid: highest level reached (" + str(dust_grid_level) + ")")
-            else: dust_grid_level += 1
+        #if self.config.refine_dust:
+        #    if dust_grid_level == self.fitting_run.highest_dust_grid_level: log.warning("Cannot refine dust grid: highest level reached (" + str(dust_grid_level) + ")")
+        #    else: dust_grid_level += 1
+        if self.config.refine_spatial:
 
         # Determine the number of photon packages
         if self.config.increase_npackages: npackages = int(self.fitting_run.current_npackages * self.config.npackages_factor)
