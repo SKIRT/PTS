@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import importlib
+import exceptions
 import tempfile
 
 # Import the relevant PTS classes and modules
@@ -338,7 +339,7 @@ class PTSRemoteLauncher(object):
         if "Error:" in last_line:
             error_message = last_line.split(": ")[1]
             error_type = last_line.split(":")[0]
-            raise RuntimeError(error_type + ": " + error_message)
+            raise getattr(exceptions, error_type)(error_message)
 
         # Set the output
         output_list = None
