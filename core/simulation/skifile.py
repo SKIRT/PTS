@@ -1278,15 +1278,35 @@ class SkiFile:
         # Get the 'components' element
         dust_components_parent = dust_distribution.xpath("components")
 
+        # Create elements
+        geometry = self.create_element(geometry_type, geometry_properties)
+        mix = self.create_element(mix_type, mix_properties)
+        normalization = self.create_element(normalization_type, normalization_properties)
+
         # Create the new dut component
-        component = dust_components_parent.makeelement("DustComp", attrs)
+        dust_component = dust_components_parent.makeelement("DustComp", attrs={})
+
+        # Add children
+        geometry_parent = dust_component.makeelement("geometry", attrs={"type": "Geometry"})
+        mix_parent = dust_component.makeelement("mix", attrs={"type": "DustMix"})
+        normalization_parent = dust_component.makeelement("normalization", attrs={"type": "DustCompNormalization"})
+
+        # Set actual elements
+        geometry_parent.append(geometry)
+        mix_parent.append(mix)
+        normalization_parent.append(normalization)
+
+        # Set geometry, mix and normalization to the dust component
+        dust_component.append(geometry_parent)
+        dust_component.append(mix_parent)
+        dust_component.append(normalization_parent)
 
         # Add the component ID
         comment = etree.Comment(component_id)
         dust_components_parent.append(comment)
 
         # Add the new dust component
-        dust_components_parent.append(component)
+        dust_components_parent.append(dust_component)
 
     ## This function returns all properties of the stellar component with the specified id
     def get_stellar_component_properties(self, component_id):
