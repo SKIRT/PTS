@@ -694,12 +694,13 @@ def mapping_to_lines(lines, mapping, indent=""):
 
 # -----------------------------------------------------------------
 
-def print_mapping(mapping, indent=""):
+def print_mapping(mapping, indent="", empty_lines=True):
 
     """
     This function ...
     :param mapping:
     :param indent:
+    :param empty_lines:
     :return:
     """
 
@@ -714,6 +715,7 @@ def print_mapping(mapping, indent=""):
     # Show contents
     contents = output.getvalue()
     for line in contents.split("\n"):
+        if not empty_lines and line.strip() == "": continue
         print(line)
 
     # Close the string buffer

@@ -191,7 +191,11 @@ class GALEXMosaicMaker(Configurable):
         super(GALEXMosaicMaker, self).setup(**kwargs)
 
         # Show the configuration
-        if log.is_debug(): print_mapping(self.config)
+        if log.is_debug():
+            log.debug("Configuration:")
+            log.debug("")
+            print_mapping(self.config, empty_lines=False, indent="  ")
+            log.debug("")
 
         # Create the DustPedia sample object
         self.sample = DustPediaSample()
