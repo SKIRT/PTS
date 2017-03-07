@@ -728,7 +728,7 @@ class GALEXMosaicMaker(Configurable):
 
             results[band].request()
             output = results[band].output
-            swarp_result_path = output[0]
+            swarp_result_path = output
 
             # Load the resulting frame
             out_image = Frame.from_file(swarp_result_path)

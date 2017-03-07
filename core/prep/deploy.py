@@ -73,6 +73,9 @@ class Deployer(RemotesConfigurable):
         :return:
         """
 
+        # Set log_conda flag
+        kwargs["log_conda"] = True
+
         # Call the setup function of the base class
         super(Deployer, self).setup(**kwargs)
 

@@ -147,7 +147,7 @@ class RemotesConfigurable(Configurable):
             for host_id in host_ids:
 
                 # Setup the remote (login)
-                remote = Remote()
+                remote = Remote(log_conda=kwargs.pop("log_conda", False))
                 if not remote.setup(host_id, one_attempt=self.config.one_attempt):
                     log.warning("Remote host '" + host_id + "' is down: skipping")
                     continue
