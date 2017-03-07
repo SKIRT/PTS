@@ -2152,7 +2152,9 @@ def get_installation_commands(dependencies, packages, already_installed, availab
         if module_name in real_names and real_names[module_name] in already_installed: continue
 
         # Double check
-        if module_name.replace("_", "-") in already_installed: continue
+        if module_name.replace("_", "-") in already_installed:
+            already_installed.append(module_name)
+            continue
 
         # Check if a repository link is defined for this package
         if module_name in repositories:
@@ -2167,7 +2169,9 @@ def get_installation_commands(dependencies, packages, already_installed, availab
             install_module_name, via, version = find_real_name(module_name, available_packages, real_names)
 
             # Triple check
-            if install_module_name in already_installed: continue
+            if install_module_name in already_installed:
+                already_installed.append(module_name)
+                continue
 
             # Module is not found
             if install_module_name is None:
