@@ -21,4 +21,11 @@ definition.add_optional("bands", "string_list", "the bands (u/g/r/i/z)", choices
 # Output
 definition.add_optional("output", "string", "the name of the output directory", default="out")
 
+# Advanced options
+definition.add_optional("max_nobservations_u", "positive_integer", "maximum number of u band observations")
+definition.add_optional("max_nobservations_g", "positive_integer", "maximum number of g band observations")
+definition.add_optional("max_nobservations_r", "positive_integer", "maximum number of r band observations")
+definition.add_optional("max_nobservations_i", "positive_integer", "maximum number of i band observations")
+definition.add_optional("max_nobservations_z", "positive_integer", "maximum number of z band observations")
+
 # -----------------------------------------------------------------

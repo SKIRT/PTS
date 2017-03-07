@@ -207,13 +207,14 @@ def download_and_decompress_files(urls, path, remove=True, overwrite=False):
 
 # -----------------------------------------------------------------
 
-def download_files(urls, path, overwrite=False):
+def download_files(urls, path, overwrite=False, info=None):
 
     """
     This function ...
     :param urls:
     :param path:
     :param overwrite:
+    :param info:
     :return:
     """
 
@@ -234,7 +235,8 @@ def download_files(urls, path, overwrite=False):
             else: raise IOError("File is already present: " + filepath)
 
         # Debugging
-        log.debug("Downloading '" + filename + "' to '" + path + "' ... (" + str(index+1) + " of " + str(count) + ")")
+        if info is not None: log.debug("Downloading '" + filename + "' to '" + path + "' ... (" + str(index+1) + " of " + str(count) + " " + info + ")")
+        else: log.debug("Downloading '" + filename + "' to '" + path + "' ... (" + str(index+1) + " of " + str(count) + ")")
         log.debug("URL: " + url)
 
         # Download

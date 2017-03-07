@@ -43,4 +43,7 @@ definition.add_flag("refine_dust", "increase the resolution of the dust cell gri
 definition.add_flag("selfabsorption", "dust self-absorption (None means the initial values are respected)", None)
 definition.add_flag("transient_heating", "transient (non-LTE) dust heating", None)
 
+# Even more advanced settings
+definition.add_optional("max_nobservations_mosaic", "positive_integer", "maximum number of observations to use for the mosaics and poisson frames (for debugging purposes)")
+
 # -----------------------------------------------------------------

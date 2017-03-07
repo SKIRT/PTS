@@ -1608,6 +1608,7 @@ class PTSInstaller(Installer):
                                                                                     easy_install_path=self.conda_easy_install_path)
 
         # Show commands
+        log.debug("")
         log.debug("Installation commands:")
         log.debug("")
         for module in installation_commands:
@@ -2457,6 +2458,7 @@ def get_pts_dependencies_remote(remote, pts_package_path, conda_path="conda", pi
     # Stop the python session
     #del session
 
+    log.debug("")
     log.debug("Installation commands:")
     log.debug("")
     for module in installation_commands:

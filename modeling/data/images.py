@@ -200,6 +200,8 @@ class ImageFetcher(DataComponent):
         config_dict = dict()
         config_dict["galaxy_name"] = self.ngc_name_nospaces
         config_dict["output"] = local_output_path
+        config_dict["max_nobservations_fuv"] = self.config.max_nobservations_mosaic
+        config_dict["max_nobservations_nuv"] = self.config.max_nobservations_mosaic
 
         # Set the analysis info and analyser class
         analysis_info = {"modeling_path": self.config.path}
@@ -239,6 +241,11 @@ class ImageFetcher(DataComponent):
         config_dict = dict()
         config_dict["galaxy_name"] = self.ngc_name_nospaces
         config_dict["output"] = fs.join(local_output_path)
+        config_dict["max_nobservations_u"] = self.config.max_nobservations_mosaic
+        config_dict["max_nobservations_g"] = self.config.max_nobservations_mosaic
+        config_dict["max_nobservations_r"] = self.config.max_nobservations_mosaic
+        config_dict["max_nobservations_i"] = self.config.max_nobservations_mosaic
+        config_dict["max_nobservations_z"] = self.config.max_nobservations_mosaic
 
         # Set the analysis info and analyser class
         analysis_info = {"modeling_path": self.config.path}

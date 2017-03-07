@@ -333,6 +333,11 @@ class SDSSMosaicMaker(Configurable):
             # USE DR12
             new_urls = [url.replace("dr10/boss", "dr12/boss") for url in urls]
 
+            # Limit the number of fields if requested
+            limit_band = self.config["max_nobservations_" + band]
+            if limit_band is not None:
+                new_urls = new_urls[:min(len(new_urls), limit_band)] # Remove the last x fields
+
             # Save the URLS for this band
             # The original urls from which the images were downloaded
             self.urls[band] = new_urls

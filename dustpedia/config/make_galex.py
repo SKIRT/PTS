@@ -21,4 +21,8 @@ definition.add_optional("bands", "string_list", "the bands (NUV/FUV)", choices=g
 # Output
 definition.add_optional("output", "string", "the name of the output directory", default="out")
 
+# Advanced
+definition.add_optional("max_nobservations_fuv", "positive_integer", "limit the number of FUV observations")
+definition.add_optional("max_nobservations_nuv", "positive_integer", "limit the number of NUV observations")
+
 # -----------------------------------------------------------------

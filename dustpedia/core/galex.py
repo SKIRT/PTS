@@ -374,18 +374,23 @@ class GALEXMosaicMaker(Configurable):
         # Search through the URL table to get all the URLS that contain one of the tilenames
         for i in range(len(self.dpdp.galex_url_table)):
 
+            # Stop adding more observations if the maximum has been achieved
+            if self.config.max_nobservations_fuv is not None and len(urls_fuv) == self.config.max_nobservations_fuv: break
+            if self.config.max_nobservations_nuv is not None and len(urls_nuv) == self.config.max_nobservations_nuv: break
+
             # Get the url
             url = self.dpdp.galex_url_table["URL"][i]
 
             # Check whether NUV of FUV observation
             nuv_or_fuv = "nuv" if fs.strip_extension(fs.name(url), double=True).split("-int")[0].split("-")[1] == "nd" else "fuv"
 
+            # Loop over all tilenames for this galaxy, find whether the tilename matches the current URL
             for tilename in tilenames:
-
                 if tilename in url:
                     if nuv_or_fuv == "nuv": urls_nuv.append(url)
                     else: urls_fuv.append(url)
                     break  # URL added, so no need to look at the other tilenames for this URL
+            else: raise RuntimeError("No tilename was not found in the DustPedia GALEX tile urls table for the url '" + url + "'")
 
         # Return the list of URLS
         return urls_nuv, urls_fuv
@@ -436,10 +441,10 @@ class GALEXMosaicMaker(Configurable):
             with ParallelTarget(network.download_files, self.config.nprocesses) as target:
 
                 # Call the target function
-                target(self.observation_urls[band], self.download_observations_paths[band])
-                target(self.response_urls[band], self.download_response_paths[band])
-                target(self.background_urls[band], self.download_background_paths[band])
-                target(self.counts_urls[band], self.download_counts_paths[band])
+                target(self.observation_urls[band], self.download_observations_paths[band], info="observations")
+                target(self.response_urls[band], self.download_response_paths[band], info="response maps")
+                target(self.background_urls[band], self.download_background_paths[band], info="background maps")
+                target(self.counts_urls[band], self.download_counts_paths[band], info="count maps")
 
     # -----------------------------------------------------------------
 
