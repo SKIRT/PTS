@@ -24,4 +24,7 @@ definition.add_optional("halpha_flux", "quantity", "flux of the h-alpha image to
 # The total H-alpha flux (reference: FAR-ULTRAVIOLET AND Ha IMAGING OF NEARBY SPIRAL GALAXIES: THE OB STELLAR,
 # POPULATION IN THE DIFFUSE IONIZED GAS (Hoopes et. al 2001)
 
+# Advanced
+definition.add_optional("max_nobservations_mosaic", "positive_integer", "maximum number of observations to use for the mosaic and poisson frames (GALEX and SDSS)")
+
 # -----------------------------------------------------------------

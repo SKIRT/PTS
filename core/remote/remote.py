@@ -3620,6 +3620,8 @@ class Remote(object):
         :return:
         """
 
+        if not self.is_executable(conda_path): raise ValueError("The conda executable does not exist: '" + conda_path + "'")
+
         output = self.execute(conda_path + " env list")
         envs = []
         for line in output:
@@ -3661,6 +3663,7 @@ class Remote(object):
         :return:
         """
 
+        if not self.is_executable(conda_path): raise ValueError("The conda executable does not exist: '" + conda_path + "'")
         output = self.execute(conda_path + " env list")
         env = None
         for line in output:
@@ -3738,6 +3741,8 @@ class Remote(object):
 
         packages = dict()
 
+        if not self.is_executable(conda_path): raise ValueError("The conda executable does not exist: '" + conda_path + "'")
+
         # Execute the conda list command
         if environment_name is not None: output = self.execute(conda_path + " list -n " + environment_name)
         else: output = self.execute(conda_path + " list")
@@ -3775,6 +3780,8 @@ class Remote(object):
         :param conda_path:
         :return:
         """
+
+        if not self.is_executable(conda_path): raise ValueError("The conda executable does not exist: '" + conda_path + "'")
 
         if environment_name is not None: command = conda_path + " list " + name + " --name " + environment_name
         else: command = conda_path + " list " + name

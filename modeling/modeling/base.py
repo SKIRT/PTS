@@ -129,6 +129,9 @@ class ModelerBase(Configurable):
         if self.config.clear_remotes:
             for host_id in self.moderator.all_host_ids:
 
+                # Inform the user
+                log.info("Clearing remote '" + host_id + "' ...")
+
                 # Setup the remote
                 remote = Remote()
                 if not remote.setup(host_id): log.warning("Could not connect to remote host '" + host_id + "'")

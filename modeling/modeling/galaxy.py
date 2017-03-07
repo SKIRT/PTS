@@ -276,6 +276,7 @@ class GalaxyModeler(ModelerBase):
         config["attached"] = self.config.attached
         config["halpha_url"] = halpha_urls[self.hyperleda_name]
         config["halpha_flux"] = halpha_fluxes[self.hyperleda_name]
+        config["max_nobservations_mosaic"] = self.config.max_nobservations_mosaic
 
         # Create the image fetcher
         fetcher = ImageFetcher(config)
