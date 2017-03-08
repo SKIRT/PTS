@@ -3250,7 +3250,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def download(self, origin, destination, timeout=60, new_name=None, compress=False, show_output=False):
+    def download(self, origin, destination, timeout=None, new_name=None, compress=False, show_output=False, connect_timeout=60):
 
         """
         This function ...
@@ -3260,6 +3260,7 @@ class Remote(object):
         :param new_name:
         :param compress:
         :param show_output:
+        :param connect_timeout:
         :return:
         """
 
@@ -3268,6 +3269,7 @@ class Remote(object):
 
         # Construct the command string
         copy_command = "scp "
+        if connect_timeout is not None: copy_command += " -o ConnectTimeout=" + str(connect_timeout) + " "
         if compress: copy_command += "-C "
 
         # Add the host address
@@ -3362,7 +3364,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def upload(self, origin, destination, timeout=60, new_name=None, compress=False, show_output=False):
+    def upload(self, origin, destination, timeout=None, new_name=None, compress=False, show_output=False, connect_timeout=60):
 
         """
         This function ...
@@ -3372,6 +3374,7 @@ class Remote(object):
         :param new_name:
         :param compress:
         :param show_output:
+        :param connect_timeout:
         :return:
         """
 
@@ -3380,6 +3383,7 @@ class Remote(object):
 
         # Construct the command string
         copy_command = "scp "
+        if connect_timeout is not None: copy_command += " -o ConnectTimeout=" + str(connect_timeout) + " "
         if compress: copy_command += "-C "
 
         # If the origin is a string, we assume it represents a single file path or directory path
