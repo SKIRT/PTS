@@ -133,10 +133,11 @@ elif len(matches) == 1 and len(table_matches) == 0:
     command_name = match[1]
 
     # Set target
-    def start(): exec open(target)
+    #def start(): exec open(target)
 
-    # Start
-    start_target(command_name, start)
+    # Start # DOESN'T WORK WHEN THE SCRIPT FILE DEFINES A FUNCTION
+    #start_target(command_name, start)
+    exec open(target)
 
 # If there is an unique match in a table
 elif len(table_matches) == 1 and len(matches) == 0:
