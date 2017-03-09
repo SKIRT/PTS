@@ -65,11 +65,16 @@ def upgradeskifile(skifile, targetfile=None):
 # -----------------------------------------------------------------
 
 ## This private function returns a sequence of 2-tuples, each defining the XPath condition and XSLT templates
-# for a single modification to the ski file format. The svn revision number listed for each item identifies
+# for a single modification to the ski file format. The svn/git revision number listed for each item identifies
 # the change in the SKIRT code requiring that ski file modification.
 def _get_upgrade_definitions():
-    # start the list
-    return (
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # ***** SKIRT 7 upgrades *****
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    # start the list of SKIRT 7 definitions
+    definitions = [
 
     # svn 302: in binary tree dust grids, replace the barycentric attribute by the directionMethod attribute
     # using an appropriate enumeration value depending on the original attribute value
@@ -1337,7 +1342,183 @@ def _get_upgrade_definitions():
     </xsl:template>
     '''),
 
-    # terminate the list with a placeholder to keep the syntax of all previous items the same
-    ("false()", "") )
+    # terminate the list of SKIRT 7 definitions
+    ]
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # ***** Transition to SKIRT 8 *****
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    # convert CubBackgroundGeometry 'extent' attribute (= half of the edge length) to corresponding 'edgeLength'
+    definitions.append((
+        '''//CubBackgroundGeometry/@extent''',
+        '''
+        <xsl:template match="//CubBackgroundGeometry/@extent">
+            <xsl:attribute name="edgeLength">
+                <xsl:value-of select="concat(2*substring-before(normalize-space(),' '), ' ', substring-after(normalize-space(),' '))"/>
+            </xsl:attribute>
+        </xsl:template>
+        '''))
+
+    # Because of the large number of attribute name changes, we first provide a list of those changes
+    # and then dynamically add appropriate xslt templates to the list of upgrade definitions
+    # List entries contain: concrete class name, old property name, new property name
+    scalarNameChanges = [
+        ( "BinTreeDustGrid", "maxDensDispFraction", "maxDensityDispersion" ),
+        ( "BinTreeDustGrid", "sampleCount", "numSamples" ),
+        ( "BrokenExpDiskGeometry", "axialScale", "scaleHeight" ),
+        ( "BrokenExpDiskGeometry", "radialScaleInner", "scaleLengthInner" ),
+        ( "BrokenExpDiskGeometry", "radialScaleOuter", "scaleLengthOuter" ),
+        ( "ClumpyGeometryDecorator", "clumpCount", "numClumps" ),
+        ( "ClumpyGeometryDecorator", "cutoff", "cutoffClumps" ),
+        ( "ConicalShellGeometry", "anisoRadius", "reshapeInnerRadius" ),
+        ( "ConicalShellGeometry", "cutRadius", "cutoffRadius" ),
+        ( "ConicalShellGeometry", "expon", "exponent" ),
+        ( "ConicalShellGeometry", "inAngle", "minAngle" ),
+        ( "ConicalShellGeometry", "outAngle", "maxAngle" ),
+        ( "Cylinder2DDustGrid", "maxR", "maxRadius" ),
+        ( "CylindricalClipGeometryDecorator", "radius", "clipRadius" ),
+        ( "Dim1DustLib", "entries", "numFieldStrengths" ),
+        ( "Dim2DustLib", "pointsTemperature", "numTemperatures" ),
+        ( "Dim2DustLib", "pointsWavelength", "numWavelengths" ),
+        ( "DustMixPopulation", "subPops", "numGrainSizes" ),
+        ( "EinastoGeometry", "radius", "halfMassRadius" ),
+        ( "ElectronDustMix", "circularPolarization", "addCircularPolarization" ),
+        ( "EnstatiteGrainComposition", "type", "grainType" ),
+        ( "ExpDiskGeometry", "axialScale", "scaleHeight" ),
+        ( "ExpDiskGeometry", "axialTrunc", "verticalTruncation" ),
+        ( "ExpDiskGeometry", "innerRadius", "minRadius" ),
+        ( "ExpDiskGeometry", "radialScale", "scaleLength" ),
+        ( "ExpDiskGeometry", "radialTrunc", "radialTruncation" ),
+        ( "ForsteriteGrainComposition", "type", "grainType" ),
+        ( "FrameInstrument", "pixelsX", "numPixelsX" ),
+        ( "FrameInstrument", "pixelsY", "numPixelsY" ),
+        ( "FullInstrument", "pixelsX", "numPixelsX" ),
+        ( "FullInstrument", "pixelsY", "numPixelsY" ),
+        ( "FullInstrument", "scatteringLevels", "numScatteringLevels" ),
+        ( "GammaGeometry", "scale", "scaleLength" ),
+        ( "InstrumentFrame", "pixelsX", "numPixelsX" ),
+        ( "InstrumentFrame", "pixelsY", "numPixelsY" ),
+        ( "LogNormalGrainSizeDistribution", "factor", "proportionalityFactor" ),
+        ( "LogWavelengthGrid", "points", "numWavelengths" ),
+        ( "MRNDustMix", "graphitePops", "numGraphiteSizes" ),
+        ( "MRNDustMix", "silicatePops", "numSilicateSizes" ),
+        ( "ModifiedLogNormalGrainSizeDistribution", "factor", "proportionalityFactor" ),
+        ( "ModifiedLogNormalGrainSizeDistribution", "y0", "firstMixingParameter" ),
+        ( "ModifiedLogNormalGrainSizeDistribution", "y1", "secondMixingParameter" ),
+        ( "ModifiedPowerLawGrainSizeDistribution", "ac", "scaleExponentialDecay" ),
+        ( "ModifiedPowerLawGrainSizeDistribution", "alpha", "powerLawIndex" ),
+        ( "ModifiedPowerLawGrainSizeDistribution", "at", "turnOffPoint" ),
+        ( "ModifiedPowerLawGrainSizeDistribution", "au", "scaleCurvature" ),
+        ( "ModifiedPowerLawGrainSizeDistribution", "eta", "exponentCurvature" ),
+        ( "ModifiedPowerLawGrainSizeDistribution", "factor", "proportionalityFactor" ),
+        ( "ModifiedPowerLawGrainSizeDistribution", "gamma", "exponentExponentialDecay" ),
+        ( "ModifiedPowerLawGrainSizeDistribution", "zeta", "strengthCurvature" ),
+        ( "NestedLogWavelengthGrid", "maxWavelength", "maxWavelengthBaseGrid" ),
+        ( "NestedLogWavelengthGrid", "minWavelength", "minWavelengthBaseGrid" ),
+        ( "NestedLogWavelengthGrid", "points", "numWavelengthsBaseGrid" ),
+        ( "NestedLogWavelengthGrid", "pointsSubGrid", "numWavelengthsSubGrid" ),
+        ( "OctTreeDustGrid", "barycentric", "useBarycentric" ),
+        ( "OctTreeDustGrid", "maxDensDispFraction", "maxDensityDispersion" ),
+        ( "OctTreeDustGrid", "sampleCount", "numSamples" ),
+        ( "OligoDustSystem", "sampleCount", "numSamples" ),
+        ( "OligoMonteCarloSimulation", "packages", "numPackages" ),
+        ( "PanDustSystem", "cycles", "numCycles" ),
+        ( "PanDustSystem", "sampleCount", "numSamples" ),
+        ( "PanDustSystem", "selfAbsorption", "includeSelfAbsorption" ),
+        ( "PanMonteCarloSimulation", "packages", "numPackages" ),
+        ( "ParticleTreeDustGrid", "extraLevels", "numExtraLevels" ),
+        ( "PegaseSED", "type", "spectralType" ),
+        ( "PerspectiveInstrument", "pixelsX", "numPixelsX" ),
+        ( "PerspectiveInstrument", "pixelsY", "numPixelsY" ),
+        ( "PlummerGeometry", "scale", "scaleLength" ),
+        ( "PowerLawGrainSizeDistribution", "factor", "proportionalityFactor" ),
+        ( "PseudoSersicGeometry", "radius", "effectiveRadius" ),
+        ( "ReadFitsGeometry", "axialScale", "scaleHeight" ),
+        ( "ReadFitsGeometry", "xcenter", "centerX" ),
+        ( "ReadFitsGeometry", "xelements", "numPixelsX" ),
+        ( "ReadFitsGeometry", "ycenter", "centerY" ),
+        ( "ReadFitsGeometry", "yelements", "numPixelsY" ),
+        ( "RingGeometry", "radius", "ringRadius" ),
+        ( "RotateGeometryDecorator", "euleralpha", "eulerAlpha" ),
+        ( "RotateGeometryDecorator", "eulerbeta", "eulerBeta" ),
+        ( "RotateGeometryDecorator", "eulergamma", "eulerGamma" ),
+        ( "SPHDustDistribution", "maximumTemperature", "maxTemperature" ),
+        ( "SPHGeometry", "maximumTemperature", "maxTemperature" ),
+        ( "SPHStellarComp", "velocity", "importVelocity" ),
+        ( "SersicGeometry", "radius", "effectiveRadius" ),
+        ( "ShellGeometry", "expon", "exponent" ),
+        ( "SimpleInstrument", "pixelsX", "numPixelsX" ),
+        ( "SimpleInstrument", "pixelsY", "numPixelsY" ),
+        ( "SingleGrainSizeDistribution", "factor", "proportionalityFactor" ),
+        ( "SpheBackgroundGeometry", "radius", "backgroundRadius" ),
+        ( "Sphere1DDustGrid", "maxR", "maxRadius" ),
+        ( "Sphere2DDustGrid", "maxR", "maxRadius" ),
+        ( "SphericalAdaptiveMeshDustDistribution", "innerRadius", "minRadius" ),
+        ( "SphericalAdaptiveMeshDustDistribution", "outerRadius", "maxRadius" ),
+        ( "SphericalClipGeometryDecorator", "radius", "clipRadius" ),
+        ( "SpiralStructureGeometryDecorator", "arms", "numArms" ),
+        ( "SpiralStructureGeometryDecorator", "perturbWeight", "perturbationWeight" ),
+        ( "SpiralStructureGeometryDecorator", "phase", "phaseZeroPoint" ),
+        ( "SpiralStructureGeometryDecorator", "pitch", "pitchAngle" ),
+        ( "SpiralStructureGeometryDecorator", "radius", "radiusZeroPoint" ),
+        ( "StellarSurfaceGeometry", "radius", "stellarRadius" ),
+        ( "TTauriDiskGeometry", "axialScale", "scaleHeight" ),
+        ( "TTauriDiskGeometry", "radialScale", "scaleLength" ),
+        ( "ThemisDustMix", "enstatitePops", "numEnstatiteSizes" ),
+        ( "ThemisDustMix", "forsteritePops", "numForsteriteSizes" ),
+        ( "ThemisDustMix", "hydrocarbonPops", "numHydrocarbonSizes" ),
+        ( "TorusGeometry", "anisoRadius", "reshapeInnerRadius" ),
+        ( "TorusGeometry", "cutRadius", "cutoffRadius" ),
+        ( "TorusGeometry", "expon", "exponent" ),
+        ( "TorusGeometry", "openAngle", "openingAngle" ),
+        ( "TriaxialGeometryDecorator", "yFlattening", "flatteningY" ),
+        ( "TriaxialGeometryDecorator", "zFlattening", "flatteningZ" ),
+        ( "TrustDustMix", "PAHPops", "numPAHSizes" ),
+        ( "TrustDustMix", "graphitePops", "numGraphiteSizes" ),
+        ( "TrustDustMix", "silicatePops", "numSilicateSizes" ),
+        ( "WeingartnerDraineDustMix", "PAHPops", "numPAHSizes" ),
+        ( "WeingartnerDraineDustMix", "graphitePops", "numGraphiteSizes" ),
+        ( "WeingartnerDraineDustMix", "silicatePops", "numSilicateSizes" ),
+        ( "ZubkoDustMix", "PAHPops", "numPAHSizes" ),
+        ( "ZubkoDustMix", "graphitePops", "numGraphiteSizes" ),
+        ( "ZubkoDustMix", "silicatePops", "numSilicateSizes" ),
+        ( "ZubkoGraphiteGrainSizeDistribution", "factor", "proportionalityFactor" ),
+        ( "ZubkoPAHGrainSizeDistribution", "factor", "proportionalityFactor" ),
+        ( "ZubkoSilicateGrainSizeDistribution", "factor", "proportionalityFactor" ),
+    ]
+
+    compoundNameChanges = [
+        ( "Cylinder2DDustGrid", "meshR", "meshRadial" ),
+        ( "Sphere1DDustGrid", "meshR", "meshRadial" ),
+        ( "Sphere2DDustGrid", "meshR", "meshRadial" ),
+        ( "Sphere2DDustGrid", "meshTheta", "meshPolar" ),
+    ]
+
+    # add the xslt templates for scalar properties
+    for elementName, oldName, newName in scalarNameChanges:
+        definitions.append(('''//{0}/@{1}'''.format(elementName,oldName),
+                            '''
+                            <xsl:template match="//{0}/@{1}">
+                                <xsl:attribute name="{2}">
+                                    <xsl:value-of select="."/>
+                                </xsl:attribute>
+                            </xsl:template>
+                            '''.format(elementName,oldName,newName)))
+
+    # add the xslt templates for compound properties
+    for elementName, oldName, newName in compoundNameChanges:
+        definitions.append(('''//{0}/{1}'''.format(elementName,oldName),
+                            '''
+                            <xsl:template match="//{0}/{1}">
+                                <xsl:element name="{2}">
+                                    <xsl:apply-templates select="@*|node()"/>
+                                </xsl:element>
+                            </xsl:template>
+                            '''.format(elementName,oldName,newName)))
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    return definitions
 
 # -----------------------------------------------------------------
