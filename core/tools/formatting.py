@@ -12,6 +12,11 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import the relevant PTS classes and modules
+from .stringify import stringify_list_fancy
+from . import filesystem as fs
+from .logging import log
+
 # -----------------------------------------------------------------
 
 # SOURCE: http://misc.flogisoft.com/bash/tip_colors_and_formatting
@@ -169,5 +174,56 @@ def print_centered_around_border(text, ch, length=50, prefix=""):
     without_border = center_text_around(text, " ", length=length-2)
     result = center_text_around(without_border, ch, length=length)
     print(prefix + result)
+
+# -----------------------------------------------------------------
+
+def print_files_in_path(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    if not log.is_debug(): return
+    in_path = fs.files_in_path(path, returns="name")
+    log.debug(str(len(in_path)) + " files in '" + path + "':")
+    print("")
+    print(stringify_list_fancy(in_path, lines_prefix="  ")[1])
+    print("")
+
+# -----------------------------------------------------------------
+
+def print_files_in_list(lst, name):
+
+    """
+    This function ...
+    :param lst:
+    :param name:
+    :return:
+    """
+
+    if not log.is_debug(): return
+    log.debug(str(len(lst)) + " files in '" + name + "':")
+    print("")
+    print(stringify_list_fancy(lst, lines_prefix="  ")[1])
+    print("")
+
+# -----------------------------------------------------------------
+
+def print_directories_in_path(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    if not log.is_debug(): return
+    in_path = fs.directories_in_path(path, returns="name")
+    log.debug(str(len(in_path)) + " directories in '" + path + "':")
+    print("")
+    print(stringify_list_fancy(in_path, lines_prefix="  ")[1])
+    print("")
 
 # -----------------------------------------------------------------

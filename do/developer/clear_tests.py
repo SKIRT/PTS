@@ -14,17 +14,10 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import introspection
-from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-# Determine path
-path = fs.join(introspection.pts_temp_dir, "tests")
-
-# Remove
-fs.remove_directory(path)
-
-# Create clean
-fs.create_directory(path)
+# Clear
+introspection.clear_tests()
 
 # -----------------------------------------------------------------

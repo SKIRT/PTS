@@ -83,6 +83,9 @@ pts_ext_dir = fs.create_directory_in(pts_root_dir, "ext")
 # The path to the PTS temp directory (PTS/temp)
 pts_temp_dir = fs.create_directory_in(pts_root_dir, "temp")
 
+# The path to the PTS test directory (PTS/tests)
+pts_tests_dir = fs.create_directory_in(pts_root_dir, "tests")
+
 # The path to the PTS user/hosts directory
 pts_user_hosts_dir = fs.create_directory_in(pts_user_dir, "hosts")
 
@@ -150,6 +153,28 @@ def pts_config_dir(subproject): return fs.join(pts_package_dir, subproject, "con
 
 # The path to the 'dat' directory for a given PTS subproject
 def pts_dat_dir(subproject): return fs.join(pts_package_dir, subproject, "dat")
+
+# -----------------------------------------------------------------
+
+def clear_temp():
+
+    """
+    This function ...
+    :return:
+    """
+
+    fs.clear_directory(pts_temp_dir)
+
+# -----------------------------------------------------------------
+
+def clear_tests():
+
+    """
+    This function ...
+    :return:
+    """
+
+    fs.clear_directory(pts_tests_dir)
 
 # -----------------------------------------------------------------
 

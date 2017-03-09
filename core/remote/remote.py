@@ -5052,6 +5052,20 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def pts_tests_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        path = fs.join(self.pts_root_path, "test")
+        if not self.is_directory(path): self.create_directory(path)
+        return path
+
+    # -----------------------------------------------------------------
+
     def clear_pts_temp(self):
 
         """
@@ -5064,6 +5078,21 @@ class Remote(object):
 
         # Clear the temporary directory
         self.clear_directory(self.pts_temp_path)
+
+    # -----------------------------------------------------------------
+
+    def clear_pts_tests(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        self.info("Clearing test data ...")
+
+        # Clear the tests directory
+        self.clear_directory(self.pts_tests_path)
 
     # -----------------------------------------------------------------
 

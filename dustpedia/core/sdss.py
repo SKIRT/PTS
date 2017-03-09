@@ -36,6 +36,7 @@ from ...core.tools import formatting as fmt
 from ...magic.core.frame import Frame, sum_frames, sum_frames_quadratically
 from ...core.tools.parallelization import ParallelTarget
 from ...core.basics.configuration import print_mapping
+from ...core.tools.formatting import print_files_in_list, print_files_in_path, print_directories_in_path
 
 # -----------------------------------------------------------------
 
@@ -232,6 +233,9 @@ class SDSSMosaicMaker(Configurable):
             self.rebinned_paths[band] = rebinned_path
             self.mosaics_paths[band] = mosaics_path
 
+            # Debugging
+            print_directories_in_path(path)
+
     # -----------------------------------------------------------------
 
     def get_range(self):
@@ -251,6 +255,10 @@ class SDSSMosaicMaker(Configurable):
         self.cutout_center = SkyCoordinate(ra, dec, unit="deg", frame="fk5")
         self.cutout_width = width
 
+        # Debugging
+        log.debug("Cutout center: " + str(self.cutout_center))
+        log.debug("Cutout width: " + str(self.cutout_width))
+
     # -----------------------------------------------------------------
 
     def get_target_header(self):
@@ -268,6 +276,13 @@ class SDSSMosaicMaker(Configurable):
 
         # To coordinate system
         self.rebin_wcs = CoordinateSystem(header)
+
+        # Debugging
+        log.debug("Rebin WCS:")
+        if log.is_debug():
+            print("")
+            print(self.rebin_wcs)
+            print("")
 
     # -----------------------------------------------------------------
 
@@ -418,6 +433,9 @@ class SDSSMosaicMaker(Configurable):
             # Download for different bands in parallel
             for band in self.config.bands: target(self.urls[band], self.fields_paths[band])
 
+        # Debugging
+        for band in self.config.bands: print_files_in_path(self.fields_paths[band])
+
     # -----------------------------------------------------------------
 
     def get_sdss_primary_field_urls_for_galaxy(self, band):
@@ -467,6 +485,9 @@ class SDSSMosaicMaker(Configurable):
             # Loop over the bands
             for band in self.config.bands: target(self.ngc_name, band, self.fields_paths[band], self.cutout_center, self.cutout_width)
 
+        # Debugging
+        for band in self.config.bands: print_files_in_path(self.fields_paths[band])
+
     # -----------------------------------------------------------------
 
     def download_photofield(self):
@@ -484,6 +505,9 @@ class SDSSMosaicMaker(Configurable):
 
             # Loop over the bands
             for band in self.config.bands: target(self.photofield_urls[band], self.photofield_paths[band])
+
+        # Debugging
+        for band in self.config.bands: print_files_in_path(self.photofield_paths[band])
 
     # -----------------------------------------------------------------
 
@@ -509,6 +533,9 @@ class SDSSMosaicMaker(Configurable):
                 # Loop over the downloaded "frame" files
                 # extension must be specified because there is also the meta.dat and overlap.dat files!!
                 for path in fs.files_in_path(fields_path, extension="fits"): convert_frame(path, counts_path)
+
+            # Debugging
+            print_files_in_path(counts_path)
 
     # -----------------------------------------------------------------
 
@@ -540,6 +567,9 @@ class SDSSMosaicMaker(Configurable):
                 # Loop over the files in the counts path
                 for path, name in fs.files_in_path(counts_path, extension="fits", returns=["path", "name"]): convert_frame(path, name, fields_path, photofields_path, poisson_path)
 
+            # Debugging
+            print_files_in_path(poisson_path)
+
     # -----------------------------------------------------------------
 
     def rebin(self):
@@ -569,6 +599,9 @@ class SDSSMosaicMaker(Configurable):
                 # Loop over the files in the raw directory
                 for path, name in fs.files_in_path(fields_path, extension="fits", returns=["path", "name"]): rebin(path, name, poisson_path, self.rebin_wcs, rebinned_path)
 
+            # Debugging
+            print_files_in_path(rebinned_path)
+
     # -----------------------------------------------------------------
 
     def mosaic(self):
@@ -593,6 +626,9 @@ class SDSSMosaicMaker(Configurable):
 
                 # Call the target function
                 target(band, rebinned_path, self.rebin_wcs, mosaics_path)
+
+        # Debugging
+        for band in self.config.bands: print_files_in_path(self.mosaics_paths[band])
 
     # -----------------------------------------------------------------
 
@@ -625,6 +661,9 @@ class SDSSMosaicMaker(Configurable):
 
         # Load the mosaics
         for band in self.config.bands:
+
+            # Debugging
+            print_files_in_path(self.mosaics_paths[band])
 
             results[band].request()
             output = results[band].output

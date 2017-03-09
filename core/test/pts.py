@@ -287,7 +287,7 @@ class PTSTestSuite(Configurable):
         log.info("Prompting for test names ...")
 
         # Create definition
-        definition = ConfigurationDefinition()
+        definition = ConfigurationDefinition(write_config=False)
 
         # Loop over the specified subprojects
         multiple_subprojects = len(self.config.subprojects) > 1
@@ -366,8 +366,7 @@ class PTSTestSuite(Configurable):
                 test_path = fs.join(tests_path, name)
 
                 # Determine an output path for the test
-                temp_tests_path = fs.create_directory_in(introspection.pts_temp_dir, "tests")
-                temp_path = fs.create_directory_in(temp_tests_path, time.unique_name(name))
+                temp_path = fs.create_directory_in(introspection.pts_tests_dir, time.unique_name(name))
 
                 # Debugging
                 log.debug("Creating temporary directory '" + temp_path + "' for the test '" + name + "' ...")

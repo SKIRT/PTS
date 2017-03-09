@@ -39,6 +39,8 @@ from ...magic.misc import chrisfuncs
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...magic.core.frame import Frame, sum_frames, sum_frames_quadratically
 from ...core.basics.configuration import print_mapping
+from ...core.tools import stringify
+from ...core.tools.formatting import print_files_in_list, print_files_in_path, print_directories_in_path
 
 # -----------------------------------------------------------------
 
@@ -271,6 +273,9 @@ class GALEXMosaicMaker(Configurable):
             self.background_paths[band] = background_path
             self.counts_paths[band] = counts_path
 
+            # Debugging
+            print_directories_in_path(path)
+
     # -----------------------------------------------------------------
 
     def get_range(self):
@@ -290,6 +295,10 @@ class GALEXMosaicMaker(Configurable):
         self.cutout_center = SkyCoordinate(ra, dec, unit="deg", frame="fk5")
         self.cutout_width = width
 
+        # Debugging
+        log.debug("Cutout center: " + stringify.stringify(self.cutout_center)[1])
+        log.debug("Cutout width: " + stringify.stringify(self.cutout_width)[1])
+
     # -----------------------------------------------------------------
 
     def get_target_header(self):
@@ -307,6 +316,13 @@ class GALEXMosaicMaker(Configurable):
 
         # Create WCS
         self.rebin_wcs = CoordinateSystem(self.rebin_header)
+
+        # Debugging
+        log.debug("Rebin WCS:")
+        if log.is_debug():
+            print("")
+            print(self.rebin_wcs)
+            print("")
 
     # -----------------------------------------------------------------
 
@@ -346,6 +362,9 @@ class GALEXMosaicMaker(Configurable):
 
         # Loop over the bands
         for band in self.config.bands:
+
+            # Inform the user
+            log.info("Getting the URLs for the '" + band + "' band ...")
 
             # Set observation urls
             self.observation_urls[band] = urls[band]
@@ -458,6 +477,12 @@ class GALEXMosaicMaker(Configurable):
                 target(self.background_urls[band], self.download_background_paths[band], info="background maps")
                 target(self.counts_urls[band], self.download_counts_paths[band], info="count maps")
 
+            # Debugging
+            print_files_in_path(self.download_observations_paths[band])
+            print_files_in_path(self.download_response_paths[band])
+            print_files_in_path(self.download_background_paths[band])
+            print_files_in_path(self.download_counts_paths[band])
+
     # -----------------------------------------------------------------
 
     def filter(self):
@@ -494,6 +519,9 @@ class GALEXMosaicMaker(Configurable):
             # Loop over the bands
             for band in self.config.bands: target(self.ngc_name, band, self.download_observations_paths[band], self.cutout_center, self.cutout_width, mode='point')
 
+        # Debugging
+        for band in self.config.bands: print_files_in_path(self.download_observations_paths[band])
+
     # -----------------------------------------------------------------
 
     def filter_coverage(self):
@@ -513,6 +541,9 @@ class GALEXMosaicMaker(Configurable):
             # galaxy_name, tiles_path, ra, dec, width_deg, temp_raw_path, band_dict
             for band in self.config.bands: target(self.ngc_name, self.download_observations_paths[band], self.cutout_center, self.cutout_width, band)
 
+        # Debugging
+        for band in self.config.bands: print_files_in_path(self.download_observations_paths[band])
+
     # -----------------------------------------------------------------
 
     def clean(self):
@@ -531,6 +562,7 @@ class GALEXMosaicMaker(Configurable):
             # Debugging
             log.debug("Cleaning GALEX " + band + " tiles ...")
 
+            # Determine paths for this band
             response_path = self.download_response_paths[band]
             convolve_path = self.convolve_paths[band]
             background_path = self.download_background_paths[band]
@@ -542,6 +574,10 @@ class GALEXMosaicMaker(Configurable):
                 # Loop over the raw files
                 # raw_file_path, response_path, convolve_path, background_path, reproject_path
                 for path in fs.files_in_path(self.download_observations_paths[band]): target(path, response_path, convolve_path, background_path, reproject_path, band)
+
+            # Debugging
+            print_files_in_path(convolve_path)
+            print_files_in_path(reproject_path)
 
     # -----------------------------------------------------------------
 
@@ -617,6 +653,9 @@ class GALEXMosaicMaker(Configurable):
                     # Call the target function
                     target(filename, offset, reproject_path)
 
+            # Debugging
+            print_files_in_path(reproject_path)
+
     # -----------------------------------------------------------------
 
     def get_exposure_times(self):
@@ -684,6 +723,9 @@ class GALEXMosaicMaker(Configurable):
                 elif 'hdu0_' in listfile:
                     os.rename(fs.join(swarp_path, listfile), fs.join(swarp_path, listfile.replace('hdu0_', '')))
 
+            # Debugging
+            print_files_in_path(swarp_path)
+
     # -----------------------------------------------------------------
 
     def mosaic(self):
@@ -730,6 +772,9 @@ class GALEXMosaicMaker(Configurable):
             output = results[band].output
             swarp_result_path = output
 
+            # Debugging
+            print_files_in_path(self.swarp_paths[band])
+
             # Load the resulting frame
             out_image = Frame.from_file(swarp_result_path)
             out_image.unit = "count/s"
@@ -761,6 +806,9 @@ class GALEXMosaicMaker(Configurable):
 
             # Get list of images
             image_names = self.get_images_for_mosaic(band)
+
+            # Debugging
+            print_files_in_list(image_names, "image_names (for mosaic pts)")
 
             # Make noise map
             self.make_noise(band, image_names)
@@ -805,6 +853,7 @@ class GALEXMosaicMaker(Configurable):
             # Add the image name to the list
             image_names_for_mosaic.append(image_name)
 
+        # Return the list of image names
         return image_names_for_mosaic
 
     # -----------------------------------------------------------------
@@ -841,6 +890,9 @@ class GALEXMosaicMaker(Configurable):
                 # band, image_name, counts_path_band, temp_noise_path, exposure_time
                 target(band, image_name, counts_path, noise_path, exposure_time)
 
+        # Debugging
+        print_files_in_path(noise_path)
+
     # -----------------------------------------------------------------
 
     def convert_to_count_s_sr(self, band, image_names):
@@ -869,6 +921,9 @@ class GALEXMosaicMaker(Configurable):
                 # Convert to counts/s/sr
                 # band, image_name, temp_reproject_path, temp_noise_path, temp_converted_path
                 target(band, image_name, reproject_path, noise_path, converted_path)
+
+        # Debugging
+        print_files_in_path(converted_path)
 
     # -----------------------------------------------------------------
 
@@ -910,6 +965,9 @@ class GALEXMosaicMaker(Configurable):
                 # Rebin the weight maps
                 target(band, image_name, reproject_path, rebinned_path, self.rebin_header_path)
 
+        # Debugging
+        print_files_in_path(rebinned_path)
+
     # -----------------------------------------------------------------
 
     def combine(self, image_names_bands):
@@ -937,7 +995,6 @@ class GALEXMosaicMaker(Configurable):
                 # image_names_for_mosaic, temp_rebinned_path, temp_mosaic_path, wcs
                 # RETURNS: mosaic_frame_path, mosaic_errors_path
                 result = target(image_names_bands[band], rebinned_path, mosaic_path, self.rebin_header_path)
-
                 results[band] = result
 
         # Inform the user
