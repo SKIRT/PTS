@@ -24,6 +24,7 @@ from ..tools import introspection
 from .installation import find_qmake, build_skirt_on_remote, build_skirt_local, get_pts_dependencies_remote
 from .installation import has_valid_conda_environment_local, has_valid_conda_environment_remote, install_conda_remote
 from .installation import create_conda_environment_local, create_conda_environment_remote
+from .installation import setup_conda_environment_local, setup_conda_environment_remote
 from ..tools import git
 from ..tools import terminal
 from ..tools import filesystem as fs
@@ -1104,6 +1105,18 @@ class PTSUpdater(Updater):
             if env_name is None: raise Exception("Cannot determine the conda environment used for pts")
             self.conda_environment = env_name
 
+            # Determine pip alias
+            self.pip_name = self.remote.conda_pip_name_for_pts
+
+            # Create pip alias if necessary
+            if self.pip_name is None:
+
+                # Add an alias for pip
+                environment_bin_path = fs.join(self.conda_installation_path, "envs", self.conda_environment, "bin")
+                pip_path = fs.join(environment_bin_path, "pip")
+                comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
+                self.remote.define_alias("pip_pts", pip_path, comment=comment, in_shell=True)
+
         # Conda not found
         else:
 
@@ -1149,7 +1162,8 @@ class PTSUpdater(Updater):
                                         self.remote.pts_root_path, self.python_version, self.conda_main_executable_path)
 
         # Setup the environment
-        setup_conda_environment_remote()
+        # remote, environment_name, pip_name, pts_root_path, python_path, pip_path
+        setup_conda_environment_remote(self.remote, self.conda_environment, self.pip_name, self.remote.pts_root_path, self.conda_python_path, self.conda_pip_path)
 
     # -----------------------------------------------------------------
 

@@ -3659,6 +3659,31 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def conda_pip_name_for_pts(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        aliases = self.aliases
+
+        pip_path = None
+        name = None
+        for alias in aliases:
+
+            target = aliases[alias]
+
+            if not target.endswith("pip"): continue
+
+            pip_path = None
+            name = alias
+
+        return name
+
+    # -----------------------------------------------------------------
+
     def conda_active_environment(self, conda_path="conda"):
 
         """

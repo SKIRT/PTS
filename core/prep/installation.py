@@ -1942,7 +1942,8 @@ class PTSInstaller(Installer):
         assert self.remote.is_file(self.conda_easy_install_path)
 
         # Setup
-        setup_conda_environment_remote()
+        # remote, environment_name, pip_name, pts_root_path, python_path, pip_path
+        setup_conda_environment_remote(self.remote, self.config.python_name, self.config.pip_name, self.pts_root_path, self.conda_python_path, self.conda_pip_path)
 
     # -----------------------------------------------------------------
 
@@ -2917,6 +2918,7 @@ def setup_conda_environment_remote(remote, environment_name, pip_name, pts_root_
 
     """
     This function ...
+    :param remote:
     :param environment_name:
     :param pip_name:
     :param pts_root_path:
@@ -2935,12 +2937,12 @@ def setup_conda_environment_remote(remote, environment_name, pip_name, pts_root_
     remote.define_alias(environment_name, python_path, comment=comment, in_shell=True)
 
     # Add an alias for pip
-    remote.define_alias(self.config.pip_name, self.conda_pip_path, comment=comment, in_shell=True)
+    remote.define_alias(pip_name, pip_path, comment=comment, in_shell=True)
 
     # Add PTS to shell configuration file
-    remote.add_to_python_path_variable(self.pts_root_path, comment=comment, in_shell=True)
-    remote.define_alias("pts", self.conda_python_path + " -m pts.do", comment=comment, in_shell=True)
-    remote.define_alias("ipts", self.conda_python_path + " -im pts.do", comment=comment, in_shell=True)
+    remote.add_to_python_path_variable(pts_root_path, comment=comment, in_shell=True)
+    remote.define_alias("pts", python_path + " -m pts.do", comment=comment, in_shell=True)
+    remote.define_alias("ipts", python_path + " -im pts.do", comment=comment, in_shell=True)
 
 # -----------------------------------------------------------------
 
