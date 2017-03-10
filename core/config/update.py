@@ -17,7 +17,7 @@ definition = ConfigurationDefinition()
 definition.add_positional_optional("host_id", "string", "update on a remote system")
 
 # Add flags
-definition.add_flag("dependencies", "also update the dependencies", True)
+definition.add_flag("dependencies", "also update the dependencies", False)
 
 # Add flag
 #definition.add_flag("all_remotes", "update on all remote hosts")

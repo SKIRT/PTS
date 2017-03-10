@@ -18,6 +18,7 @@ definition = ConfigurationDefinition()
 definition.add_flag("check_hosts", "check the availability of the remote hosts", True)
 definition.add_flag("deploy", "deploy SKIRT and PTS where necessary", False)
 definition.add_flag("check_versions", "check versions of SKIRT and PTS where necessary", True)
+definition.add_flag("update_dependencies", "update PTS dependencies", False)
 
 # Advanced settings
 definition.add_flag("local", "keep computationaly heavy computations local")

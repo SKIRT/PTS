@@ -38,7 +38,8 @@ invert_colors(image)
 
 # Determine output name
 name = fs.strip_extension(fs.name(arguments.filename))
-newname = name + "_inverted.png"
+extension = fs.get_extension(arguments.filename)
+newname = name + "_inverted." + extension
 
 # Write the inverted image
 imageio.imwrite(newname, image)

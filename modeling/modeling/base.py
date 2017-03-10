@@ -201,6 +201,9 @@ class ModelerBase(Configurable):
         # Set
         deployer.config.check = self.config.check_versions
 
+        # Set
+        deployer.config.update_dependencies = self.config.update_dependencies
+
         # Run the deployer
         deployer.run()
 

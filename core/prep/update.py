@@ -1260,7 +1260,7 @@ class PTSUpdater(Updater):
                 log.debug("Updating package '" + module_name + "' to the latest version ...")
 
                 # Set command
-                command = self.conda_executable_path + " update " + module_name + " -n " + self.conda_environment
+                command = self.conda_executable_path + " update " + module_name + " -n " + self.conda_environment + " --no-update-dependencies"
 
                 # Debugging
                 log.debug("Update command: " + command)
