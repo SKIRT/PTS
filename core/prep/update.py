@@ -1230,7 +1230,8 @@ class PTSUpdater(Updater):
         conda_versions = self.remote.installed_conda_packages(self.conda_executable_path, self.conda_environment)
 
         # Loop over the already installed packages and update them if permitted
-        for module_name in not_installed:
+        #for module_name in not_installed:
+        for module_name in already_installed:
 
             # Check if the module name may be different from the import name
             if module_name in real_names.values():
