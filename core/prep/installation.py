@@ -1670,17 +1670,34 @@ class PTSInstaller(Installer):
                     # Skip module if already installed together with another package in the meantime
                     if command[0].startswith(self.conda_executable_path):
                         if conda.is_present_package(module, self.config.python_name, self.conda_executable_path): continue
-                    terminal.execute_lines_expect_clone(*command, show_output=log.is_debug())
+                    output = terminal.execute_lines_expect_clone(*command, show_output=log.is_debug())
                 elif isinstance(command, basestring):
                     if "setup.py" in command:
                         # special: for python setup.py, we must be in the directory or it won't work
                         dir_path = fs.directory_of(command.split()[1])
                         setup_path = fs.join(dir_path, "setup.py")
                         command.replace(setup_path, "setup.py")
-                        terminal.execute(command, show_output=log.is_debug(), cwd=dir_path)
-                    else: terminal.execute_no_pexpect(command, show_output=log.is_debug())
+                        output = terminal.execute(command, show_output=log.is_debug(), cwd=dir_path)
+                    else: output = terminal.execute_no_pexpect(command, show_output=log.is_debug())
                 else: raise ValueError("Invalid installation command: " + str(command))
+
+                # Check the output
+                for line in output:
+                    if "Exception:" in line:
+                        failed = True
+                        break
+                else: failed = False
+
+                if failed:
+                    installed.remove(module)
+                    log.warning("Something went wrong installing '" + module + "'")
+                    for line in output:
+                        log.warning(line)
+                else: log.success("Installation of '" + module + "' was succesful")
+
+            # Failed
             except subprocess.CalledProcessError:
+
                 installed.remove(module)
                 log.warning("Something went wrong installing '" + module + "'")
                 traceback.print_exc()
@@ -2486,16 +2503,31 @@ def get_pts_dependencies_remote(remote, pts_package_path, conda_path="conda", pi
                 # Skip module if already installed together with another package in the meantime
                 if command[0].startswith(conda_path):
                     if remote.is_present_conda_package(module, conda_environment, conda_path): continue
-                remote.execute_lines(*command, show_output=log.is_debug())
+                output = remote.execute_lines(*command, show_output=log.is_debug())
             elif isinstance(command, basestring):
                 if "setup.py" in command:
                     # special: for python setup.py, we must be in the directory or it won't work
                     dir_path = fs.directory_of(command.split()[1])
                     setup_path = fs.join(dir_path, "setup.py")
                     command.replace(setup_path, "setup.py")
-                    remote.execute(command, show_output=log.is_debug(), cwd=dir_path)
-                else: remote.execute(command, show_output=log.is_debug())
+                    output = remote.execute(command, show_output=log.is_debug(), cwd=dir_path)
+                else: output = remote.execute(command, show_output=log.is_debug())
             else: raise ValueError("Invalid command: " + str(command))
+
+            # Check the output
+            for line in output:
+                if "Exception:" in line:
+                    failed = True
+                    break
+            else: failed = False
+
+            if failed:
+                installed.remove(module)
+                log.warning("Something went wrong installing '" + module + "'")
+                for line in output:
+                    log.warning(line)
+            else: log.success("Installation of '" + module + "' was succesful")
+
         except Exception, err:
             installed.remove(module)
             log.warning("Something went wrong installing '" + module + "'")

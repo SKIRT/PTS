@@ -332,7 +332,7 @@ class Remote(object):
 
         # Generate prefix
         prefix = self.host_id
-        if self.log_conda:
+        if self.log_conda and self.connected:
             name = self.conda_active_environment_fast(assert_activated=self.conda_activated)
             if name is not None: prefix += ", " + name
 
