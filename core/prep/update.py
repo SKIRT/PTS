@@ -699,6 +699,7 @@ class PTSUpdater(Updater):
 
         # The conda environment
         self.conda_environment = None
+        self.pip_name = None
         self.python_version = None
 
         # Path to the Montage installation directory
@@ -1111,6 +1112,7 @@ class PTSUpdater(Updater):
 
             # Set the conda environment name
             self.conda_environment = "python_pts"
+            self.pip_name = "pip_pts"
             self.python_version = "2.7"
 
     # -----------------------------------------------------------------
@@ -1145,6 +1147,9 @@ class PTSUpdater(Updater):
         self.conda_executable_path, self.conda_pip_path, self.conda_activate_path, self.conda_python_path, self.conda_easy_install_path = \
             create_conda_environment_remote(self.remote, self.conda_environment, self.conda_installation_path,
                                         self.remote.pts_root_path, self.python_version, self.conda_main_executable_path)
+
+        # Setup the environment
+        setup_conda_environment_remote()
 
     # -----------------------------------------------------------------
 

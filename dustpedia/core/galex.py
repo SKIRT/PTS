@@ -241,7 +241,7 @@ class GALEXMosaicMaker(Configurable):
             download_counts_path = fs.create_directory_in(download_path, "counts")
 
             # Create directories
-            convolve_path = fs.create_directory(path, "convolve")
+            convolve_path = fs.create_directory_in(path, "convolve")
             reproject_path = fs.create_directory_in(path, "reproject")
             swarp_path = fs.create_directory_in(path, "swarp")
 

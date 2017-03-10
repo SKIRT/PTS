@@ -262,6 +262,19 @@ def string(argument):
 
 # -----------------------------------------------------------------
 
+def string_no_spaces(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    if " " in argument: raise ValueError("The string cannot contain spaces")
+    return argument
+
+# -----------------------------------------------------------------
+
 def real_range(argument):
 
     """

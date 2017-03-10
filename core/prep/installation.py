@@ -1489,19 +1489,9 @@ class PTSInstaller(Installer):
         assert fs.is_file(self.conda_python_path)
         assert fs.is_file(self.conda_easy_install_path)
 
-        # Clear previous things
-        comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
-        terminal.remove_aliases(self.config.python_name, "pts", "ipts")
-        terminal.remove_aliases_and_variables_with_comment(comment)
-        if self.pts_root_path in terminal.paths_in_python_path_variable(): terminal.remove_from_python_path_variable(self.pts_root_path)
-
-        # Add an alias for the PTS python version
-        terminal.define_alias(self.config.python_name, self.conda_python_path, comment=comment, in_shell=True)
-
-        # Add PTS to shell configuration file
-        terminal.add_to_python_path_variable(self.pts_root_path, comment=comment, in_shell=True)
-        terminal.define_alias("pts", self.conda_python_path + " -m pts.do", comment=comment, in_shell=True)
-        terminal.define_alias("ipts", self.conda_python_path + " -im pts.do", comment=comment, in_shell=True)
+        # Setup the environment
+        # environment_name, pip_name, pts_root_path, python_path
+        setup_conda_environment_local(self.config.python_name, self.config.pip_name, self.pts_root_path, self.conda_python_path, self.conda_pip_path)
 
     # -----------------------------------------------------------------
 
@@ -1693,6 +1683,7 @@ class PTSInstaller(Installer):
                     log.warning("Something went wrong installing '" + module + "'")
                     for line in output:
                         log.warning(line)
+                    not_installed.append(module)
                 else: log.success("Installation of '" + module + "' was succesful")
 
             # Failed
@@ -1950,19 +1941,8 @@ class PTSInstaller(Installer):
         assert self.remote.is_file(self.conda_python_path)
         assert self.remote.is_file(self.conda_easy_install_path)
 
-        # Clear previous things
-        comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
-        self.remote.remove_aliases(self.config.python_name, "pts", "ipts")
-        self.remote.remove_aliases_and_variables_with_comment(comment)
-        if self.pts_root_path in self.remote.paths_in_python_path_variable: self.remote.remove_from_python_path_variable(self.pts_root_path)
-
-        # Add an alias for the PTS python version
-        self.remote.define_alias(self.config.python_name, self.conda_python_path, comment=comment, in_shell=True)
-
-        # Add PTS to shell configuration file
-        self.remote.add_to_python_path_variable(self.pts_root_path, comment=comment, in_shell=True)
-        self.remote.define_alias("pts", self.conda_python_path + " -m pts.do", comment=comment, in_shell=True)
-        self.remote.define_alias("ipts", self.conda_python_path + " -im pts.do", comment=comment, in_shell=True)
+        # Setup
+        setup_conda_environment_remote()
 
     # -----------------------------------------------------------------
 
@@ -2176,6 +2156,11 @@ def get_installation_commands(dependencies, packages, already_installed, availab
         # Check if a repository link is defined for this package
         if module_name in repositories:
 
+            # Check explicitly by trying to import the module
+            if can_import_module(module_name, remote, python_path):
+                already_installed.append(module_name)
+                continue
+
             via = repositories[module_name]
             install_module_name = module_name
             version = None
@@ -2187,6 +2172,11 @@ def get_installation_commands(dependencies, packages, already_installed, availab
 
             # Triple check
             if install_module_name in already_installed:
+                already_installed.append(module_name)
+                continue
+
+            # Check explicitly by trying to import the module
+            if can_import_module(module_name, remote, python_path):
                 already_installed.append(module_name)
                 continue
 
@@ -2526,6 +2516,7 @@ def get_pts_dependencies_remote(remote, pts_package_path, conda_path="conda", pi
                 log.warning("Something went wrong installing '" + module + "'")
                 for line in output:
                     log.warning(line)
+                not_installed.append(module)
             else: log.success("Installation of '" + module + "' was succesful")
 
         except Exception, err:
@@ -2820,21 +2811,52 @@ def create_conda_environment_local(environment_name, conda_installation_path, pt
     conda_easy_install_path = fs.join(environment_bin_path, "easy_install")
 
     # Clear previous things
+    #comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
+    #terminal.remove_aliases(environment_name, "pts", "ipts")
+    #terminal.remove_aliases_and_variables_with_comment(comment)
+    #if pts_root_path in terminal.paths_in_python_path_variable(): terminal.remove_from_python_path_variable(pts_root_path)
+
+    # Add an alias for the PTS python version
+    #terminal.define_alias(environment_name, conda_python_path, comment=comment, in_shell=True)
+
+    # Add PTS to shell configuration file
+    #terminal.add_to_python_path_variable(pts_root_path, comment=comment, in_shell=True)
+    #terminal.define_alias("pts", conda_python_path + " -m pts.do", comment=comment, in_shell=True)
+    #terminal.define_alias("ipts", conda_python_path + " -im pts.do", comment=comment, in_shell=True)
+
+    # Return the paths
+    return conda_executable_path, conda_pip_path, conda_activate_path, conda_python_path, conda_easy_install_path
+
+# -----------------------------------------------------------------
+
+def setup_conda_environment_local(environment_name, pip_name, pts_root_path, python_path, pip_path):
+
+    """
+    This function ...
+    :param environment_name:
+    :param pip_name:
+    :param pts_root_path:
+    :param python_path:
+    :param pip_path:
+    :return:
+    """
+
+    # Clear previous things
     comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
-    terminal.remove_aliases(environment_name, "pts", "ipts")
+    terminal.remove_aliases(environment_name, pip_name, "pts", "ipts")
     terminal.remove_aliases_and_variables_with_comment(comment)
     if pts_root_path in terminal.paths_in_python_path_variable(): terminal.remove_from_python_path_variable(pts_root_path)
 
     # Add an alias for the PTS python version
-    terminal.define_alias(environment_name, conda_python_path, comment=comment, in_shell=True)
+    terminal.define_alias(environment_name, python_path, comment=comment, in_shell=True)
+
+    # Add an alias for pip
+    terminal.define_alias(pip_name, pip_path, comment=comment, in_shell=True)
 
     # Add PTS to shell configuration file
     terminal.add_to_python_path_variable(pts_root_path, comment=comment, in_shell=True)
-    terminal.define_alias("pts", conda_python_path + " -m pts.do", comment=comment, in_shell=True)
-    terminal.define_alias("ipts", conda_python_path + " -im pts.do", comment=comment, in_shell=True)
-
-    # Return the paths
-    return conda_executable_path, conda_pip_path, conda_activate_path, conda_python_path, conda_easy_install_path
+    terminal.define_alias("pts", python_path + " -m pts.do", comment=comment, in_shell=True)
+    terminal.define_alias("ipts", python_path + " -im pts.do", comment=comment, in_shell=True)
 
 # -----------------------------------------------------------------
 
@@ -2873,20 +2895,74 @@ def create_conda_environment_remote(remote, environment_name, conda_installation
     conda_easy_install_path = fs.join(environment_bin_path, "easy_install")
 
     # Clear previous things
+    #comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
+    #remote.remove_aliases(environment_name, "pts", "ipts")
+    #remote.remove_aliases_and_variables_with_comment(comment)
+    #if pts_root_path in remote.paths_in_python_path_variable: remote.remove_from_python_path_variable(pts_root_path)
+
+    # Add an alias for the PTS python version
+    #remote.define_alias(environment_name, conda_python_path, comment=comment, in_shell=True)
+
+    # Add PTS to shell configuration file
+    #remote.add_to_python_path_variable(pts_root_path, comment=comment, in_shell=True)
+    #remote.define_alias("pts", conda_python_path + " -m pts.do", comment=comment, in_shell=True)
+    #remote.define_alias("ipts", conda_python_path + " -im pts.do", comment=comment, in_shell=True)
+
+    # Return the paths
+    return conda_executable_path, conda_pip_path, conda_activate_path, conda_python_path, conda_easy_install_path
+
+# -----------------------------------------------------------------
+
+def setup_conda_environment_remote(remote, environment_name, pip_name, pts_root_path, python_path, pip_path):
+
+    """
+    This function ...
+    :param environment_name:
+    :param pip_name:
+    :param pts_root_path:
+    :param python_path:
+    :param pip_path:
+    :return:
+    """
+
+    # Clear previous things
     comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
-    remote.remove_aliases(environment_name, "pts", "ipts")
+    remote.remove_aliases(environment_name, pip_name, "pts", "ipts")
     remote.remove_aliases_and_variables_with_comment(comment)
     if pts_root_path in remote.paths_in_python_path_variable: remote.remove_from_python_path_variable(pts_root_path)
 
     # Add an alias for the PTS python version
-    remote.define_alias(environment_name, conda_python_path, comment=comment, in_shell=True)
+    remote.define_alias(environment_name, python_path, comment=comment, in_shell=True)
+
+    # Add an alias for pip
+    remote.define_alias(self.config.pip_name, self.conda_pip_path, comment=comment, in_shell=True)
 
     # Add PTS to shell configuration file
-    remote.add_to_python_path_variable(pts_root_path, comment=comment, in_shell=True)
-    remote.define_alias("pts", conda_python_path + " -m pts.do", comment=comment, in_shell=True)
-    remote.define_alias("ipts", conda_python_path + " -im pts.do", comment=comment, in_shell=True)
+    remote.add_to_python_path_variable(self.pts_root_path, comment=comment, in_shell=True)
+    remote.define_alias("pts", self.conda_python_path + " -m pts.do", comment=comment, in_shell=True)
+    remote.define_alias("ipts", self.conda_python_path + " -im pts.do", comment=comment, in_shell=True)
 
-    # Return the paths
-    return conda_executable_path, conda_pip_path, conda_activate_path, conda_python_path, conda_easy_install_path
+# -----------------------------------------------------------------
+
+def can_import_module(module_name, remote=None, python_path="python"):
+
+    """
+    This function ...
+    :param module_name:
+    :param remote:
+    :param python_path:
+    :return:
+    """
+
+    if remote is not None: output = remote.execute(python_path + " -c 'import " + module_name + "'")
+    else: output = terminal.execute(python_path + " -c 'import " + module_name + "'")
+
+    # Check the output
+    if len(output) == 0: return True
+    else:
+        # Look for Import error
+        for line in output:
+            if "ImportError:" in line: return False
+        else: return True
 
 # -----------------------------------------------------------------
