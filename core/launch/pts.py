@@ -269,7 +269,7 @@ class PTSRemoteLauncher(object):
 
         # Upload the config file
         remote_conf_path = fs.join(remote_temp_path, fs.name(temp_conf_path))
-        self.remote.upload(temp_conf_path, remote_temp_path, show_output=log.is_debug())
+        self.remote.upload_retry(temp_conf_path, remote_temp_path, show_output=log.is_debug())
 
         # Remove the original config file
         fs.remove_file(temp_conf_path)
@@ -300,7 +300,7 @@ class PTSRemoteLauncher(object):
             #### UPLOAD THE INPUT :
 
             # Upload the input files
-            self.remote.upload(local_input_filepaths, remote_temp_path, show_output=log.is_debug())
+            self.remote.upload_retry(local_input_filepaths, remote_temp_path, show_output=log.is_debug())
 
             ### LOAD THE INPUT DICT REMOTELY
             python.send_line("input_dict = dict()", show_output=log.is_debug())

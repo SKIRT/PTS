@@ -167,7 +167,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def setup(self, host_id, cluster_name=None, login_timeout=20, nrows=None, ncols=200, one_attempt=False):
+    def setup(self, host_id, cluster_name=None, login_timeout=20, nrows=None, ncols=200, one_attempt=False, retry_factor=4):
 
         """
         This function ...
@@ -202,7 +202,7 @@ class Remote(object):
             # Warning
             log.warning("Connection to host '" + host_id + "' failed, trying again ...")
             self.ssh = pxssh.pxssh()
-            try: self.login(login_timeout * 4) # try now with a timeout that is four times as long
+            try: self.login(login_timeout * retry_factor) # try now with a timeout that is four times as long
             except HostDownException:
                 self.warning("Could not connect to the remote host")
                 self.ssh = pxssh.pxssh()
@@ -3250,7 +3250,34 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def download(self, origin, destination, timeout=None, new_name=None, compress=False, show_output=False, connect_timeout=60):
+    def download_retry(self, origin, destination, timeout=None, new_name=None, compress=False, show_output=False, connect_timeout=90, max_nattempts=3):
+
+        """
+        This function ...
+        :return:
+        """
+
+        success = False
+        nattempts = 0
+
+        # Try multiply times
+        while not success:
+
+            # Check the number of attempts
+            if nattempts == max_nattempts: break
+
+            # Try uploading
+            success = self.download(origin, destination, timeout, new_name, compress, show_output, connect_timeout)
+
+            # Increment the number of attempts
+            nattempts += 1
+
+        # Return if it was succesful
+        return success
+
+    # -----------------------------------------------------------------
+
+    def download(self, origin, destination, timeout=None, new_name=None, compress=False, show_output=False, connect_timeout=90):
 
         """
         This function ...
@@ -3322,8 +3349,9 @@ class Remote(object):
         # Create the pexpect child instance
         child = pexpect.spawn(copy_command, timeout=timeout)
         if self.host.password is not None:
-            child.expect(['password: '])
-            child.sendline(self.host.password)
+            index = child.expect(['password: ', pexpect.EOF])
+            if index == 0: child.sendline(self.host.password)
+            else: return False
 
         # If the output does not have to be shown on the console, create a temporary file where the output is written to
         if not show_output:
@@ -3362,9 +3390,47 @@ class Remote(object):
             # Debugging: show the output of the scp command
             self.debug("Copy stdout: " + str(" ".join(lines)))
 
+        # Success: return True
+        return True
+
     # -----------------------------------------------------------------
 
-    def upload(self, origin, destination, timeout=None, new_name=None, compress=False, show_output=False, connect_timeout=60):
+    def upload_retry(self, origin, destination, timeout=None, new_name=None, compress=False, show_output=False, connect_timeout=90, max_nattempts=3):
+
+        """
+        This function ...
+        :param origin:
+        :param destination:
+        :param timeout:
+        :param new_name:
+        :param compress:
+        :param show_output:
+        :param connect_timeout:
+        :param max_nattempts
+        :return:
+        """
+
+        success = False
+        nattempts = 0
+
+        # Try multiply times
+        while not success:
+
+            # Check the number of attempts
+            if nattempts == max_nattempts: break
+
+            # Try uploading
+            success = self.upload(origin, destination, timeout, new_name, compress, show_output, connect_timeout)
+
+            # Increment the number of attempts
+            nattempts += 1
+
+        # Return if it was succesful
+        return success
+
+    # -----------------------------------------------------------------
+
+    def upload(self, origin, destination, timeout=None, new_name=None, compress=False, show_output=False, connect_timeout=90):
 
         """
         This function ...
@@ -3426,8 +3492,9 @@ class Remote(object):
         # Create the pexpect child instance
         child = pexpect.spawn(copy_command, timeout=timeout)
         if self.host.password is not None:
-            child.expect(['password: '])
-            child.sendline(self.host.password)
+            index = child.expect(['password: ', pexpect.EOF])
+            if index == 0: child.sendline(self.host.password)
+            else: return False
 
         # If the output does not have to be shown on the console, create a temporary file where the output is written to
         if not show_output:
@@ -3468,6 +3535,9 @@ class Remote(object):
 
             # Debugging: show the output of the scp command
             self.debug("Copy stdout: " + str(" ".join(lines)))
+
+        # Success: return True
+        return True
 
     # -----------------------------------------------------------------
 
