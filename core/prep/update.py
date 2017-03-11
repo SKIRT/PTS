@@ -31,6 +31,7 @@ from ..tools import filesystem as fs
 from ..remote.modules import Modules
 from ..tools import conda
 from .installation import montage_url, imfit_macos_binary_url, imfit_linux_binary_url
+from .installation import get_installation_commands, install_module_remote
 
 # -----------------------------------------------------------------
 
@@ -709,6 +710,9 @@ class PTSUpdater(Updater):
         # Path to the Imfit installation directory
         self.imfit_path = None
 
+        # Already installed python packages
+        self.already_installed_packages = None
+
     # -----------------------------------------------------------------
 
     @property
@@ -772,6 +776,9 @@ class PTSUpdater(Updater):
 
         # 4. Update conda
         if self.config.conda: self.update_conda_local()
+
+        # Check dependencies
+        self.check_dependencies_local()
 
         # 5. Update the dependencies
         if self.config.dependencies: self.update_dependencies_local()
@@ -865,6 +872,17 @@ class PTSUpdater(Updater):
 
     # -----------------------------------------------------------------
 
+    def check_dependencies_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
     def update_dependencies_local(self):
 
         """
@@ -913,6 +931,9 @@ class PTSUpdater(Updater):
 
         # 3. Update conda
         if self.config.conda: self.update_conda_remote()
+
+        # Check the dependencies
+        self.check_dependencies_remote()
 
         # 4. Update the dependencies
         if self.config.dependencies: self.update_dependencies_remote()
@@ -1203,6 +1224,28 @@ class PTSUpdater(Updater):
 
     # -----------------------------------------------------------------
 
+    def check_dependencies_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking / installing the PTS dependencies ...")
+
+        # Install PTS dependencies
+        # conda_path="conda", pip_path="pip", python_path="python",
+        # easy_install_path="easy_install", conda_environment=None
+        installed, not_installed, already_installed = get_pts_dependencies_remote(self.remote, self.remote.pts_package_path, self.conda_executable_path,
+                                                                                  self.conda_pip_path, self.conda_python_path,
+                                                                                  self.conda_easy_install_path, self.conda_environment, conda_activate_path=self.conda_activate_path)
+
+        # Set the already installed packages
+        self.already_installed_packages = already_installed
+
+    # -----------------------------------------------------------------
+
     def update_dependencies_remote(self):
 
         """
@@ -1213,13 +1256,6 @@ class PTSUpdater(Updater):
         # Inform the user
         log.info("Updating the PTS dependencies ...")
 
-        # Install PTS dependencies
-        # conda_path="conda", pip_path="pip", python_path="python",
-        # easy_install_path="easy_install", conda_environment=None
-        installed, not_installed, already_installed = get_pts_dependencies_remote(self.remote, self.remote.pts_package_path, self.conda_executable_path,
-                                                                                  self.conda_pip_path, self.conda_python_path,
-                                                                                  self.conda_easy_install_path, self.conda_environment, conda_activate_path=self.conda_activate_path)
-
         # Get dependency version restrictions
         versions = introspection.get_constricted_versions()
 
@@ -1229,9 +1265,12 @@ class PTSUpdater(Updater):
         # Get the versions of the packages currently installed
         conda_versions = self.remote.installed_conda_packages(self.conda_executable_path, self.conda_environment)
 
+        # Get available conda packages
+        available_packages = self.remote.available_conda_packages(self.conda_executable_path)
+
         # Loop over the already installed packages and update them if permitted
         #for module_name in not_installed:
-        for module_name in already_installed:
+        for module_name in self.already_installed_packages:
 
             # Check if the module name may be different from the import name
             if module_name in real_names.values():
@@ -1251,7 +1290,57 @@ class PTSUpdater(Updater):
 
                 # Get installed version
                 installed_version = conda_versions[module_name]
-                if version != installed_version: log.error("The version of the package '" + module_name + "' is " + installed_version + " but it should be " + version)
+                if version != installed_version:
+
+                    log.error("The version of the package '" + module_name + "' is " + installed_version + " but it should be " + version)
+                    log.info("Installing the correct version instead ...")
+
+                    # Get the installation command
+                    packages = []
+                    installation_commands, installed, not_installed, std_lib, real_names = get_installation_commands([module_name],
+                                                                                                                     packages,
+                                                                                                                     [],
+                                                                                                                     available_packages,
+                                                                                                                     conda_path=self.conda_executable_path,
+                                                                                                                     pip_path=self.conda_pip_path,
+                                                                                                                     conda_environment=self.conda_environment,
+                                                                                                                     python_path=self.conda_python_path,
+                                                                                                                     easy_install_path=self.conda_easy_install_path,
+                                                                                                                     remote=self.remote, check_by_importing=False)
+
+                    if len(installation_commands) == 0: log.warning("Could not determine the installation command")
+                    elif len(installation_commands) == 1:
+
+                        # Inform the user
+                        log.info("Installing '" + module_name + "' ...")
+
+                        command = installation_commands[installation_commands.keys()[0]]
+
+                        real_module_name = real_names[module_name] if module_name in real_names else module_name
+
+                        # Debugging
+                        if isinstance(command, list): log.debug("Installation command: '" + command[0] + "'")
+                        elif isinstance(command, basestring): log.debug("Installation_command: '" + command + "'")
+                        else: raise ValueError("Invalid installation command: " + str(command))
+
+                        # Install remotely
+                        # remote, command, conda_path, module, conda_environment
+                        result = install_module_remote(self.remote, command, self.conda_executable_path, real_module_name, self.conda_environment, check_present=False)
+
+                        # Fail, stack trace back
+                        if isinstance(result, list):
+
+                            installed.remove(module_name)
+                            log.warning("Something went wrong installing '" + module_name + "'")
+                            for line in result: print(line)
+                            not_installed.append(module_name)
+
+                        # Success
+                        elif result: log.success("Installation of '" + module_name + "' was succesful")
+                        else: log.warning("Unable to handle the situation")
+
+                    # To many installation commands for one package ?
+                    else: log.warning("Don't know what to do with installation commands: " + str(installation_commands))
 
             # No version restriction: update
             else:

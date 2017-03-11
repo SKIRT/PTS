@@ -2099,7 +2099,7 @@ def find_real_name(module_name, available_packages, real_names):
 
 def get_installation_commands(dependencies, packages, already_installed, available_packages, conda_path="conda",
                               pip_path="pip", python_path="python", easy_install_path="easy_install",
-                              conda_environment=None, remote=None):
+                              conda_environment=None, remote=None, check_by_importing=True):
 
     """
     This function ...
@@ -2113,6 +2113,7 @@ def get_installation_commands(dependencies, packages, already_installed, availab
     :param easy_install_path:
     :param conda_environment:
     :param remote:
+    :param check_by_importing:
     :return:
     """
 
@@ -2159,7 +2160,7 @@ def get_installation_commands(dependencies, packages, already_installed, availab
         if module_name in repositories:
 
             # Check explicitly by trying to import the module
-            if can_import_module(module_name, remote, python_path):
+            if check_by_importing and can_import_module(module_name, remote, python_path):
                 already_installed.append(module_name)
                 continue
 
@@ -2178,7 +2179,7 @@ def get_installation_commands(dependencies, packages, already_installed, availab
                 continue
 
             # Check explicitly by trying to import the module
-            if can_import_module(module_name, remote, python_path):
+            if check_by_importing and can_import_module(module_name, remote, python_path):
                 already_installed.append(module_name)
                 continue
 
@@ -2354,12 +2355,7 @@ def get_pts_dependencies_remote(remote, pts_package_path, conda_path="conda", pi
     """
 
     # Get available conda packages
-    # output = remote.execute(conda_path + " search", show_output=log.is_debug())
-    output = remote.execute(conda_path + " search")
-    available_packages = []
-    for line in output:
-        if not line.split(" ")[0]: continue
-        available_packages.append(line.split(" ")[0])
+    available_packages = remote.available_conda_packages(conda_path)
 
     # Get already installed packages
     already_installed = []
@@ -2490,43 +2486,23 @@ def get_pts_dependencies_remote(remote, pts_package_path, conda_path="conda", pi
         elif isinstance(command, basestring): log.debug("Installation_command: '" + command + "'")
         else: raise ValueError("Invalid installation command: " + str(command))
 
-        # Launch the installation command
-        try:
-            if isinstance(command, list):
-                # Skip module if already installed together with another package in the meantime
-                if command[0].startswith(conda_path):
-                    if remote.is_present_conda_package(module, conda_environment, conda_path): continue
-                output = remote.execute_lines(*command, show_output=log.is_debug())
-            elif isinstance(command, basestring):
-                if "setup.py" in command:
-                    # special: for python setup.py, we must be in the directory or it won't work
-                    dir_path = fs.directory_of(command.split()[1])
-                    setup_path = fs.join(dir_path, "setup.py")
-                    command.replace(setup_path, "setup.py")
-                    output = remote.execute(command, show_output=log.is_debug(), cwd=dir_path)
-                else: output = remote.execute(command, show_output=log.is_debug())
-            else: raise ValueError("Invalid command: " + str(command))
+        # Install remotely
+        # remote, command, conda_path, module, conda_environment
+        result = install_module_remote(remote, command, conda_path, module, conda_environment)
 
-            # Check the output
-            for line in output:
-                if "Exception:" in line:
-                    failed = True
-                    break
-            else: failed = False
+        # Fail, stack trace back
+        if isinstance(result, list):
 
-            if failed:
-                installed.remove(module)
-                log.warning("Something went wrong installing '" + module + "'")
-                for line in output:
-                    log.warning(line)
-                not_installed.append(module)
-            else: log.success("Installation of '" + module + "' was succesful")
-
-        except Exception, err:
             installed.remove(module)
             log.warning("Something went wrong installing '" + module + "'")
-            traceback.print_exc()
+            for line in result: print(line)
             not_installed.append(module)
+
+        # Success
+        elif result: log.success("Installation of '" + module + "' was succesful")
+
+        # Already installed together with another module
+        else: log.success("Module '" + module + "' was already installed")
 
     # Show installed packages
     if len(installed) > 0:
@@ -2968,5 +2944,64 @@ def can_import_module(module_name, remote=None, python_path="python"):
         for line in output:
             if "ImportError:" in line: return False
         else: return True
+
+# -----------------------------------------------------------------
+
+def install_module_remote(remote, command, conda_path, module, conda_environment, check_present=True):
+
+    """
+    This function ...
+    :param remote:
+    :param command:
+    :param conda_path:
+    :param module:
+    :param conda_environment:
+    :param check_present:
+    :return:
+    """
+
+    # Launch the installation command
+    try:
+
+        # Multiple commands
+        if isinstance(command, list):
+
+            # Skip module if already installed together with another package in the meantime
+            if command[0].startswith(conda_path) and check_present:
+                if remote.is_present_conda_package(module, conda_environment, conda_path): return False
+            output = remote.execute_lines(*command, show_output=log.is_debug())
+
+        # Simple command
+        elif isinstance(command, basestring):
+
+            if "setup.py" in command:
+
+                # special: for python setup.py, we must be in the directory or it won't work
+                dir_path = fs.directory_of(command.split()[1])
+                setup_path = fs.join(dir_path, "setup.py")
+                command.replace(setup_path, "setup.py")
+                output = remote.execute(command, show_output=log.is_debug(), cwd=dir_path)
+
+            # Execute the command
+            else: output = remote.execute(command, show_output=log.is_debug())
+
+        else: raise ValueError("Invalid command: " + str(command))
+
+        # Check the output
+        for line in output:
+            if "Exception:" in line:
+                failed = True
+                break
+        else: failed = False
+
+        if failed: return output
+        else: return True
+
+    # An error occured
+    except Exception, err:
+
+        tb = traceback.extract_tb(sys.exc_traceback)
+        lines = traceback.format_list(tb)
+        return lines
 
 # -----------------------------------------------------------------

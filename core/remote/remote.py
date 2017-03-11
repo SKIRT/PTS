@@ -3896,6 +3896,23 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def available_conda_packages(self, conda_path="conda"):
+
+        """
+        This function ...
+        :param conda_path:
+        :return:
+        """
+
+        output = self.execute(conda_path + " search")
+        available_packages = []
+        for line in output:
+            if not line.split(" ")[0]: continue
+            available_packages.append(line.split(" ")[0])
+        return available_packages
+
+    # -----------------------------------------------------------------
+
     @property
     def pts_conformity_issues(self):
 
