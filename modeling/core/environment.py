@@ -12,6 +12,10 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import the relevant PTS classes and modules
+from ...core.tools import filesystem as fs
+from .history import ModelingHistory
+
 # -----------------------------------------------------------------
 
 class ModelingEnvironment(object):
@@ -24,10 +28,32 @@ class ModelingEnvironment(object):
 
         """
         This function ...
-        :param args:
-        :param kwargs:
+        :param modeling_path
         """
 
-        pass
+        # Set the modeling base path
+        self.path = modeling_path
+
+        # Determine the path to the modeling configuration file
+        self.config_file_path = fs.join(self.path, "modeling.cfg")
+
+        # Determine the path to the modeling history file
+        self.history_file_path = fs.join(self.path, "history.dat")
+
+        # Initialize the history file
+        if not fs.is_file(self.history_file_path):
+            history = ModelingHistory()
+            history.saveto(self.history_file_path)
+
+        # Get the full paths to the necessary subdirectories and CREATE THEM
+        self.fit_path = fs.create_directory_in(self.path, "fit")
+        self.analysis_path = fs.create_directory_in(self.path, "analysis")
+        self.reports_path = fs.create_directory_in(self.path, "reports")
+        self.visualisation_path = fs.create_directory_in(self.path, "visualisation")
+        self.plot_path = fs.create_directory_in(self.path, "plot")
+        self.log_path = fs.create_directory_in(self.path, "log")
+        self.config_path = fs.create_directory_in(self.path, "config")
+        self.show_path = fs.create_directory_in(self.path, "show")
+        self.build_path = fs.create_directory_in(self.path, "build")
 
 # -----------------------------------------------------------------

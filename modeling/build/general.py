@@ -19,7 +19,6 @@ from abc import ABCMeta, abstractmethod
 from .component import BuildComponent
 from ...core.tools.logging import log
 from ...core.prep.smile import SKIRTSmileSchema
-from ..basics.models import DeprojectionModel3D
 from ...core.tools import filesystem as fs
 from ...core.tools.serialization import write_dict
 

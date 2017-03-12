@@ -17,6 +17,7 @@ from astropy.coordinates import Angle
 from astropy.units import Unit, dimensionless_angles
 
 # Import the relevant PTS classes and modules
+from ...magic.basics.pixelscale import Pixelscale
 from ...magic.basics.vector import Position
 
 # -----------------------------------------------------------------
@@ -78,6 +79,8 @@ class GalaxyProjection(object):
         pixelscale_x  = self.field_x_physical / self.pixels_x
         pixelscale_y = self.field_y_physical / self.pixels_y
 
+        # Create and return the pixelscale
+        return Pixelscale(pixelscale_x, pixelscale_y)
 
     # -----------------------------------------------------------------
 
@@ -133,6 +136,61 @@ class GalaxyProjection(object):
 
         inclination = deprojection.inclination
         position_angle = deprojection.position_angle
+
+        # Create and return a new class instance
+        return cls(distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_instrument(cls, instrument, default_pixels_x=None, default_pixels_y=None, default_field_x=None, default_field_y=None):
+
+        """
+        This function ...
+        :param instrument:
+        :param default_pixels_x:
+        :param default_pixels_y:
+        :param default_field_x:
+        :param default_field_y:
+        :return:
+        """
+
+        # distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x, field_y
+
+        # Each instrument
+        distance = instrument.distance
+        inclination = instrument.inclination
+        azimuth = instrument.azimuth
+        position_angle = instrument.position_angle
+
+        from .instruments import SEDInstrument, FrameInstrument, SimpleInstrument, FullInstrument
+
+        # SED instrument
+        if isinstance(instrument, SEDInstrument):
+
+            pixels_x = default_pixels_x
+            pixels_y = default_pixels_y
+
+            # Put the galaxy center at the center of the instrument
+            center_x = 0.5 * pixels_x
+            center_y = 0.5 * pixels_y
+
+            # Set field
+            field_x = default_field_x
+            field_y = default_field_y
+
+        # Instrument with pixels
+        elif isinstance(instrument, FrameInstrument) or isinstance(instrument, SimpleInstrument) or isinstance(instrument, FullInstrument):
+
+            pixels_x = instrument.pixels_x
+            pixels_y = instrument.pixels_y
+            center_x = instrument.center_x
+            center_y = instrument.center_y
+            field_x = instrument.field_x
+            field_y = instrument.field_y
+
+        # Not recognized
+        else: raise ValueError("Unrecognized instrument object")
 
         # Create and return a new class instance
         return cls(distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
@@ -308,6 +366,20 @@ class FaceOnProjection(GalaxyProjection):
         # Create and return
         return cls(distance, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
 
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_projection(cls, projection):
+
+        """
+        This function ...
+        :param projection:
+        :return:
+        """
+
+        # Create and return
+        return cls(projection.distance, projection.pixels_x, projection.pixels_y, projection.center_x, projection.center_y, projection.field_x, projection.field_y)
+
 # -----------------------------------------------------------------
 
 class EdgeOnProjection(GalaxyProjection):
@@ -382,6 +454,20 @@ class EdgeOnProjection(GalaxyProjection):
 
         # Call the constructor
         return cls(distance, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_projection(cls, projection):
+
+        """
+        This function ...
+        :param projection:
+        :return:
+        """
+
+        # Create and return
+        return cls(projection.distance, projection.pixels_x, projection.pixels_y, projection.center_x, projection.center_y, projection.field_x, projection.field_y)
 
 # -----------------------------------------------------------------
 

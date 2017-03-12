@@ -1927,6 +1927,84 @@ class SkiFile:
         # Unsupported model
         else: raise ValueError("Models other than SersicModel3D, ExponentialDiskModel3D and DeprojectionModel3D are not supported yet")
 
+    ## This function adds clumpiness to a stellar component geometry
+    def add_stellar_component_clumpiness(self, component_id, fraction, count, radius, cutoff=False, kernel_type="uniform"):
+
+        from ..basics.quantity import represent_quantity
+
+        # Get the geometry
+        geometry = self.get_stellar_component_geometry(component_id)
+
+        # Remove the old geometry from the tree
+        parent = geometry.getparent()
+        parent.remove(geometry)
+
+        # Create decorator
+        class_name = "ClumpyGeometryDecorator"
+
+        # Set attributes dictionary
+        attrs = dict()
+        attrs["clumpFraction"] = repr(fraction) # min: 0, max: 1
+        attrs["clumpCount"] = str(count) # min: 1
+        attrs["clumpRadius"] = represent_quantity(radius) # min: 0 m
+        attrs["cutoff"] = "true" if cutoff else "false" # default: false
+        decorator = self.tree.getroot().makeelement(class_name, attrs)
+
+        # Add smoothing kernel
+        kernel_parent = decorator.makeelement("kernel")
+        if kernel_type == "uniform": kernel = kernel_parent.makeelement("UniformSmoothingKernel")
+        elif kernel_type == "cubic_spline": kernel = kernel_parent.makeelement("CubicSplineSmoothingKernel")
+        else: raise ValueError("Invalid kernel type")
+        kernel_parent.append(kernel)
+        decorator.append(kernel_parent)
+
+        # Add the underlying geometry
+        geometry_parent = decorator.makeelement("geometry")
+        geometry_parent.append(geometry)
+        decorator.append(geometry_parent)
+
+        # Set new stellar component geometry
+        parent.append(decorator)
+
+    ## This function adds clumpiness to a dust component geometry
+    def add_dust_component_clumpiness(self, component_id, fraction, count, radius, cutoff=False, kernel_type="uniform"):
+
+        from ..basics.quantity import represent_quantity
+
+        # Get the geometry
+        geometry = self.get_dust_component_geometry(component_id)
+
+        # Remove the old geometry from the tree
+        parent = geometry.getparent()
+        parent.remove(geometry)
+
+        # Create decorator
+        class_name = "ClumpyGeometryDecorator"
+
+        # Set attributes dictionary
+        attrs = dict()
+        attrs["clumpFraction"] = repr(fraction)  # min: 0, max: 1
+        attrs["clumpCount"] = str(count)  # min: 1
+        attrs["clumpRadius"] = represent_quantity(radius)  # min: 0 m
+        attrs["cutoff"] = "true" if cutoff else "false"  # default: false
+        decorator = self.tree.getroot().makeelement(class_name, attrs)
+
+        # Add smoothing kernel
+        kernel_parent = decorator.makeelement("kernel")
+        if kernel_type == "uniform": kernel = kernel_parent.makeelement("UniformSmoothingKernel")
+        elif kernel_type == "cubic_spline": kernel = kernel_parent.makeelement("CubicSplineSmoothingKernel")
+        else: raise ValueError("Invalid kernel type")
+        kernel_parent.append(kernel)
+        decorator.append(kernel_parent)
+
+        # Add the underlying geometry
+        geometry_parent = decorator.makeelement("geometry")
+        geometry_parent.append(geometry)
+        decorator.append(geometry_parent)
+
+        # Set new dust component geometry
+        parent.append(decorator)
+
     ## This function sets the geometry of the specified stellar component to a Sersic profile with an specific y and z flattening
     def set_stellar_component_sersic_geometry(self, component_id, index, radius, y_flattening=1, z_flattening=1):
 
@@ -2444,6 +2522,30 @@ class SkiFile:
                  #"assigner": assigner}
         parent.append(parent.makeelement("OctTreeDustGrid", attrs))
 
+    ## Range of x in length units
+    def get_dust_grid_x_range(self):
+        from ..basics.range import QuantityRange
+        grid = self.get_dust_grid()
+        min_x = self.get_quantity(grid, "minX")
+        max_x = self.get_quantity(grid, "maxX")
+        return QuantityRange(min_x, max_x)
+
+    ## Range of y in length units
+    def get_dust_grid_y_range(self):
+        from ..basics.range import QuantityRange
+        grid = self.get_dust_grid()
+        min_y = self.get_quantity(grid, "minY")
+        max_y = self.get_quantity(grid, "maxY")
+        return QuantityRange(min_y, max_y)
+
+    ## Range of z in length units
+    def get_dust_grid_z_range(self):
+        from ..basics.range import QuantityRange
+        grid = self.get_dust_grid()
+        min_z = self.get_quantity(grid, "minZ")
+        max_z = self.get_quantity(grid, "maxZ")
+        return QuantityRange(min_z, max_z)
+
     ## This function returns the instrument system
     def get_instrument_system(self):
 
@@ -2564,9 +2666,12 @@ class SkiFile:
             pixels_y = instrument.pixels_y
             center_x = instrument.center_x
             center_y = instrument.center_y
+            scattering_levels = instrument.scattering_levels
+            counts = instrument.counts
 
             # Add the full instrument to the ski file
-            self.add_full_instrument(name, distance, inclination, azimuth, position_angle, field_x, field_y, pixels_x, pixels_y, center_x, center_y)
+            self.add_full_instrument(name, distance, inclination, azimuth, position_angle, field_x, field_y, pixels_x,
+                                     pixels_y, center_x, center_y, scattering_levels, counts)
 
         # Unrecognized instrument
         else: raise ValueError("Instruments other than SimpleInstrument, SEDInstrument and FullInstrument are not yet supported")
@@ -2589,7 +2694,7 @@ class SkiFile:
 
     ## This function adds a FullInstrument to the instrument system
     def add_full_instrument(self, name, distance, inclination, azimuth, position_angle, field_x, field_y,
-                            pixels_x, pixels_y, center_x, center_y, scattering_levels=0):
+                            pixels_x, pixels_y, center_x, center_y, scattering_levels=0, counts=False):
 
         from ..basics.quantity import represent_quantity
 
@@ -2601,6 +2706,7 @@ class SkiFile:
                  "azimuth": str_from_angle(azimuth), "positionAngle": str_from_angle(position_angle), "fieldOfViewX": str(field_x),
                  "fieldOfViewY": represent_quantity(field_y), "pixelsX": str(pixels_x), "pixelsY": str(pixels_y),
                  "centerX": represent_quantity(center_x), "centerY": represent_quantity(center_y), "scatteringLevels": str(scattering_levels)}
+        if counts: attrs["counts"] = "true"
         instruments.append(instruments.makeelement("FullInstrument", attrs))
 
     ## This function adds a SimpleInstrument to the instrument system

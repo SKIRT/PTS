@@ -26,6 +26,7 @@ from ...core.tools import filesystem as fs
 from ...core.filter.broad import BroadBandFilter
 from ...core.basics.configuration import Configuration
 from ..core.history import ModelingHistory
+from ..core.environment import ModelingEnvironment
 
 # -----------------------------------------------------------------
 
@@ -54,18 +55,8 @@ class ModelingComponent(Configurable):
         # The modeling configuration file
         self.config_file_path = None
 
-        # The modeling history file
-        self.history_file_path = None
-
-        # Modeling directories
-        self.fit_path = None
-        self.analysis_path = None
-        self.reports_path = None
-        self.visualisation_path = None
-        self.plot_path = None
-        self.log_path = None
-        self.config_path = None
-        self.show_path = None
+        # The modeling environemnt
+        self.environment = None
 
         # PTS directories
         self.kernels_path = None
@@ -91,29 +82,131 @@ class ModelingComponent(Configurable):
         # Check for the presence of the configuration file
         if not fs.is_file(self.config_file_path): raise ValueError("The current working directory (" + self.config.path + ") is not a radiative transfer modeling directory (the configuration file is missing)")
 
-        # Determine the path to the modeling history file
-        self.history_file_path = fs.join(self.config.path, "history.dat")
-
-        # Initialize the history file
-        if not fs.is_file(self.history_file_path):
-            history = ModelingHistory()
-            history.saveto(self.history_file_path)
-
-        # Get the full paths to the necessary subdirectories and CREATE THEM
-        self.fit_path = fs.create_directory_in(self.config.path, "fit")
-        self.analysis_path = fs.create_directory_in(self.config.path, "analysis")
-        self.reports_path = fs.create_directory_in(self.config.path, "reports")
-        self.visualisation_path = fs.create_directory_in(self.config.path, "visualisation")
-        self.plot_path = fs.create_directory_in(self.config.path, "plot")
-        self.log_path = fs.create_directory_in(self.config.path, "log")
-        self.config_path = fs.create_directory_in(self.config.path, "config")
-        self.show_path = fs.create_directory_in(self.config.path, "show")
+        # We can now safely create the environment
+        self.environment = ModelingEnvironment(self.config.path)
 
         # Determine the path to the kernels user directory
         self.kernels_path = fs.join(introspection.pts_user_dir, "kernels")
 
-        # Set the path to the fitting configuration file
-        #self.fitting_configuration_path = fs.join(self.fit_path, "configuration.cfg")
+    # -----------------------------------------------------------------
+
+    @property
+    def history_file_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.history_file_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fit_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.fit_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def analysis_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.analysis_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def reports_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.reports_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def visualisation_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.visualisation_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def plot_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.plot_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def log_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.log_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def config_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.config_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def show_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.show_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def build_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.build_path
 
     # -----------------------------------------------------------------
 

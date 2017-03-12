@@ -67,7 +67,7 @@ class GalaxyModelingComponent(ModelingComponent):
         self.maps_path = None
         self.components_path = None
         self.deprojection_path = None
-        self.build_path = None
+        #self.build_path = None # now in the ModelingEnvironment
 
         # The path to the DustPedia observed SED
         self.observed_sed_dustpedia_path = None
@@ -169,7 +169,7 @@ class GalaxyModelingComponent(ModelingComponent):
         self.maps_path = fs.create_directory_in(self.config.path, "maps")
         self.components_path = fs.create_directory_in(self.config.path, "components")
         self.deprojection_path = fs.create_directory_in(self.config.path, "deprojection")
-        self.build_path = fs.create_directory_in(self.config.path, "build")
+        #self.build_path = fs.create_directory_in(self.config.path, "build")
 
         # Set the path to the DustPedia observed SED
         self.observed_sed_dustpedia_path = fs.join(self.data_path, "fluxes.dat")

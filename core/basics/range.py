@@ -287,6 +287,17 @@ class Range(object):
         if value < self.min: self._min = value
         elif value > self.max: self._max = value
 
+    # -----------------------------------------------------------------
+
+    def __len__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.max - self.min
+
 # -----------------------------------------------------------------
 
 class IntegerRange(Range):

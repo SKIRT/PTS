@@ -85,6 +85,11 @@ def tests_and_descriptions_for_subproject(subproject):
         # Determine path of the test.py file
         filepath = fs.join(path, "test.py")
 
+        # Check if the file is present
+        if not fs.is_file(filepath):
+            log.warning("The test definition for '" + name + "' is not complete")
+            continue
+
         # Load the test module
         test_module = imp.load_source(name, filepath)
 

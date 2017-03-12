@@ -17,10 +17,13 @@ make_young_map | -- | maps.stars.young.YoungStellarMapMaker | interactive | Make
 make_ionizing_map | -- | maps.stars.ionizing.IonizingStellarMapMaker | interactive | Make the map of the ionizing stellar population
 make_dust_map | -- | maps.dust.dust.DustMapMaker | arguments | Make the map of the dust distribution
 deproject | -- | deprojection.deprojector.Deprojector | arguments | Deproject the maps
-build_model | -- | build.model.ModelBuilder | interactive | Build the model
+build_sed | -- | build.sed.SEDModelBuilder | arguments | Build the model for SED modeling
+build_images | -- | build.images.ImagesModelBuilder | arguments | Build the model for images modeling
+build_model | -- | build.model.ModelBuilder | interactive | Build the model for galaxy modeling
 build_stars | -- | build.stars.StarsBuilder | interactive | Build stellar components of model
 build_dust | -- | build.dust.DustBuilder | interactive | Build dust components of model
 build_representation | -- | build.representation.RepresentationBuilder | interactive | Build model representation
+buildsedrepresentation | -- | build.sedrepresentation.SEDRepresentationBuilder | arguments | Build model representation for SED modeling
 generate_representations | -- | build.representations.RepresentationsGenerator | interactive | Generate model representations
 configure_fit | -- | fitting.configuration.FittingConfigurer | arguments | Configure the fitting procedure
 initialize_fit_galaxy | initialize_fit | fitting.initialization.galaxy.GalaxyFittingInitializer | arguments | Do the initialization before starting the fitting

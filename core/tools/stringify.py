@@ -214,6 +214,6 @@ def str_from_angle(angle):
     :return:
     """
 
-    return "angle", repr(angle.value) + " " + str(angle.unit).replace(" ", "")
+    return repr(angle.value) + " " + str(angle.unit).replace(" ", "")
 
 # -----------------------------------------------------------------

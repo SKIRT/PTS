@@ -22,6 +22,7 @@ from astropy.table import Table, MaskedColumn
 # Import the relevant PTS classes and modules
 from .unit import PhotometricUnit
 from .unit import parse_unit as u
+from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -129,6 +130,9 @@ class SmartTable(Table):
         """
 
         fill_values = [('--', '0')]
+
+        # Check the path
+        if not fs.is_file(path): raise IOError("The file '" + path + "' does not exist")
 
         # Open the table
         table = super(SmartTable, cls).read(path, format="ascii.ecsv", fill_values=fill_values)

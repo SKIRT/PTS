@@ -22,6 +22,8 @@ from ..component.sed import get_ski_template, get_observed_sed, get_sed_plot_pat
 from ...core.basics.range import IntegerRange, QuantityRange
 from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, DictConfigurationSetter
 from ...core.plot.sed import SEDPlotter
+from ..build.sed import SEDModelBuilder
+from ..build.sedrepresentation import SEDRepresentationBuilder
 
 # -----------------------------------------------------------------
 
@@ -69,6 +71,12 @@ class SEDModeler(ModelerBase):
         # 2. Load the data
         self.load_data()
 
+        # 3. Build the model
+        self.build_model()
+
+        # Build the model representation
+        self.build_representation()
+
         # 3. Do the fitting
         self.fit()
 
@@ -113,6 +121,51 @@ class SEDModeler(ModelerBase):
 
         # Plot SED
         if "plot_sed" not in self.history: self.plot_sed()
+
+    # -----------------------------------------------------------------
+
+    def build_model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Building the model ...")
+
+        # Create configuration
+        config = dict()
+        config["name"] = self.model_name
+
+        # Create the builder
+        builder = SEDModelBuilder()
+
+        # Run
+        builder.run()
+
+    # -----------------------------------------------------------------
+
+    def build_representation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Building the representation ...")
+
+        # Create configuration
+        config = dict()
+        config["name"] = self.representation_name
+        config["model_name"] = self.model_name
+
+        # Create the representation
+        builder = SEDRepresentationBuilder()
+
+        # Run
+        builder.run()
 
     # -----------------------------------------------------------------
 
@@ -167,6 +220,10 @@ class SEDModeler(ModelerBase):
         config["parameters"] = free_parameter_names
         config["filters"] = fitting_filter_names
 
+        # Set fitting run name and model name
+        config["name"] = self.fitting_run_name
+        config["model_name"] = self.model_name
+
         # Create the fitting configurer
         configurer = FittingConfigurer(config)
 
@@ -196,6 +253,10 @@ class SEDModeler(ModelerBase):
 
         # Inform the user
         log.info("Initializing the fitting ...")
+
+        # Create configuration
+        config = dict()
+        config["name"] = self.fitting_run_name
 
         # Create the fitting initializer
         initializer = SEDFittingInitializer()

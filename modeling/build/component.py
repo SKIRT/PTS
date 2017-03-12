@@ -328,6 +328,7 @@ def get_model_names(modeling_path):
     :return:
     """
 
+    if not fs.is_file(get_models_table_path(modeling_path)): return []
     return get_models_table(modeling_path).names
 
 # -----------------------------------------------------------------

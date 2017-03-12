@@ -24,6 +24,7 @@ from .galaxy import modeling_methods
 from ...core.remote.host import find_host_ids
 from ...core.data.sed import ObservedSED
 from ...core.simulation.skifile import LabeledSkiFile
+from ..core.environment import ModelingEnvironment
 
 # -----------------------------------------------------------------
 
@@ -89,6 +90,9 @@ class ModelingSetupTool(Configurable):
         # The ski template
         self.ski = None
 
+        # The modeling environment
+        self.environment = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -113,6 +117,9 @@ class ModelingSetupTool(Configurable):
 
         # 5. Writing
         self.write()
+
+        # Create the modeling environment
+        self.create_environment()
 
     # -----------------------------------------------------------------
 
@@ -650,5 +657,20 @@ class ModelingSetupTool(Configurable):
 
         # Loop over the images
         for name in self.images: pass
+
+    # -----------------------------------------------------------------
+
+    def create_environment(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the modeling environment ...")
+
+        # Create the environment
+        self.environment = ModelingEnvironment(self.modeling_path)
 
 # -----------------------------------------------------------------
