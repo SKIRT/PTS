@@ -1951,7 +1951,7 @@ class SkiFile:
         decorator = self.tree.getroot().makeelement(class_name, attrs)
 
         # Add smoothing kernel
-        kernel_parent = decorator.makeelement("kernel")
+        kernel_parent = decorator.makeelement("kernel", {"type": "SmoothingKernel"})
         if kernel_type == "uniform": kernel = kernel_parent.makeelement("UniformSmoothingKernel")
         elif kernel_type == "cubic_spline": kernel = kernel_parent.makeelement("CubicSplineSmoothingKernel")
         else: raise ValueError("Invalid kernel type")
@@ -1959,7 +1959,7 @@ class SkiFile:
         decorator.append(kernel_parent)
 
         # Add the underlying geometry
-        geometry_parent = decorator.makeelement("geometry")
+        geometry_parent = decorator.makeelement("geometry", {"type": "Geometry"})
         geometry_parent.append(geometry)
         decorator.append(geometry_parent)
 
@@ -1990,7 +1990,7 @@ class SkiFile:
         decorator = self.tree.getroot().makeelement(class_name, attrs)
 
         # Add smoothing kernel
-        kernel_parent = decorator.makeelement("kernel")
+        kernel_parent = decorator.makeelement("kernel", {"type": "SmoothingKernel"})
         if kernel_type == "uniform": kernel = kernel_parent.makeelement("UniformSmoothingKernel")
         elif kernel_type == "cubic_spline": kernel = kernel_parent.makeelement("CubicSplineSmoothingKernel")
         else: raise ValueError("Invalid kernel type")
@@ -1998,7 +1998,7 @@ class SkiFile:
         decorator.append(kernel_parent)
 
         # Add the underlying geometry
-        geometry_parent = decorator.makeelement("geometry")
+        geometry_parent = decorator.makeelement("geometry", {"type": "Geometry"})
         geometry_parent.append(geometry)
         decorator.append(geometry_parent)
 

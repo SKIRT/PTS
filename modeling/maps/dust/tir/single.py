@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.maps.dust.tirtofuv Contains the TIRtoFUVMapMaker class.
+## \package pts.modeling.maps.dust.tir.single Contains the SingleBandTIRMapMaker class.
 
 # -----------------------------------------------------------------
 
@@ -26,10 +26,6 @@ from ..component import MapsComponent
 from ....magic.core.frame import Frame
 from ....core.basics.unit import parse_unit as u
 
-# -----------------------------------------------------------------
-
-# The path to the table containing the parameters from Cortese et. al 2008
-cortese_table_path = fs.join(introspection.pts_dat_dir("modeling"), "cortese.dat")
 
 # The path to the table containing the Galametz calibration parameters
 galametz_table_path = fs.join(introspection.pts_dat_dir("modeling"), "galametz.dat")
@@ -41,7 +37,7 @@ solar_luminosity = 3.846e26 * u("W")
 
 # -----------------------------------------------------------------
 
-class TIRtoFUVMapMaker(MapsComponent):
+class SingleBandTIRMapMaker(MapsComponent):
 
     """
     This class...
@@ -89,7 +85,7 @@ class TIRtoFUVMapMaker(MapsComponent):
         """
 
         config = cls.get_config(config)
-        return ["GALEX FUV", "MIPS 24mu", "Pacs blue", "Pacs red"]
+        return []
 
     # -----------------------------------------------------------------
 

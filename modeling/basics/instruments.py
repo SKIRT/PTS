@@ -219,7 +219,7 @@ class FullInstrument(Instrument):
         self.add_property("center_x", "quantity", "x center")
         self.add_property("center_y", "quantity", "y center")
         self.add_property("scattering_levels", "integer", "number of scattering levels", 0) # default=0
-        self.add_property("counts", "boolean", "write photon counts")
+        self.add_property("counts", "boolean", "write photon counts", False)
 
         # Set values
         self.set_properties(kwargs)

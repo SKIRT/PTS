@@ -40,10 +40,14 @@ class CoordinateSystem(wcs.WCS):
     This class ...
     """
 
-    def __init__(self, header=None):
+    def __init__(self, header=None, naxis=None, naxis1=None, naxis2=None):
 
         """
         This function ...
+        :param header:
+        :param naxis:
+        :param naxis1:
+        :param naxis2:
         :return:
         """
 
@@ -55,7 +59,7 @@ class CoordinateSystem(wcs.WCS):
             else: raise ValueError("Header does not contain coordinate information")
 
         # Call the constructor of the base class
-        super(CoordinateSystem, self).__init__(header)
+        super(CoordinateSystem, self).__init__(header=header, naxis=naxis)
 
         # Set the number of pixels in both axis directions
         if header is not None:
@@ -69,6 +73,12 @@ class CoordinateSystem(wcs.WCS):
 
                 try: self.naxis2 = header["NAXIS2"]
                 except TypeError: self.naxis2 = self._naxis2
+
+        # If naxis1 is specified
+        if naxis1 is not None: self.naxis1 = naxis1
+
+        # If naxis2 is specified
+        if naxis2 is not None: self.naxis2 = naxis2
 
         # The path
         self.path = None
@@ -98,6 +108,68 @@ class CoordinateSystem(wcs.WCS):
 
         # Return
         return self
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_properties(cls, size, center_pixel, center_sky, pixelscale):
+
+        """
+        This function ...
+        :param size:
+        :param center_pixel:
+        :param center_sky:
+        :param pixelscale:
+        :return:
+        """
+
+        # Create a new WCS object.  The number of axes must be set
+        # from the start
+        #system = wcs.WCS(naxis=2)
+        system = cls(naxis=2, naxis1=size.x, naxis2=size.y)
+
+        # Set up an "Airy's zenithal" projection
+        # Vector properties may be set with Python lists, or Numpy arrays
+        system.wcs.crpix = [center_pixel.x, center_pixel.y]
+        system.wcs.cdelt = np.array([pixelscale.x.to("deg").value, pixelscale.y.to("deg").value])
+        #crval = [center_sky.ra.to("deg").value, center_sky.dec.to("deg").value]
+        #print(crval)
+        system.wcs.crval = [center_sky.ra.to("deg").value, center_sky.dec.to("deg").value]
+        #system.wcs.ctype = ["RA---AIR", "DEC--AIR"]
+        system.wcs.ctype = ["RA--TAN", "DEC--TAN"]
+        #system.wcs.set_pv([(2, 1, 45.0)])
+
+        # Return the coordinate system
+        return system
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_projection(cls, projection):
+
+        """
+        This function ...
+        :param projection:
+        :return:
+        """
+
+        # Get properties
+        pixels_x = projection.pixels_x
+        pixels_y = projection.pixels_y
+        center_x = projection.center_x
+        center_y = projection.center_y
+
+        # Create a new coordinate system
+        system = cls(naxis=2, naxis1=pixels_x, naxis2=pixels_y)
+
+        # Set projection
+        system.wcs.crpix = [center_x, center_y]
+        system.wcs.cdelt = np.array([])
+        system.wcs.crval = []
+        system.wcs.ctype = ["RA--TAN", "DEC--TAN"]
+
+        # Return the coordinate system
+        return system
 
     # -----------------------------------------------------------------
 

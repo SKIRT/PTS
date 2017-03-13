@@ -67,28 +67,9 @@ class GalaxyModelingComponent(ModelingComponent):
         self.maps_path = None
         self.components_path = None
         self.deprojection_path = None
-        #self.build_path = None # now in the ModelingEnvironment
 
         # The path to the DustPedia observed SED
         self.observed_sed_dustpedia_path = None
-
-        # The path to the maps
-        #self.old_stellar_map_path = None
-        #self.young_stellar_map_path = None
-        #self.ionizing_stellar_map_path = None
-        #self.dust_map_path = None
-
-        # The paths to the significance maps
-        #self.old_stellar_significance_path = None
-        #self.young_stellar_significance_path = None
-        #self.ionizing_stellar_significance_path = None
-        #self.dust_significance_path = None
-
-        # The paths to the cutoff masks
-        #self.old_stellar_cutoff_path = None
-        #self.young_stellar_cutoff_path = None
-        #self.ionizing_stellar_cutoff_path = None
-        #self.dust_cutoff_path = None
 
         # The path to the galaxy properties file
         self.galaxy_properties_path = None
@@ -169,28 +150,9 @@ class GalaxyModelingComponent(ModelingComponent):
         self.maps_path = fs.create_directory_in(self.config.path, "maps")
         self.components_path = fs.create_directory_in(self.config.path, "components")
         self.deprojection_path = fs.create_directory_in(self.config.path, "deprojection")
-        #self.build_path = fs.create_directory_in(self.config.path, "build")
 
         # Set the path to the DustPedia observed SED
         self.observed_sed_dustpedia_path = fs.join(self.data_path, "fluxes.dat")
-
-        # Set the paths to the input map
-        #self.old_stellar_map_path = fs.join(self.maps_path, "old_stars.fits")
-        #self.young_stellar_map_path = fs.join(self.maps_path, "young_stars.fits")
-        #self.ionizing_stellar_map_path = fs.join(self.maps_path, "ionizing_stars.fits")
-        #self.dust_map_path = fs.join(self.maps_path, "dust.fits")
-
-        # The paths to the significance masks
-        #self.old_stellar_significance_path = fs.join(self.maps_path, "old_stars_significance.fits")
-        #self.young_stellar_significance_path = fs.join(self.maps_path, "young_stars_significance.fits")
-        #self.ionizing_stellar_significance_path = fs.join(self.maps_path, "ionizing_stars_significance.fits")
-        #self.dust_significance_path = fs.join(self.maps_path, "dust_significance.fits")
-
-        # The paths to the significance masks
-        #self.old_stellar_cutoff_path = fs.join(self.maps_path, "old_stars_cutoff.fits")
-        #self.young_stellar_cutoff_path = fs.join(self.maps_path, "young_stars_cutoff.fits")
-        #self.ionizing_stellar_cutoff_path = fs.join(self.maps_path, "ionizing_stars_cutoff.fits")
-        #self.dust_cutoff_path = fs.join(self.maps_path, "dust_cutoff.fits")
 
         # Set the path to the galaxy properties file
         self.galaxy_properties_path = fs.join(self.data_path, "properties.dat")
@@ -1255,5 +1217,44 @@ def get_observed_sed(modeling_path):
     """
 
     return ObservedSED.from_file(get_observed_sed_file_path(modeling_path))
+
+# -----------------------------------------------------------------
+
+def get_galaxy_properties_path(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    data_path = fs.join(modeling_path, "data")
+    return fs.join(data_path, "properties.dat")
+
+# -----------------------------------------------------------------
+
+def get_data_seds_path(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    data_path = fs.join(modeling_path, "data")
+    return fs.join(data_path, "SEDs")
+
+# -----------------------------------------------------------------
+
+def get_data_images_path(modeling_path):
+
+    """
+    This function ....
+    :param modeling_path:
+    :return:
+    """
+
+    data_path = fs.join(modeling_path, "data")
+    return fs.join(data_path, "images")
 
 # -----------------------------------------------------------------

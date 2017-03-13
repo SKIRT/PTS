@@ -36,6 +36,10 @@ from ..config.parameters import default_ranges, types, parameter_descriptions
 from ...core.basics.unit import parse_unit as u
 from ..build.model import ModelBuilder
 from ..build.representation import RepresentationBuilder
+from ..component.galaxy import get_galaxy_properties_path, get_data_seds_path, get_data_images_path
+from ...core.tools import filesystem as fs
+from ...core.filter.filter import parse_filter
+from ...magic.core.image import Image
 
 # -----------------------------------------------------------------
 
@@ -96,6 +100,11 @@ class GalaxyModeler(ModelerBase):
 
         # Call the constructor of the base class
         super(GalaxyModeler, self).__init__(config, interactive)
+
+        # Attributes
+        self.properties = None
+        self.seds = None
+        self.images = None
 
     # -----------------------------------------------------------------
 
@@ -170,6 +179,11 @@ class GalaxyModeler(ModelerBase):
         :return:
         """
 
+        # Get arguments
+        self.properties = kwargs.pop("properties", None)
+        self.seds = kwargs.pop("seds", None)
+        self.images = kwargs.pop("images", None)
+
         # Call the setup function of the base class
         super(GalaxyModeler, self).setup(**kwargs)
 
@@ -189,13 +203,19 @@ class GalaxyModeler(ModelerBase):
         log.info("Getting the galaxy data ...")
 
         # Get the galaxy properties
-        if "fetch_properties" not in self.history: self.get_properties()
+        if "fetch_properties" not in self.history:
+            if self.properties is not None: self.set_properties()
+            else: self.get_properties()
 
         # Get the galaxy SEDs
-        if "fetch_seds" not in self.history: self.get_seds()
+        if "fetch_seds" not in self.history:
+            if self.seds is not None: self.set_seds()
+            else: self.get_seds()
 
         # Get the galaxy images
-        if "fetch_images" not in self.history: self.get_images_and_exit()
+        if "fetch_images" not in self.history:
+            if self.images is not None: self.set_images()
+            else: self.get_images_and_exit()
 
     # -----------------------------------------------------------------
 
@@ -220,6 +240,28 @@ class GalaxyModeler(ModelerBase):
 
         # Run the fetcher
         fetcher.run()
+
+        # Mark the end and save the history file
+        self.history.mark_end()
+        self.history.save()
+
+    # -----------------------------------------------------------------
+
+    def set_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the provided galaxy properties ...")
+
+        # Add an entry to the history and save
+        self.history.add_entry(PropertyFetcher.command_name())
+
+        # Write the properties to the correct path
+        self.properties.saveto(get_galaxy_properties_path(self.modeling_path))
 
         # Mark the end and save the history file
         self.history.mark_end()
@@ -252,6 +294,30 @@ class GalaxyModeler(ModelerBase):
         # Mark the end and save the history file
         self.history.mark_end()
         self.history.save()
+
+    # -----------------------------------------------------------------
+
+    def set_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the provided SEDs ...")
+
+        # Loop over the different SEDs
+        for label in self.seds:
+
+            # Debugging info
+            log.debug("Writing " + label + " SED ...")
+
+            # Determine the path to the new SED file
+            sed_path = fs.join(get_data_seds_path(self.modeling_path), label + ".dat")
+
+            # Save the SED at the specified location
+            self.seds[label].saveto(sed_path)
 
     # -----------------------------------------------------------------
 
@@ -306,6 +372,38 @@ class GalaxyModeler(ModelerBase):
         # Mark the end and save the history file
         self.history.mark_end()
         self.history.save()
+
+    # -----------------------------------------------------------------
+
+    def set_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the provided galaxy images ...")
+
+        # Loop over the images
+        for filter_name in self.images:
+
+            # Open the image if necessary
+            if isinstance(self.images[filter_name], basestring): image = Image.from_file(self.images[filter_name])
+            else: image = self.images[filter_name]
+
+            # Determine the path
+            fltr = parse_filter(filter_name)
+            origin = fltr.observatory
+            images_path = get_data_images_path(self.modeling_path)
+            fs.create_directory(images_path)
+
+            # Create directory for origin
+            origin_path = fs.create_directory_in(images_path, origin)
+            image_path = fs.join(origin_path, filter_name)
+
+            # Write the image
+            image.saveto(image_path)
 
     # -----------------------------------------------------------------
 

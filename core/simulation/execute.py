@@ -196,7 +196,7 @@ class SkirtExec:
             status = SimulationStatus(log_path)
 
             # Show the simulation progress
-            status.show_progress()
+            status.show_progress(self._process)
 
         # Return the list of simulations so that their results can be followed up
         return arguments.simulations(simulation_names=simulation_names)

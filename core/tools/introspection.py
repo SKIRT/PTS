@@ -1829,7 +1829,7 @@ def classes_in_module(module):
     """
 
     md = module.__dict__
-    return [md[c] for c in md if (isinstance(md[c], type) and md[c].__module__ == module.__name__)]
+    return [v for c,v in md.iteritems() if (isinstance(v, type) and v.__module__ == module.__name__)]
 
 # -----------------------------------------------------------------
 

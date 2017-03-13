@@ -174,7 +174,8 @@ class Frame(NDDataArray):
         This function ...
         """
 
-        self._filter = parse_filter(fltr)
+        if fltr is None: self._filter = None
+        else: self._filter = parse_filter(fltr)
 
     # -----------------------------------------------------------------
 
@@ -847,6 +848,9 @@ class Frame(NDDataArray):
 
         # Set the new unit
         self.unit = to_unit
+
+        # Return the conversion factor
+        return factor
 
     # -----------------------------------------------------------------
 

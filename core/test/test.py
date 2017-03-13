@@ -33,13 +33,13 @@ class PTSTest(object):
     This class ...
     """
 
-    def __init__(self, name, description, setup_function, test_function, output_path, keep=False, open_output=False):
+    #def __init__(self, name, description, setup_function, test_function, output_path, keep=False, open_output=False):
+    def __init__(self, name, description, implementation, test_function, output_path, keep=False, open_output=False):
 
         """
         This function ...
         :param name:
         :param description:
-        :param setup_function:
         :param test_function:
         :param keep:
         :param open_output:
@@ -48,15 +48,18 @@ class PTSTest(object):
         # Properties of this test
         self.name = name
         self.description = description
-        self.setup_function = setup_function
+        #self.setup_function = setup_function
         self.test_function = test_function
         self.output_path = output_path
         self.keep = keep
         self.open_output = open_output
 
+        # The test implementation
+        self.implementation = implementation
+
         # The runnable components
-        self.components = OrderedDict()
-        self.input_dicts = dict()
+        #self.components = OrderedDict()
+        #self.input_dicts = dict()
 
     # -----------------------------------------------------------------
 
@@ -92,23 +95,23 @@ class PTSTest(object):
 
     # -----------------------------------------------------------------
 
-    def add_component(self, name, cls, configuration_module_path, settings_dict, output_path, input_dict, description, finish=None):
+    #def add_component(self, name, cls, configuration_module_path, settings_dict, output_path, input_dict, description, finish=None):
 
-        """
-        This function ...
-        :param name:
-        :param cls:
-        :param configuration_module_path:
-        :param settings_dict:
-        :param output_path:
-        :param input_dict:
-        :param description:
-        :param finish:
-        :return:
-        """
+        #"""
+        #This function ...
+        #:param name:
+        #:param cls:
+        #:param configuration_module_path:
+        #:param settings_dict:
+        #:param output_path:
+        #:param input_dict:
+        #:param description:
+        #:param finish:
+        #:return:
+        #"""
 
         # Add the component to the dictionary
-        self.components[name] = Map(cls=cls, conf_path=configuration_module_path, settings=settings_dict, output_path=output_path, input_dict=input_dict, description=description, finish=finish)
+        #self.components[name] = Map(cls=cls, conf_path=configuration_module_path, settings=settings_dict, output_path=output_path, input_dict=input_dict, description=description, finish=finish)
 
     # -----------------------------------------------------------------
 
@@ -123,7 +126,7 @@ class PTSTest(object):
         log.info("Setting up the test ...")
 
         # Execute setup function
-        self.setup_function(self.output_path)
+        #self.setup_function(self.output_path)
 
     # -----------------------------------------------------------------
 
@@ -151,6 +154,21 @@ class PTSTest(object):
     # -----------------------------------------------------------------
 
     def perform(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Performing the test ...")
+
+        # Run the test implemenation
+        self.implementation.run()
+
+    # -----------------------------------------------------------------
+
+    def perform_old(self):
 
         """
         This function ...

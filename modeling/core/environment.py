@@ -57,3 +57,39 @@ class ModelingEnvironment(object):
         self.build_path = fs.create_directory_in(self.path, "build")
 
 # -----------------------------------------------------------------
+
+class GalaxyModelingEnvironment(ModelingEnvironment):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, modeling_path):
+
+        """
+        This function ...
+        :param modeling_path:
+        """
+
+        # Call the constructor of the base class
+        super(GalaxyModelingEnvironment, self).__init__(modeling_path)
+
+# -----------------------------------------------------------------
+
+class SEDModelingEnvironment(ModelingEnvironment):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, modeling_path):
+
+        """
+        This function ...
+        :param modeling_path:
+        """
+
+        # Call the constructor of the base class
+        super(SEDModelingEnvironment, self).__init__(modeling_path)
+
+# -----------------------------------------------------------------

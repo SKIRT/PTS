@@ -1028,6 +1028,9 @@ class Image(object):
         # Set the new unit
         self.unit = to_unit
 
+        # Return the conversion factor
+        return factor
+
     # -----------------------------------------------------------------
 
     def convolve(self, kernel, allow_huge=False, fft=True):

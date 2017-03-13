@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.maps.dust.tirtofuv Contains the TIRtoFUVMapMaker class.
+## \package pts.modeling.maps.dust.tir.multi Contains the MultiBandTIRMapMaker class.
 
 # -----------------------------------------------------------------
 

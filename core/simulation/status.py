@@ -147,18 +147,27 @@ class SimulationStatus(object):
 
     # -----------------------------------------------------------------
 
-    def show_progress(self, refresh_time=3):
+    def show_progress(self, process=None, refresh_time=3):
 
         """
         This function ...
-        :param refresh_time:
+        :param process:
+        :param refresh_time: time in seconds
         :return:
         """
 
         last_phase = None
         last_stage = None
         last_cycle = None
+
+        # Refresh loop
         while True:
+
+            if process is not None:
+                returncode = process.poll()
+                if returncode is not None:
+                    log.warning("The process has stopped")
+                    break
 
             # Not yet started
             if self.not_started:

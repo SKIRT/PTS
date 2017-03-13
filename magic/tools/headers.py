@@ -299,7 +299,12 @@ def get_filter(name, header=None):
                 elif np.isclose(wavelength.to("micron").value, 4.6, rtol=0.05): final_filter_name = "WISE W2"
                 elif np.isclose(wavelength.to("micron").value, 12., rtol=0.05): final_filter_name = "WISE W3"
                 elif np.isclose(wavelength.to("micron").value, 22., rtol=0.05): final_filter_name = "WISE W4"
+                else: log.warning("Could not determine which WISE filter was used for this image")
 
+            elif "3.4" in filterid: final_filter_name = "WISE W1"
+            elif "4.6" in filterid: final_filter_name = "WISE W2"
+            elif "11.6" in filterid: final_filter_name = "WISE W3"
+            elif "22.1" in filterid: final_filter_name = "WISE W4"
             else: log.warning("Could not determine which WISE filter was used for this image")
 
     # MIPS filters

@@ -178,9 +178,12 @@ class ModelingSetupTool(Configurable):
 
         # Get kwargs
         if "object_config" in kwargs: self.object_config = kwargs.pop("object_config")
-        #if "modeling_config" in kwargs: self.modeling_config = kwargs.pop("modeling_config")
         if "sed" in kwargs: self.sed = kwargs.pop("sed")
         if "images" in kwargs: self.images = kwargs.pop("images")
+
+        # Get provided name info
+        self.ngc_name = kwargs.pop("ngc_name", None)
+        self.hyperleda_name = kwargs.pop("hyperleda_name", None)
 
         # If is path, load the SED
         if isinstance(self.sed, basestring): self.sed = ObservedSED.from_file(self.sed)
@@ -257,17 +260,23 @@ class ModelingSetupTool(Configurable):
         # Inform the user
         log.info("Resolving the galaxy name ...")
 
-        # Get the NGC name of the galaxy
-        self.ngc_name = get_ngc_name(self.config.name)
+        # If NGC name is not provided
+        if self.ngc_name is None:
 
-        # Inform the user
-        log.info("Galaxy NGC ID is '" + self.ngc_name + "'")
+            # Get the NGC name of the galaxy
+            self.ngc_name = get_ngc_name(self.config.name)
 
-        # Get the name in the HYPERLEDA catalog
-        self.hyperleda_name = get_hyperleda_name(self.config.name)
+            # Inform the user
+            log.info("Galaxy NGC ID is '" + self.ngc_name + "'")
 
-        # Inform the user
-        log.info("Galaxy HYPERLEDA ID is '" + self.hyperleda_name + "'")
+        # If HYPERLEDA name is not provided
+        if self.hyperleda_name is None:
+
+            # Get the name in the HYPERLEDA catalog
+            self.hyperleda_name = get_hyperleda_name(self.config.name)
+
+            # Inform the user
+            log.info("Galaxy HYPERLEDA ID is '" + self.hyperleda_name + "'")
 
     # -----------------------------------------------------------------
 

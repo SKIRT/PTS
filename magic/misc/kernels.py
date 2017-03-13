@@ -35,9 +35,18 @@ kernels_path = fs.join(introspection.pts_user_dir, "kernels")
 # -----------------------------------------------------------------
 
 # The link to the Aniano high-resolution kernel files and the Aniano PSF files
-aniano_kernels_highres_link = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2012_May/Kernels_fits_Files/Hi_Resolution/"
-aniano_kernels_lowres_link = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2012_May/Kernels_fits_Files/Low_Resolution/"
-aniano_psf_files_link = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2012_May/PSF_fits_Files/"
+aniano_kernels_highres_link_2012 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2012/Kernels_fits_Files/Hi_Resolution/"
+aniano_kernels_lowres_link_2012 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2012/Kernels_fits_Files/Low_Resolution/"
+aniano_psf_files_link_2012 = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2012/PSF_fits_Files/"
+
+# 2017 !
+#aniano_kernels_highres_link = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2017/Kernels_fits_Files/Hi_Resolution/"
+#aniano_kernels_lowres_link = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2017/Kernels_fits_Files/Low_Resolution/"
+#aniano_psf_files_link = "http://www.astro.princeton.edu/~ganiano/Kernels/Ker_2017/PSF_fits_Files/"
+
+aniano_kernels_highres_link = aniano_kernels_highres_link_2012
+aniano_kernels_lowres_link = aniano_kernels_lowres_link_2012
+aniano_psf_files_link = aniano_psf_files_link_2012
 
 # -----------------------------------------------------------------
 
@@ -91,13 +100,13 @@ aniano_names = {"UVOT UVM2": "Gauss_02.5",
                 "WISE W3": "WISE_FRAME_11.6",
                 "WISE W4": "WISE_FRAME_22.1",
                 "MIPS 24mu": "MIPS_24",
-                "MIPS 70mu": None,
-                "MIPS 160mu": None,
+                "MIPS 70mu": "MIPS_70",
+                "MIPS 160mu": "MIPS_160",
                 "Pacs blue": "PACS_70",
                 "Pacs red": "PACS_160",
-                "SPIRE PSW": None,
-                "SPIRE PMW": None,
-                "SPIRE PLW": None}
+                "SPIRE PSW": "SPIRE_250",
+                "SPIRE PMW": "SPIRE_350",
+                "SPIRE PLW": "SPIRE_500"}
 
 # -----------------------------------------------------------------
 

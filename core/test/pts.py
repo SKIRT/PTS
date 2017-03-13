@@ -385,6 +385,63 @@ class PTSTestSuite(Configurable):
                 # Get properties of the test module
                 description = test_module.description
 
+                # Get the test function
+                test_function = test_module.test
+
+                # Get the implementation class
+                implementation_cls = introspection.classes_in_module(test_module)[0]
+
+                # Create class instance
+                implementation = implementation_cls(temp_path)
+
+                # Create Test instance
+                test = PTSTest(name, description, implementation, test_function, temp_path, self.config.keep, self.config.open_output)
+
+                # Add the test to the suite
+                self.tests[subproject].append(test)
+
+    # -----------------------------------------------------------------
+
+    def load_tests_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the tests ...")
+
+        # Loop over the subprojects
+        for subproject in self.test_names:
+
+            # Tests path for subproject
+            tests_path = fs.join(introspection.pts_subproject_dir(subproject), "tests")
+
+            # Inform the user
+            log.info("Loading tests for '" + subproject + "' subproject ...")
+
+            # Loop over the test names
+            for name in self.test_names[subproject]:
+
+                # Determine the test path
+                test_path = fs.join(tests_path, name)
+
+                # Determine an output path for the test
+                temp_path = fs.create_directory_in(introspection.pts_tests_dir, time.unique_name(name))
+
+                # Debugging
+                log.debug("Creating temporary directory '" + temp_path + "' for the test '" + name + "' ...")
+
+                # Find file with name test.py
+                filepath = fs.join(test_path, "test.py")
+
+                # Load the test module
+                test_module = imp.load_source(name, filepath)
+
+                # Get properties of the test module
+                description = test_module.description
+
                 # Iterate over these:
                 commands = test_module.commands
 

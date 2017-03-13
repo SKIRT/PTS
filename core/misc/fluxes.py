@@ -81,6 +81,9 @@ class ObservedFluxCalculator(Configurable):
         # The SPIRE instance
         self.spire = SPIRE()
 
+        # The SED paths
+        self.paths = dict()
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -320,6 +323,9 @@ class ObservedFluxCalculator(Configurable):
 
             # Write out the flux table
             self.mock_seds[name].saveto(path)
+
+            # Set the path
+            self.paths[name] = path
 
 # -----------------------------------------------------------------
 

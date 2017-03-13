@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import defaultdict
+
 # Import astronomical modules
 from astropy import constants
 
@@ -26,6 +29,7 @@ from ...magic.core.remote import RemoteDataCube
 from ..simulation.wavelengthgrid import WavelengthGrid
 from ..basics.unit import parse_unit as u
 from ..basics.configurable import Configurable
+from ..simulation.simulation import createsimulations
 
 # -----------------------------------------------------------------
 
@@ -93,6 +97,9 @@ class ObservedImageMaker(Configurable):
         # The host id
         self.host_id = None
 
+        # The path to the output data cubes
+        self.paths = defaultdict(dict)
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -144,11 +151,14 @@ class ObservedImageMaker(Configurable):
 
         # simulation, output_path=None, filter_names=None, instrument_names=None, wcs_path=None,
         # kernel_paths=None, unit=None, host_id=None
-        simulation = kwargs.pop("simulation")
+        if "simulation" in kwargs: simulation = kwargs.pop("simulation")
+        elif "simulation_output_path" in kwargs: simulation = createsimulations(kwargs.pop("simulation_output_path"), single=True)
+        else: raise ValueError("Simulation or simulation output path must be specified")
         output_path = kwargs.pop("output_path", None)
         filter_names = kwargs.pop("filter_names", None)
         instrument_names = kwargs.pop("instrument_names", None)
         wcs_path = kwargs.pop("wcs_path", None)
+        wcs = kwargs.pop("wcs", None)
         kernel_paths = kwargs.pop("kernel_paths", None)
         unit = kwargs.pop("unit", None)
         host_id = kwargs.pop("host_id", None)
@@ -171,8 +181,11 @@ class ObservedImageMaker(Configurable):
         # Set the output path
         self.config.ouput = output_path
 
+        # If WCS is given
+        if wcs is not None: self.wcs = wcs
+
         # If a WCS path is defined (a FITS file)
-        if wcs_path is not None:
+        elif wcs_path is not None:
 
             # Debugging
             log.debug("Loading the coordinate system from '" + wcs_path + "' ...")
@@ -375,7 +388,7 @@ class ObservedImageMaker(Configurable):
         # Inform the user
         log.info("Converting the units of the images to " + str(self.unit) + " ...")
 
-        assert str(self.unit) == "MJy / sr" # TEMPORARY
+        #assert str(self.unit) == "MJy / sr" # TEMPORARY
 
         # Get the pixelscale
         #pixelscale = self.wcs.average_pixelscale.to("arcsec/pix").value # in arcsec**2 / pixel
@@ -398,15 +411,21 @@ class ObservedImageMaker(Configurable):
                 #conversion_factor *=
 
                 # From W / (m2 * arcsec2 * micron) to W / (m2 * arcsec2 * Hz)
-                conversion_factor *= (pivot ** 2 / speed_of_light).to("micron/Hz").value
+                #conversion_factor *= (pivot ** 2 / speed_of_light).to("micron/Hz").value
 
                 # From W / (m2 * arcsec2 * Hz) to MJy / sr
-                #conversion_factor *= (Unit("W/(m2 * arcsec2 * Hz)") / Unit("MJy/sr")).to("")
-                conversion_factor *= 1e26 * 1e-6 * (u("sr") / u("arcsec2")).to("")
+                ##conversion_factor *= (Unit("W/(m2 * arcsec2 * Hz)") / Unit("MJy/sr")).to("")
+                #conversion_factor *= 1e26 * 1e-6 * (u("sr") / u("arcsec2")).to("")
 
                 # Convert
-                self.images[datacube_name][filter_name] *= conversion_factor
-                self.images[datacube_name][filter_name].unit = "MJy/sr"
+                #self.images[datacube_name][filter_name] *= conversion_factor
+                #self.images[datacube_name][filter_name].unit = "MJy/sr"
+
+                # Convert
+                factor = self.images[datacube_name][filter_name].convert_to(self.unit)
+
+                # Debugging
+                log.debug("The conversion factor is '" + str(factor) + "'")
 
     # -----------------------------------------------------------------
 
@@ -429,6 +448,9 @@ class ObservedImageMaker(Configurable):
 
                 # Save the image
                 self.images[datacube_name][filter_name].saveto(path)
+
+                # Set the path
+                self.paths[datacube_name][filter_name] = path
 
 # -----------------------------------------------------------------
 
