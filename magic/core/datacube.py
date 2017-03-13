@@ -468,7 +468,8 @@ class DataCube(Image):
                 frames.append(self.frames[index])
 
         # Calculate convolved frames
-        convolved_frames = self.convolve_with_filters(for_convolution, nprocesses=nprocesses)
+        if len(for_convolution) > 0: convolved_frames = self.convolve_with_filters(for_convolution, nprocesses=nprocesses)
+        else: convolved_frames = []
 
         # Add the convolved frames
         for fltr, frame in zip(for_convolution, convolved_frames):

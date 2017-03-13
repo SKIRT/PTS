@@ -23,6 +23,7 @@ from astropy import wcs
 from astropy.wcs import utils
 from astropy.io import fits
 from astropy.coordinates import Angle
+from astropy.io.fits import Header
 
 # Import the relevant PTS classes and modules
 from .coordinate import PixelCoordinate, SkyCoordinate
@@ -125,31 +126,50 @@ class CoordinateSystem(wcs.WCS):
 
         # Create a new WCS object.  The number of axes must be set
         # from the start
-        #system = wcs.WCS(naxis=2)
-        system = cls(naxis=2, naxis1=size.x, naxis2=size.y)
+        ##system = wcs.WCS(naxis=2)
+        #system = cls(naxis=2, naxis1=size.x, naxis2=size.y)
 
         # Set up an "Airy's zenithal" projection
         # Vector properties may be set with Python lists, or Numpy arrays
-        system.wcs.crpix = [center_pixel.x, center_pixel.y]
-        system.wcs.cdelt = np.array([pixelscale.x.to("deg").value, pixelscale.y.to("deg").value])
-        #crval = [center_sky.ra.to("deg").value, center_sky.dec.to("deg").value]
-        #print(crval)
-        system.wcs.crval = [center_sky.ra.to("deg").value, center_sky.dec.to("deg").value]
-        #system.wcs.ctype = ["RA---AIR", "DEC--AIR"]
-        system.wcs.ctype = ["RA--TAN", "DEC--TAN"]
+        #system.wcs.crpix = [center_pixel.x, center_pixel.y]
+        #system.wcs.cdelt = np.array([pixelscale.x.to("deg").value, pixelscale.y.to("deg").value])
+        ##crval = [center_sky.ra.to("deg").value, center_sky.dec.to("deg").value]
+        ##print(crval)
+        #system.wcs.crval = [center_sky.ra.to("deg").value, center_sky.dec.to("deg").value]
+        ##system.wcs.ctype = ["RA---AIR", "DEC--AIR"]
+        #system.wcs.ctype = ["RA--TAN", "DEC--TAN"]
         #system.wcs.set_pv([(2, 1, 45.0)])
 
         # Return the coordinate system
-        return system
+        #return system
+
+        center_x = center_pixel.x
+        center_y = center_pixel.y
+
+        # Construct header
+        header = Header()
+
+        header["CRPIX1"] = center_x
+        header["CRVAL1"] = center_sky.ra.to("deg").value
+        header["CDELT1"] = pixelscale.x.to("deg").value
+        header["CRPIX2"] = center_y
+        header["CRVAL2"] = center_sky.dec.to("deg").value
+        header["CDELT2"] = pixelscale.y.to("deg").value
+        header["NAXIS1"] = size.x
+        header["NAXIS2"] = size.y
+
+        # Convert into wcs
+        return cls(header=header)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_projection(cls, projection):
+    def from_projection(cls, projection, center_coordinate):
 
         """
         This function ...
         :param projection:
+        :param center_coordinate:
         :return:
         """
 
@@ -160,16 +180,52 @@ class CoordinateSystem(wcs.WCS):
         center_y = projection.center_y
 
         # Create a new coordinate system
-        system = cls(naxis=2, naxis1=pixels_x, naxis2=pixels_y)
+        #system = cls(naxis=2, naxis1=pixels_x, naxis2=pixels_y)
 
         # Set projection
-        system.wcs.crpix = [center_x, center_y]
-        system.wcs.cdelt = np.array([])
-        system.wcs.crval = []
-        system.wcs.ctype = ["RA--TAN", "DEC--TAN"]
+        #system.wcs.crpix = [center_x, center_y]
+        #system.wcs.cdelt = np.array([])
+        #system.wcs.crval = []
+        #system.wcs.ctype = ["RA--TAN", "DEC--TAN"]
+        ##system.wcs.set_pv([(2, 1, 45.0)])
 
         # Return the coordinate system
-        return system
+        #return system
+
+        # FROM SKIRT FITSINOUT
+
+        # double xref = (nx+1.0)/2.0;
+        # double yref = (ny+1.0)/2.0;
+
+        # // Add the relevant keywords
+        # ffpky(fptr, TDOUBLE, "BSCALE", &one, "", &status);
+        # ffpky(fptr, TDOUBLE, "BZERO", &zero, "", &status);
+        # ffpkys(fptr, "DATE"  , const_cast<char*>(stamp.c_str()), "Date and time of creation (UTC)", &status);
+        # ffpkys(fptr, "ORIGIN", const_cast<char*>("SKIRT simulation"), "Astronomical Observatory, Ghent University", &status);
+        # ffpkys(fptr, "BUNIT" , const_cast<char*>(dataunits.c_str()), "Physical unit of the array values", &status);
+        # ffpky(fptr, TDOUBLE, "CRPIX1", &xref, "X-axis coordinate system reference pixel", &status);
+        # ffpky(fptr, TDOUBLE, "CRVAL1", &xc, "Coordinate system value at X-axis reference pixel", &status);
+        # ffpky(fptr, TDOUBLE, "CDELT1", &incx, "Coordinate increment along X-axis", &status);
+        # ffpkys(fptr, "CTYPE1", const_cast<char*>(xyunits.c_str()), "Physical units of the X-axis increment", &status);
+        # ffpky(fptr, TDOUBLE, "CRPIX2", &yref, "Y-axis coordinate system reference pixel", &status);
+        # ffpky(fptr, TDOUBLE, "CRVAL2", &yc, "Coordinate system value at Y-axis reference pixel", &status);
+        # ffpky(fptr, TDOUBLE, "CDELT2", &incy, "Coordinate increment along Y-axis", &status);
+        # ffpkys(fptr, "CTYPE2", const_cast<char*>(xyunits.c_str()), "Physical units of the Y-axis increment", &status);
+
+        # Construct header
+        header = Header()
+
+        header["CRPIX1"] = center_x
+        header["CRVAL1"] = center_coordinate.ra.to("deg").value
+        header["CDELT1"] = projection.pixelscale.x
+        header["CRPIX2"] = center_y
+        header["CRVAL2"] = center_coordinate.dec.to("deg").value
+        header["CDELT2"] = projection.pixelscale.y
+        header["NAXIS1"] = pixels_x
+        header["NAXIS2"] = pixels_y
+
+        # Create and return
+        return cls(header=header)
 
     # -----------------------------------------------------------------
 

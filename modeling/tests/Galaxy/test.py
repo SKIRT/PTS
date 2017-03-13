@@ -55,6 +55,11 @@ fitting_filter_names = ["GALEX FUV", "GALEX NUV", "SDSS u", "SDSS g", "SDSS r", 
 
 # -----------------------------------------------------------------
 
+# Determine a name for this galaxy
+fake_name = "GALAXY X"
+
+# -----------------------------------------------------------------
+
 class GalaxyTest(TestImplementation):
 
     """
@@ -70,22 +75,43 @@ class GalaxyTest(TestImplementation):
         # Call the constructor of the base class
         super(GalaxyTest, self).__init__(path)
 
+        self.free_parameters = Map()
+
         # Path to the ski file for the reference simulation
         self.reference_ski_path = None
 
+        self.simulation_output_path = None
+
+        # Galaxy properties
+        self.properties = None
+
+        # Galaxy properties
+        self.wcs = None
+
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
+        # Call the setup function
+        self.setup(**kwargs)
+
+        # Set paths
         self.set_paths()
 
+        # Set parameters
+        self.set_parameters()
+
         # Set galaxy info
-        self.create_galaxy_info()
+        self.set_galaxy_properties()
+
+        # Create WCS
+        self.create_wcs()
 
         # Create ski file
         self.create_ski()
@@ -107,6 +133,19 @@ class GalaxyTest(TestImplementation):
 
     # -----------------------------------------------------------------
 
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the
+        super(GalaxyTest, self).setup(**kwargs)
+
+    # -----------------------------------------------------------------
+
     def set_paths(self):
 
         """
@@ -114,6 +153,7 @@ class GalaxyTest(TestImplementation):
         :return:
         """
 
+        # Reference ski path
         self.reference_ski_path = fs.join(self.path, "galaxy_clumpy.ski")
 
         # Determine the simulation output path
@@ -121,41 +161,60 @@ class GalaxyTest(TestImplementation):
 
     # -----------------------------------------------------------------
 
-    def create_galaxy_info(self):
+    def set_parameters(self):
+
+        # Define the true values for the free parameters
+        self.free_parameters.dust_mass = None
+        self.free_parameters.fuv_ionizing = None
+        self.free_parameters.fuv_young = None
+
+    # -----------------------------------------------------------------
+
+    def set_galaxy_properties(self):
 
         """
         This function ..
         :return:
         """
 
-        # Define the true values for the free parameters
-        self.dust_mass = None
-        self.fuv_ionizing = None
-        self.fuv_young = None
-
         # Galaxy poperties
-        self.galaxy_distance = parse_quantity("3.63 Mpc")
-        self.galaxy_inclination = Angle(59, "deg")
-        self.galaxy_azimuth = Angle(0, "deg")
-        self.galaxy_pa = Angle(67, "deg")
+        galaxy_distance = parse_quantity("3.63 Mpc")
+        galaxy_inclination = Angle(59, "deg")
+        #galaxy_azimuth = Angle(0, "deg")
+        galaxy_pa = Angle(67, "deg")
 
         # Generate a random coordinate for the center of the galaxy
         ra_random = np.random.rand() * 360.0 * u("deg")
         dec_random = (np.random.rand() * 180.0 - 90.0) * u("deg")
-        self.galaxy_center = SkyCoordinate(ra=ra_random, dec=dec_random)
+        galaxy_center = SkyCoordinate(ra=ra_random, dec=dec_random)
 
         # Determine the galaxy size, convert to
         galaxy_size = parse_quantity("100000 lyr")
-        self.galaxy_radius = 0.5 * galaxy_size.to("pc")
-        self.galaxy_radius_arcsec = (self.galaxy_radius / self.galaxy_distance).to("arcsec", equivalencies=dimensionless_angles())
+        galaxy_radius = 0.5 * galaxy_size.to("pc")
+        galaxy_radius_arcsec = (galaxy_radius / galaxy_distance).to("arcsec", equivalencies=dimensionless_angles())
 
         # Determine ellipticity
-        self.ellipticity = 0.5
+        ellipticity = 0.5
+
+        # Set the properties
+        self.properties = GalaxyProperties(name=fake_name, ngc_name=fake_name, hyperleda_name=fake_name, galaxy_type=None,
+                                      center=galaxy_center, major=galaxy_radius, major_arcsec=galaxy_radius_arcsec,
+                                      ellipticity=ellipticity, position_angle=galaxy_pa, distance=galaxy_distance, distance_error=None,
+                                      inclination=galaxy_inclination, redshift=None, common_name=fake_name)
+
+    # -----------------------------------------------------------------
+
+    def create_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Create WCS
         size = PixelStretch(1000, 1000)
         center_pixel = PixelCoordinate(500, 500)
-        center_sky = self.galaxy_center
+        center_sky = self.properties.center
         pixelscale = Pixelscale(parse_quantity("2 arcsec"))
         self.wcs = CoordinateSystem.from_properties(size, center_pixel, center_sky, pixelscale)
 
@@ -191,10 +250,11 @@ class GalaxyTest(TestImplementation):
         ski.remove_all_instruments()
 
         # Create a full instrument
-        distance = self.galaxy_distance
-        inclination = self.galaxy_inclination
-        azimuth = self.galaxy_azimuth
-        position_angle = self.galaxy_pa
+        distance = self.properties.distance
+        inclination = self.properties.inclination
+        #azimuth = self.properties.azimuth
+        azimuth = Angle(0, "deg")
+        position_angle = self.properties.position_angle
         field_x = parse_quantity("55000 pc")
         field_y = parse_quantity("5500 pc")
         pixels_x = 1000
@@ -282,8 +342,7 @@ class GalaxyTest(TestImplementation):
 
         # Set the paths to the kernel for each image
         kernel_paths = dict()
-        for filter_name in fitting_filter_names: kernel_paths[filter_name] = aniano.get_psf_path(
-            parse_filter(filter_name))
+        for filter_name in fitting_filter_names: kernel_paths[filter_name] = aniano.get_psf_path(parse_filter(filter_name))
 
         # Settings
         settings_images = dict()
@@ -342,9 +401,6 @@ class GalaxyTest(TestImplementation):
         :return:
         """
 
-        # Determine a name for this galaxy
-        fake_name = "GALAXY X"
-
         # Settings
         settings_setup = dict()
         settings_setup["type"] = "galaxy"
@@ -383,13 +439,7 @@ class GalaxyTest(TestImplementation):
         input_model = dict()
 
         # Set galaxy properties
-        properties = GalaxyProperties(name=fake_name, ngc_name=fake_name, hyperleda_name=fake_name, galaxy_type=None,
-                                      center=galaxy_center, major=galaxy_radius, major_arcsec=galaxy_radius_arcsec,
-                                      ellipticity=0.5,
-                                      position_angle=galaxy_pa, distance=galaxy_distance, distance_error=None,
-                                      inclination=galaxy_inclination,
-                                      redshift=None, common_name="fake galaxy")
-        input_model["properties"] = properties
+        input_model["properties"] = self.properties
 
         # Set SEDs
         input_model["seds"] = dict()

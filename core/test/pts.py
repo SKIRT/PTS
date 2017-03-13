@@ -379,6 +379,15 @@ class PTSTestSuite(Configurable):
                 # Find file with name test.py
                 filepath = fs.join(test_path, "test.py")
 
+                # Find file with the name config.py
+                config_path = fs.join(test_path, "config.py")
+
+                # Load the configuration definition
+                config_module = imp.load_source(name + "_config", config_path)
+                definition = config_module.definition
+                setter = InteractiveConfigurationSetter(name, add_cwd=False, add_logging=False)
+                config = setter.run(definition, prompt_optional=True)
+
                 # Load the test module
                 test_module = imp.load_source(name, filepath)
 
@@ -391,8 +400,8 @@ class PTSTestSuite(Configurable):
                 # Get the implementation class
                 implementation_cls = introspection.classes_in_module(test_module)[0]
 
-                # Create class instance
-                implementation = implementation_cls(temp_path)
+                # Create class instance with the configuration
+                implementation = implementation_cls(config)
 
                 # Create Test instance
                 test = PTSTest(name, description, implementation, test_function, temp_path, self.config.keep, self.config.open_output)

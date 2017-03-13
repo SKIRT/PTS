@@ -57,33 +57,39 @@ class Configurable(object):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, config=None, interactive=False, unlisted=False):
 
         """
         The constructor ...
         :param config:
         :param interactive:
+        :param unlisted:
         """
 
         # Set configuration
-        self.config = self.get_config(config, interactive=interactive)
+        self.config = self.get_config(config, interactive=interactive, unlisted=unlisted)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def get_config(cls, config=None, interactive=False):
+    def get_config(cls, config=None, interactive=False, unlisted=False):
 
         """
         This function ...
         :param config:
         :param interactive:
+        :param unlisted:
         :return:
         """
 
         from .configuration import get_config_for_class
 
         # Get the config
-        return get_config_for_class(cls, config, interactive=interactive)
+        if unlisted:
+            from .map import Map
+            assert isinstance(config, Map)
+            return config
+        else: return get_config_for_class(cls, config, interactive=interactive)
 
     # -----------------------------------------------------------------
 

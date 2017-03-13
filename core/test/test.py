@@ -164,7 +164,7 @@ class PTSTest(object):
         log.info("Performing the test ...")
 
         # Run the test implemenation
-        self.implementation.run()
+        self.implementation.run(path=self.output_path)
 
     # -----------------------------------------------------------------
 

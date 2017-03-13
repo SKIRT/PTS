@@ -26,6 +26,7 @@ from pts.evolve.core.mutators import G1DListMutatorSwap
 from pts.core.basics.animation import Animation
 from pts.evolve.tests.TravelingSalesman.plot import Plotter
 from pts.core.tools.random import setup_prng, skirt_seed
+from pts.core.test.implementation import TestImplementation
 
 # -----------------------------------------------------------------
 
@@ -38,25 +39,173 @@ description = "solving the traveling salesman problem"
 
 # -----------------------------------------------------------------
 
-# Fix the number of cities for the TSP
-number_of_cities = 30
-width = 600
-height = 400
+class TSPTest(TestImplementation):
 
-# -----------------------------------------------------------------
+    """
+    This class ...
+    """
 
-# Define properties
-#nparameters = 20
-nindividuals = 80
-#parameter_range = IntegerRange(0, 10)
-best_raw_score = 0.0
-#round_decimal = None
-ngenerations = 1000
-mutation_rate = 0.03
-crossover_rate = 1.0
-stats_freq = 100
-#mutation_method = "range" # or gaussian, or binary
-min_or_max = "minimize"
+    def __init__(self, config=None):
+
+        """
+        The constructor ...
+        :param path:
+        """
+
+        # Call the constructor of the base class
+        super(TSPTest, self).__init__(config)
+
+    # -----------------------------------------------------------------
+
+    def run(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Setup
+        self.setup()
+
+        # Set properties
+        self.set_properties()
+
+        # Optimize
+        self.optimize()
+
+        # Make animation
+        self.make_animation()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :param:
+        """
+
+        # Call the setup function of the base class
+        super(TSPTest, self).setup(**kwargs)
+
+        # Set the random state
+        setup_prng(skirt_seed)
+
+    # -----------------------------------------------------------------
+
+    def set_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Fix the number of cities for the TSP
+        number_of_cities = 30
+        width = 600
+        height = 400
+
+        # -----------------------------------------------------------------
+
+        # Define properties
+        # nparameters = 20
+        nindividuals = 80
+        # parameter_range = IntegerRange(0, 10)
+        best_raw_score = 0.0
+        # round_decimal = None
+        ngenerations = 1000
+        mutation_rate = 0.03
+        crossover_rate = 1.0
+        stats_freq = 100
+        # mutation_method = "range" # or gaussian, or binary
+        min_or_max = "minimize"
+
+    # -----------------------------------------------------------------
+
+    def optimize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create the cities
+        coords, cm = create_cities()
+
+        # Create the genome
+        genome = create_genome(coords)
+
+        # Settings
+        settings_optimize = dict()
+        settings_optimize["output"] = None
+        # settings_optimize["nparameters"] = nparameters
+        settings_optimize["nindividuals"] = nindividuals
+        # settings_optimize["parameter_range"] = parameter_range
+        settings_optimize["best_raw_score"] = best_raw_score
+        # settings_optimize["round_decimal"] = round_decimal
+        settings_optimize["ngenerations"] = ngenerations
+        settings_optimize["mutation_rate"] = mutation_rate
+        settings_optimize["crossover_rate"] = crossover_rate
+        settings_optimize["stats_freq"] = stats_freq
+        # settings_optimize["mutation_method"] = mutation_method
+        settings_optimize["min_or_max"] = min_or_max
+
+        # Input
+        input_optimize = dict()
+        input_optimize["genome"] = genome
+        input_optimize["evaluator"] = eval_func
+        input_optimize["initializator"] = G1DListTSPInitializator
+        input_optimize["mutator"] = G1DListMutatorSwap
+        input_optimize["crossover"] = G1DListCrossoverOX
+
+        # Create the generations plotter
+        plotter = Plotter(coordinates=coords, frequency=10)
+
+        # Set the plotter
+        input_optimize["generations_plotter"] = plotter
+
+        # Create dictionary for extra arguments to the evalutor function
+        input_optimize["evaluator_kwargs"] = {"distances": cm}
+
+        # Construct the command
+        optimize = Command("optimize_continuous", "solving the traveling salesman problem", settings_optimize,
+                           input_optimize, cwd=".", finish=finish_optimize)
+
+        # Add the command
+        #commands.append(optimize)
+
+        optimizer = self.run_command(optimize)
+
+    # -----------------------------------------------------------------
+
+    def make_animation(self):
+
+        """
+        This function ...
+        :param optimizer:
+        :param kwargs:
+        :return:
+        """
+
+        # Determine path
+        #temp_path = self.optimizer.config.path
+
+        # Determine plot path
+        plot_path = fs.join(self.path, "plot")
+
+        # Create animated gif
+        animation = Animation()
+
+        # Open the images present in the directory
+        for path in fs.files_in_path(plot_path, extension="png", exact_not_name="best"):
+            # Add frame to the animation
+            animation.add_frame_from_file(path)
+
+        # Save the animation
+        animation_path = fs.join(self.path, "animation.gif")
+        animation.saveto(animation_path)
 
 # -----------------------------------------------------------------
 
@@ -282,103 +431,6 @@ def create_genome_reference(coords):
     return genome
 
 # -----------------------------------------------------------------
-
-# Initialize list for the commands
-commands = []
-
-# -----------------------------------------------------------------
-# SETUP FUNCTION
-# -----------------------------------------------------------------
-
-def setup(temp_path):
-
-    """
-    This function ...
-    :param temp_path:
-    """
-
-    # Set the random state
-    setup_prng(skirt_seed)
-
-# -----------------------------------------------------------------
-# OPTIMIZE
-# -----------------------------------------------------------------
-
-# Create the cities
-coords, cm = create_cities()
-
-# Create the genome
-genome = create_genome(coords)
-
-# Settings
-settings_optimize = dict()
-settings_optimize["output"] = None
-#settings_optimize["nparameters"] = nparameters
-settings_optimize["nindividuals"] = nindividuals
-#settings_optimize["parameter_range"] = parameter_range
-settings_optimize["best_raw_score"] = best_raw_score
-#settings_optimize["round_decimal"] = round_decimal
-settings_optimize["ngenerations"] = ngenerations
-settings_optimize["mutation_rate"] = mutation_rate
-settings_optimize["crossover_rate"] = crossover_rate
-settings_optimize["stats_freq"] = stats_freq
-#settings_optimize["mutation_method"] = mutation_method
-settings_optimize["min_or_max"] = min_or_max
-
-# Input
-input_optimize = dict()
-input_optimize["genome"] = genome
-input_optimize["evaluator"] = eval_func
-input_optimize["initializator"] = G1DListTSPInitializator
-input_optimize["mutator"] = G1DListMutatorSwap
-input_optimize["crossover"] = G1DListCrossoverOX
-
-# Create the generations plotter
-plotter = Plotter(coordinates=coords, frequency=10)
-
-# Set the plotter
-input_optimize["generations_plotter"] = plotter
-
-# Create dictionary for extra arguments to the evalutor function
-input_optimize["evaluator_kwargs"] = {"distances": cm}
-
-# -----------------------------------------------------------------
-
-def finish_optimize(optimizer):
-
-    """
-    This function ...
-    :param optimizer:
-    :param kwargs:
-    :return:
-    """
-
-    # Determine path
-    temp_path = optimizer.config.path
-
-    # Determine plot path
-    plot_path = fs.join(temp_path, "plot")
-
-    # Create animated gif
-    animation = Animation()
-
-    # Open the images present in the directory
-    for path in fs.files_in_path(plot_path, extension="png", exact_not_name="best"):
-
-        # Add frame to the animation
-        animation.add_frame_from_file(path)
-
-    # Save the animation
-    animation_path = fs.join(temp_path, "animation.gif")
-    animation.saveto(animation_path)
-
-# -----------------------------------------------------------------
-
-# Construct the command
-optimize = Command("optimize_continuous", "solving the traveling salesman problem", settings_optimize, input_optimize, cwd=".", finish=finish_optimize)
-
-# Add the command
-commands.append(optimize)
 
 # -----------------------------------------------------------------
 # TEST FUNCTION

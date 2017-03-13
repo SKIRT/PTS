@@ -30,7 +30,10 @@ from ...core.basics.unit import parse_unit
 # -----------------------------------------------------------------
 
 # The path to the PTS kernels directory
-kernels_path = fs.join(introspection.pts_user_dir, "kernels")
+#kernels_path = fs.join(introspection.pts_user_dir, "kernels")
+if not fs.is_directory(introspection.pts_ext_dir): fs.create_directory(introspection.pts_ext_dir)
+kernels_path = fs.join(introspection.pts_ext_dir, "kernels")
+if not fs.is_directory(kernels_path): fs.create_directory(kernels_path)
 
 # -----------------------------------------------------------------
 

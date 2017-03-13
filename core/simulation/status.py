@@ -147,7 +147,7 @@ class SimulationStatus(object):
 
     # -----------------------------------------------------------------
 
-    def show_progress(self, process=None, refresh_time=3):
+    def show_progress(self, process, refresh_time=3):
 
         """
         This function ...
@@ -163,14 +163,17 @@ class SimulationStatus(object):
         # Refresh loop
         while True:
 
-            if process is not None:
-                returncode = process.poll()
-                if returncode is not None:
-                    log.warning("The process has stopped")
-                    break
-
             # Not yet started
             if self.not_started:
+
+                returncode = process.poll()
+                if returncode is not None:
+                    log.error("The simulation has stopped")
+                    if fs.is_file(self.log_path):
+                        lines = list(fs.read_lines(self.log_path))
+                        for line in lines: log.error(line)
+                    else: log.error("Log file hasn't been created yet")
+                    return False
 
                 log.info("Waiting for simulation to start ...")
                 time.wait(refresh_time)
@@ -180,12 +183,14 @@ class SimulationStatus(object):
             # Finished: break loop
             if self.finished:
                 log.success("Simulation finished")
-                break
+                #break
+                return True
 
             # Crashed: break loop
             elif self.crashed:
                 log.success("Simulation crashed")
-                break
+                #break
+                return False
 
             # New phase
             elif last_phase is None or self.phase != last_phase:
@@ -257,6 +262,8 @@ class SimulationStatus(object):
 
             # Still the same phase
             else: self.refresh_after(refresh_time)
+
+        return True
 
     # -----------------------------------------------------------------
 

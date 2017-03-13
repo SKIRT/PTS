@@ -22,6 +22,7 @@ from ..tools import filesystem as fs
 from ..tools import introspection
 from ..tools.logging import log
 from ..basics.configuration import DictConfigurationSetter
+from ..basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
@@ -29,7 +30,7 @@ tables = introspection.get_arguments_tables()
 
 # -----------------------------------------------------------------
 
-class TestImplementation(object):
+class TestImplementation(Configurable):
 
     """
     This class ...
@@ -39,15 +40,18 @@ class TestImplementation(object):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, path):
+    def __init__(self, config=None):
 
         """
         This function ...
-        :param path:
+        :param config:
         """
 
+        # Call the constructor of the base class
+        super(TestImplementation, self).__init__(config, unlisted=True)
+
         # The test path
-        self.path = path
+        self.path = None
 
         # The runnable components
         self.components = OrderedDict()
@@ -56,13 +60,25 @@ class TestImplementation(object):
     # -----------------------------------------------------------------
 
     @abstractmethod
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
         """
             
         pass
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        self.path = kwargs.pop("path")
 
     # -----------------------------------------------------------------
 
