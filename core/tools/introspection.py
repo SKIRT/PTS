@@ -97,6 +97,32 @@ pts_user_config_dir = fs.create_directory_in(pts_user_dir, "config")
 
 # -----------------------------------------------------------------
 
+# Path to the user paths file (create if necessary)
+paths_file_path = fs.join(pts_user_dir, "paths.txt")
+
+user_paths = dict()
+if not fs.is_file(paths_file_path): fs.touch(paths_file_path)
+else:
+    for line in fs.read_lines(paths_file_path):
+        if line.strip == "": continue
+        name, path = line.split(":")
+        name = name.strip()
+        path = fs.absolute_path(path.strip())
+        # Check if the path exists
+        if not fs.is_directory(path): raise ValueError("The directory '" + path + "' does not exist")
+        user_paths[name] = path
+
+# -----------------------------------------------------------------
+
+def get_dropbox_path():
+    if "dropbox" in user_paths: return user_paths["dropbox"]
+    else:
+        path = fs.join(fs.home(), "Dropbox")
+        if not fs.is_directory(path): raise IOError("No Dropbox directory found")
+        return path
+
+# -----------------------------------------------------------------
+
 # Path to the versions file
 pts_versions_path = fs.join(pts_package_dir, "versions.txt")
 

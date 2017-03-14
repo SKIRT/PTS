@@ -21,7 +21,7 @@ from ...core.tools.logging import log
 from ...core.basics.range import zip_linear
 from ..basics.configurable import Configurable
 from ..basics.table import SmartTable
-from ..basics.range import RealRange
+from ..basics.range import RealRange, QuantityRange, IntegerRange
 
 # -----------------------------------------------------------------
 
@@ -269,6 +269,20 @@ class DustGridGenerator(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def single_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if len(self.grids) == 0: raise RuntimeError("No grid")
+        elif len(self.grids) == 1: return self.grids[0]
+        else: raise RuntimeError("More than one grid")
+
+    # -----------------------------------------------------------------
+
     def setup(self, **kwargs):
 
         """
@@ -281,10 +295,15 @@ class DustGridGenerator(Configurable):
         super(DustGridGenerator, self).setup(**kwargs)
 
         # Get settings
-        self.scale_range = kwargs.pop("scale_range")
-        self.level_range = kwargs.pop("level_range")
-        self.mass_fraction_range = kwargs.pop("mass_fraction_range")
         self.ngrids = kwargs.pop("ngrids")
+        if self.ngrids == 1:
+            self.scale_range = QuantityRange.infinitesimal(kwargs.pop("scale"))
+            self.level_range = IntegerRange.infinitesimal(kwargs.pop("level"))
+            self.mass_fraction_range = RealRange.infinitesimal(kwargs.pop("mass_fraction"))
+        else:
+            self.scale_range = kwargs.pop("scale_range")
+            self.level_range = kwargs.pop("level_range")
+            self.mass_fraction_range = kwargs.pop("mass_fraction_range")
 
         # Initialize the table
         self.table = DustGridsTable()

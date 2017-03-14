@@ -18,16 +18,20 @@ import tempfile
 import requests
 from lxml import html
 
+# Import astronomical modules
+from astropy.io.fits import getheader
+
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.tools import tables
 from ...magic.core.frame import Frame
 from ...core.tools import filesystem as fs
 from ...core.tools import introspection
-from .sample import DustPediaSample
 from ...core.filter.filter import parse_filter
 from ...core.tools import network
 from ...core.tools import progress
+from ...magic.basics.coordinatesystem import CoordinateSystem
+from ...core.tools import time
 
 # -----------------------------------------------------------------
 
@@ -62,16 +66,13 @@ class DustPediaDatabase(object):
         """
 
         # Determine the path to a temporary directory
-        self.temp_path = tempfile.gettempdir()
+        self.temp_path = fs.create_directory_in(introspection.pts_temp_dir, time.unique_name("database"))
 
         # Create the session
         self.session = requests.session()
 
         # A flag that states whether we are connected
         self.connected = False
-
-        # DustPedia sample
-        self.sample = DustPediaSample()
 
     # -----------------------------------------------------------------
 
@@ -413,6 +414,36 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    def get_image_names_and_filters(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        # Initialize dictionary
+        filters = dict()
+
+        # Loop over all the images
+        names = self.get_image_names(galaxy_name, error_maps=False)
+        for name in names:
+
+            # Skip DSS
+            if "DSS" in name and "SDSS" not in name: continue
+
+            # Get the filter
+            fltr_string = name.split(galaxy_name + "_")[1].split(".fits")[0]
+            fltr = parse_filter(fltr_string)
+
+            # Set the filter
+            filters[name] = fltr
+
+        # Return the dictionary of filters
+        return filters
+
+    # -----------------------------------------------------------------
+
     def get_image_filters(self, galaxy_name):
 
         """
@@ -420,13 +451,11 @@ class DustPediaDatabase(object):
         :return:
         """
 
-        galaxy_name = self.sample.get_name(galaxy_name)
-
-        names = self.get_image_names(galaxy_name, error_maps=False)
-
+        # Initialize list
         filters = []
 
         # Loop over the image names
+        names = self.get_image_names(galaxy_name, error_maps=False)
         for name in names:
 
             # Skip DSS
@@ -470,6 +499,52 @@ class DustPediaDatabase(object):
 
         # Return the image frame
         return frame
+
+    # -----------------------------------------------------------------
+
+    def get_header(self, galaxy_name, image_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :param image_name:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the header for the '" + image_name + "' for galaxy '" + galaxy_name + "' ...")
+
+        # Determine a temporary path for the image file
+        local_path = fs.join(self.temp_path, image_name)
+
+        # Download the image to the temporary directory
+        self.download_image(galaxy_name, image_name, local_path)
+
+        # Load the header
+        header = getheader(local_path)
+
+        # Return the header
+        return header
+
+    # -----------------------------------------------------------------
+
+    def get_wcs(self, galaxy_name, image_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :param image_name:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the coordinate system for the '" + image_name + "' for galaxy '" + galaxy_name + "' ...")
+
+        # Get the header
+        header = self.get_header(galaxy_name, image_name)
+
+        # Create and return the coordinate system
+        return CoordinateSystem(header=header)
 
     # -----------------------------------------------------------------
 

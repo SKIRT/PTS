@@ -80,6 +80,19 @@ class Range(object):
     # -----------------------------------------------------------------
 
     @classmethod
+    def infinitesimal(cls, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return cls(value, value)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def around(cls, value, rel_min, rel_max, inclusive=True, invert=False):
 
         """
@@ -156,6 +169,18 @@ class Range(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def center(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.mean
+
+    # -----------------------------------------------------------------
+
     def linear(self, npoints, as_list=False, fancy=False):
 
         """
@@ -164,6 +189,11 @@ class Range(object):
         :param as_list:
         :param fancy:
         """
+
+        # If only one point, return the arithmetic mean
+        if npoints == 1:
+            if as_list: return [0.5 * (self._min + self._max)]
+            else: return np.array([0.5 * (self._min + self._max)])
 
         if fancy:
             span = self.max - self.min
@@ -190,6 +220,11 @@ class Range(object):
         :param fancy:
         :return:
         """
+
+        # If only one point, return the geometric mean
+        if npoints == 1:
+            if as_list: return [np.sqrt(self._min * self._max)]
+            else: return np.array([np.sqrt(self._min * self._max)])
 
         if fancy:
 

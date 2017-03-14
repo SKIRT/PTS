@@ -188,6 +188,7 @@ class GalaxyModeler(ModelerBase):
         self.seds = kwargs.pop("seds", None)
         self.images = kwargs.pop("images", None)
 
+        # Bulge and disk model
         self.bulge_model = kwargs.pop("bulge_model", None)
         self.disk_model = kwargs.pop("disk_model", None)
 

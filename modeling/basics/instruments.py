@@ -14,10 +14,21 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 
 # Import the relevant PTS classes and modules
 from ...core.basics.composite import SimplePropertyComposite
+from .projection import GalaxyProjection
+
+# -----------------------------------------------------------------
+
+class abstractclassmethod(classmethod):
+
+    __isabstractmethod__ = True
+
+    def __init__(self, callable):
+        callable.__isabstractmethod__ = True
+        super(abstractclassmethod, self).__init__(callable)
 
 # -----------------------------------------------------------------
 
@@ -65,6 +76,42 @@ class Instrument(SimplePropertyComposite):
         self.add_property("inclination", "angle", "inclination", None)
         self.add_property("azimuth", "angle", "azimuth", None)
         self.add_property("position_angle", "angle", "position angle", None)
+
+    # -----------------------------------------------------------------
+
+    @abstractclassmethod
+    def from_projection(self, projection):
+
+        """
+        This function ...
+        :param projection:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_wcs(cls, wcs, center, distance, inclination, azimuth, position_angle):
+
+        """
+        This function ...
+        :param wcs:
+        :param center:
+        :param distance:
+        :param inclination:
+        :param azimuth:
+        :param position_angle:
+        :return:
+        """
+
+        # Create projection
+        # wcs, center, distance, inclination, azimuth, position_angle
+        projection = GalaxyProjection.from_wcs(wcs, center, distance, inclination, azimuth, position_angle)
+
+        # Create and return
+        return cls.from_projection(projection)
 
 # -----------------------------------------------------------------
 

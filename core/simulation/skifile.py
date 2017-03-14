@@ -1222,7 +1222,7 @@ class SkiFile:
         for id_i in self.get_dust_component_ids(): self.remove_dust_component(id_i)
 
     ## This function creates a new stellar component
-    def create_new_stellar_component(self, component_id, geometry_type, geometry_properties, sed_type, sed_properties, normalization_type, normalization_properties):
+    def create_new_stellar_component(self, component_id, geometry_type=None, geometry_properties=None, sed_type=None, sed_properties=None, normalization_type=None, normalization_properties=None):
 
         # Panchromatic simulation
         if self.panchromatic():
@@ -1233,23 +1233,28 @@ class SkiFile:
             # Get the 'components' element
             stellar_components_parent = stellar_system.xpath("components")
 
-            # Create elements
-            geometry = self.create_element(geometry_type, geometry_properties)
-            sed = self.create_element(sed_type, sed_properties)
-            normalization = self.create_element(normalization_type, normalization_properties)
-
             # Create the stellar component
             stellar_component = stellar_components_parent.makeelement("PanStellarComp", attrs={})
 
-            # Add children
+            # Create children
             geometry_parent = stellar_component.makeelement("geometry", attrs={"type":"Geometry"})
             sed_parent = stellar_component.makeelement("sed", attrs={"type":"StellarSED"})
             normalization_parent = stellar_component.makeelement("normalization", attrs={"type":"StellarCompNormalization"})
 
-            # Set actual elements
-            geometry_parent.append(geometry)
-            sed_parent.append(sed)
-            normalization_parent.append(normalization)
+            # Create geometry
+            if geometry_type is not None:
+                geometry = self.create_element(geometry_type, geometry_properties)
+                geometry_parent.append(geometry)
+
+            # Create SED
+            if sed_type is not None:
+                sed = self.create_element(sed_type, sed_properties)
+                sed_parent.append(sed)
+
+            # Create normalization
+            if normalization_type is not None:
+                normalization = self.create_element(normalization_type, normalization_properties)
+                normalization_parent.append(normalization)
 
             # Set geometry, sed and normalization to the stellar component
             stellar_component.append(geometry_parent)
@@ -1267,7 +1272,7 @@ class SkiFile:
         else: pass
 
     ## This function creates a new dust component
-    def create_new_dust_component(self, component_id, geometry_type, geometry_properties, mix_type, mix_properties, normalization_type, normalization_properties):
+    def create_new_dust_component(self, component_id, geometry_type=None, geometry_properties=None, mix_type=None, mix_properties=None, normalization_type=None, normalization_properties=None):
 
         # Get the dust distribution
         dust_distribution = self.get_dust_distribution()
@@ -1278,23 +1283,28 @@ class SkiFile:
         # Get the 'components' element
         dust_components_parent = dust_distribution.xpath("components")
 
-        # Create elements
-        geometry = self.create_element(geometry_type, geometry_properties)
-        mix = self.create_element(mix_type, mix_properties)
-        normalization = self.create_element(normalization_type, normalization_properties)
-
         # Create the new dut component
         dust_component = dust_components_parent.makeelement("DustComp", attrs={})
 
-        # Add children
+        # Create children
         geometry_parent = dust_component.makeelement("geometry", attrs={"type": "Geometry"})
         mix_parent = dust_component.makeelement("mix", attrs={"type": "DustMix"})
         normalization_parent = dust_component.makeelement("normalization", attrs={"type": "DustCompNormalization"})
 
-        # Set actual elements
-        geometry_parent.append(geometry)
-        mix_parent.append(mix)
-        normalization_parent.append(normalization)
+        # Create geometry
+        if geometry_type is not None:
+            geometry = self.create_element(geometry_type, geometry_properties)
+            geometry_parent.append(geometry)
+
+        # Create mix
+        if mix_type is not None:
+            mix = self.create_element(mix_type, mix_properties)
+            mix_parent.append(mix)
+
+        # Create normalization
+        if normalization_type is not None:
+            normalization = self.create_element(normalization_type, normalization_properties)
+            normalization_parent.append(normalization)
 
         # Set geometry, mix and normalization to the dust component
         dust_component.append(geometry_parent)
@@ -1493,6 +1503,24 @@ class SkiFile:
                  "writeSize": str_from_bool(write_size, lower=True), "hydrocarbonPops": str(hydrocarbon_pops),
                  "enstatitePops": str(enstatite_pops), "forsteritePops": str(forsterite_pops)}
         parent.append(parent.makeelement("ThemisDustMix", attrs))
+
+    ## This function sets a Zubko dust mix model for the dust component with the specified id
+    def set_dust_component_zubko_mix(self, component_id, graphite_populations=7, silicate_populations=7, path_poulations=5, write_mix=True, write_mean_mix=True, write_size=True):
+        # writeMix="false" writeMeanMix="false" writeSize="false" graphitePops="7" silicatePops="7" PAHPops="5"
+
+        # Get the dust mix
+        mix = self.get_dust_component_mix(component_id)
+
+        # Get the parent
+        parent = mix.getparent()
+
+        # Remove the old mix
+        parent.remove(mix)
+
+        # Make and add the new mix
+        attrs = {"writeMix": str_from_bool(write_mix, lower=True), "writeMeanMix": str_from_bool(write_mean_mix, lower=True),
+                 "writeSize": str_from_bool(write_size, lower=True), "graphitePops": str(graphite_populations), "silicatePops": str(silicate_populations), "PAHPops": str(pah_populations)}
+        parent.append(parent.makeelement("ZubkoDustMix", attrs))
 
     ## This function returns the mass of the dust component with the specified id, as an Astropy quantity
     def get_dust_component_mass(self, component_id):
@@ -1816,7 +1844,75 @@ class SkiFile:
     def get_stellar_component_geometry_object(self, component_id):
 
         from ...modeling.basics.models import SersicModel3D, ExponentialDiskModel3D, DeprojectionModel3D, RingModel3D
-        pass
+
+        # Get the geometry object
+        geometry = self.get_stellar_component_geometry(component_id)
+
+        # RotateGeometryDecorator
+        if geometry.tag == "RotateGeometryDecorator":
+
+            # Sersic or exponential
+            base_geometry = xml.get_unique_element(geometry, "geometry")
+
+            if base_geometry.tag == "SersicGeometry":
+
+                return SersicModel3D()
+
+            elif base_geometry.tag == "ExpDiskGeometry":
+
+                raise ExponentialDiskModel3D()
+
+            elif base_geometry.tag == "SpheroidalGeometryDecorator":
+
+                base_base_geometry = xml.get_unique_element(base_geometry, "geometry")
+
+                if base_base_geometry == "SersicGeometry":
+
+                    return SersicModel3D()
+
+                else: raise NotImplementedError("Rotated version of " + base_base_geometry.tag + " with spheroidal decorator is not supported")
+
+        # Sersic model
+        elif geometry.tag == "SersicGeometry":
+
+            return SersicModel3D()
+
+        # Exponential disk
+        elif geometry.tag == "ExpDiskGeometry":
+
+            return ExponentialDiskModel3D()
+
+        # Spheroidal
+        elif geometry.tag == "SpheroidalGeometryDecorator":
+
+            base_geometry = xml.get_unique_element(geometry, "geometry")
+
+            if base_geometry.tag == "SersicGeometry":
+
+                return SersicModel3D()
+
+            elif base_geometry.tag == "RotateGeometryDecorator":
+
+                base_base_geometry = xml.get_unique_element(base_geometry, "geometry")
+
+                if base_base_geometry == "SersicGeometry":
+
+                    return SersicModel3D()
+
+                else: raise NotImplementedError("Rotated version of " + base_base_geometry.tag + " with spheroidal decorator is not supported")
+
+        # Deprojection
+        elif geometry.tag == "ReadFitsGeometry":
+
+            return DeprojectionModel3D()
+
+        # Ring
+        elif geometry.tag == "RingGeometry":
+
+            return RingModel3D()
+
+        # Other
+        else: raise NotImplementedError("Geometry " + geometry.tag + " not supported")
 
     ## This function sets the geometry of the specified stellar component.
     def set_stellar_component_geometry(self, component_id, model):
@@ -1903,19 +1999,20 @@ class SkiFile:
             self.set_stellar_component_ring_geometry(component_id, radius, width, height)
 
         # Unsupported model
-        else: raise ValueError("Models other than SersicModel3D, ExponentialDiskModel3D and DeprojectionModel3D are not supported yet. This model is of type " + str(type(model)))
+        else: raise ValueError("Models other than SersicModel3D, ExponentialDiskModel3D, RingModel3D, and DeprojectionModel3D are not supported yet. This model is of type " + str(type(model)))
 
     ## This function returns the geometry of the specified dust component
     def get_dust_component_geometry_object(self, component_id):
 
-        from ...modeling.basics.models import SersicModel3D, ExponentialDiskModel3D, DeprojectionModel3D
-        pass
+        from ...modeling.basics.models import SersicModel3D, ExponentialDiskModel3D, DeprojectionModel3D, RingModel3D
+
+
 
     ## This function sets the geometry of the specified dust component
     def set_dust_component_geometry(self, component_id, model):
 
         from astropy.coordinates import Angle
-        from ...modeling.basics.models import SersicModel3D, ExponentialDiskModel3D, DeprojectionModel3D
+        from ...modeling.basics.models import SersicModel3D, ExponentialDiskModel3D, DeprojectionModel3D, RingModel3D
 
         # Rotation:
         #  alpha: 0 to 360 degrees
@@ -1974,8 +2071,19 @@ class SkiFile:
             hz = model.scale_height
             self.set_dust_component_fits_geometry(component_id, filename, scale, pa, i, nx, ny, xc, yc, hz)
 
+        # Ring model
+        elif isinstance(model, RingModel3D):
+
+            # Get the properties
+            radius = model.radius
+            width = model.width
+            height = model.height
+
+            # Set the geometry
+            self.set_dust_component_ring_geometry(component_id, radius, width, height)
+
         # Unsupported model
-        else: raise ValueError("Models other than SersicModel3D, ExponentialDiskModel3D and DeprojectionModel3D are not supported yet")
+        else: raise ValueError("Models other than SersicModel3D, ExponentialDiskModel3D, RingModel3D, and DeprojectionModel3D are not supported yet")
 
     ## This function adds clumpiness to a stellar component geometry
     def add_stellar_component_clumpiness(self, component_id, fraction, count, radius, cutoff=False, kernel_type="uniform"):

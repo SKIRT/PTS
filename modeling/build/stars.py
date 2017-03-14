@@ -126,7 +126,7 @@ class StarsBuilder(GeneralBuilder):
 
         # Like M31
         bulge_template = "BruzualCharlot"
-        bulge_age = 12
+        bulge_age = 10
         bulge_metallicity = 0.03
 
         # Get the flux density of the bulge

@@ -32,6 +32,8 @@ from .stretch import SkyStretch
 from ..tools import coordinates
 from .pixelscale import Pixelscale
 from ...core.basics.unit import parse_unit as u
+from ...core.basics.range import QuantityRange
+from pts.magic.basics.stretch import PixelStretch
 
 # -----------------------------------------------------------------
 
@@ -113,6 +115,23 @@ class CoordinateSystem(wcs.WCS):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_header_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Load the header
+        header = Header.fromtextfile(path)
+
+        # Create and return the coordinate system
+        return cls(header=header)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_properties(cls, size, center_pixel, center_sky, pixelscale):
 
         """
@@ -160,6 +179,44 @@ class CoordinateSystem(wcs.WCS):
 
         # Convert into wcs
         return cls(header=header)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_ranges(cls, ra_range, dec_range, pixelscale):
+
+        """
+        This function ...
+        :param ra_range:
+        :param dec_range:
+        :param pixelscale:
+        :return:
+        """
+
+        # Determine the total RA and DEC distance
+        ra_begin = ra_range.min
+        ra_end = ra_range.max
+        dec_begin = dec_range.min
+        dec_end = dec_range.max
+        dec_center = dec_range.center
+        ra_distance = abs(coordinates.ra_distance(dec_center, ra_begin, ra_end))
+        dec_distance = abs(dec_end - dec_begin)
+
+        # Detemrine the nubmerof required pixels in the x and y directions
+        xpixels = int(ra_distance / pixelscale.ra)
+        ypixels = int(dec_distance / pixelscale.dec)
+
+        # Set size and center pixel
+        size = PixelStretch(xpixels, ypixels)
+        center_pixel = PixelCoordinate(0.5 * (size.x + 1), 0.5 * (size.y + 1))
+
+        # Determine center coordinate
+        ra_center = ra_range.center
+        dec_center = dec_range.center
+        center = SkyCoordinate(ra=ra_center, dec=dec_center)
+
+        # Create and return
+        return cls.from_properties(size, center_pixel, center, pixelscale)
 
     # -----------------------------------------------------------------
 
@@ -433,6 +490,50 @@ class CoordinateSystem(wcs.WCS):
         """
 
         return shape.to_sky(self)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ra_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        coor1 = self.wcs_pix2world(0.0, 0.0, 0)
+        coor2 = self.wcs_pix2world(self.xsize - 1.0, self.ysize - 1.0, 0)
+
+        co1 = SkyCoordinate(ra=float(coor1[0]), dec=float(coor1[1]), unit="deg", frame='fk5')
+        co2 = SkyCoordinate(ra=float(coor2[0]), dec=float(coor2[1]), unit="deg", frame='fk5')
+
+        # Get the range
+        ra_range = sorted([co1.ra.value, co2.ra.value])
+
+        # Return the range
+        return QuantityRange(ra_range[0], ra_range[1], "deg")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dec_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        coor1 = self.wcs_pix2world(0.0, 0.0, 0)
+        coor2 = self.wcs_pix2world(self.xsize - 1.0, self.ysize - 1.0, 0)
+
+        co1 = SkyCoordinate(ra=float(coor1[0]), dec=float(coor1[1]), unit="deg", frame='fk5')
+        co2 = SkyCoordinate(ra=float(coor2[0]), dec=float(coor2[1]), unit="deg", frame='fk5')
+
+        # Get the range
+        dec_range = sorted([co1.dec.value, co2.dec.value])
+
+        # Return the range
+        return QuantityRange(dec_range[0], dec_range[1], "deg")
 
     # -----------------------------------------------------------------
 

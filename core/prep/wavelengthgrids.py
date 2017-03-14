@@ -26,6 +26,7 @@ from ..basics.unit import parse_unit as u
 from ..filter.broad import BroadBandFilter
 from ..filter.narrow import NarrowBandFilter
 from ..plot.transmission import TransmissionPlotter
+from ..basics.range import IntegerRange
 
 # -----------------------------------------------------------------
 
@@ -174,6 +175,20 @@ class WavelengthGridGenerator(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def single_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if len(self.grids) == 0: raise RuntimeError("No grid")
+        elif len(self.grids) == 1: return self.grids[0]
+        else: raise RuntimeError("More than one grid")
+
+    # -----------------------------------------------------------------
+
     def setup(self, **kwargs):
 
         """
@@ -182,8 +197,9 @@ class WavelengthGridGenerator(Configurable):
         """
 
         # Set options
-        self.npoints_range = kwargs.pop("npoints_range")
         self.ngrids = kwargs.pop("ngrids")
+        if self.ngrids == 1: self.npoints_range = IntegerRange.infinitesimal(kwargs.pop("npoints"))
+        else: self.npoints_range = kwargs.pop("npoints_range")
         self.fixed = kwargs.pop("fixed", None)
         self.add_emission_lines = kwargs.pop("add_emission_lines", False)
         self.min_wavelength = kwargs.pop("min_wavelength", None)
@@ -270,7 +286,7 @@ class WavelengthGridGenerator(Configurable):
         # Inform the user
         log.info("Plotting the wavelength grids ...")
 
-        plotter = TransmissionPlotter()
+        #plotter = TransmissionPlotter()
 
     # -----------------------------------------------------------------
 

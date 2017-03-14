@@ -35,6 +35,9 @@ from pts.core.filter.filter import parse_filter
 from pts.core.test.implementation import TestImplementation
 from pts.core.tools.logging import log
 from pts.modeling.basics.models import SersicModel3D, ExponentialDiskModel3D, RingModel3D
+from pts.core.prep.wavelengthgrids import WavelengthGridGenerator
+from pts.core.prep.dustgrids import DustGridGenerator
+from pts.modeling.modeling.galaxy import fitting_filter_names
 
 # -----------------------------------------------------------------
 
@@ -45,13 +48,6 @@ this_dir_path = fs.directory_of(this_path)
 # -----------------------------------------------------------------
 
 description = "fitting a mock spiral galaxy"
-
-# -----------------------------------------------------------------
-
-# Set the filters for which the data can be used for fitting (data that can be trusted well enough)
-fitting_filter_names = ["GALEX FUV", "GALEX NUV", "SDSS u", "SDSS g", "SDSS r", "SDSS i", "SDSS z", "WISE W1",
-                        "IRAC I1", "IRAC I2", "WISE W2", "IRAC I3", "IRAC I4", "WISE W3", "WISE W4", "MIPS 24mu",
-                        "Pacs blue", "Pacs red", "SPIRE PSW", "SPIRE PMW", "SPIRE PLW"]
 
 # -----------------------------------------------------------------
 
@@ -117,72 +113,56 @@ titles["young"] = "Young stars"
 titles["ionizing"] = "Ionizing stars"
 titles["dust"] = "Dust disk"
 
-#old bulge
-<PanStellarComp>
-                        <geometry type="Geometry">
-                            <SpheroidalGeometryDecorator flattening="0.7">
-                                <geometry type="SpheGeometry">
-                                    <SersicGeometry index="3.8" radius="1000 pc"/>
-                                </geometry>
-                            </SpheroidalGeometryDecorator>
-                        </geometry>
-                        <sed type="StellarSED">
-                            <BruzualCharlotSED metallicity="0.02" age="10"/>
-                        </sed>
-                        <normalization type="StellarCompNormalization">
-                            <BolLuminosityStellarCompNormalization luminosity="2.2e10"/>
-                        </normalization>
-                    </PanStellarComp>
+# -----------------------------------------------------------------
 
-#young
-<sed type="StellarSED">
-                            <BruzualCharlotSED metallicity="0.02" age="6"/>
-                        </sed>
-                        <normalization type="StellarCompNormalization">
-                            <BolLuminosityStellarCompNormalization luminosity="2.4e10"/>
+# Bulge
+bulge_parameters = Map()
+bulge_parameters.flattening = 0.7
+bulge_parameters.index = 3.8
+bulge_parameters.radius = parse_quantity("1000 pc")
+bulge_parameters.metallicity = 0.02
+bulge_parameters.age = 10
+bulge_parameters.luminosity = 2.2e10 # bolometric
 
-# ionizing (ring)
-<PanStellarComp>
-                        <geometry type="Geometry">
-                            <RingGeometry radius="6000 pc" width="3000 pc" height="150 pc"/>
-                        </geometry>
-                        <sed type="StellarSED">
-                            <StarburstSED metallicity="0.02"/>
-                        </sed>
-                        <normalization type="StellarCompNormalization">
-                            <BolLuminosityStellarCompNormalization luminosity="2e9"/>
-                        </normalization>
-                    </PanStellarComp>
+# Young SED
+young_sed_parameters = Map()
+young_sed_parameters.metallicity = 0.02
+young_sed_parameters.age = 6
+young_luminosity = 2.4e10 # bolometric # FREE PARAMETER
 
-# ionizing (disk)
-<sed type="StellarSED">
-                            <StarburstSED metallicity="0.02"/>
-                        </sed>
-                        <normalization type="StellarCompNormalization">
-                            <BolLuminosityStellarCompNormalization luminosity="3e9"/>
-                        </normalization>
+# Ionizing ring
+ionizing_ring_parameters = Map()
+ionizing_ring_parameters.radius = parse_quantity("6000 pc")
+ionizing_ring_parameters.width = parse_quantity("3000 pc")
+ionizing_ring_parameters.height = parse_quantity("150 pc")
+ionizing_ring_parameters.metallicity = 0.02
+ionizing_ring_parameters.luminosity = 2e9 # bol
 
-# dust (ring)
-<DustComp>
-                                <geometry type="Geometry">
-                                    <RingGeometry radius="6000 pc" width="3000 pc" height="150 pc"/>
-                                </geometry>
-                                <mix type="DustMix">
-                                    <ZubkoDustMix writeMix="false" writeMeanMix="false" writeSize="false" graphitePops="7" silicatePops="7" PAHPops="5"/>
-                                </mix>
-                                <normalization type="DustCompNormalization">
-                                    <DustMassDustCompNormalization dustMass="136e5 Msun"/>
-                                </normalization>
-                            </DustComp>
+# Ionizing SED (disk)
+ionizing_sed_parameters = Map()
+ionizing_sed_parameters.metallicity = 0.02
+ionizing_luminosity = 3e9 # bol # FREE PARAMETER
 
-# dust (disk)
+# Dust mix
+dust_mix = Map()
+dust_mix.name = "Zubko"
+dust_mix.write = False
+dust_mix.write_mean = False
+dust_mix.write_size = False
+dust_mix.graphite_populations = 7
+dust_mix.silicate_populations = 7
+dust_mix.pah_populations = 5
 
-<mix type="DustMix">
-                                    <ZubkoDustMix writeMix="false" writeMeanMix="false" writeSize="false" graphitePops="7" silicatePops="7" PAHPops="5"/>
-                                </mix>
-                                <normalization type="DustCompNormalization">
-                                    <DustMassDustCompNormalization dustMass="[exp_dustmass:204e5 Msun]"/>
-                                </normalization>
+# Dust ring
+dust_ring_parameters = Map()
+dust_ring_parameters.radius = parse_quantity("6000 pc")
+dust_ring_parameters.width = parse_quantity("3000 pc")
+dust_ring_parameters.height = parse_quantity("150 pc")
+dust_ring_parameters.mass = parse_quantity("136e5 Msun")
+dust_ring_parameters.mix = dust_mix
+
+# Dust disk
+dust_mass = parse_quantity("204e5 Msun") # FREE PARAMETER
 
 # -----------------------------------------------------------------
 
@@ -192,14 +172,15 @@ class GalaxyTest(TestImplementation):
     This class ...
     """
 
-    def __init__(self, path):
+    def __init__(self, config=None):
 
         """
         This function ...
+        :param config:
         """
 
         # Call the constructor of the base class
-        super(GalaxyTest, self).__init__(path)
+        super(GalaxyTest, self).__init__(config)
 
         # Free parameters for fitting
         self.free_parameters = Map()
@@ -383,13 +364,37 @@ class GalaxyTest(TestImplementation):
 
     def create_dust_grid(self):
 
-        pass
+        """
+        This function ...
+        :return:
+        """
+
+        generator = DustGridGenerator()
+
+        # <CartesianDustGrid writeGrid="true" minX="-2e4 pc" maxX="2e4 pc" minY="-2e4 pc" maxY="2e4 pc" minZ="-500 pc" maxZ="500 pc">
+        # <meshX type="MoveableMesh">
+        # <SymPowMesh numBins="50" ratio="25"/>
+        #</meshX>
+        #                <meshY type="MoveableMesh">
+        #                    <SymPowMesh numBins="50" ratio="25"/>
+        #                </meshY>
+        #                <meshZ type="MoveableMesh">
+        #                    <SymPowMesh numBins="20" ratio="45"/>
+        #                </meshZ>
+        #            </CartesianDustGrid>
 
     # -----------------------------------------------------------------
 
     def create_wavelength_grid(self):
 
-        pass
+        """
+        This function ...
+        :return:
+        """
+
+        generator = WavelengthGridGenerator()
+
+        # <LogWavelengthGrid writeWavelengths="true" minWavelength="0.1 micron" maxWavelength="1000 micron" points="50"/>
 
     # -----------------------------------------------------------------
 
@@ -414,10 +419,13 @@ class GalaxyTest(TestImplementation):
         # Create clumpy ski file
         self.ski = LabeledSkiFile(ski_path)
 
+        # Set instrument
         self.set_instrument()
 
+        # Set stellar components
         self.set_stellar_components()
 
+        # Set dust components
         self.set_dust_components()
 
         # Save as new ski file
@@ -460,6 +468,11 @@ class GalaxyTest(TestImplementation):
     # -----------------------------------------------------------------
 
     def set_stellar_components(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Remove all stellar components
         self.ski.remove_all_stellar_components()
