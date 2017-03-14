@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
 from astropy.units import Quantity
+from astropy.coordinates import Angle
 
 # -----------------------------------------------------------------
 
@@ -57,6 +58,19 @@ def parse_quantity(argument, density=False, physical_type=None):
 
     # Create quantity
     return number * unit
+
+# -----------------------------------------------------------------
+
+def parse_angle(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    quantity = parse_quantity(argument, physical_type="angle")
+    return Angle(quantity.value, quantity.unit)
 
 # -----------------------------------------------------------------
 

@@ -127,7 +127,7 @@ class AnianoKernels(object):
         """
 
         # The path to the directory where the Aniano kernels are saved (to be reused)
-        self.kernels_path = fs.join(kernels_path, "aniano")
+        self.kernels_path = fs.create_directory_in(kernels_path, "aniano")
 
     # -----------------------------------------------------------------
 

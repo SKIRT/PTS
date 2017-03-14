@@ -317,7 +317,8 @@ class ConvolutionKernel(Frame):
         log.debug("Shifting the kernel center by (" + str(shift_x) + ", " + str(shift_y) + ") pixels ...")
 
         # Shift
-        self._data = shift(self._data, [shift_x, shift_y])
+        #self._data = shift(self._data, [shift_x, shift_y])
+        self._data = shift(self._data, [shift_y, shift_x])
 
         # CHECK AGAIN
 
@@ -385,60 +386,6 @@ class ConvolutionKernel(Frame):
         x_mean = model.x_mean.value
         y_mean = model.y_mean.value
         return x_mean, y_mean
-
-    # -----------------------------------------------------------------
-
-    def center_aniano(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Debugging
-        log.debug("Centering the kernel ...")
-
-        # FROM CONVOLVE_IMAGE.PRO (G. Aniano)
-
-        center_x = int(0.5 * (self.xsize - 1))
-        center_y = int(0.5 * (self.ysize - 1))
-
-        # get_maximun,image,x_max,y_max
-
-        x_max, y_max = self.get_maximum()
-
-        # ; determine the needed shifts
-        shift_x = center_x - x_max
-        shift_y = center_y - y_max
-
-        # ; make the shift if nonzero
-        if (shift_x != 0) or (shift_y != 0):
-
-            # Debugging
-            log.debug("Shifting the kernel center by (" + str(shift_x) + ", " + str(shift_y) + ") pixels ...")
-
-            self._data = shift(self._data, [shift_x,shift_y])
-
-            # Y
-            self._data[:abs(shift_y),:] = 0.0
-            self._data[self.ysize-1-abs(shift_y):self.ysize,:] = 0.0
-
-            # X
-            self._data[:,:abs(shift_x)] = 0.0
-            self._data[:,self.xsize-1-abs(shift_x):] = 0.0
-
-        # CHECK
-
-        # Calculate shift again
-        x_max, y_max = self.get_maximum()
-        new_shift_x = center_x - x_max
-        new_shift_y = center_y - y_max
-
-        # Raise exception if there is still a shift
-        if (new_shift_x != 0) or (new_shift_y != 0): raise RuntimeError("Something went wrong during the kernel centering: "
-                                                                "new shift x = " + str(new_shift_x) + ", new shift y = "
-                                                                + str(new_shift_y) + " (previous shift x = " + str(shift_x)
-                                                                        + ", previous shift y = " + str(shift_y))
 
     # -----------------------------------------------------------------
 

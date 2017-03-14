@@ -111,7 +111,7 @@ class GalaxyDecomposer(DecompositionComponent):
         self.setup(**kwargs)
 
         # 2. Get the decomposition parameters
-        self.decompose()
+        if not self.has_components: self.decompose()
 
         # 3. Create the 3D models (deproject the 2D models)
         self.create_models()
@@ -130,6 +130,18 @@ class GalaxyDecomposer(DecompositionComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_components(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.disk is not None and self.bulge is not None
+
+    # -----------------------------------------------------------------
+
     def setup(self, **kwargs):
 
         """
@@ -140,6 +152,10 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Call the setup function of the base class
         super(GalaxyDecomposer, self).setup(**kwargs)
+
+        # Get provided models
+        self.disk = kwargs.pop("disk", None)
+        self.bulge = kwargs.pop("bulge", None)
 
         # Check the method and filter
         if self.config.method == "s4g" and self.config.filter != "IRAC I1": raise ValueError("When using the S4G method, the filter can only be 'IRAC I1'")
@@ -266,10 +282,10 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Creating the 3D bulge and disk models ...")
 
         # Create the bulge model
-        self.create_bulge_model()
+        if self.bulge is None: self.create_bulge_model()
 
         # Create the disk model
-        self.create_disk_model()
+        if self.disk is None: self.create_disk_model()
 
     # -----------------------------------------------------------------
 

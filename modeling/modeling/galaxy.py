@@ -106,6 +106,10 @@ class GalaxyModeler(ModelerBase):
         self.seds = None
         self.images = None
 
+        #
+        self.disk_model = None
+        self.bulge_model = None
+
     # -----------------------------------------------------------------
 
     @property
@@ -183,6 +187,9 @@ class GalaxyModeler(ModelerBase):
         self.properties = kwargs.pop("properties", None)
         self.seds = kwargs.pop("seds", None)
         self.images = kwargs.pop("images", None)
+
+        self.bulge_model = kwargs.pop("bulge_model", None)
+        self.disk_model = kwargs.pop("disk_model", None)
 
         # Call the setup function of the base class
         super(GalaxyModeler, self).setup(**kwargs)
@@ -527,7 +534,7 @@ class GalaxyModeler(ModelerBase):
         decomposer.config.path = self.modeling_path
 
         # Run the decomposer
-        decomposer.run()
+        decomposer.run(disk=self.disk_model, bulge=self.bulge_model)
 
         # Mark the end and save the history file
         self.history.mark_end()

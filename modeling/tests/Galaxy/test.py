@@ -19,12 +19,10 @@ from astropy.units import dimensionless_angles
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
 from pts.core.basics.unit import parse_unit as u
-from pts.core.basics.configuration import Configuration
 from pts.core.simulation.skifile import LabeledSkiFile
-from pts.core.basics.range import QuantityRange, RealRange
 from pts.core.basics.map import Map
 from pts.do.commandline import Command
-from pts.core.basics.quantity import parse_quantity
+from pts.core.basics.quantity import parse_quantity, parse_angle
 from pts.modeling.basics.instruments import FullInstrument
 from pts.modeling.basics.properties import GalaxyProperties
 from pts.magic.basics.coordinate import SkyCoordinate
@@ -35,6 +33,8 @@ from pts.magic.basics.pixelscale import Pixelscale
 from pts.magic.misc.kernels import AnianoKernels
 from pts.core.filter.filter import parse_filter
 from pts.core.test.implementation import TestImplementation
+from pts.core.tools.logging import log
+from pts.modeling.basics.models import SersicModel3D, ExponentialDiskModel3D, RingModel3D
 
 # -----------------------------------------------------------------
 
@@ -60,6 +60,132 @@ fake_name = "GALAXY X"
 
 # -----------------------------------------------------------------
 
+# Dictionary with the parameters for the spiral disks for different components
+spiral_parameters = dict()
+
+# Young stars
+young_parameters = Map()
+young_parameters.radial_scale = parse_quantity("2600 pc")
+young_parameters.axial_scale = parse_quantity("260 pc")
+young_parameters.radial_truncation = parse_quantity("2e4 pc")
+young_parameters.axial_truncation = parse_quantity("1e4 pc")
+young_parameters.inner_radius = parse_quantity("0 pc")
+young_parameters.arms = 2
+young_parameters.pitch = parse_angle("18 deg")
+young_parameters.radius = parse_quantity("500 pc")
+young_parameters.phase = parse_angle("0 deg")
+young_parameters.perturbation_weight = 0.3
+young_parameters.index = 1
+spiral_parameters["young"] = young_parameters
+
+# Ionizing stars
+ionizing_parameters = Map()
+ionizing_parameters.radial_scale = parse_quantity("2600 pc")
+ionizing_parameters.axial_scale = parse_quantity("150 pc")
+ionizing_parameters.radial_truncation = parse_quantity("2e4 pc")
+ionizing_parameters.axial_truncation = parse_quantity("1e4 pc")
+ionizing_parameters.inner_radius = parse_quantity("0 pc")
+ionizing_parameters.arms = 2
+ionizing_parameters.pitch = parse_angle("18 deg")
+ionizing_parameters.radius = parse_quantity("500 pc")
+ionizing_parameters.phase = parse_angle("0 deg")
+ionizing_parameters.perturbation_weight = 1
+ionizing_parameters.index = 1
+spiral_parameters["ionizing"] = ionizing_parameters
+
+# Dust
+dust_parameters = Map()
+dust_parameters.radial_scale = parse_quantity("2600 pc")
+dust_parameters.axial_scale = parse_quantity("150 pc")
+dust_parameters.radial_truncation = parse_quantity("2e4 pc")
+dust_parameters.axial_truncation = parse_quantity("1e4 pc")
+dust_parameters.inner_radius = parse_quantity("0 pc")
+dust_parameters.arms = 2
+dust_parameters.pitch = parse_angle("18 deg")
+dust_parameters.radius = parse_quantity("500 pc")
+dust_parameters.phase = parse_angle("0 deg")
+dust_parameters.perturbation_weight = 1
+dust_parameters.index = 1
+spiral_parameters["dust"] = dust_parameters
+
+# -----------------------------------------------------------------
+
+titles = dict()
+titles["bulge"] = "Evolved stellar bulge"
+titles["old"] = "Evolved stellar disk"
+titles["young"] = "Young stars"
+titles["ionizing"] = "Ionizing stars"
+titles["dust"] = "Dust disk"
+
+#old bulge
+<PanStellarComp>
+                        <geometry type="Geometry">
+                            <SpheroidalGeometryDecorator flattening="0.7">
+                                <geometry type="SpheGeometry">
+                                    <SersicGeometry index="3.8" radius="1000 pc"/>
+                                </geometry>
+                            </SpheroidalGeometryDecorator>
+                        </geometry>
+                        <sed type="StellarSED">
+                            <BruzualCharlotSED metallicity="0.02" age="10"/>
+                        </sed>
+                        <normalization type="StellarCompNormalization">
+                            <BolLuminosityStellarCompNormalization luminosity="2.2e10"/>
+                        </normalization>
+                    </PanStellarComp>
+
+#young
+<sed type="StellarSED">
+                            <BruzualCharlotSED metallicity="0.02" age="6"/>
+                        </sed>
+                        <normalization type="StellarCompNormalization">
+                            <BolLuminosityStellarCompNormalization luminosity="2.4e10"/>
+
+# ionizing (ring)
+<PanStellarComp>
+                        <geometry type="Geometry">
+                            <RingGeometry radius="6000 pc" width="3000 pc" height="150 pc"/>
+                        </geometry>
+                        <sed type="StellarSED">
+                            <StarburstSED metallicity="0.02"/>
+                        </sed>
+                        <normalization type="StellarCompNormalization">
+                            <BolLuminosityStellarCompNormalization luminosity="2e9"/>
+                        </normalization>
+                    </PanStellarComp>
+
+# ionizing (disk)
+<sed type="StellarSED">
+                            <StarburstSED metallicity="0.02"/>
+                        </sed>
+                        <normalization type="StellarCompNormalization">
+                            <BolLuminosityStellarCompNormalization luminosity="3e9"/>
+                        </normalization>
+
+# dust (ring)
+<DustComp>
+                                <geometry type="Geometry">
+                                    <RingGeometry radius="6000 pc" width="3000 pc" height="150 pc"/>
+                                </geometry>
+                                <mix type="DustMix">
+                                    <ZubkoDustMix writeMix="false" writeMeanMix="false" writeSize="false" graphitePops="7" silicatePops="7" PAHPops="5"/>
+                                </mix>
+                                <normalization type="DustCompNormalization">
+                                    <DustMassDustCompNormalization dustMass="136e5 Msun"/>
+                                </normalization>
+                            </DustComp>
+
+# dust (disk)
+
+<mix type="DustMix">
+                                    <ZubkoDustMix writeMix="false" writeMeanMix="false" writeSize="false" graphitePops="7" silicatePops="7" PAHPops="5"/>
+                                </mix>
+                                <normalization type="DustCompNormalization">
+                                    <DustMassDustCompNormalization dustMass="[exp_dustmass:204e5 Msun]"/>
+                                </normalization>
+
+# -----------------------------------------------------------------
+
 class GalaxyTest(TestImplementation):
 
     """
@@ -75,18 +201,26 @@ class GalaxyTest(TestImplementation):
         # Call the constructor of the base class
         super(GalaxyTest, self).__init__(path)
 
+        # Free parameters for fitting
         self.free_parameters = Map()
 
         # Path to the ski file for the reference simulation
         self.reference_ski_path = None
-
         self.simulation_output_path = None
+
+        # The reference ski file
+        self.ski = None
 
         # Galaxy properties
         self.properties = None
 
         # Galaxy properties
         self.wcs = None
+
+        # Configurables
+        self.launcher = None
+        self.flux_calculator = None
+        self.image_maker = None
 
     # -----------------------------------------------------------------
 
@@ -98,11 +232,8 @@ class GalaxyTest(TestImplementation):
         :return:
         """
 
-        # Call the setup function
+        # 1. Call the setup function
         self.setup(**kwargs)
-
-        # Set paths
-        self.set_paths()
 
         # Set parameters
         self.set_parameters()
@@ -112,6 +243,17 @@ class GalaxyTest(TestImplementation):
 
         # Create WCS
         self.create_wcs()
+
+        # Create galaxy components
+        self.create_components()
+
+        # Create instrument
+
+        # Create wavelength grid
+        self.create_wavelength_grid()
+
+        # Create dust grid
+        self.create_dust_grid()
 
         # Create ski file
         self.create_ski()
@@ -144,15 +286,6 @@ class GalaxyTest(TestImplementation):
         # Call the
         super(GalaxyTest, self).setup(**kwargs)
 
-    # -----------------------------------------------------------------
-
-    def set_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
         # Reference ski path
         self.reference_ski_path = fs.join(self.path, "galaxy_clumpy.ski")
 
@@ -162,6 +295,11 @@ class GalaxyTest(TestImplementation):
     # -----------------------------------------------------------------
 
     def set_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Define the true values for the free parameters
         self.free_parameters.dust_mass = None
@@ -177,10 +315,12 @@ class GalaxyTest(TestImplementation):
         :return:
         """
 
+        # Inform the user
+        log.info("Setting galaxy properties ...")
+
         # Galaxy poperties
         galaxy_distance = parse_quantity("3.63 Mpc")
         galaxy_inclination = Angle(59, "deg")
-        #galaxy_azimuth = Angle(0, "deg")
         galaxy_pa = Angle(67, "deg")
 
         # Generate a random coordinate for the center of the galaxy
@@ -211,6 +351,9 @@ class GalaxyTest(TestImplementation):
         :return:
         """
 
+        # Inform the user
+        log.info("Creating WCS ...")
+
         # Create WCS
         size = PixelStretch(1000, 1000)
         center_pixel = PixelCoordinate(500, 500)
@@ -220,11 +363,44 @@ class GalaxyTest(TestImplementation):
 
     # -----------------------------------------------------------------
 
+    def create_components(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the galaxy components ...")
+
+        # Create a Sersic model for the bulge
+        #self.bulge = SersicModel3D.from_2d(self.components["bulge"], self.properties.inclination, self.disk_pa, azimuth_or_tilt=self.config.bulge_deprojection_method)
+
+        # Create an exponential disk model for the disk
+        #self.disk = ExponentialDiskModel3D.from_2d(self.components["disk"], self.properties.inclination, self.disk_pa)
+
+    # -----------------------------------------------------------------
+
+    def create_dust_grid(self):
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def create_wavelength_grid(self):
+
+        pass
+
+    # -----------------------------------------------------------------
+
     def create_ski(self):
 
         """
         This function ...
         """
+
+        # Inform the user
+        log.info("Creating ski file ...")
 
         fraction = 0.5
         count = 1000
@@ -236,29 +412,38 @@ class GalaxyTest(TestImplementation):
         ski_path = fs.join(this_dir_path, "galaxy.ski")
 
         # Create clumpy ski file
-        ski = LabeledSkiFile(ski_path)
+        self.ski = LabeledSkiFile(ski_path)
 
-        # Add clumpiness to all stellar components
-        for component_id in ski.get_stellar_component_ids():
-            ski.add_stellar_component_clumpiness(component_id, fraction, count, radius, cutoff, kernel_type)
+        self.set_instrument()
 
-        # Add clumpiness to all dust components
-        for component_id in ski.get_dust_component_ids():
-            ski.add_dust_component_clumpiness(component_id, fraction, count, radius, cutoff, kernel_type)
+        self.set_stellar_components()
+
+        self.set_dust_components()
+
+        # Save as new ski file
+        self.ski.saveto(self.reference_ski_path)
+
+    # -----------------------------------------------------------------
+
+    def set_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         # Add full instrument that writes out photon counts
-        ski.remove_all_instruments()
+        self.ski.remove_all_instruments()
 
         # Create a full instrument
         distance = self.properties.distance
         inclination = self.properties.inclination
-        #azimuth = self.properties.azimuth
-        azimuth = Angle(0, "deg")
+        azimuth = parse_angle("0 deg")
         position_angle = self.properties.position_angle
         field_x = parse_quantity("55000 pc")
         field_y = parse_quantity("5500 pc")
-        pixels_x = 1000
-        pixels_y = 1000
+        pixels_x = self.config.nxpixels
+        pixels_y = self.config.nypixels
         center_x = parse_quantity("130 pc")
         center_y = parse_quantity("-181 pc")
         scattering_levels = 0
@@ -270,10 +455,37 @@ class GalaxyTest(TestImplementation):
                                     center_y=center_y, scattering_levels=scattering_levels, counts=counts)
 
         # Add the instrument
-        ski.add_instrument("earth", instrument)
+        self.ski.add_instrument("earth", instrument)
 
-        # Save as new ski file
-        ski.saveto(self.reference_ski_path)
+    # -----------------------------------------------------------------
+
+    def set_stellar_components(self):
+
+        # Remove all stellar components
+        self.ski.remove_all_stellar_components()
+
+        # self, component_id, radius, perturbation_weight, arms=1, pitch=0.1745329252, , phase=0, index=1
+        self.ski.add_stellar_component_clumpiness(component_id, radius, perturbation_weight, arms, pitch, phase, index)
+
+        # Add clumpiness to all stellar components
+        for component_id in self.ski.get_stellar_component_ids():
+            self.ski.add_stellar_component_clumpiness(component_id, fraction, count, radius, cutoff, kernel_type)
+
+    # -----------------------------------------------------------------
+
+    def set_dust_components(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Remove all dust components
+        self.ski.remove_all_dust_components()
+
+        # Add clumpiness to all dust components
+        for component_id in self.ski.get_dust_component_ids():
+            self.ski.add_dust_component_clumpiness(component_id, fraction, count, radius, cutoff, kernel_type)
 
     # -----------------------------------------------------------------
 
@@ -283,6 +495,9 @@ class GalaxyTest(TestImplementation):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Launching the reference simulation ...")
 
         # Settings
         settings_launch = dict()
@@ -295,7 +510,7 @@ class GalaxyTest(TestImplementation):
 
         # Launch command
         launch = Command("launch_simulation", "launch the reference simulation", settings_launch, input_launch, cwd=".")
-        instance = self.run_command(launch)
+        self.launcher = self.run_command(launch)
 
     # -----------------------------------------------------------------
 
@@ -305,6 +520,9 @@ class GalaxyTest(TestImplementation):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Creating the observed mock SED ...")
 
         # Settings
         settings_sed = dict()
@@ -323,7 +541,7 @@ class GalaxyTest(TestImplementation):
 
         # Launch command
         calculate = Command("observed_fluxes", "create the mock SED", settings_sed, input_sed, cwd=".")
-        instance = self.run_command(calculate)
+        self.flux_calculator = self.run_command(calculate)
 
         # Determine the path to the mock SED
         mock_sed_path = "spiral_earth_fluxes.dat"
@@ -336,6 +554,9 @@ class GalaxyTest(TestImplementation):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Creating the observed mock images ...")
 
         # Create Aniano kernels object
         aniano = AnianoKernels()
@@ -369,7 +590,7 @@ class GalaxyTest(TestImplementation):
         #commands.append(create_images)
 
         make = Command("observed_images", "create the mock images", settings_images, input_images, cwd=".")
-        image_maker = self.run_command(make)
+        self.image_maker = self.run_command(make)
 
         # MAKE DATA:
 
@@ -378,15 +599,15 @@ class GalaxyTest(TestImplementation):
         images_path = fs.create_directory_in(ref_path, "images")
 
         # Determine the name of the datacube
-        datacube_names = image_maker.images.keys()
+        datacube_names = self.image_maker.images.keys()
         if len(datacube_names) > 1: raise RuntimeError("Unexpected number of datacubes")
         datacube_name = datacube_names[0]
 
         # Loop over the images
-        for filter_name in image_maker.images[datacube_name]:
+        for filter_name in self.image_maker.images[datacube_name]:
 
             # Get the image
-            image = image_maker.images[datacube_name][filter_name]
+            image = self.image_maker.images[datacube_name][filter_name]
 
             # Save the image
             image_path = fs.join(images_path, filter_name + ".fits")
@@ -400,6 +621,9 @@ class GalaxyTest(TestImplementation):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Setting up the modelling ...")
 
         # Settings
         settings_setup = dict()
@@ -428,6 +652,9 @@ class GalaxyTest(TestImplementation):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Performing the modelling ...")
 
         # Settings
         settings_model = dict()

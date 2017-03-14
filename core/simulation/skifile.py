@@ -1773,17 +1773,56 @@ class SkiFile:
         new_geometry = parent.makeelement("ReadFitsGeometry", attrs)
         parent.append(new_geometry)
 
+    ## This function sets the geometry of the specified stellar component to a ring geometry
+    def set_stellar_component_ring_geometry(self, component_id, radius, width, height):
+
+        from ..basics.quantity import represent_quantity
+
+        # Get the stellar component geometry
+        geometry = self.get_stellar_component_geometry(component_id)
+
+        # Get the parent
+        parent = geometry.getparent()
+
+        # Remove the old geometry
+        parent.remove(geometry)
+
+        # Create and add the new geometry
+        attrs = {"radius": represent_quantity(radius), "width": represent_quantity(width), "height": represent_quantity(height)}
+        new_geometry = parent.makeelement("RingGeometry", attrs)
+        parent.append(new_geometry)
+
+    ## This function sets the geometry of the specified dust component to a ring geometry
+    def set_dust_component_ring_geometry(self, component_id, radius, width, height):
+
+        from ..basics.quantity import represent_quantity
+
+        # Get the dust component geometry
+        geometry = self.get_dust_component_geometry(component_id)
+
+        # Get the parent
+        parent = geometry.getparent()
+
+        # Remove the old geometry
+        parent.remove(geometry)
+
+        # Create and add the new geometry
+        attrs = {"radius": represent_quantity(radius), "width": represent_quantity(width),
+                 "height": represent_quantity(height)}
+        new_geometry = parent.makeelement("RingGeometry", attrs)
+        parent.append(new_geometry)
+
     ## This function returns the geometry of the specified stellar component
     def get_stellar_component_geometry_object(self, component_id):
 
-        from ...modeling.basics.models import SersicModel3D, ExponentialDiskModel3D, DeprojectionModel3D
+        from ...modeling.basics.models import SersicModel3D, ExponentialDiskModel3D, DeprojectionModel3D, RingModel3D
         pass
 
     ## This function sets the geometry of the specified stellar component.
     def set_stellar_component_geometry(self, component_id, model):
 
         from astropy.coordinates import Angle
-        from ...modeling.basics.models import SersicModel3D, ExponentialDiskModel3D, DeprojectionModel3D
+        from ...modeling.basics.models import SersicModel3D, ExponentialDiskModel3D, DeprojectionModel3D, RingModel3D
 
         # Rotation:
         #  alpha: 0 to 360 degrees
@@ -1851,6 +1890,17 @@ class SkiFile:
             yc = model.y_center
             hz = model.scale_height
             self.set_stellar_component_fits_geometry(component_id, filename, scale, pa, i, nx, ny, xc, yc, hz)
+
+        # Ring model
+        elif isinstance(model, RingModel3D):
+
+            # Get the properties
+            radius = model.radius
+            width = model.width
+            height = model.height
+
+            # Set the geometry
+            self.set_stellar_component_ring_geometry(component_id, radius, width, height)
 
         # Unsupported model
         else: raise ValueError("Models other than SersicModel3D, ExponentialDiskModel3D and DeprojectionModel3D are not supported yet. This model is of type " + str(type(model)))
@@ -2004,6 +2054,64 @@ class SkiFile:
 
         # Set new dust component geometry
         parent.append(decorator)
+
+    ## This function adds spiral structure to a stellar component
+    def add_stellar_component_spiral_structure(self, component_id, radius, perturbation_weight, arms=1, pitch=0.1745329252, phase=0, index=1):
+
+        class_name = "SpiralStructureGeometryDecorator"
+
+        from ..basics.quantity import represent_quantity
+
+        # Get the geometry
+        geometry = self.get_dust_component_geometry(component_id)
+
+        # Remove the old geometry from the tree
+        parent = geometry.getparent()
+        parent.remove(geometry)
+
+        # Set attributes dictionary
+        attrs = dict()
+
+        # <ItemProperty name="geometry" title="the axisymmetric geometry to be decorated with spiral structure" base="AxGeometry"/>
+        # <IntProperty name="arms" title="the number of spiral arms" min="1" max="100" default="1"/>
+        # <DoubleProperty name="pitch" title="the pitch angle" quantity="posangle" min="0 rad" max="1.570796327 rad" default="0.1745329252 rad"/>
+        # <DoubleProperty name="radius" title="the radius zero-point" quantity="length" min="0 m"/>
+        # <DoubleProperty name="phase" title="the phase zero-point" quantity="posangle" min="0 rad" max="6.283185307 rad" default="0 rad"/>
+        # <DoubleProperty name="perturbWeight" title="the weight of the spiral perturbation" quantity="" min="0" max="1"/>
+        # <IntProperty name="index" title="the arm-interarm size ratio index" min="0" max="10" default="1"/>
+
+        attrs["arms"] = str(arms)
+        attrs["pitch"] = # default: 0.1745329252 rad
+        attrs["radius"] = # min: 0 m
+        attrs["phase"] =
+        attrs["perturbWeight"] =
+        attrs["index"] =
+        decorator = self.tree.getroot().makeelement(class_name, attrs)
+
+        # Add the underlying geometry
+        geometry_parent = decorator.makeelement("geometry", {"type": "AxGeometry"})
+        geometry_parent.append(geometry)
+        decorator.append(geometry_parent)
+
+        # Set the new stellar component geometry
+        parent.append(decorator)
+
+    ## THis function adds spiral structure to a dust component
+    def add_dust_component_spiral_structure(self, component_id, radius, perturbation_weight, arms=1, pitch=0.1745329252, phase=0, index=1):
+
+        class_name = "SpiralStructureGeometryDecorator"
+
+        from ..basics.quantity import represent_quantity
+
+        # Get the geometry
+        geometry = self.get_dust_component_geometry(component_id)
+
+        # Remove the old geometry from the tree
+        parent = geometry.getparent()
+        parent.remove(geometry)
+
+        # Set attributes dictionary
+        attrs = dict()
 
     ## This function sets the geometry of the specified stellar component to a Sersic profile with an specific y and z flattening
     def set_stellar_component_sersic_geometry(self, component_id, index, radius, y_flattening=1, z_flattening=1):

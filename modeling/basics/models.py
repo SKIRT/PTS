@@ -205,6 +205,32 @@ class ExponentialDiskModel3D(Model):
 
 # -----------------------------------------------------------------
 
+class RingModel3D(Model):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(RingModel3D, self).__init__()
+
+        # Define the properties
+        self.add_property("radius", "quantity", "radius of the ring")
+        self.add_property("width", "quantity", "width of the ring")
+        self.add_property("height", "quantity", "height of the ring")
+
+        # Set the properties
+        self.set_properties(kwargs)
+
+# -----------------------------------------------------------------
+
 class DeprojectionModel3D(Model):
 
     """

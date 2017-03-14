@@ -858,36 +858,9 @@ def angle(argument, default_unit=None):
     :return:
     """
 
-    # OLD IMPLEMENTATION
-    #splitted = entry.split()
-    #value = float(splitted[0])
-    #try: unit = splitted[1]
-    #except IndexError: unit = default_unit
-    # Create an Angle object and return it
-    #if unit is not None: value = Angle(value, unit)
-    #return value
+    from ..basics.quantity import parse_angle
 
-    # NEW IMPLEMENTATION
-    units = ""
-    number = 1.0
-    while argument:
-        try:
-            number = float(argument)
-            break
-        except ValueError:
-            units = argument[-1:] + units
-            argument = argument[:-1]
-
-    if not units: # if string is empty
-
-        if default_unit is None: raise ValueError("Unit not specified")
-        else: units = default_unit
-
-    # Import astronomical modules
-    from astropy.coordinates import Angle
-
-    # Create and return the Angle object
-    return Angle(number, units)
+    return parse_angle(argument)
 
 # -----------------------------------------------------------------
 
