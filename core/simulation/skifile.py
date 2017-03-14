@@ -2180,20 +2180,13 @@ class SkiFile:
         # Set attributes dictionary
         attrs = dict()
 
-        # <ItemProperty name="geometry" title="the axisymmetric geometry to be decorated with spiral structure" base="AxGeometry"/>
-        # <IntProperty name="arms" title="the number of spiral arms" min="1" max="100" default="1"/>
-        # <DoubleProperty name="pitch" title="the pitch angle" quantity="posangle" min="0 rad" max="1.570796327 rad" default="0.1745329252 rad"/>
-        # <DoubleProperty name="radius" title="the radius zero-point" quantity="length" min="0 m"/>
-        # <DoubleProperty name="phase" title="the phase zero-point" quantity="posangle" min="0 rad" max="6.283185307 rad" default="0 rad"/>
-        # <DoubleProperty name="perturbWeight" title="the weight of the spiral perturbation" quantity="" min="0" max="1"/>
-        # <IntProperty name="index" title="the arm-interarm size ratio index" min="0" max="10" default="1"/>
-
+        # Set the properties
         attrs["arms"] = str(arms)
-        attrs["pitch"] = # default: 0.1745329252 rad
-        attrs["radius"] = # min: 0 m
-        attrs["phase"] =
-        attrs["perturbWeight"] =
-        attrs["index"] =
+        attrs["pitch"] = str_from_angle(pitch) # min: 0 rad, 1.570796327 rad, default: 0.1745329252 rad
+        attrs["radius"] = represent_quantity(radius) # min: 0 m
+        attrs["phase"] = str_from_angle(phase) # min: 0 rad, max: 6.283185307 rad, default: 0 rad
+        attrs["perturbWeight"] = repr(perturbation_weight) # min: 0, max: 1
+        attrs["index"] = str(index) # min: 0, max: 10, default: 1
         decorator = self.tree.getroot().makeelement(class_name, attrs)
 
         # Add the underlying geometry
@@ -2220,6 +2213,23 @@ class SkiFile:
 
         # Set attributes dictionary
         attrs = dict()
+
+        # Set the properties
+        attrs["arms"] = str(arms)
+        attrs["pitch"] = str_from_angle(pitch)  # min: 0 rad, 1.570796327 rad, default: 0.1745329252 rad
+        attrs["radius"] = represent_quantity(radius)  # min: 0 m
+        attrs["phase"] = str_from_angle(phase)  # min: 0 rad, max: 6.283185307 rad, default: 0 rad
+        attrs["perturbWeight"] = repr(perturbation_weight)  # min: 0, max: 1
+        attrs["index"] = str(index)  # min: 0, max: 10, default: 1
+        decorator = self.tree.getroot().makeelement(class_name, attrs)
+
+        # Add the underlying geometry
+        geometry_parent = decorator.makeelement("geometry", {"type": "AxGeometry"})
+        geometry_parent.append(geometry)
+        decorator.append(geometry_parent)
+
+        # Set the new dust component geometry
+        parent.append(decorator)
 
     ## This function sets the geometry of the specified stellar component to a Sersic profile with an specific y and z flattening
     def set_stellar_component_sersic_geometry(self, component_id, index, radius, y_flattening=1, z_flattening=1):

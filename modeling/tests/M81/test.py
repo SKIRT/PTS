@@ -36,6 +36,7 @@ from pts.core.basics.quantity import PhotometricQuantity, parse_quantity
 from pts.core.filter.broad import BroadBandFilter
 from pts.magic.core.frame import Frame
 from pts.magic.region.list import SkyRegionList
+from pts.core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
@@ -359,7 +360,7 @@ class M81Test(TestImplementation):
         super(M81Test, self).setup(**kwargs)
 
         # Reference base path
-        self.reference_path = fs.create_directories_in(self.path, "ref")
+        self.reference_path = fs.create_directory_in(self.path, "ref")
 
         # Reference ski path
         self.ski_path = fs.join(self.reference_path, "M81.ski")
@@ -459,6 +460,36 @@ class M81Test(TestImplementation):
         # Inform the user
         log.info("Creating the WCS ...")
 
+        min_pixelscale = None
+
+        # Determine the path to the headers directory
+        headers_path = fs.join(m81_data_path, "headers")
+
+        for path, name in fs.files_in_path(headers_path, extension="txt", returns=["path", "name"]):
+
+            # Get WCS
+            wcs = CoordinateSystem.from_header_file(path)
+
+            # Adjust the pixelscale
+            if min_pixelscale is None:
+                min_pixelscale = wcs.pixelscale
+                self.wcs = wcs
+            elif min_pixelscale > wcs.pixelscale:
+                min_pixelscale = wcs.pixelscale
+                self.wcs = wcs
+
+    # -----------------------------------------------------------------
+
+    def create_wcs_not_working(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the WCS ...")
+
         # Determine the path to the headers directory
         headers_path = fs.join(m81_data_path, "headers")
 
@@ -530,7 +561,7 @@ class M81Test(TestImplementation):
         input_dict["add_emission_lines"] = True
         input_dict["min_wavelength"] = parse_quantity("0.1 micron")
         input_dict["max_wavelength"] = parse_quantity("1000 micron")
-        input_dict["filters"] = fitting_filter_names
+        input_dict["filters"] = [parse_filter(string) for string in fitting_filter_names]
 
         # Run the generator
         generator.run(**input_dict)
@@ -1068,5 +1099,17 @@ class M81Test(TestImplementation):
 
         # Add the command
         # commands.append(command)
+
+# -----------------------------------------------------------------
+
+def test(temp_path):
+
+    """
+    This function ...
+    :param temp_path:
+    :return:
+    """
+
+    pass
 
 # -----------------------------------------------------------------

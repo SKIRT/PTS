@@ -79,7 +79,7 @@ class SersicModel3D(Model):
 
         # Define properties
         self.add_property("effective_radius", "quantity", "effective radius")
-        self.add_property("index", "integer", "sersic index")
+        self.add_property("index", "real", "sersic index")
         self.add_property("y_flattening", "real", "flattening along y direction", 1.)
         self.add_property("z_flattening", "real", "flattening along z direction", 1.)
         self.add_property("azimuth", "angle", "azimuth angle", Angle(0.0, "deg"))
@@ -518,7 +518,7 @@ class SersicModel2D(Model):
         self.add_property("axial_ratio", "real", "axial ratio")
         self.add_property("position_angle", "angle", "position angle") # (degrees ccw from North)
         self.add_property("effective_radius", "quantity", "effective radius")
-        self.add_property("index", "integer", "sersic index")
+        self.add_property("index", "real", "sersic index")
 
         # Set properties
         self.set_properties(kwargs)

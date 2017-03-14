@@ -168,14 +168,28 @@ class CoordinateSystem(wcs.WCS):
         # Construct header
         header = Header()
 
-        header["CRPIX1"] = center_x
-        header["CRVAL1"] = center_sky.ra.to("deg").value
-        header["CDELT1"] = pixelscale.x.to("deg").value
-        header["CRPIX2"] = center_y
-        header["CRVAL2"] = center_sky.dec.to("deg").value
-        header["CDELT2"] = pixelscale.y.to("deg").value
+        header["SIMPLE"] = True
+        header["BITPIX"] = -32
+
+        header["NAXIS"] = 2
         header["NAXIS1"] = size.x
         header["NAXIS2"] = size.y
+
+        header["CRVAL1"] = center_sky.ra.to("deg").value
+        header["CRVAL2"] = center_sky.dec.to("deg").value
+
+        header["RADESYS"] = "ICRS"
+
+        header["CTYPE1"] = "RA--TAN"
+        header["CTYPE2"] = "DEC--TAN"
+
+        header["CRPIX1"] = center_x
+        header["CRPIX2"] = center_y
+
+        header["CDELT1"] = pixelscale.x.to("deg").value
+        header["CDELT2"] = pixelscale.y.to("deg").value
+
+        print(header)
 
         # Convert into wcs
         return cls(header=header)
@@ -203,8 +217,8 @@ class CoordinateSystem(wcs.WCS):
         dec_distance = abs(dec_end - dec_begin)
 
         # Detemrine the nubmerof required pixels in the x and y directions
-        xpixels = int(ra_distance / pixelscale.ra)
-        ypixels = int(dec_distance / pixelscale.dec)
+        xpixels = int(ra_distance / pixelscale.x)
+        ypixels = int(dec_distance / pixelscale.y)
 
         # Set size and center pixel
         size = PixelStretch(xpixels, ypixels)

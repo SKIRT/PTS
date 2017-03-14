@@ -139,7 +139,7 @@ class SimplePropertyComposite(object):
                 the_type = self._ptypes[name]
                 parsing_function = getattr(parsing, the_type)
                 try: value = parsing_function(string)
-                except ValueError: raise ValueError("The value given is of the wrong type: '" + ptype + "', must be '" + the_type + "' (value is " + string + ")")
+                except ValueError: raise ValueError("The value of '" + str(value) + "' for '" + name +  "' given is of the wrong type: '" + ptype + "', must be '" + the_type + "' (value is " + string + ")")
 
         # Actually set the attribute
         #super(SimplePropertyComposite, self).__setattr__(name, value)

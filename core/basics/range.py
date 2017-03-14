@@ -310,17 +310,26 @@ class Range(object):
 
     # -----------------------------------------------------------------
 
-    def adjust(self, value):
+    def adjust(self, value_or_range):
 
         """
         This function ...
-        :param value:
+        :param value_or_range:
         :return:
         """
 
-        # Adjust minimal and maximal speedup
-        if value < self.min: self._min = value
-        elif value > self.max: self._max = value
+        # Range
+        if isinstance(value_or_range, Range):
+
+            if value_or_range.min < self.min: self._min = value_or_range.min
+            if value_or_range.max > self.max: self._max = value_or_range.max
+
+        # Value
+        else:
+
+            # Adjust minimal and maximal speedup
+            if value_or_range < self.min: self._min = value_or_range
+            elif value_or_range > self.max: self._max = value_or_range
 
     # -----------------------------------------------------------------
 
@@ -527,6 +536,29 @@ class QuantityRange(Range):
         """
 
         return self._max * self.unit
+
+    # -----------------------------------------------------------------
+
+    def adjust(self, value_or_range):
+
+        """
+        This function ...
+        :param value_or_range:
+        :return:
+        """
+
+        # Range
+        if isinstance(value_or_range, Range):
+
+            if value_or_range.min < self.min: self._min = value_or_range.min.to(self.unit).value
+            if value_or_range.max > self.max: self._max = value_or_range.max.to(self.unit).value
+
+        # Value
+        else:
+
+            # Adjust minimal and maximal speedup
+            if value_or_range < self.min: self._min = value_or_range.to(self.unit).value
+            elif value_or_range > self.max: self._max = value_or_range.to(self.unit).value
 
     # -----------------------------------------------------------------
 
