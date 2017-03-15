@@ -167,7 +167,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def setup(self, host_id, cluster_name=None, login_timeout=20, nrows=None, ncols=200, one_attempt=False, retry_factor=4):
+    def setup(self, host_id, cluster_name=None, login_timeout=30, nrows=None, ncols=200, one_attempt=False, retry_factor=4):
 
         """
         This function ...
@@ -177,6 +177,7 @@ class Remote(object):
         :param nrows:
         :param ncols:
         :param one_attempt:
+        :param retry_factor:
         :return:
         """
 

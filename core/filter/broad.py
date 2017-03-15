@@ -414,7 +414,7 @@ class BroadBandFilter(Filter):
 
             # Load
             min_wavelength, max_wavelength, center_wavelength, mean_wavelength, eff_wavelength, filter_id, description, \
-            eff_width, photon_counter, wavelengths, transmissions = load_svo(filterspec)
+            fwhm, eff_width, photon_counter, wavelengths, transmissions = load_svo(filterspec)
 
             # Set properties
             self._WavelengthMin = min_wavelength
@@ -423,6 +423,7 @@ class BroadBandFilter(Filter):
             self._WavelengthMean = mean_wavelength
             self._WavelengthEff = eff_wavelength
             self._EffWidth = eff_width
+            self._FWHM = fwhm
             self._Wavelengths = wavelengths
             self._Transmission = transmissions
             self._PhotonCounter = photon_counter
@@ -446,6 +447,7 @@ class BroadBandFilter(Filter):
             self._IntegratedTransmission = self._WavelengthMax - self._WavelengthMin
             self._WavelengthPivot = np.sqrt(self._WavelengthMin * self._WavelengthMax)
             self._EffWidth = self._WavelengthMax - self._WavelengthMin
+            self._FWHM = None
 
             true_filter = False
 
@@ -541,6 +543,7 @@ class BroadBandFilter(Filter):
         self._WavelengthPivot = np.sqrt(integral1 / integral2)
 
         self._EffWidth = None
+        self._FWHM = None
 
     # ---------- Special functions --------------------------------------
 
@@ -723,6 +726,17 @@ class BroadBandFilter(Filter):
     def bandwidth(self):
         from ..basics.unit import parse_unit as u
         return self.effective_bandwidth() * u("micron") if self._EffWidth is not None else None
+
+    @property
+    def fwhm(self):
+        from ..basics.unit import parse_unit as u
+        return self._FWHM * u("micron") if self._FWHM is not None else None
+
+    @property
+    def fwhm_range(self):
+        if self.fwhm is None: return None
+        from ..basics.range import QuantityRange
+        return QuantityRange(self.mean - self.fwhm, self.mean + self.fwhm)
 
     # ---------- Integrating --------------------------------------
 
@@ -939,6 +953,7 @@ def load_svo(filterspec):
             filterid = tree.xpath("//RESOURCE/PARAM[@name='filterID'][1]/@value")[0]
             description = tree.xpath("//RESOURCE/PARAM[@name='Description'][1]/@value")[0]
             description = description.replace("&#956;m", "micron")
+            fwhm = 1e-4 * float(tree.xpath("//RESOURCE/PARAM[@name='FWHM'][1]/@value")[0])
             eff_width = 1e-4 * float(tree.xpath("//RESOURCE/PARAM[@name='WidthEff'][1]/@value")[0])
 
             # load the transmission table (converting wavelengths from Angstrom to micron)
@@ -952,7 +967,7 @@ def load_svo(filterspec):
 
             # Return the properties
             return min_wavelength, max_wavelength, center_wavelength, mean_wavelength, eff_wavelength, filterid, \
-                   description, eff_width, photon_counter, wavelengths, transmissions
+                   description, fwhm, eff_width, photon_counter, wavelengths, transmissions
 
     # Not recognized
     raise ValueError("Could not detect the filter")

@@ -295,6 +295,7 @@ class M81Test(TestImplementation):
 
     @lazyproperty
     def fuv_filter(self):
+
         """
         This function ...
         :return:
@@ -306,6 +307,7 @@ class M81Test(TestImplementation):
 
     @lazyproperty
     def i1_filter(self):
+
         """
         This function ...
         :return:
@@ -764,15 +766,8 @@ class M81Test(TestImplementation):
         self.ski.set_file_wavelength_grid(fs.name(self.wavelength_grid_path))
 
         # Set the dust emissivity
-        #self.set_dust_emissivity()
-        # Set dust emissivity if present
-        self.ski.set_transient_dust_emissivity()
-        #if self.ski.has_dust_emissivity:
-            # Enable or disable
-            #if self.config.transient_heating:
-            #    self.ski.set_transient_dust_emissivity()
-            #else:
-            #    self.ski.set_grey_body_dust_emissivity()
+        if self.config.transient_heating: self.ski.set_transient_dust_emissivity()
+        else: self.ski.set_grey_body_dust_emissivity()
 
         # Set the lowest-resolution dust grid
         self.ski.set_dust_grid(self.dust_grid)
@@ -781,13 +776,8 @@ class M81Test(TestImplementation):
         self.ski.set_allcells_dust_lib()
 
         # Set the dust selfabsorption
-        #self.set_selfabsorption()
-        # Dust self-absorption
-        #if self.config.selfabsorption:
-        #    self.ski.enable_selfabsorption()
-        #else:
-        #    self.ski.disable_selfabsorption()
-        self.ski.enable_selfabsorption()
+        if self.config.selfabsorption: self.ski.enable_selfabsorption()
+        else: self.ski.disable_selfabsorption()
 
         # Disable all writing options
         self.ski.disable_all_writing_options()

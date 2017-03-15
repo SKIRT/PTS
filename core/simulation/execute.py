@@ -21,7 +21,7 @@ from .arguments import SkirtArguments
 from .definition import SimulationDefinition
 from ..tools import introspection
 from ..tools import filesystem as fs
-from ..tools.logging import log, suppress_logging
+from ..tools.logging import log, no_debugging
 from .definition import SingleSimulationDefinition
 from .status import SimulationStatus
 
@@ -195,7 +195,7 @@ class SkirtExec:
             status = SimulationStatus(log_path)
 
             # Show the simulation progress
-            with suppress_logging(): success = status.show_progress(self._process)
+            with no_debugging(): success = status.show_progress(self._process)
 
             # Check whether not crashed
             if not success: raise RuntimeError("The simulation crashed")

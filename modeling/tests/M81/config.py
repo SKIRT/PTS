@@ -21,6 +21,10 @@ definition.add_optional("dust_grid_relative_scale", "real", "smallest scale of t
 definition.add_optional("dust_grid_max_level", "positive_integer", "level for the dust grid", 6)
 definition.add_optional("dust_grid_max_mass_fraction", "positive_real", "max mass fraction for the dust grid", 1e-6)
 
+# Flags
+definition.add_flag("transient_heating", "enable transient heating", False)
+definition.add_flag("selfabsorption", "enable dust selfabsorption", False)
+
 # For remote execution of reference simulation
 definition.add_optional("host_ids", "string_list", "remote hosts to use for heavy computations (in order of preference)", choices=find_host_ids(schedulers=False))
 

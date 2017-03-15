@@ -110,7 +110,7 @@ class EmissionLine(object):
             spec = definition[1]
 
             # Generate aliases for this line
-            aliases = strings.generate_from_two_parts(group, spec)
+            aliases = list(strings.generate_from_two_parts(group, spec, connectors=(" ", "-", ".", "_", "")))
 
             # If the string matches one of the aliases
             if string in aliases: return cls(group, spec, center * u("micron"), left * u("micron"), right * u("micron"), label)

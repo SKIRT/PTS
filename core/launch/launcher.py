@@ -279,6 +279,9 @@ class SKIRTLauncher(Configurable):
         # Set the parallelization scheme
         self.parallelization = Parallelization(cores, threads_per_core, processes, data_parallel=False)
 
+        # Debugging
+        log.debug("The parallelization scheme is " + str(self.parallelization))
+
     # -----------------------------------------------------------------
 
     def set_parallelization_remote(self):
@@ -287,6 +290,9 @@ class SKIRTLauncher(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Setting the parallelization scheme for remote execution ...")
 
         # If the remote uses a scheduling system
         if self.remote.scheduler:
@@ -345,7 +351,7 @@ class SKIRTLauncher(Configurable):
         self.parallelization = tool.parallelization
 
         # Debugging
-        #log.debug("The parallelization scheme for simulation '" + simulation_name + "' is " + str(parallelization))
+        log.debug("The parallelization scheme is " + str(self.parallelization))
 
     # -----------------------------------------------------------------
 
@@ -444,7 +450,7 @@ class SKIRTLauncher(Configurable):
         """
 
         # Inform the user
-        log.info("Launching the simulation remotely...")
+        log.info("Launching the simulation remotely ...")
 
         # Add the walltime to the scheduling options
         if self.config.walltime is not None:

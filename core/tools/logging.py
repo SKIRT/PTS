@@ -381,3 +381,16 @@ class suppress_logging(object):
         log.setLevel(self.original_level)
 
 # -----------------------------------------------------------------
+
+class no_debugging(object):
+
+    def __enter__(self):
+
+        self.original_level = log.level
+        log.setLevel("INFO")
+
+    def __exit__(self, type, value, traceback):
+
+        log.setLevel(self.original_level)
+
+# -----------------------------------------------------------------
