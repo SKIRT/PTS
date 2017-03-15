@@ -3383,6 +3383,24 @@ class SkiFile:
         self.set_quantity(instrument, "fieldOfViewX", x_field)
         self.set_quantity(instrument, "fieldOfViewY", y_field)
 
+    ## This function gets the center of the specified instrument
+    def get_instrument_center(self, name):
+
+        # Get the instrument with this name
+        instrument = self.get_instrument(name)
+
+        return self.get_quantity(instrument, "centerX"), self.get_quantity(instrument, "centerY")
+
+    ## This function sets the center of the specified instrument
+    def set_instrument_center(self, name, x_center, y_center):
+
+        # Get the instrument with this name
+        instrument = self.get_instrument(name)
+
+        # Set the center
+        self.set_quantity(instrument, "centerX", x_center)
+        self.set_quantity(instrument, "centerY", y_center)
+
     # -----------------------------------------------------------------
 
     def create_element(self, tag, properties):
