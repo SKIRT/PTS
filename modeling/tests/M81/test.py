@@ -697,7 +697,7 @@ class M81Test(TestImplementation):
         input_dict = dict()
         input_dict["ngrids"] = 1
         input_dict["scale"] = self.config.dust_grid_relative_scale * self.deprojections["dust"].pixelscale # in pc
-        input_dict["level"] = self.config.dust_grid_max_level
+        input_dict["level"] = self.config.dust_grid_min_level
         input_dict["mass_fraction"] = self.config.dust_grid_max_mass_fraction
 
         # Generate the grid

@@ -344,6 +344,23 @@ class DustGridGenerator(Configurable):
         # Add the grid
         self.grids.append(grid)
 
+        # Debugging
+        log.debug("Created a cartesian dust grid with:")
+        log.debug("")
+        log.debug(" - x_min: " + str(self.x_min))
+        log.debug(" - x_max: " + str(self.x_max))
+        log.debug(" - y_min: " + str(self.y_min))
+        log.debug(" - y_max: " + str(self.y_max))
+        log.debug(" - z_min: " + str(self.z_min))
+        log.debug(" - z_max: " + str(self.z_max))
+        log.debug(" - scale: " + str(scale))
+        log.debug(" - x_bins: " + str(grid.x_bins))
+        log.debug(" - y_bins: " + str(grid.y_bins))
+        log.debug(" - z_bins: " + str(grid.z_bins))
+        log.debug(" - mesh type: " + str(grid.mesh_type))
+        log.debug(" - ratio: " + str(grid.real))
+        log.debug("")
+
         # Add a row to the table
         self.table.add_row([self.grid_type, self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max, scale, None, None])
 
@@ -365,6 +382,26 @@ class DustGridGenerator(Configurable):
         # Add the grid
         self.grids.append(grid)
 
+        # Debugging
+        log.debug("Created a binary tree dust grid with:")
+        log.debug("")
+        log.debug(" - x_min: " + str(self.x_min))
+        log.debug(" - x_max: " + str(self.x_max))
+        log.debug(" - y_min: " + str(self.y_min))
+        log.debug(" - y_max: " + str(self.y_max))
+        log.debug(" - z_min: " + str(self.z_min))
+        log.debug(" - z_max: " + str(self.z_max))
+        log.debug(" - scale: " + str(scale))
+        log.debug(" - min_level: " + str(grid.min_level))
+        log.debug(" - max_level: " + str(grid.max_level))
+        log.debug(" - search_method: " + str(grid.search_method))
+        log.debug(" - sample_count: " + str(grid.sample_count))
+        log.debug(" - max_optical_depth: " + str(grid.max_optical_depth))
+        log.debug(" - max_mass_fraction: " + str(grid.max_mass_fraction))
+        log.debug(" - max_dens_disp_fraction" + str(grid.max_dens_disp_fraction))
+        log.debug(" - direction_method: " + str(grid.direction_method))
+        log.debug("")
+
         # Add a row to the table
         self.table.add_row([self.grid_type, self.x_min, self.x_max, self.y_min, self.y_max, self.z_min, self.z_max, scale, min_level, max_mass_fraction])
 
@@ -385,6 +422,26 @@ class DustGridGenerator(Configurable):
 
         # Add the grid
         self.grids.append(grid)
+
+        # Debugging
+        log.debug("Created an octtree dust grid with:")
+        log.debug("")
+        log.debug(" - x_min: " + str(self.x_min))
+        log.debug(" - x_max: " + str(self.x_max))
+        log.debug(" - y_min: " + str(self.y_min))
+        log.debug(" - y_max: " + str(self.y_max))
+        log.debug(" - z_min: " + str(self.z_min))
+        log.debug(" - z_max: " + str(self.z_max))
+        log.debug(" - scale: " + str(scale))
+        log.debug(" - min_level: " + str(grid.min_level))
+        log.debug(" - max_level: " + str(grid.max_level))
+        log.debug(" - search_method: " + str(grid.search_method))
+        log.debug(" - sample_count: " + str(grid.sample_count))
+        log.debug(" - max_optical_depth: " + str(grid.max_optical_depth))
+        log.debug(" - max_mass_fraction: " + str(grid.max_mass_fraction))
+        log.debug(" - max_dens_disp_fraction: " + str(grid.max_dens_disp_fraction))
+        log.debug(" - barycentric: " + str(grid.barycentric))
+        log.debug("")
 
         # Add entry to the table
         x_range = RealRange(self.x_min, self.x_max)
@@ -529,7 +586,7 @@ def create_one_bintree_dust_grid(scale, x_extent, x_min, x_max, y_min, y_max, z_
     # Inform the user
     log.info("Creating a binary tree dust grid with a smallest physical scale of " + str(scale) + ", with a minimum division level of " + str(min_level) + " and a maximum mass fraction of " + str(max_mass_fraction) + " ...")
 
-    # Calculate the minimum division level that is necessary to resolve the smallest scale of the input maps
+    # Calculate the maximum division level that is necessary to resolve the smallest scale of the input maps
     extent_x = x_extent.to("pc").value
     smallest_scale = scale.to("pc").value
     max_level = min_level_for_smallest_scale_bintree(extent_x, smallest_scale)
