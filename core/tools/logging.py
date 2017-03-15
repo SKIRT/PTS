@@ -368,3 +368,16 @@ def customwarn(message, category, filename, lineno, file=None, line=None):
 warnings.showwarning = customwarn
 
 # -----------------------------------------------------------------
+
+class suppress_logging(object):
+
+    def __enter__(self):
+
+        self.original_level = log.level
+        log.setLevel("WARNING")
+
+    def __exit__(self, type, value, traceback):
+
+        log.setLevel(self.original_level)
+
+# -----------------------------------------------------------------

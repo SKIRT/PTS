@@ -18,7 +18,7 @@ import numpy as np
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.simulation.wavelengthgrid import WavelengthGrid
-from ..basics.emissionlines import EmissionLines
+from ..basics.emissionlines import EmissionLines, EmissionLine
 from ..basics.configurable import Configurable
 from ..basics.table import SmartTable
 from ..basics.range import QuantityRange
@@ -136,6 +136,7 @@ class WavelengthGridGenerator(Configurable):
         self.ngrids = None
         self.fixed = None
         self.add_emission_lines = False
+        self.lines = None
         self.min_wavelength = None
         self.max_wavelength = None
         self.filters = None
@@ -202,12 +203,19 @@ class WavelengthGridGenerator(Configurable):
         else: self.npoints_range = kwargs.pop("npoints_range")
         self.fixed = kwargs.pop("fixed", None)
         self.add_emission_lines = kwargs.pop("add_emission_lines", False)
+        self.lines = kwargs.pop("lines", None)
         self.min_wavelength = kwargs.pop("min_wavelength", None)
         self.max_wavelength = kwargs.pop("max_wavelength", None)
         self.filters = kwargs.pop("filters", None)
 
         # Create the emission lines instance
-        self.emission_lines = EmissionLines()
+        if self.add_emission_lines:
+
+            # Use all liness
+            if self.lines is None: self.emission_lines = EmissionLines()
+
+            # Use specific lines
+            else: self.emission_lines = [EmissionLine.from_string(string) for string in self.lines]
 
         # Initialize the table
         self.table = WavelengthGridsTable()
@@ -244,9 +252,8 @@ class WavelengthGridGenerator(Configurable):
         with_without = " with " if self.add_emission_lines else " without "
         log.info("Creating a wavelength grid with " + str(npoints) + " points" + with_without + "emission lines ...")
 
-        # Create the grid
-        if self.add_emission_lines: grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added = create_one_subgrid_wavelength_grid(npoints, self.emission_lines, self.fixed, min_wavelength=self.min_wavelength, max_wavelength=self.max_wavelength, filters=self.filters)
-        else: grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added = create_one_subgrid_wavelength_grid(npoints, fixed=self.fixed, min_wavelength=self.min_wavelength, max_wavelength=self.max_wavelength, filters=self.filters)
+        # Generate the grid
+        grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added = create_one_subgrid_wavelength_grid(npoints, self.emission_lines, fixed=self.fixed, min_wavelength=self.min_wavelength, max_wavelength=self.max_wavelength, filters=self.filters)
 
         # Add the grid
         self.grids.append(grid)

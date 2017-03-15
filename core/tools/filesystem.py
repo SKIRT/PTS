@@ -391,7 +391,8 @@ def get_extension(name_or_path, double=False):
     """
 
     without_extension = strip_extension(name_or_path, double=double)
-    return name_or_path.split(without_extension + ".")[1]
+    if name_or_path == without_extension: return ""
+    else: return name_or_path.split(without_extension + ".")[1]
 
 # -----------------------------------------------------------------
 

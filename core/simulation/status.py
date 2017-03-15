@@ -137,6 +137,18 @@ class SimulationStatus(object):
     # -----------------------------------------------------------------
 
     @property
+    def aborted(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.status == "aborted"
+
+    # -----------------------------------------------------------------
+
+    @property
     def not_started(self):
 
         """
@@ -204,7 +216,7 @@ class SimulationStatus(object):
 
                 log.info("Waiting for simulation to start ...")
                 time.wait(refresh_time)
-                self.refresh()
+                self.refresh(process_or_handle)
                 continue
 
             # Finished: break loop
@@ -215,8 +227,13 @@ class SimulationStatus(object):
 
             # Crashed: break loop
             elif self.crashed:
-                log.success("Simulation crashed")
+                log.error("Simulation crashed")
                 #break
+                return False
+
+            # Aborted: break loop
+            elif self.aborted:
+                log.error("Simulation has been aborted")
                 return False
 
             # New phase
@@ -225,7 +242,7 @@ class SimulationStatus(object):
                 last_phase = self.phase
                 if last_phase is None:
                     time.wait(refresh_time)
-                    self.refresh()
+                    self.refresh(process_or_handle)
                     continue
                 else:
                     if self.simulation_phase is not None: log.info("Starting " + phase_descriptions[last_phase] + " in " + self.simulation_phase.lower() + " phase ...")
@@ -292,24 +309,26 @@ class SimulationStatus(object):
 
     # -----------------------------------------------------------------
 
-    def refresh_after(self, seconds):
+    def refresh_after(self, seconds, process_or_handle=None):
 
         """
         This function ...
         :param seconds:
+        :param process_or_handle:
         :return:
         """
 
         # Wait and refresh
         time.wait(seconds)
-        self.refresh()
+        self.refresh(process_or_handle)
 
     # -----------------------------------------------------------------
 
-    def refresh(self):
+    def refresh(self, process_or_handle=None):
 
         """
         This function ...
+        :param process_or_handle:
         :return:
         """
 
@@ -355,6 +374,29 @@ class SimulationStatus(object):
 
         # Running
         else:
+
+            # Process or handle is passed: check whether the process or screen is still running and not aborted
+            if process_or_handle is not None:
+
+                # Execution handle
+                if isinstance(process_or_handle, ExecutionHandle):
+
+                    if process_or_handle.type != "screen": raise NotImplementedError("Execution handle must be 'screen'")
+                    screen_name = process_or_handle.value
+
+                    if not self.remote.is_active_screen(screen_name):
+                        self.status = "aborted"
+                        return
+
+                # Process
+                else:
+
+                    returncode = process_or_handle.poll()
+                    if returncode is not None:
+                        #log.error("The simulation has been aborted")
+                        #return False
+                        self.status = "aborted"
+                        return
 
             # Status is 'running'
             self.status = "running"

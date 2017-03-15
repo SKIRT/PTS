@@ -647,9 +647,10 @@ class M81Test(TestImplementation):
         # Set input
         input_dict = dict()
         input_dict["ngrids"] = 1
-        input_dict["npoints"] = 150
+        input_dict["npoints"] = self.config.nwavelengths
         input_dict["fixed"] = [self.i1_filter.pivot, self.fuv_filter.pivot]
         input_dict["add_emission_lines"] = True
+        input_dict["lines"] = ["Halpha"] # only the H-alpha line is of importance
         input_dict["min_wavelength"] = parse_quantity("0.1 micron")
         input_dict["max_wavelength"] = parse_quantity("1000 micron")
         input_dict["filters"] = [parse_filter(string) for string in fitting_filter_names]
@@ -693,9 +694,9 @@ class M81Test(TestImplementation):
         # Set input
         input_dict = dict()
         input_dict["ngrids"] = 1
-        input_dict["scale"] = 0.5 * self.deprojections["dust"].pixelscale # in pc
-        input_dict["level"] = 6
-        input_dict["mass_fraction"] = 0.5e-6
+        input_dict["scale"] = self.config.dust_grid_relative_scale * self.deprojections["dust"].pixelscale # in pc
+        input_dict["level"] = self.config.dust_grid_max_level
+        input_dict["mass_fraction"] = self.config.dust_grid_max_mass_fraction
 
         # Generate the grid
         generator.run(**input_dict)
