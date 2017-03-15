@@ -18,6 +18,7 @@ from ..tools import time
 from ..tools.progress import Bar, BAR_FILLED_CHAR, BAR_EMPTY_CHAR
 from ..tools.logging import log
 from .logfile import get_last_phase, get_nprocesses, get_simulation_phase
+from ..basics.handle import ExecutionHandle
 
 # -----------------------------------------------------------------
 
@@ -147,11 +148,11 @@ class SimulationStatus(object):
 
     # -----------------------------------------------------------------
 
-    def show_progress(self, process, refresh_time=3):
+    def show_progress(self, process_or_handle, refresh_time=3):
 
         """
         This function ...
-        :param process:
+        :param process_or_handle:
         :param refresh_time: time in seconds
         :return:
         """
@@ -166,14 +167,40 @@ class SimulationStatus(object):
             # Not yet started
             if self.not_started:
 
-                returncode = process.poll()
-                if returncode is not None:
-                    log.error("The simulation has stopped")
-                    if fs.is_file(self.log_path):
-                        lines = list(fs.read_lines(self.log_path))
-                        for line in lines: log.error(line)
-                    else: log.error("Log file hasn't been created yet")
-                    return False
+                # Execution handle
+                if isinstance(process_or_handle, ExecutionHandle):
+
+                    if process_or_handle.type != "screen": raise NotImplementedError("Execution handle must be 'screen'")
+                    screen_name = process_or_handle.value
+
+                    # Check the screen status
+                    if not self.remote.is_active_screen(screen_name):
+                        log.error("The simulation has stopped")
+                        name = "screenlog.0"
+                        screenlog_path = None
+                        if process_or_handle.remote_screen_output_path is not None:
+                            screenlog_path = fs.join(process_or_handle.remote_screen_output_path, name)
+                            if not self.remote.is_file(screenlog_path): screenlog_path = None
+                        if self.remote.is_file(self.log_path):
+                            lines = list(self.remote.read_lines(self.log_path))
+                            for line in lines: log.error(line)
+                        elif screenlog_path is not None:
+                            lines = list(self.remote.read_lines(screenlog_path))
+                            for line in lines: log.error(line)
+                        else: log.error("Log file hasn't been created yet and no screen output found")
+                        return False
+
+                # Process
+                else:
+
+                    returncode = process_or_handle.poll()
+                    if returncode is not None:
+                        log.error("The simulation has stopped")
+                        if fs.is_file(self.log_path):
+                            lines = list(fs.read_lines(self.log_path))
+                            for line in lines: log.error(line)
+                        else: log.error("Log file hasn't been created yet")
+                        return False
 
                 log.info("Waiting for simulation to start ...")
                 time.wait(refresh_time)
@@ -262,8 +289,6 @@ class SimulationStatus(object):
 
             # Still the same phase
             else: self.refresh_after(refresh_time)
-
-        return True
 
     # -----------------------------------------------------------------
 

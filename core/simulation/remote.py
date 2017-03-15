@@ -436,11 +436,16 @@ class SkirtRemote(Remote):
 
             # Write the command string to the job script
             threads_per_core = self.threads_per_core if self.use_hyperthreading else 1
-            command = arguments.to_command(self.skirt_path, self.host.mpi_command, scheduler=False, bind_to_cores=self.host.force_process_binding, threads_per_core=threads_per_core, to_string=True)
+            command = arguments.to_command(self.skirt_path, self.host.mpi_command, scheduler=False,
+                                           bind_to_cores=self.host.force_process_binding,
+                                           threads_per_core=threads_per_core, to_string=True, remote=self)
             script_file.write(command + "\n")
 
         # Write to disk
         script_file.flush()
+
+        # If no screen output path is set, create a directory
+        if screen_output_path is None: screen_output_path = self.create_directory_in(self.pts_temp_path, screen_name)
 
         # Start a screen session
         self.start_screen(screen_name, local_script_path, self.skirt_run_dir, screen_output_path, attached=attached)
@@ -471,7 +476,7 @@ class SkirtRemote(Remote):
     # -----------------------------------------------------------------
 
     def run(self, definition, logging_options, parallelization, name=None, scheduling_options=None,
-            analysis_options=None, local_script_path=None, screen_output_path=None, attached=False):
+            analysis_options=None, local_script_path=None, screen_output_path=None, attached=False, progress_bar=False):
 
         """
         This function ...
@@ -484,6 +489,7 @@ class SkirtRemote(Remote):
         :param local_script_path:
         :param screen_output_path:
         :param attached:
+        :param progress_bar:
         :return:
         """
 
@@ -496,8 +502,32 @@ class SkirtRemote(Remote):
         # Add the simulation arguments to the queue
         simulation = self.add_to_queue(definition, logging_options, parallelization, name, scheduling_options, analysis_options=analysis_options)
 
+        # Check whether attached mode is not requested for a scheduling remote
+        if self.scheduler and attached: raise ValueError("Attached mode is not possible for a remote with scheduling system")
+
+        # Progress bar: ask attached but set detached so that the start_queue function returns immediately
+        if progress_bar and not attached: raise ValueError("Cannot show progress bar when 'attached' is False")
+        if progress_bar: attached = False
+
         # Start the queue, get execution handle(s)
         handles = self.start_queue(name, local_script_path, screen_output_path, attached=attached)
+
+        # Show progress bar with progress
+        if progress_bar:
+
+            #out_path = arguments.output_path if arguments.output_path is not None else fs.cwd()
+            #prefix = arguments.prefix
+            #log_path = fs.join(out_path, prefix + "_log.txt")
+            status = SimulationStatus(simulation.logfilepath(), remote=self)
+
+            # Get the execution handle for the simulation
+            handle = handles
+
+            # Show the simulation progress
+            success = status.show_progress(handle)
+
+            # Check whether not crashed
+            if not success: raise RuntimeError("The simulation crashed")
 
         # Set the execution handle for the simulation
         simulation.handle = handles if isinstance(handles, ExecutionHandle) else handles[0]
@@ -800,7 +830,9 @@ class SkirtRemote(Remote):
         # Send the command to the remote machine using a screen session so that we can safely detach from the
         # remote shell
         threads_per_core = self.threads_per_core if self.use_hyperthreading else 1
-        command = arguments.to_command(self.skirt_path, self.host.mpi_command, self.scheduler, self.host.force_process_binding, threads_per_core=threads_per_core, to_string=True)
+        command = arguments.to_command(self.skirt_path, self.host.mpi_command, self.scheduler,
+                                       self.host.force_process_binding, threads_per_core=threads_per_core,
+                                       to_string=True, remote=self)
         self.execute("screen -d -m " + command, output=False)
 
         # Generate a new simulation ID based on the ID's currently in use

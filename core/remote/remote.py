@@ -1162,6 +1162,26 @@ class Remote(object):
     # -----------------------------------------------------------------
 
     @property
+    def mpi_knows_cpus_per_proc_option(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        output = self.execute("mpiexec --cpus-per-proc")
+
+        for line in output:
+
+            if "unrecognized argument cpus-per-proc" in line: return False # certainly not available
+            if 'option "--cpus-per-proc" did not have enough parameters' in line: return True # certainly available
+
+        # Probably available, found nothing suspect
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_cpp_compiler(self):
 
         """

@@ -40,6 +40,7 @@ from pts.magic.region.list import SkyRegionList
 from pts.core.filter.filter import parse_filter
 from pts.core.remote.moderator import PlatformModerator
 from pts.core.simulation.memory import MemoryRequirement
+from pts.core.prep.deploy import Deployer
 
 # -----------------------------------------------------------------
 
@@ -389,6 +390,9 @@ class M81Test(TestImplementation):
         # Set remote host for reference simulation
         self.set_remote()
 
+        # Deploy SKIRT and PTS
+        self.deploy()
+
     # -----------------------------------------------------------------
 
     def set_remote(self):
@@ -414,6 +418,37 @@ class M81Test(TestImplementation):
 
         # Set the host ID
         self.host_id = moderator.host_id_for_single("reference")
+
+    # -----------------------------------------------------------------
+
+    def deploy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Deploying SKIRT and PTS ...")
+
+        # Create the deployer
+        deployer = Deployer()
+
+        # Set the host ids
+        deployer.config.host_ids = [self.host_id]
+
+        # Set the host id on which PTS should be installed (on the host for extra computations and the fitting hosts
+        # that have a scheduling system to launch the pts run_queue command)
+        #deployer.config.pts_on = self.moderator.all_host_ids
+
+        # Set
+        #deployer.config.check = self.config.check_versions
+
+        # Set
+        #deployer.config.update_dependencies = self.config.update_dependencies
+
+        # Run the deployer
+        deployer.run()
 
     # -----------------------------------------------------------------
 
@@ -1002,6 +1037,7 @@ class M81Test(TestImplementation):
         settings_launch["create_output"] = True
         settings_launch["remote"] = self.host_id
         settings_launch["attached"] = True
+        settings_launch["progress_bar"] = True
 
         # Input
         input_launch = dict()

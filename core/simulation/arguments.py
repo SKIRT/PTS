@@ -22,6 +22,7 @@ from .simulation import SkirtSimulation
 from ..basics.map import Map
 from ..tools import filesystem as fs
 from .definition import SingleSimulationDefinition, MultiSimulationDefinition
+from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -225,7 +226,7 @@ class SkirtArguments(object):
 
     # -----------------------------------------------------------------
 
-    def to_command(self, skirt_path, mpi_command, scheduler, bind_to_cores=False, threads_per_core=1, to_string=False):
+    def to_command(self, skirt_path, mpi_command, scheduler, bind_to_cores=False, threads_per_core=1, to_string=False, remote=None):
 
         """
         This function ...
@@ -235,6 +236,7 @@ class SkirtArguments(object):
         :param bind_to_cores:
         :param threads_per_core:
         :param to_string:
+        :param remote:
         :return:
         """
 
@@ -250,7 +252,7 @@ class SkirtArguments(object):
             self.input_path = dir_path
 
         # Create the argument list
-        arguments = skirt_command(skirt_path, mpi_command, bind_to_cores, self.parallel.processes, self.parallel.threads, threads_per_core, scheduler)
+        arguments = skirt_command(skirt_path, mpi_command, bind_to_cores, self.parallel.processes, self.parallel.threads, threads_per_core, scheduler, remote)
 
         # Parallelization options
         if self.parallel.threads > 0: arguments += ["-t", str(self.parallel.threads)]
@@ -374,7 +376,7 @@ class SkirtArguments(object):
 
 # -----------------------------------------------------------------
 
-def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, threads_per_core, scheduler):
+def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, threads_per_core, scheduler, remote=None):
 
     """
     This function ...
@@ -385,6 +387,7 @@ def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, th
     :param threads:
     :param threads_per_core:
     :param scheduler:
+    :param remote:
     :return:
     """
 
@@ -402,7 +405,11 @@ def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, th
             # No hyperthreading: threads_per_core will be 1
             # cores / process = (cores / thread) * (threads / process)
             cores_per_process = int(threads / threads_per_core)
-            command += ["--cpus-per-proc", str(cores_per_process)] # "CPU'S per process" means "core per process" in our definitions
+
+            # Check if cpus-per-proc option is possible
+            if remote is None or remote.mpi_knows_cpus_per_proc_option():
+                command += ["--cpus-per-proc", str(cores_per_process)] # "CPU'S per process" means "core per process" in our definitions
+            else: log.warning("The MPI version on the remote host does not know the 'cpus-per-proc' command. Processes cannot be bound to cores")
 
         # Add the SKIRT path and return the final command list
         command += [skirt_path]

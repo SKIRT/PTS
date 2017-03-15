@@ -177,7 +177,6 @@ class SkirtExec:
         command = arguments.to_command(self._path, mpi_command, scheduler)
 
         if progress_bar and not wait: raise ValueError("Cannot show progress bar when 'wait' is False")
-
         if progress_bar: wait = False
 
         # Launch the SKIRT command
