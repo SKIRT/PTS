@@ -620,26 +620,26 @@ def add_emission_lines(wavelengths, emission_lines, min_wavelength=None, max_wav
     logdelta = 0.001
     for line in emission_lines:
 
-        center = line.center
-        left = line.left
-        right = line.right
+        center_micron = line.center.to("micron").value
+        left_micron = line.left.to("micron").value
+        right_micron = line.right.to("micron").value
 
-        if min_wavelength is not None and center < min_wavelength: continue
-        if max_wavelength is not None and center > max_wavelength: continue
+        if min_wavelength is not None and line.center < min_wavelength: continue
+        if max_wavelength is not None and line.center > max_wavelength: continue
 
         # logcenter = np.log10(center)
-        logleft = np.log10(left if left > 0 else center) - logdelta
-        logright = np.log10(right if right > 0 else center) + logdelta
+        logleft = np.log10(left_micron if left_micron > 0 else center_micron) - logdelta
+        logright = np.log10(right_micron if right_micron > 0 else center_micron) + logdelta
         newgrid = []
         for w in wavelengths:
-            logw = np.log10(w)
+            logw = np.log10(w.to("micron").value)
             if logw < logleft or logw > logright:
-                newgrid.append(w * u("micron"))
-        newgrid.append(center)
-        if left > 0:
-            newgrid.append(left * u("micron"))
-        if right > 0:
-            newgrid.append(right * u("micron"))
+                newgrid.append(w)
+        newgrid.append(line.center)
+        if left_micron > 0:
+            newgrid.append(line.left)
+        if right_micron > 0:
+            newgrid.append(line.right)
         wavelengths = newgrid
 
     # Return the new wavelength list

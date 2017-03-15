@@ -20,6 +20,7 @@ from pts.do.commandline import Command
 from pts.core.basics.range import RealRange
 from pts.evolve.core import reference
 from pts.evolve.optimize.optimizer import show_best
+from pts.core.test.implementation import TestImplementation
 
 # -----------------------------------------------------------------
 
@@ -46,6 +47,114 @@ crossover_rate = None
 stats_freq = 50
 mutation_method = "gaussian" # or range, or binary
 min_or_max = "minimize"
+
+# -----------------------------------------------------------------
+
+class RastringinTest(TestImplementation):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, config=None, interactive=False):
+
+        """
+        The constructor ...
+        :param config:
+        :param interactive:
+        """
+
+        # Call the constructor of the base class
+        super(RastringinTest, self).__init__(config, interactive)
+
+    # -----------------------------------------------------------------
+
+    def run(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the setup function
+        self.setup(**kwargs)
+
+        # Optimize
+        self.optimize()
+
+        # Use pyevolve
+        self.reference()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        #
+        super(RastringinTest, self).setup(**kwargs)
+
+    # -----------------------------------------------------------------
+
+    def optimize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Settings
+        settings_optimize = dict()
+        settings_optimize["output"] = None
+        settings_optimize["nparameters"] = nparameters
+        settings_optimize["nindividuals"] = nindividuals
+        settings_optimize["parameter_range"] = parameter_range
+        settings_optimize["best_raw_score"] = best_raw_score
+        settings_optimize["round_decimal"] = round_decimal
+        settings_optimize["ngenerations"] = ngenerations
+        settings_optimize["mutation_rate"] = mutation_rate
+        settings_optimize["crossover_rate"] = crossover_rate
+        settings_optimize["stats_freq"] = stats_freq
+        settings_optimize["mutation_method"] = mutation_method
+        settings_optimize["min_or_max"] = min_or_max
+
+        # Input
+        input_optimize = dict()
+        input_optimize["evaluator"] = rastringin
+
+        # Create plot
+        ax = create_plot()
+
+        # Create callback to plot the best individuals for each generation
+        input_optimize["callback"] = add_best_to_plot
+        input_optimize["callback_kwargs"] = {"ax": ax}
+
+        # Construct the command
+        optimize = Command("optimize", "optimize the Rastrigin function", settings_optimize, input_optimize, cwd=".",
+                           finish=show_plot)
+
+        # Add the command
+        #commands.append(optimize)
+
+    # -----------------------------------------------------------------
+
+    def reference(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Solve the problem with the original Pyevolve implementation
+        best = reference.call(settings_optimize, input_optimize)
+
+        # Show the best individual
+        show_best(best)
 
 # -----------------------------------------------------------------
 
@@ -161,60 +270,6 @@ def show_plot(*args, **kwargs):
     plt.show()
 
 # -----------------------------------------------------------------
-
-# Initialize list for the commands
-commands = []
-
-# -----------------------------------------------------------------
-# SETUP FUNCTION
-# -----------------------------------------------------------------
-
-def setup(temp_path):
-
-    """
-    This function ...
-    :param temp_path:
-    """
-
-    return
-
-# -----------------------------------------------------------------
-# OPTIMIZE
-# -----------------------------------------------------------------
-
-# Settings
-settings_optimize = dict()
-settings_optimize["output"] = None
-settings_optimize["nparameters"] = nparameters
-settings_optimize["nindividuals"] = nindividuals
-settings_optimize["parameter_range"] = parameter_range
-settings_optimize["best_raw_score"] = best_raw_score
-settings_optimize["round_decimal"] = round_decimal
-settings_optimize["ngenerations"] = ngenerations
-settings_optimize["mutation_rate"] = mutation_rate
-settings_optimize["crossover_rate"] = crossover_rate
-settings_optimize["stats_freq"] = stats_freq
-settings_optimize["mutation_method"] = mutation_method
-settings_optimize["min_or_max"] = min_or_max
-
-# Input
-input_optimize = dict()
-input_optimize["evaluator"] = rastringin
-
-# Create plot
-ax = create_plot()
-
-# Create callback to plot the best individuals for each generation
-input_optimize["callback"] = add_best_to_plot
-input_optimize["callback_kwargs"] = {"ax": ax}
-
-# Construct the command
-optimize = Command("optimize", "optimize the Rastrigin function", settings_optimize, input_optimize, cwd=".", finish=show_plot)
-
-# Add the command
-commands.append(optimize)
-
-# -----------------------------------------------------------------
 # TEST FUNCTION
 # -----------------------------------------------------------------
 
@@ -224,10 +279,6 @@ def test(temp_path):
     This function ...
     """
 
-    # Solve the problem with the original Pyevolve implementation
-    best = reference.call(settings_optimize, input_optimize)
-
-    # Show the best individual
-    show_best(best)
+    pass
 
 # -----------------------------------------------------------------

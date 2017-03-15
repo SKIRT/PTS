@@ -44,13 +44,13 @@ class DustGridsTable(SmartTable):
 
         # Add column info
         self.add_column_info("Type", str, None, "grid type")
-        self.add_column_info("Min x", float, None, "minimum x")
-        self.add_column_info("Max x", float, None, "maximum x")
-        self.add_column_info("Min y", float, None, "minimum y")
-        self.add_column_info("Max y", float, None, "maximum y")
-        self.add_column_info("Min z", float, None, "minimum z")
-        self.add_column_info("Max z", float, None, "maximum z")
-        self.add_column_info("Smallest scale", float, None, "Smallest scale")
+        self.add_column_info("Min x", float, "pc", "minimum x")
+        self.add_column_info("Max x", float, "pc", "maximum x")
+        self.add_column_info("Min y", float, "pc", "minimum y")
+        self.add_column_info("Max y", float, "pc", "maximum y")
+        self.add_column_info("Min z", float, "pc", "minimum z")
+        self.add_column_info("Max z", float, "pc", "maximum z")
+        self.add_column_info("Smallest scale", float, "pc", "Smallest scale")
         self.add_column_info("Min level", int, None, "Minimum level")
         self.add_column_info("Max mass fraction", float, None, "Maximum mass fraction")
 
@@ -501,7 +501,8 @@ def create_one_cartesian_dust_grid(scale, x_extent, y_extent, z_extent, x_min, x
     z_bins = int(math.ceil(z_extent.to("pc").value / scale.to("pc").value))
 
     # Create the grid
-    grid = CartesianDustGrid(x_min, x_max, y_min, y_max, z_min, z_max, x_bins, y_bins, z_bins)
+    grid = CartesianDustGrid(x_min=x_min, x_max=x_max, y_min=y_min, y_max=y_max, z_min=z_min, z_max=z_max,
+                             x_bins=x_bins, y_bins=y_bins, z_bins=z_bins)
 
     # Return the grid
     return grid
@@ -534,7 +535,8 @@ def create_one_bintree_dust_grid(scale, x_extent, x_min, x_max, y_min, y_max, z_
     max_level = min_level_for_smallest_scale_bintree(extent_x, smallest_scale)
 
     # Create the dust grid
-    grid = BinaryTreeDustGrid(x_min, x_max, y_min, y_max, z_min, z_max, min_level=min_level, max_level=max_level, max_mass_fraction=max_mass_fraction)
+    grid = BinaryTreeDustGrid(min_x=x_min, max_x=x_max, min_y=y_min, max_y=y_max, min_z=z_min, max_z=z_max,
+                              min_level=min_level, max_level=max_level, max_mass_fraction=max_mass_fraction)
 
     # Return the grid
     return grid
@@ -567,7 +569,8 @@ def create_one_octtree_dust_grid(scale, x_extent, x_min, x_max, y_min, y_max, z_
     max_level = min_level_for_smallest_scale_octtree(extent_x, smallest_scale)
 
     # Create the dust grid
-    grid = OctTreeDustGrid(x_min, x_max, y_min, y_max, z_min, z_max, min_level=min_level, max_level=max_level, max_mass_fraction=max_mass_fraction)
+    grid = OctTreeDustGrid(min_x=x_min, max_x=x_max, min_y=y_min, max_y=y_max, min_z=z_min, max_z=z_max,
+                           min_level=min_level, max_level=max_level, max_mass_fraction=max_mass_fraction)
 
     # Return the grid
     return grid

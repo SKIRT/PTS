@@ -28,6 +28,7 @@ from ..tools import git
 from ..tools import conda
 from ..tools import time
 from ..remote.modules import Modules
+from ..basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -50,7 +51,7 @@ qt_url = "http://download.qt.io/official_releases/qt/5.7/5.7.1/single/qt-everywh
 # -----------------------------------------------------------------
 
 # The approximate size for a full installation of Qt
-full_qt_installation_size = 1.5
+full_qt_installation_size = 1.5 * u("GB")
 
 # -----------------------------------------------------------------
 

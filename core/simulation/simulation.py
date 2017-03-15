@@ -204,7 +204,9 @@ class SkirtSimulation(object):
     ## This function returns a LogFile object created from the simulation's log file
     @property
     def log_file(self):
-        return LogFile(self.outfilepath("log.txt"))
+        path = self.outfilepath("log.txt")
+        if not fs.is_file(path): raise IOError("The log file is not present at '" + path + "'")
+        return LogFile(path)
 
     # -----------------------------------------------------------------
 

@@ -363,6 +363,9 @@ def represent_unit(unit):
     for key in output_replacements:
         string = string.replace(key, output_replacements[key])
 
+    # Remove whitespace
+    string = string.replace(" ", "")
+
     return string
 
 # -----------------------------------------------------------------
@@ -868,7 +871,7 @@ class PhotometricUnit(CompositeUnit):
             wavelength = frequency.to("micron", equivalencies=spectral())
         elif fltr is not None:
             wavelength = fltr.pivot
-            frequency = frequency.to("Hz", equivalencies=spectral())
+            frequency = wavelength.to("Hz", equivalencies=spectral())
 
         # Same type
         if self.physical_type == to_unit.physical_type:
@@ -922,7 +925,7 @@ class PhotometricUnit(CompositeUnit):
         elif self.is_wavelength_density:
 
             if to_unit.is_neutral_density: new_unit = self * wavelength
-            elif to_unit.is_frequency_density: new_unit = self * wavelength / frequency
+            elif to_unit.is_frequency_density: new_unit = self * (wavelength / frequency)
             elif to_unit.is_wavelength_density: new_unit = self
             else: raise ValueError("Cannot convert from spectral density to integrated quantity")
 
@@ -931,7 +934,7 @@ class PhotometricUnit(CompositeUnit):
 
             if to_unit.is_neutral_density: new_unit = self * frequency
             elif to_unit.is_frequency_density: new_unit = self
-            elif to_unit.is_wavelength_density: new_unit = self * frequency / wavelength
+            elif to_unit.is_wavelength_density: new_unit = self * (frequency / wavelength)
             else: raise ValueError("Cannot convert from spectral density to integrated quantity")
 
         # Not a spectral density

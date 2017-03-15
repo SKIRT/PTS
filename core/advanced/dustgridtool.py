@@ -99,6 +99,9 @@ class DustGridTool(object):
         # Get and parse the log file
         log_file = simulation.log_file
 
+        # Check for errors
+        if log_file.last_message.startswith("*** Error"): raise RuntimeError("The simulation has crashed")
+
         # Initilize statistics map
         statistics = Map()
 

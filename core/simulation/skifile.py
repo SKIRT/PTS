@@ -109,6 +109,10 @@ class SkiFile:
 
     # ---------- Retrieving information -------------------------------
 
+    ## This fucntion returns the simulation element
+    def get_simulation(self):
+        return self.tree.getroot().getchildren()[0]
+
     ## This property returns whether the ski file required input
     @property
     def needs_input(self): return len(self.input_files) > 0
@@ -1231,15 +1235,15 @@ class SkiFile:
             stellar_system = self.get_stellar_system()
 
             # Get the 'components' element
-            stellar_components_parent = stellar_system.xpath("components")
+            stellar_components_parent = xml.get_unique_element_direct(stellar_system, "components")
 
             # Create the stellar component
-            stellar_component = stellar_components_parent.makeelement("PanStellarComp", attrs={})
+            stellar_component = stellar_components_parent.makeelement("PanStellarComp", {})
 
             # Create children
-            geometry_parent = stellar_component.makeelement("geometry", attrs={"type":"Geometry"})
-            sed_parent = stellar_component.makeelement("sed", attrs={"type":"StellarSED"})
-            normalization_parent = stellar_component.makeelement("normalization", attrs={"type":"StellarCompNormalization"})
+            geometry_parent = stellar_component.makeelement("geometry", {"type":"Geometry"})
+            sed_parent = stellar_component.makeelement("sed", {"type":"StellarSED"})
+            normalization_parent = stellar_component.makeelement("normalization", {"type":"StellarCompNormalization"})
 
             # Create geometry
             if geometry_type is not None:
@@ -1281,15 +1285,15 @@ class SkiFile:
         if dust_distribution.tag != "CompDustDistribution": raise ValueError("The dust distribution is not a 'CompDustDistribution', so adding components is not possible")
 
         # Get the 'components' element
-        dust_components_parent = dust_distribution.xpath("components")
+        dust_components_parent = xml.get_unique_element_direct(dust_distribution, "components")
 
         # Create the new dut component
-        dust_component = dust_components_parent.makeelement("DustComp", attrs={})
+        dust_component = dust_components_parent.makeelement("DustComp", {})
 
         # Create children
-        geometry_parent = dust_component.makeelement("geometry", attrs={"type": "Geometry"})
-        mix_parent = dust_component.makeelement("mix", attrs={"type": "DustMix"})
-        normalization_parent = dust_component.makeelement("normalization", attrs={"type": "DustCompNormalization"})
+        geometry_parent = dust_component.makeelement("geometry", {"type": "Geometry"})
+        mix_parent = dust_component.makeelement("mix", {"type": "DustMix"})
+        normalization_parent = dust_component.makeelement("normalization", {"type": "DustCompNormalization"})
 
         # Create geometry
         if geometry_type is not None:
@@ -1415,6 +1419,36 @@ class SkiFile:
         # Set the 'luminosities' attribute
         component.set("luminosities", " ".join(map(str, luminosities)))
 
+    ## This function removes the current stellar component normalization, and returns the parent
+    def remove_stellar_component_normalization(self, component_id):
+
+        # Try getting the current normalization
+        try:
+
+            # Get the stellar component normalization
+            normalization = self.get_stellar_component_normalization(component_id)
+
+            # Get the parent
+            parent = normalization.getparent()
+
+            # Remove the old normalization
+            parent.remove(normalization)
+
+        # No normalization yet
+        except ValueError:
+
+            # Get the stellar component
+            stellar_component = self.get_stellar_component(component_id)
+
+            # Get the 'normalization' element
+            try: parent = xml.get_unique_element_direct(stellar_component, "normalization")
+            except ValueError:
+                parent = stellar_component.makeelement("normalization", {"type": "StellarCompNormalization"})
+                stellar_component.append(parent)
+
+        # Return the 'normalization' parent
+        return parent
+
     ## This function sets the luminosity of the stellar component with the specified id,
     #  - if filter_or_wavelength is None, the specified luminosity [as Astropy quantity] is interpreted as a bolometric luminosity
     #  - if filter_or_wavelength is a Filter instance, the luminosity [as Astropy quantity] is interpreted as the luminosity in the corresponding band
@@ -1423,17 +1457,11 @@ class SkiFile:
 
         from ..basics.quantity import represent_quantity
 
-        # Get the stellar component normalization of the component
-        normalization = self.get_stellar_component_normalization(component_id)
+        # Remove stellar component normalization, return the parent
+        parent = self.remove_stellar_component_normalization(component_id)
 
         # No filter or wavelength is defined, use BolLuminosityStellarCompNormalization
         if filter_or_wavelength is None:
-
-            # Get element that holds the normalization class
-            parent = normalization.getparent()
-
-            # Remove the old normalization
-            parent.remove(normalization)
 
             # Make and add the new normalization element
             attrs = {"luminosity" : luminosity.to("Lsun").value}
@@ -1442,24 +1470,12 @@ class SkiFile:
         # Filter is defined, use LuminosityStellarCompNormalization
         elif isinstance(filter_or_wavelength, Filter):
 
-            # Get element that holds the normalization class
-            parent = normalization.getparent()
-
-            # Remove the old normalization
-            parent.remove(normalization)
-
             # Make and add the new normalization element
             attrs = {"luminosity": represent_quantity(luminosity), "band": filter_or_wavelength.skirt_description}
             parent.append(parent.makeelement("LuminosityStellarCompNormalization", attrs))
 
         # Wavelength is defined as an Astropy quantity, use SpectralLuminosityStellarCompNormalization
         elif filter_or_wavelength.__class__.__name__ == "Quantity":
-
-            # Get element that holds the normalization class
-            parent = normalization.getparent()
-
-            # Remove the old normalization
-            parent.remove(normalization)
 
             # Make and add the new normalization element
             attrs = {"luminosity": represent_quantity(luminosity), "wavelength": represent_quantity(filter_or_wavelength)}
@@ -1486,17 +1502,42 @@ class SkiFile:
         # Return the dust mix
         return xml.get_unique_element(dust_component, "mix")
 
+    ## This function removes the current dust component mix, and returns the parent
+    def remove_dust_component_mix(self, component_id):
+
+        # Try getting the current mix
+        try:
+
+            # Get the dust component mix
+            mix = self.get_dust_component_mix(component_id)
+
+            # Get the parent
+            parent = mix.getparent()
+
+            # Remove the old mix
+            parent.remove(mix)
+
+        # No geometry yet
+        except ValueError:
+
+            # Get the dust component
+            dust_component = self.get_dust_component(component_id)
+
+            # Get the 'mix' element
+            try: parent = xml.get_unique_element_direct(dust_component, "mix")
+            except ValueError:
+
+                parent = dust_component.makeelement("mix", {"type": "DustMix"})
+                dust_component.append(parent)
+
+        # Return the 'mix' parent
+        return parent
+
     ## This functions sets a THEMIS dust mix model for the dust component with the specified id
     def set_dust_component_themis_mix(self, component_id, hydrocarbon_pops=25, enstatite_pops=25, forsterite_pops=25, write_mix=True, write_mean_mix=True, write_size=True):
 
-        # Get the dust mix
-        mix = self.get_dust_component_mix(component_id)
-
-        # Get the parent
-        parent = mix.getparent()
-
-        # Remove the old mix
-        parent.remove(mix)
+        # Remove current mix, return the parent
+        parent = self.remove_dust_component_mix(component_id)
 
         # Make and add the new mix
         attrs = {"writeMix": str_from_bool(write_mix, lower=True), "writeMeanMix": str_from_bool(write_mean_mix, lower=True),
@@ -1505,17 +1546,11 @@ class SkiFile:
         parent.append(parent.makeelement("ThemisDustMix", attrs))
 
     ## This function sets a Zubko dust mix model for the dust component with the specified id
-    def set_dust_component_zubko_mix(self, component_id, graphite_populations=7, silicate_populations=7, path_poulations=5, write_mix=True, write_mean_mix=True, write_size=True):
+    def set_dust_component_zubko_mix(self, component_id, graphite_populations=7, silicate_populations=7, pah_poulations=5, write_mix=True, write_mean_mix=True, write_size=True):
         # writeMix="false" writeMeanMix="false" writeSize="false" graphitePops="7" silicatePops="7" PAHPops="5"
 
-        # Get the dust mix
-        mix = self.get_dust_component_mix(component_id)
-
-        # Get the parent
-        parent = mix.getparent()
-
-        # Remove the old mix
-        parent.remove(mix)
+        # Remove current mix, return the parent
+        parent = self.remove_dust_component_mix(component_id)
 
         # Make and add the new mix
         attrs = {"writeMix": str_from_bool(write_mix, lower=True), "writeMeanMix": str_from_bool(write_mean_mix, lower=True),
@@ -1533,6 +1568,69 @@ class SkiFile:
 
         # Get the dust mass and return it as a quantity
         return self.get_quantity(normalization, "dustMass")
+
+    ## This function removes the current dust component normalization, and returns the parent
+    def remove_dust_component_normalization(self, component_id):
+
+        # Try getting the current normalization
+        try:
+
+            # Get the dust component normalization
+            normalization = self.get_dust_component_normalization(component_id)
+
+            # Get the parent
+            parent = normalization.getparent()
+
+            # Remove the old normalization
+            parent.remove(normalization)
+
+        # No normalization yet
+        except ValueError:
+
+            # Get the dust component
+            dust_component = self.get_dust_component(component_id)
+
+            # Get the 'normalization' element
+            try: parent = xml.get_unique_element_direct(dust_component, "normalization")
+            except ValueError:
+
+                parent = dust_component.makeelement("normalization", {"type": "DustCompNormalization"})
+                dust_component.append(parent)
+
+        # Return the 'normalization' parent
+        return parent
+
+    ## This function sets the dust component normalization
+    def set_dust_component_normalization(self, component_id, value, wavelength=None, direction=None):
+
+        # Get parent
+        parent = self.remove_dust_component_normalization(component_id)
+
+        from ..basics.quantity import is_mass, parse_quantity, represent_quantity
+
+        # If mass is given: dust mass normalization
+        if is_mass(value):
+
+            # Get the mass as a quantity
+            mass = parse_quantity(value)
+
+            # Create normalization
+            attrs = {"dustMass": represent_quantity(mass)}
+            normalization = parent.makeelement("DustMassDustCompNormalization", attrs)
+
+            # Add the normalization
+            parent.append(normalization)
+
+        # Other:
+        else: raise NotImplementedError("Only dust mass normalization has been implemented")
+
+        #<Type name="RadialDustCompNormalization" concrete="true" base="DustCompNormalization" title="normalization by defining the radial optical depth at some wavelength">
+        #<Type name="FaceOnDustCompNormalization" concrete="true" base="DustCompNormalization" title="normalization by defining the face-on optical depth at some wavelength">
+        #<Type name="EdgeOnDustCompNormalization" concrete="true" base="DustCompNormalization" title="normalization by defining the edge-on optical depth at some wavelength">
+        #<Type name="XDustCompNormalization" concrete="true" base="DustCompNormalization" title="normalization by defining the X-axis optical depth at some wavelength">
+        #<Type name="YDustCompNormalization" concrete="true" base="DustCompNormalization" title="normalization by defining the Y-axis optical depth at some wavelength">
+        #<Type name="ZDustCompNormalization" concrete="true" base="DustCompNormalization" title="normalization by defining the Z-axis optical depth at some wavelength">
+        #<Type name="CompDustDistribution" concrete="true" base="DustDistribution" title="a dust distribution composed of various dust components">
 
     ## This function sets the mass of the dust component with the specified id. The mass should be an Astropy quantity.
     def set_dust_component_mass(self, component_id, mass):
@@ -1581,17 +1679,34 @@ class SkiFile:
         # Set the number of points
         grid.set("points", str(value))
 
+    ## This function removes the current wavelength grid and returns the parent
+    def remove_wavelength_grid(self):
+
+        try:
+
+            # Get the wavelength grid
+            wavelength_grid = self.get_wavelength_grid()
+
+            # Get the parent
+            parent = wavelength_grid.getparent()
+
+            # Remove the old wavelength grid
+            parent.remove(wavelength_grid)
+
+        except ValueError:
+
+            try: parent = xml.get_unique_element_direct(self.get_simulation(), "wavelengthGrid")
+            except ValueError:
+
+                parent = self.get_simulation().makeelement("wavelengthGrid")
+                self.get_simulation().append(parent)
+
+        return parent
+
     ## This function sets the wavelength grid to a file
     def set_file_wavelength_grid(self, filename):
 
-        # Get the wavelength grid
-        wavelength_grid = self.get_wavelength_grid()
-
-        # Get the parent
-        parent = wavelength_grid.getparent()
-
-        # Remove the old wavelength grid
-        parent.remove(wavelength_grid)
+        parent = self.remove_wavelength_grid()
 
         # Make and add the new wavelength grid
         attrs = {"filename": filename}
@@ -1602,14 +1717,7 @@ class SkiFile:
 
         from ..basics.quantity import represent_quantity
 
-        # Get the wavelength grid
-        wavelength_grid = self.get_wavelength_grid()
-
-        # Get the parent
-        parent = wavelength_grid.getparent()
-
-        # Remove the old wavelength grid
-        parent.remove(wavelength_grid)
+        parent = self.remove_wavelength_grid()
 
         # Make and add the new wavelength grid
         attrs = {"minWavelength": represent_quantity(min_lambda), "maxWavelength": represent_quantity(max_lambda),
@@ -1623,14 +1731,7 @@ class SkiFile:
 
         from ..basics.quantity import represent_quantity
 
-        # Get the wavelength grid
-        wavelength_grid = self.get_wavelength_grid()
-
-        # Get the parent
-        parent = wavelength_grid.getparent()
-
-        # Remove the old wavelength grid
-        parent.remove(wavelength_grid)
+        parent = self.remove_wavelength_grid()
 
         # Make and add the new wavelength grid
         attrs = {"minWavelength": represent_quantity(min_lambda), "maxWavelength": represent_quantity(max_lambda),
@@ -1764,14 +1865,8 @@ class SkiFile:
 
         from ..basics.quantity import represent_quantity
 
-        # Get the stellar component geometry
-        geometry = self.get_stellar_component_geometry(component_id)
-
-        # Get the parent
-        parent = geometry.getparent()
-
-        # Remove the old geometry
-        parent.remove(geometry)
+        # Get parent
+        parent = self.remove_stellar_component_geometry(component_id)
 
         # Create and add the new geometry
         attrs = {"filename": filename, "pixelScale": represent_quantity(pixelscale), "positionAngle": str_from_angle(position_angle),
@@ -1785,14 +1880,8 @@ class SkiFile:
 
         from ..basics.quantity import represent_quantity
 
-        # Get the dust component geometry
-        geometry = self.get_dust_component_geometry(component_id)
-
-        # Get the parent
-        parent = geometry.getparent()
-
-        # Remove the old geometry
-        parent.remove(geometry)
+        # Get parent
+        parent = self.remove_dust_component_geometry(component_id)
 
         # Create and add the new geometry
         attrs = {"filename": filename, "pixelScale": represent_quantity(pixelscale), "positionAngle": str_from_angle(position_angle),
@@ -1806,14 +1895,8 @@ class SkiFile:
 
         from ..basics.quantity import represent_quantity
 
-        # Get the stellar component geometry
-        geometry = self.get_stellar_component_geometry(component_id)
-
-        # Get the parent
-        parent = geometry.getparent()
-
-        # Remove the old geometry
-        parent.remove(geometry)
+        # Get parent
+        parent = self.remove_stellar_component_geometry(component_id)
 
         # Create and add the new geometry
         attrs = {"radius": represent_quantity(radius), "width": represent_quantity(width), "height": represent_quantity(height)}
@@ -1825,14 +1908,8 @@ class SkiFile:
 
         from ..basics.quantity import represent_quantity
 
-        # Get the dust component geometry
-        geometry = self.get_dust_component_geometry(component_id)
-
-        # Get the parent
-        parent = geometry.getparent()
-
-        # Remove the old geometry
-        parent.remove(geometry)
+        # Get parent
+        parent = self.remove_dust_component_geometry(component_id)
 
         # Create and add the new geometry
         attrs = {"radius": represent_quantity(radius), "width": represent_quantity(width),
@@ -2231,17 +2308,73 @@ class SkiFile:
         # Set the new dust component geometry
         parent.append(decorator)
 
+    ## This function removes the stellar component geometry, and returns the 'geometry' parent
+    def remove_stellar_component_geometry(self, component_id):
+
+        # Try getting the current geometry
+        try:
+
+            # Get the stellar component geometry
+            geometry = self.get_stellar_component_geometry(component_id)
+
+            # Get the parent
+            parent = geometry.getparent()
+
+            # Remove the old geometry
+            parent.remove(geometry)
+
+        # No geometry yet
+        except ValueError:
+
+            # Get the stellar component
+            stellar_component = self.get_stellar_component(component_id)
+
+            # Get the 'geometry' element
+            try: parent = xml.get_unique_element_direct(stellar_component, "geometry")
+            except ValueError:
+
+                parent = stellar_component.makeelement("geometry", {"type": "Geometry"})
+                stellar_component.append(parent)
+
+        # Return the 'geometry' parent
+        return parent
+
+    ## This function removes the dust component geometry, and returns the '
+    def remove_dust_component_geometry(self, component_id):
+
+        # Try getting the current geometry
+        try:
+
+            # Get the dust component geometry
+            geometry = self.get_dust_component_geometry(component_id)
+
+            # Get the parent
+            parent = geometry.getparent()
+
+            # Remove the old geometry
+            parent.remove(geometry)
+
+        # No geometry yet
+        except ValueError:
+
+            # Get the dust component
+            dust_component = self.get_dust_component(component_id)
+
+            # Get the 'geometry' element
+            try: parent = xml.get_unique_element_direct(dust_component, "geometry")
+            except ValueError:
+
+                parent = dust_component.makeelement("geometry", {"type": "Geometry"})
+                dust_component.append(parent)
+
+        # Return the 'geometry' parent
+        return parent
+
     ## This function sets the geometry of the specified stellar component to a Sersic profile with an specific y and z flattening
     def set_stellar_component_sersic_geometry(self, component_id, index, radius, y_flattening=1, z_flattening=1):
 
-        # Get the stellar component geometry
-        geometry = self.get_stellar_component_geometry(component_id)
-
-        # Get the parent
-        parent = geometry.getparent()
-
-        # Remove the old geometry
-        parent.remove(geometry)
+        # Get the parent, remove current geometry
+        parent = self.remove_stellar_component_geometry(component_id)
 
         # Create and add the new geometry
         attrs = {"yFlattening": str(y_flattening), "zFlattening": str(z_flattening)}
@@ -2262,14 +2395,8 @@ class SkiFile:
     ## This function sets the geometry of the specified dust component to a Sersic profile with a specific y and z flattening
     def set_dust_component_sersic_geometry(self, component_id, index, radius, y_flattening=1, z_flattening=1):
 
-        # Get the dust component geometry
-        geometry = self.get_dust_component_geometry(component_id)
-
-        # Get the parent
-        parent = geometry.getparent()
-
-        # Remove the old geometry
-        parent.remove(geometry)
+        # Get the parent, remove current geometry
+        parent = self.remove_dust_component_geometry(component_id)
 
         # Create and add the new geometry
         attrs = {"yFlattening": str(y_flattening), "zFlattening": str(z_flattening)}
@@ -2290,14 +2417,8 @@ class SkiFile:
     ## This function sets the geometry of the specified stellar component to an exponential disk profile
     def set_stellar_component_expdisk_geometry(self, component_id, radial_scale, axial_scale, radial_truncation=0, axial_truncation=0, inner_radius=0):
 
-        # Get the stellar component geometry
-        geometry = self.get_stellar_component_geometry(component_id)
-
-        # Get the parent
-        parent = geometry.getparent()
-
-        # Remove the old geometry
-        parent.remove(geometry)
+        # Get the parent, remove current geometry
+        parent = self.remove_stellar_component_geometry(component_id)
 
         # Create and add the new exponential disk geometry
         attrs = {"radialScale": str(radial_scale), "axialScale": str(axial_scale), "radialTrunc": str(radial_truncation), "axialTrunc": str(axial_truncation), "innerRadius": str(inner_radius)}
@@ -2309,14 +2430,8 @@ class SkiFile:
     ## This function sets the geometry of the specified dust component to an exponential disk profile
     def set_dust_component_expdisk_geometry(self, component_id, radial_scale, axial_scale, radial_truncation=0, axial_truncation=0, inner_radius=0):
 
-        # Get the dust component geometry
-        geometry = self.get_dust_component_geometry(component_id)
-
-        # Get the parent
-        parent = geometry.getparent()
-
-        # Remove the old geometry
-        parent.remove(geometry)
+        # Get the parent, remove current geometry
+        parent = self.remove_dust_component_geometry(component_id)
 
         # Create and add the new exponential disk geometry
         attrs = {"radialScale": str(radial_scale), "axialScale": str(axial_scale), "radialTrunc": str(radial_truncation), "axialTrunc": str(axial_truncation), "innerRadius": str(inner_radius)}
@@ -2334,21 +2449,46 @@ class SkiFile:
         # Get the SED element
         return xml.get_unique_element(component, "sed")
 
+    ## This function removes the current stellar component SED template, and returns the parent
+    def remove_stellar_component_sed(self, component_id):
+
+        # Try getting the current SED
+        try:
+
+            # Get the stellar component SED
+            sed = self.get_stellar_component_sed(component_id)
+
+            # Get the parent
+            parent = sed.getparent()
+
+            # Remove the old sED
+            parent.remove(sed)
+
+        # No geometry yet
+        except ValueError:
+
+            # Get the stellar component
+            stellar_component = self.get_stellar_component(component_id)
+
+            # Get the 'sed' element
+            try: parent = xml.get_unique_element_direct(stellar_component, "sed")
+            except ValueError:
+
+                parent = stellar_component.makeelement("sed", {"type": "StellarSED"})
+                stellar_component.append(parent)
+
+        # Return the 'sed' parent
+        return parent
+
     ## This function sets the SED template of the specified stellar component to a certain model with a specific age
     #  and metallicity (but not MAPPINGS SED)
     def set_stellar_component_sed(self, component_id, template, age, metallicity):
 
+        # Get the parent, remove current SED
+        parent = self.remove_stellar_component_sed(component_id)
+
         # The name of the template class in SKIRT
         template_class = template + "SED"
-
-        # Get the stellar component SED
-        sed = self.get_stellar_component_sed(component_id)
-
-        # Get the parent
-        parent = sed.getparent()
-
-        # Remove the old SED element
-        parent.remove(sed)
 
         # Create and add the new geometry
         attrs = {"age": str(age), "metallicity": str(metallicity)}
@@ -2359,14 +2499,8 @@ class SkiFile:
 
         from ..basics.quantity import represent_quantity
 
-        # Get the stellar component SED
-        sed = self.get_stellar_component_sed(component_id)
-
-        # Get the parent
-        parent = sed.getparent()
-
-        # Remove the old SED element
-        parent.remove(sed)
+        # Get the parent, remove current SED
+        parent = self.remove_stellar_component_sed(component_id)
 
         # Create and add the new geometry
         attrs = {"metallicity": str(metallicity), "compactness": str(compactness), "pressure": represent_quantity(pressure), "coveringFactor": str(covering_factor)}
@@ -2401,17 +2535,31 @@ class SkiFile:
         if self.has_dust_emissivity: return self.get_dust_emissivity().tag == "GreyBodyDustEmissivity"
         else: return None
 
+    ## This function removes the current dust emissivity and returns the parent
+    def remove_dust_emissivity(self):
+
+        try:
+            # Get the dust emissivity
+            emissivity = self.get_dust_emissivity()
+
+            # Get the parent
+            parent = emissivity.getparent()
+
+            # Remove the old emissivity
+            parent.remove(emissivity)
+
+        except ValueError:
+
+            dust_system = self.get_dust_system()
+            parent = dust_system.makeelement("dustEmissivity", {"type": "DustEmissivity"})
+            dust_system.append(parent)
+
+        return parent
+
     ## This function sets a transient dust emissivity for the simulation
     def set_transient_dust_emissivity(self):
 
-        # Get the dust emissivity
-        emissivity = self.get_dust_emissivity()
-
-        # Get the parent
-        parent = emissivity.getparent()
-
-        # Remove the old emissivity
-        parent.remove(emissivity)
+        parent = self.remove_dust_emissivity()
 
         # Create and add the new emissivity
         parent.append(parent.makeelement("TransientDustEmissivity", {}))
@@ -2419,14 +2567,7 @@ class SkiFile:
     ## This function sets a grey body dust emissivity for the simulation
     def set_grey_body_dust_emissivity(self):
 
-        # Get the dust emissivity
-        emissivity = self.get_dust_emissivity()
-
-        # Get the parent
-        parent = emissivity.getparent()
-
-        # Remove the old emissivity
-        parent.remove(emissivity)
+        parent = self.remove_dust_emissivity()
 
         # Create and add the new emissivity
         parent.append(parent.makeelement("GreyBodyDustEmissivity", {}))
@@ -2440,17 +2581,31 @@ class SkiFile:
         # Return the dust lib element
         return xml.get_unique_element(dust_system, "dustLib")
 
+    ## This function removes the current dust library and returns the parent
+    def remove_dust_lib(self):
+
+        try:
+            # Get the dust lib
+            lib = self.get_dust_lib()
+
+            # Get the parent
+            parent = lib.getparent()
+
+            # Remove the old DustLib element
+            parent.remove(lib)
+
+        except ValueError:
+
+            dust_system = self.get_dust_system()
+            parent = dust_system.makeelement("dustLib", {"type": "DustLib"})
+            dust_system.append(parent)
+
+        return parent
+
     ## This function sets the dust library to an AllCellsDustLib
     def set_allcells_dust_lib(self):
 
-        # Get the dust lib
-        lib = self.get_dust_lib()
-
-        # Get the parent
-        parent = lib.getparent()
-
-        # Remove the old DustLib element
-        parent.remove(lib)
+        parent = self.remove_dust_lib()
 
         # Create and add the new library
         parent.append(parent.makeelement("AllCellsDustLib", {}))
@@ -2458,14 +2613,7 @@ class SkiFile:
     ## This function sets the dust library to a 2D dust library
     def set_2d_dust_lib(self, temperature_points=25, wavelength_points=10):
 
-        # Get the dust lib
-        lib = self.get_dust_lib()
-
-        # Get the parent
-        parent = lib.getparent()
-
-        # Remove the old DustLib element
-        parent.remove(lib)
+        parent = self.remove_dust_lib()
 
         # Create and add the new library
         attrs = {"pointsTemperature": str(temperature_points), "pointsWavelength": str(wavelength_points)}
@@ -2474,14 +2622,7 @@ class SkiFile:
     ## This function sets the dust library to a 1D dust library
     def set_1d_dust_lib(self, points):
 
-        # Get the dust lib
-        lib = self.get_dust_lib()
-
-        # Get the parent
-        parent = lib.getparent()
-
-        # Remove the old DustLib element
-        parent.remove(lib)
+        parent = self.remove_dust_lib()
 
         # Create and add the new library
         attrs = {"entries": str(points)}
@@ -2615,19 +2756,33 @@ class SkiFile:
 
         else: raise ValueError("Invalid grid type")
 
+    ## This function removes the dust grid and returns the parent
+    def remove_dust_grid(self):
+
+        try:
+            # Get the dust grid
+            grid = self.get_dust_grid()
+
+            # Get the parent
+            parent = grid.getparent()
+
+            # Remove the old grid element
+            parent.remove(grid)
+
+        except ValueError:
+
+            dust_system = self.get_dust_system()
+            parent = dust_system.makeelement("dustGrid", {"type": "DustGrid"})
+            dust_system.append(parent)
+
+        return parent
+
     ## This function sets a cartesian dust grid for the dust system
     def set_cartesian_dust_grid(self, min_x, max_x, min_y, max_y, min_z, max_z, x_bins, y_bins, z_bins, mesh_type="linear", ratio=1., write_grid=True):
 
         from ..basics.quantity import represent_quantity
 
-        # Get the dust grid
-        grid = self.get_dust_grid()
-
-        # Get the parent
-        parent = grid.getparent()
-
-        # Remove the old grid element
-        parent.remove(grid)
+        parent = self.remove_dust_grid()
 
         # Create and add the new grid
         attrs = {"minX": represent_quantity(min_x), "maxX": represent_quantity(max_x), "minY": represent_quantity(min_y),
@@ -2686,14 +2841,7 @@ class SkiFile:
                                   max_level=10, search_method="Neighbor", sample_count=100, max_optical_depth=0,
                                   max_mass_fraction=1e-6, max_dens_disp_fraction=0, direction_method="Alternating"):
 
-        # Get the dust grid
-        grid = self.get_dust_grid()
-
-        # Get the parent
-        parent = grid.getparent()
-
-        # Remove the old grid element
-        parent.remove(grid)
+        parent = self.remove_dust_grid()
 
         # Create and add the new grid
         attrs = {"minX": str(min_x), "maxX": str(max_x), "minY": str(min_y), "maxY": str(max_y), "minZ": str(min_z),
@@ -2730,14 +2878,7 @@ class SkiFile:
                               max_level=6, search_method="Neighbor", sample_count=100, max_optical_depth=0,
                               max_mass_fraction=1e-6, max_dens_disp_fraction=0, barycentric=False):
 
-        # Get the dust grid
-        grid = self.get_dust_grid()
-
-        # Get the parent
-        parent = grid.getparent()
-
-        # Remove the old grid element
-        parent.remove(grid)
+        parent = self.remove_dust_grid()
 
         # Create and add the new grid
         attrs = {"minX": str(min_x), "maxX": str(max_x), "minY": str(min_y), "maxY": str(max_y), "minZ": str(min_z),
@@ -2775,7 +2916,21 @@ class SkiFile:
     ## This function returns the instrument system
     def get_instrument_system(self):
 
-        return self.get_unique_base_element("instrumentSystem")
+        try: return self.get_unique_base_element("instrumentSystem")
+        except ValueError:
+
+            # Get parent
+            try: parent = self.get_unique_base_element_direct("instrumentSystem")
+            except ValueError:
+                parent = self.get_simulation().makeelement("instrumentSystem", {"type": "InstrumentSystem"})
+                self.get_simulation().append(parent)
+
+            # Set actual instrument system
+            system = parent.makeelement("InstrumentSystem")
+            parent.append(system)
+
+            # Return the new instrument system
+            return system
 
     ## This funcion removes the complete instrument system
     def remove_instrument_system(self):
@@ -2790,17 +2945,14 @@ class SkiFile:
         # Get the instrument system
         instrument_system = self.get_instrument_system()
 
-        # Get the 'instruments' element
-        instruments_parents = instrument_system.xpath("instruments")
-
-        # Check if only one 'instruments' element is present
-        if len(instruments_parents) == 0: raise ValueError("No instruments found")
-        elif len(instruments_parents) > 1: raise ValueError("Invalid ski file: multiple 'instruments' objects within instrument system")
-        instruments_element = instruments_parents[0]
+        try: instruments = xml.get_unique_element_direct(instrument_system, "instruments")
+        except ValueError:
+            instruments = instrument_system.makeelement("instruments", {"type": "Instrument"})
+            instrument_system.append(instruments)
 
         # Return the instruments as a list
-        if as_list: return instruments_element.getchildren()
-        else: return instruments_element
+        if as_list: return instruments.getchildren()
+        else: return instruments
 
     ## This function returns the names of all the instruments in the ski file as a list
     def get_instrument_names(self):
@@ -3312,7 +3464,11 @@ class SkiFile:
 
     ## This function returns the xml tree element with the specified name that is at the base level of the simulation hierarchy
     def get_unique_base_element(self, name):
-        return xml.get_unique_element(self.tree.getroot(), "//"+name)
+        return xml.get_unique_element(self.get_simulation(), "//"+name)
+
+    ## This function ...
+    def get_unique_base_element_direct(self, name):
+        return xml.get_unique_element_direct(self.get_simulation(), "//"+name)
 
     # -----------------------------------------------------------------
 

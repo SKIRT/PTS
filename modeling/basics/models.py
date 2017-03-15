@@ -297,7 +297,8 @@ class DeprojectionModel3D(Model):
         y_size = wcs.ysize
 
         # Create the deprojection model
-        deprojection = cls(filepath, pixelscale, pa, inclination, x_size, y_size, xc, yc, scale_height)
+        deprojection = cls(filename=filepath, pixelscale=pixelscale, position_angle=pa, inclination=inclination,
+                           x_size=x_size, y_size=y_size, x_center=xc, y_center=yc, scale_height=scale_height)
 
         # Return the deprojection model
         return deprojection

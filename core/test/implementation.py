@@ -40,15 +40,16 @@ class TestImplementation(Configurable):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         This function ...
         :param config:
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(TestImplementation, self).__init__(config, unlisted=True)
+        super(TestImplementation, self).__init__(config, interactive, unlisted=True)
 
         # The test path
         self.path = None
@@ -123,9 +124,13 @@ class TestImplementation(Configurable):
         configuration_module = importlib.import_module(configuration_module_path)
         definition = getattr(configuration_module, "definition")
 
+        #print(settings_dict)
+
         # Parse the configuration
         setter = DictConfigurationSetter(settings_dict, the_command, description=description)
         config = setter.run(definition)
+
+        #print(config)
 
         # Set working directory (output directory)
         config.path = output_path

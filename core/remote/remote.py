@@ -4265,7 +4265,7 @@ class Remote(object):
         free = float(splitted[1]) / 1e6
 
         # Return the free amount of virtual memory in gigabytes
-        return free
+        return free * u("GB")
 
     # -----------------------------------------------------------------
 
@@ -4295,7 +4295,7 @@ class Remote(object):
             free += float(splitted[3].split("G")[0]) if "G" in splitted[3] else float(splitted[3].split("T")[0]) * 1e3
 
         # Return the amount of free memory in gigabytes
-        return free
+        return free * u("GB")
 
     # -----------------------------------------------------------------
 
@@ -4317,7 +4317,7 @@ class Remote(object):
             free = (total - used).to("GB")
 
             # Return it in GB
-            return free.value
+            return free
 
         # No quota: return free memory on the entire disk
         else: return self.free_space

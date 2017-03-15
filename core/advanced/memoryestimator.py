@@ -19,6 +19,9 @@ from ..tools import introspection
 from ..tools import filesystem as fs
 from ..advanced.dustgridtool import DustGridTool
 from ..tools import formatting as fmt
+from ..tools.logging import log
+from ..simulation.memory import MemoryRequirement
+from ..basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -108,12 +111,27 @@ class MemoryEstimator(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def memory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return MemoryRequirement(self.serial_memory, self.parallel_memory)
+
+    # -----------------------------------------------------------------
+
     def estimate(self):
 
         """
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Estimating the memory requirements ...")
 
         # Get the number of dust cells
         self.get_ncells()
@@ -211,6 +229,9 @@ class MemoryEstimator(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Estimating the number of dust cells ...")
+
         # Create the dust grid tool
         tool = DustGridTool()
 
@@ -255,6 +276,9 @@ class MemoryEstimator(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Estimating the parallel part of the memory requirement ...")
+
         # Size of the parallel tables (in number of values)
         #table_size = self.nwavelengths * self.ncells
 
@@ -281,7 +305,7 @@ class MemoryEstimator(Configurable):
         instruments_memory = 8 * instruments_size / bytes_per_gigabyte
 
         # Determine the parallel memory requirement
-        self.parallel_memory = tables_memory + instruments_memory
+        self.parallel_memory = (tables_memory + instruments_memory) * u("GB")
 
         # TODO: determine the serial memory requirement
 
@@ -293,6 +317,9 @@ class MemoryEstimator(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Estimating the serial part of the memory requirement ...")
 
         # Overhead
         Ndoubles = 50e6 + (self.nwavelengths + self.ncells + self.ncomponents + self.npopulations) * 10
@@ -327,7 +354,8 @@ class MemoryEstimator(Configurable):
 
         Nbytes = Ndoubles * 8
 
-        self.serial_memory = Nbytes / bytes_per_gigabyte
+        # Set serial part of the memory requirement
+        self.serial_memory = (Nbytes / bytes_per_gigabyte) * u("GB")
 
     # -----------------------------------------------------------------
 
@@ -355,8 +383,8 @@ class MemoryEstimator(Configurable):
 
         print("")
 
-        print(" - serial part:", self.serial_memory, "GB")
-        print(" - parallel", self.parallel_memory, "GB")
+        print(" - serial part:", self.serial_memory)
+        print(" - parallel", self.parallel_memory)
 
         print("")
 
@@ -366,12 +394,12 @@ class MemoryEstimator(Configurable):
             else: print(fmt.underlined + str(nproc) + " processes" + fmt.reset + ":")
             print("")
 
-            print(" - serial part:", self.serial_memory, "GB")
-            print(" - parallel part:", self.parallel_memory / float(nproc), "GB")
-            print(" - memory per process:", self.serial_memory + self.parallel_memory / float(nproc), "GB")
-            print(" - total memory (all processes):", self.serial_memory * float(nproc) + self.parallel_memory, "GB")
+            print(" - serial part:", self.serial_memory)
+            print(" - parallel part:", self.parallel_memory / float(nproc))
+            print(" - memory per process:", self.serial_memory + self.parallel_memory / float(nproc))
+            print(" - total memory (all processes):", self.serial_memory * float(nproc) + self.parallel_memory)
             #print("")
-            print(" - total memory (no data parallelization):", (self.serial_memory + self.parallel_memory)*float(nproc), "GB")
+            print(" - total memory (no data parallelization):", (self.serial_memory + self.parallel_memory)*float(nproc))
 
             print("")
 

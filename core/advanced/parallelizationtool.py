@@ -88,6 +88,9 @@ class ParallelizationTool(Configurable):
         # The parallelization object
         self.parallelization = None
 
+        # The memory requirement for the simulation
+        self.memory = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -124,6 +127,9 @@ class ParallelizationTool(Configurable):
 
         # Open the ski file
         self.ski = self.config.ski if isinstance(self.config.ski, SkiFile) else SkiFile(self.config.ski)
+
+        # Set the memory requirement
+        self.memory = kwargs.pop("memory", None)
 
     # -----------------------------------------------------------------
 
@@ -167,20 +173,30 @@ class ParallelizationTool(Configurable):
         # If MPI can be used
         else:
 
-            # Configure the memory estimator
-            self.estimator.config.ski = self.ski
-            self.estimator.config.input = self.config.input
-            self.estimator.config.ncells = self.config.ncells
+            # If memory as not been set
+            if self.memory is None:
 
-            # Don't show the memory
-            self.estimator.config.show = False
+                # Configure the memory estimator
+                self.estimator.config.ski = self.ski
+                self.estimator.config.input = self.config.input
+                self.estimator.config.ncells = self.config.ncells
 
-            # Estimate the memory
-            self.estimator.run()
+                # Don't show the memory
+                self.estimator.config.show = False
 
-            # Get the serial and parallel parts of the simulation's memory
-            serial_memory = self.estimator.serial_memory
-            parallel_memory = self.estimator.parallel_memory
+                # Estimate the memory
+                self.estimator.run()
+
+                # Get the serial and parallel parts of the simulation's memory
+                #serial_memory = self.estimator.serial_memory
+                #parallel_memory = self.estimator.parallel_memory
+
+                # Set the memory requirement
+                self.memory = self.estimator.memory
+
+            # Get serial and parallel parts of the memory requirement
+            serial_memory = self.memory.serial
+            parallel_memory = self.memory.parallel
 
             # Calculate the total memory of one process without data parallelization
             total_memory = serial_memory + parallel_memory

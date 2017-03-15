@@ -15,6 +15,7 @@ import numpy as np
 # Import astronomical modules
 from astropy.utils import lazyproperty
 from astropy.units import dimensionless_angles
+from astropy.io.fits import Header
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
@@ -37,6 +38,8 @@ from pts.core.filter.broad import BroadBandFilter
 from pts.magic.core.frame import Frame
 from pts.magic.region.list import SkyRegionList
 from pts.core.filter.filter import parse_filter
+from pts.core.remote.moderator import PlatformModerator
+from pts.core.simulation.memory import MemoryRequirement
 
 # -----------------------------------------------------------------
 
@@ -158,21 +161,29 @@ dust_filename = "dust.fits"
 
 # -----------------------------------------------------------------
 
+# Rough estimates
+# memory requirement: 3.16 GB
+serial_memory = 2.0 * u("GB")
+parallel_memory = 2.0 * u("GB")
+
+# -----------------------------------------------------------------
+
 class M81Test(TestImplementation):
 
     """
     This class runs the test on M81
     """
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, interactive=False):
 
         """
         This function ...
         :param config:
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(M81Test, self).__init__(config)
+        super(M81Test, self).__init__(config, interactive)
 
         # The galaxy properties
         self.properties = None
@@ -202,6 +213,9 @@ class M81Test(TestImplementation):
 
         # The wcs for the reference simulation
         self.wcs = None
+
+        # The host ID for remote execution of reference simulation
+        self.host_id = None
 
         # The simulation launcher
         self.launcher = None
@@ -237,23 +251,23 @@ class M81Test(TestImplementation):
         # 3. Load the components
         self.load_components()
 
-        # Load the input maps
-        self.load_maps()
-
         # 4. Load the wcs
         self.create_wcs()
 
+        # Load the input maps
+        self.load_maps()
+
         # Create the instrument
         self.create_instrument()
+
+        # Create deprojections
+        self.create_deprojections()
 
         # 5. Create wavelength grid
         self.create_wavelength_grid()
 
         # Create dust grid
         self.create_dust_grid()
-
-        # Create deprojections
-        self.create_deprojections()
 
         # 6. Create the ski file
         self.create_ski()
@@ -370,7 +384,36 @@ class M81Test(TestImplementation):
         self.simulation_output_path = fs.create_directory_in(self.reference_path, "out")
 
         # Determine the path to the wavelength grid file
-        self.wavelength_grid_path = fs.join(self.path, "wavelengths.txt")
+        self.wavelength_grid_path = fs.join(self.simulation_input_path, "wavelengths.txt")
+
+        # Set remote host for reference simulation
+        self.set_remote()
+
+    # -----------------------------------------------------------------
+
+    def set_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Setup the platform moderator
+        moderator = PlatformModerator()
+
+        # Launching the reference simulation
+        #if self.config.local: moderator.add_local("reference")
+        #elif self.config.remotes is not None: moderator.add_single("reference", self.config.remotes)
+        #elif self.modeling_config.host_ids is None: moderator.add_local("reference")
+        #else: moderator.add_single("other", self.modeling_config.host_ids)
+        if self.config.host_ids is None: moderator.add_local("reference")
+        else: moderator.add_single("reference", self.config.host_ids)
+
+        # Run the platform moderator
+        moderator.run()
+
+        # Set the host ID
+        self.host_id = moderator.host_id_for_single("reference")
 
     # -----------------------------------------------------------------
 
@@ -428,24 +471,33 @@ class M81Test(TestImplementation):
         # Determine path to maps directory
         maps_path = fs.join(m81_data_path, "maps")
 
+        # Determine the path to the header file
+        header_path = fs.join(maps_path, "header.txt")
+        header = Header.fromtextfile(header_path)
+        wcs = CoordinateSystem(header=header)
+
         # Old stars
         old_map_path = fs.join(maps_path, old_filename)
         old_map = Frame.from_file(old_map_path)
+        old_map.wcs = wcs
         self.maps["old"] = old_map
 
         # young stars
         young_map_path = fs.join(maps_path, young_filename)
         young_map = Frame.from_file(young_map_path)
+        young_map.wcs = wcs
         self.maps["young"] = young_map
 
         # Ionizing stars
         ionizing_map_path = fs.join(maps_path, ionizing_filename)
         ionizing_map = Frame.from_file(ionizing_map_path)
+        ionizing_map.wcs = wcs
         self.maps["ionizing"] = ionizing_map
 
         # Dust
         dust_map_path = fs.join(maps_path, dust_filename)
         dust_map = Frame.from_file(dust_map_path)
+        dust_map.wcs = wcs
         self.maps["dust"] = dust_map
 
     # -----------------------------------------------------------------
@@ -465,7 +517,11 @@ class M81Test(TestImplementation):
         # Determine the path to the headers directory
         headers_path = fs.join(m81_data_path, "headers")
 
+        # Loop over the header files
         for path, name in fs.files_in_path(headers_path, extension="txt", returns=["path", "name"]):
+
+            # Get the filter
+            fltr = parse_filter(name)
 
             # Get WCS
             wcs = CoordinateSystem.from_header_file(path)
@@ -500,7 +556,7 @@ class M81Test(TestImplementation):
         for path, name in fs.files_in_path(headers_path, extension="txt", returns=["path", "name"]):
 
             # Get the filter
-            #fltr = parse_filter(name)
+            fltr = parse_filter(name)
 
             # Get WCS
             wcs = CoordinateSystem.from_header_file(path)
@@ -586,7 +642,7 @@ class M81Test(TestImplementation):
 
         # Determine truncation ellipse
         disk_ellipse_path = fs.join(m81_data_path, "components", "disk.reg")
-        disk_ellipse = SkyRegionList.from_file(disk_ellipse_path)
+        disk_ellipse = SkyRegionList.from_file(disk_ellipse_path)[0]
         truncation_ellipse = 0.82 * disk_ellipse
 
         # Determine the radius of the galaxy
@@ -626,19 +682,22 @@ class M81Test(TestImplementation):
 
         # Set deprojection of old stars
         wcs = self.maps["old"].wcs
-        # galaxy_center, distance, pa, inclination, filepath, scale_height
+        if wcs is None: raise IOError("The map of old stars has no WCS information")
         self.deprojections["old"] = DeprojectionModel3D.from_wcs(wcs, self.galaxy_center, self.galaxy_distance, self.galaxy_position_angle, self.galaxy_inclination, old_filename, old_scale_height)
 
         # Set deprojection of young stars
         wcs = self.maps["young"].wcs
+        if wcs is None: raise IOError("The map of young stars has no WCS information")
         self.deprojections["young"] = DeprojectionModel3D.from_wcs(wcs, self.galaxy_center, self.galaxy_distance, self.galaxy_position_angle, self.galaxy_inclination, young_filename, young_scale_height)
 
         # Set deprojection of ionizing stars
         wcs = self.maps["ionizing"].wcs
+        if wcs is None: raise IOError("The map of ionizing stars has no WCS information")
         self.deprojections["ionizing"] = DeprojectionModel3D.from_wcs(wcs, self.galaxy_center, self.galaxy_distance, self.galaxy_position_angle, self.galaxy_inclination, ionizing_filename, ionizing_scale_height)
 
         # Set deprojection of dust map
         wcs = self.maps["dust"].wcs
+        if wcs is None: raise IOError("The map of old stars has no WCS information")
         self.deprojections["dust"] = DeprojectionModel3D.from_wcs(wcs, self.galaxy_center, self.galaxy_distance, self.galaxy_position_angle, self.galaxy_inclination, dust_filename, dust_scale_height)
 
     # -----------------------------------------------------------------
@@ -826,7 +885,7 @@ class M81Test(TestImplementation):
         log.info("Setting the ionizing stellar disk component ...")
 
         # Get the title
-        title = titles["young"]
+        title = titles["ionizing"]
 
         # Create the new component
         self.ski.create_new_stellar_component(title)
@@ -867,7 +926,7 @@ class M81Test(TestImplementation):
         self.ski.set_dust_component_themis_mix(title, hydrocarbon_pops, enstatite_pops, forsterite_pops, write_mix=False, write_mean_mix=False, write_size=False)
 
         # Set the normalization
-        self.ski.set_dust_component_mass(dust_mass)
+        self.ski.set_dust_component_normalization(title, dust_mass)
 
     # -----------------------------------------------------------------
 
@@ -877,6 +936,9 @@ class M81Test(TestImplementation):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing ...")
 
         # Write the ski file
         self.write_ski()
@@ -893,6 +955,9 @@ class M81Test(TestImplementation):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the ski file ...")
+
         # Save
         self.ski.saveto(self.ski_path)
 
@@ -905,8 +970,11 @@ class M81Test(TestImplementation):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the simulation input ...")
+
         # Write wavelength grid
-        self.wavelength_grid.saveto(self.wavelength_grid_path)
+        self.wavelength_grid.to_skirt_input(self.wavelength_grid_path)
 
         # Write maps
         self.maps["old"].saveto(fs.join(self.simulation_input_path, old_filename))
@@ -932,9 +1000,12 @@ class M81Test(TestImplementation):
         settings_launch["input"] = self.simulation_input_path
         settings_launch["output"] = self.simulation_output_path
         settings_launch["create_output"] = True
+        settings_launch["remote"] = self.host_id
+        settings_launch["attached"] = True
 
         # Input
         input_launch = dict()
+        input_launch["memory"] = MemoryRequirement(serial_memory, parallel_memory)
 
         # Launch command
         launch = Command("launch_simulation", "launch the reference simulation", settings_launch, input_launch, cwd=".")

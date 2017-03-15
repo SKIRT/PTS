@@ -148,6 +148,20 @@ class EllipseRegion(Region):
 
     # -----------------------------------------------------------------
 
+    def __rmul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        new = self.copy()
+        new *= value
+        return new
+
+    # -----------------------------------------------------------------
+
     def __imul__(self, value):
 
         """
@@ -172,6 +186,18 @@ class EllipseRegion(Region):
         new = self.copy()
         new /= value
         return new
+
+    # -----------------------------------------------------------------
+
+    def __rdiv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        raise SyntaxError("You cannot divide by a region")
 
     # -----------------------------------------------------------------
 

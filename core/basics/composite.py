@@ -127,6 +127,7 @@ class SimplePropertyComposite(object):
         else:
 
             # Check the type
+            #print(value, type(value), hasattr(value, "__array__"))
             ptype, string = stringify(value)
 
             if string == "None": value = None

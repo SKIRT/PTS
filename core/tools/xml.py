@@ -41,6 +41,26 @@ def get_unique_element(element, name):
 
 # -----------------------------------------------------------------
 
+def get_unique_element_direct(element, name):
+
+    """
+    This function ...
+    :param element:
+    :param name:
+    :return:
+    """
+
+    # Get child element of the given element
+    parents = element.xpath(name)
+
+    # Check if only one child element is present
+    if len(parents) == 0: raise ValueError("Invalid ski file: no '" + name + "' elements within '" + element.tag + "'")
+    elif len(parents) > 1: raise ValueError("Invalid ski file: multiple '" + name + "' elements within '" + element.tag + "'")
+
+    return parents[0]
+
+# -----------------------------------------------------------------
+
 def get_list(element, name):
 
     """

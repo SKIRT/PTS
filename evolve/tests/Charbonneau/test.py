@@ -10,8 +10,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import inspect
-import random
-from math import sqrt
 import numpy as np
 
 # Import the relevant PTS classes and modules
@@ -23,6 +21,8 @@ from pts.evolve.core.crossovers import G1DListCrossoverOX
 from pts.evolve.core.mutators import G1DListMutatorSwap
 from pts.core.basics.animation import Animation
 from pts.core.basics.range import RealRange
+from pts.core.test.implementation import TestImplementation
+from pts.core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -49,6 +49,114 @@ crossover_rate = 1.0
 stats_freq = 100
 #mutation_method = "range" # or gaussian, or binary
 min_or_max = "maximize"
+
+# -----------------------------------------------------------------
+
+class CharbonneauTest(TestImplementation):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, config=None, interactive=False):
+
+        """
+        This function ...
+        :param config:
+        :param interactive:
+        """
+
+        # Call the constructor of the base class
+        super(CharbonneauTest, self).__init__(config, interactive)
+
+        # The optimizer
+        self.optimizer = None
+
+    # -----------------------------------------------------------------
+
+    def run(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the setup function
+        self.setup(**kwargs)
+
+        # Optimize
+        self.optimize()
+
+        # Make animation
+        self.make_animation()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(CharbonneauTest, self).setup(**kwargs)
+
+    # -----------------------------------------------------------------
+
+    def optimize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Optimizing ...")
+
+        # Construct the command
+        command = Command("optimize_continuous", "finding the maximum of the function defined by Charbonneau (1995)",
+                           settings_optimize, input_optimize, cwd=".")
+
+        # Add the command
+        #commands.append(optimize)
+
+        self.optimizer = self.run_command(command)
+
+    # -----------------------------------------------------------------
+
+    def make_animation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making animation ...")
+
+        # Get the best
+        best = self.optimizer.best
+
+        # Determine path
+        temp_path = self.optimizer.config.path
+        filepath = fs.join(temp_path, "best.png")
+
+        # Make plot of best
+
+        # Create animated gif
+        animation = Animation()
+
+        # Open the images present in the directory
+        for path in fs.files_in_path(temp_path, extension="png", exact_not_name="best"):
+            # Add frame to the animation
+            animation.add_frame_from_file(path)
+
+        # Save the animation
+        animation_path = fs.join(temp_path, "animation.gif")
+        animation.saveto(animation_path)
 
 # -----------------------------------------------------------------
 
@@ -105,11 +213,6 @@ def evolve_callback(ga_engine, **kwargs):
     pass
 
 # -----------------------------------------------------------------
-
-# Initialize list for the commands
-commands = []
-
-# -----------------------------------------------------------------
 # SETUP FUNCTION
 # -----------------------------------------------------------------
 
@@ -154,47 +257,6 @@ input_optimize["callback"] = evolve_callback
 # Create dictionary for extra arguments to the evalutor function
 #input_optimize["evaluator_kwargs"] = {"distances": cm}
 #input_optimize["callback_kwargs"] = {"coordinates": coords}
-
-# -----------------------------------------------------------------
-
-def finish_optimize(optimizer, **kwargs):
-
-    """
-    This function ...
-    :param optimizer:
-    :param kwargs:
-    :return:
-    """
-
-    # Get the best
-    best = optimizer.best
-
-    # Determine path
-    temp_path = optimizer.config.path
-    filepath = fs.join(temp_path, "best.png")
-
-    # Make plot of best
-
-    # Create animated gif
-    animation = Animation()
-
-    # Open the images present in the directory
-    for path in fs.files_in_path(temp_path, extension="png", exact_not_name="best"):
-
-        # Add frame to the animation
-        animation.add_frame_from_file(path)
-
-    # Save the animation
-    animation_path = fs.join(temp_path, "animation.gif")
-    animation.saveto(animation_path)
-
-# -----------------------------------------------------------------
-
-# Construct the command
-optimize = Command("optimize_continuous", "finding the maximum of the function defined by Charbonneau (1995)", settings_optimize, input_optimize, cwd=".", finish=finish_optimize)
-
-# Add the command
-commands.append(optimize)
 
 # -----------------------------------------------------------------
 # TEST FUNCTION

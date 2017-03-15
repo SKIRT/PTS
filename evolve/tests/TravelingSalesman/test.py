@@ -77,6 +77,8 @@ class TSPTest(TestImplementation):
         # Make animation
         self.make_animation()
 
+        self.reference()
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -184,8 +186,6 @@ class TSPTest(TestImplementation):
 
         """
         This function ...
-        :param optimizer:
-        :param kwargs:
         :return:
         """
 
@@ -206,6 +206,28 @@ class TSPTest(TestImplementation):
         # Save the animation
         animation_path = fs.join(self.path, "animation.gif")
         animation.saveto(animation_path)
+
+    # -----------------------------------------------------------------
+
+    def reference(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set the random state
+        setup_prng(skirt_seed)
+
+        # Make new genome, made from the original Pyevolve classes
+        genome = create_genome_reference(coords)
+        input_optimize["genome"] = genome
+
+        # Solve the problem with the original Pyevolve implementation
+        best = reference.call(settings_optimize, input_optimize)
+
+        # Show the best individual
+        show_best(best)
 
 # -----------------------------------------------------------------
 
@@ -431,8 +453,6 @@ def create_genome_reference(coords):
     return genome
 
 # -----------------------------------------------------------------
-
-# -----------------------------------------------------------------
 # TEST FUNCTION
 # -----------------------------------------------------------------
 
@@ -442,17 +462,6 @@ def test(temp_path):
     This function ...
     """
 
-    # Set the random state
-    setup_prng(skirt_seed)
-
-    # Make new genome, made from the original Pyevolve classes
-    genome = create_genome_reference(coords)
-    input_optimize["genome"] = genome
-
-    # Solve the problem with the original Pyevolve implementation
-    best = reference.call(settings_optimize, input_optimize)
-
-    # Show the best individual
-    show_best(best)
+    pass
 
 # -----------------------------------------------------------------

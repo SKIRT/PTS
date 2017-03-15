@@ -202,7 +202,21 @@ class SkirtExec:
             if not success: raise RuntimeError("The simulation crashed")
 
         # Return the list of simulations so that their results can be followed up
-        return arguments.simulations(simulation_names=simulation_names)
+        simulations = arguments.simulations(simulation_names=simulation_names)
+
+        # Check whether SKIRT has started
+        returncode = self._process.poll() if self._process is not None else None
+        if wait or returncode is not None: # when wait=True, or returncode is not None, SKIRT executable should have finished
+
+            # Check presence of log files
+            if arguments.single:
+                if not fs.is_file(simulations.logfilepath()): raise RuntimeError("SKIRT executable has stopped but log file is not present")
+            else:
+                for simulation in simulations:
+                    if not fs.is_file(simulation.logfilepath()): raise RuntimeError("SKIRT executable has stopped but log file for simulation " + simulation.name + " is not present")
+
+        # Return the list of simulations
+        return simulations
 
     ## This function returns True if the previously started SKIRT process is still running, False otherwise
     def isrunning(self):

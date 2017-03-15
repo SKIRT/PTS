@@ -58,7 +58,7 @@ class SKIRTLauncher(Configurable):
         self.skirt = SkirtExec()
 
         # Create the SKIRT remote execution context
-        self.remote = SkirtRemote()
+        self.remote = None
 
         # Create a SimulationAnalyser instance
         self.analyser = SimulationAnalyser()
@@ -81,6 +81,9 @@ class SKIRTLauncher(Configurable):
         # Initialize a list to contain the retrieved finished simulations
         self.simulations = []
 
+        # Estimates of the memory requirement
+        self.memory = None
+
     # -----------------------------------------------------------------
 
     @property
@@ -101,6 +104,7 @@ class SKIRTLauncher(Configurable):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
@@ -130,6 +134,7 @@ class SKIRTLauncher(Configurable):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
@@ -137,7 +142,9 @@ class SKIRTLauncher(Configurable):
         super(SKIRTLauncher, self).setup(**kwargs)
 
         # Setup the remote execution context
-        if self.config.remote is not None: self.remote.setup(self.config.remote, self.config.cluster)
+        if self.config.remote is not None:
+            self.remote = SkirtRemote()
+            self.remote.setup(self.config.remote, self.config.cluster)
 
         # Create output directory
         if self.config.create_output and not fs.is_directory(self.config.output): fs.create_directory(self.config.output)
@@ -148,6 +155,9 @@ class SKIRTLauncher(Configurable):
 
         # Create the analysis options
         self.create_analysis_options()
+
+        # Get the memory information passed to this instance
+        self.memory = kwargs.pop("memory", None)
 
     # -----------------------------------------------------------------
 
@@ -180,6 +190,8 @@ class SKIRTLauncher(Configurable):
         # Create the simulation definition
         self.definition = SingleSimulationDefinition(self.config.ski, self.config.output, self.config.input)
 
+        #print(self.definition)
+
     # -----------------------------------------------------------------
 
     def set_parallelization(self):
@@ -211,22 +223,26 @@ class SKIRTLauncher(Configurable):
         # Check whether MPI is available on this system
         if introspection.has_mpi():
 
-            # The memory estimator
-            estimator = MemoryEstimator()
+            # If memory requirement is not set
+            if self.memory is None:
 
-            # Configure the memory estimator
-            estimator.config.ski = self.definition.ski_path
-            estimator.config.input = self.config.input_path
-            #estimator.config.ncells =
+                # The memory estimator
+                estimator = MemoryEstimator()
 
-            estimator.config.show = False
+                # Configure the memory estimator
+                estimator.config.ski = self.definition.ski_path
+                estimator.config.input = self.config.input
+                estimator.config.show = False
 
-            # Estimate the memory
-            estimator.run()
+                # Estimate the memory
+                estimator.run()
+
+                # Get the memory requirement
+                self.memory = estimator.memory
 
             # Get the serial and parallel parts of the simulation's memory
-            serial_memory = estimator.serial_memory
-            parallel_memory = estimator.parallel_memory
+            serial_memory = self.memory.serial
+            parallel_memory = self.memory.parallel
 
             # Calculate the total memory of one process without data parallelization
             total_memory = serial_memory + parallel_memory
@@ -239,7 +255,7 @@ class SKIRTLauncher(Configurable):
             if processes < 1:
 
                 # Exit with an error
-                log.error("Not enough memory available to run this simulation: free memory = " + str(free_memory) + ", required memory = " + str(total_memory))
+                log.error("Not enough memory available to run this simulation locally: free memory = " + str(free_memory) + ", required memory = " + str(total_memory))
                 exit()
 
         # No MPI available
@@ -260,6 +276,7 @@ class SKIRTLauncher(Configurable):
         cores = processes * threads
         threads_per_core = 2
 
+        # Set the parallelization scheme
         self.parallelization = Parallelization(cores, threads_per_core, processes, data_parallel=False)
 
     # -----------------------------------------------------------------
@@ -321,8 +338,8 @@ class SKIRTLauncher(Configurable):
         # Don't show the parallelization
         tool.config.show = False
 
-        # Run the parallelization tool
-        tool.run()
+        # Run the parallelization tool (passing the memory requirement of the simulation as an argument)
+        tool.run(memory=self.memory)
 
         # Get the parallelization scheme
         self.parallelization = tool.parallelization

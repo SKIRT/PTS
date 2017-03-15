@@ -19,6 +19,7 @@ from pts.core.simulation.skifile import LabeledSkiFile
 from pts.core.basics.range import QuantityRange, RealRange
 from pts.core.basics.map import Map
 from pts.do.commandline import Command
+from pts.core.test.implementation import TestImplementation
 
 # -----------------------------------------------------------------
 
@@ -40,150 +41,205 @@ dust_mass = ski.get_labeled_value("exp_dustmass")
 
 # -----------------------------------------------------------------
 
-# Initialize list for the commands
-commands = []
-
-# -----------------------------------------------------------------
-# SETUP FUNCTION
-# -----------------------------------------------------------------
-
-def setup(temp_path):
+class SpiralTest(TestImplementation):
 
     """
-    This function ...
-    :param temp_path:
+    This class ...
     """
 
-    return
+    def __init__(self, config=None, interactive=False):
 
-# -----------------------------------------------------------------
-# LAUNCH REFERENCE SIMULATION
-# -----------------------------------------------------------------
+        """
+        The constructor ...
+        :param config:
+        :param interactive:
+        """
 
-# Determine the simulation output path
-simulation_output_path = "./ref"
+        # Call the constructor of the base class
+        super(SpiralTest, self).__init__(config, interactive)
 
-# Settings
-settings_launch = dict()
-settings_launch["ski"] = ski_path
-settings_launch["output"] = simulation_output_path
-settings_launch["create_output"] = True
+    # -----------------------------------------------------------------
 
-# Input
-input_launch = dict()
+    def run(self, **kwargs):
 
-# Construct the command
-launch = Command("launch_simulation", "launch the reference simulation", settings_launch, input_launch, cwd=".")
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
 
-# Add the command
-commands.append(launch)
+        self.setup(**kwargs)
 
-# -----------------------------------------------------------------
-# CREATE THE MOCK SED
-# -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
-# Create simulation
-#prefix = name = "spiral"
-output_path = simulation_output_path
-#simulation = SkirtSimulation(prefix, outpath=output_path, ski_path=ski_path, name=name)
+    def setup(self, **kwargs):
 
-# Settings
-settings_sed = dict()
-settings_sed["spectral_convolution"] = False
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
 
-# Input
-input_sed = dict()
-input_sed["simulation_output_path"] = simulation_output_path
-input_sed["output_path"] = "."
+        super(SpiralTest, self).setup(**kwargs)
 
-# Construct the command
-create_sed = Command("observed_fluxes", "create the mock SED", settings_sed, input_sed, cwd=".")
+    # -----------------------------------------------------------------
 
-# Add the command
-commands.append(create_sed)
+    def launch_reference(self):
 
-# Determine the path to the mock SED
-mock_sed_path = "spiral_earth_fluxes.dat"
+        """
+        This function ...
+        :return:
+        """
 
-# -----------------------------------------------------------------
-# SETUP THE MODELLING
-# -----------------------------------------------------------------
+        # Determine the simulation output path
+        simulation_output_path = "./ref"
 
-# Settings
-settings_setup = dict()
-settings_setup["type"] = "sed"
-settings_setup["name"] = "Spiral"
-settings_setup["fitting_host_ids"] = None
+        # Settings
+        settings_launch = dict()
+        settings_launch["ski"] = ski_path
+        settings_launch["output"] = simulation_output_path
+        settings_launch["create_output"] = True
 
-# Create object config
-object_config = dict()
-object_config["ski"] = ski_path
+        # Input
+        input_launch = dict()
 
-# Create input dict for setup
-input_setup = dict()
-input_setup["object_config"] = object_config
-input_setup["sed"] = mock_sed_path
+        # Construct the command
+        launch = Command("launch_simulation", "launch the reference simulation", settings_launch, input_launch, cwd=".")
 
-# Construct the command
-stp = Command("setup", "setup the modeling", settings_setup, input_setup, cwd=".")
+        # Add the command
+        #commands.append(launch)
 
-# Add the command
-commands.append(stp)
+        launcher = self.run_command(launch)
 
-# -----------------------------------------------------------------
-# PEFORM THE MODELLING
-# -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
-# Settings
-settings_model = dict()
-settings_model["ngenerations"] = 4
-settings_model["nsimulations"] = 20
-settings_model["fitting_settings"] = {"spectral_convolution": False}
+    def create_sed(self):
 
-# Input
+        """
+        This function ...
+        :return:
+        """
 
-# Get free parameter names
-ski = LabeledSkiFile(ski_path)
-free_parameter_names = ski.labels
+        # Create simulation
+        #prefix = name = "spiral"
+        output_path = simulation_output_path
+        #simulation = SkirtSimulation(prefix, outpath=output_path, ski_path=ski_path, name=name)
 
-# Get fitting filter names
-#filter_names = sed.filter_names()
+        # Settings
+        settings_sed = dict()
+        settings_sed["spectral_convolution"] = False
 
-# Set descriptions
-descriptions = Map()
-descriptions["exp_dustmass"] = "dust mass of the exponential disk with spiral structure"
+        # Input
+        input_sed = dict()
+        input_sed["simulation_output_path"] = simulation_output_path
+        input_sed["output_path"] = "."
 
-# Set types
-types = Map()
-types["exp_dustmass"] = "dust mass"
+        # Construct the command
+        create_sed = Command("observed_fluxes", "create the mock SED", settings_sed, input_sed, cwd=".")
 
-# Set units
-units = Map()
-units["exp_dustmass"] = u("Msun")
+        # Add the command
+        #commands.append(create_sed)
 
-# Set the range of the dust mass
-dustmass_range = QuantityRange(0.1*dust_mass, 100*dust_mass)
+        calculator = self.run_command(create_sed)
 
-# Create input dict for model
-input_model = dict()
-input_model["parameters_config"] = Configuration(free_parameters=free_parameter_names)
-input_model["descriptions_config"] = Configuration(descriptions=descriptions)
-input_model["types_config"] = Configuration(types=types)
-input_model["units_config"] = Configuration(units=units)
-input_model["ranges_config"] = Configuration(exp_dustmass_range=dustmass_range)
-#input_model["filters_config"] = Configuration(filters=filter_names)
+        # Determine the path to the mock SED
+        mock_sed_path = "spiral_earth_fluxes.dat"
 
-# Fitting initializer config
-input_model["initialize_config"] = Configuration(npackages=1e4)
+    # -----------------------------------------------------------------
 
-# Add dict of input for 'model' command to the list
-#input_dicts.append(input_model)
+    def setup_modelling(self):
 
-# Construct the command
-command = Command("model", "perform the modelling", settings_model, input_model, "./Spiral")
+        """
+        This function ...
+        :return:
+        """
 
-# Add the command
-commands.append(command)
+        # -----------------------------------------------------------------
+        # SETUP THE MODELLING
+        # -----------------------------------------------------------------
+
+        # Settings
+        settings_setup = dict()
+        settings_setup["type"] = "sed"
+        settings_setup["name"] = "Spiral"
+        settings_setup["fitting_host_ids"] = None
+
+        # Create object config
+        object_config = dict()
+        object_config["ski"] = ski_path
+
+        # Create input dict for setup
+        input_setup = dict()
+        input_setup["object_config"] = object_config
+        input_setup["sed"] = mock_sed_path
+
+        # Construct the command
+        stp = Command("setup", "setup the modeling", settings_setup, input_setup, cwd=".")
+
+        # Add the command
+        commands.append(stp)
+
+    # -----------------------------------------------------------------
+
+    def model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Settings
+        settings_model = dict()
+        settings_model["ngenerations"] = 4
+        settings_model["nsimulations"] = 20
+        settings_model["fitting_settings"] = {"spectral_convolution": False}
+
+        # Input
+
+        # Get free parameter names
+        ski = LabeledSkiFile(ski_path)
+        free_parameter_names = ski.labels
+
+        # Get fitting filter names
+        #filter_names = sed.filter_names()
+
+        # Set descriptions
+        descriptions = Map()
+        descriptions["exp_dustmass"] = "dust mass of the exponential disk with spiral structure"
+
+        # Set types
+        types = Map()
+        types["exp_dustmass"] = "dust mass"
+
+        # Set units
+        units = Map()
+        units["exp_dustmass"] = u("Msun")
+
+        # Set the range of the dust mass
+        dustmass_range = QuantityRange(0.1*dust_mass, 100*dust_mass)
+
+        # Create input dict for model
+        input_model = dict()
+        input_model["parameters_config"] = Configuration(free_parameters=free_parameter_names)
+        input_model["descriptions_config"] = Configuration(descriptions=descriptions)
+        input_model["types_config"] = Configuration(types=types)
+        input_model["units_config"] = Configuration(units=units)
+        input_model["ranges_config"] = Configuration(exp_dustmass_range=dustmass_range)
+        #input_model["filters_config"] = Configuration(filters=filter_names)
+
+        # Fitting initializer config
+        input_model["initialize_config"] = Configuration(npackages=1e4)
+
+        # Add dict of input for 'model' command to the list
+        #input_dicts.append(input_model)
+
+        # Construct the command
+        command = Command("model", "perform the modelling", settings_model, input_model, "./Spiral")
+
+        # Add the command
+        #commands.append(command)
+
+        modeler = self.run_command(command)
 
 # -----------------------------------------------------------------
 # TEST FUNCTION

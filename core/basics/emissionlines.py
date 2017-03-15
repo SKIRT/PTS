@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import the relevant PTS classes and modules
+from .unit import parse_unit as u
+
 # -----------------------------------------------------------------
 
 # define some relevant emission lines as a list of (label, center) tuples
@@ -105,7 +108,7 @@ class EmissionLines(list):
         for center, left, right, label in linedefs:
 
             # Create the line
-            line = EmissionLine(center, left, right, label)
+            line = EmissionLine(center * u("micron"), left * u("micron"), right * u("micron"), label)
 
             # Add the line
             self.append(line)

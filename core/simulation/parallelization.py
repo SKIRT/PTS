@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.launch.parallelization Contains the ParallelizationTool class and the Parallelization class.
+## \package pts.core.simulation.parallelization Contains the Parallelization class.
 
 # -----------------------------------------------------------------
 
