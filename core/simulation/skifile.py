@@ -1698,7 +1698,7 @@ class SkiFile:
             try: parent = xml.get_unique_element_direct(self.get_simulation(), "wavelengthGrid")
             except ValueError:
 
-                parent = self.get_simulation().makeelement("wavelengthGrid")
+                parent = self.get_simulation().makeelement("wavelengthGrid", {"type": "PanWavelengthGrid"})
                 self.get_simulation().append(parent)
 
         return parent
