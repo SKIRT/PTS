@@ -692,7 +692,7 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
             elif returns == "directory": thing = directory
             else: raise ValueError("Invalid option for 'returns': should be (a list of) 'path', 'name' or 'directory'")
 
-        else: # Assume 'returns' is a list
+        else: # Assume 'returns' is a list or tuple
 
             thing = []
 
@@ -799,7 +799,7 @@ def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains
             elif returns == "directory": thing = directory
             else: raise ValueError("Invalid option for 'returns': should be (a list of) 'path', 'name' or 'directory'")
 
-        else: # Assume 'returns' is a list
+        else: # Assume 'returns' is a list or tuple
 
             thing = []
 

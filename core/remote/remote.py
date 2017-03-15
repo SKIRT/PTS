@@ -2859,13 +2859,21 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def directories_in_path(self, path, startswith=None, recursive=False, ignore_hidden=True):
+    def directories_in_path(self, path, recursive=False, ignore_hidden=True, contains=None, not_contains=None,
+                        returns="path", exact_name=None, exact_not_name=None, startswith=None, endswith=None):
 
         """
         This function ...
         :param path:
-        :param startswith:
         :param recursive:
+        :param ignore_hidden:
+        :param contains:
+        :param not_contains:
+        :param returns:
+        :param exact_name:
+        :param exact_not_name:
+        :param startswith:
+        :param endswith:
         :return:
         """
 
@@ -2887,25 +2895,86 @@ class Remote(object):
             paths = [fs.join(path, name) for name in output]
 
         # Filter
-        filtered_paths = []
-        for path in paths:
-            if startswith is not None:
-                name = fs.name(path)
-                if not name.startswith(startswith): continue
-            filtered_paths.append(path)
+        result = []
 
-        # Return the list of directory paths
-        return filtered_paths
+        # List all items in the specified directory
+        for item_path in paths:
+
+            # Get the name of the directory
+            item = fs.name(item_path)
+
+            # Get the path to the containing directory
+            directory = fs.directory_of(item_path)
+
+            # Ignore hidden directories if requested
+            if ignore_hidden and item.startswith("."): continue
+
+            # Ignore names that do not contain a certain string, if specified
+            if contains is not None and contains not in item: continue
+
+            # Ignore names that do contain a certain string that it should not contain, if specified
+            if not_contains is not None and not_contains in item: continue
+
+            # If the directory name does not match the exact name, skip it
+            if exact_name is not None and exact_name != item: continue
+
+            # If the directory name matches the 'exact not name', skip it
+            if exact_not_name is not None:
+
+                if isinstance(exact_not_name, basestring):
+                    if exact_not_name == item: continue
+                elif isinstance(exact_not_name, list):
+                    if item in exact_not_name: continue
+                else: raise ValueError("Invalid option for 'exact_not_name': must be string or list")
+
+            # Ignore directory names that do not start or end with the specified strings
+            if startswith is not None and not item.startswith(startswith): continue
+            if endswith is not None and not item.endswith(endswith): continue
+
+            # Create the return value
+            if isinstance(returns, basestring):
+
+                if returns == "path": thing = item_path
+                elif returns == "name": thing = item
+                elif returns == "directory": thing = directory
+                else: raise ValueError("Invalid option for 'returns': should be (a list of) 'path', 'name' or 'directory'")
+
+            else:  # Assume 'returns' is a list or tuple
+
+                thing = []
+
+                for return_value in returns:
+
+                    if return_value == "path": thing.append(item_path)
+                    elif return_value == "name": thing.append(item)
+                    elif return_value == "directory": thing.append(directory)
+                    else: raise ValueError("Invalid option for 'returns': should be (a list of) 'path', 'name' or 'directory'")
+
+            # Add an entry to the result
+            result.append(thing)
+
+        # Return the result
+        return result
 
     # -----------------------------------------------------------------
 
-    def files_in_path(self, path, recursive=False, ignore_hidden=True):
+    def files_in_path(self, path, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None,
+                      exact_name=None, exact_not_name=None, startswith=None, endswith=None, returns="path", extensions=False):
 
         """
         This function ...
         :param path:
         :param recursive:
         :param ignore_hidden:
+        :param extension:
+        :param contains:
+        :param not_contains:
+        :param exact_name:
+        :param exact_not_name:
+        :param startswith:
+        :param endswith:
+        :param returns:
+        :param extensions:
         :return:
         """
 
@@ -2923,8 +2992,67 @@ class Remote(object):
             output = self.execute("for f in *; do [[ -d $f ]] || echo $f; done", cwd=path)
             paths = [fs.join(path, name) for name in output]
 
-        # Return the list of files
-        return paths
+        # Filter
+        result = []
+
+        # Loop over the paths
+        for path in paths:
+
+            item_path = path
+
+            # Determine the name of the item
+            item = fs.name(path)
+
+            # Get the path to the containing directory
+            directory = fs.directory_of(item_path)
+
+            # Get the file name and extension
+            item_name = fs.strip_extension(item)
+            item_extension = fs.get_extension(item)
+
+            # Ignore files with extension different from the one that is specified
+            if extension is not None and item_extension != extension: continue
+
+            # Ignore filenames that do not contain a certain string, if specified
+            if contains is not None and contains not in item_name: continue
+
+            # Ignore filenames that do contain a certain string that it should not contain, if specified
+            if not_contains is not None and not_contains in item_name: continue
+
+            # Ignore filenames that do not match the exact filename, if specified
+            if exact_name is not None and exact_name != item_name: continue
+
+            # If the filename matches the 'exact not name', skip it
+            if exact_not_name is not None and exact_not_name == item_name: continue
+
+            # Ignore filenames that do not start or end with the specified strings
+            if startswith is not None and not item_name.startswith(startswith): continue
+            if endswith is not None and not item_name.endswith(endswith): continue
+
+            # Create the return value
+            if isinstance(returns, basestring):
+
+                if returns == "path": thing = item_path
+                elif returns == "name": thing = item_name + "." + item_extension if extensions else item_name
+                elif returns == "directory": thing = directory
+                else: raise ValueError("Invalid option for 'returns': should be (a list of) 'path', 'name' or 'directory'")
+
+            else:  # Assume 'returns' is a list
+
+                thing = []
+
+                for return_value in returns:
+
+                    if return_value == "path": thing.append(item_path)
+                    elif return_value == "name": thing.append(item_name + "." + item_extension if extensions else item_name)
+                    elif return_value == "directory": thing.append(directory)
+                    else: raise ValueError("Invalid option for 'returns': should be (a list of) 'path', 'name' or 'directory'")
+
+            # Add entry to the result
+            result.append(thing)
+
+        # Return the result
+        return result
 
     # -----------------------------------------------------------------
 

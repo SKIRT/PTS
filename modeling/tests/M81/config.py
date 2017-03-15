@@ -15,7 +15,7 @@ from pts.core.remote.host import find_host_ids
 definition = ConfigurationDefinition(write_config=False)
 
 # Optional settings
-definition.add_optional("npackages", "positive_integer", "number of photon packages per wavelength for the reference simulation", int(1e6))
+definition.add_optional("npackages", "positive_integer", "number of photon packages per wavelength for the reference simulation", int(1e5))
 
 # For remote execution of reference simulation
 definition.add_optional("host_ids", "string_list", "remote hosts to use for heavy computations (in order of preference)", choices=find_host_ids(schedulers=False))

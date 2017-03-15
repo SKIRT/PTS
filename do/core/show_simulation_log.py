@@ -62,7 +62,7 @@ simulation = RemoteSimulation.from_file(simulation_path)
 ski_name = simulation.prefix()
 
 # The path to the simulation log file
-remote_log_file_path = fs.join(simulation.remote_output_path, ski_name + "_log.txt")
+remote_log_file_path = simulation.remote_log_file_path
 
 # Check whether the log file exists
 if not remote.is_file(remote_log_file_path): raise RuntimeError("The log file does not exist remotely")

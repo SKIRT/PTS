@@ -738,6 +738,55 @@ class RemoteSimulation(SkirtSimulation):
 
     # -----------------------------------------------------------------
 
+    def remote_input_file_path(self, name):
+
+        """
+        This function returns the absolute path for a simulation input file, given the file's name
+        """
+
+        return fs.join(self.remote_input_path, name)
+
+    # -----------------------------------------------------------------
+
+    def remote_output_file_path(self, partialname):
+
+        """
+        This function returns the absolute path for a simulation output file, given the file's partial name
+        (the partial name does not include the prefix and the subsequent underscore).
+        :param partialname:
+        :return:
+        """
+
+        return fs.join(self.remote_output_path, self._prefix + "_" + partialname)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def remote_log_file_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote_output_file_path("log.txt")
+
+    # -----------------------------------------------------------------
+
+    def get_remote_log_file_paths(self, remote):
+
+        """
+        This function returns a list of absolute filepaths for all log files produced by the simulation, including
+        the master log file and any log files produced by parallel (MPI) processes. The list includes only paths for
+        log files that actually exist, and the paths are listed in order of process rank.
+        :return:
+        """
+
+        logname = self._prefix + "_log"
+        return remote.files_in_path(self.remote_output_path, startswith=logname, extension="txt")
+
+    # -----------------------------------------------------------------
+
     def remove_from_remote(self, remote, full=False):
 
         """

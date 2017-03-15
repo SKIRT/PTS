@@ -518,7 +518,7 @@ class SkirtRemote(Remote):
             #out_path = arguments.output_path if arguments.output_path is not None else fs.cwd()
             #prefix = arguments.prefix
             #log_path = fs.join(out_path, prefix + "_log.txt")
-            status = SimulationStatus(simulation.logfilepath(), remote=self)
+            status = SimulationStatus(simulation.remote_log_file_path, remote=self)
 
             # Get the execution handle for the simulation
             handle = handles
@@ -1070,8 +1070,8 @@ class SkirtRemote(Remote):
         # The name of the ski file (the simulation prefix)
         ski_name = simulation.prefix()
 
-        # The path to the simulation log file
-        remote_log_file_path = fs.join(simulation.remote_output_path, ski_name + "_log.txt")
+        # Determine the path to the remote log file
+        remote_log_file_path = simulation.remote_log_file_path
 
         # Check whether the simulation has already been analysed
         if simulation.analysed: simulation_status = "analysed"
@@ -1100,7 +1100,7 @@ class SkirtRemote(Remote):
         ski_name = simulation.prefix()
 
         # The path to the simulation log file
-        remote_log_file_path = fs.join(simulation.remote_output_path, ski_name + "_log.txt")
+        remote_log_file_path = simulation.remote_log_file_path
 
         # Check if the simulation has already been analysed
         if simulation.analysed: simulation_status = "analysed"
