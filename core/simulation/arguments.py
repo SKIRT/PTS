@@ -407,7 +407,7 @@ def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, th
             cores_per_process = int(threads / threads_per_core)
 
             # Check if cpus-per-proc option is possible
-            if remote is None or remote.mpi_knows_cpus_per_proc_option():
+            if remote is None or remote.mpi_knows_cpus_per_proc_option:
                 command += ["--cpus-per-proc", str(cores_per_process)] # "CPU'S per process" means "core per process" in our definitions
             else: log.warning("The MPI version on the remote host does not know the 'cpus-per-proc' command. Processes cannot be bound to cores")
 
