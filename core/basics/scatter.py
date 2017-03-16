@@ -19,7 +19,7 @@ import numpy as np
 from .table import SmartTable
 from ..tools.strings import alphabet
 from .range import RealRange
-from ..tools import tables
+from ..tools import tables, arrays
 
 # -----------------------------------------------------------------
 
@@ -108,7 +108,7 @@ class Scatter(SmartTable):
         :return:
         """
 
-        values = tables.column_as_array(self[name], unit=self[name].unit)
+        values = arrays.plain_array(self[name], unit=self[name].unit)
         mask = np.logical_not(np.isnan(values))
         values = values[mask]
 
@@ -276,8 +276,8 @@ class Scatter3D(Scatter):
         :return:
         """
 
-        if asarray: return tables.column_as_array(self[self.x_label], unit=unit)
-        else: return tables.column_as_list(self[self.x_label], unit=unit, add_unit=add_unit)
+        if asarray: return arrays.plain_array(self[self.x_label], unit=unit)
+        else: return arrays.array_as_list(self[self.x_label], unit=unit, add_unit=add_unit)
 
     # -----------------------------------------------------------------
 
@@ -291,8 +291,8 @@ class Scatter3D(Scatter):
         :return:
         """
 
-        if asarray: return tables.column_as_array(self[self.y_label], unit=unit)
-        else: return tables.column_as_list(self[self.y_label], unit=unit, add_unit=add_unit)
+        if asarray: return arrays.plain_array(self[self.y_label], unit=unit)
+        else: return arrays.array_as_list(self[self.y_label], unit=unit, add_unit=add_unit)
 
     # -----------------------------------------------------------------
 
@@ -306,7 +306,7 @@ class Scatter3D(Scatter):
         :return:
         """
 
-        if asarray: return tables.column_as_array(self[self.z_label], unit=unit)
-        else: return tables.column_as_list(self[self.z_label], unit=unit, add_unit=add_unit)
+        if asarray: return arrays.plain_array(self[self.z_label], unit=unit)
+        else: return arrays.array_as_list(self[self.z_label], unit=unit, add_unit=add_unit)
 
 # -----------------------------------------------------------------

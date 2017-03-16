@@ -186,6 +186,9 @@ elif len(table_matches) == 1 and len(matches) == 0:
     # If not specified on the command line (before the command name), then use the default specified in the commands.dat file
     if configuration_method is None: configuration_method = configuration_method_table
 
+    #print(definition)
+    #print(configuration_method)
+
     # Create the configuration
     config = create_configuration(definition, command_name, description, configuration_method)
 

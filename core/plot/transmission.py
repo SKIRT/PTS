@@ -219,6 +219,7 @@ class TransmissionPlotter(Configurable):
                 for label in wavelengths: self.add_wavelength(wavelengths[label], label=label)
             else:
                 for wavelength in wavelengths: self.add_wavelength(wavelength)
+
         # Wavelengths are specified in the configuration
         elif self.config.wavelengths is not None:
             for wavelength in self.config.wavelengths:

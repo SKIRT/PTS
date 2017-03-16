@@ -20,7 +20,7 @@ definition.add_optional("nwavelengths", "positive_integer", "number of wavelengt
 definition.add_optional("npackages", "positive_integer", "number of photon packages per wavelength for the reference simulation", int(1e4))
 definition.add_optional("dust_grid_relative_scale", "real", "smallest scale of the dust grid relative to the pixelscale of the input maps", 10.)
 definition.add_optional("dust_grid_min_level", "positive_integer", "level for the dust grid", 0)
-definition.add_optional("dust_grid_max_mass_fraction", "positive_real", "max mass fraction for the dust grid", 1e-6)
+definition.add_optional("dust_grid_max_mass_fraction", "positive_real", "max mass fraction for the dust grid", 1e-5)
 
 # Flags
 definition.add_flag("transient_heating", "enable transient heating", False)
@@ -35,5 +35,11 @@ definition.add_optional("nsimulations", "positive_integer", "number of simulatio
 
 # Free parameters
 definition.add_optional("free_parameters", "string_list", "free parameter labels", choices=possible_free_parameters, default=default_free_parameters)
+
+# Wavelength grid
+definition.add_optional("wavelength_range", "quantity_range", "range of wavelengths", "0.1 micron > 1000 micron", convert_default=True)
+
+# Dust grid
+definition.add_optional("physical_domain_disk_ellipse_factor", "positive_real", "factor of the disk ellipse region to take as the physical domain of the model", 0.82)
 
 # -----------------------------------------------------------------

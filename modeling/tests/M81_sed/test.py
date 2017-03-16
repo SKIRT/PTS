@@ -27,6 +27,7 @@ from pts.modeling.tests.base import free_parameters_relative_instruments_paths, 
 from pts.core.data.sed import ObservedSED
 from pts.core.tools import parsing, stringify
 from pts.core.tools import sequences
+from pts.core.basics.quantity import parse_angle
 
 # -----------------------------------------------------------------
 
@@ -102,11 +103,23 @@ class M81SEDTest(M81TestBase):
         # 3. Load the components
         self.load_components()
 
+        # Load the input maps
+        self.load_maps()
+
         # Create instrument
         self.create_instrument()
 
         # Create deprojection
         self.create_deprojections()
+
+        # Create the wavelength grid
+        self.create_wavelength_grid()
+
+        # Create the dust grid
+        self.create_dust_grid()
+
+        # Create the ski file
+        self.create_ski()
 
         # Write
         self.write()
@@ -147,9 +160,8 @@ class M81SEDTest(M81TestBase):
         # Inform the user
         log.info("Creating the SED instrument ...")
 
-        azimuth = 0.
-
         # Create the SED instrument
+        azimuth = parse_angle("0. deg")
         self.instrument = SEDInstrument(distance=self.galaxy_distance, inclination=self.galaxy_inclination, azimuth=azimuth, position_angle=self.galaxy_position_angle)
 
     # -----------------------------------------------------------------
@@ -318,6 +330,8 @@ class M81SEDTest(M81TestBase):
                     # Get the dust component
                     dust_component = self.ski.get_dust_component(component_name)
 
+                    print(component_name, path)
+
                     # Get the current value
                     value = parser(self.ski.get_value_for_path(path, dust_component))
 
@@ -331,6 +345,8 @@ class M81SEDTest(M81TestBase):
 
                         # Get the dust component
                         dust_component = self.ski.get_dust_component(component_id)
+
+                        print(component_id, path)
 
                         # Get the current value
                         value = parser(self.ski.get_value_for_path(path, dust_component))
@@ -641,5 +657,17 @@ class M81SEDTest(M81TestBase):
         settings_model["ngenerations"] = self.config.ngenerations
         settings_model["nsimulations"] = self.config.nsimulations
         settings_model["fitting_settings"] = {"spectral_convolution": False}
+
+# -----------------------------------------------------------------
+
+def test(temp_path):
+
+    """
+    This function ...
+    :param temp_path:
+    :return:
+    """
+
+    pass
 
 # -----------------------------------------------------------------

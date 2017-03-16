@@ -3019,7 +3019,7 @@ def construct_type(real_type, min_value, max_value, forbidden):
 
         # Determine base type parsing function
         base_type = getattr(parsing, real_type.__name__.split("_list")[0])
-        the_type = partial(smart_list_type, base_type, min_value, max_value, forbidden)
+        the_type = partial(smart_list_type, **{"real_base_type": base_type, "min_value": min_value, "max_value": max_value, "forbidden": forbidden})
 
         # Return the new function
         return the_type

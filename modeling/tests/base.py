@@ -8,13 +8,10 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import inspect
-import numpy as np
-
 # Import astronomical modules
 from astropy.io.fits import Header
 from astropy.utils import lazyproperty
+from astropy.units import dimensionless_angles
 
 # Import the relevant PTS classes and modules
 from pts.core.test.implementation import TestImplementation
@@ -34,6 +31,12 @@ from pts.core.plot.transmission import TransmissionPlotter
 from pts.modeling.basics.models import load_2d_model
 from pts.modeling.modeling.galaxy import fitting_filter_names
 from pts.core.basics.quantity import parse_quantity, PhotometricQuantity
+from pts.core.prep.wavelengthgrids import WavelengthGridGenerator
+from pts.core.prep.dustgrids import DustGridGenerator
+from pts.core.basics.quantity import parse_quantity
+from pts.magic.region.list import SkyRegionList
+from pts.core.filter.filter import parse_filter
+from pts.core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -484,6 +487,81 @@ class M81TestBase(TestImplementation):
 
     # -----------------------------------------------------------------
 
+    def create_wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the wavelength grid ...")
+
+        # Create the wavelength generator
+        generator = WavelengthGridGenerator()
+
+        # Set input
+        input_dict = dict()
+        input_dict["ngrids"] = 1
+        input_dict["npoints"] = self.config.nwavelengths
+        input_dict["fixed"] = [self.i1_filter.pivot, self.fuv_filter.pivot]
+        input_dict["add_emission_lines"] = True
+        input_dict["lines"] = ["Halpha"] # only the H-alpha line is of importance
+        input_dict["min_wavelength"] = self.config.wavelength_range.min
+        input_dict["max_wavelength"] = self.config.wavelength_range.max
+        input_dict["filters"] = [parse_filter(string) for string in fitting_filter_names]
+
+        # Run the generator
+        generator.run(**input_dict)
+
+        # Set the wavelength grid
+        self.wavelength_grid = generator.single_grid
+
+    # -----------------------------------------------------------------
+
+    def create_dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the dust grid ...")
+
+        # Create the dust grid generator
+        generator = DustGridGenerator()
+
+        # Determine truncation ellipse
+        disk_ellipse_path = fs.join(m81_data_path, "components", "disk.reg")
+        disk_ellipse = SkyRegionList.from_file(disk_ellipse_path)[0]
+        truncation_ellipse = self.config.physical_domain_disk_ellipse_factor * disk_ellipse
+
+        # Determine the radius of the galaxy
+        semimajor_angular = truncation_ellipse.semimajor  # semimajor axis length of the sky ellipse
+        radius_physical = (semimajor_angular * self.galaxy_distance).to("pc", equivalencies=dimensionless_angles())
+
+        # Set properties
+        generator.grid_type = "bintree"  # set grid type
+        generator.x_radius = radius_physical
+        generator.y_radius = radius_physical
+        generator.z_radius = 2. * u("kpc")
+
+        # Set input
+        input_dict = dict()
+        input_dict["ngrids"] = 1
+        input_dict["scale"] = self.config.dust_grid_relative_scale * self.deprojections["dust"].pixelscale # in pc
+        input_dict["level"] = self.config.dust_grid_min_level
+        input_dict["mass_fraction"] = self.config.dust_grid_max_mass_fraction
+
+        # Generate the grid
+        generator.run(**input_dict)
+
+        # Set the dust grid
+        self.dust_grid = generator.single_grid
+
+    # -----------------------------------------------------------------
+
     def create_ski(self):
 
         """
@@ -752,8 +830,11 @@ class M81TestBase(TestImplementation):
         # Add the wavelength grid
         plotter.add_wavelength_grid(self.wavelength_grid, "reference simulation")
 
+        # Determine the plot path
+        path = fs.join(self.reference_path, "wavelengths.pdf")
+
         # Run the plotter
-        plotter.run()
+        plotter.run(path)
 
     # -----------------------------------------------------------------
 
@@ -771,12 +852,16 @@ class M81TestBase(TestImplementation):
         plotter = TransmissionPlotter()
 
         # Add the filters
-        for filter_name in fitting_filter_names: plotter.add_filter(filter_name)
+        #for filter_name in fitting_filter_names: plotter.add_filter(filter_name)
+        plotter.config.filters = fitting_filter_names
 
         # Add the wavelengths of the wavelength grid
         for wavelength in self.wavelength_grid.wavelengths(): plotter.add_wavelength(wavelength)
 
+        # Determine the plot path
+        path = fs.join(self.reference_path, "filters.pdf")
+
         # Run the plotter
-        plotter.run()
+        plotter.run(output=path)
 
 # -----------------------------------------------------------------

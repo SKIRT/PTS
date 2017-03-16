@@ -11,9 +11,6 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import inspect
 
-# Import astronomical modules
-from astropy.units import dimensionless_angles
-
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
 from pts.core.basics.unit import parse_unit as u
@@ -22,10 +19,6 @@ from pts.do.commandline import Command
 from pts.magic.misc.kernels import AnianoKernels
 from pts.magic.basics.coordinatesystem import CoordinateSystem
 from pts.modeling.basics.instruments import FullInstrument
-from pts.core.prep.wavelengthgrids import WavelengthGridGenerator
-from pts.core.prep.dustgrids import DustGridGenerator
-from pts.core.basics.quantity import parse_quantity
-from pts.magic.region.list import SkyRegionList
 from pts.core.filter.filter import parse_filter
 from pts.core.remote.moderator import PlatformModerator
 from pts.core.simulation.memory import MemoryRequirement
@@ -309,78 +302,7 @@ class M81Test(M81TestBase):
 
     # -----------------------------------------------------------------
 
-    def create_wavelength_grid(self):
 
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the wavelength grid ...")
-
-        # Create the wavelength generator
-        generator = WavelengthGridGenerator()
-
-        # Set input
-        input_dict = dict()
-        input_dict["ngrids"] = 1
-        input_dict["npoints"] = self.config.nwavelengths
-        input_dict["fixed"] = [self.i1_filter.pivot, self.fuv_filter.pivot]
-        input_dict["add_emission_lines"] = True
-        input_dict["lines"] = ["Halpha"] # only the H-alpha line is of importance
-        input_dict["min_wavelength"] = parse_quantity("0.1 micron")
-        input_dict["max_wavelength"] = parse_quantity("1000 micron")
-        input_dict["filters"] = [parse_filter(string) for string in fitting_filter_names]
-
-        # Run the generator
-        generator.run(**input_dict)
-
-        # Set the wavelength grid
-        self.wavelength_grid = generator.single_grid
-
-    # -----------------------------------------------------------------
-
-    def create_dust_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the dust grid ...")
-
-        # Create the dust grid generator
-        generator = DustGridGenerator()
-
-        # Determine truncation ellipse
-        disk_ellipse_path = fs.join(m81_data_path, "components", "disk.reg")
-        disk_ellipse = SkyRegionList.from_file(disk_ellipse_path)[0]
-        truncation_ellipse = 0.82 * disk_ellipse
-
-        # Determine the radius of the galaxy
-        semimajor_angular = truncation_ellipse.semimajor  # semimajor axis length of the sky ellipse
-        radius_physical = (semimajor_angular * self.galaxy_distance).to("pc", equivalencies=dimensionless_angles())
-
-        # Set properties
-        generator.grid_type = "bintree"  # set grid type
-        generator.x_radius = radius_physical
-        generator.y_radius = radius_physical
-        generator.z_radius = 3. * u("kpc")
-
-        # Set input
-        input_dict = dict()
-        input_dict["ngrids"] = 1
-        input_dict["scale"] = self.config.dust_grid_relative_scale * self.deprojections["dust"].pixelscale # in pc
-        input_dict["level"] = self.config.dust_grid_min_level
-        input_dict["mass_fraction"] = self.config.dust_grid_max_mass_fraction
-
-        # Generate the grid
-        generator.run(**input_dict)
-
-        # Set the dust grid
-        self.dust_grid = generator.single_grid
 
     # -----------------------------------------------------------------
 

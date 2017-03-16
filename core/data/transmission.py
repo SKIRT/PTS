@@ -20,7 +20,7 @@ from scipy import interpolate
 from astropy.table import Table
 
 # Import the relevant PTS classes and modules
-from ..tools import tables
+from ..tools import tables, arrays
 from ..basics.curve import Curve
 from ..basics.unit import parse_unit as u
 
@@ -121,8 +121,8 @@ class TransmissionCurve(object):
         :return:
         """
 
-        if asarray: return tables.column_as_array(self.table["Wavelength"], unit=unit)
-        else: return tables.column_as_list(self.table["Wavelength"], unit=unit, add_unit=add_unit)
+        if asarray: return arrays.plain_array(self.table["Wavelength"], unit=unit, array_unit=self.table["Wavelength"].unit)
+        else: return arrays.array_as_list(self.table["Wavelength"], unit=unit, add_unit=add_unit, array_unit=self.table["Wavelength"].unit)
 
     # -----------------------------------------------------------------
 
@@ -134,8 +134,8 @@ class TransmissionCurve(object):
         :return:
         """
 
-        if asarray: return tables.column_as_array(self.table["Transmission"])
-        else: return tables.column_as_list(self.table["Transmission"])
+        if asarray: return arrays.plain_array(self.table["Transmission"])
+        else: return arrays.array_as_list(self.table["Transmission"])
 
     # -----------------------------------------------------------------
 

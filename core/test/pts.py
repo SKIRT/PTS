@@ -22,7 +22,7 @@ from ..tools.logging import log
 from ..basics.configurable import Configurable
 from ..tools import introspection
 from ..tools import filesystem as fs
-from ..basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, DictConfigurationSetter
+from ..basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, DictConfigurationSetter, PassiveConfigurationSetter
 from .imports import ImportsChecker
 from .test import PTSTest
 from ..tools import time
@@ -385,8 +385,13 @@ class PTSTestSuite(Configurable):
                 # Load the configuration definition
                 config_module = imp.load_source(name + "_config", config_path)
                 definition = config_module.definition
-                setter = InteractiveConfigurationSetter(name, add_cwd=False, add_logging=False)
-                config = setter.run(definition, prompt_optional=True)
+
+                if self.config.default:
+                    setter = PassiveConfigurationSetter(name, add_cwd=False, add_logging=False)
+                    config = setter.run(definition)
+                else:
+                    setter = InteractiveConfigurationSetter(name, add_cwd=False, add_logging=False)
+                    config = setter.run(definition, prompt_optional=True)
 
                 # Load the test module
                 test_module = imp.load_source(name, filepath)

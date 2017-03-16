@@ -29,7 +29,7 @@ from ..core.frame import Frame
 from ..core.detection import Detection
 from ..tools import statistics, fitting
 from ...core.basics.configurable import Configurable
-from ...core.tools import tables
+from ...core.tools import tables, arrays
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ..tools import plotting
@@ -152,8 +152,8 @@ class PointSourceTable(SmartTable):
         :return:
         """
 
-        if asarray: return tables.column_as_array(self["FWHM"], unit=unit)
-        else: return tables.column_as_list(self["FWHM"], unit=unit, add_unit=add_unit)
+        if asarray: return arrays.plain_array(self["FWHM"], unit=unit)
+        else: return arrays.array_as_list(self["FWHM"], unit=unit, add_unit=add_unit)
 
     # -----------------------------------------------------------------
 

@@ -21,7 +21,7 @@ from astropy.units import Unit, spectral
 from astropy.table import Table
 
 # Import the relevant PTS classes and modules
-from ...core.tools import tables, introspection
+from ...core.tools import tables, introspection, arrays
 from ...core.tools import filesystem as fs
 from ..basics.curve import Curve
 
@@ -115,8 +115,8 @@ class AttenuationCurve(Curve):
         :return:
         """
 
-        if asarray: return tables.column_as_array(self["Wavelength"], unit=unit)
-        else: return tables.column_as_list(self["Wavelength"], unit=unit, add_unit=add_unit)
+        if asarray: return arrays.plain_array(self["Wavelength"], unit=unit, array_unit=self.column_unit("Wavelength"))
+        else: return arrays.array_as_list(self["Wavelength"], unit=unit, add_unit=add_unit, array_unit=self.column_unit("Wavelength"))
 
     # -----------------------------------------------------------------
 
@@ -128,8 +128,8 @@ class AttenuationCurve(Curve):
         :return:
         """
 
-        if asarray: return tables.column_as_array(self["Attenuation"])
-        else: return tables.column_as_list(self["Attenuation"])
+        if asarray: return arrays.plain_array(self["Attenuation"])
+        else: return arrays.array_as_list(self["Attenuation"])
 
     # -----------------------------------------------------------------
 
