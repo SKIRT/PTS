@@ -24,6 +24,7 @@ from matplotlib.ticker import FormatStrFormatter
 import matplotlib.gridspec as gridspec
 from matplotlib import rc
 from scipy.interpolate import interp1d
+from operator import itemgetter
 
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
@@ -631,19 +632,33 @@ class SEDPlotter(Configurable):
             if ghost:
 
                 model_fluxes = sed.photometry(unit="Jy", add_unit=False)
-                f2 = interp1d(sed.wavelengths(unit="micron", add_unit=False), model_fluxes, kind='cubic')
-                residuals = -(fluxes - f2(wavelengths)) / fluxes * 100.
+                sed_wavelengths = sed.wavelengths(unit="micron", add_unit=False)
+                f2 = interp1d(sed_wavelengths, model_fluxes, kind='cubic')
 
-                ax2.plot(wavelengths, residuals, "-", color="lightgrey")
+                min_sed_wavelength = min(sed_wavelengths)
+                max_sed_wavelength = max(sed_wavelengths)
+                wavelengths_fluxes_residuals = sorted([(wavelength, flux) for wavelength, flux in zip(wavelengths, fluxes) if min_sed_wavelength < wavelength < max_sed_wavelength], key=itemgetter(0))
+                wavelengths_residuals = [item[0] for item in wavelengths_fluxes_residuals]
+                fluxes_residuals = [item[1] for item in wavelengths_fluxes_residuals]
+                residuals = -(fluxes_residuals - f2(wavelengths_residuals)) / fluxes * 100.
+
+                ax2.plot(wavelengths_residuals, residuals, "-", color="lightgrey")
 
             else:
 
                 #log_model = np.log10(sed.fluxes(unit="Jy", add_unit=False))
                 model_fluxes = sed.photometry(unit="Jy", add_unit=False)
-                f2 = interp1d(sed.wavelengths(unit="micron", add_unit=False), model_fluxes, kind='cubic')
-                residuals = -(fluxes - f2(wavelengths))/fluxes * 100.
+                sed_wavelengths = sed.wavelengths(unit="micron", add_unit=False)
+                f2 = interp1d(sed_wavelengths, model_fluxes, kind='cubic')
 
-                ax2.plot(wavelengths, residuals, line_styles_models[counter], color=line_colors_models[counter], label='model')
+                min_sed_wavelength = min(sed_wavelengths)
+                max_sed_wavelength = max(sed_wavelengths)
+                wavelengths_fluxes_residuals = sorted([(wavelength, flux) for wavelength, flux in zip(wavelengths, fluxes) if min_sed_wavelength < wavelength < max_sed_wavelength], key=itemgetter(0))
+                wavelengths_residuals = [item[0] for item in wavelengths_fluxes_residuals]
+                fluxes_residuals = [item[1] for item in wavelengths_fluxes_residuals]
+                residuals = -(fluxes_residuals - f2(wavelengths_residuals)) / fluxes * 100.
+
+                ax2.plot(wavelengths_residuals, residuals, line_styles_models[counter], color=line_colors_models[counter], label='model')
 
                 counter += 1
 
@@ -861,12 +876,19 @@ class SEDPlotter(Configurable):
                 if not plot_residuals: continue
 
                 model_fluxes = sed.photometry(unit="Jy", add_unit=False)
-                f2 = interp1d(sed.wavelengths(unit="micron", add_unit=False), model_fluxes, kind='cubic')
-                residuals = -(fluxes - f2(wavelengths)) / fluxes * 100.
+                sed_wavelengths = sed.wavelengths(unit="micron", add_unit=False)
+                f2 = interp1d(sed_wavelengths, model_fluxes, kind='cubic')
 
-                if ghost: ax2.plot(wavelengths, residuals, "-", color='lightgrey')
+                min_sed_wavelength = min(sed_wavelengths)
+                max_sed_wavelength = max(sed_wavelengths)
+                wavelengths_fluxes_residuals = sorted([(wavelength, flux) for wavelength, flux in zip(wavelengths, fluxes) if min_sed_wavelength < wavelength < max_sed_wavelength], key=itemgetter(0))
+                wavelengths_residuals = [item[0] for item in wavelengths_fluxes_residuals]
+                fluxes_residuals = [item[1] for item in wavelengths_fluxes_residuals]
+                residuals = -(fluxes_residuals - f2(wavelengths_residuals)) / fluxes * 100.
+
+                if ghost: ax2.plot(wavelengths_residuals, residuals, "-", color='lightgrey')
                 else:
-                    ax2.plot(wavelengths, residuals, line_styles[counter], color='black', label=model_label)
+                    ax2.plot(wavelengths_residuals, residuals, line_styles[counter], color='black', label=model_label)
                     counter += 1
 
         # Add model SEDs
