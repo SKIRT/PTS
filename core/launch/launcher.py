@@ -154,7 +154,7 @@ class SKIRTLauncher(Configurable):
         self.logging_options.set_options(self.config.logging)
 
         # Create the analysis options
-        if "analysis_options" in kwargs: self.analysis_options = kwargs.pop("analysis_options")
+        if "analysis_options" in kwargs: self.set_analysis_options(kwargs.pop("analysis_options"))
         else: self.create_analysis_options()
 
         # Get the memory information passed to this instance
@@ -175,6 +175,25 @@ class SKIRTLauncher(Configurable):
         # Create the analysis options object
         self.analysis_options = AnalysisOptions()
         self.analysis_options.set_options(self.config.analysis)
+
+        # Check the options
+        self.analysis_options.check(self.logging_options, self.config.output)
+
+    # -----------------------------------------------------------------
+
+    def set_analysis_options(self, options):
+
+        """
+        This function ...
+        :param options:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the analysis options ...")
+
+        # Set
+        self.analysis_options = options
 
         # Check the options
         self.analysis_options.check(self.logging_options, self.config.output)

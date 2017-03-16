@@ -381,7 +381,8 @@ class ObservedSED(FilterCurve):
         :return:
         """
 
-        return tables.columns_as_objects([self["Error-"], self["Error+"]], ErrorBar, unit=unit, add_unit=add_unit)
+        column_units = [self.column_unit("Error-"), self.column_unit("Error+")]
+        return tables.columns_as_objects([self["Error-"], self["Error+"]], ErrorBar, unit=unit, add_unit=add_unit, column_units=column_units)
 
     # -----------------------------------------------------------------
 

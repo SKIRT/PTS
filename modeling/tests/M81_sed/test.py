@@ -249,6 +249,7 @@ class M81SEDTest(M81TestBase):
         # Input
         input_launch = dict()
         # input_launch["memory"] = MemoryRequirement(serial_memory, parallel_memory)
+        input_launch["analysis_options"] = analysis
 
         # Launch command
         launch = Command("launch_simulation", "launch the reference simulation", settings_launch, input_launch, cwd=".")
@@ -330,8 +331,6 @@ class M81SEDTest(M81TestBase):
                     # Get the dust component
                     dust_component = self.ski.get_dust_component(component_name)
 
-                    print(component_name, path)
-
                     # Get the current value
                     value = parser(self.ski.get_value_for_path(path, dust_component))
 
@@ -345,8 +344,6 @@ class M81SEDTest(M81TestBase):
 
                         # Get the dust component
                         dust_component = self.ski.get_dust_component(component_id)
-
-                        print(component_id, path)
 
                         # Get the current value
                         value = parser(self.ski.get_value_for_path(path, dust_component))

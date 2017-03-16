@@ -418,6 +418,7 @@ class M81Test(M81TestBase):
         # Input
         input_launch = dict()
         #input_launch["memory"] = MemoryRequirement(serial_memory, parallel_memory)
+        input_launch["analysis_options"] = analysis
 
         # Launch command
         launch = Command("launch_simulation", "launch the reference simulation", settings_launch, input_launch, cwd=".")

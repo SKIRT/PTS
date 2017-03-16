@@ -178,7 +178,7 @@ free_parameters_relative_stellar_component_paths["fuv_ionizing"] = ("normalizati
 
 # Dust component parameters
 free_parameters_relative_dust_component_paths = dict()
-free_parameters_relative_dust_component_paths["dust_mass"] = ("normalization/DustMassDustCompNormalization/dust_mass", titles["dust"])
+free_parameters_relative_dust_component_paths["dust_mass"] = ("normalization/DustMassDustCompNormalization/dustMass", titles["dust"])
 
 # Instrument parameters
 free_parameters_relative_instruments_paths = dict()

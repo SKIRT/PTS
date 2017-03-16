@@ -3551,6 +3551,7 @@ class SkiFile:
 
     ## This function returns the string value of a property of an element
     def get_value(self, element, name):
+        if name not in element.attrib: raise ValueError("A property '" + name + "' does not exist for this element")
         return element.get(name)
 
     ## This function sets the string value of a property of an element
