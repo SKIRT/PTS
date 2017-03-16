@@ -31,7 +31,7 @@ from pts.core.remote.moderator import PlatformModerator
 from pts.core.simulation.memory import MemoryRequirement
 from pts.core.prep.deploy import Deployer
 from pts.core.launch.options import AnalysisOptions
-from pts.modeling.tests.base import M81TestBase, m81_data_path, fitting_filter_names
+from pts.modeling.tests.base import M81TestBase, m81_data_path, fitting_filter_names, instrument_name
 
 # -----------------------------------------------------------------
 
@@ -450,7 +450,7 @@ class M81Test(M81TestBase):
 
         # Settings
         settings_launch = dict()
-        settings_launch["ski"] = self.ski_path
+        settings_launch["ski"] = self.reference_ski_path
         settings_launch["input"] = self.simulation_input_path
         settings_launch["output"] = self.simulation_output_path
         settings_launch["create_output"] = True
@@ -476,7 +476,7 @@ class M81Test(M81TestBase):
         analysis.misc.fluxes = True
         analysis.misc.images = True
         analysis.misc.observation_filters = fitting_filter_names
-        analysis.misc.observation_instruments = ["earth"]
+        analysis.misc.observation_instruments = [instrument_name]
         analysis.misc.make_images_remote = self.host_id
         analysis.misc.images_wcs = self.reference_wcs_path
         analysis.misc.images_unit = "Jy/pix"
@@ -491,7 +491,7 @@ class M81Test(M81TestBase):
         analysis.misc.images_kernels = kernel_paths
 
         # Set the paths to the WCS files for each image
-        analysis.misc.rebin_wcs = {"earth": self.wcs_paths}
+        analysis.misc.rebin_wcs = {instrument_name: self.wcs_paths}
 
         # Input
         input_launch = dict()
@@ -544,8 +544,8 @@ class M81Test(M81TestBase):
 
         # Settings
         settings_model = dict()
-        settings_model["ngenerations"] = 4
-        settings_model["nsimulations"] = 20
+        settings_model["ngenerations"] = self.config.ngenerations
+        settings_model["nsimulations"] = self.config.nsimulations
         settings_model["fitting_settings"] = {"spectral_convolution": False}
 
         # Input
@@ -560,7 +560,7 @@ class M81Test(M81TestBase):
         # Set images dictionary
         images = dict()
         for filter_name in fitting_filter_names:
-            images[filter_name] = fs.join("../ref/images", filter_name + ".fits")
+            images[filter_name] = fs.join(self.simulation_misc_path, filter_name + ".fits")
         input_model["images"] = images
 
         # Construct the command

@@ -180,6 +180,7 @@ class ModelingSetupTool(Configurable):
         if "object_config" in kwargs: self.object_config = kwargs.pop("object_config")
         if "sed" in kwargs: self.sed = kwargs.pop("sed")
         if "images" in kwargs: self.images = kwargs.pop("images")
+        if "ski" in kwargs: self.ski = kwargs.pop("ski")
 
         # Get provided name info
         self.ngc_name = kwargs.pop("ngc_name", None)
@@ -187,6 +188,9 @@ class ModelingSetupTool(Configurable):
 
         # If is path, load the SED
         if isinstance(self.sed, basestring): self.sed = ObservedSED.from_file(self.sed)
+
+        # If is path, load the ski file template
+        if isinstance(self.ski, basestring): self.ski = LabeledSkiFile(self.ski)
 
     # -----------------------------------------------------------------
 
@@ -493,13 +497,13 @@ class ModelingSetupTool(Configurable):
         """
 
         # Inform the user
-        log.info("Loading the ")
+        log.info("Loading the input ...")
 
         # load the SED
         if self.sed_modeling and self.sed is None: self.load_sed()
 
         # Load the ski template
-        if self.sed_modeling or self.images_modeling: self.load_ski()
+        if (self.sed_modeling or self.images_modeling) and self.ski is None: self.load_ski()
 
         # Load the images
         if self.images_modeling and self.images is None: self.load_images()

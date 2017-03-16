@@ -43,6 +43,7 @@ from pts.magic.welcome import welcome as welcome_magic
 from pts.evolve.welcome import welcome as welcome_evolve
 from pts.dustpedia.welcome import welcome as welcome_dustpedia
 from pts.core.basics.configuration import create_configuration
+from pts.do.commandline import Command
 
 # -----------------------------------------------------------------
 
@@ -108,6 +109,12 @@ sys.argv = ["pts", args.do_command] + args.options
 # Find matches
 matches = introspection.find_matches_scripts(script_name, scripts)
 table_matches = introspection.find_matches_tables(script_name, tables)
+
+# Create the command
+#description = ""
+#settings_dict = dictionary(args.options)
+#input_dict =
+#command = Command(args.do_command, description, settings_dict, input_dict, cwd=".")
 
 # No match
 if len(matches) + len(table_matches) == 0:

@@ -21,6 +21,7 @@ from pts.core.basics.range import QuantityRange, RealRange
 from pts.core.basics.map import Map
 from pts.do.commandline import Command
 from pts.core.test.implementation import TestImplementation
+from pts.core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -50,6 +51,9 @@ class SN1987ATest(TestImplementation):
         # Call the constructor of the base class
         super(SN1987ATest, self).__init__(config, interactive)
 
+        # The modeler
+        self.modeler = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -60,11 +64,29 @@ class SN1987ATest(TestImplementation):
         :return:
         """
 
+        # Call the setup function
         self.setup(**kwargs)
 
+        # Setup the modelling
         self.setup_modelling()
 
+        # Model
         self.model()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(SN1987ATest, self).setup(**kwargs)
+
+    # -----------------------------------------------------------------
 
     def setup_modelling(self):
 
@@ -72,6 +94,9 @@ class SN1987ATest(TestImplementation):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Setting up the modeling ...")
 
         # Settings
         settings_setup = dict()
@@ -120,9 +145,8 @@ class SN1987ATest(TestImplementation):
         :return:
         """
 
-        # -----------------------------------------------------------------
-        # PERFORM MODELLING
-        # -----------------------------------------------------------------
+        # Inform the user
+        log.info("Performing the modelling ...")
 
         # Settings
         settings_model = dict()
@@ -186,7 +210,7 @@ class SN1987ATest(TestImplementation):
         # Add the command
         #commands.append(model_command)
 
-        modeler = self.run_command(model_command)
+        self.modeler = self.run_command(model_command)
 
 # -----------------------------------------------------------------
 # TEST FUNCTION

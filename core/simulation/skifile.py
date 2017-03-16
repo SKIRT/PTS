@@ -437,7 +437,7 @@ class SkiFile:
         if dust_system.tag != "PanDustSystem": raise ValueError("Not a panchromatic simulation")
 
         # Enable dust self-absorption
-        dust_system.set("selfAbsorption", "true")
+        self.set_value(dust_system, "selfAbsorption", "true")
 
     def disable_selfabsorption(self):
 
@@ -448,7 +448,7 @@ class SkiFile:
         if dust_system.tag != "PanDustSystem": raise ValueError("Not a panchromatic simulation")
 
         # Disable dust self-absorption
-        dust_system.set("selfAbsorption", "false")
+        self.set_value(dust_system, "selfAbsorption", "false")
 
     def enable_all_dust_system_writing_options(self):
 
@@ -465,7 +465,7 @@ class SkiFile:
                 if not setting_name.startswith("write"): continue
 
                 # Set the setting to true
-                element.set(setting_name, "true")
+                self.set_value(element, setting_name, "true")
 
     def set_write_convergence(self, value=True):
 
@@ -473,7 +473,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Set the 'writeConvergence' setting to true
-        dust_system.set("writeConvergence", str_from_bool(value, lower=True))
+        self.set_value(dust_system, "writeConvergence", str_from_bool(value, lower=True))
 
     def set_write_density(self, value=True):
 
@@ -481,7 +481,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Set the 'writeDensity' setting to true
-        dust_system.set("writeDensity", str_from_bool(value, lower=True))
+        self.set_value(dust_system, "writeDensity", str_from_bool(value, lower=True))
 
     def set_write_depth_map(self, value=True):
 
@@ -489,7 +489,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Set the 'writeDepthMap' setting to true
-        dust_system.set("writeDepthMap", str_from_bool(value, lower=True))
+        self.set_value(dust_system, "writeDepthMap", str_from_bool(value, lower=True))
 
     def set_write_quality(self, value=True):
 
@@ -497,7 +497,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Set the 'writeQuality' setting to true
-        dust_system.set("writeQuality", str_from_bool(value, lower=True))
+        self.set_value(dust_system, "writeQuality", str_from_bool(value, lower=True))
 
     def set_write_cell_properties(self, value=True):
 
@@ -505,7 +505,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Set the 'writeCellProperties' setting to true
-        dust_system.set("writeCellProperties", str_from_bool(value, lower=True))
+        self.set_value(dust_system, "writeCellProperties", str_from_bool(value, lower=True))
 
     def set_write_stellar_density(self, value=True):
 
@@ -513,7 +513,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Set the 'writeStellarDensity' setting to true
-        dust_system.set("writeStellarDensity", str_from_bool(value, lower=True))
+        self.set_value(dust_system, "writeStellarDensity", str_from_bool(value, lower=True))
 
     def set_write_cells_crossed(self, value=True):
 
@@ -521,7 +521,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Set the 'writeCellsCrossed' setting to true
-        dust_system.set("writeCellsCrossed", str_from_bool(value, lower=True))
+        self.set_value(dust_system, "writeCellsCrossed", str_from_bool(value, lower=True))
 
     def set_write_emissivity(self, value=True):
 
@@ -529,7 +529,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Set the 'writeEmissivity' setting to true
-        dust_system.set("writeEmissivity", str_from_bool(value, lower=True))
+        self.set_value(dust_system, "writeEmissivity", str_from_bool(value, lower=True))
 
     def set_write_temperature(self, value=True):
 
@@ -537,7 +537,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Set the 'writeTemperature' setting to true
-        dust_system.set("writeTemperature", str_from_bool(value, lower=True))
+        self.set_value(dust_system, "writeTemperature", str_from_bool(value, lower=True))
 
     def set_write_isrf(self, value=True):
 
@@ -545,7 +545,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Set the 'writeISRF' setting to true
-        dust_system.set("writeISRF", str_from_bool(value, lower=True))
+        self.set_value(dust_system, "writeISRF", str_from_bool(value, lower=True))
 
     def set_write_absorption(self, value=True):
 
@@ -553,7 +553,7 @@ class SkiFile:
         dust_system = self.get_dust_system()
 
         # Set the 'writeAbsorption' setting to true
-        dust_system.set("writeAbsorption", str_from_bool(value, lower=True))
+        self.set_value(dust_system, "writeAbsorption", str_from_bool(value, lower=True))
 
     def set_write_grid(self, value=True):
 
@@ -561,7 +561,7 @@ class SkiFile:
         grid = self.get_dust_grid()
 
         # Set the 'writeGrid' setting to true
-        grid.set("writeGrid", str_from_bool(value, lower=True))
+        self.set_value(grid, "writeGrid", str_from_bool(value, lower=True))
 
     def disable_all_dust_system_writing_options(self):
 
@@ -578,7 +578,7 @@ class SkiFile:
                 if not setting_name.startswith("write"): continue
 
                 # Set the setting to true
-                element.set(setting_name, "false")
+                self.set_value(element, setting_name, "false")
 
     def enable_all_writing_options(self):
 
@@ -592,7 +592,7 @@ class SkiFile:
                 if not setting_name.startswith("write"): continue
 
                 # Set the setting to true
-                element.set(setting_name, "true")
+                self.set_value(element, setting_name, "true")
 
     def disable_all_writing_options(self):
 
@@ -606,7 +606,7 @@ class SkiFile:
                 if not setting_name.startswith("write"): continue
 
                 # Set the setting to false
-                element.set(setting_name, "false")
+                self.set_value(element, setting_name, "false")
 
     ## This function returns the number of pixels for each of the instruments
     def npixels(self, nwavelengths=None):
@@ -747,7 +747,7 @@ class SkiFile:
             # Remove the old wavelength grid
             wavelength_grid = self.get_wavelength_grid()
             parent = wavelength_grid.getparent()
-            parent.set("type", "OligoWavelengthGrid")
+            self.set_value(parent, "type", "OligoWavelengthGrid")
             parent.remove(wavelength_grid)
 
             # If the wavelength is a quantity, make a list of the one wavelength
@@ -763,14 +763,14 @@ class SkiFile:
                 luminosities = ", ".join(["1"] * len(wavelengths))
 
                 component.tag = "OligoStellarComp"
-                component.set("luminosities", luminosities)
+                self.set_value(component, "luminosities", luminosities)
 
                 for child in component.getchildren():
                     if child.tag == "sed" or child.tag == "normalization": component.remove(child)
 
             dust_system = self.get_dust_system()
             parent = dust_system.getparent()
-            parent.set("type", "OligoDustSystem")
+            self.set_value(parent, "type", "OligoDustSystem")
             dust_system.tag = "OligoDustSystem"
 
             if "writeAbsorption" in dust_system.attrib: dust_system.attrib.pop("writeAbsorption")
@@ -2083,8 +2083,7 @@ class SkiFile:
     def get_dust_component_geometry_object(self, component_id):
 
         from ...modeling.basics.models import SersicModel3D, ExponentialDiskModel3D, DeprojectionModel3D, RingModel3D
-
-
+        pass
 
     ## This function sets the geometry of the specified dust component
     def set_dust_component_geometry(self, component_id, model):
@@ -2861,7 +2860,7 @@ class SkiFile:
         if grid.tag != "BinTreeDustGrid": raise ValueError("The ski file does not specify a binary tree dust grid")
 
         # Set the optical depth
-        grid.set("maxOpticalDepth", str(value))
+        self.set_value(grid, "maxOpticalDepth", str(value))
 
     ## This function sets the maximal mass fraction
     def set_binary_tree_max_mass_fraction(self, value):
@@ -2872,7 +2871,7 @@ class SkiFile:
         if grid.tag != "BinTreeDustGrid": raise ValueError("The ski file does not specify a binary tree dust grid")
 
         # Set the max mass fraction
-        grid.set("maxMassFraction", str(value))
+        self.set_value(grid, "maxMassFraction", str(value))
 
     ## This function sets an octtree dust grid for the dust system
     def set_octtree_dust_grid(self, min_x, max_x, min_y, max_y, min_z, max_z, write_grid=True, min_level=2,
@@ -3544,6 +3543,56 @@ class SkiFile:
         # Set the value in the tree element
         element.set(name, string)
 
+    ## This function returns the child of the passed element with a given name
+    def get_child_with_name(self, element, child_name):
+        for child in element.getchildren():
+            if child.tag == child_name: return child
+        return None
+
+    ## This function returns the string value of a property of an element
+    def get_value(self, element, name):
+        return element.get(name)
+
+    ## This function sets the string value of a property of an element
+    def set_value(self, element, name, string):
+        element.set(name, string)
+
+    def get_value_for_path(self, property_path, element=None):
+
+        # Determine the name of the property
+        property_name = property_path.split("/")[-1]
+
+        # Start with the simulation object as the root for searching through the simulation hierarchy
+        if element is None: last = self.get_simulation()
+
+        # Or start with the passed element
+        else: last = element
+
+        # Find the property
+        for link in property_path.split("/")[:-1]:
+            last = self.get_child_with_name(last, link)
+
+        # Get the current property value
+        return self.get_value(last, property_name)
+
+    def set_value_for_path(self, property_path, value, element=None):
+
+        # Determine the name of the property
+        property_name = property_path.split("/")[-1]
+
+        # Start with the simulation object as the root for searching through the simulation hierarchy
+        if element is None: last = self.get_simulation()
+
+        # Or start with the passed element
+        else: last = element
+
+        # Find the property
+        for link in property_path.split("/")[:-1]:
+            last = self.get_child_with_name(last, link)
+
+        # Set the property value
+        self.set_value(last, property_name, value)
+
 # -----------------------------------------------------------------
 
 class LabeledSkiFile(SkiFile):
@@ -3771,6 +3820,79 @@ class LabeledSkiFile(SkiFile):
 
     # -----------------------------------------------------------------
 
+    def add_label_to_path(self, property_path, label, element=None):
+
+        """
+        This function ...
+        :param property_path:
+        :param label:
+        :param element:
+        :return:
+        """
+
+        # Determine the name of the property
+        property_name = property_path.split("/")[-1]
+
+        # Start with the simulation object as the root for searching through the simulation hierarchy
+        if element is None: last = self.get_simulation()
+
+        # Or start with the passed element
+        else: last = element
+
+        # Find the property to be set
+        for link in property_path.split("/")[:-1]:
+            last = self.get_child_with_name(last, link)
+
+        # Get the current property value
+        value = last.get(property_name)
+
+        # Add the label
+        value = "[" + label + ":" + value + "]"
+
+        # Set the property with the label
+        last.set(property_name, value)
+
+    # -----------------------------------------------------------------
+
+    def get_value(self, element, name):
+
+        """
+        This function ...
+        :param element:
+        :param name:
+        :return:
+        """
+
+        prop = element.get(name)
+        if prop.startswith("[") and prop.endswith("]"): prop = prop[1:-1].split(":")[1].strip()
+
+        return prop
+
+    # -----------------------------------------------------------------
+
+    def set_value(self, element, name, string):
+
+        """
+        This function ...
+        :param element:
+        :param name:
+        :param string:
+        :return:
+        """
+
+        # Get the property
+        prop = element.get(name)
+
+        # Labeled value, add label to stringified quantity
+        if prop.startswith("[") and prop.endswith("]"):
+            label = prop[1:-1].split(":")[0]
+            string = "[" + label + ":" + string + "]"
+
+        # Set the value in the tree element
+        element.set(name, string)
+
+    # -----------------------------------------------------------------
+
     def get_quantity(self, element, name, default_unit=None):
 
         """
@@ -3785,8 +3907,8 @@ class LabeledSkiFile(SkiFile):
         from ..basics.quantity import parse_quantity
         from ..basics.unit import parse_unit
 
-        prop = element.get(name)
-        if prop.startswith("[") and prop.endswith("]"): prop = prop[1:-1].split(":")[1]
+        # Get string value
+        prop = self.get_value(element, name)
 
         try:
             quantity = parse_quantity(prop)
@@ -3816,20 +3938,12 @@ class LabeledSkiFile(SkiFile):
         from ..basics.quantity import represent_quantity
         from ..basics.unit import represent_unit, parse_unit
 
-        # Get the property
-        prop = element.get(name)
-
         # Stringify the value
         if hasattr(value, "unit"): string = represent_quantity(value)
         elif default_unit is not None: string = repr(value) + " " + represent_unit(parse_unit(default_unit))
         else: string = repr(value)
 
-        # Labeled value, add label to stringified quantity
-        if prop.startswith("[") and prop.endswith("]"):
-            label = prop[1:-1].split(":")[0]
-            string = "[" + label + ":" + string + "]"
-
-        # Set the value in the tree element
-        element.set(name, string)
+        # Set the value
+        self.set_value(element, name, string)
 
 # -----------------------------------------------------------------

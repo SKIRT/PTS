@@ -33,6 +33,7 @@ from pts.core.plot.wavelengthgrid import WavelengthGridPlotter
 from pts.core.plot.transmission import TransmissionPlotter
 from pts.modeling.basics.models import load_2d_model
 from pts.modeling.modeling.galaxy import fitting_filter_names
+from pts.core.basics.quantity import parse_quantity, PhotometricQuantity
 
 # -----------------------------------------------------------------
 
@@ -56,6 +57,10 @@ disk2d_path = fs.join(models_path, "disk.mod")
 bulge2d_path = fs.join(models_path, "bulge.mod")
 disk2d_model = load_2d_model(disk2d_path)
 bulge2d_model = load_2d_model(bulge2d_path)
+
+# -----------------------------------------------------------------
+
+instrument_name = "earth"
 
 # -----------------------------------------------------------------
 
@@ -149,6 +154,35 @@ dust_filename = "dust.fits"
 
 # -----------------------------------------------------------------
 
+# Define the possible free parameters
+possible_free_parameters = ["dust_mass", "fuv_young", "fuv_ionizing", "distance"]
+default_free_parameters = ["dust_mass", "fuv_young", "fuv_ionizing"]
+
+# Define the free parameter types
+free_parameter_types = dict()
+free_parameter_types["dust_mass"] = "mass_quantity"
+free_parameter_types["fuv_young"] = "photometric_quantity"
+free_parameter_types["fuv_ionizing"] = "photometric_quantity"
+free_parameter_types["distance"] = "length_quantity"
+
+# Absolute ski file parameters
+free_parameters_absolute_paths = dict()
+
+# Stellar component parameters
+free_parameters_relative_stellar_component_paths = dict()
+free_parameters_relative_stellar_component_paths["fuv_young"] = ("normalization/SpectralLuminosityStellarCompNormalization/luminosity", titles["young"])
+free_parameters_relative_stellar_component_paths["fuv_ionizing"] = ("normalization/SpectralLuminosityStellarCompNormalization/luminosity", titles["ionizing"])
+
+# Dust component parameters
+free_parameters_relative_dust_component_paths = dict()
+free_parameters_relative_dust_component_paths["dust_mass"] = ("normalization/DustMassDustCompNormalization/dust_mass", titles["dust"])
+
+# Instrument parameters
+free_parameters_relative_instruments_paths = dict()
+free_parameters_relative_instruments_paths["distance"] = ("distance", instrument_name)
+
+# -----------------------------------------------------------------
+
 class M81TestBase(TestImplementation):
 
     """
@@ -186,7 +220,7 @@ class M81TestBase(TestImplementation):
         # Path to the ski file for the reference simulation
         self.reference_path = None
         self.reference_wcs_path = None
-        self.ski_path = None
+        self.reference_ski_path = None
         self.simulation_input_path = None
         self.simulation_output_path = None
         self.simulation_extract_path = None
@@ -238,6 +272,18 @@ class M81TestBase(TestImplementation):
         """
 
         return BroadBandFilter("IRAC I1")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def galaxy_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.properties.name
 
     # -----------------------------------------------------------------
 
@@ -307,7 +353,7 @@ class M81TestBase(TestImplementation):
         self.reference_wcs_path = fs.join(self.reference_path, "wcs.txt")
 
         # Reference ski path
-        self.ski_path = fs.join(self.reference_path, "M81.ski")
+        self.reference_ski_path = fs.join(self.reference_path, "M81.ski")
 
         # Determine the simulation input and output path
         self.simulation_input_path = fs.create_directory_in(self.reference_path, "in")
@@ -455,7 +501,7 @@ class M81TestBase(TestImplementation):
         self.set_components()
 
         # Add the instrument
-        self.ski.add_instrument("earth", self.instrument)
+        self.ski.add_instrument(instrument_name, self.instrument)
 
         # Set the number of photon packages
         self.ski.setpackages(self.config.npackages)
@@ -665,7 +711,7 @@ class M81TestBase(TestImplementation):
         log.info("Writing the ski file ...")
 
         # Save
-        self.ski.saveto(self.ski_path)
+        self.ski.saveto(self.reference_ski_path)
 
     # -----------------------------------------------------------------
 

@@ -106,3 +106,20 @@ def find_exact_index(seq, value):
     return seq.index(value)
 
 # -----------------------------------------------------------------
+
+def all_equal(lst):
+
+    """
+    This function ...
+    :param lst:
+    :return:
+    """
+
+    first = lst[0]
+
+    for index in range(1,len(lst)):
+        if lst[index] != first: return False
+
+    return True
+
+# -----------------------------------------------------------------
