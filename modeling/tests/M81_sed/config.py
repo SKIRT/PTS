@@ -15,10 +15,10 @@ from pts.core.remote.host import find_host_ids
 definition = ConfigurationDefinition(write_config=False)
 
 # Optional settings
-definition.add_optional("nwavelengths", "positive_integer", "number of wavelengths for the reference simulation", 50)
-definition.add_optional("npackages", "positive_integer", "number of photon packages per wavelength for the reference simulation", int(1e5))
-definition.add_optional("dust_grid_relative_scale", "real", "smallest scale of the dust grid relative to the pixelscale of the input maps", 2.)
-definition.add_optional("dust_grid_min_level", "positive_integer", "level for the dust grid", 2)
+definition.add_optional("nwavelengths", "positive_integer", "number of wavelengths for the reference simulation", 40)
+definition.add_optional("npackages", "positive_integer", "number of photon packages per wavelength for the reference simulation", int(1e4))
+definition.add_optional("dust_grid_relative_scale", "real", "smallest scale of the dust grid relative to the pixelscale of the input maps", 10.)
+definition.add_optional("dust_grid_min_level", "positive_integer", "level for the dust grid", 0)
 definition.add_optional("dust_grid_max_mass_fraction", "positive_real", "max mass fraction for the dust grid", 1e-6)
 
 # Flags

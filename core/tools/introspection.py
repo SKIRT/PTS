@@ -121,6 +121,18 @@ def get_dropbox_path():
         if not fs.is_directory(path): raise IOError("No Dropbox directory found")
         return path
 
+def get_dropbox_tests_path():
+    return fs.join(get_dropbox_path(), "Data", "Tests")
+
+def get_dropbox_tests_pts_path():
+    return fs.join(get_dropbox_tests_path(), "PTS")
+
+def get_dropbox_tests_skirt_path():
+    return fs.join(get_dropbox_tests_path(), "SKIRT")
+
+def get_dropbox_tests_pts_path_for_subproject(subproject):
+    return fs.join(get_dropbox_tests_pts_path(), subproject)
+
 # -----------------------------------------------------------------
 
 # Path to the versions file
