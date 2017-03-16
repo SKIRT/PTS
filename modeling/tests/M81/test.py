@@ -41,6 +41,9 @@ from pts.core.filter.filter import parse_filter
 from pts.core.remote.moderator import PlatformModerator
 from pts.core.simulation.memory import MemoryRequirement
 from pts.core.prep.deploy import Deployer
+from pts.core.plot.wavelengthgrid import WavelengthGridPlotter
+from pts.core.plot.transmission import TransmissionPlotter
+from pts.core.launch.options import AnalysisOptions
 
 # -----------------------------------------------------------------
 
@@ -204,9 +207,13 @@ class M81Test(TestImplementation):
 
         # Path to the ski file for the reference simulation
         self.reference_path = None
+        self.reference_wcs_path = None
         self.ski_path = None
         self.simulation_input_path = None
         self.simulation_output_path = None
+        self.simulation_extract_path = None
+        self.simulation_plot_path = None
+        self.simulation_misc_path = None
         self.wavelength_grid_path = None
 
         # The reference ski file
@@ -214,6 +221,9 @@ class M81Test(TestImplementation):
 
         # The wcs for the reference simulation
         self.wcs = None
+
+        # The coordinate systems for the various filters
+        self.wcs_paths = None
 
         # The host ID for remote execution of reference simulation
         self.host_id = None
@@ -232,6 +242,9 @@ class M81Test(TestImplementation):
 
         # The dust grid
         self.dust_grid = None
+
+        # The modeler
+        self.modeler = None
 
     # -----------------------------------------------------------------
 
@@ -276,14 +289,11 @@ class M81Test(TestImplementation):
         # Write
         self.write()
 
+        # Plot
+        self.plot()
+
         # 7. Launch reference simulation
         self.launch_reference()
-
-        # 8. Make observed SED
-        self.make_sed()
-
-        # 9. Make observed images
-        self.make_images()
 
         # 10. Setup modelling
         self.setup_modelling()
@@ -379,12 +389,18 @@ class M81Test(TestImplementation):
         # Reference base path
         self.reference_path = fs.create_directory_in(self.path, "ref")
 
+        # Reference wcs path
+        self.reference_wcs_path = fs.join(self.reference_path, "wcs.txt")
+
         # Reference ski path
         self.ski_path = fs.join(self.reference_path, "M81.ski")
 
         # Determine the simulation input and output path
         self.simulation_input_path = fs.create_directory_in(self.reference_path, "in")
         self.simulation_output_path = fs.create_directory_in(self.reference_path, "out")
+        self.simulation_extract_path = fs.create_directory_in(self.reference_path, "extr")
+        self.simulation_plot_path = fs.create_directory_in(self.reference_path, "plot")
+        self.simulation_misc_path = fs.create_directory_in(self.reference_path, "misc")
 
         # Determine the path to the wavelength grid file
         self.wavelength_grid_path = fs.join(self.simulation_input_path, "wavelengths.txt")
@@ -393,7 +409,7 @@ class M81Test(TestImplementation):
         self.set_remote()
 
         # Deploy SKIRT and PTS
-        self.deploy()
+        if self.host_id is not None: self.deploy()
 
     # -----------------------------------------------------------------
 
@@ -559,6 +575,10 @@ class M81Test(TestImplementation):
 
             # Get the filter
             fltr = parse_filter(name)
+            filter_name = str(fltr)
+
+            # Set the path of the file for the filter name
+            self.wcs_paths[filter_name] = path
 
             # Get WCS
             wcs = CoordinateSystem.from_header_file(path)
@@ -972,6 +992,72 @@ class M81Test(TestImplementation):
         # Write the input
         self.write_input()
 
+        # Write the WCS
+        self.write_wcs()
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        # Plot the wavelengths
+        self.plot_wavelengths()
+
+        # Plot the filters
+        self.plot_filters()
+
+    # -----------------------------------------------------------------
+
+    def plot_wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the wavelengths ...")
+
+        # Create the plotter
+        plotter = WavelengthGridPlotter()
+
+        # Add the wavelength grid
+        plotter.add_wavelength_grid(self.wavelength_grid, "reference simulation")
+
+        # Run the plotter
+        plotter.run()
+
+    # -----------------------------------------------------------------
+
+    def plot_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the filters ...")
+
+        # Create the plotter
+        plotter = TransmissionPlotter()
+
+        # Add the filters
+        for filter_name in fitting_filter_names: plotter.add_filter(filter_name)
+
+        # Add the wavelengths of the wavelength grid
+        for wavelength in self.wavelength_grid.wavelengths(): plotter.add_wavelength(wavelength)
+
+        # Run the plotter
+        plotter.run()
+
     # -----------------------------------------------------------------
 
     def write_ski(self):
@@ -1010,6 +1096,21 @@ class M81Test(TestImplementation):
 
     # -----------------------------------------------------------------
 
+    def write_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the reference coordinate system ...")
+
+        # Write the WCS
+        self.wcs.saveto(self.reference_wcs_path)
+
+    # -----------------------------------------------------------------
+
     def launch_reference(self):
 
         """
@@ -1030,105 +1131,48 @@ class M81Test(TestImplementation):
         settings_launch["attached"] = True
         settings_launch["progress_bar"] = True
 
-        # Input
-        input_launch = dict()
-        input_launch["memory"] = MemoryRequirement(serial_memory, parallel_memory)
-
-        # Launch command
-        launch = Command("launch_simulation", "launch the reference simulation", settings_launch, input_launch, cwd=".")
-        self.launcher = self.run_command(launch)
-
-    # -----------------------------------------------------------------
-
-    def make_sed(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the observed mock SED ...")
-
-        # Settings
-        settings_sed = dict()
-        settings_sed["spectral_convolution"] = False
-
-        # Input
-        input_sed = dict()
-        input_sed["simulation_output_path"] = self.simulation_output_path
-        input_sed["output_path"] = "."
-
-        # Launch command
-        calculate = Command("observed_fluxes", "create the mock SED", settings_sed, input_sed, cwd=".")
-        self.flux_calculator = self.run_command(calculate)
-
-        # Determine the path to the mock SED
-        #mock_sed_path = "spiral_earth_fluxes.dat"
-
-    # -----------------------------------------------------------------
-
-    def make_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the observed mock images ...")
+        # Create the analysis options
+        analysis = AnalysisOptions()
+        analysis.extraction.path = self.simulation_extract_path
+        analysis.plotting.path = self.simulation_plot_path
+        analysis.misc.path = self.simulation_misc_path
+        analysis.extraction.progress = True
+        analysis.extraction.timeline = True
+        analysis.extraction.memory = True
+        analysis.plotting.progress = True
+        analysis.plotting.timeline = True
+        analysis.plotting.memory = True
+        analysis.plotting.seds = True
+        analysis.plotting.grids = True
+        seds_path = fs.join(m81_data_path, "seds")
+        analysis.plotting.reference_seds = fs.files_in_path(seds_path)
+        analysis.misc.fluxes = True
+        analysis.misc.images = True
+        analysis.misc.observation_filters = fitting_filter_names
+        analysis.misc.observation_instruments = ["earth"]
+        analysis.misc.make_images_remote = self.host_id
+        analysis.misc.images_wcs = self.reference_wcs_path
+        analysis.misc.images_unit = "Jy/pix"
+        analysis.misc.spectral_convolution = False
 
         # Create Aniano kernels object
         aniano = AnianoKernels()
 
         # Set the paths to the kernel for each image
         kernel_paths = dict()
-        for filter_name in fitting_filter_names: kernel_paths[filter_name] = aniano.get_psf_path(
-            parse_filter(filter_name))
+        for filter_name in fitting_filter_names: kernel_paths[filter_name] = aniano.get_psf_path(parse_filter(filter_name))
+        analysis.misc.images_kernels = kernel_paths
 
-        # Settings
-        settings_images = dict()
-        settings_images["spectral_convolution"] = False
-        # No output path is specified, so images won't be written out
+        # Set the paths to the WCS files for each image
+        analysis.misc.rebin_wcs = {"earth": self.wcs_paths}
 
         # Input
-        input_images = dict()
-        input_images["simulation_output_path"] = self.simulation_output_path
-        input_images["output_path"] = "."
-        input_images["filter_names"] = fitting_filter_names
-        input_images["instrument_names"] = ["earth"]
-        # input_images["wcs_path"] =
-        input_images["wcs"] = self.wcs
-        input_images["kernel_paths"] = kernel_paths
-        input_images["unit"] = "Jy/pix"
-        # input_images["host_id"] = "nancy"
+        input_launch = dict()
+        #input_launch["memory"] = MemoryRequirement(serial_memory, parallel_memory)
 
-        # Launch the command
-        make = Command("observed_images", "create the mock images", settings_images, input_images, cwd=".")
-        self.image_maker = self.run_command(make)
-
-        # MAKE DATA:
-
-        # Create directory for the images
-        ref_path = fs.create_directory_in(self.path, "ref")
-        images_path = fs.create_directory_in(ref_path, "images")
-
-        # Determine the name of the datacube
-        datacube_names = self.image_maker.images.keys()
-        if len(datacube_names) > 1: raise RuntimeError("Unexpected number of datacubes")
-        datacube_name = datacube_names[0]
-
-        # Loop over the images
-        for filter_name in self.image_maker.images[datacube_name]:
-
-            # Get the image
-            image = self.image_maker.images[datacube_name][filter_name]
-
-            #
-
-            # Save the image
-            image_path = fs.join(images_path, filter_name + ".fits")
-            image.saveto(image_path)
+        # Launch command
+        launch = Command("launch_simulation", "launch the reference simulation", settings_launch, input_launch, cwd=".")
+        self.launcher = self.run_command(launch)
 
     # -----------------------------------------------------------------
 
@@ -1150,14 +1194,14 @@ class M81Test(TestImplementation):
 
         # Create input dict for setup
         input_setup = dict()
-        input_setup["ngc_name"] = fake_name
-        input_setup["hyperleda_name"] = fake_name
+        input_setup["ngc_name"] = self.properties.ngc_name
+        input_setup["hyperleda_name"] = self.properties.hyperleda_name
 
         # Construct the command
-        # stp = Command("setup", "setup the modeling", settings_setup, input_setup, cwd=".")
+        stp = Command("setup", "setup the modeling", settings_setup, input_setup, cwd=".")
 
-        # Add the command
-        # commands.append(stp)
+        # Call the command
+        tool = self.run_command(stp)
 
     # -----------------------------------------------------------------
 
@@ -1193,10 +1237,10 @@ class M81Test(TestImplementation):
         input_model["images"] = images
 
         # Construct the command
-        # command = Command("model", "perform the modelling", settings_model, input_model, "./Galaxy")
+        command = Command("model", "perform the modelling", settings_model, input_model, "./Galaxy")
 
-        # Add the command
-        # commands.append(command)
+        # Run the command
+        self.modeler = self.run_command(command)
 
 # -----------------------------------------------------------------
 

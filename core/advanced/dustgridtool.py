@@ -94,7 +94,7 @@ class DustGridTool(object):
         arguments.logging.verbose = True
 
         # Run SKIRT
-        simulation = self.skirt.run(arguments)
+        simulation = self.skirt.run(arguments, progress_bar=True)
 
         # Get and parse the log file
         log_file = simulation.log_file
@@ -106,7 +106,7 @@ class DustGridTool(object):
         statistics = Map()
 
         # Get the number of dust cells
-        statistics.ncells = log_file.dust_cells
+        statistics.ncells = log_file.dust_cells_tree
 
         # Get the number of tree nodes
         statistics.tree_nodes = log_file.tree_nodes

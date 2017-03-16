@@ -100,6 +100,9 @@ class ObservedImageMaker(Configurable):
         # The path to the output data cubes
         self.paths = defaultdict(dict)
 
+        # The rebin wcs dictionary
+        self.rebin_wcs = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -130,6 +133,9 @@ class ObservedImageMaker(Configurable):
 
         # 7. Do convolutions
         if self.kernel_paths is not None: self.convolve()
+
+        # Rebin
+        if self.rebin_wcs is not None: self.rebin()
 
         # 8. Do unit conversions
         if self.unit is not None: self.convert_units()
@@ -162,6 +168,8 @@ class ObservedImageMaker(Configurable):
         kernel_paths = kwargs.pop("kernel_paths", None)
         unit = kwargs.pop("unit", None)
         host_id = kwargs.pop("host_id", None)
+        rebin_wcs_paths = kwargs.pop("rebin_wcs_paths", None)
+        rebin_wcs = kwargs.pop("rebin_wcs", None)
 
         # Obtain the paths to the 'total' FITS files created by the simulation
         self.fits_paths = simulation.totalfitspaths()
@@ -192,6 +200,32 @@ class ObservedImageMaker(Configurable):
 
             # Load the WCS
             self.wcs = CoordinateSystem.from_file(wcs_path)
+
+        # If rebin wcs dictionary is given
+        if rebin_wcs is not None: self.rebin_wcs = rebin_wcs
+
+        # If rebin WCS paths are defined
+        elif rebin_wcs_paths is not None:
+
+            # Debugging
+            log.debug("Loading the coordinate systems for rebinning ...")
+
+            # Initialize dictionary
+            self.rebin_wcs = dict()
+
+            # Loop over the instrument names
+            for instrument in rebin_wcs_paths:
+
+                wcs_dict = dict()
+
+                # Loop over the filter names
+                for filter_name in rebin_wcs_paths[instrument]:
+
+                    # Load the wcs
+                    wcs_dict[filter_name] = CoordinateSystem.from_file(rebin_wcs_paths[instrument][filter_name])
+
+                # Set the dictionary of WCS's for this instrument
+                self.rebin_wcs[instrument] = wcs_dict
 
         # Set the kernel paths
         self.kernel_paths = kernel_paths
@@ -372,6 +406,57 @@ class ObservedImageMaker(Configurable):
 
                 # Convolve this image frame
                 self.images[datacube_name][filter_name].convolve(kernel)
+
+    # -----------------------------------------------------------------
+
+    def rebin(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Rebinning the images to the requested coordinate systems ...")
+
+        # Loop over the datacubes
+        for datacube_name in self.images:
+
+            # Check if the name of the datacube appears in the rebin_wcs dictionary
+            if datacube_name not in self.rebin_wcs: continue
+
+            # Loop over the filters
+            for filter_name in self.images[datacube_name]:
+
+                # Check if the name of the image appears in the rebin_wcs[datacube_name] sub-dictionary
+                if filter_name not in self.rebin_wcs[datacube_name]: continue
+
+                # Debugging
+                log.debug("Rebinning the '" + filter_name + "' image of the '" + datacube_name + "' instrument ...")
+
+                # Get the original unit
+                original_unit = self.images[datacube_name][filter_name].unit
+                converted = False
+
+                # Check if this is a surface brightness or intensity
+                if not (original_unit.is_intensity or original_unit.is_surface_brightness):
+
+                    # Determine the new (surface brightness or intensity) unit
+                    new_unit = original_unit / u("sr")
+
+                    # Debugging
+                    log.debug("Converting the unit from '" + str(original_unit) + "' to '" + str(new_unit) + "' in order to be able to perform rebinning ...")
+
+                    # Convert
+                    self.images[datacube_name][filter_name].convert_to(new_unit)
+                    converted = True
+
+                # Rebin
+                wcs = self.rebin_wcs[datacube_name][filter_name]
+                self.images[datacube_name][filter_name].rebin(wcs)
+
+                # Convert the unit back
+                if converted: self.images[datacube_name][filter_name].convert_to(original_unit)
 
     # -----------------------------------------------------------------
 

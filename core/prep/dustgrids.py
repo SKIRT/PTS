@@ -398,7 +398,7 @@ class DustGridGenerator(Configurable):
         log.debug(" - sample_count: " + str(grid.sample_count))
         log.debug(" - max_optical_depth: " + str(grid.max_optical_depth))
         log.debug(" - max_mass_fraction: " + str(grid.max_mass_fraction))
-        log.debug(" - max_dens_disp_fraction" + str(grid.max_dens_disp_fraction))
+        log.debug(" - max_dens_disp_fraction: " + str(grid.max_dens_disp_fraction))
         log.debug(" - direction_method: " + str(grid.direction_method))
         log.debug("")
 

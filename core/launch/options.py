@@ -136,9 +136,11 @@ class AnalysisOptions(Options):
         self.misc.add_property("observation_filters", "string_list", "the names of the filters for which to recreate the observations", None)
         self.misc.add_property("observation_instruments", "string_list", "the names of the instruments for which to recreate the observations", None)
         self.misc.add_property("make_images_remote", "string", "Perform the calculation of the observed images on a remote machine (this is a memory and CPU intensive step)", None)
-        self.misc.add_property("images_wcs", "file_path", "the path to the FITS file for which the WCS should be set as the WCS of the recreated observed images", None)
+        self.misc.add_property("images_wcs", "file_path", "the path to the FITS/txt file for which the WCS should be set as the WCS of the recreated observed images", None)
         self.misc.add_property("images_unit", "string", "the unit to which the recreated observed images should be converted", None)
         self.misc.add_property("images_kernels", "string_string_dictionary", "paths to the FITS file of convolution kernel used for convolving the observed images (a dictionary where the keys are the filter names)", None)
+        self.misc.add_property("rebin_wcs", "string_string_dictionary", "paths to the FITS/txt files of which the WCS should be used as the target for rebinning")
+        self.misc.add_property("spectral_convolution", "boolean", "use spectral convolution to calculate observed fluxes and create observed images", True)
 
         # Properties that are relevant for simulations launched as part of a batch (e.g. from an automatic launching procedure)
         self.add_property("timing_table_path", "file_path", "path of the timing table", None)

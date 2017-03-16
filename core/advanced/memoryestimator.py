@@ -22,6 +22,7 @@ from ..tools import formatting as fmt
 from ..tools.logging import log
 from ..simulation.memory import MemoryRequirement
 from ..basics.unit import parse_unit as u
+from ..tools import time
 
 # -----------------------------------------------------------------
 
@@ -107,7 +108,7 @@ class MemoryEstimator(Configurable):
 
         # Path to temporary directory
         if not fs.is_directory(introspection.pts_temp_dir): fs.create_directory(introspection.pts_temp_dir)
-        self.temp_path = fs.create_directory_in(introspection.pts_temp_dir, "memory_estimator")
+        self.temp_path = fs.create_directory_in(introspection.pts_temp_dir, time.unique_name("memory_estimator"))
 
     # -----------------------------------------------------------------
 
@@ -159,13 +160,20 @@ class MemoryEstimator(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Determining the number of dust cells ...")
+
         # Get the number of dust cells
         if self.ski.treegrid():
-            if self.config.ncells is not None:
-                self.ncells = self.config.ncells
+
+            if self.config.ncells is not None: self.ncells = self.config.ncells
             elif self.config.probe: self.estimate_ncells()
             else: raise ValueError("The number of dust cells could not be determined (probing is disabled)")
+
         else: self.ncells = self.ski.ncells()
+
+        # Debugging
+        log.debug("The number of dust cells is " + str(self.ncells))
 
     # -----------------------------------------------------------------
 
@@ -176,13 +184,20 @@ class MemoryEstimator(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Determining the number of wavelenth points ...")
+
         # Get the number of wavelengths
         if self.ski.wavelengthsfile():
-            if self.config.nwavelengths is not None:
-                self.nwavelengths = self.config.nwavelengths
+
+            if self.config.nwavelengths is not None: self.nwavelengths = self.config.nwavelengths
             elif self.config.input is not None: self.nwavelengths = self.ski.nwavelengthsfile(self.config.input)
             else: raise ValueError("Wavelength file is used but input directory (or paths) not specified, nwavelengths also not passed in configuration")
+
         else: self.nwavelengths = self.ski.nwavelengths()
+
+        # Debugging
+        log.debug("The number of wavelengths is " + str(self.nwavelengths))
 
     # -----------------------------------------------------------------
 
@@ -193,9 +208,15 @@ class MemoryEstimator(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Determining the total number of instrument pixels ...")
+
         self.npixels = 0
         for name, instrument_type, npixels in self.ski.npixels(self.nwavelengths):
             self.npixels += npixels
+
+        # Debugging
+        log.debug("The number of instrument pixels is " + str(self.npixels))
 
     # -----------------------------------------------------------------
 
@@ -206,11 +227,14 @@ class MemoryEstimator(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Determining other simulation properties ...")
+
         # Get the number of dust components
         self.ncomponents = self.ski.ncomponents()
 
         # Get the number of items in the dust library
-        self.nitems = self.ski.nlibitems()
+        self.nitems = self.ski.nlibitems(ncells=self.ncells)
 
         # Get the number of dust populations (all dust mixes combined)
         self.npopulations = self.ski.npopulations()
@@ -219,6 +243,14 @@ class MemoryEstimator(Configurable):
         self.dust_emission = self.ski.dustemission()
         self.self_absorption = self.ski.dustselfabsorption()
         self.transient_heating = self.ski.transientheating()
+
+        # Debugging
+        log.debug("The number of dust components is " + str(self.ncomponents))
+        log.debug("The number of library items is " + str(self.nitems))
+        log.debug("The number of dust populations is " + str(self.npopulations))
+        log.debug("Dust emission is enabled" if self.dust_emission else "Dust emission is disabled")
+        log.debug("Dust self-absorption is enabled" if self.self_absorption else "Dust self-absorption is disabled")
+        log.debug("Transient heating is enabled" if self.transient_heating else "Transient heating is disabled")
 
     # -----------------------------------------------------------------
 
@@ -250,7 +282,8 @@ class MemoryEstimator(Configurable):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Estimating the total memory usage for an oligochromatic simulation ...")
 
     # -----------------------------------------------------------------
 
@@ -260,6 +293,9 @@ class MemoryEstimator(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Estimating the total memory usage for a panchromatic simulation ...")
 
         # Estimate the parallel part
         self.estimate_parallel()

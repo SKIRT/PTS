@@ -265,6 +265,9 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.analysis.misc.fluxes = True       # calculate observed fluxes
         self.launcher.config.analysis.misc.observation_filters = self.observed_filter_names
 
+        # Set spectral convolution flag
+        self.launcher.config.analysis.misc.spectral_convolution = self.fitting_run.fitting_configuration.spectral_convolution
+
         # Set the path to the modeling directory to the simulation object
         self.launcher.config.analysis.modeling_path = self.config.path
 

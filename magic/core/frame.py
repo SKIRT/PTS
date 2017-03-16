@@ -983,6 +983,9 @@ class Frame(NDDataArray):
         # Check whether the frame has a WCS
         if not self.has_wcs: raise RuntimeError("Cannot rebin a frame without coordinate system")
 
+        # Check the unit
+        if self.unit is not None and not (self.unit.is_intensity or self.unit.is_surface_brightness): raise ValueError("Cannot rebin a frame that is not in intensity or surface brightness units. First convert the units.")
+
         # Calculate rebinned data and footprint of the original image
         if exact: new_data, footprint = reproject_exact((self._data, self.wcs), reference_wcs, shape_out=reference_wcs.shape, parallel=parallel)
         else: new_data, footprint = reproject_interp((self._data, self.wcs), reference_wcs, shape_out=reference_wcs.shape)

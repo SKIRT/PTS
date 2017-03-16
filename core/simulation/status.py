@@ -68,6 +68,9 @@ class SimulationStatus(object):
         # The progress (if applicable)
         self.progress = None
 
+        # More info
+        self.extra = None
+
         # Get the status
         self.refresh()
 
@@ -172,6 +175,9 @@ class SimulationStatus(object):
         last_phase = None
         last_stage = None
         last_cycle = None
+        last_extra = None
+
+        # Wait for a bit ?
 
         # Refresh loop
         while True:
@@ -305,7 +311,12 @@ class SimulationStatus(object):
                         self.refresh_after(1)
 
             # Still the same phase
-            else: self.refresh_after(refresh_time)
+            else:
+                if self.extra is not None:
+                    if last_extra is None or last_extra != self.extra:
+                        log.info(self.extra)
+                    last_extra = self.extra
+                self.refresh_after(refresh_time)
 
     # -----------------------------------------------------------------
 
@@ -339,6 +350,7 @@ class SimulationStatus(object):
         self.stage = None
         self.cycle = None
         self.progress = None
+        self.extra = None
 
         # Check whether the log file exists
         if self.remote is not None: present = self.remote.is_file(self.log_path)
@@ -414,8 +426,38 @@ class SimulationStatus(object):
             # Set the simulation phase
             #self.simulation_phase = simulation_phase
 
+            # The setup phase
+            if self.phase == "setup":
+
+                self.simulation_phase = "SETUP"
+
+                # Loop over the lines in reversed order
+                for line in reversed(lines):
+
+                    if "Writing dust cell properties" in line:
+                        self.extra = "Writing dust cell properties ..."
+                        break
+                    elif "Setting the value of the density in the cells" in line:
+                        self.extra = "Calculating dust densities ..."
+                        break
+                    elif "Writing data to plot the dust grid":
+                        self.extra = "Writing the dust grid ..."
+                        break
+                    elif "Subdividing node" in line:
+                        self.extra = "Creating the dust grid tree ..."
+                        break
+                    elif "Starting subdivision" in line:
+                        self.extra = "Creating the dust grid tree ..."
+                        break
+                    elif "Adding dust population" in line:
+                        self.extra = "Setting dust populations ..."
+                        break
+                    elif line.startswith("Reading"):
+                        self.extra = "Reading input ..."
+                        break
+
             # Get the progress of the stellar emission
-            if self.phase == "stellar":
+            elif self.phase == "stellar":
 
                 # Set simulation phase
                 self.simulation_phase = "STELLAR EMISSION"

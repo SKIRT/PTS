@@ -34,6 +34,7 @@ from .pixelscale import Pixelscale
 from ...core.basics.unit import parse_unit as u
 from ...core.basics.range import QuantityRange
 from pts.magic.basics.stretch import PixelStretch
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -97,6 +98,21 @@ class CoordinateSystem(wcs.WCS):
         :return:
         """
 
+        if path.endswith(".fits"): return cls.from_fits(path)
+        elif path.endswith(".txt"): return cls.from_header_file(path)
+        else: raise ValueError("Path must be a FITS or header text file")
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_fits(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
         # Get the header and flatten it (remove references to third axis)
         header = fits.getheader(path)
         header["NAXIS"] = 2
@@ -104,13 +120,10 @@ class CoordinateSystem(wcs.WCS):
         for key in header:
             if "PLANE" in key: del header[key]
 
-        self = cls(header)
-
-        # Set the path
-        self.path = path
-
-        # Return
-        return self
+        # Create and return
+        system = cls(header)
+        system.path = path
+        return system
 
     # -----------------------------------------------------------------
 
@@ -127,7 +140,9 @@ class CoordinateSystem(wcs.WCS):
         header = Header.fromtextfile(path)
 
         # Create and return the coordinate system
-        return cls(header=header)
+        system = cls(header=header)
+        system.path = path
+        return system
 
     # -----------------------------------------------------------------
 
@@ -878,6 +893,68 @@ class CoordinateSystem(wcs.WCS):
                 raise NotImplementedError("Non-fk4/fk5 equinoxes are not allowed")
         elif 'GLON' in ctype or 'GLAT' in ctype:
             return 'galactic'
+
+    # -----------------------------------------------------------------
+
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Saving the coordinate system ...")
+
+        # Check whether the path is defined
+        if self.path is None: raise RuntimeError("Path is not defined for this coordinate system")
+
+        # Save the image
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        if path.endswith(".fits"): self.saveto_fits(path)
+        elif path.endswith(".txt"): self.saveto_header_file(path)
+        else: raise ValueError("Path should be a FITS or txt file")
+
+    # -----------------------------------------------------------------
+
+    def saveto_fits(self, path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Convert to header
+        header = self.to_header()
+
+        # Write as FITS file
+        header.tofile(path)
+
+    # -----------------------------------------------------------------
+
+    def saveto_header_file(self, path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Convert to header
+        header = self.to_header()
+
+        # Write the header as a text file
+        header.totextfile(path)
 
 # -----------------------------------------------------------------
 

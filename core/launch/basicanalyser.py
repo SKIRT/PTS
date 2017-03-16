@@ -148,6 +148,9 @@ class BasicAnalyser(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Extracting ...")
+
         # Extract the progress information
         if self.extraction_options.progress: self.extract_progress()
 
@@ -165,6 +168,9 @@ class BasicAnalyser(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Plotting ...")
 
         # If requested, plot the SED's
         if self.plotting_options.seds: self.plot_seds()
@@ -189,6 +195,9 @@ class BasicAnalyser(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Performing miscellaneous analysis ...")
 
         # If requested, make RGB images of the output FITS files
         if self.misc_options.rgb: self.make_rgb()
@@ -483,10 +492,8 @@ class BasicAnalyser(Configurable):
         # Create and run a ObservedFluxCalculator object
         self.flux_calculator = ObservedFluxCalculator()
 
-        # Set spectral convolution
-        if self.simulation.from_modeling:
-            from ...modeling.component.component import get_spectral_convolution_flag
-            self.flux_calculator.config.spectral_convolution = get_spectral_convolution_flag(self.simulation.analysis.modeling_path)
+        # Set spectral convolution flag
+        self.flux_calculator.config.spectral_convolution = self.misc_options.spectral_convolution
 
         # Run
         self.flux_calculator.run(simulation=self.simulation, output_path=self.misc_options.path,
@@ -508,10 +515,8 @@ class BasicAnalyser(Configurable):
         # Create and run an ObservedImageMaker object
         self.image_maker = ObservedImageMaker()
 
-        # Set spectral convolution
-        if self.simulation.from_modeling:
-            from ...modeling.component.component import get_spectral_convolution_flag
-            self.image_maker.config.spectral_convolution = get_spectral_convolution_flag(self.simulation.analysis.modeling_path)
+        # Set spectral convolution flag
+        self.image_maker.config.spectral_convolution = self.misc_options.spectral_convolution
 
         # Run
         self.image_maker.run(simulation=self.simulation, output_path=self.misc_options.path,
@@ -520,7 +525,7 @@ class BasicAnalyser(Configurable):
                              wcs_path=self.misc_options.images_wcs,
                              kernel_paths=self.misc_options.images_kernels,
                              unit=self.misc_options.images_unit,
-                             host_id=self.misc_options.make_images_remote)
+                             host_id=self.misc_options.make_images_remote, rebin_wcs_paths=self.misc_options.rebin_wcs)
 
 # -----------------------------------------------------------------
 

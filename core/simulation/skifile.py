@@ -361,10 +361,11 @@ class SkiFile:
         else: return 1
 
     ## This function returns the number of dust library items
-    def nlibitems(self):
+    def nlibitems(self, ncells=None):
         dustlib = self.get_dust_lib()
         if dustlib.tag == "AllCellsDustLib":
-            return self.ncells()
+            if ncells is not None: return ncells
+            else: return self.ncells()
         elif dustlib.tag == "Dim2DustLib":
             temppoints = dustlib.attrib["pointsTemperature"] if "pointsTemperature" in dustlib.attrib else 25
             wavelengthpoints = dustlib.attrib["pointsWavelength"] if "pointsWavelength" in dustlib.attrib else 10
