@@ -407,7 +407,8 @@ class M81Test(M81TestBase):
         dustpedia_sed = ObservedSED.from_file(dustpedia_sed_path)
         filter_names = dustpedia_sed.filter_names()
         errors = dustpedia_sed.errors()
-        flux_errors = sequences.zip_into_dict(filter_names, errors)
+        #print([str(error) for error in errors])
+        flux_errors = sequences.zip_into_dict(filter_names, [str(error) for error in errors])
         analysis.misc.flux_errors = flux_errors
 
         # Create Aniano kernels object

@@ -54,6 +54,37 @@ def stringify(value, scientific=False, decimal_places=2):
         #print(strings)
         return ptype + "_list", ",".join(strings)
 
+    # Dictionary
+    if isinstance(value, dict):
+
+        if len(value) == 0: raise ValueError("Cannot stringify an empty dictionary")
+
+        keytype = None
+        ptype = None
+        parts = []
+
+        for key in value:
+
+            ktype, kstring = stringify(key)
+
+            # Check key type
+            if keytype is None: keytype = ktype
+            elif keytype != ktype: keytype = "mixed"
+
+            v = value[key]
+
+            vtype, vstring = stringify(v)
+
+            # Check value type
+            if ptype is None: ptype = vtype
+            elif ptype != vtype: ptype = "mixed"
+
+            string = "'" + kstring + "': '" + vstring + "'"
+            parts.append(string)
+
+        # Return
+        return keytype + "_" + ptype + "_dictionary", ",".join(parts)
+
     # Array or derived from Array, but not quantity
     #elif isinstance(value, np.ndarray) and not isinstance(value, Quantity):
     #elif introspection.try_importing_module("numpy", True) and (isinstance(value, np.ndarray) and not hasattr(value, "unit")):
@@ -119,6 +150,24 @@ def stringify_not_list(value, scientific=False, decimal_places=2):
     elif introspection.lazy_isinstance(value, "BroadBandFilter", "pts.core.filter.broad"): return "broad_band_filter", str(value)
 
     else: raise ValueError("Unrecognized type: " + str(type(value)))
+
+# -----------------------------------------------------------------
+
+def str_from_dictionary(dictionary):
+
+    """
+    This function ...
+    :param dictionary:
+    :return:
+    """
+
+    parts = []
+    for key in dictionary:
+        value = dictionary[key]
+        vtype, vstring = stringify(value)
+        string = key + ": " + vstring
+        parts.append(string)
+    return ",".join(parts)
 
 # -----------------------------------------------------------------
 

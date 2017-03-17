@@ -219,6 +219,18 @@ class ErrorBar(object):
 
     # -----------------------------------------------------------------
 
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..tools import stringify
+        return stringify.stringify(self.lower)[1] + ">" + stringify.stringify(self.upper)[1]
+
+    # -----------------------------------------------------------------
+
     def __repr__(self):
 
         """

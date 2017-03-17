@@ -64,6 +64,7 @@ class ParallelTarget(object):
 
         # Initialize the process pool
         self.pool = Pool(processes=self.nprocesses)
+        self.nprocesses = self.pool._processes # make sure nprocesses is set
         return self
 
     # -----------------------------------------------------------------
@@ -95,7 +96,7 @@ class ParallelTarget(object):
         #self.results.extend(result)
         self.ncompleted += 1
         #print('Progress: {:.2f}%'.format((self.ncompleted / self.nprocesses) * 100))
-        print("Process " + str(self.ncompleted) + " of " + str(self.nprocesses) + " has finished (" + str(self.ncompleted/self.nprocesses*100) + "%)")
+        print("Process " + str(self.ncompleted) + " of " + str(self.nprocesses) + " has finished a task")
 
     # -----------------------------------------------------------------
 
