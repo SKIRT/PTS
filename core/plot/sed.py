@@ -45,8 +45,7 @@ line_styles = ['-', '--', '-.', ':']
 filled_markers = ['o', 'v', '^', '<', '>', '8', 's', 'p', '*', 'h', 'H', 'D', 'd'] * 6
 
 distinguishable_colormaps = ["spring", "winter", "copper", "cool", "PRGn", "coolwarm"]
-
-other_colormaps = ["YlGn", "YlGnBu", "YlOrRd", "Purples"]
+other_colormaps = ["YlGn", "YlGnBu", "YlOrRd", "Purples", "inferno", "plasma", "Spectral", "terrain"]
 
 # http://matplotlib.org/examples/color/named_colors.html
 color_hex = colors.cnames
@@ -371,7 +370,8 @@ class SEDPlotter(Configurable):
         reference_sed = None
 
         # Make iterable from color map names
-        color_maps = iter(distinguishable_colormaps+other_colormaps)
+        color_maps = iter(distinguishable_colormaps + other_colormaps)
+        ncolor_maps = len(distinguishable_colormaps + other_colormaps)
 
         # Make iterable from distinct colors
         different_colors = iter(pretty_colors)
@@ -640,7 +640,7 @@ class SEDPlotter(Configurable):
                 wavelengths_fluxes_residuals = sorted([(wavelength, flux) for wavelength, flux in zip(wavelengths, fluxes) if min_sed_wavelength < wavelength < max_sed_wavelength], key=itemgetter(0))
                 wavelengths_residuals = [item[0] for item in wavelengths_fluxes_residuals]
                 fluxes_residuals = [item[1] for item in wavelengths_fluxes_residuals]
-                residuals = -(fluxes_residuals - f2(wavelengths_residuals)) / fluxes * 100.
+                residuals = -(fluxes_residuals - f2(wavelengths_residuals)) / fluxes_residuals * 100.
 
                 ax2.plot(wavelengths_residuals, residuals, "-", color="lightgrey")
 
@@ -656,7 +656,7 @@ class SEDPlotter(Configurable):
                 wavelengths_fluxes_residuals = sorted([(wavelength, flux) for wavelength, flux in zip(wavelengths, fluxes) if min_sed_wavelength < wavelength < max_sed_wavelength], key=itemgetter(0))
                 wavelengths_residuals = [item[0] for item in wavelengths_fluxes_residuals]
                 fluxes_residuals = [item[1] for item in wavelengths_fluxes_residuals]
-                residuals = -(fluxes_residuals - f2(wavelengths_residuals)) / fluxes * 100.
+                residuals = -(fluxes_residuals - f2(wavelengths_residuals)) / fluxes_residuals * 100.
 
                 ax2.plot(wavelengths_residuals, residuals, line_styles_models[counter], color=line_colors_models[counter], label='model')
 
@@ -839,11 +839,11 @@ class SEDPlotter(Configurable):
             # Get labels and descriptions
             labels, descriptions = get_labels_and_descriptions(instruments, bands)
 
-            # Determine color map class
-            colormap = plt.get_cmap(next(color_maps))
-
             # Create color range
-            if number_of_observations <= 3: color_range = iter(colormap(np.linspace(0, 1, len(wavelengths))))
+            if number_of_observations <= 3:
+                # Determine color map class
+                colormap = plt.get_cmap(next(color_maps))
+                color_range = iter(colormap(np.linspace(0, 1, len(wavelengths))))
             else: color_range = iter([color_hex[next(colors)]] * len(wavelengths))
 
             # Loop over the wavelengths
@@ -884,7 +884,7 @@ class SEDPlotter(Configurable):
                 wavelengths_fluxes_residuals = sorted([(wavelength, flux) for wavelength, flux in zip(wavelengths, fluxes) if min_sed_wavelength < wavelength < max_sed_wavelength], key=itemgetter(0))
                 wavelengths_residuals = [item[0] for item in wavelengths_fluxes_residuals]
                 fluxes_residuals = [item[1] for item in wavelengths_fluxes_residuals]
-                residuals = -(fluxes_residuals - f2(wavelengths_residuals)) / fluxes * 100.
+                residuals = -(fluxes_residuals - f2(wavelengths_residuals)) / fluxes_residuals * 100.
 
                 if ghost: ax2.plot(wavelengths_residuals, residuals, "-", color='lightgrey')
                 else:
