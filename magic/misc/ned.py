@@ -89,6 +89,7 @@ class NED(Configurable):
         :return:
         """
 
+        # Call the setup function of the base class
         super(NED, self).setup(**kwargs)
 
     # -----------------------------------------------------------------
@@ -217,14 +218,15 @@ class NED(Configurable):
 
                     title = results["title"][0][0]
                     journal = results["journal"][0][0].split(",")[0]
-                    citations = results["citations"][0][0]
+                    try: citations = results["citations"][0][0]
+                    except IndexError: citations = None
 
                     print(fmt.underlined + name + fmt.reset)
                     print("")
                     if year is not None: print(" * year:", year)
                     print(" * title:", title)
                     print(" * journal:", journal)
-                    print(" * citations:", citations)
+                    if citations is not None: print(" * citations:", citations)
                     print(" * authors:", authorstring)
                     print(" * url:", url)
                     print("")
@@ -265,14 +267,15 @@ class NED(Configurable):
 
                 title = results["title"][0][0]
                 journal = results["journal"][0][0].split(",")[0]
-                citations = results["citations"][0][0]
+                try: citations = results["citations"][0][0]
+                except IndexError: citations = None
 
                 print(fmt.underlined + name + fmt.reset)
                 print("")
                 if year is not None: print(" * year:", year)
                 print(" * title:", title)
                 print(" * journal:", journal)
-                print(" * citations:", citations)
+                if citations is not None: print(" * citations:", citations)
                 print(" * authors:", authorstring)
                 print(" * url:", url)
                 print("")
@@ -305,7 +308,8 @@ class NED(Configurable):
 
                 title = results["title"][0][0]
                 journal = results["journal"][0][0].split(",")[0]
-                citations = results["citations"][0][0]
+                try: citations = results["citations"][0][0]
+                except IndexError: citations = None
 
             else: title = journal = citations = authorstring = None
 

@@ -96,7 +96,7 @@ def download_file_no_requests(url, path, overwrite=False):
 
 # -----------------------------------------------------------------
 
-def download_file(url, path, overwrite=False, progress_bar=False, stream=False, chunk_size=1024, session=None):
+def download_file(url, path, new_name=None, overwrite=False, progress_bar=False, stream=False, chunk_size=1024, session=None):
 
     """
     This function ...
@@ -114,7 +114,8 @@ def download_file(url, path, overwrite=False, progress_bar=False, stream=False, 
     import requests
 
     # Get the name of the file
-    filename = fs.name(url)
+    if new_name is not None: filename = new_name
+    else: filename = fs.name(url)
 
     # Determine the local path to the file
     filepath = fs.join(path, filename) if fs.is_directory(path) else path

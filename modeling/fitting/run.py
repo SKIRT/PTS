@@ -55,7 +55,7 @@ class FittingRun(object):
         fit_path = fs.join(modeling_path, "fit")
 
         # Set the path for this fitting run
-        self.path = fs.join(fit_path, self.name)
+        self.path = fs.create_directory_in(fit_path, self.name)
 
         # Set the name of the model used
         self.model_name = model_name

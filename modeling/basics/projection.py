@@ -143,7 +143,8 @@ class GalaxyProjection(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_instrument(cls, instrument, default_pixels_x=None, default_pixels_y=None, default_field_x=None, default_field_y=None):
+    def from_instrument(cls, instrument, default_pixels_x=None, default_pixels_y=None, default_field_x=None,
+                        default_field_y=None):
 
         """
         This function ...
@@ -172,8 +173,16 @@ class GalaxyProjection(object):
             pixels_y = default_pixels_y
 
             # Put the galaxy center at the center of the instrument
-            center_x = 0.5 * pixels_x
-            center_y = 0.5 * pixels_y
+            center_x = 0.5 * (pixels_x + 1)
+            center_y = 0.5 * (pixels_y + 1)
+
+            # Determine the pixelscale
+            pixelscale_physical_x = default_field_x / pixels_x
+            pixelscale_physical_y = default_field_y / pixels_y
+
+            # Calculate center in physical units
+            center_x = center_x * pixelscale_physical_x
+            center_y = center_y * pixelscale_physical_y
 
             # Set field
             field_x = default_field_x
@@ -378,7 +387,8 @@ class FaceOnProjection(GalaxyProjection):
         """
 
         # Create and return
-        return cls(projection.distance, projection.pixels_x, projection.pixels_y, projection.center_x, projection.center_y, projection.field_x, projection.field_y)
+        return cls(projection.distance, projection.pixels_x, projection.pixels_y, projection.center_x,
+                   projection.center_y, projection.field_x_physical, projection.field_y_physical)
 
 # -----------------------------------------------------------------
 
@@ -467,7 +477,8 @@ class EdgeOnProjection(GalaxyProjection):
         """
 
         # Create and return
-        return cls(projection.distance, projection.pixels_x, projection.pixels_y, projection.center_x, projection.center_y, projection.field_x, projection.field_y)
+        return cls(projection.distance, projection.pixels_x, projection.pixels_y, projection.center_x,
+                   projection.center_y, projection.field_x_physical, projection.field_y_physical)
 
 # -----------------------------------------------------------------
 

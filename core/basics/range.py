@@ -333,7 +333,8 @@ class Range(object):
 
     # -----------------------------------------------------------------
 
-    def __len__(self):
+    @property
+    def span(self):
 
         """
         This function ...

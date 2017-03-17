@@ -170,6 +170,9 @@ class SEDRepresentationBuilder(BuildComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Loading the galaxy projection from the ski file ...")
+
         # Get the instrument names
         names = self.ski.get_instrument_names()
 
@@ -183,7 +186,7 @@ class SEDRepresentationBuilder(BuildComponent):
         x_range = self.ski.get_dust_grid_x_range()
         y_range = self.ski.get_dust_grid_y_range()
         z_range = self.ski.get_dust_grid_z_range()
-        max_field = max(len(x_range), len(y_range), len(z_range))
+        max_field = max(x_range.span, y_range.span, z_range.span)
 
         # Create projection
         projection = GalaxyProjection.from_instrument(instrument, default_pixels_x=200, default_pixels_y=200, default_field_x=max_field, default_field_y=max_field)

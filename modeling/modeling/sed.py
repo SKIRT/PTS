@@ -139,7 +139,7 @@ class SEDModeler(ModelerBase):
         config["name"] = self.model_name
 
         # Create the builder
-        builder = SEDModelBuilder()
+        builder = SEDModelBuilder(config)
 
         # Run
         builder.run()
@@ -162,7 +162,7 @@ class SEDModeler(ModelerBase):
         config["model_name"] = self.model_name
 
         # Create the representation
-        builder = SEDRepresentationBuilder()
+        builder = SEDRepresentationBuilder(config)
 
         # Run
         builder.run()

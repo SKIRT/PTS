@@ -198,6 +198,9 @@ class SEDModelBuilder(BuildComponent):
         # Write the dust properties
         self.write_dust_properties()
 
+        # Write the table
+        self.write_table()
+
     # -----------------------------------------------------------------
 
     def write_stellar_component_directories(self):
@@ -279,5 +282,24 @@ class SEDModelBuilder(BuildComponent):
             # Write the properties
             path = fs.join(self.dust_paths[name], "properties.dat")
             write_dict(self.dust_properties[name], path)
+
+    # -----------------------------------------------------------------
+
+    def write_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the model table ...")
+
+        # Add the model
+        table = self.models_table
+        table.add_model(self.model_name, None, None, None, None, None)
+
+        # Save the table
+        table.saveto(self.models_table_path)
 
 # -----------------------------------------------------------------

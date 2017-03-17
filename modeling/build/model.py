@@ -164,4 +164,26 @@ class ModelBuilder(BuildComponent):
         # Write the deprojections
         #self.write_deprojections()
 
+        # Write models table
+        self.write_table()
+
+    # -----------------------------------------------------------------
+
+    def write_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the model table ...")
+
+        # Add the model
+        table = self.models_table
+        table.add_model(self.model_name, None, None, None, None, None)
+
+        # Save the table
+        table.saveto(self.models_table_path)
+
 # -----------------------------------------------------------------

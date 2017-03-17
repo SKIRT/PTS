@@ -43,6 +43,11 @@ identifiers["SDSS.z"] = Map(instruments=["SDSS"], bands=["z"])
 identifiers["2MASS.H"] = Map(instruments=["2MASS"], bands=["H"])
 identifiers["2MASS.J"] = Map(instruments=["2MASS"], bands=["J"])
 identifiers["2MASS.K"] = Map(instruments=["2MASS"], bands=["K", "Ks"])
+identifiers["UKIDSS.H"] = Map(observatories=["UKIRT"], instruments=["WFCAM"], bands=["H"], surveys=["UKIDSS"])
+identifiers["UKIDSS.J"] = Map(observatories=["UKIRT"], instruments=["WFCAM"], bands=["J"], surveys=["UKIDSS"])
+identifiers["UKIDSS.K"] = Map(observatories=["UKIRT"], instruments=["WFCAM"], bands=["K"], surveys=["UKIDSS"])
+identifiers["UKIDSS.Y"] = Map(observatories=["UKIRT"], instruments=["WFCAM"], bands=["Y"], surveys=["UKIDSS"])
+identifiers["UKIDSS.Z"] = Map(observatories=["UKIRT"], instruments=["WFCAM"], bands=["Z"], surveys=["UKIDSS"])
 identifiers["IRAC.I1"] = Map(observatories=["Spitzer"], instruments=["IRAC"], bands=["I1"], channel=1, wavelength="3.6 micron")
 identifiers["IRAC.I2"] = Map(observatories=["Spitzer"], instruments=["IRAC"], bands=["I2"], channel=2, wavelength="4.5 micron")
 identifiers["IRAC.I3"] = Map(observatories=["Spitzer"], instruments=["IRAC"], bands=["I3"], channel=3, wavelength="5.8 micron")
@@ -196,6 +201,27 @@ def get_filter_descriptions():
 
 # -----------------------------------------------------------------
 
+def is_sdss_or_johnson(identifier):
+
+    """
+    This function ...
+    :param identifier:
+    :return:
+    """
+
+    if "instruments" in identifier:
+
+        if "SDSS" in identifier.instruments: return True
+
+    if "system" in identifier:
+
+        if identifier.system == "Johnson": return True
+        else: return False
+
+    return False
+
+# -----------------------------------------------------------------
+
 def is_sdss_2mass_or_johnson(identifier):
 
     """
@@ -230,6 +256,7 @@ def generate_aliases(identifier):
     if "bands" in identifier:
         for band in strings.case_combinations_list(identifier.bands, also_one_letter=False):
 
+            #if len(band) == 1 and not is_sdss_2mass_or_johnson(identifier): continue
             if len(band) == 1 and not is_sdss_2mass_or_johnson(identifier): continue
 
             yield band
@@ -316,6 +343,43 @@ def generate_aliases(identifier):
             for frequency_string in strings.quantity_combinations(frequency):
                 for string in strings.generate_from_two_parts(observatory, frequency_string): yield string
                 for string in strings.generate_from_two_parts("the " + observatory, frequency_string + " band"): yield string
+
+    # Combinations of survey and band
+    if "surveys" in identifier and "bands" in identifier:
+
+        for survey in strings.case_combinations_list(identifier.surveys):
+            for band in strings.case_combinations_list(identifier.bands, also_one_letter=False):
+
+                for string in strings.generate_from_two_parts(survey, band): yield string
+                for string in strings.generate_from_two_parts("the " + survey, band + "-band"): yield string
+                for string in strings.generate_from_two_parts("the " + survey, band + " band"): yield string
+
+    # Combinations of survey and channel
+    if "channel" in identifier and "surveys" in identifier:
+        for survey in strings.case_combinations_list(identifier.surveys):
+            for string in strings.generate_from_two_parts(survey, str_from_real_or_integer(identifier.channel)): yield string
+
+    # Combinations of survey and wavelength
+    if "wavelength" in identifier and "surveys" in identifier:
+
+        from ..tools import parsing
+        wavelength = parsing.quantity(identifier.wavelength)
+
+        for survey in strings.case_combinations_list(identifier.surveys):
+            for wavelength_string in strings.quantity_combinations(wavelength):
+                for string in strings.generate_from_two_parts(survey, wavelength_string): yield string
+                for string in strings.generate_from_two_parts("the " + survey, wavelength_string + " band"): yield string
+
+    # Combinations of survey and frequency
+    if "frequency" in identifier and "surveys" in identifier:
+
+        from ..tools import parsing
+        frequency = parsing.quantity(identifier.frequency)
+
+        for survey in identifier.surveys:
+            for frequency_string in strings.quantity_combinations(frequency):
+                for string in strings.generate_from_two_parts(survey, frequency_string): yield string
+                for string in strings.generate_from_two_parts("the " + survey, frequency_string + " band"): yield string
 
 # -----------------------------------------------------------------
 

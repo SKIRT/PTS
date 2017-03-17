@@ -2509,21 +2509,31 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                     except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
         # Only one choice
+        #elif len(choices) == 1:
         else:
 
             # List-type setting
             if real_type.__name__.endswith("_list"):  # list-type setting
 
-                # Inform the user
-                log.info("Only one option: automatically using a list of this value '[" + str(choices[0]) + "]' for " + name)
-                value = [choices[0]]
+                if isinstance(choices, dict):
+                    log.info("Only one option: automatically using a list of this value '[" + str(choices.keys()[0]) + "]' for " + name)
+                    value = [choices.keys()[0]]
+                else:
+                    # Inform the user
+                    log.info("Only one option: automatically using a list of this value '[" + str(choices[0]) + "]' for " + name)
+                    value = [choices[0]]
 
             # Single-value setting
             else:
 
-                # Inform the user
-                log.info("Only one option: automatically using value of '" + str(choices[0]) + "' for " + name)
-                value = choices[0]
+                if isinstance(choices, dict):
+                    # Inform the user
+                    log.info("Only one option: automatically using value of '" + str(choices.keys()[0]) + "' for " + name)
+                    value = choices.keys()[0]
+                else:
+                    # Inform the user
+                    log.info("Only one option: automatically using value of '" + str(choices[0]) + "' for " + name)
+                    value = choices[0]
 
         # Set the value
         config[name] = value
