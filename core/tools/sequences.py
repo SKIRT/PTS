@@ -123,3 +123,18 @@ def all_equal(lst):
     return True
 
 # -----------------------------------------------------------------
+
+def zip_into_dict(list_a, list_b):
+
+    """
+    This function ...
+    :param list_a:
+    :param list_b:
+    :return:
+    """
+
+    dictionary = dict()
+    for item_a, item_b in zip(list_a, list_b): dictionary[item_a] = item_b
+    return dictionary
+
+# -----------------------------------------------------------------

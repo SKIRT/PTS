@@ -25,12 +25,9 @@ from pts.core.simulation.memory import MemoryRequirement
 from pts.core.prep.deploy import Deployer
 from pts.core.launch.options import AnalysisOptions
 from pts.modeling.tests.base import M81TestBase, m81_data_path, fitting_filter_names, instrument_name
-
-# -----------------------------------------------------------------
-
-# Determine path of this directory
-this_path = fs.absolute_path(inspect.stack()[0][1])
-this_dir_path = fs.directory_of(this_path)
+from pts.modeling.tests.base import seds_path, dustpedia_sed_path
+from pts.core.data.sed import ObservedSED
+from pts.core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -396,7 +393,6 @@ class M81Test(M81TestBase):
         analysis.plotting.memory = True
         analysis.plotting.seds = True
         analysis.plotting.grids = True
-        seds_path = fs.join(m81_data_path, "seds")
         analysis.plotting.reference_seds = fs.files_in_path(seds_path)
         analysis.misc.fluxes = True
         analysis.misc.images = True
@@ -406,6 +402,13 @@ class M81Test(M81TestBase):
         analysis.misc.images_wcs = self.reference_wcs_path
         analysis.misc.images_unit = "Jy/pix"
         analysis.misc.spectral_convolution = False
+
+        # Set flux error bars
+        dustpedia_sed = ObservedSED.from_file(dustpedia_sed_path)
+        filter_names = dustpedia_sed.filter_names()
+        errors = dustpedia_sed.errors()
+        flux_errors = sequences.zip_into_dict(filter_names, errors)
+        analysis.misc.flux_errors = flux_errors
 
         # Create Aniano kernels object
         aniano = AnianoKernels()

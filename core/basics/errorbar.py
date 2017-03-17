@@ -104,6 +104,18 @@ class ErrorBar(object):
 
     # -----------------------------------------------------------------
 
+    def to(self, unit):
+
+        """
+        This function ...
+        :param unit:
+        :return:
+        """
+
+        return ErrorBar(self.lower.to(unit), self.upper.to(unit))
+
+    # -----------------------------------------------------------------
+
     def as_tuple(self):
 
         """

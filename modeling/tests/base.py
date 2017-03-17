@@ -184,6 +184,11 @@ free_parameters_relative_instruments_paths["distance"] = ("distance", instrument
 
 # -----------------------------------------------------------------
 
+seds_path = fs.join(m81_data_path, "seds")
+dustpedia_sed_path = fs.join(seds_path, "DustPedia.dat")
+
+# -----------------------------------------------------------------
+
 class M81TestBase(TestImplementation):
 
     """

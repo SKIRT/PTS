@@ -26,6 +26,8 @@ from pts.modeling.tests.base import free_parameters_relative_instruments_paths, 
 from pts.core.data.sed import ObservedSED
 from pts.core.tools import stringify
 from pts.core.basics.quantity import parse_angle
+from pts.modeling.tests.base import seds_path, dustpedia_sed_path
+from pts.core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -224,7 +226,6 @@ class M81SEDTest(M81TestBase):
         analysis.plotting.memory = True
         analysis.plotting.seds = True
         analysis.plotting.grids = True
-        seds_path = fs.join(m81_data_path, "seds")
         analysis.plotting.reference_seds = fs.files_in_path(seds_path)
         analysis.misc.fluxes = True
         #analysis.misc.images = True
@@ -234,6 +235,13 @@ class M81SEDTest(M81TestBase):
         #analysis.misc.images_wcs = self.reference_wcs_path
         #analysis.misc.images_unit = "Jy/pix"
         analysis.misc.spectral_convolution = False
+
+        # Set flux error bars
+        dustpedia_sed = ObservedSED.from_file(dustpedia_sed_path)
+        filter_names = dustpedia_sed.filter_names()
+        errors = dustpedia_sed.errors()
+        flux_errors = sequences.zip_into_dict(filter_names, errors)
+        analysis.misc.flux_errors = flux_errors
 
         # Input
         input_launch = dict()

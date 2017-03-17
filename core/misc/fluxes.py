@@ -33,6 +33,7 @@ from ..data.sed import ObservedSED
 from ..tools import sequences
 from ..basics.configurable import Configurable
 from ..simulation.simulation import createsimulations
+from ..tools import parsing
 
 # -----------------------------------------------------------------
 
@@ -147,7 +148,13 @@ class ObservedFluxCalculator(Configurable):
         self.instrument_names = instrument_names
 
         # Set the errors
-        self.errors = errors
+        if errors is not None:
+
+            # Set the error bars from strings
+            for filter_name in errors:
+                error = errors[filter_name]
+                if isinstance(error, basestring): error = parsing.errorbar(error)
+                self.errors[filter_name] = error
 
         # Set output path
         self.config.output = output_path
@@ -249,6 +256,9 @@ class ObservedFluxCalculator(Configurable):
             # Loop over the different filters
             for fltr in self.filters:
 
+                # Determine filter name
+                filter_name = str(fltr)
+
                 # Broad band filter, with spectral convolution
                 if isinstance(fltr, BroadBandFilter) and self.config.spectral_convolution:
 
@@ -274,7 +284,8 @@ class ObservedFluxCalculator(Configurable):
                         fluxdensity_value *= kbeam
 
                     # Add a point to the mock SED
-                    mock_sed.add_point(fltr, fluxdensity_value * u("Jy"))
+                    error = self.errors[filter_name] if self.errors is not None and filter_name in self.errors else None
+                    mock_sed.add_point(fltr, fluxdensity_value * u("Jy"), error)
 
                 # Broad band filter without spectral convolution or narrow band filter
                 else:
@@ -290,6 +301,7 @@ class ObservedFluxCalculator(Configurable):
                     fluxdensity = fluxdensity.to("Jy", equivalencies=spectral_density(fltr.pivot))  # now in Jy
 
                     # Add a point to the mock SED
+                    error = self.errors[filter_name] if self.errors is not None and filter_name in self.errors else None
                     mock_sed.add_point(fltr, fluxdensity)
 
             # Add the complete SED to the dictionary (with the SKIRT SED name as key)

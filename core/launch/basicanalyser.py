@@ -498,7 +498,8 @@ class BasicAnalyser(Configurable):
         # Run
         self.flux_calculator.run(simulation=self.simulation, output_path=self.misc_options.path,
                                  filter_names=self.misc_options.observation_filters,
-                                 instrument_names=self.misc_options.observation_instruments)
+                                 instrument_names=self.misc_options.observation_instruments,
+                                 errors=self.misc_options.flux_errors)
 
     # -----------------------------------------------------------------
 

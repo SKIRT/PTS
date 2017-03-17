@@ -164,7 +164,17 @@ class SEDPlotter(Configurable):
         """
 
         # Add observed or modeled SED
-        if isinstance(sed, ObservedSED): self.observations[label] = sed
+        if isinstance(sed, ObservedSED):
+
+            # Make a copy with only broad band filters
+            only_broad = sed.only_broad_band()
+
+            # Check whether there are any points in the SED
+            if len(only_broad) == 0: log.warning("The '" + label + "' SED contains no (broad band) photometry points")
+
+            # Set the SED
+            self.observations[label] = only_broad
+
         elif isinstance(sed, SED): self.models.append((label, sed, residuals, ghost))
         else: raise ValueError("The SED must be an SED or ObservedSED instance")
 
@@ -320,11 +330,11 @@ class SEDPlotter(Configurable):
         observation = self.observations[self.observations.keys()[0]]
 
         # Get wavelengths, fluxes, instruments, bands, errors
-        wavelengths = observation.wavelengths(unit="micron", add_unit=False, narrow=False)
-        fluxes = observation.photometry(unit="Jy", add_unit=False, narrow=False)
-        instruments = observation.instruments(narrow=False)
-        bands = observation.bands(narrow=False)
-        errors = observation.errors(unit="Jy", add_unit=False, narrow=False)
+        wavelengths = observation.wavelengths(unit="micron", add_unit=False)
+        fluxes = observation.photometry(unit="Jy", add_unit=False)
+        instruments = observation.instruments()
+        bands = observation.bands()
+        errors = observation.errors(unit="Jy", add_unit=False)
 
         # Create colors
         colors = colormap(np.linspace(0, 1, len(wavelengths)))

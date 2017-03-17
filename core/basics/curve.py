@@ -357,34 +357,25 @@ class FilterCurve(WavelengthCurve):
 
     # -----------------------------------------------------------------
 
-    def instruments(self, narrow=True):
+    def instruments(self):
 
         """
         This function ...
-        :param narrow:
         :return:
         """
 
-        if narrow: return arrays.array_as_list(self["Instrument"])
-        else:
-            mask = np.array(self.broad_band_filters())
-            instruments = arrays.plain_array(self["Instrument"])
-            return list(instruments[mask])
+        return arrays.array_as_list(self["Instrument"])
 
     # -----------------------------------------------------------------
 
-    def bands(self, narrow=True):
+    def bands(self):
 
         """
         This function ...
         :return:
         """
 
-        if narrow: return arrays.array_as_list(self["Band"])
-        else:
-            mask = np.array(self.broad_band_filters())
-            bands = arrays.plain_array(self["Band"])
-            return list(bands[mask])
+        return arrays.array_as_list(self["Band"])
 
     # -----------------------------------------------------------------
 
@@ -440,6 +431,44 @@ class FilterCurve(WavelengthCurve):
 
         # Return the list of filters
         return filters
+
+    # -----------------------------------------------------------------
+
+    def only_broad_band(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Make a copy of this curve
+        new = self.copy()
+
+        # Loop over the rows, remove the row if it does not correspond to a broad band filter
+        for index, is_broad in reversed(enumerate(self.broad_band_filters())):
+            if not is_broad: new.remove_row(index)
+
+        # Return the new SED
+        return new
+
+    # -----------------------------------------------------------------
+
+    def only_narrow_band(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Make a copy of this curve
+        new = self.copy()
+
+        # Loop over the rows, remove the row if it does not correspond to a narrow band filter
+        for index, is_narrow in reversed(enumerate(self.narrow_band_filters())):
+            if not is_narrow: new.remove_row(index)
+
+        # Return the new SED
+        return new
 
     # -----------------------------------------------------------------
 
