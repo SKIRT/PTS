@@ -149,7 +149,7 @@ class ObservedFluxCalculator(Configurable):
 
         # Set the errors
         if errors is not None:
-
+            self.errors = dict()
             # Set the error bars from strings
             for filter_name in errors:
                 error = errors[filter_name]

@@ -289,7 +289,7 @@ class SKIRTLauncher(Configurable):
 
         # If there are too little free cpus for the amount of processes, the number of threads will be smaller than one
         if threads < 1:
-            processes = int(monitoring.free_cpus())
+            processes = max(int(monitoring.free_cpus()), 1)
             threads = 1
 
         # Set the parallelization options
@@ -298,6 +298,11 @@ class SKIRTLauncher(Configurable):
 
         cores = processes * threads
         threads_per_core = 2
+
+        # Debugging
+        log.debug("The number of cores is " + str(cores))
+        log.debug("The number of thread per core is " + str(threads_per_core))
+        log.debug("The number of processes is " + str(processes))
 
         # Set the parallelization scheme
         self.parallelization = Parallelization(cores, threads_per_core, processes, data_parallel=False)

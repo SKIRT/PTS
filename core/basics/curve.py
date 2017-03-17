@@ -445,8 +445,9 @@ class FilterCurve(WavelengthCurve):
         new = self.copy()
 
         # Loop over the rows, remove the row if it does not correspond to a broad band filter
-        for index, is_broad in reversed(enumerate(self.broad_band_filters())):
-            if not is_broad: new.remove_row(index)
+        is_broad = self.broad_band_filters()
+        for index in reversed(range(len(self))):
+            if not is_broad[index]: new.remove_row(index)
 
         # Return the new SED
         return new
@@ -464,8 +465,9 @@ class FilterCurve(WavelengthCurve):
         new = self.copy()
 
         # Loop over the rows, remove the row if it does not correspond to a narrow band filter
-        for index, is_narrow in reversed(enumerate(self.narrow_band_filters())):
-            if not is_narrow: new.remove_row(index)
+        is_narrow = self.narrow_band_filters()
+        for index in reversed(range(len(self))):
+            if not is_narrow[index]: new.remove_row(index)
 
         # Return the new SED
         return new

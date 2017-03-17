@@ -875,7 +875,7 @@ def errorbar(argument):
     from ..basics.errorbar import ErrorBar
 
     upper = None
-    if ">" in argument: lower, upper = quantity_tuple(argument)
+    if ">" in argument: lower, upper = quantity_tuple(argument.replace(">", ","))
     else: lower = quantity(argument)
 
     # Create error bar
