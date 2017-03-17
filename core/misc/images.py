@@ -137,6 +137,12 @@ class ObservedImageMaker(Configurable):
         # Rebin
         if self.rebin_wcs is not None: self.rebin()
 
+        # Add sky
+        self.add_sky()
+
+        # Add stars
+        self.add_stars()
+
         # 8. Do unit conversions
         if self.unit is not None: self.convert_units()
 
@@ -457,6 +463,30 @@ class ObservedImageMaker(Configurable):
 
                 # Convert the unit back
                 if converted: self.images[datacube_name][filter_name].convert_to(original_unit)
+
+    # -----------------------------------------------------------------
+
+    def add_sky(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adding artificial sky contribution to the images ...")
+
+    # -----------------------------------------------------------------
+
+    def add_stars(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adding artificial stars to the images ...")
 
     # -----------------------------------------------------------------
 

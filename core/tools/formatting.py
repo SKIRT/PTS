@@ -187,10 +187,12 @@ def print_files_in_path(path):
 
     if not log.is_debug(): return
     in_path = fs.files_in_path(path, returns="name")
-    log.debug(str(len(in_path)) + " files in '" + path + "':")
-    print("")
-    print(stringify_list_fancy(in_path, lines_prefix="  ")[1])
-    print("")
+    if len(in_path) == 0: log.debug("No files in '" + path + "'")
+    else:
+        log.debug(str(len(in_path)) + " files in '" + path + "':")
+        print("")
+        print(stringify_list_fancy(in_path, lines_prefix="  ")[1])
+        print("")
 
 # -----------------------------------------------------------------
 
@@ -204,10 +206,12 @@ def print_files_in_list(lst, name):
     """
 
     if not log.is_debug(): return
-    log.debug(str(len(lst)) + " files in '" + name + "':")
-    print("")
-    print(stringify_list_fancy(lst, lines_prefix="  ")[1])
-    print("")
+    if len(lst) == 0: log.debug("No files in '" + name + "'")
+    else:
+        log.debug(str(len(lst)) + " files in '" + name + "':")
+        print("")
+        print(stringify_list_fancy(lst, lines_prefix="  ")[1])
+        print("")
 
 # -----------------------------------------------------------------
 
@@ -221,9 +225,30 @@ def print_directories_in_path(path):
 
     if not log.is_debug(): return
     in_path = fs.directories_in_path(path, returns="name")
-    log.debug(str(len(in_path)) + " directories in '" + path + "':")
-    print("")
-    print(stringify_list_fancy(in_path, lines_prefix="  ")[1])
-    print("")
+    if len(in_path) == 0: log.debug("No directories in '" + path + "'")
+    else:
+        log.debug(str(len(in_path)) + " directories in '" + path + "':")
+        print("")
+        print(stringify_list_fancy(in_path, lines_prefix="  ")[1])
+        print("")
+
+# -----------------------------------------------------------------
+
+def print_directories_in_list(lst, name):
+
+    """
+    This function ...
+    :param lst:
+    :param name:
+    :return:
+    """
+
+    if not log.is_debug(): return
+    if len(lst) == 0: log.debug("No directories in '" + name + "'")
+    else:
+        log.debug(str(len(lst)) + " directories in '" + name +"':")
+        print("")
+        print(stringify_list_fancy(lst, lines_prefix="  ")[1])
+        print("")
 
 # -----------------------------------------------------------------

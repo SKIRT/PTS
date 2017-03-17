@@ -381,8 +381,7 @@ class SimulationDiscoverer(Configurable):
                 #if prefix in input_paths_ski_files:
                 input_path = input_paths_ski_files[skipath] if skipath in input_paths_ski_files else None
                 #else: input_path = None
-
-                parameters = comparison_parameters_from_ski(skipath)
+                parameters = comparison_parameters_from_ski(skipath, input_path=input_path)
 
                 # Set ...
                 parameters_ski_files[skipath] = parameters
@@ -795,6 +794,7 @@ def comparison_parameters_from_ski(ski_path, input_path=None):
     :param input_path:
     """
 
+    # Open the ski file
     ski = SkiFile(ski_path)
 
     # Get the number of wavelengths

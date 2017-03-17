@@ -136,7 +136,7 @@ class TimeLinePlotter(Configurable):
             else: raise ValueError("Timelines must be a dictionary")
 
         # Load simulations from working directory if none have been added
-        if len(self.simulations) == 0:
+        if len(self.simulations) == 0 and len(self.timelines) == 0:
 
             # Inform the user
             log.info("Loading simulations ...")
@@ -499,7 +499,7 @@ class TimeLinePlotter(Configurable):
         self.write_single_data()
 
         # Write multi data
-        self.write_multi_data()
+        if self.has_multi: self.write_multi_data()
 
     # -----------------------------------------------------------------
 

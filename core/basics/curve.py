@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import numpy as np
 from scipy import interpolate
 
 # Import the relevant PTS classes and modules
@@ -21,6 +22,8 @@ from ..tools import tables
 from ..filter.filter import parse_filter
 from .unit import parse_unit as u
 from ..tools import arrays
+from ..filter.broad import BroadBandFilter
+from ..filter.narrow import NarrowBandFilter
 
 # -----------------------------------------------------------------
 
@@ -354,25 +357,34 @@ class FilterCurve(WavelengthCurve):
 
     # -----------------------------------------------------------------
 
-    def instruments(self):
+    def instruments(self, narrow=True):
 
         """
         This function ...
+        :param narrow:
         :return:
         """
 
-        return arrays.array_as_list(self["Instrument"])
+        if narrow: return arrays.array_as_list(self["Instrument"])
+        else:
+            mask = np.array(self.broad_band_filters())
+            instruments = arrays.plain_array(self["Instrument"])
+            return list(instruments[mask])
 
     # -----------------------------------------------------------------
 
-    def bands(self):
+    def bands(self, narrow=True):
 
         """
         This function ...
         :return:
         """
 
-        return arrays.array_as_list(self["Band"])
+        if narrow: return arrays.array_as_list(self["Band"])
+        else:
+            mask = np.array(self.broad_band_filters())
+            bands = arrays.plain_array(self["Band"])
+            return list(bands[mask])
 
     # -----------------------------------------------------------------
 
@@ -428,5 +440,27 @@ class FilterCurve(WavelengthCurve):
 
         # Return the list of filters
         return filters
+
+    # -----------------------------------------------------------------
+
+    def broad_band_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [isinstance(fltr, BroadBandFilter) for fltr in self.filters()]
+
+    # -----------------------------------------------------------------
+
+    def narrow_band_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [isinstance(fltr, NarrowBandFilter) for fltr in self.filters()]
 
 # -----------------------------------------------------------------

@@ -8,6 +8,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import defaultdict
+
 # Import astronomical modules
 from astropy.io.fits import Header
 from astropy.utils import lazyproperty
@@ -37,12 +40,7 @@ from pts.core.basics.quantity import parse_quantity
 from pts.magic.region.list import SkyRegionList
 from pts.core.filter.filter import parse_filter
 from pts.core.basics.unit import parse_unit as u
-
-# -----------------------------------------------------------------
-
-# Determine path of this directory
-#this_path = fs.absolute_path(inspect.stack()[0][1])
-#this_dir_path = fs.directory_of(this_path)
+from pts.core.tools import sequences, parsing, stringify
 
 # -----------------------------------------------------------------
 
@@ -251,6 +249,9 @@ class M81TestBase(TestImplementation):
 
         # The modeler
         self.modeler = None
+
+        # The real parameter values
+        self.real_parameter_values = dict()
 
     # -----------------------------------------------------------------
 
@@ -863,5 +864,150 @@ class M81TestBase(TestImplementation):
 
         # Run the plotter
         plotter.run(output=path)
+
+    # -----------------------------------------------------------------
+
+    def get_real_parameter_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the real parameter values ...")
+
+        # Store the different values encountered in the ski file
+        values = defaultdict(list)
+
+        # Add the labels for the free parameters
+        # Loop over the free parameters
+        for parameter_name in self.config.free_parameters:
+
+            # Get the parsing function for this parameter
+            parser = getattr(parsing, free_parameter_types[parameter_name])
+
+            # Search in the absolute parameters
+            if parameter_name in free_parameters_absolute_paths:
+
+                # Determine the path to the property
+                path = free_parameters_absolute_paths
+
+                # Get the current value
+                value = parser(self.ski.get_value_for_path(path))
+
+                # Set the value
+                values[parameter_name].append(value)
+
+            # Search in the stellar components
+            if parameter_name in free_parameters_relative_stellar_component_paths:
+
+                # Determine the relative path to the property and the stellar component name
+                path, component_name = free_parameters_relative_stellar_component_paths[parameter_name]
+
+                if component_name is not None:
+
+                    # Get the stellar component
+                    stellar_component = self.ski.get_stellar_component(component_name)
+
+                    # Get the current value
+                    value = parser(self.ski.get_value_for_path(path, stellar_component))
+
+                    # Set the value
+                    values[parameter_name].append(value)
+
+                else:
+
+                    # Loop over the stellar components
+                    for component_id in self.ski.get_stellar_component_ids():
+
+                        # Get the stellar component
+                        stellar_component = self.ski.get_stellar_component(component_id)
+
+                        # Get the current value
+                        value = parser(self.ski.get_value_for_path(path, stellar_component))
+
+                        # Set the value
+                        values[parameter_name].append(value)
+
+            # Search in the dust components
+            if parameter_name in free_parameters_relative_dust_component_paths:
+
+                # Determine the relative path to the property and the dust component name
+                path, component_name = free_parameters_relative_dust_component_paths[parameter_name]
+
+                if component_name is not None:
+
+                    # Get the dust component
+                    dust_component = self.ski.get_dust_component(component_name)
+
+                    # Get the current value
+                    value = parser(self.ski.get_value_for_path(path, dust_component))
+
+                    # Set the value
+                    values[parameter_name].append(value)
+
+                else:
+
+                    # Loop over the dust components
+                    for component_id in self.ski.get_dust_component_ids():
+
+                        # Get the dust component
+                        dust_component = self.ski.get_dust_component(component_id)
+
+                        # Get the current value
+                        value = parser(self.ski.get_value_for_path(path, dust_component))
+
+                        # Set the value
+                        values[parameter_name].append(value)
+
+            # Search in instruments
+            if parameter_name in free_parameters_relative_instruments_paths:
+
+                # Determine the relative path to the property and the instrument name
+                path, instrument_name = free_parameters_relative_instruments_paths[parameter_name]
+
+                if instrument_name is not None:
+
+                    # Get the instrument
+                    instrument = self.ski.get_instrument(instrument_name)
+
+                    # Get the current value
+                    value = parser(self.ski.get_value_for_path(path, instrument))
+
+                    # Set the value
+                    values[parameter_name].append(value)
+
+                else:
+
+                    # Loop over the instruments
+                    for instrument_name in self.ski.get_instrument_names():
+
+                        # Get the instruemnt
+                        instrument = self.ski.get_instrument(instrument_name)
+
+                        # Get the current value
+                        value = parser(self.ski.get_value_for_path(path, instrument))
+
+                        # Set the value
+                        values[parameter_name].append(value)
+
+        # Check whether we have only one value for each parameter
+        for parameter_name in self.config.free_parameters:
+
+            # Check if any
+            if len(values[parameter_name]) == 0: raise ValueError("No parameter values for '" + parameter_name + "' were found in the ski file")
+
+            # Check if all equal
+            if not sequences.all_equal(values[parameter_name]): raise ValueError("Parameter values for '" + parameter_name + "' are not equal throughout the ski file")
+
+            # Set the unique real parameter value
+            self.real_parameter_values[parameter_name] = values[parameter_name][0]
+
+        # Debugging
+        log.debug("The real parameter values are: ")
+        log.debug("")
+        for parameter_name in self.real_parameter_values: log.debug(" - " + parameter_name + ": " + stringify.stringify(self.real_parameter_values[parameter_name])[1])
+        log.debug("")
 
 # -----------------------------------------------------------------

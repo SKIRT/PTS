@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import os
 import psutil
 from multiprocessing import Pool
 
@@ -46,6 +47,9 @@ class ParallelTarget(object):
         # Get the process pool
         self.nprocesses = nprocesses
 
+        # The number of completed processes
+        self.ncompleted = 0
+
     # -----------------------------------------------------------------
 
     def __enter__(self):
@@ -54,6 +58,9 @@ class ParallelTarget(object):
         This function ...
         :return:
         """
+
+        # Reset the number of completed processes
+        self.ncompleted = 0
 
         # Initialize the process pool
         self.pool = Pool(processes=self.nprocesses)
@@ -71,9 +78,24 @@ class ParallelTarget(object):
         """
 
         # Launch
-        result = self.pool.apply_async(self.target, args=tuple(args), kwds=kwargs)
+        result = self.pool.apply_async(self.target, args=tuple(args), kwds=kwargs, callback=self.complete)
         output = PendingOutput(result)
         return output
+
+    # -----------------------------------------------------------------
+
+    def complete(self, result):
+
+        """
+        This function ...
+        :param result:
+        :return:
+        """
+
+        #self.results.extend(result)
+        self.ncompleted += 1
+        #print('Progress: {:.2f}%'.format((self.ncompleted / self.nprocesses) * 100))
+        print("Process " + str(self.ncompleted) + " of " + str(self.nprocesses) + " has finished (" + str(self.ncompleted/self.nprocesses*100) + "%)")
 
     # -----------------------------------------------------------------
 
@@ -226,5 +248,12 @@ def virtual_memory():
     """
 
     return float(psutil.virtual_memory().total) * Unit("byte")
+
+# -----------------------------------------------------------------
+
+#def set_(name):
+#    sys.stdout = open(str(os.getpid()) + ".out", "w")
+#    info('function f')
+#    #print 'hello', name
 
 # -----------------------------------------------------------------

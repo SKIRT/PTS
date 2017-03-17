@@ -120,6 +120,9 @@ class M81Test(M81TestBase):
         # 7. Launch reference simulation
         self.launch_reference()
 
+        # Get the real parameter values
+        self.get_real_parameter_values()
+
         # 10. Setup modelling
         self.setup_modelling()
 

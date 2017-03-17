@@ -372,7 +372,7 @@ class ObservedSED(FilterCurve):
 
     # -----------------------------------------------------------------
 
-    def errors(self, unit=None, add_unit=True):
+    def errors(self, unit=None, add_unit=True, narrow=True):
 
         """
         This function ...

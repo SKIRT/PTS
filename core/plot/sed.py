@@ -320,11 +320,11 @@ class SEDPlotter(Configurable):
         observation = self.observations[self.observations.keys()[0]]
 
         # Get wavelengths, fluxes, instruments, bands, errors
-        wavelengths = observation.wavelengths(unit="micron", add_unit=False)
-        fluxes = observation.photometry(unit="Jy", add_unit=False)
-        instruments = observation.instruments()
-        bands = observation.bands()
-        errors = observation.errors(unit="Jy", add_unit=False)
+        wavelengths = observation.wavelengths(unit="micron", add_unit=False, narrow=False)
+        fluxes = observation.photometry(unit="Jy", add_unit=False, narrow=False)
+        instruments = observation.instruments(narrow=False)
+        bands = observation.bands(narrow=False)
+        errors = observation.errors(unit="Jy", add_unit=False, narrow=False)
 
         # Create colors
         colors = colormap(np.linspace(0, 1, len(wavelengths)))

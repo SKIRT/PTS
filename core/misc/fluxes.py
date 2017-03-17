@@ -72,6 +72,9 @@ class ObservedFluxCalculator(Configurable):
         # Instrument names
         self.instrument_names = None
 
+        # The errors for the different filters
+        self.errors = None
+
         # The filters for which the fluxes should be calculated
         self.filters = None
 
@@ -126,6 +129,7 @@ class ObservedFluxCalculator(Configurable):
         output_path = kwargs.pop("output_path", None)
         filter_names = kwargs.pop("filter_names", None)
         instrument_names = kwargs.pop("instrument_names", None)
+        errors = kwargs.pop("errors", None)
 
         # Obtain the paths to the SED files created by the simulation
         self.sed_paths = simulation.seddatpaths()
@@ -141,6 +145,9 @@ class ObservedFluxCalculator(Configurable):
 
         # Set the instrument names
         self.instrument_names = instrument_names
+
+        # Set the errors
+        self.errors = errors
 
         # Set output path
         self.config.output = output_path

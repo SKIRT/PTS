@@ -63,6 +63,11 @@ def stringify(value, scientific=False, decimal_places=2):
         ptype, val = stringify_not_list(value[0])
         return ptype + "_array", ",".join([repr(el) for el in value])
 
+    elif type(value).__name__ == "MaskedColumn":
+
+        ptype, val = stringify_not_list(value[0])
+        return ptype + "_array", ",".join([repr(el) for el in value])
+
     # Tuple or derived from tuple
     elif isinstance(value, tuple):
 

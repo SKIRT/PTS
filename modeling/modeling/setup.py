@@ -37,7 +37,7 @@ galaxy_modeling_definition.add_required("method", "string", "method to use for t
 
 # Define the sed modeling configuration definition
 sed_modeling_definition = ConfigurationDefinition()
-sed_modeling_definition.add_required("ski", "file_path", "path/name of the template ski file")
+sed_modeling_definition.add_positional_optional("ski", "file_path", "path/name of the template ski file")
 sed_modeling_definition.add_flag("use_sed_file", "import an SED file produced with PTS (instead of manually entering the flux points)", False)
 
 # -----------------------------------------------------------------

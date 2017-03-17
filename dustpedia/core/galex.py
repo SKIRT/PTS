@@ -568,6 +568,12 @@ class GALEXMosaicMaker(Configurable):
             background_path = self.download_background_paths[band]
             reproject_path = self.reproject_paths[band]
 
+            # Debugging
+            log.debug("Response path: " + response_path)
+            log.debug("Convolve path: " + convolve_path)
+            log.debug("Background path: " + background_path)
+            log.debug("Reproject path: " + reproject_path)
+
             # Parallel execution
             with ParallelTarget(clean_galex_tile, self.config.nprocesses) as target:
 
@@ -590,6 +596,8 @@ class GALEXMosaicMaker(Configurable):
 
         # Inform the user
         log.info("Peforming background-leveling on the observations ...")
+
+        print("Performing background-leveling on the observations ...")
 
         target_suffix = "int.fits"
 
@@ -1231,6 +1239,8 @@ def clean_galex_tile(raw_file_path, response_path, convolve_path, background_pat
     # Inform the user ...
     log.info("Cleaning map " + raw_file_path + " ...")
 
+    print("Cleaning map " + raw_file_path + " ...")
+
     # Create subdirectories
     #temp_raw_path = fs.create_directory_in(temp_path_band, "raw")
     #temp_convolve_path = fs.create_directory_in(temp_path_band, "convolve")
@@ -1245,6 +1255,8 @@ def clean_galex_tile(raw_file_path, response_path, convolve_path, background_pat
 
     # Load and align response map
     rr_path = fs.join(response_path, raw_file_name.replace('-int.fits','-rr.fits'))
+    print("rr_path: " + rr_path)
+    if not fs.is_file(rr_path): print("NOT PRESENT")
     rr_fitsdata = open_fits(rr_path)
     rr_image = rr_fitsdata[0].data
     rr_zoom = np.float(out_image.shape[0]) / np.float(rr_image.shape[0])
@@ -1255,13 +1267,15 @@ def clean_galex_tile(raw_file_path, response_path, convolve_path, background_pat
 
     # Load and align sky background map
     bg_path = fs.join(background_path, raw_file_name.replace('-int.fits','-skybg.fits'))
+    print("bg_path: " + bg_path)
+    if not fs.is_file(bg_path): print("NOT PRESENT")
     bg_fitsdata = open_fits(bg_path)
     bg_image = bg_fitsdata[0].data
     bg_zoom = np.float(out_image.shape[0]) / np.float(bg_image.shape[0])
     bg_image = interpolation.zoom(bg_image, bg_zoom, order=0)
 
     # Clean image using sky background map
-    out_image[ np.where( bg_image <= 1E-10 ) ] = np.NaN
+    out_image[np.where(bg_image <= 1E-10)] = np.NaN
 
     """
     # Load and align flag map
@@ -1305,11 +1319,13 @@ def clean_galex_tile(raw_file_path, response_path, convolve_path, background_pat
     else:
     """
 
+    # Do the convolution
     kernel = Tophat2DKernel(10)
     conv_image = convolve_fft(out_image, kernel, interpolate_nan=False, normalize_kernel=True, ignore_edge_zeros=False, allow_huge=True) #, interpolate_nan=True, normalize_kernel=True)
 
-    # Write
+    # Write the convolved map
     temp_convolve_image_path = fs.join(convolve_path, raw_file_name)                  ## NEW
+    print("Writing convolved map to " + temp_convolve_image_path)
     if fs.is_file(temp_convolve_image_path): fs.remove_file(temp_convolve_image_path) ## NEW
     writeto(temp_convolve_image_path, conv_image, in_header)
 
@@ -1319,10 +1335,11 @@ def clean_galex_tile(raw_file_path, response_path, convolve_path, background_pat
     exp_hdu = PrimaryHDU(data=exp_image, header=in_header)
     exp_hdulist = HDUList([exp_hdu])
 
-    # Write
-    temp_reproject_image_path = fs.join(reproject_path, raw_file_name.replace('.fits','.wgt.fits'))  ## NEW
-    if fs.is_file(temp_reproject_image_path): fs.remove_file(temp_reproject_image_path)              ## NEW
-    exp_hdulist.writeto(temp_reproject_image_path)
+    # Write the weight map
+    temp_reproject_weight_path = fs.join(reproject_path, raw_file_name.replace('.fits','.wgt.fits'))  ## NEW
+    print("Writing weight map to " + temp_reproject_weight_path)
+    if fs.is_file(temp_reproject_weight_path): fs.remove_file(temp_reproject_weight_path)              ## NEW
+    exp_hdulist.writeto(temp_reproject_weight_path)
 
 # -----------------------------------------------------------------
 

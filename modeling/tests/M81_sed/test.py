@@ -11,7 +11,6 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import inspect
 import numpy as np
-from collections import defaultdict
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
@@ -25,15 +24,8 @@ from pts.modeling.tests.base import instrument_name, free_parameters_absolute_pa
 from pts.modeling.tests.base import free_parameters_relative_stellar_component_paths, free_parameters_relative_dust_component_paths
 from pts.modeling.tests.base import free_parameters_relative_instruments_paths, free_parameter_types
 from pts.core.data.sed import ObservedSED
-from pts.core.tools import parsing, stringify
-from pts.core.tools import sequences
+from pts.core.tools import stringify
 from pts.core.basics.quantity import parse_angle
-
-# -----------------------------------------------------------------
-
-# Determine path of this directory
-this_path = fs.absolute_path(inspect.stack()[0][1])
-this_dir_path = fs.directory_of(this_path)
 
 # -----------------------------------------------------------------
 
@@ -78,9 +70,6 @@ class M81SEDTest(M81TestBase):
         # The observed SED
         self.observed_sed = None
 
-        # The real parameter values
-        self.real_parameter_values = dict()
-
         # The initial parameter values for the fitting
         self.initial_parameter_values = dict()
 
@@ -103,49 +92,49 @@ class M81SEDTest(M81TestBase):
         # 3. Load the components
         self.load_components()
 
-        # Load the input maps
+        # 4. Load the input maps
         self.load_maps()
 
-        # Create instrument
+        # 5. Create instrument
         self.create_instrument()
 
-        # Create deprojection
+        # 6. Create deprojection
         self.create_deprojections()
 
-        # Create the wavelength grid
+        # 7. Create the wavelength grid
         self.create_wavelength_grid()
 
-        # Create the dust grid
+        # 8. Create the dust grid
         self.create_dust_grid()
 
-        # Create the ski file
+        # 9. Create the ski file
         self.create_ski()
 
-        # Write
+        # 10. Write
         self.write()
 
-        # Plot
+        # 11. Plot
         self.plot()
 
-        # Launch the reference simulation
+        # 12. Launch the reference simulation
         self.launch_reference()
 
-        # Get the real parameter values
+        # 13. Get the real parameter values
         self.get_real_parameter_values()
 
-        # Generate the initial parameter values
+        # 14. Generate the initial parameter values
         self.generate_initial_parameter_values()
 
-        # Create the ski file template
+        # 15. Create the ski file template
         self.create_template()
 
-        # Load the observed SED
+        # 16. Load the observed SED
         self.load_observed_sed()
 
-        # Setup the modeling
+        # 17. Setup the modeling
         self.setup_modelling()
 
-        # Model
+        # 18. Model
         self.model()
 
     # -----------------------------------------------------------------
@@ -254,151 +243,6 @@ class M81SEDTest(M81TestBase):
         # Launch command
         launch = Command("launch_simulation", "launch the reference simulation", settings_launch, input_launch, cwd=".")
         self.launcher = self.run_command(launch)
-
-    # -----------------------------------------------------------------
-
-    def get_real_parameter_values(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Getting the real parameter values ...")
-
-        # Store the different values encountered in the ski file
-        values = defaultdict(list)
-
-        # Add the labels for the free parameters
-        # Loop over the free parameters
-        for parameter_name in self.config.free_parameters:
-
-            # Get the parsing function for this parameter
-            parser = getattr(parsing, free_parameter_types[parameter_name])
-
-            # Search in the absolute parameters
-            if parameter_name in free_parameters_absolute_paths:
-
-                # Determine the path to the property
-                path = free_parameters_absolute_paths
-
-                # Get the current value
-                value = parser(self.ski.get_value_for_path(path))
-
-                # Set the value
-                values[parameter_name].append(value)
-
-            # Search in the stellar components
-            if parameter_name in free_parameters_relative_stellar_component_paths:
-
-                # Determine the relative path to the property and the stellar component name
-                path, component_name = free_parameters_relative_stellar_component_paths[parameter_name]
-
-                if component_name is not None:
-
-                    # Get the stellar component
-                    stellar_component = self.ski.get_stellar_component(component_name)
-
-                    # Get the current value
-                    value = parser(self.ski.get_value_for_path(path, stellar_component))
-
-                    # Set the value
-                    values[parameter_name].append(value)
-
-                else:
-
-                    # Loop over the stellar components
-                    for component_id in self.ski.get_stellar_component_ids():
-
-                        # Get the stellar component
-                        stellar_component = self.ski.get_stellar_component(component_id)
-
-                        # Get the current value
-                        value = parser(self.ski.get_value_for_path(path, stellar_component))
-
-                        # Set the value
-                        values[parameter_name].append(value)
-
-            # Search in the dust components
-            if parameter_name in free_parameters_relative_dust_component_paths:
-
-                # Determine the relative path to the property and the dust component name
-                path, component_name = free_parameters_relative_dust_component_paths[parameter_name]
-
-                if component_name is not None:
-
-                    # Get the dust component
-                    dust_component = self.ski.get_dust_component(component_name)
-
-                    # Get the current value
-                    value = parser(self.ski.get_value_for_path(path, dust_component))
-
-                    # Set the value
-                    values[parameter_name].append(value)
-
-                else:
-
-                    # Loop over the dust components
-                    for component_id in self.ski.get_dust_component_ids():
-
-                        # Get the dust component
-                        dust_component = self.ski.get_dust_component(component_id)
-
-                        # Get the current value
-                        value = parser(self.ski.get_value_for_path(path, dust_component))
-
-                        # Set the value
-                        values[parameter_name].append(value)
-
-            # Search in instruments
-            if parameter_name in free_parameters_relative_instruments_paths:
-
-                # Determine the relative path to the property and the instrument name
-                path, instrument_name = free_parameters_relative_instruments_paths[parameter_name]
-
-                if instrument_name is not None:
-
-                    # Get the instrument
-                    instrument = self.ski.get_instrument(instrument_name)
-
-                    # Get the current value
-                    value = parser(self.ski.get_value_for_path(path, instrument))
-
-                    # Set the value
-                    values[parameter_name].append(value)
-
-                else:
-
-                    # Loop over the instruments
-                    for instrument_name in self.ski.get_instrument_names():
-
-                        # Get the instruemnt
-                        instrument = self.ski.get_instrument(instrument_name)
-
-                        # Get the current value
-                        value = parser(self.ski.get_value_for_path(path, instrument))
-
-                        # Set the value
-                        values[parameter_name].append(value)
-
-        # Check whether we have only one value for each parameter
-        for parameter_name in self.config.free_parameters:
-
-            # Check if any
-            if len(values[parameter_name]) == 0: raise ValueError("No parameter values for '" + parameter_name + "' were found in the ski file")
-
-            # Check if all equal
-            if not sequences.all_equal(values[parameter_name]): raise ValueError("Parameter values for '" + parameter_name + "' are not equal throughout the ski file")
-
-            # Set the unique real parameter value
-            self.real_parameter_values[parameter_name] = values[parameter_name][0]
-
-        # Debugging
-        log.debug("The real parameter values are: ")
-        log.debug("")
-        for parameter_name in self.real_parameter_values: log.debug(" - " + parameter_name + ": " + stringify.stringify(self.real_parameter_values[parameter_name])[1])
-        log.debug("")
 
     # -----------------------------------------------------------------
 
@@ -654,6 +498,21 @@ class M81SEDTest(M81TestBase):
         settings_model["ngenerations"] = self.config.ngenerations
         settings_model["nsimulations"] = self.config.nsimulations
         settings_model["fitting_settings"] = {"spectral_convolution": False}
+
+        # Input
+        input_model = dict()
+
+        # Set galaxy properties
+        input_model["properties"] = self.properties
+
+        # Set SEDs
+        #input_model["seds"] = dict()
+
+        # Construct the command
+        command = Command("model", "perform the modelling", settings_model, input_model, "./" + self.galaxy_name)
+
+        # Run the command
+        self.modeler = self.run_command(command)
 
 # -----------------------------------------------------------------
 
