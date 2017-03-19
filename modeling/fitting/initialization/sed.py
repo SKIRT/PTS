@@ -99,6 +99,9 @@ class SEDFittingInitializer(FittingComponent, SEDModelingComponent):
         FittingComponent.setup(self, **kwargs)
         SEDModelingComponent.setup(self, **kwargs)
 
+        # Load the fitting run
+        self.fitting_run = self.load_fitting_run(self.config.name)
+
         # Create a WavelengthGridGenerator
         self.wg_generator = WavelengthGridGenerator()
 
