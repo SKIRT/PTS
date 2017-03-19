@@ -94,9 +94,9 @@ possible_parameter_types_descriptions["pressure"] = "pressure (default unit: " +
 
 parsing_types_for_parameter_types = dict()
 parsing_types_for_parameter_types["dimless"] = "real"
-parsing_types_for_parameter_types["mass"] = "quantity"
-parsing_types_for_parameter_types["grainsize"] = "quantity"
-parsing_types_for_parameter_types["length"] = "quantity"
+parsing_types_for_parameter_types["mass"] = "mass_quantity"
+parsing_types_for_parameter_types["grainsize"] = "length_quantity"
+parsing_types_for_parameter_types["length"] = "length_quantity"
 parsing_types_for_parameter_types["angle"] = "angle"
 parsing_types_for_parameter_types["posangle"] = "angle"
 parsing_types_for_parameter_types["luminosity"] = "photometric_quantity"

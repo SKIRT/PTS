@@ -89,7 +89,7 @@ def stringify(value, scientific=False, decimal_places=2):
     #elif isinstance(value, np.ndarray) and not isinstance(value, Quantity):
     #elif introspection.try_importing_module("numpy", True) and (isinstance(value, np.ndarray) and not hasattr(value, "unit")):
     # WE ALSO TEST IF THIS IS NOT A NUMPY INTEGER, FLOAT OR BOOLEAN (because they have a __array__ attribute)
-    elif hasattr(value, "__array__") and not hasattr(value, "unit") and not types.is_boolean_type(value) and not types.is_integer_type(value) and not types.is_real_type(value):
+    elif hasattr(value, "__array__") and not hasattr(value, "unit") and not types.is_boolean_type(value) and not types.is_integer_type(value) and not types.is_real_type(value) and not types.is_string_type(value):
 
         ptype, val = stringify_not_list(value[0])
         return ptype + "_array", ",".join([repr(el) for el in value])

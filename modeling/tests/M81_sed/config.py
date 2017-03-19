@@ -9,6 +9,7 @@
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.remote.host import find_host_ids
 from pts.modeling.tests.base import possible_free_parameters, default_free_parameters
+from pts.modeling.fitting.configuration import genetic_definition
 
 # -----------------------------------------------------------------
 
@@ -35,11 +36,16 @@ definition.add_optional("nsimulations", "positive_integer", "number of simulatio
 
 # Free parameters
 definition.add_optional("free_parameters", "string_list", "free parameter labels", choices=possible_free_parameters, default=default_free_parameters)
+definition.add_optional("relative_range_initial", "real_range", "relative range for generating the initial parameter values", default="0.3>3", convert_default=True)
+definition.add_optional("relative_range_fitting", "real_range", "relative range of the free parameter values for the fitting", default="0.1>20", convert_default=True)
 
 # Wavelength grid
 definition.add_optional("wavelength_range", "quantity_range", "range of wavelengths", "0.1 micron > 2000 micron", convert_default=True)
 
 # Dust grid
 definition.add_optional("physical_domain_disk_ellipse_factor", "positive_real", "factor of the disk ellipse region to take as the physical domain of the model", 0.82)
+
+# Genetic section
+definition.import_section("genetic", "genetic algorithm options", genetic_definition)
 
 # -----------------------------------------------------------------

@@ -196,6 +196,18 @@ class SkiFile:
             fluxstyle = 'neutral'
         return SkirtUnits(unitsystem, fluxstyle)
 
+    @property
+    def uses_wavelength_file(self):
+        grid = self.get_wavelength_grid()
+        return grid.tag == "FileWavelengthGrid"
+
+    ## This function returns the number of wavelengths, either defined by the ski file, or from the input wavelengths file
+    def get_nwavelengths(self, input_path=None):
+        if self.uses_wavelength_file:
+            if input_path is None: raise ValueError("Wavelengths are defined in a file but input path was not specified")
+            return self.nwavelengthsfile(input_path)
+        else: return self.nwavelengths()
+
     ## This function returns the number of wavelengths for oligochromatic or panchromatic simulations
     def nwavelengths(self):
         # Try to get the list of wavelengths from the ski file
@@ -211,22 +223,27 @@ class SkiFile:
             return int(entry.get("points"))
 
     ## This function returns the name of the wavelengths file that is used for the simulation, if any
-    def wavelengthsfile(self):
+    def wavelengthsfile(self, input_path=None):
         entry = self.tree.xpath("//FileWavelengthGrid")
-        if entry: return entry[0].get("filename")
+        if entry:
+            #return entry[0].get("filename")
+            filename = entry[0].get("filename")
+            if input_path is not None:
+                if isinstance(input_path, list):
+                    for path in input_path:
+                        if os.path.basename(path) == filename:
+                            wavelengths_path = path
+                            break
+                    else: raise ValueError("The list of input paths does not contain the path to the wavelengths file")
+                else: wavelengths_path = os.path.join(input_path, filename)
+            else: wavelengths_path = filename
+            return wavelengths_path
         else: return None
 
     ## This function returns the number of wavelength points as defined in the wavelengths file
     def nwavelengthsfile(self, input_path):
-        wavelengths_filename = self.wavelengthsfile()
-        if isinstance(input_path, list):
-            for path in input_path:
-                if os.path.basename(path) == wavelengths_filename:
-                    wavelengths_path = path
-                    break
-            else: raise ValueError("The list of input paths does not contain the path to the wavelengths file")
-        else: wavelengths_path = os.path.join(input_path, wavelengths_filename)
-        with open(wavelengths_path, 'r') as f: first_line = f.readline()
+        path = self.wavelengthsfile(input_path)
+        with open(path, 'r') as f: first_line = f.readline()
         nwavelengths = int(first_line.split("\n")[0])
         return nwavelengths
 
@@ -1647,7 +1664,6 @@ class SkiFile:
 
     ## This function returns the wavelength grid
     def get_wavelength_grid(self):
-
         # Get the wavelength grid
         return self.get_unique_base_element("wavelengthGrid")
 
@@ -1659,6 +1675,37 @@ class SkiFile:
 
     def minwavelength(self):
         return self.get_quantity(self.get_wavelength_grid(), "minWavelength")
+
+    ## This function returns a list of the wavelengths as Quantities, sorted from lowest to highest
+    def get_wavelengths(self, input_path):
+
+        from .wavelengthgrid import WavelengthGrid
+        from ..basics.unit import parse_unit as u
+
+        # Wavelengths file
+        if self.uses_wavelength_file:
+
+            # Determine wavelengths file path
+            path = self.wavelengthsfile(input_path)
+
+            # Load the wavelength grid
+            grid = WavelengthGrid.from_skirt_input(path)
+
+            # Return the wavelengths as a list
+            return sorted(grid.wavelengths(unit="micron"))
+
+        # Wavelengths defined in ski file
+        else: return sorted([wavelength * u("micron") for wavelength in self.wavelengths()])
+
+    ## This function returns the minimum wavelength in the grid, but also works when the wavelengths are defined in a file
+    def get_min_wavelength(self, input_path):
+        wavelengths = self.get_wavelengths(input_path)
+        return wavelengths[0]
+
+    ## This function returns the maximum wavelength in the grid, but also works when the wavelengths are defined in a file
+    def get_max_wavelength(self, input_path):
+        wavelengths = self.get_wavelengths(input_path)
+        return wavelengths[-1]
 
     @property
     def min_wavelength(self):

@@ -58,3 +58,16 @@ def is_real_type(value):
     else: return isinstance(value, float)
 
 # -----------------------------------------------------------------
+
+def is_string_type(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    if HAS_NP: return isinstance(value, basestring) or isinstance(value, np.string_)
+    else: return isinstance(value, basestring)
+
+# -----------------------------------------------------------------

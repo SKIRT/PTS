@@ -18,7 +18,7 @@ from ...core.tools.logging import log
 from ...magic.tools.catalogs import get_ngc_name, get_hyperleda_name
 from ...core.tools import filesystem as fs
 from ..component.component import get_config_file_path
-from ..component.sed import get_observed_sed_file_path, get_ski_template_path
+from ..component.sed import get_observed_sed_file_path, get_ski_template_path, get_ski_input_path
 from ...core.basics.configuration import Configuration, ConfigurationDefinition, InteractiveConfigurationSetter, DictConfigurationSetter
 from .galaxy import modeling_methods
 from ...core.remote.host import find_host_ids
@@ -39,13 +39,15 @@ galaxy_modeling_definition.add_required("method", "string", "method to use for t
 sed_modeling_definition = ConfigurationDefinition()
 sed_modeling_definition.add_positional_optional("ski", "file_path", "path/name of the template ski file")
 sed_modeling_definition.add_flag("use_sed_file", "import an SED file produced with PTS (instead of manually entering the flux points)", False)
+sed_modeling_definition.add_optional("input", "directory_path", "path/name of the ski input directory")
 
 # -----------------------------------------------------------------
 
 # Define the image modeling configuration definition
 images_modeling_definition = ConfigurationDefinition()
-images_modeling_definition.add_required("ski", "file_path", "path/name of the template ski file")
+images_modeling_definition.add_positional_optional("ski", "file_path", "path/name of the template ski file")
 images_modeling_definition.add_required("images", "filepath_list", "the observed images to be used as reference", dynamic_list=True)
+images_modeling_definition.add_optional("input", "directory_path", "path/name of the ski input directory")
 
 # -----------------------------------------------------------------
 
@@ -89,6 +91,9 @@ class ModelingSetupTool(Configurable):
 
         # The ski template
         self.ski = None
+
+        # Input required for the ski file
+        self.ski_input = None
 
         # The modeling environment
         self.environment = None
@@ -181,6 +186,7 @@ class ModelingSetupTool(Configurable):
         if "sed" in kwargs: self.sed = kwargs.pop("sed")
         if "images" in kwargs: self.images = kwargs.pop("images")
         if "ski" in kwargs: self.ski = kwargs.pop("ski")
+        if "ski_input" in kwargs: self.ski_input = kwargs.pop("ski_input")
 
         # Get provided name info
         self.ngc_name = kwargs.pop("ngc_name", None)
@@ -505,6 +511,9 @@ class ModelingSetupTool(Configurable):
         # Load the ski template
         if (self.sed_modeling or self.images_modeling) and self.ski is None: self.load_ski()
 
+        # Load the input
+        if self.sed_modeling or self.images_modeling: self.load_ski_input()
+
         # Load the images
         if self.images_modeling and self.images is None: self.load_images()
 
@@ -568,6 +577,28 @@ class ModelingSetupTool(Configurable):
 
     # -----------------------------------------------------------------
 
+    def load_ski_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the ski input ...")
+
+        # If no input is required
+        if not self.ski.needs_input: self.ski_input = None
+
+        # If input is required
+        else:
+
+            if self.ski_input is not None: self.ski_input = self.ski.input_paths(self.ski_input)
+            elif self.object_config.input is not None: self.ski_input = self.ski.input_paths(self.object_config.input)
+            else: raise ValueError("Input is required for the ski file but input path(s) not specified")
+
+    # -----------------------------------------------------------------
+
     def load_images(self):
 
         """
@@ -598,6 +629,9 @@ class ModelingSetupTool(Configurable):
 
         # Write the ski template
         if self.sed_modeling or self.images_modeling: self.write_ski()
+
+        # Write the ski input
+        if (self.sed_modeling or self.images_modeling) and self.ski_input is not None: self.write_ski_input()
 
         # Write the images
         if self.images_modeling: self.write_images()
@@ -655,6 +689,45 @@ class ModelingSetupTool(Configurable):
 
         # Save the ski template
         self.ski.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_ski_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the ski input ...")
+
+        # Determine the path
+        path = get_ski_input_path(self.modeling_path)
+
+        # Create the input directory
+        fs.create_directory(path)
+
+        # Create list of the new file paths
+        new_ski_input = []
+
+        # Save the input
+        for filepath in self.ski_input:
+
+            # Determine the filename
+            filename = fs.name(filepath)
+
+            # Determine new path
+            new_filepath = fs.join(path, filename)
+
+            # Copy the file
+            fs.copy_file(filepath, path)
+
+            # Add the new file path to the list
+            new_ski_input.append(new_filepath)
+
+        # Set
+        self.ski_input = new_ski_input
 
     # -----------------------------------------------------------------
 

@@ -9,7 +9,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import inspect
 import numpy as np
 
 # Import the relevant PTS classes and modules
@@ -28,6 +27,9 @@ from pts.core.tools import stringify
 from pts.core.basics.quantity import parse_angle
 from pts.modeling.tests.base import seds_path, dustpedia_sed_path
 from pts.core.tools import sequences
+from pts.core.basics.map import Map
+from pts.modeling.tests.base import free_parameter_descriptions, free_parameter_units
+from pts.core.basics.configuration import PassiveConfigurationSetter
 
 # -----------------------------------------------------------------
 
@@ -265,8 +267,8 @@ class M81SEDTest(M81TestBase):
         # Inform the user
         log.info("Generating random initial parameter values ...")
 
-        low_factor = 0.3
-        high_factor = 3.
+        low_factor = self.config.relative_range_initial.min
+        high_factor = self.config.relative_range_initial.max
 
         # Determine the exponents, to generate random points
         log_low = np.log10(low_factor)
@@ -281,7 +283,7 @@ class M81SEDTest(M81TestBase):
             # Multiply the value with a random number between 1/3 and 3.
             random = np.random.uniform(log_low, log_high)
             random_factor = 10 ** random
-            value = value * random_factor
+            value *= random_factor
 
             # Set the value as the initial parameter value
             self.initial_parameter_values[parameter_name] = value
@@ -474,15 +476,16 @@ class M81SEDTest(M81TestBase):
         settings_setup["name"] = self.galaxy_name
         settings_setup["fitting_host_ids"] = None
 
-        # Create object config
-        object_config = dict()
-        #object_config["ski"] = ski_path
-
         # Create input dict for setup
         input_setup = dict()
-        input_setup["object_config"] = object_config
         input_setup["sed"] = self.observed_sed
         input_setup["ski"] = self.ski_template
+        input_setup["ski_input"] = self.simulation_input_path
+
+        # Create object config
+        object_config = dict()
+        # object_config["ski"] = ski_path
+        input_setup["object_config"] = object_config
 
         # Construct the command
         stp = Command("setup", "setup the modeling", settings_setup, input_setup, cwd=".")
@@ -516,6 +519,41 @@ class M81SEDTest(M81TestBase):
 
         # Set SEDs
         #input_model["seds"] = dict()
+
+        # Create descriptions config
+        descriptions_config = Map(descriptions=free_parameter_descriptions)
+        input_model["descriptions_config"] = descriptions_config
+
+        # Create types config
+        types_config = Map(types=free_parameter_types)
+        input_model["types_config"] = types_config
+
+        # Create units config
+        units_config = Map(units=free_parameter_units)
+        input_model["units_config"] = units_config
+
+        # Create filters config
+        filters_config = Map(filters=fitting_filter_names)
+        input_model["filters_config"] = filters_config
+
+        # Create genetic config
+        #setter = PassiveConfigurationSetter("genetic", add_logging=False, add_cwd=False)
+        #genetic_config = setter.run(genetic_definition)
+        input_model["genetic_config"] = self.config.genetic
+
+        # Create ranges config
+        ranges_config = Map()
+        for parameter_name in self.config.free_parameters:
+            # Define range
+            ranges_config[parameter_name + "_range"] = self.config.relative_range_fitting * self.real_parameter_values[parameter_name]
+        input_model["ranges_config"] = ranges_config
+
+        # Create initialize config
+        initialize_config = Map()
+        initialize_config.npackages = 1e4
+        initialize_config.selfabsorption = True
+        initialize_config.transient_heating = False
+        input_model["initialize_config"] = initialize_config
 
         # Construct the command
         command = Command("model", "perform the modelling", settings_model, input_model, "./" + self.galaxy_name)

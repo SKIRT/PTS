@@ -2570,8 +2570,105 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         #
         log.info("Press ENTER to use the default value (" + stringify.stringify(default)[1] + ")")
 
+        # Choices are not given
+        if choices_list is None:
+
+            # List-typ setting
+            if real_type.__name__.endswith("_list"):  # list-type setting
+
+                # Dynamic list
+                if dynamic_list:
+
+                    log.info(
+                        "or provide other values. Enter a value and press ENTER. To end the list, leave blank and press ENTER.")
+
+                    real_base_type = getattr(parsing, real_type.__name__.split("_list")[0])
+
+                    # Construct type
+                    the_type = construct_type(real_base_type, min_value, max_value, forbidden)
+
+                    # Show suggestions
+                    if suggestions is not None:
+                        log.info("Suggestions:")
+                        for suggestion in suggestions:
+                            suggestion_description = suggestions[suggestion]
+                            log.info(" - " + suggestion + ": " + suggestion_description)
+
+                    value = []  # to remove warning
+                    while True:
+                        answer = raw_input("   : ")
+                        if answer == "":
+                            break  # end of list
+                        else:
+                            try:
+                                # single_value = real_type(answer)
+                                single_value = the_type(answer)
+                                value.append(single_value)
+                            except ValueError, e:
+                                log.warning("Invalid input: " + str(e) + ". Try again.")
+
+                # Not a dynamic list
+                else:
+
+                    log.info("or provide other values, separated by commas")
+
+                    # Construct type
+                    the_type = construct_type(real_type, min_value, max_value, forbidden)
+
+                    # Show suggestions
+                    if suggestions is not None:
+                        log.info("Suggestions:")
+                        for suggestion in suggestions:
+                            suggestion_description = suggestions[suggestion]
+                            log.info(" - " + suggestion + ": " + suggestion_description)
+
+                    value = default  # to remove warning from IDE that value could be referenced (below) without assignment
+                    while True:
+                        answer = raw_input("   : ")
+                        if answer == "":
+                            value = default
+                            break
+                        else:
+                            try:
+                                # value = real_type(answer)
+                                value = the_type(answer)
+                                break
+                            except ValueError, e:
+                                log.warning("Invalid input: " + str(e) + ". Try again.")
+
+            # Not a list
+            else:
+
+                log.info("or provide another value")
+
+                # Construct type
+                the_type = construct_type(real_type, min_value, max_value, forbidden)
+
+                # Show suggestions
+                if suggestions is not None:
+                    log.info("Suggestions:")
+                    for suggestion in suggestions:
+                        suggestion_description = suggestions[suggestion]
+                        log.info(" - " + suggestion + ": " + suggestion_description)
+
+                value = default  # to remove warning from IDE that value could be referenced (below) without assignment
+                while True:
+                    answer = raw_input("   : ")
+                    if answer == "":
+                        value = default
+                        break
+                    else:
+                        try:
+                            # value = real_type(answer)
+                            value = the_type(answer)
+                            break
+                        except ValueError, e:
+                            log.warning("Invalid input: " + str(e) + ". Try again.")
+
         # Choices are given
-        if choices_list is not None:
+        #if choices_list is not None:
+        # More than one choice or no default
+        elif len(choices) > 1 or default is None:
 
             # List-type setting
             if real_type.__name__.endswith("_list"):  # list-type setting
@@ -2620,95 +2717,38 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                             break
                         except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
-        # No choices
+        # Exactly one choice AND a default value
         else:
 
-            # List-typ setting
+            # List-type setting
             if real_type.__name__.endswith("_list"):  # list-type setting
 
-                # Dynamic list
-                if dynamic_list:
-
-                    log.info("or provide other values. Enter a value and press ENTER. To end the list, leave blank and press ENTER.")
-
-                    real_base_type = getattr(parsing, real_type.__name__.split("_list")[0])
-
-                    # Construct type
-                    the_type = construct_type(real_base_type, min_value, max_value, forbidden)
-
-                    # Show suggestions
-                    if suggestions is not None:
-                        log.info("Suggestions:")
-                        for suggestion in suggestions:
-                            suggestion_description = suggestions[suggestion]
-                            log.info(" - " + suggestion + ": " + suggestion_description)
-
-                    value = [] # to remove warning
-                    while True:
-                        answer = raw_input("   : ")
-                        if answer == "": break # end of list
-                        else:
-                            try:
-                                #single_value = real_type(answer)
-                                single_value = the_type(answer)
-                                value.append(single_value)
-                            except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
-
-                # Not a dynamic list
+                if isinstance(choices, dict):
+                    log.info("Only one option: automatically using a list of this value '[" + str(
+                        choices.keys()[0]) + "]' for " + name)
+                    value = [choices.keys()[0]]
+                    assert value == default
                 else:
+                    # Inform the user
+                    log.info("Only one option: automatically using a list of this value '[" + str(
+                        choices[0]) + "]' for " + name)
+                    value = [choices[0]]
+                    assert value == default
 
-                    log.info("or provide other values, separated by commas")
-
-                    # Construct type
-                    the_type = construct_type(real_type, min_value, max_value, forbidden)
-
-                    # Show suggestions
-                    if suggestions is not None:
-                        log.info("Suggestions:")
-                        for suggestion in suggestions:
-                            suggestion_description = suggestions[suggestion]
-                            log.info(" - " + suggestion + ": " + suggestion_description)
-
-                    value = default  # to remove warning from IDE that value could be referenced (below) without assignment
-                    while True:
-                        answer = raw_input("   : ")
-                        if answer == "":
-                            value = default
-                            break
-                        else:
-                            try:
-                                #value = real_type(answer)
-                                value = the_type(answer)
-                                break
-                            except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
-
-            # Not a list
+            # Single-value setting
             else:
 
-                log.info("or provide another value")
-
-                # Construct type
-                the_type = construct_type(real_type, min_value, max_value, forbidden)
-
-                # Show suggestions
-                if suggestions is not None:
-                    log.info("Suggestions:")
-                    for suggestion in suggestions:
-                        suggestion_description = suggestions[suggestion]
-                        log.info(" - " + suggestion + ": " + suggestion_description)
-
-                value = default  # to remove warning from IDE that value could be referenced (below) without assignment
-                while True:
-                    answer = raw_input("   : ")
-                    if answer == "":
-                        value = default
-                        break
-                    else:
-                        try:
-                            #value = real_type(answer)
-                            value = the_type(answer)
-                            break
-                        except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+                if isinstance(choices, dict):
+                    # Inform the user
+                    log.info(
+                        "Only one option: automatically using value of '" + str(choices.keys()[0]) + "' for " + name)
+                    value = choices.keys()[0]
+                    assert value == default
+                else:
+                    # Inform the user
+                    log.info("Only one option: automatically using value of '" + str(choices[0]) + "' for " + name)
+                    value = choices[0]
+                    assert value == default
 
         # Set the value
         config[name] = value
@@ -2746,8 +2786,106 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         #
         log.info("Press ENTER to use the default value (" + stringify.stringify(default)[1] + ")")
 
+        # Choices are not given
+        if choices_list is None:
+
+            # List-type setting
+            if real_type.__name__.endswith("_list"):  # list-type setting
+
+                # Dynamic list
+                if dynamic_list:
+
+                    log.info(
+                        "or provide other values. Enter a value and press ENTER. To end the list, leave blank and press ENTER.")
+
+                    real_base_type = getattr(parsing, real_type.__name__.split("_list")[0])
+
+                    # Construct type
+                    the_type = construct_type(real_base_type, min_value, max_value, forbidden)
+
+                    # Show suggestions
+                    if suggestions is not None:
+                        log.info("Suggestions:")
+                        for suggestion in suggestions:
+                            suggestion_description = suggestions[suggestion]
+                            log.info(" - " + suggestion + ": " + suggestion_description)
+
+                    value = []  # to remove warning
+                    while True:
+                        answer = raw_input("   : ")
+                        if answer == "":
+                            break  # end of list
+                        else:
+                            try:
+                                # single_value = real_type(answer)
+                                single_value = the_type(answer)
+                                value.append(single_value)
+                            except ValueError, e:
+                                log.warning("Invalid input: " + str(e) + ". Try again.")
+
+                # Not dynamic list
+                else:
+
+                    log.info("or provide other values, separated by commas")
+
+                    # Construct type
+                    the_type = construct_type(real_type, min_value, max_value, forbidden)
+
+                    # Show suggestions
+                    if suggestions is not None:
+                        log.info("Suggestions:")
+                        for suggestion in suggestions:
+                            suggestion_description = suggestions[suggestion]
+                            log.info(" - " + suggestion + ": " + suggestion_description)
+
+                    value = default  # to remove warning from IDE that value could be referenced (below) without assignment
+                    while True:
+                        answer = raw_input("   : ")
+                        if answer == "":
+                            value = default
+                            break
+                        else:
+                            try:
+                                # value = real_type(answer)
+                                value = the_type(answer)
+                                break
+                            except ValueError, e:
+                                log.warning("Invalid input: " + str(e) + ". Try again.")
+
+            # Single-value setting
+            else:
+
+                log.info("or provide another value")
+
+                # Construct type
+                the_type = construct_type(real_type, min_value, max_value, forbidden)
+
+                # Show suggestions
+                if suggestions is not None:
+                    log.info("Suggestions:")
+                    for suggestion in suggestions:
+                        suggestion_description = suggestions[suggestion]
+                        log.info(" - " + suggestion + ": " + suggestion_description)
+
+                value = default  # to remove warning from IDE that value could be referenced (below) without assignment
+                while True:
+                    # Get the input
+                    answer = raw_input("   : ")
+                    if answer == "":
+                        value = default
+                        break
+                    else:
+                        try:
+                            # value = real_type(answer)
+                            value = the_type(answer)
+                            break
+                        except ValueError, e:
+                            log.warning("Invalid input: " + str(e) + ". Try again.")
+
         # Choices are given
-        if choices_list is not None:
+        #if choices_list is not None:
+        # If more choices are given or no default is given
+        elif len(choices_list) > 1 or default is None:
 
             # List-type setting
             if real_type.__name__.endswith("_list"):  # list-type setting
@@ -2805,90 +2943,32 @@ def add_settings_interactive(config, definition, prompt_optional=True):
             # List-type setting
             if real_type.__name__.endswith("_list"):  # list-type setting
 
-                # Dynamic list
-                if dynamic_list:
-
-                    log.info("or provide other values. Enter a value and press ENTER. To end the list, leave blank and press ENTER.")
-
-                    real_base_type = getattr(parsing, real_type.__name__.split("_list")[0])
-
-                    # Construct type
-                    the_type = construct_type(real_base_type, min_value, max_value, forbidden)
-
-                    # Show suggestions
-                    if suggestions is not None:
-                        log.info("Suggestions:")
-                        for suggestion in suggestions:
-                            suggestion_description = suggestions[suggestion]
-                            log.info(" - " + suggestion + ": " + suggestion_description)
-
-                    value = [] # to remove warning
-                    while True:
-                        answer = raw_input("   : ")
-                        if answer == "": break # end of list
-                        else:
-                            try:
-                                #single_value = real_type(answer)
-                                single_value = the_type(answer)
-                                value.append(single_value)
-                            except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
-
-                # Not dynamic list
+                if isinstance(choices, dict):
+                    log.info("Only one option: automatically using a list of this value '[" + str(
+                        choices.keys()[0]) + "]' for " + name)
+                    value = [choices.keys()[0]]
+                    assert value == default
                 else:
-
-                    log.info("or provide other values, separated by commas")
-
-                    # Construct type
-                    the_type = construct_type(real_type, min_value, max_value, forbidden)
-
-                    # Show suggestions
-                    if suggestions is not None:
-                        log.info("Suggestions:")
-                        for suggestion in suggestions:
-                            suggestion_description = suggestions[suggestion]
-                            log.info(" - " + suggestion + ": " + suggestion_description)
-
-                    value = default  # to remove warning from IDE that value could be referenced (below) without assignment
-                    while True:
-                        answer = raw_input("   : ")
-                        if answer == "":
-                            value = default
-                            break
-                        else:
-                            try:
-                                #value = real_type(answer)
-                                value = the_type(answer)
-                                break
-                            except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+                    # Inform the user
+                    log.info("Only one option: automatically using a list of this value '[" + str(
+                        choices[0]) + "]' for " + name)
+                    value = [choices[0]]
+                    assert value == default
 
             # Single-value setting
             else:
 
-                log.info("or provide another value")
-
-                # Construct type
-                the_type = construct_type(real_type, min_value, max_value, forbidden)
-
-                # Show suggestions
-                if suggestions is not None:
-                    log.info("Suggestions:")
-                    for suggestion in suggestions:
-                        suggestion_description = suggestions[suggestion]
-                        log.info(" - " + suggestion + ": " + suggestion_description)
-
-                value = default # to remove warning from IDE that value could be referenced (below) without assignment
-                while True:
-                    # Get the input
-                    answer = raw_input("   : ")
-                    if answer == "":
-                        value = default
-                        break
-                    else:
-                        try:
-                            #value = real_type(answer)
-                            value = the_type(answer)
-                            break
-                        except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+                if isinstance(choices, dict):
+                    # Inform the user
+                    log.info(
+                        "Only one option: automatically using value of '" + str(choices.keys()[0]) + "' for " + name)
+                    value = choices.keys()[0]
+                    assert value == default
+                else:
+                    # Inform the user
+                    log.info("Only one option: automatically using value of '" + str(choices[0]) + "' for " + name)
+                    value = choices[0]
+                    assert value == default
 
         # Set the value
         config[name] = value

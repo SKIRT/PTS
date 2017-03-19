@@ -19,6 +19,7 @@ from astropy.units import Unit, dimensionless_angles
 # Import the relevant PTS classes and modules
 from ...magic.basics.pixelscale import Pixelscale
 from ...magic.basics.vector import Position
+from ...magic.basics.vector import Extent
 
 # -----------------------------------------------------------------
 
@@ -68,6 +69,23 @@ class GalaxyProjection(object):
     # -----------------------------------------------------------------
 
     @property
+    def physical_pixelscale(self):
+
+        """
+        This function
+        :return:
+        """
+
+        # From field of view to pixel scale
+        pixelscale_x = self.field_x_physical / self.pixels_x
+        pixelscale_y = self.field_y_physical / self.pixels_y
+
+        # Create xy extent
+        return Extent(pixelscale_x, pixelscale_y)
+
+    # -----------------------------------------------------------------
+
+    @property
     def pixelscale(self):
 
         """
@@ -75,12 +93,12 @@ class GalaxyProjection(object):
         :return:
         """
 
-        # From field of view to pixel scale
-        pixelscale_x  = self.field_x_physical / self.pixels_x
-        pixelscale_y = self.field_y_physical / self.pixels_y
+        physical = self.physical_pixelscale
+        pixelscale_x_angular = (physical.x / self.distance).to("arcsec", equivalencies=dimensionless_angles())
+        pixelscale_y_angular = (physical.y / self.distance).to("arcsec", equivalencies=dimensionless_angles())
 
         # Create and return the pixelscale
-        return Pixelscale(pixelscale_x, pixelscale_y)
+        return Pixelscale(pixelscale_x_angular, pixelscale_y_angular)
 
     # -----------------------------------------------------------------
 

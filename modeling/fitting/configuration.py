@@ -35,6 +35,32 @@ template_ski_path = fs.join(introspection.pts_dat_dir("modeling"), "ski", "label
 
 # -----------------------------------------------------------------
 
+default_mutation_rate = 0.02
+default_crossover_rate = 0.9
+default_rounddecimal = None
+default_mutation_method = "range"
+default_elitism = True
+default_nelite_individuals = 1
+
+# -----------------------------------------------------------------
+
+# Create the genetic definition
+genetic_definition = ConfigurationDefinition(write_config=False)
+
+# Add settings
+genetic_definition.add_optional("mutation_rate", "real", "mutation rate", default_mutation_rate)
+genetic_definition.add_optional("crossover_rate", "real", "crossover rate", default_crossover_rate)
+genetic_definition.add_optional("rounddecimal", "integer", "round everything to this decimal place", default_rounddecimal)
+genetic_definition.add_optional("mutation_method", "string", "mutation method", default_mutation_method, choices=["range", "gaussian", "binary"])
+
+# Flags
+genetic_definition.add_flag("elitism", "enable elitism", default_elitism)
+
+# Advanced
+genetic_definition.add_optional("nelite_individuals", "positive_integer", "number of individuals to take as elite", default_nelite_individuals)
+
+# -----------------------------------------------------------------
+
 class FittingConfigurer(FittingComponent):
     
     """
@@ -203,8 +229,8 @@ class FittingConfigurer(FittingComponent):
         highest_pixelscale = None
         highest_pixelscale_name = None
 
-        print(self.model_name)
-        print(get_representations_for_model(self.config.path, self.model_name))
+        #print(self.model_name)
+        #print(get_representations_for_model(self.config.path, self.model_name))
 
         # Loop over the different representations for the model
         for name in get_representations_for_model(self.config.path, self.model_name):
@@ -241,23 +267,8 @@ class FittingConfigurer(FittingComponent):
         # Inform the user
         log.info("Creating the definition of the genetic algorithm configuration ...")
 
-        # Create the configuration
-        definition = ConfigurationDefinition(write_config=False)
-
-        # Add settings
-        definition.add_optional("mutation_rate", "real", "mutation rate", 0.02)
-        definition.add_optional("crossover_rate", "real", "crossover rate", 0.9)
-        definition.add_optional("rounddecimal", "integer", "round everything to this decimal place")
-        definition.add_optional("mutation_method", "string", "mutation method", choices=["range", "gaussian", "binary"])
-
-        # Flags
-        definition.add_flag("elitism", "enable elitism", True)
-
-        # Advanced
-        definition.add_optional("nelite_individuals", "positive_integer", "number of individuals to take as elite", 1)
-
         # Set
-        self.genetic_definition = definition
+        self.genetic_definition = genetic_definition
 
     # -----------------------------------------------------------------
 

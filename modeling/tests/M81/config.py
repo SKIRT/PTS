@@ -35,6 +35,7 @@ definition.add_optional("nsimulations", "positive_integer", "number of simulatio
 
 # Free parameters
 definition.add_optional("free_parameters", "string_list", "free parameter labels", choices=possible_free_parameters, default=default_free_parameters)
+definition.add_optional("relative_range", "real_range", "relative range of the free parameter values for the fitting", default="0.1>20", convert_default=True)
 
 # Wavelength grid
 definition.add_optional("wavelength_range", "quantity_range", "range of wavelengths", "0.1 micron > 2000 micron", convert_default=True)

@@ -31,10 +31,10 @@
 # Import standard modules
 import sys
 import argparse
-import time as _time
+import importlib
 
 # Import the relevant PTS modules
-from pts.core.tools import introspection
+from pts.core.tools import introspection, parsing
 from pts.core.tools import filesystem as fs
 from pts.core.tools import time
 from pts.do.commandline import show_all_available, show_possible_matches, start_target
@@ -59,6 +59,8 @@ parser.add_argument("--remote", type=str, help="launch the PTS command remotely"
 parser.add_argument("--keep", action="store_true", help="keep the remote output")
 parser.add_argument("--input", type=str, help="the name/path of the input directory")
 parser.add_argument("--output", type=str, help="the name/path of the output directory")
+parser.add_argument("--input_files", type=parsing.string_tuple_dictionary, help="dictionary of (class_path, input_file_path) where the key is the input variable name")
+parser.add_argument("--output_files", type=parsing.string_string_dictionary, help="dictinoary of output file paths where the key is the variable (attribute) name")
 parser.add_argument("options", nargs=argparse.REMAINDER, help="options for the specific do command")
 
 # -----------------------------------------------------------------
@@ -259,8 +261,55 @@ elif len(table_matches) == 1 and len(matches) == 0:
         # Create the class instance, configure it with the configuration settings
         inst = cls(config)
 
+        # Set input files
+        input_dict = {}
+        if args.input_files is not None:
+
+            # Loop over the names of the input variables
+            for name in args.input_files:
+
+                # Get class path
+                classpath, filepath = args.input_files[name]
+                modulepath, classname = classpath.rsplit(".", 1)
+
+                # Get input class
+                input_module = importlib.import_module(modulepath)
+                input_class = getattr(input_module, classname)
+
+                # Open the input file
+                input_object = input_class(filepath)
+
+                # Set to input dict
+                input_dict[name] = input_object
+
         # Start
-        start_target(command_name, inst.run)
+        start_target(command_name, inst.run, **input_dict)
+
+        # Write output files
+        if args.output_files is not None:
+
+            types = dict()
+
+            # Loop over the names of the attributes for output
+            for name in args.output_files:
+
+                # Get filepath
+                filepath = args.output_files[name]
+
+                # Get the output object
+                output_object = getattr(inst, name)
+
+                # Set the type
+                types[name] = type(output_object).__module__ + "." + type(output_object).__name__
+
+                # Save the output object
+                real_filepath = filepath + "." + type(output_object).default_extension
+                output_object.saveto(real_filepath)
+
+            # Save the types
+            from pts.core.tools import serialization
+            types_path = fs.join(args.output, "types.dat")
+            serialization.write_dict(types, types_path)
 
     # Mark the end of this modeling script
     if subproject == "modeling" and command_name != "setup" and command_name != "model_galaxy" and command_name != "model_sed":

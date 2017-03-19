@@ -144,6 +144,35 @@ class PhotometricQuantity(Quantity):
 
     # -----------------------------------------------------------------
 
+    def __quantity_subclass__(self, unit):
+
+        """
+        Overridden by subclasses to change what kind of view is
+        created based on the output unit of an operation.
+
+        Parameters
+        ----------
+        unit : UnitBase
+            The unit for which the appropriate class should be returned
+
+        Returns
+        -------
+        tuple :
+            - `Quantity` subclass
+            - bool: True is subclasses of the given class are ok
+        """
+
+        #return Quantity, True
+
+        from .unit import parse_unit as u
+        from .unit import PhotometricUnit
+
+        unit = u(unit)
+        if isinstance(unit, PhotometricUnit): return PhotometricQuantity, True
+        else: return Quantity, True
+
+    # -----------------------------------------------------------------
+
     @Quantity.unit.setter
     def unit(self, argument):
 

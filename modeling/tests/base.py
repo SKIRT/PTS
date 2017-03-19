@@ -41,6 +41,8 @@ from pts.magic.region.list import SkyRegionList
 from pts.core.filter.filter import parse_filter
 from pts.core.basics.unit import parse_unit as u
 from pts.core.tools import sequences, parsing, stringify
+from pts.modeling.config.parameters import parsing_types_for_parameter_types
+from pts.modeling.config.parameters import default_units
 
 # -----------------------------------------------------------------
 
@@ -161,10 +163,22 @@ default_free_parameters = ["dust_mass", "fuv_young", "fuv_ionizing"]
 
 # Define the free parameter types
 free_parameter_types = dict()
-free_parameter_types["dust_mass"] = "mass_quantity"
-free_parameter_types["fuv_young"] = "photometric_quantity"
-free_parameter_types["fuv_ionizing"] = "photometric_quantity"
-free_parameter_types["distance"] = "length_quantity"
+# Parsing types
+#free_parameter_types["dust_mass"] = "mass_quantity"
+#free_parameter_types["fuv_young"] = "photometric_quantity"
+#free_parameter_types["fuv_ionizing"] = "photometric_quantity"
+#free_parameter_types["distance"] = "length_quantity"
+# Parameter types
+free_parameter_types["dust_mass"] = "mass"
+free_parameter_types["fuv_young"] = "spectral luminosity density"
+free_parameter_types["fuv_ionizing"] = "spectral luminosity density"
+free_parameter_types["distance"] = "length"
+
+# Define free parameter units
+free_parameter_units = dict()
+for label in free_parameter_types:
+    parameter_type = free_parameter_types[label]
+    free_parameter_units[label] = default_units[parameter_type]
 
 # Absolute ski file parameters
 free_parameters_absolute_paths = dict()
@@ -181,6 +195,13 @@ free_parameters_relative_dust_component_paths["dust_mass"] = ("normalization/Dus
 # Instrument parameters
 free_parameters_relative_instruments_paths = dict()
 free_parameters_relative_instruments_paths["distance"] = ("distance", instrument_name)
+
+# Free parameter descriptions
+free_parameter_descriptions = dict()
+free_parameter_descriptions["dust_mass"] = "total dust mass"
+free_parameter_descriptions["fuv_young"] = "FUV spectral luminosity of the young stellar component"
+free_parameter_descriptions["fuv_ionizing"] = "FUV spectral luminosity of the ionizing stellar component"
+free_parameter_descriptions["distance"] = "galaxy distance"
 
 # -----------------------------------------------------------------
 
@@ -889,8 +910,11 @@ class M81TestBase(TestImplementation):
         # Loop over the free parameters
         for parameter_name in self.config.free_parameters:
 
+            parameter_type = free_parameter_types[parameter_name]
+            parsing_type = parsing_types_for_parameter_types[parameter_type]
+
             # Get the parsing function for this parameter
-            parser = getattr(parsing, free_parameter_types[parameter_name])
+            parser = getattr(parsing, parsing_type)
 
             # Search in the absolute parameters
             if parameter_name in free_parameters_absolute_paths:

@@ -313,9 +313,36 @@ def quantity_range(argument):
     :return:
     """
 
-    from ..basics.range import IntegerRange, RealRange, QuantityRange
-
+    from ..basics.range import QuantityRange
     min_quantity, max_quantity = quantity_tuple(argument.replace(">", ","))
+    return QuantityRange(min_quantity, max_quantity)
+
+# -----------------------------------------------------------------
+
+def photometric_quantity_range(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..basics.range import QuantityRange
+    min_quantity, max_quantity = photometric_quantity_tuple(argument.replace(">", ","))
+    return QuantityRange(min_quantity, max_quantity)
+
+# -----------------------------------------------------------------
+
+def photometric_density_quantity_range(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..basics.range import QuantityRange
+    min_quantity, max_quantity = photometric_density_quantity_tuple(argument.replace(">", ","))
     return QuantityRange(min_quantity, max_quantity)
 
 # -----------------------------------------------------------------
@@ -490,6 +517,19 @@ def photometric_quantity_tuple(argument):
     """
 
     a, b = map(photometric_quantity, argument.split(","))
+    return a, b
+
+# -----------------------------------------------------------------
+
+def photometric_density_quantity_tuple(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    a, b = map(photometric_density_quantity, argument.split(","))
     return a, b
 
 # -----------------------------------------------------------------
@@ -691,6 +731,22 @@ def string_photometricunit_dictionary(argument):
     for key, value in d.items():
         if not isinstance(key, basestring): raise ValueError("All keys must be strings")
         d[key] = photometric_unit(value)
+    return d
+
+# -----------------------------------------------------------------
+
+def string_tuple_dictionary(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    d = dictionary(argument)
+    for key, value in d.items():
+        if not isinstance(key, basestring): raise ValueError("All keys must be strings")
+        if not isinstance(value, tuple): raise ValueError("All values must be tuples")
     return d
 
 # -----------------------------------------------------------------

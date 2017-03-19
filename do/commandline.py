@@ -53,7 +53,7 @@ class Command(object):
 
 # -----------------------------------------------------------------
 
-def start_target(command_name, target):
+def start_target(command_name, target, **kwargs):
 
     """
     This function ...
@@ -64,7 +64,7 @@ def start_target(command_name, target):
     start = _time.time()
 
     # Run
-    target()
+    target(**kwargs)
 
     # Record end time
     end = _time.time()

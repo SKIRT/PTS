@@ -18,7 +18,7 @@ from ...core.tools.logging import log
 from ..fitting.configuration import FittingConfigurer
 from ..fitting.initialization.sed import SEDFittingInitializer
 from .base import ModelerBase
-from ..component.sed import get_ski_template, get_observed_sed, get_sed_plot_path
+from ..component.sed import get_ski_template, get_observed_sed, get_sed_plot_path, get_ski_input_paths
 from ...core.basics.range import IntegerRange, QuantityRange
 from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
 from ...core.plot.sed import SEDPlotter
@@ -185,22 +185,25 @@ class ImagesModeler(ModelerBase):
         # Load the current ski template
         ski = get_ski_template(self.modeling_path)
 
+        # Get the ski input paths
+        ski_input_paths = get_ski_input_paths(self.modeling_path)
+
         # Create a definition
         definition = ConfigurationDefinition()
-        default_npackages = max(int(1e4), int(ski.packages()/10))
+        default_npackages = max(int(1e4), int(ski.packages() / 10))
         definition.add_optional("npackages", "positive_integer", "the number of photon packages per wavelength for the initial generation", default=default_npackages)
         definition.add_flag("selfabsorption", "enable dust self-absorption", default=ski.dustselfabsorption())
         definition.add_flag("transient_heating", "enable transient heating", default=ski.transientheating())
 
         # Add option for the range of the number of wavelengths
-        nwavelengths = ski.nwavelengths()
+        nwavelengths = ski.get_nwavelengths(ski_input_paths)
         min_nwavelengths = max(int(0.1 * nwavelengths), 45)
         max_nwavelengths = max(5 * nwavelengths, 5 * min_nwavelengths)
         default_nwavelengths_range = IntegerRange(min_nwavelengths, max_nwavelengths)
         definition.add_optional("nwavelengths_range", "integer_range", "range for the number of wavelengths to vary over the generations", default=default_nwavelengths_range)
         definition.add_optional("ngrids", "positive_integer", "number of wavelength grids to be generated", default=10)
         definition.add_flag("add_emission_lines", "add additional points to the wavelength grids to sample important dust/gas emission lines", default=False)
-        default_wavelength_range = QuantityRange(ski.min_wavelength, ski.max_wavelength)
+        default_wavelength_range = QuantityRange(ski.get_min_wavelength(ski_input_paths), ski.get_max_wavelength(ski_input_paths))
         definition.add_optional("wavelength_range", "quantity_range", "wavelength range for all wavelength grids", default=default_wavelength_range)
 
         # Create the setter
