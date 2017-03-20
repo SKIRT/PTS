@@ -1220,7 +1220,7 @@ class GeneticEngine(object):
         """
 
         if self.new_population is None:
-            if self.currentGeneration > 0: raise RuntimeError("Inconsistent state: 'new_population' does exist but 'currentGeneration' >0")
+            if self.currentGeneration > 0: raise RuntimeError("Inconsistent state: 'new_population' does exist but 'currentGeneration' > 0")
             return True
         else: return False
 

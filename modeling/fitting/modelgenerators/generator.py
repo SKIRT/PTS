@@ -21,6 +21,7 @@ from ....core.tools.logging import log
 from ..component import FittingComponent
 from ....magic.animation.scatter import ScatterAnimation
 from ....magic.animation.distribution import DistributionAnimation
+from ....core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -126,6 +127,72 @@ class ModelGenerator(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def parameter_minima_scalar(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a list
+        minima = []
+
+        # Set the list values
+        for label in self.fitting_run.free_parameter_labels:
+
+            min_value = self.ranges[label].min
+
+            # Convert if necessary
+            if label in self.fitting_run.parameter_units and self.fitting_run.parameter_units[label] is not None:
+                unit = self.fitting_run.parameter_units[label]
+                min_value = min_value.to(unit).value
+
+            # Assert that is real type
+            assert types.is_real_type(min_value)
+            min_value = float(min_value)
+
+            # Add to list
+            minima.append(min_value)
+
+        # Return the minimal parameter values
+        return minima
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_maxima_scalar(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a list
+        maxima = []
+
+        # Set the list values
+        for label in self.fitting_run.free_parameter_labels:
+
+            max_value = self.ranges[label].max
+
+            # Convert if necessary
+            if label in self.fitting_run.parameter_units and self.fitting_run.parameter_units[label] is not None:
+                unit = self.fitting_run.parameter_units[label]
+                max_value = max_value.to(unit).value
+
+            # Assert that is real type
+            assert types.is_real_type(max_value)
+            max_value = float(max_value)
+
+            # Add to list
+            maxima.append(max_value)
+
+        # Return the maximal parameter values
+        return maxima
+
+    # -----------------------------------------------------------------
+
     def add_parameter(self, label, parameter_range):
 
         """
@@ -139,15 +206,16 @@ class ModelGenerator(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 3. Load the current parameter value probability distributions
         self.load_distributions()

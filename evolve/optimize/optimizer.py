@@ -15,6 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 from abc import ABCMeta, abstractmethod
 
+# Import astronomical modules
+from astropy.utils import lazyproperty
+
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
 from ..genomes.list1d import G1DList
@@ -22,8 +25,11 @@ from ..genomes.list2d import G2DList
 from ..genomes.binarystring1d import G1DBinaryString
 from ..genomes.binarystring2d import G2DBinaryString
 from ...core.tools.logging import log
-from ..core.initializators import G1DListInitializatorReal, G1DListInitializatorInteger
-from ..core.mutators import G1DListMutatorIntegerRange, G1DListMutatorIntegerGaussian, G1DListMutatorIntegerBinary, G1DListMutatorRealGaussian, G1DListMutatorRealRange
+from ..core.initializators import G1DListInitializatorReal, G1DListInitializatorInteger, HeterogeneousListInitializerReal, HeterogeneousListInitializerInteger
+from ..core.mutators import G1DListMutatorIntegerRange, G1DListMutatorIntegerGaussian, G1DListMutatorIntegerBinary
+from ..core.mutators import G1DListMutatorRealGaussian, G1DListMutatorRealRange
+from ..core.mutators import HeterogeneousListMutatorRealRange, HeterogeneousListMutatorRealGaussian
+from ..core.mutators import HeterogeneousListMutatorIntegerRange, HeterogeneousListMutatorIntegerGaussian
 from ..core.engine import GeneticEngine, RawScoreCriteria
 from ..core import constants
 from ...core.basics.range import RealRange, IntegerRange
@@ -31,6 +37,7 @@ from ...core.tools import formatting as fmt
 from ...core.tools import stringify
 from ..core.adapters import DBFileCSV, DBSQLite
 from ...core.tools import filesystem as fs
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -76,6 +83,51 @@ class Optimizer(Configurable):
         # The plot path
         self.plot_path = None
 
+        # The parameter minima and maxima (for heterogeneous genomes)
+        self.parameter_minima = None
+        self.parameter_maxima = None
+
+        # The parameter centers and sigmas (for heterogeneous genomes with Gaussian mutator and/or initializer)
+        self.parameter_centers = None
+        self.parameter_sigmas = None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def parameter_base_type(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Parameter range is defined, not hetereogeneous
+        if self.config.parameter_range is not None:
+
+            if isinstance(self.config.parameter_range, IntegerRange): return "integer"
+            elif isinstance(self.config.parameter_range, RealRange): return "real"
+            else: raise ValueError("Invalid parameter range")
+
+        # Parameter minima are defined, heterogeneous
+        elif self.parameter_minima is not None:
+
+            if types.is_integer_type(self.parameter_minima[0]): return "integer"
+            elif types.is_real_type(self.parameter_minima[0]): return "real"
+            else: raise ValueError("Invalid parameter minima")
+
+        # Parameter maxima are defined, heterogeneous
+        elif self.parameter_maxima is not None:
+
+            if types.is_integer_type(self.parameter_maxima[0]): return "integer"
+            elif types.is_real_type(self.parameter_maxima[0]): return "real"
+            else: raise ValueError("Invalid parameter maxima")
+
+        # Parameter type is defined in the configuration
+        elif self.config.parameter_type is not None: return self.config.parameter_type
+
+        # No clue
+        else: raise ValueError("Parameter type cannot be determined or is invalid")
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -91,6 +143,14 @@ class Optimizer(Configurable):
 
         # Set the plot path
         self.plot_path = fs.create_directory_in(self.config.path, "plot")
+
+        # Set the parameter minima and maxima
+        if "minima" in kwargs: self.parameter_minima = kwargs.pop("minima")
+        if "maxima" in kwargs: self.parameter_maxima = kwargs.pop("maxima")
+
+        # Set the parameter centers and sigmas
+        if "centers" in kwargs: self.parameter_centers = kwargs.pop("centers")
+        if "sigmas" in kwargs: self.parameter_sigmas = kwargs.pop("sigmas")
 
     # -----------------------------------------------------------------
 
@@ -198,32 +258,133 @@ class Optimizer(Configurable):
         if self.config.best_raw_score is not None: genome.setParams(bestrawscore=self.config.best_raw_score)
         if self.config.round_decimal is not None: genome.setParams(rounddecimal=self.config.round_decimal)
 
+        # Set minima or maxima for heterogeneous genome lists
+        if self.parameter_minima is not None: genome.setParams(minima=self.parameter_minima)
+        if self.parameter_maxima is not None: genome.setParams(maxima=self.parameter_maxima)
+
+        # Set parameter centers and sigmas
+        if self.parameter_centers is not None: genome.setParams(centers=self.parameter_centers)
+        if self.parameter_sigmas is not None: genome.setParams(sigmas=self.parameter_sigmas)
+
         # Set initializator
         if initializator is not None: genome.initializator.set(initializator)
-        else:
-            if isinstance(self.config.parameter_range, IntegerRange): genome.initializator.set(G1DListInitializatorInteger)
-            elif isinstance(self.config.parameter_range, RealRange): genome.initializator.set(G1DListInitializatorReal)
-            else: raise ValueError("Invalid parameter range")
+        else: genome.initializator.set(self.get_initializator())
 
         # Set mutator
         if mutator is not None: genome.mutator.set(mutator)
-        else:
-            if isinstance(self.config.parameter_range, IntegerRange):
-                if self.config.mutation_method == "range": genome.mutator.set(G1DListMutatorIntegerRange)
-                elif self.config.mutation_method == "gaussian": genome.mutator.set(G1DListMutatorIntegerGaussian)
-                elif self.config.mutation_method == "binary": genome.mutator.set(G1DListMutatorIntegerBinary)
-                else: raise ValueError("Mutation method '" + self.config.mutation_method + "' not recognized")
-            elif isinstance(self.config.parameter_range, RealRange):
-                if self.config.mutation_method == "range": genome.mutator.set(G1DListMutatorRealRange)
-                elif self.config.mutation_method == "gaussian": genome.mutator.set(G1DListMutatorRealGaussian)
-                else: raise ValueError("Mutation method '" + self.config.mutation_method + "' not valid for genome of real values")
-            else: raise ValueError("Invalid parameter range")
+        else: genome.mutator.set(self.get_mutator())
 
         # Set crossover
         if crossover is not None: genome.crossover.set(crossover)
 
         # Set the initial genome
         self.initial_genome = genome
+
+    # -----------------------------------------------------------------
+
+    def get_initializator(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the initializator type ...")
+
+        # Integer type
+        if self.parameter_base_type == "integer":
+
+            #if self.config.heterogeneous: genome.initializator.set(HeterogeneousListInitializerInteger)
+            #else: genome.initializator.set(G1DListInitializatorInteger)
+
+            if self.config.heterogeneous: return HeterogeneousListInitializerInteger
+            else: return G1DListInitializatorInteger
+
+        # Real type
+        elif self.parameter_base_type == "real":
+
+            #if self.config.heterogeneous: genome.initializator.set(HeterogeneousListInitializerReal)
+            #genome.initializator.set(G1DListInitializatorReal)
+
+            if self.config.heterogeneous: return HeterogeneousListInitializerReal
+            else: return G1DListInitializatorReal
+
+        # Invalid
+        else: raise ValueError("Invalid parameter type")
+
+    # -----------------------------------------------------------------
+
+    def get_mutator(self):
+
+        """
+        This function ...
+        :param self:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the mutator type ...")
+
+        # Integer type
+        if self.parameter_base_type == "integer":
+
+            # Range-based mutator
+            if self.config.mutation_method == "range":
+
+                #if self.config.heterogeneous: genome.mutator.set(HeterogeneousListMutatorIntegerRange)
+                #else: genome.mutator.set(G1DListMutatorIntegerRange)
+
+                if self.config.heterogeneous: return HeterogeneousListMutatorIntegerRange
+                else: return G1DListMutatorIntegerRange
+
+            # Gaussian mutator
+            elif self.config.mutation_method == "gaussian":
+
+                #if self.config.heterogeneous: genome.mutator.set(HeterogeneousListMutatorIntegerGaussian)
+                #else: genome.mutator.set(G1DListMutatorIntegerGaussian)
+
+                if self.config.heterogeneous: return HeterogeneousListMutatorIntegerGaussian
+                else: return G1DListMutatorIntegerGaussian
+
+            # Binary mutator
+            elif self.config.mutation_method == "binary":
+
+                #if self.config.heterogeneous: raise ValueError("Cannot use binary mutation on heterogeneous genomes")
+                #else: genome.mutator.set(G1DListMutatorIntegerBinary)
+
+                if self.config.heterogeneous: raise ValueError("Cannot use binary mutation on heterogeneous genomes")
+                else: return G1DListMutatorIntegerBinary
+
+            # Invalid
+            else: raise ValueError("Mutation method '" + self.config.mutation_method + "' not recognized")
+
+        # Real type
+        elif self.parameter_base_type == "real":
+
+            # Range-based mutator
+            if self.config.mutation_method == "range":
+
+                #if self.config.heterogeneous: genome.mutator.set(HeterogeneousListMutatorRealRange)
+                #else: genome.mutator.set(G1DListMutatorRealRange)
+
+                if self.config.heterogeneous: return HeterogeneousListMutatorRealRange
+                else: return G1DListMutatorRealRange
+
+            # Gaussian mutator
+            elif self.config.mutation_method == "gaussian":
+
+                #if self.config.heterogeneous: genome.mutator.set(HeterogeneousListMutatorRealGaussian)
+                #else: genome.mutator.set(G1DListMutatorRealGaussian)
+
+                if self.config.heterogeneous: return HeterogeneousListMutatorRealGaussian
+                else: return G1DListMutatorRealGaussian
+
+            # Invalid
+            else: raise ValueError("Mutation method '" + self.config.mutation_method + "' not valid for genome of real values")
+
+        # Invalid
+        else: raise ValueError("Invalid parameter type")
 
     # -----------------------------------------------------------------
 

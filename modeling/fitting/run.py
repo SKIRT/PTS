@@ -29,6 +29,7 @@ from .tables import ModelProbabilitiesTable
 from ...core.basics.configuration import Configuration
 from ...core.filter.filter import parse_filter
 from ..build.representation import Representation
+from ..build.component import get_representation_path
 
 # -----------------------------------------------------------------
 
@@ -305,7 +306,9 @@ class FittingRun(object):
         :return:
         """
 
-        return Representation(self.config.path, )
+        name = self.fitting_configuration.initial_representation
+        representation_path = get_representation_path(self.modeling_path, name)
+        return Representation(name, self.model_name, representation_path)
 
     # -----------------------------------------------------------------
     # END

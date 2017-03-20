@@ -11,6 +11,9 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
+import math
+
 # Import other evolve modules
 from . import utils
 from . import tree
@@ -163,6 +166,43 @@ def G1DListMutatorIntegerRange(genome, **args):
          genome[which_gene] = prng.randint(genome.getParam("rangemin", constants.CDefRangeMin), # HERE IT SHOULD BE INCLUSIVE
                                            genome.getParam("rangemax", constants.CDefRangeMax) + 1) # HERE IT SHOULD BE INCLUSIVE
 
+   return int(mutations)
+
+# -----------------------------------------------------------------
+
+def HeterogeneousListMutatorIntegerRange(genome, **args):
+
+   """
+   This function ...
+   :param genome:
+   :param args:
+   :return:
+   """
+
+   if args["pmut"] <= 0.0:
+       return 0
+
+   listSize = len(genome)
+   mutations = args["pmut"] * (listSize)
+
+   if mutations < 1.0:
+
+       mutations = 0
+       for it in xrange(listSize):
+
+           if utils.randomFlipCoin(args["pmut"]):
+
+               genome[it] = prng.randint(int(math.ceil(genome.getParam("minima")[it])), int(math.floor(genome.getParam("maxima")[it])) + 1) # HERE IT SHOULD BE INCLUSIVE
+               mutations += 1
+
+   else:
+
+       for it in xrange(int(round(mutations))):
+
+            which_gene = prng.randint(0, listSize)
+            genome[which_gene] = prng.randint(int(math.ceil(genome.getParam("minima")[which_gene])), int(math.floor(genome.getParam("maxima")[which_gene])) + 1) # HERE IT SHOULD BE INCLUSIVE
+
+   # Return the number of mutations
    return int(mutations)
 
 # -----------------------------------------------------------------
@@ -328,6 +368,60 @@ def G1DListMutatorIntegerGaussian(genome, **args):
          genome[which_gene] = final_value
 
    return int(mutations)
+
+# -----------------------------------------------------------------
+
+def HeterogeneousListMutatorIntegerGaussian(genome, **args):
+
+    """
+    This function ...
+    :param genome:
+    :param args:
+    :return:
+    """
+
+    if args["pmut"] <= 0.0:
+        return 0
+    listSize = len(genome)
+    mutations = args["pmut"] * (listSize)
+
+    if mutations < 1.0:
+        mutations = 0
+
+        # Let the fact whether we do a mutation for each genome depend on a random 'coin flip'
+        for it in xrange(listSize):
+
+            # Get the mu and the sigma
+            mu = genome.getParam("centers")[it]
+            sigma = genome.getParam("sigmas")[it]
+
+            if utils.randomFlipCoin(args["pmut"]):
+
+                final_value = genome[it] + int(prng.normal(mu, sigma))
+
+                final_value = min(final_value, int(math.floor(genome.getParam("maxima")[it])))
+                final_value = max(final_value, int(math.ceil(genome.getParam("minima")[it])))
+
+                genome[it] = final_value
+                mutations += 1
+    else:
+
+        # Do a specific number of mutations
+        for it in xrange(int(round(mutations))):
+
+            # Get the mu and the sigma
+            mu = genome.getParam("centers")[it]
+            sigma = genome.getParam("sigmas")[it]
+
+            which_gene = prng.randint(0, listSize)
+            final_value = genome[which_gene] + int(prng.normal(mu, sigma))
+
+            final_value = min(final_value, int(math.floor(genome.getParam("maxima")[which_gene])))
+            final_value = max(final_value, int(math.ceil(genome.getParam("minima")[which_gene])))
+
+            genome[which_gene] = final_value
+
+    return int(mutations)
 
 # -----------------------------------------------------------------
 

@@ -520,6 +520,8 @@ class M81SEDTest(M81TestBase):
         # Set SEDs
         #input_model["seds"] = dict()
 
+        # Create free parameters config
+
         # Create descriptions config
         descriptions_config = Map(descriptions=free_parameter_descriptions)
         input_model["descriptions_config"] = descriptions_config
@@ -539,7 +541,7 @@ class M81SEDTest(M81TestBase):
         # Create genetic config
         #setter = PassiveConfigurationSetter("genetic", add_logging=False, add_cwd=False)
         #genetic_config = setter.run(genetic_definition)
-        input_model["genetic_config"] = self.config.genetic
+        input_model["genetic_config"] = Map(genetic=self.config.genetic)
 
         # Create ranges config
         ranges_config = Map()

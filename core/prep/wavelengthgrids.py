@@ -266,7 +266,7 @@ class WavelengthGridGenerator(Configurable):
         log.debug(" - number of points in subgrids: " + str(subgrid_npoints))
         log.debug(" - number of emission points: " + str(emission_npoints))
         log.debug(" - number of fixed points: " + str(fixed_npoints))
-        log.debug(" - filters for which resampling was performed: " + str(broad_resampled))
+        log.debug(" - filters for which extra sampling was performed: " + str(broad_resampled))
         log.debug(" - narrow band filters for which wavelength was added: " + str(narrow_added))
         log.debug("")
 

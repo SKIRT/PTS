@@ -47,6 +47,9 @@ class ParallelTarget(object):
         # Get the process pool
         self.nprocesses = nprocesses
 
+        # The number of tasks
+        self.ntasks = 0
+
         # The number of completed processes
         self.ncompleted = 0
 
@@ -61,6 +64,9 @@ class ParallelTarget(object):
 
         # Reset the number of completed processes
         self.ncompleted = 0
+
+        # Reset the number of tasks
+        self.ntasks = 0
 
         # Initialize the process pool
         self.pool = Pool(processes=self.nprocesses)
@@ -77,6 +83,9 @@ class ParallelTarget(object):
         :param kwargs:
         :return:
         """
+
+        # Increment the number of tasks
+        self.ntasks += 1
 
         # Launch
         result = self.pool.apply_async(self.target, args=tuple(args), kwds=kwargs, callback=self.complete)
@@ -96,7 +105,10 @@ class ParallelTarget(object):
         #self.results.extend(result)
         self.ncompleted += 1
         #print('Progress: {:.2f}%'.format((self.ncompleted / self.nprocesses) * 100))
-        print("Process " + str(self.ncompleted) + " of " + str(self.nprocesses) + " has finished a task")
+        #print("Process " + str(self.ncompleted) + " of " + str(self.nprocesses) + " has finished a task")
+
+        # Debugging
+        log.debug("Task " + str(self.ncompleted) + " of " + str(self.ntasks) + " has been completed")
 
     # -----------------------------------------------------------------
 

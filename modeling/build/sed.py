@@ -74,16 +74,16 @@ class SEDModelBuilder(BuildComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Load the ski file template
+        # 2. Load the ski file template
         self.load_ski()
 
-        # Get the stellar components
+        # 3. Get the stellar components
         self.get_stellar_components()
 
-        # Get the dust components
+        # 4. Get the dust components
         self.get_dust_components()
 
-        # 4. Write
+        # 5. Write
         self.write()
 
     # -----------------------------------------------------------------
@@ -217,7 +217,8 @@ class SEDModelBuilder(BuildComponent):
         for name in self.stellar_properties:
 
             # Create a directory
-            component_path = self.output_path_file(name)
+            #component_path = self.output_path_file(name)
+            component_path = fs.join(self.model_stellar_path, name)
             fs.create_directory(component_path)
 
             # Set the path
@@ -239,7 +240,8 @@ class SEDModelBuilder(BuildComponent):
         for name in self.dust_properties:
 
             # Create a directory
-            component_path = self.output_path_file(name)
+            #component_path = self.output_path_file(name)
+            component_path = fs.join(self.model_dust_path, name)
             fs.create_directory(component_path)
 
             # Set the path

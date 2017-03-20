@@ -16,6 +16,9 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
+import math
+
 # Import other evolve modules
 from . import tree
 from . import utils
@@ -108,6 +111,26 @@ def HeterogeneousListInitializerReal(genome, **args):
         range_max = genome.getParam("maxima")[index]
 
         genome.genomeList.append(prng.uniform(range_min, range_max))
+
+# -----------------------------------------------------------------
+
+def HeterogeneousListInitializerInteger(genome, **args):
+
+    """
+    This function ...
+    :param genome:
+    :param args:
+    :return:
+    """
+
+    genome.genomeList = []
+
+    for index in xrange(genome.getListSize()):
+
+        range_min = int(math.ceil(genome.getParam("minima")[index]))
+        range_max = int(math.floor(genome.getParam("maxima")[index]))
+
+        genome.genomeList.append(prng.randint(range_min, range_max + 1)) # HERE IT SHOULD BE INCLUSIVE
 
 # -----------------------------------------------------------------
 

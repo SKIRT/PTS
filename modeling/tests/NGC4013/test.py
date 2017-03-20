@@ -63,11 +63,14 @@ class NGC4013Test(TestImplementation):
         :return:
         """
 
-        # Call the setup function
+        # 1. Call the setup function
         self.setup(**kwargs)
 
         # Get the data
         self.get_data()
+
+        # Launch with FitSKIRT
+        self.launch_fitskirt()
 
         # Setup the modeling
         self.setup_modelling()
@@ -102,6 +105,22 @@ class NGC4013Test(TestImplementation):
 
         # Download the input
         network.download_and_decompress_file(input_url, temp_path, progress_bar=True)
+
+    # -----------------------------------------------------------------
+
+    def launch_fitskirt(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Launching FitSKIRT ...")
+
+        # mkdir sample_output
+        # fitskirt -t 1 tutorial.fski -o ./sample_output
+        # mpirun -n 20 fitskirt -t 1 -o fit1 tutorial.fski
 
     # -----------------------------------------------------------------
 

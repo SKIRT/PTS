@@ -142,7 +142,7 @@ class ParameterExplorer(FittingComponent):
         self.load_ski()
 
         # 3. Set the parameter ranges
-        self.set_ranges()
+        if not self.has_all_ranges: self.set_ranges()
 
         # 4. Set the generation info
         self.set_info()
@@ -170,6 +170,25 @@ class ParameterExplorer(FittingComponent):
 
         # 12. Launch the simulations for different parameter values
         self.launch()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_all_ranges(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the free parameter labels
+        for label in self.fitting_run.free_parameter_labels:
+
+            # If range is already defined
+            if label not in self.ranges: return False
+
+        # All ranges are defined
+        return True
 
     # -----------------------------------------------------------------
 
@@ -319,6 +338,9 @@ class ParameterExplorer(FittingComponent):
 
             # Create the generator
             self.generator = GeneticModelGenerator()
+
+        # Invalid generation method
+        else: raise ValueError("Invalid generation method: " + str(self.config.generation_method))
 
     # -----------------------------------------------------------------
 

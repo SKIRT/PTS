@@ -45,7 +45,7 @@ class SEDModeler(ModelerBase):
         super(SEDModeler, self).__init__(config, interactive)
 
         # Optional configs for the fitting configurer
-        self.parameters_config = None
+        #self.parameters_config = None
         self.descriptions_config = None
         self.types_config = None
         self.units_config = None
@@ -98,7 +98,7 @@ class SEDModeler(ModelerBase):
         super(SEDModeler, self).setup(**kwargs)
 
         # Set configs for the fitting configurer
-        if "parameters_config" in kwargs: self.parameters_config = kwargs.pop("parameters_config")
+        #if "parameters_config" in kwargs: self.parameters_config = kwargs.pop("parameters_config")
         if "descriptions_config" in kwargs: self.descriptions_config = kwargs.pop("descriptions_config")
         if "types_config" in kwargs: self.types_config = kwargs.pop("types_config")
         if "units_config" in kwargs: self.units_config = kwargs.pop("units_config")
@@ -110,11 +110,13 @@ class SEDModeler(ModelerBase):
         if "initialize_config" in kwargs: self.initialize_config = kwargs.pop("initialize_config")
 
         # Set ranges dict
-        if self.ranges_config is not None and self.parameters_config is not None:
-            self.parameter_ranges = dict()
-            for parameter_name in self.parameters_config.free_parameters:
-                range = self.ranges_config[parameter_name + "_range"]
-                self.parameter_ranges[parameter_name] = range
+        #if self.ranges_config is not None and self.parameters_config is not None:
+        #    self.parameter_ranges = dict()
+        #    for parameter_name in self.parameters_config.free_parameters:
+        #        range = self.ranges_config[parameter_name + "_range"]
+        #        self.parameter_ranges[parameter_name] = range
+
+        # Set ranges dict
 
     # -----------------------------------------------------------------
 
@@ -221,13 +223,14 @@ class SEDModeler(ModelerBase):
         ski = get_ski_template(self.config.path)
         free_parameter_names = ski.labels
 
-        # Load the SED, get the fitting filters
-        sed = get_observed_sed(self.config.path)
-        fitting_filter_names = sed.filter_names()
-
-        # Set free parameters and fitting filters
+        # Set free parameters
         config["parameters"] = free_parameter_names
-        config["filters"] = fitting_filter_names
+
+        # Load the SED, get the fitting filters
+        if self.filters_config is not None:
+            sed = get_observed_sed(self.config.path)
+            fitting_filter_names = sed.filter_names()
+            config["filters"] = fitting_filter_names
 
         # Set fitting run name and model name
         config["name"] = self.fitting_run_name
@@ -243,9 +246,27 @@ class SEDModeler(ModelerBase):
         configurer.config.path = self.modeling_path
 
         # Run the fitting configurer
-        configurer.run(parameters_config=self.parameters_config, descriptions_config=self.descriptions_config,
-                       types_config=self.types_config, units_config=self.units_config, ranges_config=self.ranges_config,
-                       filters_config=self.filters_config, genetic_config=self.genetic_config, settings=self.config.fitting_settings)
+        #configurer.run(parameters_config=self.parameters_config, descriptions_config=self.descriptions_config,
+        #               types_config=self.types_config, units_config=self.units_config, ranges_config=self.ranges_config,
+        #               filters_config=self.filters_config, genetic_config=self.genetic_config, settings=self.config.fitting_settings)
+        configurer.run(descriptions_config=self.descriptions_config, types_config=self.types_config,
+                       units_config=self.units_config, ranges_config=self.ranges_config, filters_config=self.filters_config,
+                       genetic_config=self.genetic_config, settings=self.config.fitting_settings)
+
+        # Get the parameter ranges
+        # Set ranges dict
+        if self.ranges_config is not None:
+            self.parameter_ranges = dict()
+            for parameter_name in free_parameter_names:
+
+                # Get the range
+                range = self.ranges_config[parameter_name + "_range"]
+
+                # Debugging
+                log.debug("Setting the range of the '" + parameter_name + "' parameter to '" + str(range) + "' for the parameter exploration ...")
+
+                # Set the range
+                self.parameter_ranges[parameter_name] = range
 
         # Mark the end and save the history file
         self.history.mark_end()

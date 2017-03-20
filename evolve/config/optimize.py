@@ -27,7 +27,7 @@ definition.add_optional("mutation_rate", "real", "mutation rate", 0.02)
 definition.add_optional("crossover_rate", "real", "crossover rate", 0.9)
 definition.add_optional("stats_freq", "integer", "frequency of statistics (in number of generations)", 50)
 definition.add_optional("best_raw_score", "real", "best score for an individual")
-definition.add_optional("rounddecimal", "integer", "round everything to this decimal place")
+definition.add_optional("round_decimal", "integer", "round everything to this decimal place", 2)
 definition.add_optional("mutation_method", "string", "mutation method", choices=["range", "gaussian", "binary"])
 definition.add_optional("min_or_max", "string", "minimize or maximize", choices=["minimize", "maximize"])
 definition.add_optional("run_id", "string", "identifier for this run", default="run0")
@@ -44,6 +44,8 @@ definition.add_flag("write", "write results", True)
 definition.add_flag("plot", "plot results", False)
 definition.add_flag("finish", "finish the evolution: set the scores of the last generation but don't generate a new population", False)
 
+definition.add_flag("heterogeneous", "genomes use heterogeneous quantities (parameter minima and maxima - or centers and sigmas for gaussian initializers and mutators - must be specified as input to the 'run' function")
+
 # Writing options
 definition.add_section("writing", "writing options")
 definition.sections["writing"].add_optional("engine_path", "string", "path for the genetic engine")
@@ -54,5 +56,8 @@ definition.sections["writing"].add_optional("database_path", "string", "path for
 
 # Advanced
 definition.add_optional("nelite_individuals", "positive_integer", "number of individuals to take as elite", 1)
+
+# Must only be defined when specifying only centers and sigmas for gaussian initializers and mutators, and no minima or maxima, or parameter_range
+definition.add_optional("parameter_type", "string", "parameter type", choices=["real", "integer"])
 
 # -----------------------------------------------------------------

@@ -45,12 +45,16 @@ class GeneticModelGenerator(ModelGenerator):
         # The optimizer
         self.optimizer = None
 
+        # Whether or not this is the initial generation
+        self.initial = None
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
 
         """
-        This funtion ...
+        This function ...
+        :param kwargs:
         :return:
         """
 
@@ -61,11 +65,14 @@ class GeneticModelGenerator(ModelGenerator):
         self.fitting_run = kwargs.pop("fitting_run")
 
         # Re-invoke existing optimizer run
-        if fs.is_file(self.fitting_run.main_engine_path): self.optimizer = StepWiseOptimizer.from_paths(self.fitting_run.path,
-                                                                                                        self.fitting_run.main_engine_path,
-                                                                                                        self.fitting_run.main_prng_path,
-                                                                                                        self.fitting_run.optimizer_config_path,
-                                                                                                        self.statistics_path, self.database_path)
+        if fs.is_file(self.fitting_run.main_engine_path):
+            self.optimizer = StepWiseOptimizer.from_paths(self.fitting_run.path,
+                                                            self.fitting_run.main_engine_path,
+                                                            self.fitting_run.main_prng_path,
+                                                            self.fitting_run.optimizer_config_path,
+                                                            self.statistics_path, self.database_path)
+            # Set initial flag
+            self.initial = False
 
         # New optimizer run
         else:
@@ -79,8 +86,37 @@ class GeneticModelGenerator(ModelGenerator):
             self.optimizer.config.writing.statistics_path = self.statistics_path
             self.optimizer.config.writing.database_path = self.database_path
 
+            # Set initial flag
+            self.initial = True
+
+        # Set parameters
+        self.set_parameters()
+
         # Set settings
         self.set_optimizer_settings()
+
+    # -----------------------------------------------------------------
+
+    def set_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the parameter ranges ...")
+
+        # Loop over the free parameters
+        for label in self.fitting_run.free_parameter_labels:
+
+            # Use: self.parameter_ranges_for_generation(self, generation_name) ????
+
+            # Get range
+            parameter_range = self.fitting_run.free_parameter_ranges[label]
+
+            # Add the parameter
+            self.add_parameter(label, parameter_range)
 
     # -----------------------------------------------------------------
 
@@ -102,7 +138,7 @@ class GeneticModelGenerator(ModelGenerator):
         self.optimizer.config.best_raw_score = 0.
 
         # User
-        self.optimizer.config.rounddecimal = self.fitting_run.genetic_settings.rounddecimal
+        self.optimizer.config.round_decimal = self.fitting_run.genetic_settings.round_decimal
         self.optimizer.config.mutation_method = self.fitting_run.genetic_settings.mutation_method
 
         # Fixed
@@ -120,44 +156,8 @@ class GeneticModelGenerator(ModelGenerator):
         # Fixed
         self.optimizer.config.nelite_individuals = self.fitting_run.genetic_settings.nelite_individuals
 
-    # -----------------------------------------------------------------
-
-    def setup_from_initial(self, **kwargs):
-
-        """
-        This function ...
-        :param kwargs:
-        :return:
-        """
-
-        # Call the setup function of the base class
-        #super(InitialModelGenerator, self).setup(**kwargs)
-
-        # Create the first genome
-        genome = G1DList(self.nparameters)
-
-        # Set genome options
-        genome.setParams(minima=self.parameter_minima, maxima=self.parameter_maxima, bestrawscore=0.00, rounddecimal=2)
-        genome.initializator.set(initializators.HeterogeneousListInitializerReal)
-        genome.mutator.set(mutators.HeterogeneousListMutatorRealRange)
-
-        # If gaussian is used
-        #genome.mutator.set(mutators.HeterogeneousListMutatorRealGaussian)
-        #genome.setParams(centers=centers, sigmas=sigmas) # means is a list with the centers of the gaussian function [for each parameter], sigmas is a list with the standard deviations [for each parameter]
-
-        # Create the genetic algorithm engine
-        self.engine = GeneticEngine(genome)
-
-        # Set options for the engine
-        self.engine.terminationCriteria.set(RawScoreCriteria)
-        self.engine.setMinimax(constants.minimaxType["minimize"])
-        self.engine.setGenerations(5) # not important in this case
-        self.engine.setCrossoverRate(self.config.crossover_rate)
-        self.engine.setPopulationSize(self.config.nmodels)
-        self.engine.setMutationRate(self.config.mutation_rate)
-
-        # Initialize the genetic algorithm
-        self.engine.initialize()
+        # Set heterogeneous flag
+        self.optimizer.config.heterogeneous = True
 
     # -----------------------------------------------------------------
 
@@ -172,40 +172,13 @@ class GeneticModelGenerator(ModelGenerator):
         log.info("Generating the new models ...")
 
         # Set the scores
-        self.set_scores()
+        if not self.initial: self.set_scores()
 
         # Run the optimizer
-        self.optimizer.run(scores=self.scores, scores_check=self.scores_check)
+        self.optimizer.run(scores=self.scores, scores_check=self.scores_check, minima=self.parameter_minima_scalar, maxima=self.parameter_maxima_scalar)
 
         # Get the parameter values of the new models
         self.get_model_parameters()
-
-    # -----------------------------------------------------------------
-
-    def generate_from_initial(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Generating the initial population of models ...")
-
-        # Get the initial population
-        population = self.engine.get_population()
-
-        # Loop over the individuals of the population
-        for individual in population:
-
-            # Loop over all the genes (parameters)
-            for i in range(len(individual)):
-
-                # Get the parameter value
-                value = individual[i]
-
-                # Add the parameter value to the dictionary
-                self.parameters[self.free_parameter_labels[i]].append(value)
 
     # -----------------------------------------------------------------
 
