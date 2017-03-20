@@ -478,12 +478,14 @@ class PhotometricUnit(CompositeUnit):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, unit, density=False):
+    def __init__(self, unit, density=False, strict=False):
 
         """
         The constructor ...
         :param unit:
         :param density:
+        :param strict: if strict is True, density=True or density=False is interepreted as a strong necessity:
+        an error will be thrown if this class thinks the passed flag is not correctly representing the quantity
         """
 
         # Already a photometric unit
@@ -517,8 +519,12 @@ class PhotometricUnit(CompositeUnit):
             self.scale_factor, self.base_unit, self.wavelength_unit, self.frequency_unit, self.distance_unit, self.solid_angle_unit = analyse_unit(unit)
 
             # If the wavelength unit is not None or the frequency unit is not None, we have a spectral density
-            if self.wavelength_unit is not None and self.wavelength_unit != "": self.density = True
-            if self.frequency_unit is not None and self.frequency_unit != "": self.density = True
+            if self.wavelength_unit is not None and self.wavelength_unit != "":
+                if strict and not self.density: raise ValueError("The passed unit string does not correspond to a spectral density")
+                self.density = True
+            if self.frequency_unit is not None and self.frequency_unit != "":
+                if strict and not self.density: raise ValueError("The passed unit string does not correspond to a spectral density")
+                self.density = True
 
         # Call the constructor of the base class
         super(PhotometricUnit, self).__init__(unit.scale, unit.bases, unit.powers)

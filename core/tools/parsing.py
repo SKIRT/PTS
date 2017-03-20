@@ -366,21 +366,6 @@ def range(argument):
 
 # -----------------------------------------------------------------
 
-def photometric_quantity_range(argument):
-
-    """
-    This function ...
-    :param argument:
-    :return:
-    """
-
-    from ..basics.range import QuantityRange
-
-    min_quantity, max_quantity = photometric_quantity_tuple(argument.replace(">", ","))
-    return QuantityRange(min_quantity, max_quantity)
-
-# -----------------------------------------------------------------
-
 def directory_path(argument):
 
     """
@@ -759,8 +744,7 @@ def unit(argument):
     :return:
     """
 
-    from ..basics.unit import PhotometricUnit, parse_unit
-
+    from ..basics.unit import parse_unit
     return parse_unit(argument) # can be photometric, but doesn't need to be
 
 # -----------------------------------------------------------------
@@ -773,8 +757,7 @@ def photometric_unit(argument):
     :return:
     """
 
-    from ..basics.unit import PhotometricUnit, parse_unit
-
+    from ..basics.unit import PhotometricUnit
     return PhotometricUnit(argument)
 
 # -----------------------------------------------------------------
@@ -787,9 +770,8 @@ def photometric_density_unit(argument):
     :return:
     """
 
-    from ..basics.unit import PhotometricUnit, parse_unit
-
-    return PhotometricUnit(argument, density=True)
+    from ..basics.unit import PhotometricUnit
+    return PhotometricUnit(argument, density=True, strict=True)
 
 # -----------------------------------------------------------------
 
@@ -812,7 +794,6 @@ def quantity(argument):
     """
 
     from ..basics.quantity import parse_quantity
-
     return parse_quantity(argument)
 
 # -----------------------------------------------------------------
@@ -826,7 +807,6 @@ def photometric_quantity(argument):
     """
 
     from ..basics.quantity import parse_quantity
-
     return parse_quantity(argument)
 
 # -----------------------------------------------------------------
@@ -840,7 +820,6 @@ def photometric_density_quantity(argument):
     """
 
     from ..basics.quantity import parse_quantity
-
     return parse_quantity(argument, density=True)
 
 # -----------------------------------------------------------------
@@ -1015,7 +994,6 @@ def image_path(argument):
     """
 
     path = file_path(argument)
-
     if path.endswith("fits"): raise ValueError("Unrecognized file type")
     else: return path
 
@@ -1029,11 +1007,7 @@ def filter(argument):
     :return:
     """
 
-    from ..filter.broad import BroadBandFilter
-    from ..filter.broad import identifiers as broad_band_identifiers
-    from ..filter.narrow import NarrowBandFilter, generate_aliases_ranges, wavelength_range_for_spec
     from ..filter.filter import parse_filter
-
     return parse_filter(argument)
 
 # -----------------------------------------------------------------
@@ -1059,10 +1033,6 @@ def broad_band_filter(argument):
     """
 
     from ..filter.broad import BroadBandFilter
-    from ..filter.broad import identifiers as broad_band_identifiers
-    from ..filter.narrow import NarrowBandFilter, generate_aliases_ranges, wavelength_range_for_spec
-    from ..filter.filter import parse_filter
-
     return BroadBandFilter(argument)
 
 # -----------------------------------------------------------------
@@ -1075,11 +1045,7 @@ def narrow_band_filter(argument):
     :return:
     """
 
-    from ..filter.broad import BroadBandFilter
-    from ..filter.broad import identifiers as broad_band_identifiers
-    from ..filter.narrow import NarrowBandFilter, generate_aliases_ranges, wavelength_range_for_spec
-    from ..filter.filter import parse_filter
-
+    from ..filter.narrow import NarrowBandFilter
     return NarrowBandFilter(argument)
 
 # -----------------------------------------------------------------
@@ -1221,10 +1187,7 @@ def lazy_narrow_band_filter_list(argument):
     :return:
     """
 
-    from ..filter.broad import BroadBandFilter
-    from ..filter.broad import identifiers as broad_band_identifiers
     from ..filter.narrow import NarrowBandFilter, generate_aliases_ranges, wavelength_range_for_spec
-    from ..filter.filter import parse_filter
 
     filters = []
     for arg in string_list(argument):

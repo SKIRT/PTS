@@ -20,6 +20,270 @@ except ImportError: HAS_NP = False
 
 # -----------------------------------------------------------------
 
+class Type(object):
+
+    """
+    This class ...
+    """
+
+# -----------------------------------------------------------------
+
+class Boolean(Type):
+
+    """
+    This class ...
+    """
+
+    def __new__(cls, argument):
+
+        """
+        This fucntion ...
+        :param argument:
+        :return:
+        """
+
+# -----------------------------------------------------------------
+
+class Real(Type):
+
+    """
+    This class ...
+    """
+
+    def __new__(cls, argument):
+
+        """
+        This function ...
+        :param argument:
+        :return:
+        """
+
+# -----------------------------------------------------------------
+
+class Integer(Type):
+
+    """
+    This class ...
+    """
+
+    def __new__(cls, argument):
+
+        """
+        The constructor ...
+        :param argument:
+        :return:
+        """
+
+# -----------------------------------------------------------------
+
+class NonNegativeInteger(Integer):
+
+    """
+    This class ...
+    """
+
+    def __new__(cls, argument):
+
+        """
+        The constructor ...
+        :param argument:
+        :return:
+        """
+
+# -----------------------------------------------------------------
+
+class NonPositiveInteger(Integer):
+
+    """
+    This class ...
+    """
+
+    def __new__(cls, argument):
+
+        """
+        The constructor ...
+        :param argument:
+        :return:
+        """
+
+# -----------------------------------------------------------------
+
+class PositiveInteger(NonNegativeInteger):
+
+    """
+    This class ...
+    """
+
+    def __new__(cls, argument):
+
+        """
+        The constructor ...
+        :param argument:
+        :return:
+        """
+
+# -----------------------------------------------------------------
+
+class NegativeInteger(NonPositiveInteger):
+
+    """
+    This class ...
+    """
+
+    def __new__(cls, argument):
+
+        """
+        The constructor ...
+        :param argument:
+        :return:
+        """
+
+# -----------------------------------------------------------------
+
+class NonNegativeReal(Real):
+
+    """
+    This class ...
+    """
+
+    def __new__(cls, argument):
+
+        """
+        This function ...
+        :param argument:
+        :return:
+        """
+
+# -----------------------------------------------------------------
+
+class NonPositiveReal(Real):
+
+    """
+    This class ...
+    """
+
+    def __new__(cls, argument):
+
+        """
+        This function ...
+        :param argument:
+        :return:
+        """
+
+# -----------------------------------------------------------------
+
+class PositiveReal(NonNegativeReal):
+
+    """
+    This class ...
+    """
+
+    def __new__(cls, argument):
+
+        """
+        This function ...
+        :param argument:
+        :return:
+        """
+
+# -----------------------------------------------------------------
+
+class NegativeReal(NonPositiveReal):
+
+    """
+    This class ...
+    """
+
+    def __new__(cls, argument):
+
+        """
+        This function ...
+        :param argument:
+        :return:
+        """
+
+# -----------------------------------------------------------------
+
+class String(Type):
+
+    """
+    This class ...
+    """
+
+    def __new__(cls, argument):
+
+        """
+        This function ...
+        :param argument:
+        :return:
+        """
+
+# -----------------------------------------------------------------
+
+class NoSpacesString(String):
+
+    """
+    This class ...
+    """
+
+    def __new__(cls, argument):
+
+        """
+        This function ...
+        :param argument:
+        :return:
+        """
+
+# -----------------------------------------------------------------
+
+class Path(String):
+
+    """
+    This function ...
+    """
+
+    def __new__(cls, argument):
+
+        """
+        This function ...
+        :param argument:
+        :return:
+        """
+
+# -----------------------------------------------------------------
+
+class FilePath(Path):
+
+    """
+    This function ...
+    """
+
+    def __new__(cls, argument):
+
+        """
+        This function ...
+        :param argument:
+        :return:
+        """
+
+# -----------------------------------------------------------------
+
+class DirectoryPath(Path):
+
+    """
+    This fucntion ...
+    """
+
+    def __new__(cls, argument):
+
+        """
+        This function ...
+        :param argument:
+        :return:
+        """
+
+# -----------------------------------------------------------------
+
 def is_boolean_type(value):
 
     """

@@ -18,6 +18,7 @@ from types import NoneType
 # Import the relevant PTS classes and modules
 from . import types
 from . import introspection
+from . import sequences
 
 # -----------------------------------------------------------------
 
@@ -38,6 +39,7 @@ def stringify(value, scientific=False, decimal_places=2):
 
         strings = []
         ptype = None
+        ptypes = set()
         for entry in value:
 
             #parsetype, val = stringify_not_list(entry)
@@ -48,10 +50,22 @@ def stringify(value, scientific=False, decimal_places=2):
                 #raise ValueError("Nonuniform list")
                 ptype = "mixed"
 
+            # Add the parse type
+            ptypes.add(parsetype)
+
+            # Add the string
             strings.append(val)
 
-        #print(ptype)
-        #print(strings)
+        from ..basics.configuration import parent_type
+        from .logging import log
+
+        # Investigate the different ptypes
+        parent_types = [parent_type(type_name) for type_name in ptypes]
+        print("Parent types:", parent_types)
+        if sequences.all_equal(parent_types) and parent_types[0] is not None: ptype = parent_types[0]
+        elif ptype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_types)[1] + "'")
+
+        # Return the type and the string
         return ptype + "_list", ",".join(strings)
 
     # Dictionary
@@ -63,9 +77,15 @@ def stringify(value, scientific=False, decimal_places=2):
         ptype = None
         parts = []
 
+        keytypes = set()
+        ptypes = set()
+
         for key in value:
 
             ktype, kstring = stringify(key)
+
+            # Add key type
+            keytypes.add(ktype)
 
             # Check key type
             if keytype is None: keytype = ktype
@@ -75,12 +95,30 @@ def stringify(value, scientific=False, decimal_places=2):
 
             vtype, vstring = stringify(v)
 
+            # Add value type
+            ptypes.add(vtype)
+
             # Check value type
             if ptype is None: ptype = vtype
             elif ptype != vtype: ptype = "mixed"
 
             string = "'" + kstring + "': '" + vstring + "'"
             parts.append(string)
+
+        from ..basics.configuration import parent_type
+        from .logging import log
+
+        # Investigate the different keytypes
+        parent_key_types = [parent_type(type_name) for type_name in keytypes]
+        print("Parent key types:", parent_key_types)
+        if sequences.all_equal(parent_key_types) and parent_key_types[0] is not None: ptype = parent_key_types[0]
+        elif keytype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_key_types)[1] + "'")
+
+        # Investigate the different value types
+        parent_value_types = [parent_type(type_name) for type_name in ptypes]
+        print("Parent value types:", parent_value_types)
+        if sequences.all_equal(parent_value_types) and parent_value_types[0] is not None: ptype = parent_value_types[0]
+        elif ptype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_value_types)[1] + "'")
 
         # Return
         return keytype + "_" + ptype + "_dictionary", ",".join(parts)
@@ -238,6 +276,7 @@ def yes_or_no(boolean, short=False):
     """
     This function ...
     :param boolean:
+    :param short:
     :return:
     """
 

@@ -323,6 +323,21 @@ def are_related_types(type_a, type_b):
 
 # -----------------------------------------------------------------
 
+def parent_type(type_name):
+
+    """
+    This function ...
+    :param type_name:
+    :return:
+    """
+
+    if type_name in subtypes.keys(): return type_name
+    for label in subtypes:
+        if type_name in subtypes[label]: return label
+    return None
+
+# -----------------------------------------------------------------
+
 class Configuration(Map):
 
     """
@@ -551,7 +566,7 @@ def load_mapping(mappingfile, mapping, indent=""):
             if "#" in line: line = line.split("#")[0]
 
             try:
-                before, after = line.split(":")
+                before, after = line.split(":", 1)
             except ValueError: print("ERROR processing: ", line)
 
             #print("declaration", before, after)

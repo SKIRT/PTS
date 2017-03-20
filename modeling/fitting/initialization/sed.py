@@ -214,10 +214,10 @@ class SEDFittingInitializer(FittingComponent, SEDModelingComponent):
         log.info("Setting the initial parameter values ...")
 
         # Loop over the free parameter labels
-        for label in self.free_parameter_labels:
+        for label in self.fitting_run.free_parameter_labels:
 
             # Determine value as the mean of the given range
-            value = self.free_parameter_ranges[label].mean
+            value = self.fitting_run.free_parameter_ranges[label].mean
 
             # Set the value for the parameter
             self.ski.set_labeled_value(label, value)
@@ -278,7 +278,7 @@ class SEDFittingInitializer(FittingComponent, SEDModelingComponent):
         submm_bands = []
 
         # Loop over the observed SED filters
-        for fltr in self.fitting_filters:
+        for fltr in self.fitting_run.fitting_filters:
 
             # Get the central wavelength
             wavelength = fltr.center
@@ -317,7 +317,7 @@ class SEDFittingInitializer(FittingComponent, SEDModelingComponent):
         if has_submm: number_of_groups += 1
 
         # Detemrine total number of data points
-        number_of_data_points = len(self.fitting_filters)
+        number_of_data_points = len(self.fitting_run.fitting_filters)
 
         # Determine the weight for each group of filters
         uv_weight = 1. / (len(uv_bands) * number_of_groups) * number_of_data_points if has_uv else 0.0
@@ -374,10 +374,10 @@ class SEDFittingInitializer(FittingComponent, SEDModelingComponent):
         """
 
         # Inform the user
-        log.info("Writing the ski file to " + self.template_ski_path + " ...")
+        log.info("Writing the ski file to " + self.fitting_run.template_ski_path + " ...")
 
         # Save the ski template file
-        self.ski.saveto(self.template_ski_path)
+        self.ski.saveto(self.fitting_run.template_ski_path)
 
     # -----------------------------------------------------------------
 

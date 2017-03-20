@@ -13,6 +13,7 @@ def main():
     Lsun = 3.846e26 # Watts
     # Total energy absorbed in the new component
     # Derived from ../../SKIRTrun/models/testHeating/MappingsHeating/plotSEDs.py
+
     Lnew = 176495776.676 # in Lsun
 
     print 'reading data... '
