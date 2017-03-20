@@ -109,6 +109,13 @@ class SEDModeler(ModelerBase):
         # Config for the fitting initializer
         if "initialize_config" in kwargs: self.initialize_config = kwargs.pop("initialize_config")
 
+        # Set ranges dict
+        if self.ranges_config is not None and self.parameters_config is not None:
+            self.parameter_ranges = dict()
+            for parameter_name in self.parameters_config.free_parameters:
+                range = self.ranges_config[parameter_name + "_range"]
+                self.parameter_ranges[parameter_name] = range
+
     # -----------------------------------------------------------------
 
     def load_data(self):

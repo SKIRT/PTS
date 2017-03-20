@@ -61,7 +61,7 @@ def stringify(value, scientific=False, decimal_places=2):
 
         # Investigate the different ptypes
         parent_types = [parent_type(type_name) for type_name in ptypes]
-        print("Parent types:", parent_types)
+        #print("Parent types:", parent_types)
         if sequences.all_equal(parent_types) and parent_types[0] is not None: ptype = parent_types[0]
         elif ptype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_types)[1] + "'")
 
@@ -110,13 +110,13 @@ def stringify(value, scientific=False, decimal_places=2):
 
         # Investigate the different keytypes
         parent_key_types = [parent_type(type_name) for type_name in keytypes]
-        print("Parent key types:", parent_key_types)
+        #print("Parent key types:", parent_key_types)
         if sequences.all_equal(parent_key_types) and parent_key_types[0] is not None: ptype = parent_key_types[0]
         elif keytype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_key_types)[1] + "'")
 
         # Investigate the different value types
         parent_value_types = [parent_type(type_name) for type_name in ptypes]
-        print("Parent value types:", parent_value_types)
+        #print("Parent value types:", parent_value_types)
         if sequences.all_equal(parent_value_types) and parent_value_types[0] is not None: ptype = parent_value_types[0]
         elif ptype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_value_types)[1] + "'")
 

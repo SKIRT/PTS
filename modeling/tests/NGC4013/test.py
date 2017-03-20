@@ -51,7 +51,7 @@ class NGC4013Test(TestImplementation):
         """
 
         # Call the constructor of the base class
-        super(NGC4013Test, self).__init__()
+        super(NGC4013Test, self).__init__(config, interactive)
 
     # -----------------------------------------------------------------
 
@@ -102,6 +102,8 @@ class NGC4013Test(TestImplementation):
 
         # Download the input
         network.download_and_decompress_file(input_url, temp_path, progress_bar=True)
+
+    # -----------------------------------------------------------------
 
     def setup_modelling(self):
 

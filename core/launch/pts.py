@@ -521,7 +521,8 @@ class PTSRemoteLauncher(object):
         else: remote_output_paths = None
 
         # Construct the PTS command string
-        command_string = "pts --configfile " + remote_conf_path + " --input " + remote_input_path
+        command_string = "pts --configfile " + remote_conf_path
+        if remote_input_path is not None: command_string += " --input " + remote_input_path
         command_string += " --output " + remote_output_path + " " + exact_command_name
 
         # Add input file paths

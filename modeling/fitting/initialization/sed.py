@@ -135,8 +135,8 @@ class SEDFittingInitializer(FittingComponent, SEDModelingComponent):
         # Inform the user
         log.info("Creating the wavelength grids ...")
 
-        # Get fixed wavelengths
-        fixed = self.sed_filter_wavelengths
+        # Fixed wavelengths (always in the grid)
+        fixed = [self.i1_filter.pivot, self.fuv_filter.pivot]
 
         # Set options
         self.wg_generator.config.show = False

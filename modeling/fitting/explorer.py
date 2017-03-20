@@ -351,6 +351,7 @@ class ParameterExplorer(FittingComponent):
         definition = ConfigurationDefinition(write_config=False)
 
         extra_info = dict()
+
         # Check if there are any models that have been evaluated
         if self.fitting_run.has_evaluated_models:
 
@@ -367,8 +368,7 @@ class ParameterExplorer(FittingComponent):
             parameter_values = model.parameter_values
 
             # Set info
-            for label in parameter_values:
-                extra_info[label] = "parameter value of current best model = " + stringify(parameter_values[label])[1]
+            for label in parameter_values: extra_info[label] = "parameter value of current best model = " + stringify(parameter_values[label])[1]
 
         else:
 

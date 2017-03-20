@@ -323,7 +323,7 @@ class AnalysisLauncher(AnalysisComponent):
         emission_lines = EmissionLines()
 
         # Fixed wavelengths in the grid
-        fixed = [self.i1_filter.pivotwavelength(), self.fuv_filter.pivotwavelength()]
+        fixed = [self.i1_filter.pivot, self.fuv_filter.pivot]
 
         # Create the grid
         # grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added

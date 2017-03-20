@@ -195,7 +195,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         emission_lines = EmissionLines()
 
         # Fixed wavelengths in the grid
-        fixed = [self.i1_filter.pivotwavelength(), self.fuv_filter.pivotwavelength()] # in micron, for normalization of stellar components
+        fixed = [self.i1_filter.pivot, self.fuv_filter.pivot] # in micron, for normalization of stellar components
 
         # Range in micron
         micron_range = RealRange(self.config.wg.range.min.to("micron").value, self.config.wg.range.max.to("micron").value)

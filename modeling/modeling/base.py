@@ -71,6 +71,9 @@ class ModelerBase(Configurable):
         self.model_name = "model_a"
         self.representation_name = "highres"
 
+        # Parameter ranges
+        self.parameter_ranges = None
+
     # -----------------------------------------------------------------
 
     @property
@@ -356,7 +359,7 @@ class ModelerBase(Configurable):
         config["name"] = self.fitting_run_name
 
         # Create the parameter explorer
-        explorer = ParameterExplorer()
+        explorer = ParameterExplorer(config)
 
         # Add an entry to the history
         self.history.add_entry(ParameterExplorer.command_name())
@@ -381,8 +384,12 @@ class ModelerBase(Configurable):
         explorer.config.selfabsorption = self.config.selfabsorption
         explorer.config.transient_heating = self.config.transient_heating
 
+        # Set the input
+        input_dict = dict()
+        if self.parameter_ranges is not None: input_dict["ranges"] = self.parameter_ranges
+
         # Run the parameter explorer
-        explorer.run()
+        explorer.run(**input_dict)
 
         # Mark the end and save the history file
         self.history.mark_end()
