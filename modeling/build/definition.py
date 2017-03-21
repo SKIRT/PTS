@@ -38,4 +38,43 @@ class ModelDefinition(object):
         self.stellar_path = fs.create_directory_in(self.path, "stellar")
         self.dust_path = fs.create_directory_in(self.path, "dust")
 
+        # Other input
+        self.input_path = fs.create_directory_in(self.path, "input")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def stellar_map_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.stellar_path, recursive=True, exact_name="map", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_map_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.dust_path, recursive=True, exact_name="map", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def input_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.input_path) + self.stellar_map_paths + self.dust_map_paths
+
 # -----------------------------------------------------------------

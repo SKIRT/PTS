@@ -72,13 +72,13 @@ class SEDRepresentationBuilder(BuildComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Load the ski file
+        # 2. Load the ski file
         self.load_ski()
 
-        # Load the instrument
+        # 3. Load the instrument
         self.load_projection()
 
-        # Create projections
+        # 4. Create projections
         self.create_projections()
 
         # 5. Create the instruments

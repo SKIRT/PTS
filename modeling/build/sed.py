@@ -18,6 +18,8 @@ from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
 from ..component.sed import get_ski_template
 from ...core.tools.serialization import write_dict
+from ...magic.core.frame import Frame
+from .component import model_map_filename
 
 # -----------------------------------------------------------------
 
@@ -48,6 +50,9 @@ class SEDModelBuilder(BuildComponent):
         # The path for the dust components
         self.model_dust_path = None
 
+        # The path for the other input files
+        self.model_input_path = None
+
         # The ski file template
         self.ski = None
 
@@ -60,6 +65,18 @@ class SEDModelBuilder(BuildComponent):
         # The paths to the component directories
         self.stellar_paths = dict()
         self.dust_paths = dict()
+
+        # The stellar maps
+        self.stellar_maps = dict()
+
+        # The dust maps
+        self.dust_maps = dict()
+
+        # The original input map filenames
+        self.original_map_filenames = []
+
+        # Other input paths
+        self.other_input = dict()
 
     # -----------------------------------------------------------------
 
@@ -82,6 +99,9 @@ class SEDModelBuilder(BuildComponent):
 
         # 4. Get the dust components
         self.get_dust_components()
+
+        # 5. Load input other than the input maps defining
+        if self.ski.needs_input: self.load_other_input()
 
         # 5. Write
         self.write()
@@ -120,6 +140,9 @@ class SEDModelBuilder(BuildComponent):
         # Set the path of the directory for the dust components
         self.model_dust_path = fs.create_directory_in(self.model_path, "dust")
 
+        # Set the path of the input directory
+        self.model_input_path = fs.create_directory_in(self.model_path, "input")
+
     # -----------------------------------------------------------------
 
     def load_ski(self):
@@ -150,8 +173,44 @@ class SEDModelBuilder(BuildComponent):
             # Get the properties
             properties = self.ski.get_stellar_component_properties(component_id)
 
+            # Check the geometry of the stellar component
+            geometries = properties["children"]["geometry"]["children"]
+            if len(geometries) != 1: raise ValueError("Cannot locate the geometry for stellar component '" + component_id + "'")
+            geometry_type = geometries.keys()[0]
+            geometry_properties = geometries[geometry_type]
+            if geometry_type == "ReadFitsGeometry": self.load_stellar_map(component_id, geometry_properties)
+
             # Set the properties
             self.stellar_properties[component_id] = properties
+
+    # -----------------------------------------------------------------
+
+    def load_stellar_map(self, name, parameters):
+
+        """
+        This function ...
+        :param name:
+        :param parameters:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the input map for the '" + name + "' stellar component ...")
+
+        # Add to original filenames
+        self.original_map_filenames.append(parameters["filename"])
+
+        # Get the absolute file path
+        path = fs.absolute_path(parameters["filename"])
+
+        # Debugging
+        log.debug("Loading the map from '" + path + "' ...")
+
+        # Load the map
+        self.stellar_maps[name] = Frame.from_file(path)
+
+        # Change the filename in the geometry parameters
+        parameters["filename"] = model_map_filename
 
     # -----------------------------------------------------------------
 
@@ -171,8 +230,65 @@ class SEDModelBuilder(BuildComponent):
             # Get the properties
             properties = self.ski.get_dust_component_properties(component_id)
 
+            # Check the geometry of the dust component
+            geometries = properties["children"]["geometry"]["children"]
+            if len(geometries) != 1: raise ValueError("Cannot locate the geometry for dust component '" + component_id + "'")
+            geometry_type = geometries.keys()[0]
+            geometry_properties = geometries[geometry_type]
+            if geometry_type == "ReadFitsGeometry": self.load_dust_map(component_id, geometry_properties)
+
             # Set the properties
             self.dust_properties[component_id] = properties
+
+    # -----------------------------------------------------------------
+
+    def load_dust_map(self, name, parameters):
+
+        """
+        This function ...
+        :param name:
+        :param parameters:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the input map for the '" + name + "' dust component ...")
+
+        # Add to original filenames
+        self.original_map_filenames.append(parameters["filename"])
+
+        # Get the absolute file path
+        path = fs.absolute_path(parameters["filename"])
+
+        # Debugging
+        log.debug("Loading the map from '" + path + "' ...")
+
+        # Load the map
+        self.dust_maps[name] = Frame.from_file(path)
+
+        # Change the filename in the geometry parameters
+        parameters["filename"] = model_map_filename
+
+    # -----------------------------------------------------------------
+
+    def load_other_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading other input files for the ski file ...")
+
+        # Loop over the input filenames
+        for filename in self.ski.input_files:
+
+            # Skip maps
+            if filename in self.original_map_filenames: continue
+
+            # Add others
+            self.other_input[filename] = fs.absolute_path(filename)
 
     # -----------------------------------------------------------------
 
@@ -197,6 +313,15 @@ class SEDModelBuilder(BuildComponent):
 
         # Write the dust properties
         self.write_dust_properties()
+
+        # Write stellar maps
+        self.write_stellar_maps()
+
+        # Write dust maps
+        self.write_dust_maps()
+
+        # Write other input
+        self.write_other_input()
 
         # Write the table
         self.write_table()
@@ -284,6 +409,65 @@ class SEDModelBuilder(BuildComponent):
             # Write the properties
             path = fs.join(self.dust_paths[name], "properties.dat")
             write_dict(self.dust_properties[name], path)
+
+    # -----------------------------------------------------------------
+
+    def write_stellar_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing stellar maps ...")
+
+        # Loop over the components with a map
+        for name in self.stellar_maps:
+
+            # Determine path and save
+            path = fs.join(self.stellar_paths[name], model_map_filename)
+            self.stellar_maps[name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_dust_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing dust maps ...")
+
+        # Loop over the components with a map
+        for name in self.dust_maps:
+
+            # Determine path and save
+            path = fs.join(self.dust_paths[name], model_map_filename)
+            self.dust_maps[name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_other_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing other input files ...")
+
+        # Loop over the files
+        for filename in self.other_input:
+
+            # Original filepath
+            filepath = self.other_input[filename]
+
+            # Copy
+            fs.copy_file(filepath, self.model_input_path)
 
     # -----------------------------------------------------------------
 

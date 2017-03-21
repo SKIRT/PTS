@@ -24,10 +24,6 @@ from ...core.tools.serialization import write_dict
 
 # -----------------------------------------------------------------
 
-model_map_filename = "map.fits"
-
-# -----------------------------------------------------------------
-
 class GeneralBuilder(BuildComponent):
     
     """

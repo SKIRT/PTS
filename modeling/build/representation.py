@@ -290,10 +290,10 @@ class RepresentationBuilder(BuildComponent):
         # Inform the user
         log.info("Loading the deprojections used for the model ...")
 
-        # Load stellar deprojections
+        # 1. Load stellar deprojections
         self.load_stellar_deprojections()
 
-        # load dust deprojections
+        # 2. load dust deprojections
         self.load_dust_deprojections()
 
     # -----------------------------------------------------------------
@@ -511,7 +511,7 @@ class RepresentationBuilder(BuildComponent):
         # Inform the user
         log.info("Creating the dust grid ...")
 
-
+        # TODO: implement
 
     # -----------------------------------------------------------------
 
@@ -525,10 +525,10 @@ class RepresentationBuilder(BuildComponent):
         # Inform the user
         log.info("Writing ...")
 
-        # Write the projections
+        # 1. Write the projections
         self.write_projections()
 
-        # 1. Write the instruments
+        # 2. Write the instruments
         self.write_instruments()
 
         # 3. Write the dust grids

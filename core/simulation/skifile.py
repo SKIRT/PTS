@@ -135,6 +135,26 @@ class SkiFile:
                     filenames.append(value)
         return filenames
 
+    # This property returns a list of (element, attribute_name) tuples
+    @property
+    def input_file_elements_and_attributes(self):
+
+        elements = xml.get_all_elements(self.tree.getroot())
+
+        result = []
+
+        for el in elements:
+            for label in el.attrib:
+                value = el.attrib[label]
+                if "." in value:
+                    before, after = value.split(".")
+                    if after[0].isdigit() or after[0] == " ": continue
+                    assert after[0].isalpha() # equivalent
+
+                    result.append((el, label))
+
+        return result
+
     ## This function returns the paths to the input files
     def input_paths(self, input_path=None, working_directory=None):
 
@@ -177,6 +197,19 @@ class SkiFile:
 
         # Return the input paths
         return input_paths
+
+    ## This function allows to change the input filename/filepath into another filename/filepath
+    def change_input_filename(self, old_filename, new_filename):
+
+        result = self.input_file_elements_and_attributes
+        for element, label in result:
+
+            # Check
+            filename = self.get_value(element, label)
+            if filename != old_filename: continue
+
+            # Set
+            self.set_value(element, label, new_filename)
 
     ## This property gives the simulation prefix
     @property
@@ -1923,6 +1956,15 @@ class SkiFile:
         new_geometry = parent.makeelement("ReadFitsGeometry", attrs)
         parent.append(new_geometry)
 
+    ## This function sets the filename of a stellar component ReadFits geometry
+    def set_stellar_component_fits_geometry_filename(self, component_id, filename):
+
+        # Get the geometry
+        geometry = self.get_stellar_component_geometry(component_id)
+
+        # Set
+        self.set_value(geometry, "filename", filename)
+
     ## This function sets the geometry of the specified dust component to a FITS file
     def set_dust_component_fits_geometry(self, component_id, filename, pixelscale, position_angle, inclination, x_size, y_size, x_center, y_center, scale_height):
 
@@ -1937,6 +1979,15 @@ class SkiFile:
                  "xcenter": str(x_center), "ycenter": str(y_center), "axialScale": represent_quantity(scale_height)}
         new_geometry = parent.makeelement("ReadFitsGeometry", attrs)
         parent.append(new_geometry)
+
+    ## This fucntion sets the filename of a dust component ReadFits geometry
+    def set_dust_component_fits_geometry_filename(self, component_id, filename):
+
+        # Get the geometry
+        geometry = self.get_dust_component_geometry(component_id)
+
+        # Set
+        self.set_value(geometry, "filename", filename)
 
     ## This function sets the geometry of the specified stellar component to a ring geometry
     def set_stellar_component_ring_geometry(self, component_id, radius, width, height):

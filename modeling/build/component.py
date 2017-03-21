@@ -25,6 +25,10 @@ from .definition import ModelDefinition
 
 # -----------------------------------------------------------------
 
+model_map_filename = "map.fits"
+
+# -----------------------------------------------------------------
+
 class BuildComponent(GalaxyModelingComponent):
     
     """
@@ -426,16 +430,20 @@ def get_dust_component_path(modeling_path, model_name, component_name):
 
 # -----------------------------------------------------------------
 
-def load_component(path):
+def load_component(path, add_map=False):
 
     """
     This function
     :param path:
+    :param add_map:
     :return:
     """
 
     # Create a map
     component = Map()
+
+    # Set the name
+    component.name = fs.name(path)
 
     # Load the parameters
     parameters_path = fs.join(path, "parameters.cfg")
@@ -453,8 +461,10 @@ def load_component(path):
     # Load the map
     map_path = fs.join(path, "map.fits")
     if fs.is_file(map_path):
-        map = Frame.from_file(map_path)
-        component.map = map
+        component.map_path = map_path
+        if add_map:
+            map = Frame.from_file(map_path)
+            component.map = map
 
     # Load the model
     model_path = fs.join(path, "model.mod")
@@ -473,13 +483,14 @@ def load_component(path):
 
 # -----------------------------------------------------------------
 
-def load_stellar_component(modeling_path, model_name, component_name):
+def load_stellar_component(modeling_path, model_name, component_name, add_map=False):
 
     """
     This function ...
     :param modeling_path:
     :param model_name:
     :param component_name:
+    :param add_map:
     :return:
     """
 
@@ -487,17 +498,18 @@ def load_stellar_component(modeling_path, model_name, component_name):
     path = get_stellar_component_path(modeling_path, model_name, component_name)
 
     # Load the component
-    return load_component(path)
+    return load_component(path, add_map=add_map)
 
 # -----------------------------------------------------------------
 
-def load_dust_component(modeling_path, model_name, component_name):
+def load_dust_component(modeling_path, model_name, component_name, add_map=False):
 
     """
     This function ...
     :param modeling_path:
     :param model_name:
     :param component_name:
+    :param add_map:
     :return:
     """
 
@@ -505,7 +517,7 @@ def load_dust_component(modeling_path, model_name, component_name):
     path = get_dust_component_path(modeling_path, model_name, component_name)
 
     # Load the component
-    return load_component(path)
+    return load_component(path, add_map=add_map)
 
 # -----------------------------------------------------------------
 

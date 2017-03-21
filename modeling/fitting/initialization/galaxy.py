@@ -13,22 +13,18 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..component import FittingComponent
-from ....core.tools import tables
-from ....core.tools import filesystem as fs
 from ....core.data.sun import Sun
-from ....magic.tools import wavelengths
 from ....core.tools.logging import log
 from ....core.prep.wavelengthgrids import WavelengthGridGenerator
 from ...component.galaxy import GalaxyModelingComponent
 from ..tables import WeightsTable
 from ...build.component import get_stellar_component_names, get_dust_component_names, load_stellar_component, load_dust_component
 from ....core.filter.filter import parse_filter
-from ...build.representation import Representation
+from .base import FittingInitializerBase
 
 # -----------------------------------------------------------------
 
-class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
+class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
     
     """
     This class...
@@ -44,27 +40,15 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         """
 
         # Call the constructor of the base class
-        FittingComponent.__init__(self, config, interactive)
+        FittingInitializerBase.__init__(self, config, interactive)
         GalaxyModelingComponent.__init__(self, config, interactive)
-
-        # The fitting run
-        self.fitting_run = None
 
         # The initial model representation
         self.representation = None
 
-        # The ski file
-        self.ski = None
-
-        # The table of weights for each band
-        self.weights = None
-
         # Solar luminosity units
         self.sun_fuv = None
         self.sun_i1 = None
-
-        # The wavelength grid generator
-        self.wg_generator = None
 
     # -----------------------------------------------------------------
 
@@ -111,34 +95,13 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         """
 
         # Call the setup function of the base class
-        FittingComponent.setup(self, **kwargs)
+        FittingInitializerBase.setup(self, **kwargs)
         GalaxyModelingComponent.setup(self, **kwargs)
-
-        # Load the fitting run
-        self.fitting_run = self.load_fitting_run(self.config.name)
 
         # Solar properties
         sun = Sun()
         self.sun_fuv = sun.luminosity_for_filter_as_unit(self.fuv_filter) # Get the luminosity of the Sun in the FUV band
         self.sun_i1 = sun.luminosity_for_filter_as_unit(self.i1_filter)   # Get the luminosity of the Sun in the IRAC I1 band
-
-        # Create a WavelengthGridGenerator
-        self.wg_generator = WavelengthGridGenerator()
-
-        # Create the table to contain the weights
-        self.weights = WeightsTable()
-
-    # -----------------------------------------------------------------
-
-    @property
-    def model_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.fitting_run.model_name
 
     # -----------------------------------------------------------------
 
@@ -204,6 +167,20 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
 
             # Load the component
             component = load_stellar_component(self.config.path, self.model_name, name)
+
+            # If an input map is required
+            if "map_path" in component:
+
+                # Generate a filename for the map
+                filename = "stars_" + name + ".fits"
+
+                # Set the filename
+                if "deprojection" in component: component.deprojection.filename = filename
+                elif "geometry" in component.parameters: component.properties["geometry"].filename = filename
+                else: raise RuntimeError("Stellar component based on an input map should either have a deprojection or geometry properties")
+
+                # Add entry to the input maps dictionary
+                self.input_map_paths[filename] = component.map_path
 
             # Set geometry
             if "model" in component:
@@ -312,6 +289,20 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
 
             # Load the component
             component = load_dust_component(self.config.path, self.model_name, name)
+
+            # If an input map is required
+            if "map_path" in component:
+
+                # Generate a filename for the map
+                filename = "dust_" + name + ".fits"
+
+                # Set the filename
+                if "deprojection" in component: component.deprojection.filename = filename
+                elif "geometry" in component.parameters: component.properties["geometry"].filename = filename
+                else: raise RuntimeError("Dust component based on an input map should either have a deprojection or geometry properties")
+
+                # Add entry to the input maps dictionary
+                self.input_map_paths[filename] = component.map_path
 
             # Set geometry
             if "model" in component:
@@ -472,75 +463,6 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def calculate_weights(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Calculating the weight to give to each band ...")
-
-        # Initialize lists to contain the filters of the different wavelength ranges
-        uv_bands = []
-        optical_bands = []
-        nir_bands = []
-        mir_bands = []
-        fir_bands = []
-        submm_bands = []
-
-        # Set the number of groups
-        number_of_groups = 6
-
-        # Loop over the observed SED filters
-        for fltr in self.fitting_run.fitting_filters:
-
-            # Get the central wavelength
-            wavelength = fltr.center
-
-            # Get a string identifying which portion of the wavelength spectrum this wavelength belongs to
-            spectrum = wavelengths.name_in_spectrum(wavelength)
-
-            # Determine to which group
-            if spectrum[0] == "UV": uv_bands.append(fltr)
-            elif spectrum[0] == "Optical": optical_bands.append(fltr)
-            elif spectrum[0] == "Optical/IR": optical_bands.append(fltr)
-            elif spectrum[0] == "IR":
-                if spectrum[1] == "NIR": nir_bands.append(fltr)
-                elif spectrum[1] == "MIR": mir_bands.append(fltr)
-                elif spectrum[1] == "FIR": fir_bands.append(fltr)
-                else: raise RuntimeError("Unknown IR range")
-            elif spectrum[0] == "Submm": submm_bands.append(fltr)
-            else: raise RuntimeError("Unknown wavelength range")
-
-        # Determine the weight for each group of filters
-        number_of_data_points = len(self.fitting_run.fitting_filters)
-        uv_weight = 1. / (len(uv_bands) * number_of_groups) * number_of_data_points
-        optical_weight = 1. / (len(optical_bands) * number_of_groups) * number_of_data_points
-        nir_weight = 1. / (len(nir_bands) * number_of_groups) * number_of_data_points
-        mir_weight = 1. / (len(mir_bands) * number_of_groups) * number_of_data_points
-        fir_weight = 1. / (len(fir_bands) * number_of_groups) * number_of_data_points
-        submm_weight = 1. / (len(submm_bands) * number_of_groups) * number_of_data_points
-
-        # Debugging
-        log.debug("UV: number of bands = " + str(len(uv_bands)) + ", weight = " + str(uv_weight))
-        log.debug("Optical: number of bands = " + str(len(optical_bands)) + ", weight = " + str(optical_weight))
-        log.debug("NIR: number of bands = " + str(len(nir_bands)) + ", weight = " + str(nir_weight))
-        log.debug("MIR: number of bands = " + str(len(mir_bands)) + ", weight = " + str(mir_weight))
-        log.debug("FIR: number of bands = " + str(len(fir_bands)) + ", weight = " + str(fir_weight))
-        log.debug("Submm: number of bands = " + str(len(submm_bands)) + ", weight = " + str(submm_weight))
-
-        # Loop over the bands in each group and set the weight in the weights table
-        for fltr in uv_bands: self.weights.add_row([fltr.instrument, fltr.band, uv_weight])
-        for fltr in optical_bands: self.weights.add_row([fltr.instrument, fltr.band, optical_weight])
-        for fltr in nir_bands: self.weights.add_row([fltr.instrument, fltr.band, nir_weight])
-        for fltr in mir_bands: self.weights.add_row([fltr.instrument, fltr.band, mir_weight])
-        for fltr in fir_bands: self.weights.add_row([fltr.instrument, fltr.band, fir_weight])
-        for fltr in submm_bands: self.weights.add_row([fltr.instrument, fltr.band, submm_weight])
-
-    # -----------------------------------------------------------------
-
     def write(self):
 
         """
@@ -551,14 +473,17 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
         # Inform the user
         log.info("Writing ...")
 
-        # 2. Write the ski file
+        # 1. Write the ski file
         self.write_ski()
 
-        # 4. Write the weights table
+        # 2. Write the weights table
         self.write_weights()
 
-        # 6. Write the wavelength grids
+        # 3. Write the wavelength grids
         self.write_wavelength_grids()
+
+        # 4. Write the paths to the input maps
+        self.write_input_map_paths()
 
     # -----------------------------------------------------------------
 
@@ -574,48 +499,5 @@ class GalaxyFittingInitializer(FittingComponent, GalaxyModelingComponent):
 
         # Save the ski template file
         self.ski.save()
-
-    # -----------------------------------------------------------------
-
-    def write_weights(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the table with weights to " + self.fitting_run.weights_table_path + " ...")
-
-        # Write the table with weights
-        self.weights.saveto(self.fitting_run.weights_table_path)
-
-    # -----------------------------------------------------------------
-
-    def write_wavelength_grids(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the wavelength grids ...")
-
-        # Loop over the grids
-        index = 0
-        for grid in self.wg_generator.grids:
-
-            # Determine the path to the grid
-            path = fs.join(self.fitting_run.wavelength_grids_path, str(index) + ".txt")
-
-            # Save the wavelength grid
-            grid.to_skirt_input(path)
-
-            # Increment the index
-            index += 1
-
-        # Write the wavelength grids table
-        tables.write(self.wg_generator.table, self.fitting_run.wavelength_grids_table_path)
 
 # -----------------------------------------------------------------

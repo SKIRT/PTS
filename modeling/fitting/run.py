@@ -30,6 +30,7 @@ from ...core.basics.configuration import Configuration
 from ...core.filter.filter import parse_filter
 from ..build.representation import Representation
 from ..build.component import get_representation_path
+from ...core.tools.serialization import load_dict
 
 # -----------------------------------------------------------------
 
@@ -168,6 +169,9 @@ class FittingRun(object):
             best_parameters_table = BestParametersTable(parameters=self.free_parameter_labels,
                                                         units=self.parameter_units)
             best_parameters_table.saveto(self.best_parameters_table_path)
+
+        ## INPUT MAP PATHS FILE
+        self.input_maps_file_path = fs.join(self.path, "input_maps.dat")
 
     # -----------------------------------------------------------------
 
@@ -1128,6 +1132,19 @@ class FittingRun(object):
 
         if len(self.generations_table) > 0: return self.generations_table["Model representation"][-1]
         else: return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def input_map_paths(self):
+
+        """
+        This funtion ...
+        :return:
+        """
+
+        # Load dictionary
+        return load_dict(self.input_maps_file_path)
 
     # -----------------------------------------------------------------
 
