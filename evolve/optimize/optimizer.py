@@ -429,8 +429,9 @@ class Optimizer(Configurable):
 
         # Set generations plotter
         self.generations_plotter = kwargs.pop("generations_plotter", None)
-        self.generations_plotter.output_path = self.plot_path
-        if self.generations_plotter is not None: self.engine.stepCallback.set(self.generations_plotter.add_generation)
+        if self.generations_plotter is not None:
+            self.generations_plotter.output_path = self.plot_path
+            self.engine.stepCallback.set(self.generations_plotter.add_generation)
 
         # Set the database adapter
         self.database.open(self.engine)

@@ -247,6 +247,18 @@ class FittingRun(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def nfree_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.free_parameter_labels)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def free_parameter_ranges(self):
 
         """

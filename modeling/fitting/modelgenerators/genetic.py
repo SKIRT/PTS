@@ -129,6 +129,9 @@ class GeneticModelGenerator(ModelGenerator):
 
         ## In order of optimizer configuration
 
+        # Parameters
+        self.optimizer.config.nparameters = self.fitting_run.nfree_parameters
+
         # User
         self.optimizer.config.mutation_rate = self.fitting_run.genetic_settings.mutation_rate
         self.optimizer.config.crossover_rate = self.fitting_run.genetic_settings.crossover_rate

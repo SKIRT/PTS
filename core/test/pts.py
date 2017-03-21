@@ -26,6 +26,7 @@ from ..basics.configuration import ConfigurationDefinition, InteractiveConfigura
 from .imports import ImportsChecker
 from .test import PTSTest
 from ..tools import time
+from ..tools import stringify
 
 # -----------------------------------------------------------------
 
@@ -369,6 +370,18 @@ class PTSTestSuite(Configurable):
 
                 # Determine the test path
                 test_path = fs.join(tests_path, name)
+
+                # If remove_previous is enabled, remove previous output directories of the same test
+                if self.config.remove_previous:
+
+                    # Find
+                    previous_paths = fs.directories_in_path(introspection.pts_tests_dir, startswith=name)
+
+                    # Debugging
+                    log.debug("Removing output directories of previous test runs: " + stringify.stringify(previous_paths)[1] + " ...")
+
+                    # Remove
+                    fs.remove_directories(previous_paths)
 
                 # Determine an output path for the test
                 temp_path = fs.create_directory_in(introspection.pts_tests_dir, time.unique_name(name))
