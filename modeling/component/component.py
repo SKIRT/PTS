@@ -230,7 +230,9 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        return []
+        input_path = fs.join(self.config.path, "input")
+        if fs.is_directory(input_path): return fs.files_in_path(input_path, extension="fits")
+        else: return []
 
     # -----------------------------------------------------------------
 
