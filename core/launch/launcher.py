@@ -111,8 +111,8 @@ class SKIRTLauncher(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 2. Create the simulation definition
-        self.create_definition()
+        # 2. Create the simulation definition (if necessary)
+        if self.definition is None: self.create_definition()
 
         # 2. Set the parallelization scheme
         if not self.has_parallelization: self.set_parallelization()
@@ -159,6 +159,9 @@ class SKIRTLauncher(Configurable):
 
         # Get the memory information passed to this instance
         self.memory = kwargs.pop("memory", None)
+
+        # Get the definition
+        if "definition" in kwargs: self.definition = kwargs.pop("definition")
 
     # -----------------------------------------------------------------
 
@@ -212,8 +215,6 @@ class SKIRTLauncher(Configurable):
 
         # Create the simulation definition
         self.definition = SingleSimulationDefinition(self.config.ski, self.config.output, self.config.input)
-
-        #print(self.definition)
 
     # -----------------------------------------------------------------
 

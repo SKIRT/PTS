@@ -19,13 +19,17 @@ import numpy as np
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.basics.configuration import ConfigurationDefinition
-from ...core.basics.configuration import InteractiveConfigurationSetter, prompt_proceed
+from ...core.basics.configuration import InteractiveConfigurationSetter, prompt_proceed, prompt_string
 from ...core.basics.unit import parse_unit as u
 from ..core.mappings import Mappings
-from .general import GeneralBuilder
+from .general import GeneralBuilder, model_map_filename
+from ...core.tools import filesystem as fs
+from ...magic.core.frame import Frame
+from ..maps.component import get_old_stars_maps_path, get_young_stars_maps_path, get_ionizing_stars_maps_path
 
 # -----------------------------------------------------------------
 
+# Define titles for the different fixed components
 titles = dict()
 titles["bulge"] = "Evolved stellar bulge"
 titles["old"] = "Evolved stellar disk"
@@ -190,13 +194,13 @@ class StarsBuilder(GeneralBuilder):
         # Inform the user
         log.info("Building the old stellar disk component ...")
 
-        # Get the parameters
+        # 1. Get the parameters
         self.get_old_parameters()
 
-        # Load the map
+        # 2. Load the map
         self.load_old_map()
 
-        # Create the deprojection
+        # 3. Create the deprojection
         self.create_deprojection_old()
 
     # -----------------------------------------------------------------
@@ -263,8 +267,18 @@ class StarsBuilder(GeneralBuilder):
         # Inform the user
         log.info("Loading the map of old stars ...")
 
+        # Get the path to the old stellar maps directory
+        directory_path = get_old_stars_maps_path(self.config.path)
+
+        # Get the present filenames
+        names = fs.files_in_path(directory_path, extension="fits", returns="name")
+
+        # Ask for the old stellar map
+        name = prompt_string("old_map", "old stellar disk map to use for this model", choices=names)
+        path = fs.join(directory_path, name + ".fits")
+
         # Set the map
-        self.maps["old"] = None
+        self.maps["old"] = Frame.from_file(path)
 
     # -----------------------------------------------------------------
 
@@ -279,7 +293,7 @@ class StarsBuilder(GeneralBuilder):
         log.info("Creating the deprojection model for the old stellar disk ...")
 
         # Create the deprojection model
-        deprojection = self.create_deprojection_for_map(self.maps["old"], "old_stars.fits", self.parameters["old"].scale_height)
+        deprojection = self.create_deprojection_for_map(self.maps["old"], model_map_filename, self.parameters["old"].scale_height)
 
         # Set the deprojection model
         self.deprojections["old"] = deprojection
@@ -296,13 +310,13 @@ class StarsBuilder(GeneralBuilder):
         # Inform the user
         log.info("Building the young stellar component ...")
 
-        # Get the parameters
+        # 1. Get the parameters
         self.get_young_parameters()
 
-        # Load the map
+        # 2. Load the map
         self.load_young_map()
 
-        # Create deprojection
+        # 3. Create deprojection
         self.create_deprojection_young()
 
     # -----------------------------------------------------------------
@@ -369,8 +383,18 @@ class StarsBuilder(GeneralBuilder):
         # Inform the user
         log.info("Loading the map of young stars ...")
 
+        # Get the path to the young stellar maps directory
+        directory_path = get_young_stars_maps_path(self.config.path)
+
+        # Get the present filenames
+        names = fs.files_in_path(directory_path, extension="fits", returns="name")
+
+        # Ask for the young stellar map
+        name = prompt_string("young_map", "young stellar disk map to use for this model", choices=names)
+        path = fs.join(directory_path, name + ".fits")
+
         # Set the map
-        self.maps["young"] = None
+        self.maps["young"] = Frame.from_file(path)
 
     # -----------------------------------------------------------------
 
@@ -385,7 +409,7 @@ class StarsBuilder(GeneralBuilder):
         log.info("Creating the deprojection model for the young stellar disk ...")
 
         # Create the deprojection model
-        deprojection = self.create_deprojection_for_map(self.maps["young"], "young_stars.fits", self.parameters["young"].scale_height)
+        deprojection = self.create_deprojection_for_map(self.maps["young"], model_map_filename, self.parameters["young"].scale_height)
 
         # Set the deprojection model
         self.deprojections["young"] = deprojection
@@ -402,13 +426,13 @@ class StarsBuilder(GeneralBuilder):
         # Inform the user
         log.info("Building the ionizing stellar component ...")
 
-        # Set the parameters
+        # 1. Set the parameters
         self.set_ionizing_parameters()
 
-        # Load map
+        # 2. Load map
         self.load_ionizing_map()
 
-        # Create deprojection model
+        # 3. Create deprojection model
         self.create_deprojection_ionizing()
 
     # -----------------------------------------------------------------
@@ -482,8 +506,18 @@ class StarsBuilder(GeneralBuilder):
         # Inform the user
         log.info("Loading the map of ionizing stars ...")
 
+        # Get the path to the ionizing stellar maps directory
+        directory_path = get_ionizing_stars_maps_path(self.config.path)
+
+        # Get the present filenames
+        names = fs.files_in_path(directory_path, extension="fits", returns="name")
+
+        # Ask for the ionizing stellar map
+        name = prompt_string("ionizing_map", "ionizing stellar disk map to use for this model", choices=names)
+        path = fs.join(directory_path, name + ".fits")
+
         # Set the map
-        self.maps["ionizing"] = None
+        self.maps["ionizing"] = Frame.from_file(path)
 
     # -----------------------------------------------------------------
 
@@ -498,7 +532,7 @@ class StarsBuilder(GeneralBuilder):
         log.info("Creating the deprojection model for the ionizing stellar disk ...")
 
         # Create the deprojection model
-        deprojection = self.create_deprojection_for_map(self.maps["ionizing"], "ionizing_stars.fits", self.parameters["ionizing"].scale_height)
+        deprojection = self.create_deprojection_for_map(self.maps["ionizing"], model_map_filename, self.parameters["ionizing"].scale_height)
 
         # Set the deprojection model
         self.deprojections["ionizing"] = deprojection
@@ -533,6 +567,9 @@ class StarsBuilder(GeneralBuilder):
             # Set the properties
             properties = {"sed": sed_parameters, "normalization": normalization_parameters, "geometry": geometry_parameters}
 
+            # Load map if necessary
+            if self.parameters[name].geometry == "ReadFitsGeometry": self.load_additional_map(name, geometry_parameters)
+
             # Add the properties
             self.properties[name] = properties
 
@@ -559,6 +596,9 @@ class StarsBuilder(GeneralBuilder):
         # Prompt for settings
         setter = InteractiveConfigurationSetter("additional stellar component", add_cwd=False, add_logging=False)
         config = setter.run(definition)
+
+        # Check the name
+        if config.name in self.parameters: raise ValueError("You cannot use this name for the stellar component: already in use")
 
         # Set the parameters
         self.parameters[config.name] = config
@@ -629,6 +669,29 @@ class StarsBuilder(GeneralBuilder):
 
         # Return the parameters
         return parameters
+
+    # -----------------------------------------------------------------
+
+    def load_additional_map(self, name, parameters):
+
+        """
+        This function ...
+        :param name:
+        :param parameters:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the input map for stellar component '" + name + "' ...")
+
+        # Get the absolute file path to the map
+        path = fs.absolute_path(parameters["filename"])
+
+        # Load the map
+        self.maps[name] = Frame.from_file(path)
+
+        # Change the filename in the geometry parameters
+        parameters["filename"] = model_map_filename
 
 # -----------------------------------------------------------------
 

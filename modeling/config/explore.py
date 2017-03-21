@@ -67,4 +67,7 @@ definition.add_flag("data_parallel", "data parallelization mode", False)
 # Special options
 definition.add_flag("dry", "dry-run (don't actually launch simulations)")
 
+# Advanced
+definition.add_optional("ngenerations", "positive_integer", "number of generations to run in one run (ngenerations > 1 is only allowed for local execution)", 1)
+
 # -----------------------------------------------------------------

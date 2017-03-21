@@ -158,12 +158,6 @@ class ModelBuilder(BuildComponent):
         # Inform the user
         log.info("Writing ...")
 
-        # Write the maps
-        #self.write_maps()
-
-        # Write the deprojections
-        #self.write_deprojections()
-
         # Write models table
         self.write_table()
 

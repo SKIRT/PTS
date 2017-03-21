@@ -401,7 +401,7 @@ class M81Test(M81TestBase):
         analysis.misc.make_images_remote = self.host_id
         analysis.misc.images_wcs = self.reference_wcs_path
         analysis.misc.images_unit = "Jy/pix"
-        analysis.misc.spectral_convolution = False
+        analysis.misc.spectral_convolution = self.config.spectral_convolution
 
         # Set flux error bars
         dustpedia_sed = ObservedSED.from_file(dustpedia_sed_path)

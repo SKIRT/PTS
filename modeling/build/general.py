@@ -24,6 +24,10 @@ from ...core.tools.serialization import write_dict
 
 # -----------------------------------------------------------------
 
+model_map_filename = "map.fits"
+
+# -----------------------------------------------------------------
+
 class GeneralBuilder(BuildComponent):
     
     """
@@ -207,7 +211,7 @@ class GeneralBuilder(BuildComponent):
             if name not in self.maps: continue
 
             # Save the map
-            path = fs.join(self.paths[name], "map.fits")
+            path = fs.join(self.paths[name], model_map_filename)
             self.maps[name].saveto(path)
 
     # -----------------------------------------------------------------

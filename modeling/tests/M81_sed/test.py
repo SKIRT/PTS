@@ -143,6 +143,18 @@ class M81SEDTest(M81TestBase):
 
     # -----------------------------------------------------------------
 
+    @property
+    def required_input_files(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.simulation_input_path, exact_not_name="wavelengths")
+
+    # -----------------------------------------------------------------
+
     def create_instrument(self):
 
         """
@@ -236,7 +248,7 @@ class M81SEDTest(M81TestBase):
         #analysis.misc.make_images_remote = self.host_id
         #analysis.misc.images_wcs = self.reference_wcs_path
         #analysis.misc.images_unit = "Jy/pix"
-        analysis.misc.spectral_convolution = False
+        analysis.misc.spectral_convolution = self.config.spectral_convolution
 
         # Set flux error bars
         dustpedia_sed = ObservedSED.from_file(dustpedia_sed_path)
@@ -480,7 +492,7 @@ class M81SEDTest(M81TestBase):
         input_setup = dict()
         input_setup["sed"] = self.observed_sed
         input_setup["ski"] = self.ski_template
-        input_setup["ski_input"] = self.simulation_input_path
+        input_setup["ski_input"] = self.required_input_files
 
         # Create object config
         object_config = dict()

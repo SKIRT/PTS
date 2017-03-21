@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.units import Unit
-
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
 from ...core.tools.logging import log
@@ -24,8 +21,6 @@ from .modelgenerators.grid import GridModelGenerator
 from .modelgenerators.genetic import GeneticModelGenerator
 from .modelgenerators.instinctive import InstinctiveModelGenerator
 from ...core.tools import time
-from ...core.basics.range import range_around
-from ...core.simulation.definition import SingleSimulationDefinition
 from .tables import ParametersTable, ChiSquaredTable
 from ...core.launch.options import SchedulingOptions
 from ...core.advanced.runtimeestimator import RuntimeEstimator
@@ -34,6 +29,7 @@ from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.advanced.parallelizationtool import ParallelizationTool
 from ...core.remote.host import Host
 from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
+from .evaluate import get_parameter_values_from_generator, prepare_simulation
 
 # -----------------------------------------------------------------
 
@@ -451,6 +447,10 @@ class ParameterExplorer(FittingComponent):
         # Inform the user
         log.info("Generating the model parameters ...")
 
+        # Set generator options
+        self.generator.config.ngenerations = self.config.ngenerations
+        self.generator.config.nmodels = self.config.nsimulations
+
         # Run the model generator
         self.generator.run(fitting_run=self.fitting_run)
 
@@ -518,7 +518,7 @@ class ParameterExplorer(FittingComponent):
         log.info("Setting the input paths ...")
 
         # Set the paths to the input maps
-        self.input_paths = self.input_map_paths
+        self.input_paths = self.environment.input_paths
 
         # Determine and set the path to the appropriate wavelength grid file
         wavelength_grid_path = self.fitting_run.wavelength_grid_path_for_level(self.generation.wavelength_grid_level)
@@ -791,43 +791,12 @@ class ParameterExplorer(FittingComponent):
         # Loop over the different parameter combinations
         for i in range(self.nmodels):
 
-            # Set the parameter values as a dictionary for this individual model
-            parameter_values = dict()
-            for label in self.fitting_run.free_parameter_labels:
+            # Get the parameter values as a dictionary
+            parameter_values = get_parameter_values_from_generator(self.generator.parameters, i, self.fitting_run)
 
-                # Get the value for this model from the generator and get the unit defined for this parameter
-                value = self.generator.parameters[label][i]
-
-                # Set value with unit
-                if self.fitting_run.parameter_units[label] is not None:
-                    unit = Unit(self.fitting_run.parameter_units[label])
-                    parameter_values[label] = value * unit
-
-                # Set dimensionless value
-                else: parameter_values[label] = value
-
-            # Debugging
-            log.debug("Adjusting ski file for the following model parameters:")
-            for label in parameter_values: log.debug(" - " + label + ": " + stringify_not_list(parameter_values[label])[1])
-
-            # Create a unique name for this combination of parameter values
-            simulation_name = time.unique_name()
-
-            # Set the parameter values in the ski file template
-            self.ski.set_labeled_values(parameter_values)
-
-            # Create a directory for this simulation
-            simulation_path = fs.create_directory_in(self.generation.path, simulation_name)
-
-            # Create an output directory for this simulation
-            simulation_output_path = fs.create_directory_in(simulation_path, "out")
-
-            # Put the ski file with adjusted parameters into the simulation directory
-            ski_path = fs.join(simulation_path, self.object_name + ".ski")
-            self.ski.saveto(ski_path)
-
-            # Create the SKIRT simulation definition
-            definition = SingleSimulationDefinition(ski_path, simulation_output_path, self.input_paths, name=simulation_name)
+            # Prepare simulation directories, ski file, and return the simulation definition
+            definition = prepare_simulation(self.ski, parameter_values, self.object_name, self.input_paths, self.generation.path)
+            simulation_name = definition.name
 
             # Debugging
             log.debug("Adding a simulation to the queue with:")
@@ -862,9 +831,9 @@ class ParameterExplorer(FittingComponent):
             # No simulations were launched
             if len(simulations) == 0:
 
+                # Show error message
                 log.error("No simulations could be launched: removing generation")
                 log.error("Try again later")
-
                 log.error("Cleaning up generation and quitting ...")
 
                 # Remove this generation from the generations table
@@ -880,9 +849,11 @@ class ParameterExplorer(FittingComponent):
             # Less simulations were launched
             elif len(simulations) < self.nmodels:
 
+                # Get the names of simulations that were launched
                 launched_simulation_names = [simulation.name for simulation in simulations]
                 if None in launched_simulation_names: raise RuntimeError("Some or all simulation don't have a name defined")
 
+                # Show error message
                 log.error("Launching a simulation for the following models failed:")
                 log.error("")
 
@@ -901,6 +872,7 @@ class ParameterExplorer(FittingComponent):
 
                     failed_indices.append(index)
 
+                # Show error message
                 log.error("Removing corresponding entries from the model parameters table ...")
 
                 # Remove rows and save

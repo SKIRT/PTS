@@ -55,6 +55,19 @@ class ModelingEnvironment(object):
         self.config_path = fs.create_directory_in(self.path, "config")
         self.show_path = fs.create_directory_in(self.path, "show")
         self.build_path = fs.create_directory_in(self.path, "build")
+        #self.input_path = fs.create_directory_in(self.path, "input")
+
+    # -----------------------------------------------------------------
+
+    #@property
+    #def input_paths(self):
+
+        #"""
+        #This function ...
+        #:return:
+        #"""
+
+        #return fs.files_in_path(self.input_path)
 
 # -----------------------------------------------------------------
 
@@ -91,5 +104,32 @@ class SEDModelingEnvironment(ModelingEnvironment):
 
         # Call the constructor of the base class
         super(SEDModelingEnvironment, self).__init__(modeling_path)
+
+# -----------------------------------------------------------------
+
+#def get_ski_input_path(modeling_path):
+
+    #"""
+    #This function ...
+    #:param modeling_path:
+    #:return:
+    #"""
+
+    #return fs.join(modeling_path, "input")
+
+# -----------------------------------------------------------------
+
+#def get_ski_input_paths(modeling_path):
+
+    #"""
+    #This function ...
+    #:param modeling_path:
+    #:return:
+    #"""
+
+    #path = get_ski_input_path(modeling_path)
+
+    #if not fs.is_directory(path): return None
+    #else: return fs.files_in_path(path)
 
 # -----------------------------------------------------------------

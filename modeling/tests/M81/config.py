@@ -43,4 +43,7 @@ definition.add_optional("wavelength_range", "quantity_range", "range of waveleng
 # Dust grid
 definition.add_optional("physical_domain_disk_ellipse_factor", "positive_real", "factor of the disk ellipse region to take as the physical domain of the model", 0.82)
 
+# Flags
+definition.add_flag("spectral_convolution", "use spectral convolution to calculate observed fluxes", False)
+
 # -----------------------------------------------------------------

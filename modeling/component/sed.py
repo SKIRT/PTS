@@ -57,7 +57,7 @@ class SEDModelingComponent(ModelingComponent):
         # The ski template path
         self.ski_path = None
 
-        # The input path (for the ski file)
+        # The ski input path
         self.ski_input_path = None
 
     # -----------------------------------------------------------------
@@ -133,6 +133,18 @@ def get_ski_template_path(modeling_path):
 
 # -----------------------------------------------------------------
 
+def get_ski_template(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return LabeledSkiFile(get_ski_template_path(modeling_path))
+
+# -----------------------------------------------------------------
+
 def get_ski_input_path(modeling_path):
 
     """
@@ -154,20 +166,7 @@ def get_ski_input_paths(modeling_path):
     """
 
     path = get_ski_input_path(modeling_path)
-
     if not fs.is_directory(path): return None
     else: return fs.files_in_path(path)
-
-# -----------------------------------------------------------------
-
-def get_ski_template(modeling_path):
-
-    """
-    This function ...
-    :param modeling_path:
-    :return:
-    """
-
-    return LabeledSkiFile(get_ski_template_path(modeling_path))
 
 # -----------------------------------------------------------------

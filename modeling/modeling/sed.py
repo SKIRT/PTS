@@ -18,12 +18,13 @@ from ...core.tools.logging import log
 from ..fitting.configuration import FittingConfigurer
 from ..fitting.initialization.sed import SEDFittingInitializer
 from .base import ModelerBase
-from ..component.sed import get_ski_template, get_observed_sed, get_sed_plot_path, get_ski_input_paths
+from ..component.sed import get_ski_template, get_observed_sed, get_sed_plot_path
 from ...core.basics.range import IntegerRange, QuantityRange
 from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, DictConfigurationSetter
 from ...core.plot.sed import SEDPlotter
 from ..build.sed import SEDModelBuilder
 from ..build.sedrepresentation import SEDRepresentationBuilder
+from ..core.environment import get_ski_input_paths
 
 # -----------------------------------------------------------------
 

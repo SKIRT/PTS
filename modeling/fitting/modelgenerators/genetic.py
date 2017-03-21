@@ -14,11 +14,11 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
-from ....evolve.core.engine import GeneticEngine
 from .generator import ModelGenerator
 from ....core.tools import filesystem as fs
-from ....core.tools.random import save_state, load_state
 from ....evolve.optimize.stepwise import StepWiseOptimizer
+from ....evolve.optimize.continuous import ContinuousOptimizer
+from ..evaluate import evaluate
 
 # -----------------------------------------------------------------
 
@@ -48,6 +48,10 @@ class GeneticModelGenerator(ModelGenerator):
         # Whether or not this is the initial generation
         self.initial = None
 
+        # The evaluator function and its kwargs
+        self.evaluator = None
+        self.evaluator_kwargs = None
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -64,30 +68,56 @@ class GeneticModelGenerator(ModelGenerator):
         # Get the fitting run
         self.fitting_run = kwargs.pop("fitting_run")
 
-        # Re-invoke existing optimizer run
-        if fs.is_file(self.fitting_run.main_engine_path):
-            self.optimizer = StepWiseOptimizer.from_paths(self.fitting_run.path,
-                                                            self.fitting_run.main_engine_path,
-                                                            self.fitting_run.main_prng_path,
-                                                            self.fitting_run.optimizer_config_path,
-                                                            self.statistics_path, self.database_path)
-            # Set initial flag
-            self.initial = False
+        # If the number of generations in one run is more than one
+        if self.config.ngenerations > 1:
 
-        # New optimizer run
-        else:
-
-            # Create a new optimizer and set paths
-            self.optimizer = StepWiseOptimizer()
+            # Create a new continuous optimizer
+            self.optimizer = ContinuousOptimizer()
             self.optimizer.config.output = self.fitting_run.path
-            self.optimizer.config.writing.engine_path = self.fitting_run.main_engine_path
-            self.optimizer.config.writing.prng_path = self.fitting_run.main_prng_path
-            self.optimizer.config.writing.config_path = self.fitting_run.optimizer_config_path
-            self.optimizer.config.writing.statistics_path = self.statistics_path
-            self.optimizer.config.writing.database_path = self.database_path
+            #self.optimizer.config.writing.engine_path = self.fitting_run.main_engine_path
+            #self.optimizer.config.writing.prng_path = self.fitting_run.main_prng_path
+            #self.optimizer.config.writing.config_path = self.fitting_run.optimizer_config_path
+            #self.optimizer.config.writing.statistics_path = self.statistics_path
+            #self.optimizer.config.writing.database_path = self.database_path
 
             # Set initial flag
             self.initial = True
+
+            # Set the evaluator function
+            self.evaluator = evaluate
+
+            # Set the evaluator kwargs
+            self.evaluator_kwargs = dict()
+            self.evaluator_kwargs["fitting_run"] = self.fitting_run #self.fitting_run.name
+
+        else:
+
+            # Re-invoke existing optimizer run
+            if fs.is_file(self.fitting_run.main_engine_path):
+
+                # Load the optimizer from files
+                self.optimizer = StepWiseOptimizer.from_paths(self.fitting_run.path,
+                                                                self.fitting_run.main_engine_path,
+                                                                self.fitting_run.main_prng_path,
+                                                                self.fitting_run.optimizer_config_path,
+                                                                self.statistics_path, self.database_path)
+                # Set initial flag
+                self.initial = False
+
+            # New optimizer run
+            else:
+
+                # Create a new optimizer and set paths
+                self.optimizer = StepWiseOptimizer()
+                self.optimizer.config.output = self.fitting_run.path
+                self.optimizer.config.writing.engine_path = self.fitting_run.main_engine_path
+                self.optimizer.config.writing.prng_path = self.fitting_run.main_prng_path
+                self.optimizer.config.writing.config_path = self.fitting_run.optimizer_config_path
+                self.optimizer.config.writing.statistics_path = self.statistics_path
+                self.optimizer.config.writing.database_path = self.database_path
+
+                # Set initial flag
+                self.initial = True
 
         # Set parameters
         self.set_parameters()
@@ -131,6 +161,10 @@ class GeneticModelGenerator(ModelGenerator):
 
         # Parameters
         self.optimizer.config.nparameters = self.fitting_run.nfree_parameters
+
+        # Number of generations and the number of individuals per generation
+        self.optimizer.config.ngenerations = self.config.ngenerations
+        self.optimizer.config.nindividuals = self.config.nmodels
 
         # User
         self.optimizer.config.mutation_rate = self.fitting_run.genetic_settings.mutation_rate
@@ -178,7 +212,8 @@ class GeneticModelGenerator(ModelGenerator):
         if not self.initial: self.set_scores()
 
         # Run the optimizer
-        self.optimizer.run(scores=self.scores, scores_check=self.scores_check, minima=self.parameter_minima_scalar, maxima=self.parameter_maxima_scalar)
+        self.optimizer.run(scores=self.scores, scores_check=self.scores_check, minima=self.parameter_minima_scalar,
+                           maxima=self.parameter_maxima_scalar, evaluator=self.evaluator, evaluator_kwargs=self.evaluator_kwargs)
 
         # Get the parameter values of the new models
         self.get_model_parameters()

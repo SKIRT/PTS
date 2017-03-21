@@ -125,6 +125,12 @@ class GalaxyModelingComponent(ModelingComponent):
         # The path to the preparation statistics file
         self.preparation_statistics_path = None
 
+        # Paths to input maps
+        #self.old_stellar_map_path = None
+        #self.young_stellar_map_path = None
+        #self.ionizing_stellar_map_path = None
+        #self.dust_map_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -135,7 +141,7 @@ class GalaxyModelingComponent(ModelingComponent):
         """
 
         # Call the setup function of the base class
-        super(GalaxyModelingComponent, self).setup()
+        super(GalaxyModelingComponent, self).setup(**kwargs)
 
         # -- Attributes --
 
@@ -207,6 +213,12 @@ class GalaxyModelingComponent(ModelingComponent):
 
         # Set the path to the preparation statistics file
         self.preparation_statistics_path = fs.join(self.prep_path, "statistics.dat")
+
+        # Set the paths to input maps
+        #self.old_stellar_map_path = fs.join(self.environment.input_path, "old_stars.fits")
+        #self.young_stellar_map_path = fs.join(self.environment.input_path, "young_stars.fits")
+        #self.ionizing_stellar_map_path = fs.join(self.environment.input_path, "ionizing_stars.fits")
+        #self.dust_map_path = fs.join(self.environment.input_path, "dust.fits")
 
     # -----------------------------------------------------------------
 
@@ -1084,7 +1096,7 @@ class GalaxyModelingComponent(ModelingComponent):
     #@lazyproperty
     #def young_stars_map(self):
 
-        #"""
+        #""""
         #This function ...
         #:return:
         #"""

@@ -371,6 +371,11 @@ class ModelerBase(Configurable):
         explorer.config.remotes = self.moderator.host_ids_for_ensemble("fitting")
         explorer.config.attached = self.config.fitting_attached
 
+        # Set the number of generations
+        #if self.config.ngenerations is not None: explorer.config.ngenerations = self.config.ngenerations
+        # NO: THIS ALWAYS HAVE TO BE ONE: BECAUSE HERE IN THIS CLASS WE ALREADY USE REPEAT(SELF.ADVANCE)
+        explorer.config.ngenerations = 1
+
         # Set the number of simulations per generation
         if self.config.nsimulations is not None: explorer.config.nsimulations = self.config.nsimulations
 

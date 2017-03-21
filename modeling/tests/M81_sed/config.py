@@ -48,4 +48,7 @@ definition.add_optional("physical_domain_disk_ellipse_factor", "positive_real", 
 # Genetic section
 definition.import_section("genetic", "genetic algorithm options", genetic_definition)
 
+# Flags
+definition.add_flag("spectral_convolution", "use spectral convolution to calculate observed fluxes", False)
+
 # -----------------------------------------------------------------

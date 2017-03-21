@@ -332,27 +332,21 @@ class Optimizer(Configurable):
             # Range-based mutator
             if self.config.mutation_method == "range":
 
-                #if self.config.heterogeneous: genome.mutator.set(HeterogeneousListMutatorIntegerRange)
-                #else: genome.mutator.set(G1DListMutatorIntegerRange)
-
+                # Choose class
                 if self.config.heterogeneous: return HeterogeneousListMutatorIntegerRange
                 else: return G1DListMutatorIntegerRange
 
             # Gaussian mutator
             elif self.config.mutation_method == "gaussian":
 
-                #if self.config.heterogeneous: genome.mutator.set(HeterogeneousListMutatorIntegerGaussian)
-                #else: genome.mutator.set(G1DListMutatorIntegerGaussian)
-
+                # Choose class
                 if self.config.heterogeneous: return HeterogeneousListMutatorIntegerGaussian
                 else: return G1DListMutatorIntegerGaussian
 
             # Binary mutator
             elif self.config.mutation_method == "binary":
 
-                #if self.config.heterogeneous: raise ValueError("Cannot use binary mutation on heterogeneous genomes")
-                #else: genome.mutator.set(G1DListMutatorIntegerBinary)
-
+                # Choose class
                 if self.config.heterogeneous: raise ValueError("Cannot use binary mutation on heterogeneous genomes")
                 else: return G1DListMutatorIntegerBinary
 
@@ -365,18 +359,14 @@ class Optimizer(Configurable):
             # Range-based mutator
             if self.config.mutation_method == "range":
 
-                #if self.config.heterogeneous: genome.mutator.set(HeterogeneousListMutatorRealRange)
-                #else: genome.mutator.set(G1DListMutatorRealRange)
-
+                # Choose class
                 if self.config.heterogeneous: return HeterogeneousListMutatorRealRange
                 else: return G1DListMutatorRealRange
 
             # Gaussian mutator
             elif self.config.mutation_method == "gaussian":
 
-                #if self.config.heterogeneous: genome.mutator.set(HeterogeneousListMutatorRealGaussian)
-                #else: genome.mutator.set(G1DListMutatorRealGaussian)
-
+                # Choose class
                 if self.config.heterogeneous: return HeterogeneousListMutatorRealGaussian
                 else: return G1DListMutatorRealGaussian
 

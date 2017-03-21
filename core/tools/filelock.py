@@ -441,6 +441,7 @@ class SoftFileLock(BaseFileLock):
     # -----------------------------------------------------------------
 
     def _release(self):
+
         os.close(self._lock_file_fd)
         self._lock_file_fd = None
 

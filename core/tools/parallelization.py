@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os
 import psutil
 from multiprocessing import Pool
 

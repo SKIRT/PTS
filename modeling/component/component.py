@@ -74,7 +74,7 @@ class ModelingComponent(Configurable):
         """
 
         # Call the setup function of the base class
-        super(ModelingComponent, self).setup()
+        super(ModelingComponent, self).setup(**kwargs)
 
         # Determine the path to the modeling configuration file
         self.config_file_path = fs.join(self.config.path, "modeling.cfg")
@@ -219,20 +219,6 @@ class ModelingComponent(Configurable):
         """
 
         return self.modeling_configuration.name
-
-    # -----------------------------------------------------------------
-
-    @property
-    def input_map_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        input_path = fs.join(self.config.path, "input")
-        if fs.is_directory(input_path): return fs.files_in_path(input_path, extension="fits")
-        else: return []
 
     # -----------------------------------------------------------------
 

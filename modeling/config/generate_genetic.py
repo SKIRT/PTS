@@ -18,4 +18,8 @@ modeling_path = fs.cwd()
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
+# Add optional
+definition.add_optional("ngenerations", "positive_integer", "number of generations to run in one run (ngenerations > 1 is only allowed for local execution)", 1)
+definition.add_optional("nmodels", "positive_integer", "number of models per generation", 80)
+
 # -----------------------------------------------------------------

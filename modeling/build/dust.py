@@ -13,13 +13,17 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ...core.basics.configuration import prompt_proceed, ConfigurationDefinition, InteractiveConfigurationSetter
+from ...core.basics.configuration import prompt_proceed, ConfigurationDefinition, InteractiveConfigurationSetter, prompt_string
 from ...core.tools.logging import log
 from ...core.basics.unit import parse_unit as u
-from .general import GeneralBuilder
+from .general import GeneralBuilder, model_map_filename
+from ...core.tools import filesystem as fs
+from ...magic.core.frame import Frame
+from ..maps.component import get_dust_maps_path
 
 # -----------------------------------------------------------------
 
+# Define titles for the fixed components
 titles = dict()
 titles["disk"] = "Dust disk"
 
@@ -88,13 +92,13 @@ class DustBuilder(GeneralBuilder):
         # Inform the user
         log.info("Building the dust disk component ...")
 
-        # Get parameters
+        # 1. Get parameters
         self.get_dust_disk_parameters()
 
-        # Load the map
+        # 2. Load the map
         self.load_dust_disk_map()
 
-        # Create the deprojection model
+        # 3. Create the deprojection model
         self.create_deprojection_disk()
 
     # -----------------------------------------------------------------
@@ -144,8 +148,21 @@ class DustBuilder(GeneralBuilder):
         :return:
         """
 
+        # Inform the user
+        log.info("Loading the dust disk map ...")
+
+        # Get the path to the dust maps directory
+        directory_path = get_dust_maps_path(self.config.path)
+
+        # Get the present filenames
+        names = fs.files_in_path(directory_path, extension="fits", returns="name")
+
+        # Ask for the dust map to use
+        name = prompt_string("dust_map", "dust disk map to use for this model", choices=names)
+        path = fs.join(directory_path, name + ".fits")
+
         # Set the map
-        self.maps["disk"] = None
+        self.maps["disk"] = Frame.from_file(path)
 
     # -----------------------------------------------------------------
 
@@ -160,7 +177,7 @@ class DustBuilder(GeneralBuilder):
         log.info("Creating the deprojection model for the dust disk ...")
 
         # Create the deprojection model
-        deprojection = self.create_deprojection_for_map(self.maps["disk"], filename, self.parameters["disk"].scale_height)
+        deprojection = self.create_deprojection_for_map(self.maps["disk"], model_map_filename, self.parameters["disk"].scale_height)
 
         # Set the deprojection model
         self.deprojections["disk"] = deprojection
@@ -195,6 +212,9 @@ class DustBuilder(GeneralBuilder):
             # Create the properties
             properties = {"normalization": normalization_parameters, "geometry": geometry_parameters, "mix": mix_parameters}
 
+            # Load map if necessary
+            if self.parameters[name].geometry == "ReadFitsGeometry": self.load_additional_map(name, geometry_parameters)
+
             # Add the properties
             self.properties[name] = properties
 
@@ -221,6 +241,9 @@ class DustBuilder(GeneralBuilder):
         # Prompt for settings
         setter = InteractiveConfigurationSetter("additional dust component", add_cwd=False, add_logging=False)
         config = setter.run(definition)
+
+        # Check the name
+        if config.name in self.parameters: raise ValueError("You cannot use this name for the dust component: already in use")
 
         # Set the parameters
         self.parameters[config.name] = config
@@ -292,5 +315,28 @@ class DustBuilder(GeneralBuilder):
 
         # Return the parameters
         return parameters
+
+    # -----------------------------------------------------------------
+
+    def load_additional_map(self, name, parameters):
+
+        """
+        This function ...
+        :param name:
+        :param parameters:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the input map for stellar component '" + name + "' ...")
+
+        # Get the absolute file path to the map
+        path = fs.absolute_path(parameters["filename"])
+
+        # Load the map
+        self.maps[name] = Frame.from_file(path)
+
+        # Change the filename in the geometry parameters
+        parameters["filename"] = model_map_filename
 
 # -----------------------------------------------------------------

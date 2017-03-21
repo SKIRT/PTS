@@ -18,6 +18,17 @@ from datetime import datetime
 
 # -----------------------------------------------------------------
 
+def time():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return _time.time()
+
+# -----------------------------------------------------------------
+
 def wait(seconds):
 
     """

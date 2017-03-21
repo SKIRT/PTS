@@ -821,30 +821,30 @@ class GeneticEngine(object):
 
     # -----------------------------------------------------------------
 
-    def __gp_catch_functions(self, prefix):
+    #def __gp_catch_functions(self, prefix):
 
-        """
-        Internally used to catch functions with some specific prefix
-        as non-terminals of the GP core
-        """
+        #"""
+        #Internally used to catch functions with some specific prefix
+        #as non-terminals of the GP core
+        #"""
 
-        import __main__ as mod_main
+        #import __main__ as mod_main
 
-        function_set = {}
+        #function_set = {}
 
-        main_dict = mod_main.__dict__
-        for obj, addr in main_dict.items():
-            if obj[0:len(prefix)] == prefix:
-                try:
-                    op_len = addr.func_code.co_argcount
-                except:
-                    continue
-                function_set[obj] = op_len
-
-        if len(function_set) <= 0:
-            utils.raiseException("No function set found using function prefix '%s' !" % prefix, ValueError)
-
-        self.setParams(gp_function_set=function_set)
+        #main_dict = mod_main.__dict__
+        #for obj, addr in main_dict.items():
+        #    if obj[0:len(prefix)] == prefix:
+        #        try:
+        #            op_len = addr.func_code.co_argcount
+        #        except:
+        #            continue
+        #        function_set[obj] = op_len
+        #
+        #if len(function_set) <= 0:
+        #    utils.raiseException("No function set found using function prefix '%s' !" % prefix, ValueError)
+        #
+        #self.setParams(gp_function_set=function_set)
 
     # -----------------------------------------------------------------
 
@@ -1046,11 +1046,16 @@ class GeneticEngine(object):
         # Inform the user
         if not silent: log.info("Performing step in the evolutionary process ...")
 
+        # Debugging
+        log.debug("Generating new population ...")
+
         # Generate the new population
         self.generate_new_population(silent=silent)
 
+        # Debugging
+        log.debug("Evaluating generation '" + self.generation_description + "' ...")
+
         # Evaluate
-        #print(self.generation_description)
         self.new_population.evaluate(silent, **self.evaluator_kwargs)
 
         # Replace population
