@@ -23,8 +23,7 @@ from ..basics.map import Map
 from ..tools import filesystem as fs
 from .definition import SingleSimulationDefinition, MultiSimulationDefinition
 from ..tools.logging import log
-from ..tools import introspection
-from ..tools import time
+from .input import SimulationInput
 
 # -----------------------------------------------------------------
 
@@ -243,26 +242,11 @@ class SkirtArguments(object):
         """
 
         # If the input consists of a list of paths, check whether they represent files in the same directory
-        if isinstance(self.input_path, list):
-
-            # Determine the single directory where the input is placed
-            dir_path = None
-            scattered_input = False
-            for path in self.input_path:
-                this_dir_path = fs.directory_of(path)
-                if dir_path is None: dir_path = this_dir_path
-                elif dir_path != this_dir_path:
-                    #raise RuntimeError("Cannot convert this SkirtArguments instance to a command: input files should be placed in the same directory!")
-                    scattered_input = True
-                    break
-
-            if scattered_input:
-                temp_path = fs.create_directory_in(introspection.pts_temp_dir, time.unique_name("SKIRT"))
-                for path in self.input_path: fs.copy_file(path, temp_path)
-                dir_path = temp_path
-            #else: temp_path = None
-
-            self.input_path = dir_path
+        if isinstance(self.input_path, list): input_dir_path = SimulationInput(*self.input_path).to_single_directory()
+        elif isinstance(self.input_path, basestring): input_dir_path = SimulationInput(self.input_path).to_single_directory()
+        elif isinstance(self.input_path, SimulationInput): input_dir_path = self.input_path.to_single_directory()
+        elif self.input_path is None: input_dir_path = None
+        else: raise ValueError("Type of simulation input not recognized")
 
         # Create the argument list
         arguments = skirt_command(skirt_path, mpi_command, bind_to_cores, self.parallel.processes, self.parallel.threads, threads_per_core, scheduler, remote)
@@ -279,7 +263,7 @@ class SkirtArguments(object):
         if self.logging.allocation: arguments += ["-l", str(self.logging.allocation_limit)]
 
         # Options for input and output
-        if self.input_path is not None: arguments += ["-i", self.input_path]
+        if input_dir_path is not None: arguments += ["-i", input_dir_path]
         if self.output_path is not None: arguments += ["-o", self.output_path]
 
         # Other options

@@ -31,6 +31,7 @@ class ModelDefinition(object):
         :param path:
         """
 
+        # Set model name and directory path
         self.name = name
         self.path = path
 

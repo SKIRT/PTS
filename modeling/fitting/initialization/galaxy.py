@@ -15,9 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ....core.data.sun import Sun
 from ....core.tools.logging import log
-from ....core.prep.wavelengthgrids import WavelengthGridGenerator
 from ...component.galaxy import GalaxyModelingComponent
-from ..tables import WeightsTable
 from ...build.component import get_stellar_component_names, get_dust_component_names, load_stellar_component, load_dust_component
 from ....core.filter.filter import parse_filter
 from .base import FittingInitializerBase

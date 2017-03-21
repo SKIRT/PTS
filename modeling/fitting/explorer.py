@@ -30,6 +30,7 @@ from ...core.advanced.parallelizationtool import ParallelizationTool
 from ...core.remote.host import Host
 from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
 from .evaluate import get_parameter_values_from_generator, prepare_simulation
+from ...core.simulation.input import SimulationInput
 
 # -----------------------------------------------------------------
 
@@ -112,8 +113,8 @@ class ParameterExplorer(FittingComponent):
         # The model generator
         self.generator = None
 
-        # The paths to the simulation input files
-        self.input_paths = None
+        # The simulation input
+        self.simulation_input = None
 
         # A dictionary with the scheduling options for the different remote hosts
         self.scheduling_options = dict()
@@ -517,12 +518,18 @@ class ParameterExplorer(FittingComponent):
         # Inform the user
         log.info("Setting the input paths ...")
 
+        # Initialize the SimulationInput object
+        self.simulation_input = SimulationInput()
+
         # Set the paths to the input maps
-        self.input_paths = self.environment.input_paths
+        for name in self.fitting_run.input_map_paths:
+            path = self.fitting_run.input_map_paths[name]
+            self.simulation_input.add_file(path, name)
 
         # Determine and set the path to the appropriate wavelength grid file
         wavelength_grid_path = self.fitting_run.wavelength_grid_path_for_level(self.generation.wavelength_grid_level)
-        self.input_paths.append(wavelength_grid_path)
+        #self.input_paths.append(wavelength_grid_path)
+        self.simulation_input.add_file(wavelength_grid_path)
 
         # Get the number of wavelengths
         self.nwavelengths = len(WavelengthGrid.from_skirt_input(wavelength_grid_path))
@@ -698,7 +705,7 @@ class ParameterExplorer(FittingComponent):
 
             # Set configuration options
             tool.config.ski = self.ski
-            tool.config.input = self.input_paths
+            tool.config.input = self.simulation_input
 
             # Set host properties
             tool.config.nnodes = self.config.nnodes
@@ -795,13 +802,13 @@ class ParameterExplorer(FittingComponent):
             parameter_values = get_parameter_values_from_generator(self.generator.parameters, i, self.fitting_run)
 
             # Prepare simulation directories, ski file, and return the simulation definition
-            definition = prepare_simulation(self.ski, parameter_values, self.object_name, self.input_paths, self.generation.path)
+            definition = prepare_simulation(self.ski, parameter_values, self.object_name, self.simulation_input, self.generation.path)
             simulation_name = definition.name
 
             # Debugging
             log.debug("Adding a simulation to the queue with:")
             log.debug(" - name: " + simulation_name)
-            log.debug(" - input: " + stringify(self.input_paths)[1])
+            log.debug(" - input: " + str(self.simulation_input))
             log.debug(" - ski path: " + definition.ski_path)
             log.debug(" - output path: " + definition.output_path)
 

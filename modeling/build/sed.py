@@ -103,7 +103,7 @@ class SEDModelBuilder(BuildComponent):
         # 5. Load input other than the input maps defining
         if self.ski.needs_input: self.load_other_input()
 
-        # 5. Write
+        # 6. Write
         self.write()
 
     # -----------------------------------------------------------------

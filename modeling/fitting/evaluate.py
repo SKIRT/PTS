@@ -134,14 +134,14 @@ def get_parameter_values(genome, fitting_run):
 
 # -----------------------------------------------------------------
 
-def prepare_simulation(ski, parameter_values, object_name, input_paths, generation_path):
+def prepare_simulation(ski, parameter_values, object_name, simulation_input, generation_path):
 
     """
     This function ...
     :param ski:
     :param parameter_values:
     :param object_name:
-    :param input_paths:
+    :param simulation_input:
     :param generation_path:
     :return:
     """
@@ -167,7 +167,7 @@ def prepare_simulation(ski, parameter_values, object_name, input_paths, generati
     ski.saveto(ski_path)
 
     # Create the SKIRT simulation definition
-    definition = SingleSimulationDefinition(ski_path, simulation_output_path, input_paths, name=simulation_name)
+    definition = SingleSimulationDefinition(ski_path, simulation_output_path, simulation_input, name=simulation_name)
 
     # Return the simulation definition
     return definition

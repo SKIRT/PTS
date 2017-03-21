@@ -1135,7 +1135,7 @@ class FittingRun(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def input_map_paths(self):
 
         """
