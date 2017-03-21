@@ -23,6 +23,8 @@ from ..basics.map import Map
 from ..tools import filesystem as fs
 from .definition import SingleSimulationDefinition, MultiSimulationDefinition
 from ..tools.logging import log
+from ..tools import introspection
+from ..tools import time
 
 # -----------------------------------------------------------------
 
@@ -245,10 +247,21 @@ class SkirtArguments(object):
 
             # Determine the single directory where the input is placed
             dir_path = None
+            scattered_input = False
             for path in self.input_path:
                 this_dir_path = fs.directory_of(path)
                 if dir_path is None: dir_path = this_dir_path
-                elif dir_path != this_dir_path: raise RuntimeError("Cannot convert this SkirtArguments instance to a command: input files should be placed in the same directory!")
+                elif dir_path != this_dir_path:
+                    #raise RuntimeError("Cannot convert this SkirtArguments instance to a command: input files should be placed in the same directory!")
+                    scattered_input = True
+                    break
+
+            if scattered_input:
+                temp_path = fs.create_directory_in(introspection.pts_temp_dir, time.unique_name("SKIRT"))
+                for path in self.input_path: fs.copy_file(path, temp_path)
+                dir_path = temp_path
+            #else: temp_path = None
+
             self.input_path = dir_path
 
         # Create the argument list
