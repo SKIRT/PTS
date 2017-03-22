@@ -63,6 +63,29 @@ def download_and_decompress_file(url, path, remove=True, overwrite=False, progre
 
 # -----------------------------------------------------------------
 
+def download_and_decompress_directory(url, path, remove=True, overwrite=False, progress_bar=False, into_root=False):
+
+    """
+    This function ...
+    :param url:
+    :param path:
+    :param remove:
+    :param overwrite:
+    :param progress_bar:
+    :param into_root:
+    :return:
+    """
+
+    # Check if path is a directory
+    if not fs.is_directory(path): raise ValueError("Second argument must be an existing directory")
+
+    # Download the file and decompress into directory
+    filepath = download_file(url, path, overwrite=overwrite, progress_bar=progress_bar)
+    decompressed_path = archive.decompress_directory_in_place(filepath, remove=remove, into_root=into_root)
+    return decompressed_path
+
+# -----------------------------------------------------------------
+
 def download_file_no_requests(url, path, overwrite=False):
 
     """

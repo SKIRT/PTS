@@ -125,19 +125,21 @@ class FitSKIRT(object):
         # mpirun -n 20 fitskirt -t 1 -o fit1 tutorial.fski
 
         # Construct command
-        if parallelization.nprocesses > 1: command = mpi_command + " -n " + str(parallelization.nprocesses) + " " + self.path
-        else: command = self.path
-        command += " -t " + str(parallelization.nthreads) + " -i " + definition.input_path + " -o " + definition.output_path
+        if parallelization.nprocesses > 1: parts = [mpi_command, "-n", str(parallelization.nprocesses), self.path]
+        else: parts = [self.path]
+        parts += [definition.fski_path]
+        parts += ["-t", str(parallelization.nthreads), "-i", definition.input_path, "-o", definition.output_path]
 
         # Debugging
+        command = " ".join(parts)
         log.debug("The command to launch FitSKIRT is: '" + command + "'")
 
         # Launch the FitSKIRT command
         if wait:
             self._process = None
-            if silent: subprocess.call(command, stdout=open(os.devnull,'w'), stderr=open(os.devnull,'w'))
-            else: subprocess.call(command)
-        else: self._process = subprocess.Popen(command, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
+            if silent: subprocess.call(parts, stdout=open(os.devnull,'w'), stderr=open(os.devnull,'w'))
+            else: subprocess.call(parts)
+        else: self._process = subprocess.Popen(parts, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
 
         # Return the list of simulations so that their results can be followed up
         #simulations = arguments.simulations(simulation_names=simulation_names)

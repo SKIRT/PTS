@@ -27,12 +27,13 @@ from . import filesystem as fs
 
 # -----------------------------------------------------------------
 
-def decompress_directory_in_place(filepath, remove=False):
+def decompress_directory_in_place(filepath, remove=False, into_root=False):
 
     """
     This function ...
     :param filepath:
     :param remove:
+    :param into_root:
     :return:
     """
 
@@ -41,11 +42,11 @@ def decompress_directory_in_place(filepath, remove=False):
     # Inform the user
     log.info("Decompressing '" + filepath + "' ...")
 
+    # Tar.gz
     if filepath.endswith(".tar.gz"):
 
         # Determine the path of the directory
         new_path = filepath.split(".tar.gz")[0]
-        #fs.create_directory(new_path)
         dir_path = fs.directory_of(new_path)
 
         # Debugging
@@ -58,6 +59,13 @@ def decompress_directory_in_place(filepath, remove=False):
         subprocess.call(command, shell=True)
 
     else: raise NotImplementedError("Not implemented yet")
+
+    if into_root:
+
+        for path in fs.files_in_path(new_path):
+            fs.move_file(path, dir_path)
+        fs.remove_directory(new_path)
+        new_path = dir_path
 
     # Remove the file
     if remove: fs.remove_file(filepath)

@@ -118,8 +118,8 @@ class NGC4013Test(TestImplementation):
         # Create the reference directory and subdirectories
         self.reference_path = fs.create_directory_in(self.path, "ref")
         self.reference_output_path = fs.create_directory_in(self.reference_path, "out")
-        self.reference_ski_path = fs.join(self.reference_path, "NGC4013.ski")
-        self.reference_fski_path = fs.join(self.reference_path, "NGC4013.fsi")
+        self.reference_ski_path = fs.join(self.data_path, "NGC4013.ski")
+        self.reference_fski_path = fs.join(self.reference_path, "NGC4013.fski")
 
     # -----------------------------------------------------------------
 
@@ -134,7 +134,7 @@ class NGC4013Test(TestImplementation):
         log.info("Downloading the input ...")
 
         # Download the input
-        network.download_and_decompress_file(input_url, self.data_path, progress_bar=True)
+        network.download_and_decompress_directory(all_url, self.data_path, progress_bar=True, into_root=True)
 
     # -----------------------------------------------------------------
 

@@ -214,12 +214,6 @@ class FitModelAnalyser(FittingComponent):
         # Set the name of the fitting run
         fitting_run_name = fs.name(fs.directory_of(fs.directory_of(generation_path)))
 
-        print(generation_path)
-        print(self.generation_name)
-        print(fitting_run_name)
-        print(self.config.path)
-        exit()
-
         # Load the fitting run
         self.fitting_run = load_fitting_run(self.config.path, fitting_run_name)
 
