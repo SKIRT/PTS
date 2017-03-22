@@ -458,10 +458,11 @@ class SKIRTLauncher(Configurable):
         """
 
         # Inform the user
-        log.info("Launching the simulation locally...")
+        log.info("Launching the simulation locally ...")
 
         # Run the simulation
-        self.simulation = self.skirt.run(self.definition, logging_options=self.logging_options, silent=False, wait=True, progress_bar=self.config.progress_bar)
+        self.simulation = self.skirt.run(self.definition, logging_options=self.logging_options, silent=False, wait=True,
+                                         progress_bar=self.config.progress_bar, parallelization=self.parallelization)
 
         # Set the simulation name
         self.simulation.name = self.definition.prefix
@@ -553,7 +554,7 @@ class SKIRTLauncher(Configurable):
 
 # -----------------------------------------------------------------
 
-class SimpleSKIRTLauncher(object):
+class SingleImageSKIRTLauncher(object):
 
     """
     This class ...

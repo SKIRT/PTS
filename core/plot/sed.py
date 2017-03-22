@@ -447,8 +447,12 @@ class SEDPlotter(Configurable):
                 # Plot on axis 2
                 if first:
 
-                    value = 0.0
-                    error = errors[k] / fluxes[k] * 100.
+                    if errors[k] is not None:
+
+                        value = 0.0
+                        error = errors[k] / fluxes[k] * 100.
+
+                    else: value = error = None
 
                 else:
 
@@ -464,7 +468,7 @@ class SEDPlotter(Configurable):
                         value = (fluxes[k] - reference_flux) / reference_flux * 100.
                         error = errors[k] / reference_flux * 100.0
 
-                if value is not None:
+                if value is not None and error is not None:
 
                     error_bar = np.array([[abs(error.lower), abs(error.upper)]]).T
                     ax2.errorbar(wavelengths[k], value, yerr=error_bar, fmt=marker, markersize=7, color=colors[k], markeredgecolor='black', ecolor=colors[k], capthick=2)
@@ -623,9 +627,10 @@ class SEDPlotter(Configurable):
 
             # Plot point at y=0.0 with errorbar on axis 2
             value = 0.0
-            error = errors[k] / fluxes[k] * 100.
-            error_bar = np.array([[abs(error.lower), abs(error.upper)]]).T
-            ax2.errorbar(wavelengths[k], value, yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
+            if errors[k] is not None:
+                error = errors[k] / fluxes[k] * 100.
+                error_bar = np.array([[abs(error.lower), abs(error.upper)]]).T
+                ax2.errorbar(wavelengths[k], value, yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
 
         line_styles_models = line_styles
         line_colors_models = ['black'] * len(self.models)
@@ -875,9 +880,10 @@ class SEDPlotter(Configurable):
 
                 # Plot measurement points on residual plot
                 value = 0.0
-                error = errors[k] / fluxes[k] * 100.
-                error_bar = np.array([[abs(error.lower), abs(error.upper)]]).T
-                ax2.errorbar(wavelengths[k], value, yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
+                if errors[k] is not None:
+                    error = errors[k] / fluxes[k] * 100.
+                    error_bar = np.array([[abs(error.lower), abs(error.upper)]]).T
+                    ax2.errorbar(wavelengths[k], value, yerr=error_bar, fmt=marker, markersize=7, color=color, markeredgecolor='black', ecolor=color, capthick=2)
 
             # Residuals
             counter = 0

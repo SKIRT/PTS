@@ -22,6 +22,7 @@ from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
 from ...core.tools import tables, time
 from ...core.basics.table import SmartTable
+from .component import load_fitting_run
 
 # -----------------------------------------------------------------
 
@@ -90,6 +91,9 @@ class FitModelAnalyser(FittingComponent):
         # The simulation object
         self.simulation = None
 
+        # The fitting run
+        self.fitting_run = None
+
         # The name of the generation
         self.generation_name = None
 
@@ -133,19 +137,16 @@ class FitModelAnalyser(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self, simulationanalyser, **kwargs):
+    def run(self, **kwargs):
 
         """
         This function ...
-        :param simulationanalyser:
+        :param kwargs:
         :return:
         """
 
-        # Get a reference to the flux calculator
-        flux_calculator = simulationanalyser.basic_analyser.flux_calculator
-
         # 1. Call the setup function
-        self.setup(flux_calculator, **kwargs)
+        self.setup(**kwargs)
 
         # 4. Calculate the differences
         self.calculate_differences()
@@ -184,16 +185,19 @@ class FitModelAnalyser(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self, flux_calculator, **kwargs):
+    def setup(self, **kwargs):
 
         """
         This function ...
-        :param flux_calculator:
         :return:
         """
 
         # Call the setup function of the base class
         super(FitModelAnalyser, self).setup(**kwargs)
+
+        # Get a reference to the flux calculator
+        simulationanalyser = kwargs.pop("simulation_analyser")
+        flux_calculator = simulationanalyser.basic_analyser.flux_calculator
 
         # Make a local reference to the flux calculator
         if flux_calculator is None:
@@ -201,15 +205,30 @@ class FitModelAnalyser(FittingComponent):
                                "each simulation that is part of the radiative transfer modeling")
         self.flux_calculator = flux_calculator
 
-        # Load the weights table
-        #self.weights = tables.from_file(self.weights_table_path, fix_floats=True) # For some reason, the weights are parsed as strings instead of floats (but not from the command line!!??)
-        self.weights = tables.from_file(self.weights_table_path)
-
-        # Initialize the differences table
-        self.differences = FluxDifferencesTable()
+        # Determine the generation directory
+        generation_path = fs.directory_of(self.simulation.base_path)
 
         # Set the name of the generation
         self.generation_name = fs.name(fs.directory_of(self.simulation.base_path))
+
+        # Set the name of the fitting run
+        fitting_run_name = fs.name(fs.directory_of(fs.directory_of(generation_path)))
+
+        print(generation_path)
+        print(self.generation_name)
+        print(fitting_run_name)
+        print(self.config.path)
+        exit()
+
+        # Load the fitting run
+        self.fitting_run = load_fitting_run(self.config.path, fitting_run_name)
+
+        # Load the weights table
+        #self.weights = tables.from_file(self.weights_table_path, fix_floats=True) # For some reason, the weights are parsed as strings instead of floats (but not from the command line!!??)
+        self.weights = tables.from_file(self.fitting_run.weights_table_path)
+
+        # Initialize the differences table
+        self.differences = FluxDifferencesTable()
 
     # -----------------------------------------------------------------
 
@@ -303,7 +322,7 @@ class FitModelAnalyser(FittingComponent):
         log.info("Loading the chi squared table ...")
 
         # Open the table
-        self.chi_squared_table = self.chi_squared_table_for_generation(self.generation_name)
+        self.chi_squared_table = self.fitting_run.chi_squared_table_for_generation(self.generation_name)
 
     # -----------------------------------------------------------------
 
@@ -315,10 +334,10 @@ class FitModelAnalyser(FittingComponent):
         """
 
         # Find the index in the table for this generation
-        index = tables.find_index(self.generations_table, self.generation_name, "Generation name")
+        index = tables.find_index(self.fitting_run.generations_table, self.generation_name, "Generation name")
 
         # Get the number of simulations for this generation
-        nsimulations = self.generations_table["Number of simulations"][index]
+        nsimulations = self.fitting_run.generations_table["Number of simulations"][index]
 
         # Get the number of entries in the chi squared table
         nfinished_simulations = len(self.chi_squared_table)
@@ -327,8 +346,8 @@ class FitModelAnalyser(FittingComponent):
         if nsimulations == nfinished_simulations + 1:
 
             # Update the generations table
-            self.generations_table.set_finishing_time(self.generation_name, time.timestamp())
-            self.generations_table.save()
+            self.fitting_run.generations_table.set_finishing_time(self.generation_name, time.timestamp())
+            self.fitting_run.generations_table.save()
 
     # -----------------------------------------------------------------
 

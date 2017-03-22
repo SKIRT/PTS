@@ -33,7 +33,7 @@ from ..basics.projection import GalaxyProjection, FaceOnProjection, EdgeOnProjec
 from .s4g import S4GDecomposer
 #from .fitting import FittingDecomposer
 #from .imfit import ImfitDecomposer
-from ...core.launch.launcher import SimpleSKIRTLauncher
+from ...core.launch.launcher import SingleImageSKIRTLauncher
 
 # -----------------------------------------------------------------
 
@@ -64,7 +64,7 @@ class GalaxyDecomposer(DecompositionComponent):
         self.wcs = None
 
         # The SKIRT launching environment
-        self.launcher = SimpleSKIRTLauncher()
+        self.launcher = SingleImageSKIRTLauncher()
 
         # The 2D components
         self.components = None

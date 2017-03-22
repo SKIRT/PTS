@@ -134,7 +134,7 @@ sfr = 0.8  # The star formation rate # see Perez-Gonzalez 2006 (mentions Devereu
 # fuv_ionizing:2.4590756925069244e+33 W/micron]
 # 15450820.890962543 Msun
 
-fuv_young = PhotometricQuantity(6e36, "W/micron")
+fuv_young = PhotometricQuantity(1e36, "W/micron")
 fuv_ionizing = PhotometricQuantity(2.5e33, "W/micron")
 dust_mass = parse_quantity("1.5e7 Msun")
 

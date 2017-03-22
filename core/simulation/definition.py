@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import copy
+
 # Import the relevant PTS classes and modules
 from ..tools import filesystem as fs
 from .skifile import SkiFile
@@ -95,7 +98,18 @@ class SimulationDefinition(object):
 
         pass
 
-# -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    def copy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return copy.deepcopy(self)
+
+    # -----------------------------------------------------------------
 
 class SingleSimulationDefinition(SimulationDefinition):
 

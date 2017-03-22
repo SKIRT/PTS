@@ -311,6 +311,11 @@ skirt_run_dir = fs.join(skirt_root_dir, "run") if skirt_path is not None else No
 
 # -----------------------------------------------------------------
 
+# The path to the FitSKIRT executable
+fitskirt_path = find_executable("fitskirt")
+
+# -----------------------------------------------------------------
+
 @contextmanager
 def suppress_stdout():
 

@@ -180,11 +180,12 @@ class SkirtArguments(object):
 
     # -----------------------------------------------------------------
 
-    def simulations(self, simulation_names=None):
+    def simulations(self, simulation_names=None, simulation_name=None):
 
         """
         This function ...
         :param simulation_names:
+        :param simulation_name:
         :return:
         """
 
@@ -220,10 +221,16 @@ class SkirtArguments(object):
 
             # If multiple matching ski files are found, raise an error
             if len(simulations) > 1: raise ValueError("The specified ski pattern defines multiple simulations")
-            else: return simulations[0]
+            else: simulation = simulations[0]
+
+            # Set name and return simulation
+            if simulation_name is not None: simulation.name = simulation_name
+            return simulation
 
         # Else, just return the list of simulations (even when containing only one item)
-        else: return simulations
+        else:
+            if simulation_name is not None: raise ValueError("'simulation_name' cannot be specified if single=False")
+            return simulations
 
     # -----------------------------------------------------------------
 

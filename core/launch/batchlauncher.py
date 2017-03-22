@@ -35,6 +35,7 @@ from ..tools import parallelization as par
 from ..simulation.execute import SkirtExec
 from ..simulation.input import SimulationInput
 from ..simulation.skifile import SkiFile
+from ..simulation.arguments import SkirtArguments
 
 # -----------------------------------------------------------------
 
@@ -108,6 +109,9 @@ class BatchLauncher(Configurable):
 
         # Create temporary local directory
         self.temp_path = fs.create_directory_in(introspection.pts_temp_dir, time.unique_name("BatchLauncher"))
+
+        # Original definitions of local simulations (when definitions are changed because of shared input)
+        self.original_local_definitions = dict()
 
     # -----------------------------------------------------------------
 
@@ -840,7 +844,7 @@ class BatchLauncher(Configurable):
         """
 
         # Inform the user
-        log.info("Checking the input of the simulations ...")
+        log.info("Checking the input of the simulations that are run locally ...")
 
         # A dictionary with the simulation names for each input file that is shared
         shared_input = defaultdict(list)
@@ -896,6 +900,9 @@ class BatchLauncher(Configurable):
 
             # Get the definition
             definition = self.get_definition_for_local_simulation(simulation_name)
+
+            # Set the original definition
+            self.original_local_definitions[simulation_name] = definition.copy()
 
             # Get the original simulation input specification
             original_simulation_input = definition.input_path
@@ -1224,8 +1231,26 @@ class BatchLauncher(Configurable):
                 # Run the simulation
                 simulation = self.skirt.run(definition, logging_options=logging_options, parallelization=parallelization_item, silent=(not log.is_debug()), progress_bar=self.config.progress_bar)
 
+                # Overwrite the simulation object when the definition had been altered by this class
+                if name in self.original_local_definitions:
+
+                    # Get modified prefix and original prefix
+                    original_definition = self.original_local_definitions[name]
+                    prefix = simulation.prefix()
+                    original_prefix = original_definition.prefix
+
+                    # Change the names of the output files so that they start with the right prefix (and not the timestamped prefix of the temporarily created ski file)
+                    for filename in fs.files_in_path(simulation.output_path, returns="name", extensions=True):
+                        if not filename.startswith(prefix): continue
+                        original_filename = filename.replace(prefix, original_prefix)
+                        fs.rename_file(simulation.output_path, filename, original_filename)
+
+                    # Create new simulation object
+                    arguments = SkirtArguments.from_definition(original_definition, logging_options, parallelization_item)
+                    simulation = arguments.simulations(simulation_name=name)
+
                 # Success
-                log.success("Finished simulation " + str(index+1) + " out of " + str(total_queued) + " in the local queue ...")
+                log.success("Finished simulation " + str(index + 1) + " out of " + str(total_queued) + " in the local queue ...")
 
                 # Set the parallelization scheme
                 simulation.parallelization = parallelization_item
@@ -1243,8 +1268,10 @@ class BatchLauncher(Configurable):
                 # Also add the simulation directly to the list of simulations to be analysed
                 self.simulations.append(simulation)
 
+            # Error occured during simulation
             except Exception:
 
+                # Show error messages and traceback; cancel all following simulations
                 log.error("Launching simulation '" + name + "' failed:")
                 traceback.print_exc()
                 log.error("Cancelling following simulations in the queue ...")

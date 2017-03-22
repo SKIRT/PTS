@@ -650,8 +650,10 @@ class GeneticEngine(object):
         .. note:: the population size must be >= 2
         """
 
-        if size < 2:
-            utils.raiseException("population size must be >= 2", ValueError)
+        # Check the value
+        if size < 2: raise ValueError("Population size must be >= 2") #utils.raiseException("population size must be >= 2", ValueError)
+
+        # Set the value
         self.internalPop.setPopulationSize(size)
 
     # -----------------------------------------------------------------
@@ -664,8 +666,10 @@ class GeneticEngine(object):
         :param sort_type: the Sort Type
         """
 
-        if sort_type not in constants.sortType.values():
-            utils.raiseException("sort type must be a constants.sortType type", TypeError)
+        # Check the value
+        if sort_type not in constants.sortType.values(): raise ValueError("Sort type must be a constants.sortType type") #utils.raiseException("sort type must be a constants.sortType type", TypeError)
+
+        # Set the value
         self.internalPop.sortType = sort_type
 
     # -----------------------------------------------------------------
@@ -677,8 +681,7 @@ class GeneticEngine(object):
         :param rate: the rate, between 0.0 and 1.0
         """
 
-        if (rate > 1.0) or (rate < 0.0):
-            utils.raiseException("Mutation rate must be >= 0.0 and <= 1.0", ValueError)
+        if (rate > 1.0) or (rate < 0.0): utils.raiseException("Mutation rate must be >= 0.0 and <= 1.0", ValueError)
         self.pMutation = rate
 
     # -----------------------------------------------------------------
@@ -690,8 +693,7 @@ class GeneticEngine(object):
         :param rate: the rate, between 0.0 and 1.0
         """
 
-        if (rate > 1.0) or (rate < 0.0):
-            utils.raiseException("Crossover rate must be >= 0.0 and <= 1.0", ValueError)
+        if (rate > 1.0) or (rate < 0.0): utils.raiseException("Crossover rate must be >= 0.0 and <= 1.0", ValueError)
         self.pCrossover = rate
 
     # -----------------------------------------------------------------
@@ -703,8 +705,7 @@ class GeneticEngine(object):
         :param num_gens: the number of generations
         """
 
-        if num_gens < 1:
-            utils.raiseException("Number of generations must be >= 1", ValueError)
+        if num_gens < 1: utils.raiseException("Number of generations must be >= 1", ValueError)
         self.nGenerations = num_gens
 
     # -----------------------------------------------------------------

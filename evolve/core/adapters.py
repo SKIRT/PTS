@@ -484,7 +484,7 @@ class DBSQLite(DataBaseAdapter):
       stmt = "delete from %s where identify = ?" % (constants.CDefSQLiteDBTable)
       stmt2 = "delete from %s where identify = ?" % (constants.CDefSQLiteDBTablePop)
 
-      log.debug("Erasing data from the tables with the identify = %s", self.getIdentify())
+      log.debug("Erasing data from the tables with the run identifier = %s", self.getIdentify())
       try:
          c.execute(stmt, (self.getIdentify(),))
          c.execute(stmt2, (self.getIdentify(),))
@@ -892,7 +892,7 @@ class DBMySQLAdapter(DataBaseAdapter):
       stmt = "delete from %s where identify = '%s'" % (constants.CDefMySQLDBTable, self.getIdentify())
       stmt2 = "delete from %s where identify = '%s'" % (constants.CDefMySQLDBTablePop, self.getIdentify())
 
-      log.debug("Erasing data from the tables with the identify = %s", self.getIdentify())
+      log.debug("Erasing data from the tables with the run identifier = %s", self.getIdentify())
       c.execute(stmt)
       c.execute(stmt2)
 

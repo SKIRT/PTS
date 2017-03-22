@@ -181,7 +181,7 @@ class SimulationAnalyser(Configurable):
             analyser = analyser_class.for_simulation(self.simulation)
 
             # Run the analyser, giving this simulation analyser instance as an argument
-            analyser.run(self)
+            analyser.run(simulation_analyser=self)
 
         # Indicate that this simulation has been analysed
         self.simulation.analysed = True

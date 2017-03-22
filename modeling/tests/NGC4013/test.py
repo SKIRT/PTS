@@ -28,11 +28,14 @@ this_dir_path = fs.directory_of(this_path)
 description = "Fitting the galaxy NGC4013 using a flattened Sersic profile for the central bulge and a double exponential for the stellar disk and dust disk"
 
 # -----------------------------------------------------------------
-# SETUP FUNCTION
-# -----------------------------------------------------------------
 
 input_url = "http://www.skirt.ugent.be/downloads/tutorial_NGC4013.tar.gz"
 all_url = "http://www.skirt.ugent.be/downloads/tutorial_NGC4013_complete.tar.gz"
+
+# -----------------------------------------------------------------
+
+ski_path = fs.join(this_dir_path, "ngc4013.ski")
+fski_path = fs.join(this_dir_path, "ngc4013.fski")
 
 # -----------------------------------------------------------------
 
@@ -56,6 +59,12 @@ class NGC4013Test(TestImplementation):
         # The path with the test data
         self.data_path = None
 
+        # The path for the fitskirt run
+        self.reference_path = None
+        self.reference_output_path = None
+        self.reference_ski_path = None
+        self.reference_fski_path = None
+
         # The FitSKIRT launcher
         self.launcher = None
 
@@ -77,6 +86,9 @@ class NGC4013Test(TestImplementation):
 
         # 2. Get the data
         self.get_data()
+
+        # Write
+        self.write()
 
         # 3. Launch with FitSKIRT
         self.launch_fitskirt()
@@ -103,6 +115,12 @@ class NGC4013Test(TestImplementation):
         # Create the data directory
         self.data_path = fs.create_directory_in(self.path, "data")
 
+        # Create the reference directory and subdirectories
+        self.reference_path = fs.create_directory_in(self.path, "ref")
+        self.reference_output_path = fs.create_directory_in(self.reference_path, "out")
+        self.reference_ski_path = fs.join(self.reference_path, "NGC4013.ski")
+        self.reference_fski_path = fs.join(self.reference_path, "NGC4013.fsi")
+
     # -----------------------------------------------------------------
 
     def get_data(self):
@@ -120,6 +138,52 @@ class NGC4013Test(TestImplementation):
 
     # -----------------------------------------------------------------
 
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write ski
+        self.write_ski()
+
+        # Write fski
+        self.write_fski()
+
+    # -----------------------------------------------------------------
+
+    def write_ski(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the ski file ...")
+
+        fs.copy_file(ski_path, self.reference_ski_path)
+
+    # -----------------------------------------------------------------
+
+    def write_fski(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the fski file ...")
+
+        fs.copy_file(fski_path, self.reference_fski_path)
+
+    # -----------------------------------------------------------------
+
     def launch_fitskirt(self):
 
         """
@@ -130,9 +194,22 @@ class NGC4013Test(TestImplementation):
         # Inform the user
         log.info("Launching FitSKIRT ...")
 
-        # mkdir sample_output
-        # fitskirt -t 1 tutorial.fski -o ./sample_output
-        # mpirun -n 20 fitskirt -t 1 -o fit1 tutorial.fski
+        # Create configuration
+        config = dict()
+
+        config["ski"] = self.reference_ski_path
+        config["fski"] = self.reference_fski_path
+
+        config["input"] = self.data_path
+        config["output"] = self.reference_output_path
+
+        # Input
+        input_dict = dict()
+
+        command = Command("fitskirt", "run the reference fitting with FitSKIRT", config, input_dict, cwd=".")
+
+        # Run the command
+        self.launcher = self.run_command(command)
 
     # -----------------------------------------------------------------
 
