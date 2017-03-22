@@ -267,6 +267,9 @@ class MemoryEstimator(Configurable):
         # Create the dust grid tool
         tool = DustGridTool()
 
+        # Debugging
+        log.debug("Running a test simulation in the temporary directory '" + self.temp_path + "' ...")
+
         # Get the dust grid statistics
         statistics = tool.get_statistics(self.ski, self.temp_path, self.config.input, "test")
 

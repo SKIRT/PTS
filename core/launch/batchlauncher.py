@@ -840,7 +840,9 @@ class BatchLauncher(Configurable):
 
             # Generate a unique filename for this file
             original_filename = fs.name(filepath)
-            new_filename = time.unique_name(original_filename, precision="micro")
+            extension = fs.get_extension(original_filename)
+            bare_original_filename = fs.strip_extension(original_filename)
+            new_filename = time.unique_name(bare_original_filename, precision="micro") + "." + extension
 
             # Copy the file to the temporary directory
             fs.copy_file(filepath, self.temp_path, new_name=new_filename)
@@ -897,7 +899,9 @@ class BatchLauncher(Configurable):
                 filepath = original_simulation_input[filename]
 
                 # Generate unique filename
-                new_filename = time.unique_name(filename, precision="micro")
+                extension = fs.get_extension(filename)
+                bare_filename = fs.strip_extension(filename)
+                new_filename = time.unique_name(bare_filename, precision="micro") + "." + extension
 
                 # Save to temporary directory
                 fs.copy_file(filepath, self.temp_path, new_name=new_filename)

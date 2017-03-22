@@ -60,6 +60,18 @@ class LogFile(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def messages(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self.contents["Message"])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def host(self):
 
         """
