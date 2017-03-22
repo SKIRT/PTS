@@ -29,6 +29,7 @@ phase_descriptions["spectra"] = "calculation of dust emission spectra"
 phase_descriptions["dust"] = "emission of dust photons"
 phase_descriptions["comm"] = "communication"
 phase_descriptions["write"] = "writing results"
+phase_descriptions["wait"] = "waiting for synchronization"
 
 # -----------------------------------------------------------------
 
@@ -281,8 +282,12 @@ class SimulationStatus(object):
                         # Loop
                         while True:
 
-                            if self.stage != last_stage: break
-                            if self.cycle != last_cycle: break
+                            if self.stage != last_stage:
+                                bar.show(100) # make sure it always ends on 100%
+                                break
+                            if self.cycle != last_cycle:
+                                bar.show(100) # make sure it always ends on 100%
+                                break
                             if self.progress is None: bar.show(100)
                             else: bar.show(int(self.progress))
                             self.refresh_after(1)
@@ -301,11 +306,12 @@ class SimulationStatus(object):
                          filled_char=BAR_FILLED_CHAR, expected_size=total_length, every=1, add_datetime=True) as bar:
                     # Loop
                     while True:
-                        if self.phase != last_phase: break
+                        if self.phase != last_phase:
+                            bar.show(100) # make sure it always ends on 100%
+                            break
                         if self.progress is None:
                             bar.show(100)
-                        else:
-                            bar.show(int(self.progress))
+                        else: bar.show(int(self.progress))
                         self.refresh_after(1)
 
             # Still the same phase

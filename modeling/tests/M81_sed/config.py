@@ -32,7 +32,7 @@ definition.add_flag("selfabsorption", "enable dust selfabsorption", False)
 
 # Fitting
 definition.add_optional("ngenerations", "positive_integer", "number of generations", 5)
-definition.add_optional("nsimulations", "positive_integer", "number of simulations per generation", 30)
+definition.add_optional("nsimulations", "positive_integer", "number of simulations per generation", 5)
 
 # Free parameters
 definition.add_optional("free_parameters", "string_list", "free parameter labels", choices=possible_free_parameters, default=default_free_parameters)

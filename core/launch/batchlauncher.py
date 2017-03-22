@@ -82,6 +82,9 @@ class BatchLauncher(Configurable):
         # The assignment from items in the queue to the different remote hosts
         self.assignment = None
 
+        # The parallelization scheme for local execution
+        self.parallelization_local = None
+
         # The parallelization scheme for the different remote hosts
         self.parallelization_hosts = dict()
 
@@ -105,6 +108,30 @@ class BatchLauncher(Configurable):
 
         # Create temporary local directory
         self.temp_path = fs.create_directory_in(introspection.pts_temp_dir, time.unique_name("BatchLauncher"))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def uses_remotes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.config.remotes) > 0 or len(self.remotes) > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def only_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.config.remotes) == 0 and len(self.remotes) == 0
 
     # -----------------------------------------------------------------
 
@@ -580,6 +607,19 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    def set_parallelization_for_local(self, parallelization):
+
+        """
+        This function ...
+        :param parallelization:
+        :return:
+        """
+
+        # Set
+        self.parallelization_local = parallelization
+
+    # -----------------------------------------------------------------
+
     def set_parallelization_for_host(self, host_id, parallelization):
 
         """
@@ -929,7 +969,7 @@ class BatchLauncher(Configurable):
         log.info("Setting parallelization schemes ...")
 
         # Set parallelization scheme for local execution
-        self.set_parallelization_local()
+        if self.parallelization_local is None: self.set_parallelization_local()
 
         # Set parallelization schemes for remote execution
         self.set_parallelization_remote()
@@ -1078,22 +1118,6 @@ class BatchLauncher(Configurable):
                 # Run the parallelization tool
                 tool.run()
 
-                # Get the flag indicating whether data parallelization mode should be enabled
-                #data_parallel = self.config.data_parallel
-
-                # Get the amount of (currently) free cores on the remote host
-                #cores = int(remote.free_cores)
-
-                # Determine the number of thread to be used per core
-                #threads_per_core = remote.threads_per_core if remote.use_hyperthreading else 1
-
-                # Create the parallelization object
-                #parallelization = Parallelization.from_free_cores(cores, cores_per_process, threads_per_core, data_parallel)
-
-                # Debugging
-                #log.debug("Using " + str(parallelization.processes) + " processes and " + str(parallelization.threads) + " threads per process on this remote")
-                #log.debug("Parallelization scheme: " + str(parallelization))
-
                 # Get the parallelization scheme
                 parallelization = tool.parallelization
 
@@ -1184,7 +1208,9 @@ class BatchLauncher(Configurable):
 
             # Get the parallelization scheme that has been defined for this simulation
             parallelization_item = self.parallelization_for_simulation(name)
-            if parallelization_item is None: raise RuntimeError("Parallelization has not been defined for local simulation '" + name + "'")
+            if parallelization_item is not None: pass # OK
+            elif self.parallelization_local is not None: parallelization_item = self.parallelization_local
+            else: raise RuntimeError("Parallelization has not been defined for local simulation '" + name + "' and no general parallelization scheme has been set for local execution")
 
             # Generate the analysis options
             logging_options, analysis_options = self.generate_options(name, definition, analysis_options_item, local=True)

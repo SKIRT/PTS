@@ -31,6 +31,8 @@ from ...core.remote.host import Host
 from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
 from .evaluate import get_parameter_values_from_generator, prepare_simulation
 from ...core.simulation.input import SimulationInput
+from ...core.tools import introspection
+from ...core.tools import parallelization as par
 
 # -----------------------------------------------------------------
 
@@ -156,17 +158,44 @@ class ParameterExplorer(FittingComponent):
         # 8. Adjust the ski template
         self.adjust_ski()
 
-        # 9. Set the parallelization schemes for the different remote hosts
-        if self.uses_schedulers: self.set_parallelization()
+        # 9. Set the parallelization scheme for local execution if necessary
+        if self.only_local: self.set_parallelization_local()
 
-        # 10. Estimate the runtimes for the different remote hosts
+        # 10. Set the parallelization schemes for the different remote hosts
+        if self.uses_schedulers: self.set_parallelization_remote()
+
+        # 11. Estimate the runtimes for the different remote hosts
         if self.uses_schedulers: self.estimate_runtimes()
 
-        # 11. Writing
+        # 12. Writing
         self.write()
 
-        # 12. Launch the simulations for different parameter values
+        # 13. Launch the simulations for different parameter values
         self.launch()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def uses_remotes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.launcher.uses_remotes
+
+    # -----------------------------------------------------------------
+
+    @property
+    def only_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.launcher.only_local
 
     # -----------------------------------------------------------------
 
@@ -198,7 +227,7 @@ class ParameterExplorer(FittingComponent):
         """
 
         # Call the setup function of the base class
-        super(ParameterExplorer, self).setup()
+        super(ParameterExplorer, self).setup(**kwargs)
 
         # Load the fitting run
         self.fitting_run = self.load_fitting_run(self.config.name)
@@ -588,9 +617,6 @@ class ParameterExplorer(FittingComponent):
         # Set wavelength grid
         if self.fitting_run.has_wavelength_grids: self.set_wavelength_grid()
 
-        # Set dust grid
-        #if self.fitting_run.has_dust_grids: self.set_dust_grid()
-
         # Set model representation
         self.set_representation()
 
@@ -670,22 +696,64 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    #def set_dust_grid(self):
+    def set_parallelization_local(self):
 
-        #"""
-        #This function ...
-        #:return:
-        #"""
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the parallelization scheme for local execution ...")
+
+        # Get properties of the local machine
+        nnodes = par.nnodes()
+        nsockets = par.sockets_per_node()
+        ncores = par.cores_per_socket()
+        memory = par.virtual_memory().to("Gbyte")
+        threads_per_core = par.nthreads_per_core()
+        hyperthreading = threads_per_core > 1
+        mpi = introspection.has_mpi()
+
+        # Create the parallelization tool
+        tool = ParallelizationTool()
+
+        # Set configuration options
+        tool.config.ski = self.ski
+        tool.config.input = self.simulation_input
+
+        # Set host properties
+        tool.config.nnodes = nnodes
+        tool.config.nsockets = nsockets
+        tool.config.ncores = ncores
+        tool.config.memory = memory
+
+        # MPI available and used
+        tool.config.mpi = mpi
+        tool.config.hyperthreading = hyperthreading
+        tool.config.threads_per_core = threads_per_core
+
+        # Number of dust cells
+        tool.config.ncells = None  # number of dust cells (relevant if ski file uses a tree dust grid)
+
+        # Don't show
+        tool.config.show = False
+
+        # Run the parallelization tool
+        tool.run()
+
+        # Get the parallelization scheme
+        parallelization = tool.parallelization
 
         # Debugging
-        #log.debug("Setting the dust grid (level " + str(self.generation.dust_grid_level) + ") ...")
+        log.debug("The parallelization scheme for local execution is " + str(parallelization))
 
-        # Set the dust grid
-        #self.ski.set_dust_grid(self.fitting_run.dust_grid_for_level(self.generation.dust_grid_level))
+        # Set the parallelization scheme
+        self.launcher.set_parallelization_for_local(parallelization)
 
     # -----------------------------------------------------------------
 
-    def set_parallelization(self):
+    def set_parallelization_remote(self):
 
         """
         This function sets the parallelization scheme for those remote hosts used by the batch launcher that use
@@ -871,7 +939,7 @@ class ParameterExplorer(FittingComponent):
                     # This simulation is OK
                     if simulation_name in launched_simulation_names: continue
 
-                    log.error("Model #" + str(index))
+                    log.error("Model #" + str(index + 1))
                     log.error("")
                     parameter_values = self.parameters_table.parameter_values_for_simulation(simulation_name)
                     for label in parameter_values: log.error(" - " + label + ": " + stringify_not_list(parameter_values[label])[1])

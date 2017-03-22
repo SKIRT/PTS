@@ -117,6 +117,9 @@ class SEDFitter(FittingComponent):
         # The directory with the probability tables for all finished generations
         self.prob_generations_path = fs.create_directory_in(self.fitting_run.prob_path, "generations")
 
+        # Check if there are finished generations
+        if len(self.fitting_run.finished_generations) == 0: raise RuntimeError("There are no finished generations")
+
         # For each finished generation, determine the path to the probability table
         for generation_name in self.fitting_run.finished_generations:
 
