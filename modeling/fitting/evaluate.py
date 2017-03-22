@@ -68,6 +68,9 @@ def get_parameter_values_from_generator(parameters, index, fitting_run):
         # Set dimensionless value
         else: parameter_values[label] = value
 
+    # Return the parameter values
+    return parameter_values
+
 # -----------------------------------------------------------------
 
 def get_scalar_parameter_values(genome, fitting_run):

@@ -228,13 +228,11 @@ class SimulationStatus(object):
             # Finished: break loop
             if self.finished:
                 log.success("Simulation finished")
-                #break
                 return True
 
             # Crashed: break loop
             elif self.crashed:
                 log.error("Simulation crashed")
-                #break
                 return False
 
             # Aborted: break loop

@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from .component import BuildComponent
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
-from ..component.sed import get_ski_template
+from ..component.sed import get_ski_template, get_ski_input_path
 from ...core.tools.serialization import write_dict
 from ...magic.core.frame import Frame
 from .component import model_map_filename
@@ -201,7 +201,7 @@ class SEDModelBuilder(BuildComponent):
         self.original_map_filenames.append(parameters["filename"])
 
         # Get the absolute file path
-        path = fs.absolute_path(parameters["filename"])
+        path = fs.join(get_ski_input_path(self.config.path), parameters["filename"])
 
         # Debugging
         log.debug("Loading the map from '" + path + "' ...")
@@ -258,7 +258,7 @@ class SEDModelBuilder(BuildComponent):
         self.original_map_filenames.append(parameters["filename"])
 
         # Get the absolute file path
-        path = fs.absolute_path(parameters["filename"])
+        path = fs.join(get_ski_input_path(self.config.path), parameters["filename"])
 
         # Debugging
         log.debug("Loading the map from '" + path + "' ...")
@@ -279,16 +279,22 @@ class SEDModelBuilder(BuildComponent):
         """
 
         # Inform the user
-        log.info("Loading other input files for the ski file ...")
+        log.info("Loading other input files for the ski file (expect wavelength grid files) ...")
+
+        # Get the wavelength grid filename (if any)
+        wavelength_grid_filename = self.ski.wavelengthsfile()
 
         # Loop over the input filenames
         for filename in self.ski.input_files:
+
+            # Skip wavelength grid file
+            if wavelength_grid_filename is not None and filename == wavelength_grid_filename: continue
 
             # Skip maps
             if filename in self.original_map_filenames: continue
 
             # Add others
-            self.other_input[filename] = fs.absolute_path(filename)
+            self.other_input[filename] = fs.join(get_ski_input_path(self.config.path), filename)
 
     # -----------------------------------------------------------------
 
@@ -365,7 +371,6 @@ class SEDModelBuilder(BuildComponent):
         for name in self.dust_properties:
 
             # Create a directory
-            #component_path = self.output_path_file(name)
             component_path = fs.join(self.model_dust_path, name)
             fs.create_directory(component_path)
 

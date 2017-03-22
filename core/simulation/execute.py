@@ -173,9 +173,6 @@ class SkirtExec:
             mpi_command = "mpirun"
         else: raise ValueError("Invalid MPI style")
 
-        # Check whether input paths are defined for the simulation as a list of file paths
-
-
         # Get the command string
         command = arguments.to_command(self._path, mpi_command, scheduler)
 

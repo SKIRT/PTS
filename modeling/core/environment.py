@@ -55,19 +55,6 @@ class ModelingEnvironment(object):
         self.config_path = fs.create_directory_in(self.path, "config")
         self.show_path = fs.create_directory_in(self.path, "show")
         self.build_path = fs.create_directory_in(self.path, "build")
-        #self.input_path = fs.create_directory_in(self.path, "input")
-
-    # -----------------------------------------------------------------
-
-    #@property
-    #def input_paths(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        #return fs.files_in_path(self.input_path)
 
 # -----------------------------------------------------------------
 

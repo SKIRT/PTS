@@ -593,8 +593,8 @@ class ModelingSetupTool(Configurable):
         # If input is required
         else:
 
-            if self.ski_input is not None: self.ski_input = self.ski.input_paths(self.ski_input)
-            elif self.object_config.input is not None: self.ski_input = self.ski.input_paths(self.object_config.input)
+            if self.ski_input is not None: self.ski_input = self.ski.input_paths(self.ski_input) #ignore_wavelength_grid=True)
+            elif self.object_config.input is not None: self.ski_input = self.ski.input_paths(self.object_config.input) # ignore_wavelength_grid=True)
             else: raise ValueError("Input is required for the ski file but input path(s) not specified")
 
     # -----------------------------------------------------------------

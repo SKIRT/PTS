@@ -15,7 +15,7 @@ import numpy as np
 from pts.core.tools import filesystem as fs
 from pts.core.tools.logging import log
 from pts.modeling.basics.instruments import SEDInstrument
-from pts.modeling.tests.base import M81TestBase, fitting_filter_names, m81_data_path
+from pts.modeling.tests.base import M81TestBase, fitting_filter_names
 from pts.core.launch.options import AnalysisOptions
 from pts.do.commandline import Command
 from pts.core.simulation.skifile import LabeledSkiFile
@@ -29,7 +29,6 @@ from pts.modeling.tests.base import seds_path, dustpedia_sed_path
 from pts.core.tools import sequences
 from pts.core.basics.map import Map
 from pts.modeling.tests.base import free_parameter_descriptions, free_parameter_units
-from pts.core.basics.configuration import PassiveConfigurationSetter
 
 # -----------------------------------------------------------------
 
@@ -152,6 +151,18 @@ class M81SEDTest(M81TestBase):
         """
 
         return fs.files_in_path(self.simulation_input_path, exact_not_name="wavelengths")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_input_files(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.simulation_input_path)
 
     # -----------------------------------------------------------------
 
@@ -492,7 +503,9 @@ class M81SEDTest(M81TestBase):
         input_setup = dict()
         input_setup["sed"] = self.observed_sed
         input_setup["ski"] = self.ski_template
-        input_setup["ski_input"] = self.required_input_files
+        #input_setup["ski_input"] = self.required_input_files
+        input_setup["ski_input"] = self.all_input_files # Important so that the fittinginitializer can choose the number
+        #  of wavelengths for the fitting based on what the user used as a wavelength grid file for the ski file
 
         # Create object config
         object_config = dict()

@@ -121,6 +121,12 @@ class SEDFittingInitializer(FittingInitializerBase, SEDModelingComponent):
             # Load the component
             component = load_stellar_component(self.config.path, self.model_name, name)
 
+            # Check whether requires a map
+            if component.map_path is None: continue
+
+            # Debugging
+            log.debug("Setting the path to the '" + name + "' stellar component map ...")
+
             # Generate a filename for the map
             filename = "stars_" + name + ".fits"
 
@@ -140,6 +146,12 @@ class SEDFittingInitializer(FittingInitializerBase, SEDModelingComponent):
 
             # Load the component
             component = load_dust_component(self.config.path, self.model_name, name)
+
+            # Check whether requires a map
+            if component.map_path is None: continue
+
+            # Debugging
+            log.debug("Setting the path to the '" + name + "' dust component map ...")
 
             # Generate a filename for the map
             filename = "dust_" + name + ".fits"

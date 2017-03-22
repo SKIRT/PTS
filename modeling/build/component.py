@@ -447,10 +447,11 @@ def load_component(path, add_map=False):
 
     # Load the parameters
     parameters_path = fs.join(path, "parameters.cfg")
-    parameters = Map()
-    with open(parameters_path, "r") as fh:
-        load_mapping(fh, parameters)
-    component.parameters = parameters
+    if fs.is_file(parameters_path):
+        parameters = Map()
+        with open(parameters_path, "r") as fh:
+            load_mapping(fh, parameters)
+        component.parameters = parameters
 
     # Load the deprojection
     deprojection_path = fs.join(path, "deprojection.mod")

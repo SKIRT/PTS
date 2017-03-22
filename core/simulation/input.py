@@ -50,6 +50,22 @@ class SimulationInput(object):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_any(cls, argument):
+
+        """
+        This function ...
+        :param argument:
+        :return:
+        """
+
+        if isinstance(argument, list): return cls(*argument)
+        elif isinstance(argument, basestring): return cls(argument)
+        elif isinstance(argument, cls): return argument
+        else: raise ValueError("Invalid input specification: should be list, string or SimulationInput object")
+
+    # -----------------------------------------------------------------
+
     def __str__(self):
 
         """

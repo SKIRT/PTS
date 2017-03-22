@@ -33,6 +33,8 @@ from ..advanced.parallelizationtool import ParallelizationTool
 from ..basics.handle import ExecutionHandle
 from ..tools import parallelization as par
 from ..simulation.execute import SkirtExec
+from ..simulation.input import SimulationInput
+from ..simulation.skifile import SkiFile
 
 # -----------------------------------------------------------------
 
@@ -100,6 +102,9 @@ class BatchLauncher(Configurable):
 
         # The logging options
         self.logging_options = None
+
+        # Create temporary local directory
+        self.temp_path = fs.create_directory_in(introspection.pts_temp_dir, time.unique_name("BatchLauncher"))
 
     # -----------------------------------------------------------------
 
@@ -638,6 +643,9 @@ class BatchLauncher(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
+        # 2. Check the input files for all simulations
+        self.check_input()
+
         # 2. Set the parallelization scheme for the remote hosts for which this was not specified by the user
         self.set_parallelization()
 
@@ -766,6 +774,143 @@ class BatchLauncher(Configurable):
 
             # Add the definition to the queue
             self.add_to_queue(definition, definition.prefix)
+
+    # -----------------------------------------------------------------
+
+    def get_definition_for_local_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        for definition, name, _ in self.local_queue:
+            if name == simulation_name: return definition
+
+        raise ValueError("No simulation found in the local queue with the name '" + simulation_name + "'")
+
+    # -----------------------------------------------------------------
+
+    def check_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the input of the simulations ...")
+
+        # A dictionary with the simulation names for each input file that is shared
+        shared_input = defaultdict(list)
+
+        # Check which definitions in the local queue use the same input
+        for definition, simulation_name, analysis_options in self.local_queue:
+
+            # Skip simulations without input
+            if definition.input_path is None: continue
+
+            # Convert definition input to actual SimulationInput object
+            simulation_input = SimulationInput.from_any(definition.input_path)
+
+            # Loop over the input files
+            for filename, filepath in simulation_input:
+
+                # Set
+                shared_input[filepath].append((simulation_name, filename))
+
+            # Set the simulation input object
+            definition.input_path = simulation_input
+
+        # New paths for each shared input file
+        new_paths = dict()
+
+        # List of participating simulations
+        participating_simulations = set()
+
+        # Loop over the filepaths that are shared
+        for filepath in shared_input:
+
+            # Not shared
+            if len(shared_input[filepath]) < 2: continue
+
+            # Add all corresponding simulations to the list of participating simulations
+            for simulation_name, _ in shared_input[filepath]: participating_simulations.add(simulation_name)
+
+            # Generate a unique filename for this file
+            original_filename = fs.name(filepath)
+            new_filename = time.unique_name(original_filename, precision="micro")
+
+            # Copy the file to the temporary directory
+            fs.copy_file(filepath, self.temp_path, new_name=new_filename)
+            new_filepath = fs.join(self.temp_path, new_filename)
+
+            # Set the new path
+            new_paths[filepath] = new_filepath
+
+        # Copy the rest of the input files of the participating simulations
+        for simulation_name in participating_simulations:
+
+            # Get the definition
+            definition = self.get_definition_for_local_simulation(simulation_name)
+
+            # Get the original simulation input specification
+            original_simulation_input = definition.input_path
+
+            # Set the input path to the temporary directory path
+            definition.input_path = self.temp_path
+
+            # Open the ski file
+            ski = SkiFile(definition.ski_path)
+
+            # List of shared filenames for this simulation
+            shared_filenames_for_simulation = []
+
+            # Loop over the shared input files, set the new file name
+            for filepath in shared_input:
+
+                ski_filename = None
+                for sim_name, filename in shared_input[filepath]:
+                    if sim_name == simulation_name:
+                        ski_filename = filename
+                        break
+                else: continue
+
+                # Get the new filepath
+                new_filepath = new_paths[filepath]
+                new_filename = fs.name(new_filepath)
+
+                # Change in the ski file
+                ski.change_input_filename(ski_filename, new_filename)
+
+                # Add to list
+                shared_filenames_for_simulation.append(new_filename)
+
+            # Loop over other input files for this simulation, also copy them to the temporary directory with a unique name
+            for filename in ski.input_files:
+
+                # Already changed
+                if filename in shared_filenames_for_simulation: continue
+
+                # Get path for this filename
+                filepath = original_simulation_input[filename]
+
+                # Generate unique filename
+                new_filename = time.unique_name(filename, precision="micro")
+
+                # Save to temporary directory
+                fs.copy_file(filepath, self.temp_path, new_name=new_filename)
+
+                # Change filename in ski
+                ski.change_input_filename(filename, new_filename)
+
+            # Save the ski file
+            new_ski_path = fs.join(self.temp_path, time.unique_name(simulation_name, precision="micro") + ".ski")
+            ski.saveto(new_ski_path)
+
+            # Set the new ski path to the definition
+            definition.ski_path = new_ski_path
 
     # -----------------------------------------------------------------
 

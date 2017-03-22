@@ -210,6 +210,10 @@ dustpedia_sed_path = fs.join(seds_path, "DustPedia.dat")
 
 # -----------------------------------------------------------------
 
+reference_wavelength_grid_filename = "wavelengths.txt"
+
+# -----------------------------------------------------------------
+
 class M81TestBase(TestImplementation):
 
     """
@@ -393,7 +397,7 @@ class M81TestBase(TestImplementation):
         self.simulation_misc_path = fs.create_directory_in(self.reference_path, "misc")
 
         # Determine the path to the wavelength grid file
-        self.wavelength_grid_path = fs.join(self.simulation_input_path, "wavelengths.txt")
+        self.wavelength_grid_path = fs.join(self.simulation_input_path, reference_wavelength_grid_filename)
 
     # -----------------------------------------------------------------
 
@@ -612,7 +616,7 @@ class M81TestBase(TestImplementation):
         self.ski.setpackages(self.config.npackages)
 
         # Set the name of the wavelength grid file
-        self.ski.set_file_wavelength_grid(fs.name(self.wavelength_grid_path))
+        self.ski.set_file_wavelength_grid(reference_wavelength_grid_filename)
 
         # Set the dust emissivity
         if self.config.transient_heating: self.ski.set_transient_dust_emissivity()
