@@ -185,7 +185,7 @@ class MemoryEstimator(Configurable):
         """
 
         # Inform the user
-        log.info("Determining the number of wavelenth points ...")
+        log.info("Determining the number of wavelength points ...")
 
         # Get the number of wavelengths
         if self.ski.wavelengthsfile():

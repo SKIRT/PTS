@@ -950,7 +950,7 @@ class BatchLauncher(Configurable):
         nnodes = par.nnodes()
         nsockets = par.sockets_per_node()
         ncores = par.cores_per_socket()
-        memory = par.virtual_memory().to("Gbyte").value
+        memory = par.virtual_memory().to("Gbyte")
         threads_per_core = par.nthreads_per_core()
         hyperthreading = threads_per_core > 1
         mpi = introspection.has_mpi()

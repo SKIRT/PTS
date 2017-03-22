@@ -212,7 +212,7 @@ class AnalysisLauncher(AnalysisComponent):
         self.ski_file_path = fs.join(self.analysis_run_path, self.galaxy_name + ".ski")
 
         # Set the path to the wavelength grid file
-        self.wavelength_grid_path = fs.join(self.analysis_run_path, "wavelenth_grid.dat")
+        self.wavelength_grid_path = fs.join(self.analysis_run_path, "wavelength_grid.dat")
 
         # Set the path to the dust grid file
         self.dust_grid_path = fs.join(self.analysis_run_path, "dust_grid.dg")

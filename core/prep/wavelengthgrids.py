@@ -74,7 +74,7 @@ class WavelengthGridsTable(SmartTable):
         self.add_column_info("PAH points", int, None, "number of points in the PAH spectrum (range: " + str(ranges["PAH"]) + ")")
         self.add_column_info("Dust points", int, None, "number of points in the dust spectrum (range: " + str(ranges["dust"]) + ")")
         self.add_column_info("Extension points", int, None, "number of points in the extension spectrum (range: " + str(ranges["extension"]) + ")")
-        self.add_column_info("Broad band filters", str, None, "broad band filters for which the wavelenth range was resampled")
+        self.add_column_info("Broad band filters", str, None, "broad band filters for which the wavelength range was resampled")
         self.add_column_info("Narrow band filters", str, None, "narrow band filters for which the wavelength was added")
         self.add_column_info("Emission lines", int, None, "number of emission lines")
         self.add_column_info("Fixed points", int, None, "number of fixed points")
