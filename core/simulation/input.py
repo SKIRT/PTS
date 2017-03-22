@@ -61,6 +61,54 @@ class SimulationInput(object):
 
     # -----------------------------------------------------------------
 
+    def __iter__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.paths: yield name, self.paths[name]
+
+    # -----------------------------------------------------------------
+
+    def __contains__(self, name):
+
+        """
+        This funtion ...
+        :param name:
+        :return:
+        """
+
+        return name in self.paths
+
+    # -----------------------------------------------------------------
+
+    def __setitem__(self, name, path):
+
+        """
+        This function ...
+        :param name:
+        :param path:
+        :return:
+        """
+
+        self.paths[name] = path
+
+    # -----------------------------------------------------------------
+
+    def __getitem__(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.paths[name]
+
+    # -----------------------------------------------------------------
+
     def add_file(self, path, name=None):
 
         """

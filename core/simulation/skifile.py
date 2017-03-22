@@ -26,6 +26,7 @@ from ..tools import archive as arch
 from ..tools import filesystem as fs
 from ..tools.stringify import str_from_bool, str_from_angle
 from ..tools import xml
+from .input import SimulationInput
 
 # -----------------------------------------------------------------
 
@@ -174,26 +175,44 @@ class SkiFile:
                 if not fs.contains_file(working_directory, filename): raise IOError("The input file " + filename + " is not present in the working directory")
                 else: input_paths.append(fs.join(working_directory, filename))
 
+            # Return the input paths
+            return input_paths
+
+        # Construct simulation input
+        elif isinstance(input_path, list): input_path = SimulationInput(*input_path)
+        elif isinstance(input_path, basestring): input_path = SimulationInput(input_path)
+        elif isinstance(input_path, SimulationInput): pass
+        else: raise ValueError("Invalid value for 'input_path': " + str(input_path))
+
+        # Initialize a list to contain the file paths
+        input_paths = []
+
+        # Loop over the filenames as defined in the ski file
+        for filename in filenames:
+
+            # Check if in simulation input
+            if filename not in input_path: raise ValueError("The simulation input specification does not contain the file '" + filename + "' needed for ski file '" + self.prefix + "'")
+
+            # Get the path for this file
+            path = input_path[filename]
+
+            # Add the input path
+            input_paths.append(path)
+
         # If a list of input paths has been specified
-        elif isinstance(input_path, list):
-
-            input_names = [fs.name(path) for path in input_path]
-
-            # Loop over the files
-            for filename in filenames:
-
-                # Check if in list
-                if filename not in input_names: raise ValueError("The list of input files does not specify the file '" + filename + "' needed for ski file " + self.prefix)
-
+        #elif isinstance(input_path, list):
+            #input_names = [fs.name(path) for path in input_path]
+            ## Loop over the files
+            #for filename in filenames:
+            #    # Check if in list
+            #    if filename not in input_names: raise ValueError("The list of input files does not specify the file '" + filename + "' needed for ski file " + self.prefix)
             # Set the input paths
-            input_paths = input_path
-
+            #input_paths = input_path
         # If a directory is specified
-        else:
-            if not fs.contains_files(input_path, filenames): raise IOError("Some input files are missing from the input directory")
-
-            # Set the input paths
-            input_paths = [fs.join(input_path, filename) for filename in filenames]
+        #else:
+        #    if not fs.contains_files(input_path, filenames): raise IOError("Some input files are missing from the input directory")
+        #    # Set the input paths
+        #    input_paths = [fs.join(input_path, filename) for filename in filenames]
 
         # Return the input paths
         return input_paths
@@ -257,20 +276,47 @@ class SkiFile:
 
     ## This function returns the name of the wavelengths file that is used for the simulation, if any
     def wavelengthsfile(self, input_path=None):
+
+        # If this ski file contains a file wavelength grid
         entry = self.tree.xpath("//FileWavelengthGrid")
         if entry:
-            #return entry[0].get("filename")
-            filename = entry[0].get("filename")
+
+            filename = self.get_value(entry[0], "filename")
+
+            # Simulation input is specified
             if input_path is not None:
+
+                # List of file paths
                 if isinstance(input_path, list):
+
                     for path in input_path:
                         if os.path.basename(path) == filename:
                             wavelengths_path = path
                             break
                     else: raise ValueError("The list of input paths does not contain the path to the wavelengths file")
-                else: wavelengths_path = os.path.join(input_path, filename)
+
+                # Directory path
+                elif isinstance(input_path, basestring): wavelengths_path = os.path.join(input_path, filename)
+
+                # Simulation input object
+                elif isinstance(input_path, SimulationInput):
+
+                    # Check whether present in simulation input
+                    if filename not in input_path: raise ValueError("The file '" + filename + "' with the input wavelengths could not be found within the simulation input specification")
+
+                    # Otherwise, set the path
+                    wavelengths_path = input_path[filename]
+
+                # Invalid
+                else: raise ValueError("Invalid value for 'input_path'")
+
+            # Input path is not specified
             else: wavelengths_path = filename
+
+            # Return the file path
             return wavelengths_path
+
+        # No file wavelength grid in this ski file
         else: return None
 
     ## This function returns the number of wavelength points as defined in the wavelengths file

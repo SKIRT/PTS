@@ -29,6 +29,7 @@ from ..simulation.parallelization import Parallelization
 from ..simulation.arguments import SkirtArguments
 from ..basics.handle import ExecutionHandle
 from .status import SimulationStatus
+from .input import SimulationInput
 
 # -----------------------------------------------------------------
 
@@ -614,7 +615,7 @@ class SkirtRemote(Remote):
                 self.upload(definition.input_path, remote_input_path, show_output=True)
 
             # The specified remote input directory (for re-usage of already uploaded input) does not exist
-            elif not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist")
+            elif not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist: '" + remote_input_path + "'")
 
         # If the simulation input is defined as a list of seperate file paths
         elif isinstance(definition.input_path, list):
@@ -637,8 +638,32 @@ class SkirtRemote(Remote):
             # The specified remote directory (for re-usage of already uploaded input) does not exist
             elif not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist: '" + remote_input_path + "'")
 
+        # If we have a SimulationInput instance
+        elif isinstance(definition.input_path, SimulationInput):
+
+            # If a remote input path is not specified
+            if remote_input_path is None:
+
+                # Determine the full path to the remote input directory on the remote system
+                remote_input_path = fs.join(remote_simulation_path, "in")
+
+                # Create the remote directory
+                self.create_directory(remote_input_path)
+
+                # Upload the local input files to the new remote directory
+                for name, path in definition.input_path:
+
+                    # Debugging
+                    log.debug("Uploading the '" + path + "' file to '" + remote_input_path + "' under the name '" + name + "'")
+
+                    # Upload the file, giving it the desired name
+                    self.upload(path, remote_input_path, new_name=name)
+
+            # The specified remote directory (for re-usage of already uploaded input) does not exist
+            elif not self.is_directory(remote_input_path): raise RuntimeError("The remote input directory does not exist: '" + remote_input_path + "'")
+
         # Invalid format for arguments.input_path
-        else: raise ValueError("Invalid value for 'input_path': must be None, local directory path or list of file paths")
+        else: raise ValueError("Invalid value for 'input_path': must be None, local directory path, list of file paths or SimulationInput object")
 
         # Create the remote output directory
         self.create_directory(remote_output_path)
