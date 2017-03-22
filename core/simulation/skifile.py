@@ -4022,10 +4022,12 @@ class LabeledSkiFile(SkiFile):
         # Get the property
         prop = element.get(name)
 
-        # Labeled value, add label to stringified quantity
-        if prop.startswith("[") and prop.endswith("]"):
-            label = prop[1:-1].split(":")[0]
-            string = "[" + label + ":" + string + "]"
+        # Not a new property
+        if prop is not None:
+            # Labeled value, add label to stringified quantity
+            if prop.startswith("[") and prop.endswith("]"):
+                label = prop[1:-1].split(":")[0]
+                string = "[" + label + ":" + string + "]"
 
         # Set the value in the tree element
         element.set(name, string)

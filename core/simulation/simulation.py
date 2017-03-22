@@ -28,6 +28,7 @@ from .logfile import LogFile
 from ..tools import archive as arch
 from ..launch.options import AnalysisOptions
 from .status import SimulationStatus
+from .input import SimulationInput
 
 # -----------------------------------------------------------------
 
@@ -112,7 +113,9 @@ class SkirtSimulation(object):
         # Set the full path to the input directory or the paths to the input files
         if inpath is not None:
             if isinstance(inpath, list): self._inpath = inpath
-            else: self._inpath = os.path.realpath(os.path.expanduser(inpath))
+            elif isinstance(inpath, basestring): self._inpath = os.path.realpath(os.path.expanduser(inpath))
+            elif isinstance(inpath, SimulationInput): self._inpath = inpath
+            else: raise ValueError("Invalid value for 'inpath'")
         else: self._inpath = None
         self._outpath = os.path.realpath(os.path.expanduser(outpath if outpath is not None else ""))
         self._prefix = prefix
@@ -190,7 +193,9 @@ class SkirtSimulation(object):
 
     ## This function returns the absolute path for a simulation input file, given the file's name
     def infilepath(self, name):
-        return os.path.join(self._inpath, name)
+        if isinstance(self._inpath, basestring): return os.path.join(self._inpath, name)
+        elif isinstance(self._inpath, SimulationInput): return self._inpath[name]
+        else: raise ValueError("The input path is of invalid type")
 
     ## This function returns the absolute path for a simulation output file, given the file's partial name
     # (the partial name does not include the prefix and the subsequent underscore).

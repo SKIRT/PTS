@@ -53,6 +53,15 @@ class NGC4013Test(TestImplementation):
         # Call the constructor of the base class
         super(NGC4013Test, self).__init__(config, interactive)
 
+        # The path with the test data
+        self.data_path = None
+
+        # The FitSKIRT launcher
+        self.launcher = None
+
+        # The modeler
+        self.modeler = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -66,10 +75,10 @@ class NGC4013Test(TestImplementation):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Get the data
+        # 2. Get the data
         self.get_data()
 
-        # Launch with FitSKIRT
+        # 3. Launch with FitSKIRT
         self.launch_fitskirt()
 
         # Setup the modeling
@@ -91,6 +100,9 @@ class NGC4013Test(TestImplementation):
         # CAll the setup function of the base class
         super(NGC4013Test, self).setup(**kwargs)
 
+        # Create the data directory
+        self.data_path = fs.create_directory_in(self.path, "data")
+
     # -----------------------------------------------------------------
 
     def get_data(self):
@@ -104,7 +116,7 @@ class NGC4013Test(TestImplementation):
         log.info("Downloading the input ...")
 
         # Download the input
-        network.download_and_decompress_file(input_url, temp_path, progress_bar=True)
+        network.download_and_decompress_file(input_url, self.data_path, progress_bar=True)
 
     # -----------------------------------------------------------------
 
@@ -196,7 +208,7 @@ class NGC4013Test(TestImplementation):
         # Add the command
         #commands.append(model_command)
 
-        modeler = self.run_command(model_command)
+        self.modeler = self.run_command(model_command)
 
 # -----------------------------------------------------------------
 # TEST FUNCTION
