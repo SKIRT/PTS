@@ -378,7 +378,7 @@ class PTSTestSuite(Configurable):
                     previous_paths = fs.directories_in_path(introspection.pts_tests_dir, startswith=name)
 
                     # Debugging
-                    log.debug("Removing output directories of previous test runs: " + stringify.stringify(previous_paths)[1] + " ...")
+                    if len(previous_paths) > 0: log.debug("Removing output directories of previous test runs: " + stringify.stringify(previous_paths)[1] + " ...")
 
                     # Remove
                     fs.remove_directories(previous_paths)

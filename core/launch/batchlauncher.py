@@ -150,6 +150,9 @@ class BatchLauncher(Configurable):
         :return:
         """
 
+        # Debugging
+        log.debug("Adding simulation '" + name + "' to the queue ...")
+
         # Check whether the simulation name doesn't contain spaces
         if " " in name: raise ValueError("The simulation name cannot contain spaces")
 
