@@ -57,7 +57,7 @@ class UnitsTest(TestImplementation):
 
         self.observed_sed = None
         self.model_sed_1 = None
-        #self.model_sed_2 = None
+        self.model_sed_2 = None
         self.model_sed_3 = None
         #self.model_sed_4 = None
         self.mock_sed = None
@@ -85,7 +85,7 @@ class UnitsTest(TestImplementation):
         self.test_sed()
 
         # Plot
-        self.plot()
+        if self.config.plot: self.plot()
 
     # -----------------------------------------------------------------
 
@@ -116,7 +116,7 @@ class UnitsTest(TestImplementation):
 
         self.observed_sed = ObservedSED.from_file(observed_sed_path)
         self.model_sed_1 = SED.from_skirt(sim_sed_path_1)
-        #self.model_sed_2 = SED.from_skirt(sim_sed_path_2)
+        self.model_sed_2 = SED.from_skirt(sim_sed_path_2)
         self.mock_sed = ObservedSED.from_file(mock_sed_path)
 
     # -----------------------------------------------------------------
@@ -199,8 +199,6 @@ class UnitsTest(TestImplementation):
         print("automatically determined conversion factor:", converted_auto.value / flux.value)
         print("")
 
-        exit()
-
     # -----------------------------------------------------------------
 
     def test_sed(self):
@@ -213,7 +211,11 @@ class UnitsTest(TestImplementation):
         # Inform the user
         log.info("Testing SED unit conversion ...")
 
+        # Convert manually
         self.convert_sed_manual()
+
+        # Convert automatic
+        self.convert_sed_automatic()
 
     # -----------------------------------------------------------------
 
@@ -251,7 +253,18 @@ class UnitsTest(TestImplementation):
         #self.model_sed_4 = SED.from_arrays(wavelengths, fluxes2, wavelength_unit="micron", photometry_unit="Jy")
         #print(self.model_sed_4)
 
-        #self.model_sed_1.convert_to(photometry_unit="Jy")
+    # -----------------------------------------------------------------
+
+    def convert_sed_automatic(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.model_sed_1.convert_to(photometry_unit="Jy")
+
+        print(self.model_sed_1)
 
     # -----------------------------------------------------------------
 
@@ -266,7 +279,7 @@ class UnitsTest(TestImplementation):
 
         plotter.add_sed(self.observed_sed, "Observation")
         plotter.add_sed(self.model_sed_1, "model 1")
-        #plotter.add_sed(self.model_sed_2, "model 2")
+        plotter.add_sed(self.model_sed_2, "model 2")
         plotter.add_sed(self.model_sed_3, "model 3")
         #plotter.add_sed(self.model_sed_4, "model 4")
 

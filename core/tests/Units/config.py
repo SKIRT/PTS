@@ -13,4 +13,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 # Creaet the definition
 definition = ConfigurationDefinition(write_config=False)
 
+# Flags
+definition.add_flag("plot", "plot", False)
+
 # -----------------------------------------------------------------

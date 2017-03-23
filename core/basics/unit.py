@@ -587,7 +587,8 @@ class PhotometricUnit(CompositeUnit):
             new_unit = divide_units(self, other.unit)
 
             # Create a quantity
-            quantity = parse_quantity(1./ other.value * new_unit)
+            self_value = 1.
+            quantity = parse_quantity(self_value / other.value * new_unit)
 
             # Return the quantity
             return quantity
@@ -618,7 +619,8 @@ class PhotometricUnit(CompositeUnit):
             new_unit = divide_units_reverse(self, other)
 
             # Create a quantity
-            quantity = parse_quantity(other.value * new_unit)
+            self_value = 1.
+            quantity = parse_quantity(other.value / self_value * new_unit)
 
             # Return the quantity
             return quantity
@@ -890,8 +892,9 @@ class PhotometricUnit(CompositeUnit):
         # Same type
         if self.physical_type == to_unit.physical_type:
             #factor = self.scale_factor * self / self.to_unit
-            factor = self / to_unit
-            return factor.scale
+            factor = (self / to_unit).to("")
+            #return factor.scale
+            return factor
 
         # Convert
         if isinstance(solid_angle, basestring):
@@ -931,8 +934,8 @@ class PhotometricUnit(CompositeUnit):
         if self.is_neutral_density:
 
             # Convert into new unit by dividing by wavelength or by frequency
-            if to_unit.is_wavelength_density: new_unit = self / wavelength
-            elif to_unit.is_frequency_density: new_unit = self / frequency
+            if to_unit.is_wavelength_density: new_unit = photometric_unit_from_divide_unit_and_quantity(self, wavelength)
+            elif to_unit.is_frequency_density: new_unit = photometric_unit_from_divide_unit_and_quantity(self, frequency)
             elif to_unit.is_neutral_density: new_unit = self
             else: raise ValueError("Cannot convert from spectral density to integrated quantity") # asked to convert to not a spectral density
 
@@ -940,8 +943,8 @@ class PhotometricUnit(CompositeUnit):
         elif self.is_wavelength_density:
 
             # Convert into new unit by multiplying with wavelength or with wavelength / frequency
-            if to_unit.is_neutral_density: new_unit = self * wavelength
-            elif to_unit.is_frequency_density: new_unit = self * (wavelength / frequency)
+            if to_unit.is_neutral_density: new_unit = photometric_unit_from_multiply_unit_and_quantity(self, wavelength)
+            elif to_unit.is_frequency_density: new_unit = photometric_unit_from_multiply_unit_and_quantity(self, wavelength / frequency)
             elif to_unit.is_wavelength_density: new_unit = self
             else: raise ValueError("Cannot convert from spectral density to integrated quantity")
 
@@ -949,9 +952,9 @@ class PhotometricUnit(CompositeUnit):
         elif self.is_frequency_density:
 
             # Convert into new unit by multiplying with frequency or with frequency / wavelength
-            if to_unit.is_neutral_density: new_unit = self * frequency
+            if to_unit.is_neutral_density: new_unit = photometric_unit_from_multiply_unit_and_quantity(self, frequency)
             elif to_unit.is_frequency_density: new_unit = self
-            elif to_unit.is_wavelength_density: new_unit = self * (frequency / wavelength)
+            elif to_unit.is_wavelength_density: new_unit = photometric_unit_from_multiply_unit_and_quantity(self, frequency / wavelength)
             else: raise ValueError("Cannot convert from spectral density to integrated quantity")
 
         # Not a spectral density
@@ -970,9 +973,13 @@ class PhotometricUnit(CompositeUnit):
             #print("to_unit:", to_unit)
 
             # Determine factor
+            #print("new unit", new_unit)
+            #print("to unit", to_unit)
             factor = new_unit.to(to_unit)
+            #print("conversion factor", factor)
             #print(new_unit, to_unit, factor.value)
-            return factor.value
+            #return factor.value
+            return factor
 
         # Different base type, luminosity
         elif self.base_physical_type == "luminosity":
@@ -1270,6 +1277,45 @@ def make_composite_multiplication(unit_a, unit_b):
 
 # -----------------------------------------------------------------
 
+def photometric_unit_from_multiply_unit_and_quantity(unit, quantity):
+
+    """
+    This function ...
+    :param unit:
+    :param quantity:
+    :return:
+    """
+
+    return PhotometricUnit(unit * quantity)
+
+# -----------------------------------------------------------------
+
+def photometric_unit_from_divide_unit_and_quantity(unit, quantity):
+
+    """
+    This function ...
+    :param unit:
+    :param quantity:
+    :return:
+    """
+
+    return PhotometricUnit(unit / quantity)
+
+# -----------------------------------------------------------------
+
+def photometric_unit_from_divide_unit_and_quantity_reverse(unit, quantity):
+
+    """
+    This function ...
+    :param unit:
+    :param quantity:
+    :return:
+    """
+
+    return PhotometricUnit(quantity / unit)
+
+# -----------------------------------------------------------------
+
 def multiply_units(unit_a, unit_b):
 
     """
@@ -1319,18 +1365,21 @@ def multiply_units(unit_a, unit_b):
 
         # If unit b is an inverse wavelength
         if is_inverse_wavelength(unit_b):
+
             unit = PhotometricUnit(make_composite_multiplication(unit_a, unit_b), density=False)
             if unit.density: warnings.warn("A " + unit_a.physical_type + " unit is converted to a " + unit.physical_type + " by multiplication with the unit '" + str(unit_b) + ". This may not be the intention.")
             return unit
 
         # If unit b is an inverse frequency
         elif is_inverse_frequency(unit_b):
+
             unit = PhotometricUnit(make_composite_multiplication(unit_a, unit_b), density=False)
             if unit.density: warnings.warn("A " + unit_a.physical_type + " unit is converted to a " + unit.physical_type + " by multiplication with the unit '" + str(unit_b) + ". This may not be the intention.")
             return unit
 
         # Try parsing as spectral photometric quantity (density=True), but possibly no photometric quantity
         elif contains_inverse_wavelength(unit_b):
+
             unit = parse_unit(make_composite_multiplication(unit_a, unit_b), density=False)
             try:
                 if unit.density: warnings.warn("A " + unit_a.physical_type + " unit is converted to a " + unit.physical_type + " by multiplication with the unit '" + str(unit_b) + ". This may not be the intention.")
@@ -1339,6 +1388,7 @@ def multiply_units(unit_a, unit_b):
 
         # Try parsing as spectral photometric quantity(density=True), but possibly no photometric quantity
         elif contains_inverse_frequency(unit_b):
+
             unit = parse_unit(make_composite_multiplication(unit_a, unit_b), density=False)
             try:
                 if unit.density: warnings.warn("A " + unit_a.physical_type + " unit is converted to a " + unit.physical_type + " by multiplication with the unit '" + str(unit_b) + ". This may not be the intention.")

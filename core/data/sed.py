@@ -232,20 +232,6 @@ class SED(WavelengthCurve):
         photometry_unit = units[contributions_index[contribution]]
         if unit is None: unit = photometry_unit
 
-        #jansky_column = []
-        #for i in range(len(wavelength_column)):
-
-            # Get the flux density in W / m2 and the wavelength in micron
-            #neutral_fluxdensity = flux_column[i] * PhotometricUnit("W/m2")
-            #wavelength = wavelength_column[i] * u("micron")
-
-            # Convert to Jansky (2 methods give same result)
-            # jansky_ = unitconversion.neutral_fluxdensity_to_jansky(neutral_fluxdensity, wavelength)
-            #jansky = (neutral_fluxdensity / wavelength.to("Hz", equivalencies=spectral())).to("Jy").value
-
-            # Add the fluxdensity in Jansky to the new column
-            #jansky_column.append(jansky)
-
         # Create a new SED
         sed = cls(photometry_unit=unit)
 

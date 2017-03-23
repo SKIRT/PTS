@@ -248,10 +248,19 @@ class PhotometricQuantity(Quantity):
 
         #print(self, self.unit, unit)
 
+        print("")
+
         # Determine conversion factor
         factor = self.unit.conversion_factor(unit, density=density, wavelength=wavelength, frequency=frequency, distance=distance, solid_angle=solid_angle, fltr=fltr, pixelscale=pixelscale)
 
-        #print(factor)
+        from astropy.units import spectral
+        if wavelength is not None:
+            #print("")
+            print("wavelength", wavelength)
+            print("frequency", wavelength.to("Hz", equivalencies=spectral()))
+            print("unit", self.unit)
+            print("to unit", unit)
+            print("conversion factor", factor)
 
         #print(wavelength, factor)
 

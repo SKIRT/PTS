@@ -133,15 +133,20 @@ def array_as_list(array, add_unit=True, unit=None, masked_value=None, array_unit
     :return:
     """
 
+    # If conversion info is not defined
     if conversion_info is None:
 
         conversion_info = dict()
         wavelengths = None
 
+    # Wavelengths are specified in the conversion info
     elif "wavelengths" in conversion_info:
+
         wavelengths = conversion_info["wavelengths"]
         conversion_info = copy.deepcopy(conversion_info)
         del conversion_info["wavelengths"]
+
+    #print(wavelengths)
 
     # Initialize a list to contain the column values
     result = []
@@ -187,6 +192,8 @@ def array_as_list(array, add_unit=True, unit=None, masked_value=None, array_unit
                             if wavelengths is not None: conversion_info["wavelength"] = wavelengths[i]
                         # Not a photometric quantity
                         else: conversion_info = dict()
+
+                        #print(conversion_info)
 
                         # If a target unit is specified, convert
                         value = value.to(unit, **conversion_info).value * unit  # If converted, do not add any unit
