@@ -236,9 +236,12 @@ class ObservedFluxCalculator(Configurable):
 
                 # 2 different ways should be the same:
                 #fluxdensity_ = fluxdensity_jy.to("W / (m2 * micron)", equivalencies=spectral_density(wavelength))
-                fluxdensity = fluxdensity_jy.to("W / (m2 * Hz)").value * spectral_factor_hz_to_micron(wavelength) * u("W / (m2 * micron)")
+                #fluxdensity = fluxdensity_jy.to("W / (m2 * Hz)").value * spectral_factor_hz_to_micron(wavelength) * u("W / (m2 * micron)")
                 #print(fluxdensity_, fluxdensity) # IS OK!
-                fluxdensities.append(fluxdensity.to("W / (m2 * micron)").value)
+
+                fluxdensity = fluxdensity_jy.to("W / (m2 * micron)", wavelength=wavelength)
+                #fluxdensities.append(fluxdensity.to("W / (m2 * micron)").value)
+                fluxdensities.append(fluxdensity.value)
 
                 if wavelength > 50. * u("micron"):
                     bb_frequencies.append(wavelength.to("Hz", equivalencies=spectral()).value)
@@ -302,7 +305,7 @@ class ObservedFluxCalculator(Configurable):
 
                     # Add a point to the mock SED
                     error = self.errors[filter_name] if self.errors is not None and filter_name in self.errors else None
-                    mock_sed.add_point(fltr, fluxdensity)
+                    mock_sed.add_point(fltr, fluxdensity, error)
 
             # Add the complete SED to the dictionary (with the SKIRT SED name as key)
             self.mock_seds[sed_name] = mock_sed
@@ -340,61 +343,14 @@ class ObservedFluxCalculator(Configurable):
             # Determine the path to the output flux table
             path = self.output_path_file(name + "_fluxes.dat")
 
+            # Debugging
+            log.debug("Writing the mock SED '" + name + "' to '" + path + "' ...")
+
             # Write out the flux table
             self.mock_seds[name].saveto(path)
 
             # Set the path
             self.paths[name] = path
-
-# -----------------------------------------------------------------
-
-# The speed of light
-speed_of_light = constants.c
-
-# -----------------------------------------------------------------
-
-def spectral_factor_hz_to_micron(wavelength):
-
-    """
-    This function ...
-    :param wavelength:
-    :return:
-    """
-
-    wavelength_unit = "micron"
-    frequency_unit = "Hz"
-
-    # Convert string units to Unit objects
-    if isinstance(wavelength_unit, basestring): wavelength_unit = u(wavelength_unit)
-    if isinstance(frequency_unit, basestring): frequency_unit = u(frequency_unit)
-
-    conversion_factor_unit = wavelength_unit / frequency_unit
-
-    # Calculate the conversion factor
-    factor = (wavelength ** 2 / speed_of_light).to(conversion_factor_unit).value
-    return 1. / factor
-
-# -----------------------------------------------------------------
-
-def spectral_factor_hz_to_meter(wavelength):
-
-    """
-    This function ...
-    :return:
-    """
-
-    wavelength_unit = "m"
-    frequency_unit = "Hz"
-
-    # Convert string units to Unit objects
-    if isinstance(wavelength_unit, basestring): wavelength_unit = u(wavelength_unit)
-    if isinstance(frequency_unit, basestring): frequency_unit = u(frequency_unit)
-
-    conversion_factor_unit = wavelength_unit / frequency_unit
-
-    # Calculate the conversion factor
-    factor = (wavelength ** 2 / speed_of_light).to(conversion_factor_unit).value
-    return 1./factor
 
 # -----------------------------------------------------------------
 

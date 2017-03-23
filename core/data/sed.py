@@ -199,6 +199,13 @@ class SED(WavelengthCurve):
             mathematical = second.split(";")[1].split("(")[0].strip() if len(second.split(";")) > 1 else None
             unit_string = second.split("(")[1].split(")")[0]
             density = mathematical.startswith("lambda*") or mathematical.startswith("nu*") if mathematical is not None else False
+
+            #print(mathematical)
+            #print(name)
+            #print(unit_string)
+            #print(density)
+
+            # Parse the unit
             unit = u(unit_string, density=density)
 
             # Add the unit
@@ -253,6 +260,36 @@ class SED(WavelengthCurve):
 
         # Return the SED
         return sed
+
+    # -----------------------------------------------------------------
+
+    def convert_to(self, wavelength_unit=None, photometry_unit=None):
+
+        """
+        This function ...
+        :param wavelength_unit:
+        :param photometry_unit:
+        :return:
+        """
+
+        # If wavelength unit has to be converted
+        if wavelength_unit is not None:
+
+            wavelength_unit = u(wavelength_unit)
+            self["Wavelength"] = self.wavelengths(asarray=True, unit=wavelength_unit)
+            self["Wavelength"].unit = wavelength_unit
+
+        # If photometry unit has to be converted
+        if photometry_unit is not None:
+
+            photometry_unit = PhotometricUnit(photometry_unit)
+            self["Photometry"] = self.photometry(asarray=True, unit=photometry_unit)
+            self["Photometry"].unit = photometry_unit
+
+            # Set whether this column is a spectral density
+            if photometry_unit.density:
+                if "density" not in self.meta: self.meta["density"] = []
+                self.meta["density"].append("Photometry")
 
 # -----------------------------------------------------------------
 
@@ -587,5 +624,42 @@ class ObservedSED(FilterCurve):
 
         # Return the sed
         return sed
+
+    # -----------------------------------------------------------------
+
+    def convert_to(self, wavelength_unit=None, photometry_unit=None):
+
+        """
+        This function ...
+        :param wavelength_unit:
+        :param photometry_unit:
+        :return:
+        """
+
+        # If wavelength unit has to be converted
+        if wavelength_unit is not None:
+
+            wavelength_unit = u(wavelength_unit)
+            self["Wavelength"] = self.wavelengths(asarray=True, unit=wavelength_unit)
+            self["Wavelength"].unit = wavelength_unit
+
+        # If photometry unit has to be converted
+        if photometry_unit is not None:
+
+            photometry_unit = PhotometricUnit(photometry_unit)
+
+            self["Photometry"] = self.photometry(asarray=True, unit=photometry_unit)
+            self["Photometry"].unit = photometry_unit
+
+            self["Error-"] = self.errors_min(asarray=True, unit=photometry_unit)
+            self["Error-"].unit = photometry_unit
+
+            self["Error+"] = self.errors_max(asarray=True, unit=photometry_unit)
+            self["Error+"].unit = photometry_unit
+
+            # Set whether this column is a spectral density
+            if photometry_unit.density:
+                if "density" not in self.meta: self.meta["density"] = []
+                self.meta["density"].append("Photometry")
 
 # -----------------------------------------------------------------

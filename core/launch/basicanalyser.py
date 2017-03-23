@@ -151,6 +151,10 @@ class BasicAnalyser(Configurable):
         # Inform the user
         log.info("Extracting ...")
 
+        # Debugging
+        log.debug("Extraction options:")
+        if log.is_debug(): print(str(self.extraction_options))
+
         # Extract the progress information
         if self.extraction_options.progress: self.extract_progress()
 
@@ -171,6 +175,10 @@ class BasicAnalyser(Configurable):
 
         # Inform the user
         log.info("Plotting ...")
+
+        # Debugging
+        log.debug("Plotting options:")
+        if log.is_debug(): print(str(self.plotting_options))
 
         # If requested, plot the SED's
         if self.plotting_options.seds: self.plot_seds()
@@ -198,6 +206,10 @@ class BasicAnalyser(Configurable):
 
         # Inform the user
         log.info("Performing miscellaneous analysis ...")
+
+        # Debugging
+        log.debug("Misccellaneous options:")
+        if log.is_debug(): print(str(self.misc_options))
 
         # If requested, make RGB images of the output FITS files
         if self.misc_options.rgb: self.make_rgb()
@@ -388,7 +400,7 @@ class BasicAnalyser(Configurable):
         log.info("Plotting grids ...")
 
         # Plot the dust grid for the simulation
-        plotgrids(self.simulation, output_path=self.plotting_options.path, silent=True)
+        plotgrids(self.simulation, output_path=self.plotting_options.path, silent=(not log.is_debug()))
 
     # -----------------------------------------------------------------
 

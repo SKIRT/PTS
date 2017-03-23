@@ -120,10 +120,6 @@ class FitSKIRT(object):
         # Get the command string
         #command = arguments.to_command(self.path, mpi_command, scheduler)
 
-        # mkdir sample_output
-        # fitskirt -t 1 tutorial.fski -o ./sample_output
-        # mpirun -n 20 fitskirt -t 1 -o fit1 tutorial.fski
-
         # Construct command
         if parallelization.nprocesses > 1: parts = [mpi_command, "-n", str(parallelization.nprocesses), self.path]
         else: parts = [self.path]

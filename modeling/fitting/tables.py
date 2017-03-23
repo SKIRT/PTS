@@ -706,9 +706,11 @@ class ParametersTable(SmartTable):
         index = tables.find_index(self, simulation_name, "Simulation name")
 
         for name in self.colnames:
+            #print(self[name], type(self[name]))
+            #print(self[name][index], type(self[name][index]))
             if name == "Simulation name": continue
-            if self.column_unit(name) is None: values[name] = self[name][index]
-            else: values[name] = self[name][index] * self.column_unit(name)
+            if self.column_unit(name) is None: values[name] = float(self[name][index])
+            else: values[name] = float(self[name][index]) * self.column_unit(name)
 
         # Return the values
         return values

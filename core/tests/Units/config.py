@@ -5,24 +5,12 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.developer.test_unit_conversion Test the unit conversion things.
-
-# -----------------------------------------------------------------
-
-# Ensure Python 3 compatibility
-from __future__ import absolute_import, division, print_function
-
 # Import the relevant PTS classes and modules
-from pts.core.basics.unit import PhotometricUnit
+from pts.core.basics.configuration import ConfigurationDefinition
 
 # -----------------------------------------------------------------
 
-# Create nanomaggy unit
-nanomaggy = PhotometricUnit("nMgy")
-
-# Conversion factor to Jansky
-factor = nanomaggy.conversion_factor("Jy")
-
-print(factor, 3.613e-6)
+# Creaet the definition
+definition = ConfigurationDefinition(write_config=False)
 
 # -----------------------------------------------------------------

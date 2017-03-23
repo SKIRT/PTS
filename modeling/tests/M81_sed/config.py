@@ -17,7 +17,7 @@ from pts.modeling.fitting.configuration import genetic_definition
 definition = ConfigurationDefinition(write_config=False)
 
 # Optional settings
-definition.add_optional("nwavelengths", "positive_integer", "number of wavelengths for the reference simulation", 40)
+definition.add_optional("nwavelengths", "positive_integer", "number of wavelengths for the reference simulation", 100)
 definition.add_optional("npackages", "positive_integer", "number of photon packages per wavelength for the reference simulation", int(1e4))
 definition.add_optional("dust_grid_relative_scale", "real", "smallest scale of the dust grid relative to the pixelscale of the input maps", 10.)
 definition.add_optional("dust_grid_min_level", "positive_integer", "level for the dust grid", 0)

@@ -1219,23 +1219,26 @@ class BatchLauncher(Configurable):
             elif self.parallelization_local is not None: parallelization_item = self.parallelization_local
             else: raise RuntimeError("Parallelization has not been defined for local simulation '" + name + "' and no general parallelization scheme has been set for local execution")
 
-            # Generate the analysis options
-            logging_options, analysis_options = self.generate_options(name, definition, analysis_options_item, local=True)
+            # Get original definition if applicable
+            if name in self.original_local_definitions: original_definition = self.original_local_definitions[name]
+            else: original_definition = None
+
+            # Generate the analysis options: THIS DOES NOT MODIFY THE DEFINITION
+            logging_options, analysis_options = self.generate_options(name, original_definition, analysis_options_item, local=True)
 
             # Perform the simulation locally
             try:
 
                 # Inform the user
-                log.info("Launching simulation " + str(index+1) + " out of " + str(total_queued) + " in the local queue ...")
+                log.info("Launching simulation " + str(index + 1) + " out of " + str(total_queued) + " in the local queue ...")
 
                 # Run the simulation
                 simulation = self.skirt.run(definition, logging_options=logging_options, parallelization=parallelization_item, silent=(not log.is_debug()), progress_bar=self.config.progress_bar)
 
                 # Overwrite the simulation object when the definition had been altered by this class
-                if name in self.original_local_definitions:
+                if original_definition is not None:
 
                     # Get modified prefix and original prefix
-                    original_definition = self.original_local_definitions[name]
                     prefix = simulation.prefix()
                     original_prefix = original_definition.prefix
 

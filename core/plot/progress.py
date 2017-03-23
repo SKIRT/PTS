@@ -151,7 +151,7 @@ def create_progress_plot(data, path, title):
 
     # Set the axis labels
     plt.xlabel("Time (s)", fontsize='large')
-    plt.ylabel("Progress (%)", fontsize='large')
+    plt.ylabel("Progress (\%)", fontsize='large')
 
     # Set the plot title
     plt.title(title)

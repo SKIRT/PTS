@@ -20,4 +20,8 @@ definition.add_positional_optional("seds", "filepath_list", "SED files to be plo
 # Add plotting options
 definition.import_section("plot", "plotting options", plot_definition)
 
+# The unit in which to plot
+definition.add_optional("wavelength_unit", "length_unit", "unit of wavelength", "micron", convert_default=True)
+definition.add_optional("unit", "photometric_unit", "photometric unit", "Jy", convert_default=True)
+
 # -----------------------------------------------------------------

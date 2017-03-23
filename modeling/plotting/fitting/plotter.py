@@ -195,6 +195,7 @@ class FittingPlotter(Configurable):
         # Inform the user
         log.info("Plotting dust grids ...")
 
+        # Create plotter
         plotter = DustGridsPlotter()
         plotter.config.path = self.config.path
         plotter.run()
@@ -211,6 +212,7 @@ class FittingPlotter(Configurable):
         # Inform the user
         log.info("Plotting dust cell distributions ...")
 
+        # Create plotter
         plotter = CellDistributionsPlotter()
         plotter.config.path = self.config.path
         plotter.run()
@@ -227,6 +229,7 @@ class FittingPlotter(Configurable):
         # Inform the user
         log.info("Plotting the runtimes ...")
 
+        # Create plotter
         plotter = RuntimesPlotter()
         plotter.config.path = self.config.path
         plotter.run()

@@ -330,11 +330,11 @@ class SEDPlotter(Configurable):
         observation = self.observations[self.observations.keys()[0]]
 
         # Get wavelengths, fluxes, instruments, bands, errors
-        wavelengths = observation.wavelengths(unit="micron", add_unit=False)
-        fluxes = observation.photometry(unit="Jy", add_unit=False)
+        wavelengths = observation.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
+        fluxes = observation.photometry(unit=self.config.unit, add_unit=False)
         instruments = observation.instruments()
         bands = observation.bands()
-        errors = observation.errors(unit="Jy", add_unit=False)
+        errors = observation.errors(unit=self.config.unit, add_unit=False)
 
         # Create colors
         colors = colormap(np.linspace(0, 1, len(wavelengths)))
@@ -408,11 +408,11 @@ class SEDPlotter(Configurable):
             observation = self.observations[label]
 
             # Get wavelengths, fluxes, instruments, bands, errors
-            wavelengths = observation.wavelengths(unit="micron", add_unit=False)
-            fluxes = observation.photometry(unit="Jy", add_unit=False)
+            wavelengths = observation.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
+            fluxes = observation.photometry(unit=self.config.unit, add_unit=False)
             instruments = observation.instruments()
             bands = observation.bands()
-            errors = observation.errors(unit="Jy", add_unit=False)
+            errors = observation.errors(unit=self.config.unit, add_unit=False)
 
             # Create color range
             if number_of_observations <= 3:
@@ -456,7 +456,7 @@ class SEDPlotter(Configurable):
 
                 else:
 
-                    reference_flux = find_reference_flux(instruments[k], bands[k], wavelengths[k], reference_sed.instruments(), reference_sed.bands(), reference_sed.wavelengths(unit="micron", add_unit=False), reference_sed.photometry(unit="Jy", add_unit=False))
+                    reference_flux = find_reference_flux(instruments[k], bands[k], wavelengths[k], reference_sed.instruments(), reference_sed.bands(), reference_sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False), reference_sed.photometry(unit=self.config.unit, add_unit=False))
 
                     if reference_flux is None:
 
@@ -531,8 +531,8 @@ class SEDPlotter(Configurable):
             if ghost:
 
                 # Get fluxes, wavelengths and errors
-                fluxes = sed.photometry(unit="Jy", add_unit=False)
-                wavelengths = sed.wavelengths(unit="micron", add_unit=False)
+                fluxes = sed.photometry(unit=self.config.unit, add_unit=False)
+                wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
 
                 # Plot the model SED as a grey line (no errors)
                 self.draw_model(self._main_axis, wavelengths, fluxes, "-", linecolor="lightgrey")
@@ -540,9 +540,9 @@ class SEDPlotter(Configurable):
             elif plot_residuals:
 
                 # Get fluxes, wavelengths and errors
-                fluxes = sed.photometry(unit="Jy", add_unit=False)
-                wavelengths = sed.wavelengths(unit="micron", add_unit=False)
-                errors = sed.errors(unit="Jy", add_unit=False) if sed.has_errors else None
+                fluxes = sed.photometry(unit=self.config.unit, add_unit=False)
+                wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
+                errors = sed.errors(unit=self.config.unit, add_unit=False) if sed.has_errors else None
 
                 # Plot the model SED as a line (with errors if present)
                 self.draw_model(self._main_axis, wavelengths, fluxes, line_styles[counter_residuals], model_label, errors=errors)
@@ -552,9 +552,9 @@ class SEDPlotter(Configurable):
             else:
 
                 # Get fluxes, wavelengths and errors
-                fluxes = sed.photometry(unit="Jy", add_unit=False)
-                wavelengths = sed.wavelengths(unit="micron", add_unit=False)
-                errors = sed.errors(unit="Jy", add_unit=False) if sed.has_errors else None
+                fluxes = sed.photometry(unit=self.config.unit, add_unit=False)
+                wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
+                errors = sed.errors(unit=self.config.unit, add_unit=False) if sed.has_errors else None
 
                 # Plot the model SED as a line (with errors if present)
                 self.draw_model(self._main_axis, wavelengths, fluxes, line_styles_models_no_residuals[counter_no_residals], model_label, errors=errors, linecolor=line_colors_models_no_residuals[counter_no_residals], adjust_extrema=False)
@@ -584,11 +584,11 @@ class SEDPlotter(Configurable):
         observation = self.observations[self.observations.keys()[0]]
 
         # Get wavelengths, fluxes, instruments, bands, errors
-        wavelengths = observation.wavelengths(unit="micron", add_unit=False)
-        fluxes = observation.photometry(unit="Jy", add_unit=False)
+        wavelengths = observation.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
+        fluxes = observation.photometry(unit=self.config.unit, add_unit=False)
         instruments = observation.instruments()
         bands = observation.bands()
-        errors = observation.errors(unit="Jy", add_unit=False)
+        errors = observation.errors(unit=self.config.unit, add_unit=False)
 
         # Get labels and descriptions
         labels, descriptions = get_labels_and_descriptions(instruments, bands)
@@ -646,8 +646,8 @@ class SEDPlotter(Configurable):
 
             if ghost:
 
-                model_fluxes = sed.photometry(unit="Jy", add_unit=False)
-                sed_wavelengths = sed.wavelengths(unit="micron", add_unit=False)
+                model_fluxes = sed.photometry(unit=self.config.unit, add_unit=False)
+                sed_wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
                 f2 = interp1d(sed_wavelengths, model_fluxes, kind='cubic')
 
                 min_sed_wavelength = min(sed_wavelengths)
@@ -661,9 +661,9 @@ class SEDPlotter(Configurable):
 
             else:
 
-                #log_model = np.log10(sed.fluxes(unit="Jy", add_unit=False))
-                model_fluxes = sed.photometry(unit="Jy", add_unit=False)
-                sed_wavelengths = sed.wavelengths(unit="micron", add_unit=False)
+                #log_model = np.log10(sed.fluxes(unit=self.config.unit, add_unit=False))
+                model_fluxes = sed.photometry(unit=self.config.unit, add_unit=False)
+                sed_wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
                 f2 = interp1d(sed_wavelengths, model_fluxes, kind='cubic')
 
                 min_sed_wavelength = min(sed_wavelengths)
@@ -687,13 +687,13 @@ class SEDPlotter(Configurable):
 
             if ghost:
 
-                log_model = np.log10(sed.photometry(unit="Jy", add_unit=False))
-                self._main_axis.plot(sed.wavelengths(unit="micron", add_unit=False), log_model, "-", color="lightgrey")
+                log_model = np.log10(sed.photometry(unit=self.config.unit, add_unit=False))
+                self._main_axis.plot(sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False), log_model, "-", color="lightgrey")
 
             elif plot_residuals:
 
-                fluxes = sed.photometry(unit="Jy", add_unit=False)
-                wavelengths = sed.wavelengths(unit="micron", add_unit=False)
+                fluxes = sed.photometry(unit=self.config.unit, add_unit=False)
+                wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
                 log_model = np.log10(fluxes)
                 self._main_axis.plot(wavelengths, log_model, line_styles_models[counter], color=line_colors_models[counter], label=model_label)
 
@@ -741,9 +741,9 @@ class SEDPlotter(Configurable):
 
             else:
 
-                fluxes = sed.photometry(unit="Jy", add_unit=False)
+                fluxes = sed.photometry(unit=self.config.unit, add_unit=False)
                 log_model = np.log10(fluxes)
-                wavelengths = sed.wavelengths(unit="micron", add_unit=False)
+                wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
                 self._main_axis.plot(wavelengths, log_model, line_styles_models_no_residuals[counter_no_residuals], color=line_colors_models_no_residuals[counter_no_residuals], label=model_label)
 
                 ## SAME AS ABOVE::
@@ -845,11 +845,11 @@ class SEDPlotter(Configurable):
             observation = self.observations[label]
 
             # Get wavelengths, fluxes, instruments, bands, errors
-            wavelengths = observation.wavelengths(unit="micron", add_unit=False)
-            fluxes = observation.photometry(unit="Jy", add_unit=False)
+            wavelengths = observation.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
+            fluxes = observation.photometry(unit=self.config.unit, add_unit=False)
             instruments = observation.instruments()
             bands = observation.bands()
-            errors = observation.errors(unit="Jy", add_unit=False)
+            errors = observation.errors(unit=self.config.unit, add_unit=False)
 
             # Get labels and descriptions
             labels, descriptions = get_labels_and_descriptions(instruments, bands)
@@ -891,8 +891,8 @@ class SEDPlotter(Configurable):
 
                 if not plot_residuals: continue
 
-                model_fluxes = sed.photometry(unit="Jy", add_unit=False)
-                sed_wavelengths = sed.wavelengths(unit="micron", add_unit=False)
+                model_fluxes = sed.photometry(unit=self.config.unit, add_unit=False)
+                sed_wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
                 f2 = interp1d(sed_wavelengths, model_fluxes, kind='cubic')
 
                 min_sed_wavelength = min(sed_wavelengths)
@@ -913,9 +913,9 @@ class SEDPlotter(Configurable):
         for model_label, sed, plot_residuals, ghost in self.models:
 
             # Get fluxes, wavelengths and errors
-            fluxes = sed.photometry(unit="Jy", add_unit=False)
-            wavelengths = sed.wavelengths(unit="micron", add_unit=False)
-            errors = sed.errors(unit="Jy", add_unit=False) if sed.has_errors else None
+            fluxes = sed.photometry(unit=self.config.unit, add_unit=False)
+            wavelengths = sed.wavelengths(unit=self.config.wavelength_unit, add_unit=False)
+            errors = sed.errors(unit=self.config.unit, add_unit=False) if sed.has_errors else None
 
             if ghost:
 

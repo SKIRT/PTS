@@ -398,64 +398,72 @@ def analyse_unit(unit):
 
                 if wu != "":
 
-                    assert fu == ""
-                    assert wavelength_unit == ""
+                    if fu != "": raise ValueError("Wavelength unit and frequency unit cannot both be defined")
+                    if wavelength_unit != "": raise ValueError("Encountered two wavelength units: " + str(wavelength_unit) + " and " + str(wu))
 
                     wavelength_unit = wu
 
                 if fu != "":
 
-                    assert wu == ""
-                    assert frequency_unit == ""
+                    if wu != "": raise ValueError("Wavelength unit and frequency unit cannot both be defined")
+                    if frequency_unit != "": raise ValueError("Encountered two frequency units: " + str(frequency_unit) + " and " + str(fu))
 
                     frequency_unit = fu
 
                 if du != "":
 
-                    assert distance_unit == ""
+                    if distance_unit != "": raise ValueError("Encountered two distance units: " + str(distance_unit) + " and " + str(du))
                     distance_unit = du
 
                 if su != "":
 
-                    assert su == ""
+                    if solid_angle_unit != "": raise ValueError("Encountered two solid angle units: " + str(solid_angle_unit) + " and " + str(su))
                     solid_angle_unit = su
 
             elif base.physical_type == "power":
-                assert power == 1
-                assert base_unit == ""
+
+                if power != 1: raise ValueError("Found a power of " + str(power) + " for a unit of radiative power")
+                if base_unit != "": raise ValueError("Found a unit of power but base unit already defined by '" + str(base_unit) + "'")
                 base_unit = base
 
             elif base.physical_type == "energy":
-                assert power == 1
-                assert base_unit == ""
+
+                if power != 1: raise ValueError("Found a power of " + str(power) + " for a unit of energy")
+                if base_unit != "": raise ValueError("Found a unit of energy but base unit already defined by '" + str(base_unit) + "'")
                 base_unit = base
 
-            elif base.physical_type == "unknown":
-                base_unit *= base ** power
+            elif base.physical_type == "unknown": base_unit *= base ** power
 
             else: raise ValueError("Not a photometric unit: found " + base.physical_type + "^" + str(power) + " dimension as a base")
 
         elif base.physical_type == "time":
-            assert power == -1
+
+            if power != -1: raise ValueError("Found a unit of time but not as inversely proportional to the base unit (instead the power is " + str(power) + ")")
             base_unit *= base ** power
+
         elif base.physical_type == "length":
-            if power == -1:
-                wavelength_unit = base
-            elif power == -2:
-                distance_unit = base ** 2
+
+            if power == -1: wavelength_unit = base
+            elif power == -2: distance_unit = base ** 2
             elif power == -3:
                 wavelength_unit = base
                 distance_unit = base ** 2
             else: raise ValueError("Not a photometric unit: found length^" + str(power) + " dimension")
+
         elif base.physical_type == "frequency":
-            assert power == -1, power
+
+            if power != -1: raise ValueError("Found a unit of frequency but not as inversely proportional to the base unit (instead the power is " + str(power) + ")")
             frequency_unit = base
+
         elif base.physical_type == "solid angle":
-            assert power == -1, power
+
+            if power != -1: raise ValueError("Found a unit of solid angle but not as inversely proportional to the base unit (instead the power is " + str(power) + ")")
             solid_angle_unit = base
+
         elif base.physical_type == "angle":
-            assert solid_angle_unit == ""
-            assert power == -2, power
+
+            if solid_angle_unit != "": raise ValueError("Found an angle unit but the solid angle unit is already defined: " + str(solid_angle_unit))
+            if power != -2: raise ValueError("Found an angle unit but not as squared inversely proportional to the base unit (instead the power is " + str(power) + ")")
             solid_angle_unit = base ** power
 
     # Check if wavelength and frequency unit are not both defined

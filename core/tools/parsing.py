@@ -775,6 +775,21 @@ def photometric_density_unit(argument):
 
 # -----------------------------------------------------------------
 
+def length_unit(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..basics.unit import parse_unit
+    unit = parse_unit(argument)
+    if unit.physical_type != "length": raise ValueError("Not a length unit")
+    else: return unit
+
+# -----------------------------------------------------------------
+
 def quantity(argument):
 
     """
@@ -884,17 +899,15 @@ def mass_density_quantity(argument):
 
 # -----------------------------------------------------------------
 
-def angle(argument, default_unit=None):
+def angle(argument):
 
     """
     An Astropy Angle
     :param argument:
-    :param default_unit:
     :return:
     """
 
     from ..basics.quantity import parse_angle
-
     return parse_angle(argument)
 
 # -----------------------------------------------------------------

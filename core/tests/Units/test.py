@@ -1,0 +1,258 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+# *****************************************************************
+# **       PTS -- Python Toolkit for working with SKIRT          **
+# **       © Astronomical Observatory, Ghent University          **
+# *****************************************************************
+
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import standard modules
+import inspect
+
+# Import astronomical modules
+from astropy import constants
+
+# Import the relevant PTS classes and modules
+from pts.core.test.implementation import TestImplementation
+from pts.core.tools.logging import log
+from pts.core.basics.unit import PhotometricUnit
+from pts.core.basics.unit import parse_unit as u
+from pts.core.tools import filesystem as fs
+from pts.core.data.sed import SED, ObservedSED
+from pts.core.plot.sed import SEDPlotter
+from pts.modeling.preparation.unitconversion import neutral_fluxdensity_to_jansky
+
+# -----------------------------------------------------------------
+
+this_path = fs.absolute_path(inspect.stack()[0][1])
+this_dir_path = fs.directory_of(this_path)
+
+# -----------------------------------------------------------------
+
+description = "testing the unit conversions"
+
+# -----------------------------------------------------------------
+
+class UnitsTest(TestImplementation):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, config=None, interactive=False):
+
+        """
+        This function ...
+        :param config:
+        :param interactive:
+        """
+
+        # Call the constructor of the base class
+        super(UnitsTest, self).__init__(config, interactive)
+
+        self.observed_sed = None
+        self.model_sed_1 = None
+        self.model_sed_2 = None
+        self.model_sed_3 = None
+        self.mock_sed = None
+
+    # -----------------------------------------------------------------
+
+    def run(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # 1. Call the setup function
+        self.setup(**kwargs)
+
+        # Load the SEDs
+        self.load_seds()
+
+        # Simple test
+        self.simple()
+
+        # SED test
+        self.test_sed()
+
+        # Plot
+        self.plot()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(UnitsTest, self).setup(**kwargs)
+
+    # -----------------------------------------------------------------
+
+    def load_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        observed_sed_path = fs.join(this_dir_path, "DustPedia.dat")
+        sim_sed_path_1 = fs.join(this_dir_path, "M81_earth_sed1.dat")
+        sim_sed_path_2 = fs.join(this_dir_path, "M81_earth_sed2.dat")
+        mock_sed_path = fs.join(this_dir_path, "M81_earth_fluxes.dat")
+
+        self.observed_sed = ObservedSED.from_file(observed_sed_path)
+        self.model_sed_1 = SED.from_skirt(sim_sed_path_1)
+        self.model_sed_2 = SED.from_skirt(sim_sed_path_2)
+        self.mock_sed = ObservedSED.from_file(mock_sed_path)
+
+    # -----------------------------------------------------------------
+
+    def simple(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Simple test ...")
+
+        # Create nanomaggy unit
+        nanomaggy = PhotometricUnit("nMgy")
+
+        # Conversion factor to Jansky
+        factor = nanomaggy.conversion_factor("Jy")
+
+        #print(factor, 3.613e-6)
+
+    # -----------------------------------------------------------------
+
+    def test_sed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Testing SED unit conversion ...")
+
+        # 2 different ways should be the same:
+        # fluxdensity_ = fluxdensity_jy.to("W / (m2 * micron)", equivalencies=spectral_density(wavelength))
+        #fluxdensity = fluxdensity_jy.to("W / (m2 * Hz)").value * spectral_factor_hz_to_micron(wavelength) * u("W / (m2 * micron)")
+        # print(fluxdensity_, fluxdensity) # IS OK!
+        #fluxdensities.append(fluxdensity.to("W / (m2 * micron)").value)
+
+        wavelengths = self.model_sed_1.wavelengths(asarray=True) # in micron
+        fluxes = self.model_sed_1.photometry(asarray=True) #self.model_sed_1["Photometry"] # in W/m2 (lambda * F_Lambda)
+
+        print("wavelengths", wavelengths)
+        print("fluxes", fluxes)
+
+        fluxes = fluxes / wavelengths # in W / (m2 * micron)
+        fluxes = [flux / spectral_factor_hz_to_micron(wavelength * u("micron")) for flux, wavelength in zip(fluxes, wavelengths)] # in W / (m2 * Hz)
+
+
+        #print("")
+
+        fluxes2 = [neutral_fluxdensity_to_jansky(fluxdensity, wavelength * u("micron")) for fluxdensity, wavelength in zip(self.model_sed_1["Photometry"], wavelengths)]
+
+        print("Jy fluxes", fluxes2)
+
+        self.model_sed_3 = SED.from_arrays(wavelengths, fluxes2, wavelength_unit="micron", photometry_unit="Jy")
+
+        print(self.model_sed_3)
+
+        self.model_sed_1.convert_to(photometry_unit="Jy")
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        plotter = SEDPlotter()
+
+        plotter.add_sed(self.observed_sed, "Observation")
+        plotter.add_sed(self.model_sed_1, "model 1")
+        plotter.add_sed(self.model_sed_2, "model 2")
+        plotter.add_sed(self.model_sed_3, "model 3")
+
+        plotter.run()
+
+# -----------------------------------------------------------------
+
+def test(temp_path):
+
+    """
+    This function ...
+    :param temp_path:
+    :return:
+    """
+
+    pass
+
+# -----------------------------------------------------------------
+
+# The speed of light
+speed_of_light = constants.c
+
+# -----------------------------------------------------------------
+
+def spectral_factor_hz_to_micron(wavelength):
+
+    """
+    This function ...
+    :param wavelength:
+    :return:
+    """
+
+    wavelength_unit = "micron"
+    frequency_unit = "Hz"
+
+    # Convert string units to Unit objects
+    if isinstance(wavelength_unit, basestring): wavelength_unit = u(wavelength_unit)
+    if isinstance(frequency_unit, basestring): frequency_unit = u(frequency_unit)
+
+    conversion_factor_unit = wavelength_unit / frequency_unit
+
+    # Calculate the conversion factor
+    factor = (wavelength ** 2 / speed_of_light).to(conversion_factor_unit).value
+    return 1. / factor
+
+# -----------------------------------------------------------------
+
+def spectral_factor_hz_to_meter(wavelength):
+
+    """
+    This function ...
+    :return:
+    """
+
+    wavelength_unit = "m"
+    frequency_unit = "Hz"
+
+    # Convert string units to Unit objects
+    if isinstance(wavelength_unit, basestring): wavelength_unit = u(wavelength_unit)
+    if isinstance(frequency_unit, basestring): frequency_unit = u(frequency_unit)
+
+    conversion_factor_unit = wavelength_unit / frequency_unit
+
+    # Calculate the conversion factor
+    factor = (wavelength ** 2 / speed_of_light).to(conversion_factor_unit).value
+    return 1./factor
+
+# -----------------------------------------------------------------
