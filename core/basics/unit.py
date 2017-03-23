@@ -14,6 +14,7 @@ import math
 import copy
 import warnings
 import numpy as np
+from collections import defaultdict
 
 # Import astronomical modules
 from astropy.units import Unit, UnitBase, CompositeUnit, spectral, Quantity
@@ -370,6 +371,90 @@ def represent_unit(unit):
 
 # -----------------------------------------------------------------
 
+def physical_base_types(unit, power=None):
+
+    """
+    This function ...
+    :param unit:
+    :param power:
+    :return:
+    """
+
+    if power is None: return [base.physical_type for base in unit.bases]
+    else: return [base.physical_type for base, pwr in zip(unit.bases, unit.powers) if pwr == power]
+
+# -----------------------------------------------------------------
+
+def physical_base_types_units_and_powers(unit, power=None):
+
+    """
+    This function ...
+    :param unit:
+    :param power:
+    :return:
+    """
+
+    result = []
+
+    if power is None:
+        for base, pwr in zip(unit.bases, unit.powers):
+            result.append((base.physical_type, base, pwr))
+    else:
+        for base, pwr in zip(unit.bases, unit.powers):
+            if pwr != power: continue
+            result.append((base.physical_type, base, pwr))
+
+    return result
+
+# -----------------------------------------------------------------
+
+def physical_base_types_units_and_powers_as_dict(unit, power=None):
+
+    """
+    This function ...
+    :param unit:
+    :param power:
+    :return:
+    """
+
+    result = defaultdict(list)
+
+    if power is None:
+
+        for base, pwr in zip(unit.bases, unit.powers):
+            result[base.physical_type].append((base, pwr))
+
+    else:
+
+        for base, pwr in zip(unit.bases, unit.powers):
+            if pwr != power: continue
+            result[base.physical_type].append((base, pwr))
+
+    return result
+
+# -----------------------------------------------------------------
+
+def occurences_for_type(unit, physical_type):
+
+    """
+    This function ...
+    :param unit:
+    :param physical_type:
+    :return:
+    """
+
+    occurences = []
+
+    for base, power in zip(unit.bases, unit.powers):
+
+        if base.physical_type == physical_type:
+
+            occurences.append((base, power))
+
+    return occurences
+
+# -----------------------------------------------------------------
+
 def analyse_unit(unit):
 
     """
@@ -385,6 +470,79 @@ def analyse_unit(unit):
     distance_unit = Unit("")
     solid_angle_unit = Unit("")
 
+    #print(unit, type(unit))
+
+    #base_types = physical_base_types(unit, power=1)
+
+    base_types = physical_base_types_units_and_powers_as_dict(unit, power=1)
+
+    if "spectral flux density" in base_types and "frequency" in base_types:
+
+        # if they occur more than once, we have something weird
+        if len(base_types["spectral flux density"]) == 1 and len(base_types["frequency"]) == 1:
+
+            # Assert power is one
+            assert base_types["spectral flux density"][0][1] == 1
+
+            # Replace the flux density unit with the decomposed version
+            represents = base_types["spectral flux density"][0][0].represents
+
+            unit /= base_types["spectral flux density"][0][0]
+            unit *= represents
+
+    if "spectral flux density" in base_types and "length" in physical_base_types(unit, power=2):
+
+        # if they occur more than once, we have something weird
+        if len(base_types["spectral flux density"]) == 1:
+
+            # Assert power is one
+            assert base_types["spectral flux density"][0][1] == 1
+
+            # Replace the flux density unit with the decomposed version
+            represents = base_types["spectral flux density"][0][0].represents
+
+            unit /= base_types["spectral flux density"][0][0]
+            unit *= represents
+
+    # Look in the bases whether different physical types occur twice
+    for physical_type in ["frequency", "time", "length", "solid angle"]:
+
+        #print(type(unit))
+
+        occurences = occurences_for_type(unit, physical_type)
+
+        # Powers are
+        if len(occurences) == 2:
+
+            base_a = occurences[0][0]
+            base_b = occurences[1][0]
+
+            power_a = occurences[0][1]
+            power_b = occurences[1][1]
+
+            if power_a == -power_b:
+
+                # Eliminate this physical type from the unit
+
+                # Calculate the ratio of the two units
+                ratio = (base_a / base_b).to("")
+
+                # To the power
+                factor = ratio**power_a
+
+                # Eliminate first base unit
+                unit *= base_a**(-power_a)
+                unit *= base_b**(-power_b)
+
+                # Correct with factor
+                unit = CompositeUnit(factor * unit.scale, unit.bases, unit.powers)
+
+    #print(unit)
+
+    #print(unit)
+    #exit()
+
+    # Loop over the bases
     for base, power in zip(unit.bases, unit.powers):
 
         if power > 0:
@@ -420,27 +578,33 @@ def analyse_unit(unit):
                     if solid_angle_unit != "": raise ValueError("Encountered two solid angle units: " + str(solid_angle_unit) + " and " + str(su))
                     solid_angle_unit = su
 
+            # Unit of power
             elif base.physical_type == "power":
 
                 if power != 1: raise ValueError("Found a power of " + str(power) + " for a unit of radiative power")
                 if base_unit != "": raise ValueError("Found a unit of power but base unit already defined by '" + str(base_unit) + "'")
                 base_unit = base
 
+            # Unit of energy
             elif base.physical_type == "energy":
 
                 if power != 1: raise ValueError("Found a power of " + str(power) + " for a unit of energy")
                 if base_unit != "": raise ValueError("Found a unit of energy but base unit already defined by '" + str(base_unit) + "'")
                 base_unit = base
 
+            # Unknown
             elif base.physical_type == "unknown": base_unit *= base ** power
 
+            # Else
             else: raise ValueError("Not a photometric unit: found " + base.physical_type + "^" + str(power) + " dimension as a base")
 
+        # Time unit
         elif base.physical_type == "time":
 
             if power != -1: raise ValueError("Found a unit of time but not as inversely proportional to the base unit (instead the power is " + str(power) + ")")
             base_unit *= base ** power
 
+        # Length unit
         elif base.physical_type == "length":
 
             if power == -1: wavelength_unit = base
@@ -450,16 +614,19 @@ def analyse_unit(unit):
                 distance_unit = base ** 2
             else: raise ValueError("Not a photometric unit: found length^" + str(power) + " dimension")
 
+        # Frequency unit
         elif base.physical_type == "frequency":
 
             if power != -1: raise ValueError("Found a unit of frequency but not as inversely proportional to the base unit (instead the power is " + str(power) + ")")
             frequency_unit = base
 
+        # Solid angle unit
         elif base.physical_type == "solid angle":
 
             if power != -1: raise ValueError("Found a unit of solid angle but not as inversely proportional to the base unit (instead the power is " + str(power) + ")")
             solid_angle_unit = base
 
+        # Angle unit
         elif base.physical_type == "angle":
 
             if solid_angle_unit != "": raise ValueError("Found an angle unit but the solid angle unit is already defined: " + str(solid_angle_unit))

@@ -227,7 +227,7 @@ class WavelengthGridPlotter(object):
 
             # Get the wavelength points
             grid = self.grids[label]
-            wavelengths = grid.wavelengths(asarray=True)
+            wavelengths = grid.wavelengths("micron", asarray=True)
             nwavelengths = grid.nwavelengths
 
             # Plot the grid points

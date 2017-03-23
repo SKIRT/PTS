@@ -213,8 +213,8 @@ class SkirtArguments(object):
 
                     # Create the simulation and add it to the list
                     filepath = fs.join(dirpath, filename)
-                    simulation_name = simulation_names[filepath] if simulation_names is not None and filepath in simulation_names else None
-                    simulations.append(SkirtSimulation(filename, inpath=inp, outpath=out, ski_path=filepath, name=simulation_name))
+                    sim_name = simulation_names[filepath] if simulation_names is not None and filepath in simulation_names else None
+                    simulations.append(SkirtSimulation(filename, inpath=inp, outpath=out, ski_path=filepath, name=sim_name))
 
         # Check whether the ski pattern is ought to represent only one particular simulation
         if self.single:
