@@ -83,7 +83,7 @@ class SED(WavelengthCurve):
 
     # -----------------------------------------------------------------
 
-    def photometry(self, unit=None, asarray=False, add_unit=True, conversion_info=None):
+    def photometry(self, unit=None, asarray=False, add_unit=True, conversion_info=None, density=False):
 
         """
         This function ...
@@ -91,10 +91,11 @@ class SED(WavelengthCurve):
         :param asarray:
         :param add_unit:
         :param conversion_info:
+        :param density:
         :return:
         """
 
-        return self.values(unit, asarray, add_unit, conversion_info=conversion_info)
+        return self.values(unit, asarray, add_unit, conversion_info=conversion_info, density=density)
 
     # -----------------------------------------------------------------
 
@@ -354,33 +355,37 @@ class ObservedSED(FilterCurve):
 
     # -----------------------------------------------------------------
 
-    def photometry(self, unit=None, asarray=False, add_unit=True):
+    def photometry(self, unit=None, asarray=False, add_unit=True, density=False):
 
         """
         This function ...
         :param unit:
         :param asarray:
         :param add_unit:
+        :param density:
         :return:
         """
 
-        return self.values(unit, asarray, add_unit)
+        return self.values(unit, asarray, add_unit, density=density)
 
     # -----------------------------------------------------------------
 
-    def photometry_at(self, wavelength):
+    def photometry_at(self, wavelength, unit=None, add_unit=True, density=False):
 
         """
         This function ...
         :param wavelength:
+        :param unit:
+        :param add_unit:
+        :param density:
         :return:
         """
 
-        return self.value_for_wavelength(wavelength)
+        return self.value_for_wavelength(wavelength, unit=unit, add_unit=add_unit, density=density)
 
     # -----------------------------------------------------------------
 
-    def photometry_for_band(self, instrument, band, unit=None, add_unit=True):
+    def photometry_for_band(self, instrument, band, unit=None, add_unit=True, density=False):
 
         """
         This function ...
@@ -388,68 +393,73 @@ class ObservedSED(FilterCurve):
         :param band:
         :param unit:
         :param add_unit:
+        :param density:
         :return:
         """
 
-        return self.value_for_band(instrument, band, unit, add_unit)
+        return self.value_for_band(instrument, band, unit, add_unit, density=density)
 
     # -----------------------------------------------------------------
 
-    def photometry_for_filter(self, fltr, unit=None, add_unit=True):
+    def photometry_for_filter(self, fltr, unit=None, add_unit=True, density=False):
 
         """
         This function ...
         :param fltr:
         :param unit:
         :param add_unit:
+        :param density:
         :return:
         """
 
-        return self.value_for_filter(fltr, unit=unit, add_unit=add_unit)
+        return self.value_for_filter(fltr, unit=unit, add_unit=add_unit, density=density)
 
     # -----------------------------------------------------------------
 
-    def errors(self, unit=None, add_unit=True):
+    def errors(self, unit=None, add_unit=True, density=False):
 
         """
         This function ...
         :param unit:
         :param add_unit:
+        :param density:
         :return:
         """
 
         column_units = [self.column_unit("Error-"), self.column_unit("Error+")]
-        return tables.columns_as_objects([self["Error-"], self["Error+"]], ErrorBar, unit=unit, add_unit=add_unit, column_units=column_units)
+        return tables.columns_as_objects([self["Error-"], self["Error+"]], ErrorBar, unit=unit, add_unit=add_unit, column_units=column_units, density=density)
 
     # -----------------------------------------------------------------
 
-    def errors_min(self, unit=None, asarray=False, add_unit=True):
+    def errors_min(self, unit=None, asarray=False, add_unit=True, density=False):
 
         """
         This function ...
         :param unit:
         :param asarray:
         :param add_unit:
+        :param density:
         :return:
         """
 
-        if asarray: return arrays.plain_array(self["Error-"], unit=unit, array_unit=self.column_unit("Error-"))
-        else: return arrays.array_as_list(self["Error-"], unit=unit, add_unit=add_unit, array_unit=self.column_unit("Error-"))
+        if asarray: return arrays.plain_array(self["Error-"], unit=unit, array_unit=self.column_unit("Error-"), density=density)
+        else: return arrays.array_as_list(self["Error-"], unit=unit, add_unit=add_unit, array_unit=self.column_unit("Error-"), density=density)
 
     # -----------------------------------------------------------------
 
-    def errors_max(self, unit=None, asarray=False, add_unit=True):
+    def errors_max(self, unit=None, asarray=False, add_unit=True, density=False):
 
         """
         This function ...
         :param unit:
         :param asarray:
         :param add_unit:
+        :param density:
         :return:
         """
 
-        if asarray: return arrays.plain_array(self["Error+"], unit=unit, array_unit=self.column_unit("Error+"))
-        else: return arrays.array_as_list(self["Error+"], unit=unit, add_unit=add_unit, array_unit=self.column_unit("Error+"))
+        if asarray: return arrays.plain_array(self["Error+"], unit=unit, array_unit=self.column_unit("Error+"), density=density)
+        else: return arrays.array_as_list(self["Error+"], unit=unit, add_unit=add_unit, array_unit=self.column_unit("Error+"), density=density)
 
     # -----------------------------------------------------------------
 

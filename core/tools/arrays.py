@@ -18,6 +18,7 @@ import numpy as np
 
 # Import the relevant PTS classes and modules
 from ..basics.unit import parse_unit
+from ..basics.quantity import PhotometricQuantity
 
 # -----------------------------------------------------------------
 
@@ -118,7 +119,7 @@ def find_closest_below_index(array, value, array_unit=None):
 
 # -----------------------------------------------------------------
 
-def array_as_list(array, add_unit=True, unit=None, masked_value=None, array_unit=None, conversion_info=None):
+def array_as_list(array, add_unit=True, unit=None, masked_value=None, array_unit=None, conversion_info=None, density=False):
 
     """
     This function ...
@@ -128,17 +129,33 @@ def array_as_list(array, add_unit=True, unit=None, masked_value=None, array_unit
     :param masked_value:
     :param array_unit:
     :param conversion_info:
+    :param density:
     :return:
     """
 
-    if conversion_info is None: conversion_info = dict()
+    if conversion_info is None:
+
+        conversion_info = dict()
+        wavelengths = None
+
+    elif "wavelengths" in conversion_info:
+        wavelengths = conversion_info["wavelengths"]
+        conversion_info = copy.deepcopy(conversion_info)
+        del conversion_info["wavelengths"]
 
     # Initialize a list to contain the column values
     result = []
 
-    #if array_unit is None:
-    #    if hasattr(array, "unit"): array_unit = array.unit
-    has_unit = array.unit is not None
+    # Get array unit if not passed to this function
+    if array_unit is None and hasattr(array, "unit"): array_unit = array.unit
+
+    # Parse the unit
+    if unit is not None: unit = parse_unit(unit, density=density)
+
+    #print("array unit", array_unit)
+    #print("unit", unit)
+
+    has_unit = array_unit is not None
     has_mask = hasattr(array, "mask")
 
     # If unit has to be converted, check whether the original unit is specified
@@ -147,26 +164,44 @@ def array_as_list(array, add_unit=True, unit=None, masked_value=None, array_unit
     # Loop over the entries in the column
     for i in range(len(array)):
 
+        # Masked value
         if has_mask and array.mask[i]: result.append(masked_value)
+
+        # Not masked value
         else:
 
+            # If the array has a unit
             if has_unit:
 
                 # Add the unit initially to be able to convert
                 value = array[i] * array_unit
 
-                # Set the wavelength
-                conversion_info = copy.deepcopy(conversion_info)
-                if "wavelengths" in conversion_info:
-                    conversion_info["wavelength"] = conversion_info["wavelengths"][i]
-                    del conversion_info["wavelengths"]
+                # Check if a target unit is specified
+                if unit is not None:
 
-                # If a target unit is specified, convert
-                if unit is not None: value = value.to(unit, **conversion_info).value * parse_unit(unit) # If converted, do not add any unit
+                    # Check if the requested unit is different from the array unit
+                    if unit != array_unit:
 
-                if not add_unit: value = value.value # If not converted and add_unit is enabled, add the unit
+                        # Set the wavelength
+                        if isinstance(value, PhotometricQuantity):
+                            if wavelengths is not None: conversion_info["wavelength"] = wavelengths[i]
+                        # Not a photometric quantity
+                        else: conversion_info = dict()
 
-            else: value = array[i]
+                        # If a target unit is specified, convert
+                        value = value.to(unit, **conversion_info).value * unit  # If converted, do not add any unit
+
+                    # Don't add the unit: get the value
+                    if not add_unit: value = value.value # If not converted and add_unit is enabled, add the unit
+
+                # If adding the unit is not requested but no unit was specified for the output, then the user wouldn't have any information on what the units are of the resulting list, so throw an error
+                elif not add_unit: raise ValueError("You cannot know which units the values are going to be if you don't specifiy the target unit and you put add_unit to False")
+
+            # The array doesn't have a unit
+            else:
+
+                if unit is not None: raise ValueError("Cannot convert the unit because the original unit is unknown")
+                value = array[i]
 
             # Add the value to the list
             result.append(value)
@@ -176,7 +211,7 @@ def array_as_list(array, add_unit=True, unit=None, masked_value=None, array_unit
 
 # -----------------------------------------------------------------
 
-def plain_array(column, unit=None, array_unit=None, conversion_info=None):
+def plain_array(column, unit=None, array_unit=None, conversion_info=None, density=False):
 
     """
     This function ...
@@ -184,9 +219,10 @@ def plain_array(column, unit=None, array_unit=None, conversion_info=None):
     :param unit:
     :param array_unit:
     :param conversion_info:
+    :param density:
     :return:
     """
 
-    return np.array(array_as_list(column, unit=unit, add_unit=False, masked_value=float('nan'), array_unit=array_unit, conversion_info=conversion_info))
+    return np.array(array_as_list(column, unit=unit, add_unit=False, masked_value=float('nan'), array_unit=array_unit, conversion_info=conversion_info, density=density))
 
 # -----------------------------------------------------------------

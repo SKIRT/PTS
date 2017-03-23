@@ -587,7 +587,7 @@ class PhotometricUnit(CompositeUnit):
             new_unit = divide_units(self, other.unit)
 
             # Create a quantity
-            quantity = parse_quantity(other.value * new_unit)
+            quantity = parse_quantity(1./ other.value * new_unit)
 
             # Return the quantity
             return quantity
@@ -930,6 +930,7 @@ class PhotometricUnit(CompositeUnit):
         # Neutral density
         if self.is_neutral_density:
 
+            # Convert into new unit by dividing by wavelength or by frequency
             if to_unit.is_wavelength_density: new_unit = self / wavelength
             elif to_unit.is_frequency_density: new_unit = self / frequency
             elif to_unit.is_neutral_density: new_unit = self
@@ -938,6 +939,7 @@ class PhotometricUnit(CompositeUnit):
         # Wavelength density
         elif self.is_wavelength_density:
 
+            # Convert into new unit by multiplying with wavelength or with wavelength / frequency
             if to_unit.is_neutral_density: new_unit = self * wavelength
             elif to_unit.is_frequency_density: new_unit = self * (wavelength / frequency)
             elif to_unit.is_wavelength_density: new_unit = self
@@ -946,6 +948,7 @@ class PhotometricUnit(CompositeUnit):
         # Frequency density
         elif self.is_frequency_density:
 
+            # Convert into new unit by multiplying with frequency or with frequency / wavelength
             if to_unit.is_neutral_density: new_unit = self * frequency
             elif to_unit.is_frequency_density: new_unit = self
             elif to_unit.is_wavelength_density: new_unit = self * (frequency / wavelength)
@@ -954,6 +957,7 @@ class PhotometricUnit(CompositeUnit):
         # Not a spectral density
         else:
 
+            # Cannot convert from an integrated quantity to a spectral density
             if to_unit.is_neutral_density: raise ValueError("Cannot convert from integrated quantity to spectral density")
             elif to_unit.is_frequency_density: raise ValueError("Cannot convert from integrated quantity to spectral density")
             elif to_unit.is_wavelength_density: raise ValueError("Cannot convert from integrated quantity to spectral density")
@@ -962,9 +966,13 @@ class PhotometricUnit(CompositeUnit):
         # Same base type
         if self.base_physical_type == to_unit.base_physical_type:
 
+            #print("new_unit:", new_unit)
+            #print("to_unit:", to_unit)
+
             # Determine factor
             factor = new_unit.to(to_unit)
-            return factor
+            #print(new_unit, to_unit, factor.value)
+            return factor.value
 
         # Different base type, luminosity
         elif self.base_physical_type == "luminosity":
@@ -1363,6 +1371,8 @@ def divide_units(unit_a, unit_b):
     :param unit_b:
     :return:
     """
+
+    #print("Divide units:", unit_a, unit_b)
 
     # If the other unit is dimensionless
     if unit_b == "": return unit_a.copy()

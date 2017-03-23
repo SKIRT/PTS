@@ -10,19 +10,22 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import inspect
+import numpy as np
 
 # Import astronomical modules
 from astropy import constants
+from astropy.units import spectral
 
 # Import the relevant PTS classes and modules
 from pts.core.test.implementation import TestImplementation
 from pts.core.tools.logging import log
 from pts.core.basics.unit import PhotometricUnit
 from pts.core.basics.unit import parse_unit as u
+from pts.core.basics.quantity import parse_quantity
 from pts.core.tools import filesystem as fs
 from pts.core.data.sed import SED, ObservedSED
 from pts.core.plot.sed import SEDPlotter
-from pts.modeling.preparation.unitconversion import neutral_fluxdensity_to_jansky
+from pts.modeling.preparation.unitconversion import neutral_fluxdensity_to_jansky, si_to_jansky
 
 # -----------------------------------------------------------------
 
@@ -54,8 +57,9 @@ class UnitsTest(TestImplementation):
 
         self.observed_sed = None
         self.model_sed_1 = None
-        self.model_sed_2 = None
+        #self.model_sed_2 = None
         self.model_sed_3 = None
+        #self.model_sed_4 = None
         self.mock_sed = None
 
     # -----------------------------------------------------------------
@@ -112,7 +116,7 @@ class UnitsTest(TestImplementation):
 
         self.observed_sed = ObservedSED.from_file(observed_sed_path)
         self.model_sed_1 = SED.from_skirt(sim_sed_path_1)
-        self.model_sed_2 = SED.from_skirt(sim_sed_path_2)
+        #self.model_sed_2 = SED.from_skirt(sim_sed_path_2)
         self.mock_sed = ObservedSED.from_file(mock_sed_path)
 
     # -----------------------------------------------------------------
@@ -127,6 +131,19 @@ class UnitsTest(TestImplementation):
         # Inform the user
         log.info("Simple test ...")
 
+        self.test_names()
+
+        self.test_fluxes()
+
+    # -----------------------------------------------------------------
+
+    def test_names(self):
+
+        """
+        Tihs function ...
+        :return:
+        """
+
         # Create nanomaggy unit
         nanomaggy = PhotometricUnit("nMgy")
 
@@ -134,6 +151,55 @@ class UnitsTest(TestImplementation):
         factor = nanomaggy.conversion_factor("Jy")
 
         #print(factor, 3.613e-6)
+
+        assert np.isclose(factor, 3.613e-6)
+
+    # -----------------------------------------------------------------
+
+    def test_fluxes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create a quantity that is 1 W/m2 at 200 micron
+
+        wavelength = parse_quantity("200 micron")
+
+        frequency = wavelength.to("Hz", equivalencies=spectral())
+
+        print("")
+        print("wavelength:", wavelength)
+        print("frequency:", frequency)
+        print("")
+
+        flux = parse_quantity("1 W/m2", density=True) # neutral flux density
+
+        print("neutral flux density:", flux)
+        print("wavelength flux density:", flux / wavelength)
+        print("frequency flux density:", flux / frequency)
+        print("")
+
+        converted = flux.value / wavelength.value # to W / (m2 * micron)
+        converted = converted / spectral_factor_hz_to_micron(wavelength)
+        converted = converted * si_to_jansky * u("Jy") # in Jy
+
+        converted3 = flux.value / frequency.value * si_to_jansky * u("Jy")  # first to W / [m2 * Hz] and then to Jy
+
+        converted_auto = flux.to("Jy", wavelength=wavelength)
+
+        print("")
+        print("flux density in Jy:", converted)
+        print("flux density in Jy (other way):", converted3)
+        print("automatically converted flux density in Jy:", converted_auto)
+        print("")
+
+        print("conversion factor:", converted.value / flux.value)
+        print("automatically determined conversion factor:", converted_auto.value / flux.value)
+        print("")
+
+        exit()
 
     # -----------------------------------------------------------------
 
@@ -147,33 +213,45 @@ class UnitsTest(TestImplementation):
         # Inform the user
         log.info("Testing SED unit conversion ...")
 
+        self.convert_sed_manual()
+
+    # -----------------------------------------------------------------
+
+    def convert_sed_manual(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         # 2 different ways should be the same:
         # fluxdensity_ = fluxdensity_jy.to("W / (m2 * micron)", equivalencies=spectral_density(wavelength))
         #fluxdensity = fluxdensity_jy.to("W / (m2 * Hz)").value * spectral_factor_hz_to_micron(wavelength) * u("W / (m2 * micron)")
         # print(fluxdensity_, fluxdensity) # IS OK!
         #fluxdensities.append(fluxdensity.to("W / (m2 * micron)").value)
 
-        wavelengths = self.model_sed_1.wavelengths(asarray=True) # in micron
-        fluxes = self.model_sed_1.photometry(asarray=True) #self.model_sed_1["Photometry"] # in W/m2 (lambda * F_Lambda)
+        wavelengths = self.model_sed_1.wavelengths("micron", asarray=True) # in micron
+        fluxes = self.model_sed_1.photometry("W/m2", asarray=True) #self.model_sed_1["Photometry"] # in W/m2 (lambda * F_Lambda)
 
-        print("wavelengths", wavelengths)
-        print("fluxes", fluxes)
+        #print("wavelengths", wavelengths)
+        #print("fluxes", fluxes)
 
         fluxes = fluxes / wavelengths # in W / (m2 * micron)
         fluxes = [flux / spectral_factor_hz_to_micron(wavelength * u("micron")) for flux, wavelength in zip(fluxes, wavelengths)] # in W / (m2 * Hz)
+        fluxes = [flux * si_to_jansky for flux in fluxes]
 
+        self.model_sed_3 = SED.from_arrays(wavelengths, fluxes, wavelength_unit="micron", photometry_unit="Jy")
+        #print(self.model_sed_3)
 
-        #print("")
+        ## ANALOG WAY:
 
-        fluxes2 = [neutral_fluxdensity_to_jansky(fluxdensity, wavelength * u("micron")) for fluxdensity, wavelength in zip(self.model_sed_1["Photometry"], wavelengths)]
+        #fluxes2 = [neutral_fluxdensity_to_jansky(fluxdensity, wavelength * u("micron")) for fluxdensity, wavelength in zip(self.model_sed_1["Photometry"], wavelengths)]
 
-        print("Jy fluxes", fluxes2)
+        #print("Jy fluxes", fluxes2)
+        #self.model_sed_4 = SED.from_arrays(wavelengths, fluxes2, wavelength_unit="micron", photometry_unit="Jy")
+        #print(self.model_sed_4)
 
-        self.model_sed_3 = SED.from_arrays(wavelengths, fluxes2, wavelength_unit="micron", photometry_unit="Jy")
-
-        print(self.model_sed_3)
-
-        self.model_sed_1.convert_to(photometry_unit="Jy")
+        #self.model_sed_1.convert_to(photometry_unit="Jy")
 
     # -----------------------------------------------------------------
 
@@ -188,8 +266,9 @@ class UnitsTest(TestImplementation):
 
         plotter.add_sed(self.observed_sed, "Observation")
         plotter.add_sed(self.model_sed_1, "model 1")
-        plotter.add_sed(self.model_sed_2, "model 2")
+        #plotter.add_sed(self.model_sed_2, "model 2")
         plotter.add_sed(self.model_sed_3, "model 3")
+        #plotter.add_sed(self.model_sed_4, "model 4")
 
         plotter.run()
 

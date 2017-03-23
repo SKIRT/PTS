@@ -271,7 +271,7 @@ def fix_string_length_column(table, column_name, length):
 
 # -----------------------------------------------------------------
 
-def columns_as_objects(columns, cls, add_unit=True, unit=None, column_units=None):
+def columns_as_objects(columns, cls, add_unit=True, unit=None, column_units=None, density=False):
 
     """
     This function ...
@@ -280,6 +280,7 @@ def columns_as_objects(columns, cls, add_unit=True, unit=None, column_units=None
     :param add_unit:
     :param unit:
     :param column_units:
+    :param density:
     :return:
     """
 
@@ -296,7 +297,7 @@ def columns_as_objects(columns, cls, add_unit=True, unit=None, column_units=None
 
     # Loop over the columns, get list of values
     for column, column_unit in zip(columns, column_units):
-        column_lists.append(arrays.array_as_list(column, add_unit=add_unit, unit=unit, array_unit=column_unit))
+        column_lists.append(arrays.array_as_list(column, add_unit=add_unit, unit=unit, array_unit=column_unit, density=density))
 
     # Loop over the column values for each entry
     for i in range(len(column_lists[0])):

@@ -243,11 +243,17 @@ class PhotometricQuantity(Quantity):
         # Import
         from .unit import PhotometricUnit
 
-        # Parse the new unit
+        # Parse the new photometric unit
         unit = PhotometricUnit(unit, density=density)
+
+        #print(self, self.unit, unit)
 
         # Determine conversion factor
         factor = self.unit.conversion_factor(unit, density=density, wavelength=wavelength, frequency=frequency, distance=distance, solid_angle=solid_angle, fltr=fltr, pixelscale=pixelscale)
+
+        #print(factor)
+
+        #print(wavelength, factor)
 
         # Return new quantity
         return PhotometricQuantity(self.value * factor, unit)
