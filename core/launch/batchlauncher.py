@@ -1435,12 +1435,19 @@ class BatchLauncher(Configurable):
         :return:
         """
 
+        # Set add_timing and add_memory settings
+        if local:
+            add_timing = self.config.add_timing_local
+            add_memory = self.config.add_memory_local
+        else: add_timing = add_memory = True
+
         # Check whether analysis options are specified
         if analysis_options_item is None:
 
             # Get a copy of the default logging options, create the default analysis options and adjust logging options according to the analysis options
             logging_options = self.logging_options.copy()
-            analysis_options_item = self.create_analysis_options(definition, name, logging_options, local=local)
+
+            analysis_options_item = self.create_analysis_options(definition, name, logging_options, add_timing=add_timing, add_memory=add_memory)
 
         # AnalysisOptions object
         elif isinstance(analysis_options_item, AnalysisOptions):
@@ -1452,7 +1459,7 @@ class BatchLauncher(Configurable):
         elif isinstance(analysis_options_item, dict):
 
             # Create the default analysis options from the configuration of the batch launcher
-            default_analysis_options = self.create_analysis_options(definition, name, local=local)
+            default_analysis_options = self.create_analysis_options(definition, name, add_timing=add_timing, add_memory=add_memory)
 
             # Set the options specified in the analysis_options_item dictionary
             default_analysis_options.set_options(analysis_options_item)
@@ -1545,14 +1552,15 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def create_analysis_options(self, definition, simulation_name, logging_options=None, local=False):
+    def create_analysis_options(self, definition, simulation_name, logging_options=None, add_timing=True, add_memory=True):
 
         """
         This function ...
         :param definition:
         :param simulation_name:
         :param logging_options:
-        :param local:
+        :param add_timing:
+        :param add_memory:
         :return:
         """
 
@@ -1609,8 +1617,8 @@ class BatchLauncher(Configurable):
         else: analysis_options.misc.path = None
 
         # Set timing and memory table paths (if specified for this batch launcher)
-        if self.config.timing_table_path is not None and not local: analysis_options.timing_table_path = self.config.timing_table_path
-        if self.config.memory_table_path is not None and not local: analysis_options.memory_table_path = self.config.memory_table_path
+        if self.config.timing_table_path is not None and add_timing: analysis_options.timing_table_path = self.config.timing_table_path
+        if self.config.memory_table_path is not None and add_memory: analysis_options.memory_table_path = self.config.memory_table_path
 
         # Check the analysis options
         if logging_options is not None: analysis_options.check(logging_options)

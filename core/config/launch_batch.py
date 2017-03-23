@@ -32,6 +32,10 @@ definition.add_flag("progress_bar", "use progress bars to show progress")
 definition.add_optional("timing_table_path", "file_path", "path to the timing table")
 definition.add_optional("memory_table_path", "file_path", "path to the memory table")
 
+# Flags
+definition.add_flag("add_timing_local", "add timing information for locally launched simulations", True)
+definition.add_flag("add_memory_local", "add memory information for locally launched simulations", True)
+
 # The analyser classes
 definition.add_optional("analysers", "string_list", "analyser classes for the simulations")
 
