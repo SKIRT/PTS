@@ -76,6 +76,9 @@ class M81SEDTest(M81TestBase):
         # The initial parameter values for the fitting
         self.initial_parameter_values = dict()
 
+        # The best parameter values from the fitting
+        self.best_parameter_values = dict()
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -139,6 +142,12 @@ class M81SEDTest(M81TestBase):
 
         # 18. Model
         self.model()
+
+        # legmegekge
+        self.get_best_parameter_values()
+
+        # gegjepgoeg
+        self.test()
 
     # -----------------------------------------------------------------
 
@@ -577,7 +586,7 @@ class M81SEDTest(M81TestBase):
 
         # Create initialize config
         initialize_config = Map()
-        initialize_config.npackages = 1e4
+        initialize_config.npackages = self.config.npackages_fitting
         initialize_config.selfabsorption = True
         initialize_config.transient_heating = False
         input_model["initialize_config"] = initialize_config
@@ -587,6 +596,35 @@ class M81SEDTest(M81TestBase):
 
         # Run the command
         self.modeler = self.run_command(command)
+
+        print(self.modeler.modeler.fitter.fitting_run.best_parameters_table)
+
+    # -----------------------------------------------------------------
+
+    def get_best_parameter_values(self):
+
+        """
+		This function ...
+		:return:
+		"""
+
+        # Inform the user
+        log.info("Getting the best parameter values ...")
+
+
+
+    # -----------------------------------------------------------------
+
+    def test(self):
+
+
+        """
+        This function ...
+        :return:
+        """
+
+        print(self.real_parameter_values)
+
 
 # -----------------------------------------------------------------
 

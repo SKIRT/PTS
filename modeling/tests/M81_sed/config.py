@@ -31,8 +31,10 @@ definition.add_flag("selfabsorption", "enable dust selfabsorption", False)
 #definition.add_optional("host_ids", "string_list", "remote hosts to use for heavy computations (in order of preference)", choices=find_host_ids(schedulers=False))
 
 # Fitting
-definition.add_optional("ngenerations", "positive_integer", "number of generations", 5)
+definition.add_optional("ngenerations", "positive_integer", "number of generations", 2)
 definition.add_optional("nsimulations", "even_positive_integer", "number of simulations per generation", 2)
+definition.add_optional("npackages_fitting", "positive_integer", "number of photon packages for each fitting simulation", int(1e4))
+
 
 # Free parameters
 definition.add_optional("free_parameters", "string_list", "free parameter labels", choices=possible_free_parameters, default=default_free_parameters)

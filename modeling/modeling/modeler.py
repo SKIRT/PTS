@@ -46,6 +46,9 @@ class Modeler(Configurable):
         # The modeling configuration
         self.modeling_config = None
 
+        # The specific modeler
+        self.modeler = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -153,10 +156,10 @@ class Modeler(Configurable):
         """
 
         # Create galaxy modeler
-        modeler = GalaxyModeler(self.config)
+        self.modeler = GalaxyModeler(self.config)
 
         # Run the modeler
-        modeler.run(**kwargs)
+        self.modeler.run(**kwargs)
 
     # -----------------------------------------------------------------
 
@@ -169,10 +172,10 @@ class Modeler(Configurable):
         """
 
         # Create SED modeler
-        modeler = SEDModeler(self.config)
+        self.modeler = SEDModeler(self.config)
 
         # Run the modeler
-        modeler.run(**kwargs)
+        self.modeler.run(**kwargs)
 
     # -----------------------------------------------------------------
 
@@ -185,9 +188,9 @@ class Modeler(Configurable):
         """
 
         # Create images modeler
-        modeler = ImagesModeler(self.config)
+        self.modeler = ImagesModeler(self.config)
 
         # Run the modeler
-        modeler.run(**kwargs)
+        self.modeler.run(**kwargs)
 
 # -----------------------------------------------------------------
