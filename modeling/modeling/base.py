@@ -74,6 +74,12 @@ class ModelerBase(Configurable):
         # Parameter ranges
         self.parameter_ranges = None
 
+        # rlkrmglrgr
+        self.explorer = None
+
+        # egeg
+        self.fitter = None
+
     # -----------------------------------------------------------------
 
     @property
@@ -228,8 +234,11 @@ class ModelerBase(Configurable):
         # Initialize the fitting
         if not self.history.has_initialized_fit: self.initialize_fit()
 
+        # Load the generations table
+        generations = get_generations_table(self.modeling_path, self.fitting_run_name)
+
         # If finishing the generation is requested
-        if self.config.finish: self.finish()
+        if self.config.finish or (self.config.ngenerations > 1 and generations.ngenerations == self.config.ngenerations): self.finish()
 
         # Advance the fitting with a new generations
         else: repeat(self.advance, self.config.ngenerations)
@@ -331,13 +340,13 @@ class ModelerBase(Configurable):
         config["name"] = self.fitting_run_name
 
         # Create the SED fitter
-        fitter = SEDFitter(config)
+        self.fitter = SEDFitter(config)
 
         # Add an entry to the history
         self.history.add_entry(SEDFitter.command_name())
 
         # Run the fitter
-        fitter.run()
+        self.fitter.run()
 
         # Mark the end and save the history file
         self.history.mark_end()
@@ -359,42 +368,42 @@ class ModelerBase(Configurable):
         config["name"] = self.fitting_run_name
 
         # Create the parameter explorer
-        explorer = ParameterExplorer(config)
+        self.explorer = ParameterExplorer(config)
 
         # Add an entry to the history
         self.history.add_entry(ParameterExplorer.command_name())
 
         # Set the working directory
-        explorer.config.path = self.modeling_path
+        self.explorer.config.path = self.modeling_path
 
         # Set the remote host IDs
-        explorer.config.remotes = self.moderator.host_ids_for_ensemble("fitting")
-        explorer.config.attached = self.config.fitting_attached
+        self.explorer.config.remotes = self.moderator.host_ids_for_ensemble("fitting")
+        self.explorer.config.attached = self.config.fitting_attached
 
         # Set the number of generations
         #if self.config.ngenerations is not None: explorer.config.ngenerations = self.config.ngenerations
         # NO: THIS ALWAYS HAVE TO BE ONE: BECAUSE HERE IN THIS CLASS WE ALREADY USE REPEAT(SELF.ADVANCE)
-        explorer.config.ngenerations = 1
+        self.explorer.config.ngenerations = 1
 
         # Set the number of simulations per generation
-        if self.config.nsimulations is not None: explorer.config.nsimulations = self.config.nsimulations
+        if self.config.nsimulations is not None: self.explorer.config.nsimulations = self.config.nsimulations
 
         # Set other settings
-        explorer.config.npackages_factor = self.config.npackages_factor
-        explorer.config.increase_npackages = self.config.increase_npackages
+        self.explorer.config.npackages_factor = self.config.npackages_factor
+        self.explorer.config.increase_npackages = self.config.increase_npackages
         #explorer.config.refine_wavelengths = self.config.refine_wavelengths
-        explorer.config.refine_spectral = self.config.refine_spectral
+        self.explorer.config.refine_spectral = self.config.refine_spectral
         #explorer.config.refine_dust = self.config.refine_dust
-        explorer.config.refine_spatial = self.config.refine_spatial
-        explorer.config.selfabsorption = self.config.selfabsorption
-        explorer.config.transient_heating = self.config.transient_heating
+        self.explorer.config.refine_spatial = self.config.refine_spatial
+        self.explorer.config.selfabsorption = self.config.selfabsorption
+        self.explorer.config.transient_heating = self.config.transient_heating
 
         # Set the input
         input_dict = dict()
         if self.parameter_ranges is not None: input_dict["ranges"] = self.parameter_ranges
 
         # Run the parameter explorer
-        explorer.run(**input_dict)
+        self.explorer.run(**input_dict)
 
         # Mark the end and save the history file
         self.history.mark_end()
@@ -419,7 +428,7 @@ class ModelerBase(Configurable):
 
         # Check if there are unfinished generations
         has_unfinished = has_unfinished_generations(self.modeling_path, self.fitting_run_name)
-        if has_unfinished: log.warning("There are unfinished generations, but evaluting finished simulations anyway ...")
+        if has_unfinished: log.warning("There are unfinished generations, but evaluating finished simulations anyway ...")
 
         # Check if there are unevaluated generations
         if not has_unevaluated_generations(self.modeling_path, self.fitting_run_name): log.success("All generations have already been evaluated")

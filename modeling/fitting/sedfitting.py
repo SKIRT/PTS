@@ -446,7 +446,8 @@ class SEDFitter(FittingComponent):
 
             # Create a plot file for the probability distribution
             path = fs.join(self.fitting_run.prob_distributions_path, parameter_name + ".pdf")
-            distribution.plot(title="Probability of the " + description, path=path, logscale=True)
+            try: distribution.plot(title="Probability of the " + description, path=path, logscale=True)
+            except ValueError: log.warning("Could not create the distribution plot for parameter '" + parameter_name + "'")
 
     # -----------------------------------------------------------------
 
