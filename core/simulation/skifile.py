@@ -130,7 +130,7 @@ class SkiFile:
             for label in el.attrib:
                 value = el.attrib[label]
                 if "." in value:
-                    before, after = value.split(".")
+                    before, after = value.rsplit(".", 1)
                     if after[0].isdigit() or after[0] == " ": continue
                     assert after[0].isalpha() # equivalent
                     filenames.append(value)
@@ -1824,6 +1824,18 @@ class SkiFile:
 
         return parent
 
+    ## This function sets the wavelengths for an oligochromatic simulation
+    def set_wavelengths(self, *args):
+
+        from ..basics.quantity import represent_quantity
+
+        # Remove the old wavelength grid
+        parent = self.remove_wavelength_grid()
+
+        # Make the oligochromatic wavelength grid
+        attrs = {"wavelengths": ", ".join(map(represent_quantity, args))}
+        parent.append(parent.makeelement("OligoWavelengthGrid", attrs))
+
     ## This function sets the wavelength grid to a file
     def set_file_wavelength_grid(self, filename):
 
@@ -2868,14 +2880,16 @@ class SkiFile:
     ## This function sets the dust grid
     def set_dust_grid(self, grid):
 
-        from .grids import BinaryTreeDustGrid, OctTreeDustGrid, CartesianDustGrid
+        from .grids import BinaryTreeDustGrid, OctTreeDustGrid, CartesianDustGrid, CylindricalGrid
 
+        # Cartesian
         if isinstance(grid, CartesianDustGrid):
 
             # Set cartesian dust grid
             self.set_cartesian_dust_grid(grid.min_x, grid.max_x, grid.min_y, grid.max_y, grid.min_z, grid.max_z,
                                          grid.x_bins, grid.y_bins, grid.mesh_type, grid.ratio, grid.write)
 
+        # Binary tree
         elif isinstance(grid, BinaryTreeDustGrid):
 
             # Set binary tree dust grid
@@ -2884,6 +2898,7 @@ class SkiFile:
                                            grid.sample_count, grid.max_optical_depth, grid.max_mass_fraction,
                                            grid.max_dens_disp_fraction, grid.direction_method)
 
+        # Octtree
         elif isinstance(grid, OctTreeDustGrid):
 
             # Set octtree dust grid
@@ -2892,6 +2907,17 @@ class SkiFile:
                                        grid.sample_count, grid.max_optical_depth, grid.max_mass_fraction,
                                        grid.max_dens_disp_fraction, grid.barycentric)
 
+        # Cylindrical
+        elif isinstance(grid, CylindricalGrid):
+
+            # Set cylindrical grid
+            # self, max_r, min_z, max_z, nbins_r, nbins_z, fraction_r=None, fraction_z=None,
+            # ratio_r=None, ratio_z=None, write_grid=False
+            self.set_cylindrical_dust_grid(grid.max_r, grid.min_z, grid.max_z, grid.nbins_r, grid.nbins_z,
+                                           fraction_r=grid.central_bin_fraction_r, fraction_z=grid.central_bin_fraction_z,
+                                           ratio_r=grid.ratio_r, ratio_z=grid.ratio_z)
+
+        # Invalid
         else: raise ValueError("Invalid grid type")
 
     ## This function removes the dust grid and returns the parent
@@ -3027,6 +3053,36 @@ class SkiFile:
                  #"assigner": assigner}
         parent.append(parent.makeelement("OctTreeDustGrid", attrs))
 
+    ## This function sets a cylindrical grid
+    def set_cylindrical_dust_grid(self, max_r, min_z, max_z, nbins_r, nbins_z, fraction_r=None, fraction_z=None,
+                                  ratio_r=None, ratio_z=None, write_grid=False):
+
+        from ..basics.quantity import represent_quantity
+
+        parent = self.remove_dust_grid()
+
+        # Set attrs
+        attrs = {"writeGrid": str_from_bool(write_grid, lower=True), "maxR": represent_quantity(max_r), "minZ": represent_quantity(min_z),
+                 "maxZ": represent_quantity(max_z)}
+
+        # Create new grid
+        grid = parent.makeelement("Cylinder2DDustGrid", attrs)
+
+        # Mesh r
+        mesh_r = grid.makeelement("meshR", {"type": "Mesh"})
+        mesh_r_log = mesh_r.makeelement("LogMesh", {"numBins": str(nbins_r), "centralBinFraction": repr(fraction_r)})
+        mesh_r.append(mesh_r_log)
+        grid.append(mesh_r)
+
+        # Mesh z
+        mesh_z = grid.makeelement("meshZ", {"type": "MoveableMesh"})
+        mesh_z_sympow = mesh_z.makeelement("SymPowMesh", {"numBins": str(nbins_z), "ratio": repr(ratio_z)})
+        mesh_z.append(mesh_z_sympow)
+        grid.append(mesh_z)
+
+        # Add the grid
+        parent.append(grid)
+
     ## Range of x in length units
     def get_dust_grid_x_range(self):
         from ..basics.range import QuantityRange
@@ -3134,7 +3190,7 @@ class SkiFile:
     ## This function adds an instrument
     def add_instrument(self, name, instrument):
 
-        from ...modeling.basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument, FullInstrument
+        from ...modeling.basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument, FullInstrument, MultiFrameInstrument
 
         distance = instrument.distance
         inclination = instrument.inclination
@@ -3189,8 +3245,45 @@ class SkiFile:
             self.add_full_instrument(name, distance, inclination, azimuth, position_angle, field_x, field_y, pixels_x,
                                      pixels_y, center_x, center_y, scattering_levels, counts)
 
+        # Multi frame instrument
+        elif isinstance(instrument, MultiFrameInstrument):
+
+            # Add the multi frame instrument
+
+            from ..basics.quantity import represent_quantity
+
+            # Get the 'instruments' element
+            instruments = self.get_instruments(as_list=False)
+
+            distance = instrument.distance
+            inclination = instrument.inclination
+            azimuth = instrument.azimuth
+            position_angle = instrument.position_angle
+
+            # Make and add the new FullInstrument
+            attrs = {"instrumentName": name, "distance": represent_quantity(distance),
+                     "inclination": str_from_angle(inclination),
+                     "azimuth": str_from_angle(azimuth), "positionAngle": str_from_angle(position_angle)}
+            instr = instruments.makeelement("MultiFrameInstrument", attrs)
+
+            # Children
+            frames = instr.makeelement("frames", {"type": "InstrumentFrame"})
+
+            # Loop over the frames
+            for frame in instrument.frames:
+
+                fr_attrs = {"pixelsX": str(frame.pixels_x), "pixelsY": str(frame.pixels_y), "fieldOfViewX": represent_quantity(frame.field_x), "fieldOfViewY": represent_quantity(frame.field_y)}
+
+                fr = frames.makeelement("InstrumentFrame", fr_attrs)
+
+                frames.append(fr)
+
+            # Add the instrument with its frames
+            instr.append(frames)
+            instruments.append(instr)
+
         # Unrecognized instrument
-        else: raise ValueError("Instruments other than SimpleInstrument, SEDInstrument and FullInstrument are not yet supported")
+        else: raise ValueError("Instruments other than SimpleInstrument, SEDInstrument, FullInstrument, and MultiFrameInstrument are not yet supported")
 
     ## This function adds a FrameInstrument to the instrument system
     def add_frame_instrument(self, name, distance, inclination, azimuth, position_angle, field_x, field_y,

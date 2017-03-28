@@ -60,6 +60,9 @@ class FittingComponent(ModelingComponent):
         # The statistics path
         self.statistics_path = None
 
+        # The name of the instrument
+        self.earth_instrument_name = None
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -85,6 +88,9 @@ class FittingComponent(ModelingComponent):
 
         # Set the path to the statistics file
         self.statistics_path = fs.join(self.fit_path, "statistics.csv")
+
+        # The name of the instrument
+        self.earth_instrument_name = "earth"
 
     # -----------------------------------------------------------------
 

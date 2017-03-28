@@ -18,6 +18,7 @@ import numpy as np
 
 # Import astronomical modules
 from astropy import coordinates
+from astropy.units import CompositeUnit
 
 # Import the relevant PTS classes and modules
 from ...core.filter.filter import parse_filter
@@ -26,6 +27,7 @@ from ...core.tools.logging import log
 from ..basics.pixelscale import Pixelscale
 from ...core.basics.unit import PhotometricUnit
 from ...core.basics.unit import parse_unit as u
+from ...core.basics.quantity import parse_quantity
 
 # -----------------------------------------------------------------
 
@@ -64,23 +66,33 @@ def get_pixelscale(header):
             scale = header[keyword]
             if scale == "N/A": continue
 
-            try: unit = header.comments[keyword].split("[")[1].split("]")[0]
-            except IndexError: unit = None
+            scale = float(scale)
 
-            # Parse the unit with Astropy
-            if unit is not None:
+            #print(scale, type(scale))
+            # Composite unit
+            #if isinstance(scale, CompositeUnit):
+            #    scale = parse_quantity(str(scale))
 
-                unit = unit.replace("asec", "arcsec")
-                if not (unit.endswith("pixel") or unit.endswith("pix")): unit = unit + "/pix"
-                try: unit = u(unit)
-                except ValueError: unit = None
+            # If unit is not defined
+            if not hasattr(scale, "unit"):
 
-            log.debug("pixelscale found in " + str(keyword) + " keyword = " + str(scale))
-            log.debug("unit for the pixelscale = " + str(unit))
+                try: unit = header.comments[keyword].split("[")[1].split("]")[0]
+                except IndexError: unit = None
 
-            # If no unit is found, guess that it's arcseconds / pixel ...
-            if unit is None: unit = u("arcsec/pix")
-            scale = scale * unit
+                # Parse the unit with Astropy
+                if unit is not None:
+
+                    unit = unit.replace("asec", "arcsec")
+                    if not (unit.endswith("pixel") or unit.endswith("pix")): unit = unit + "/pix"
+                    try: unit = u(unit)
+                    except ValueError: unit = None
+
+                log.debug("pixelscale found in " + str(keyword) + " keyword = " + str(scale))
+                log.debug("unit for the pixelscale = " + str(unit))
+
+                # If no unit is found, guess that it's arcseconds / pixel ...
+                if unit is None: unit = u("arcsec/pix")
+                scale = scale * unit
 
             # Return the scale
             return Pixelscale(scale)

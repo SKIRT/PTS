@@ -24,7 +24,9 @@ from .galaxy import modeling_methods
 from ...core.remote.host import find_host_ids
 from ...core.data.sed import ObservedSED
 from ...core.simulation.skifile import LabeledSkiFile
-from ..core.environment import ModelingEnvironment
+from ..core.environment import GalaxyModelingEnvironment, SEDModelingEnvironment, ImagesModelingEnvironment
+from ..component.images import get_images_path, get_images_header_path
+from ...magic.core.frame import Frame
 
 # -----------------------------------------------------------------
 
@@ -89,6 +91,9 @@ class ModelingSetupTool(Configurable):
         # The observed images
         self.images = dict()
 
+        # The images header
+        self.images_header = None
+
         # The ski template
         self.ski = None
 
@@ -123,7 +128,7 @@ class ModelingSetupTool(Configurable):
         # 5. Writing
         self.write()
 
-        # Create the modeling environment
+        # 6. Create the modeling environment
         self.create_environment()
 
     # -----------------------------------------------------------------
@@ -184,7 +189,6 @@ class ModelingSetupTool(Configurable):
         # Get kwargs
         if "object_config" in kwargs: self.object_config = kwargs.pop("object_config")
         if "sed" in kwargs: self.sed = kwargs.pop("sed")
-        if "images" in kwargs: self.images = kwargs.pop("images")
         if "ski" in kwargs: self.ski = kwargs.pop("ski")
         if "ski_input" in kwargs: self.ski_input = kwargs.pop("ski_input")
 
@@ -515,7 +519,10 @@ class ModelingSetupTool(Configurable):
         if self.sed_modeling or self.images_modeling: self.load_ski_input()
 
         # Load the images
-        if self.images_modeling and self.images is None: self.load_images()
+        if self.images_modeling: self.load_images()
+
+        # Set the header
+        if self.images_modeling: self.set_images_header()
 
     # -----------------------------------------------------------------
 
@@ -609,6 +616,58 @@ class ModelingSetupTool(Configurable):
         # Inform the user
         log.info("Loading the observed images ...")
 
+        wcs = None
+
+        # Loop over the image paths
+        for path in self.object_config.images:
+
+            # Open the image
+            frame = Frame.from_file(path)
+
+            # Check the WCS
+            if wcs is None: wcs = frame.wcs
+            elif wcs == frame.wcs: pass
+            else: raise ValueError("The wcs of image '" + path + "' does not match that of other images")
+
+            # Determine name based on filter
+            name = str(frame.filter)
+
+            # Add to the dictionary
+            self.images[name] = frame
+
+    # -----------------------------------------------------------------
+
+    def set_images_header(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the common header for the images ...")
+
+        wcs = None
+
+        # Loop over the images
+        for name in self.images:
+
+            # Debugging
+            log.debug("Loading the wcs of the '" + name + "' image ...")
+
+            # Get wcs
+            frame_wcs = self.images[name].wcs
+
+            #print(frame_wcs)
+
+            # Check the WCS
+            if wcs is None: wcs = frame_wcs
+            elif wcs == frame_wcs: pass
+            else: raise ValueError("The wcs of image '" + name + "' does not match that of other images")
+
+        # Convert the wcs to a header
+        self.images_header = wcs.to_header()
+
     # -----------------------------------------------------------------
 
     def write(self):
@@ -621,20 +680,23 @@ class ModelingSetupTool(Configurable):
         # Inform the user
         log.info("Writing ...")
 
-        # Write the configuration
+        # 1. Write the configuration
         self.write_config()
 
-        # Write the SED
+        # 2. Write the SED
         if self.sed_modeling: self.write_sed()
 
-        # Write the ski template
+        # 3. Write the ski template
         if self.sed_modeling or self.images_modeling: self.write_ski()
 
-        # Write the ski input
+        # 4. Write the ski input
         if (self.sed_modeling or self.images_modeling) and self.ski_input is not None: self.write_ski_input()
 
-        # Write the images
+        # 5. Write the images
         if self.images_modeling: self.write_images()
+
+        # 6. Write the header
+        if self.images_modeling: self.write_header()
 
     # -----------------------------------------------------------------
 
@@ -739,10 +801,34 @@ class ModelingSetupTool(Configurable):
         """
 
         # Inform the user
-        log.info("Write the images ...")
+        log.info("Writing the images ...")
+
+        # Create images path
+        fs.create_directory(get_images_path(self.modeling_path))
 
         # Loop over the images
-        for name in self.images: pass
+        for name in self.images:
+
+            # Determine the path for this image
+            path = fs.join(get_images_path(self.modeling_path), name + ".fits")
+
+            # Save
+            self.images[name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_header(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the header ...")
+
+        # Write the header
+        self.images_header.totextfile(get_images_header_path(self.modeling_path))
 
     # -----------------------------------------------------------------
 
@@ -757,6 +843,9 @@ class ModelingSetupTool(Configurable):
         log.info("Creating the modeling environment ...")
 
         # Create the environment
-        self.environment = ModelingEnvironment(self.modeling_path)
+        if self.galaxy_modeling: self.environment = GalaxyModelingEnvironment(self.modeling_path)
+        elif self.sed_modeling: self.environment = SEDModelingEnvironment(self.modeling_path)
+        elif self.images_modeling: self.environment = ImagesModelingEnvironment(self.modeling_path)
+        else: raise RuntimeError("Invalid modeling type")
 
 # -----------------------------------------------------------------

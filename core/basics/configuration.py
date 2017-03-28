@@ -1333,7 +1333,11 @@ class ConfigurationDefinition(object):
 
         # Get the real default value
         if default is not None:
-            if convert_default: default = get_real_value(default, real_type)
+            if convert_default:
+                if user_type.endswith("list") and isinstance(default, list):
+                    real_base_type = getattr(parsing, user_type.split("_list")[0])
+                    default = [get_real_value(arg, real_base_type) for arg in default]
+                else: default = get_real_value(default, real_type)
             else: # check default
                 default_type, default_string = stringify.stringify(default)
                 #if default_type != user_type and user_type not in subtypes[default_type]:
@@ -1377,7 +1381,11 @@ class ConfigurationDefinition(object):
 
         # Get the real default value
         if default is not None:
-            if convert_default: default = get_real_value(default, real_type)
+            if convert_default:
+                if user_type.endswith("list") and isinstance(default, list):
+                    real_base_type = getattr(parsing, user_type.split("_list")[0])
+                    default = [get_real_value(arg, real_base_type) for arg in default]
+                else: default = get_real_value(default, real_type)
             else: # check default
                 default_type, default_string = stringify.stringify(default)
                 #if default_type != user_type and user_type not in subtypes[default_type]:

@@ -26,6 +26,7 @@ from ..build.sed import SEDModelBuilder
 from ..build.sedrepresentation import SEDRepresentationBuilder
 #from ..build.definition import get_input_paths
 from ..component.sed import get_ski_input_path
+from ..core.environment import SEDModelingEnvironment
 
 # -----------------------------------------------------------------
 
@@ -47,7 +48,6 @@ class SEDModeler(ModelerBase):
         super(SEDModeler, self).__init__(config, interactive)
 
         # Optional configs for the fitting configurer
-        #self.parameters_config = None
         self.descriptions_config = None
         self.types_config = None
         self.units_config = None
@@ -77,13 +77,13 @@ class SEDModeler(ModelerBase):
         # 3. Build the model
         self.build_model()
 
-        # Build the model representation
+        # 4. Build the model representation
         self.build_representation()
 
-        # 3. Do the fitting
+        # 5. Do the fitting
         self.fit()
 
-        # 4. Writing
+        # 6. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -99,8 +99,10 @@ class SEDModeler(ModelerBase):
         # Call the setup function of the base class
         super(SEDModeler, self).setup(**kwargs)
 
+        # Load the modeling environment
+        self.environment = SEDModelingEnvironment(self.modeling_path)
+
         # Set configs for the fitting configurer
-        #if "parameters_config" in kwargs: self.parameters_config = kwargs.pop("parameters_config")
         if "descriptions_config" in kwargs: self.descriptions_config = kwargs.pop("descriptions_config")
         if "types_config" in kwargs: self.types_config = kwargs.pop("types_config")
         if "units_config" in kwargs: self.units_config = kwargs.pop("units_config")
@@ -220,10 +222,7 @@ class SEDModeler(ModelerBase):
         config["parameters"] = free_parameter_names
 
         # Load the SED, get the fitting filters
-        if self.filters_config is not None:
-            sed = get_observed_sed(self.config.path)
-            fitting_filter_names = sed.filter_names()
-            config["filters"] = fitting_filter_names
+        if self.filters_config is None: config["filters"] = self.environment.observed_sed_filter_names
 
         # Set fitting run name and model name
         config["name"] = self.fitting_run_name
@@ -239,27 +238,20 @@ class SEDModeler(ModelerBase):
         configurer.config.path = self.modeling_path
 
         # Run the fitting configurer
-        #configurer.run(parameters_config=self.parameters_config, descriptions_config=self.descriptions_config,
-        #               types_config=self.types_config, units_config=self.units_config, ranges_config=self.ranges_config,
-        #               filters_config=self.filters_config, genetic_config=self.genetic_config, settings=self.config.fitting_settings)
         configurer.run(descriptions_config=self.descriptions_config, types_config=self.types_config,
                        units_config=self.units_config, ranges_config=self.ranges_config, filters_config=self.filters_config,
                        genetic_config=self.genetic_config, settings=self.config.fitting_settings)
 
-        # Get the parameter ranges
-        # Set ranges dict
+        # Set the parameter ranges
         if self.ranges_config is not None:
             self.parameter_ranges = dict()
             for parameter_name in free_parameter_names:
-
                 # Get the range
-                range = self.ranges_config[parameter_name + "_range"]
-
+                parameter_range = self.ranges_config[parameter_name + "_range"]
                 # Debugging
-                log.debug("Setting the range of the '" + parameter_name + "' parameter to '" + str(range) + "' for the parameter exploration ...")
-
+                log.debug("Setting the range of the '" + parameter_name + "' parameter to '" + str(parameter_range) + "' for the parameter exploration ...")
                 # Set the range
-                self.parameter_ranges[parameter_name] = range
+                self.parameter_ranges[parameter_name] = parameter_range
 
         # Mark the end and save the history file
         self.history.mark_end()

@@ -288,3 +288,83 @@ class FullInstrument(Instrument):
                    center_x=projection.center_x, center_y=projection.center_y)
 
 # -----------------------------------------------------------------
+
+class MultiFrameInstrument(Instrument):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(MultiFrameInstrument, self).__init__()
+
+        # Add the frames property
+        self.add_property("frames", "instrument_frame_list", "list of instrument frames", [])
+
+        # Add the frames
+        for frame in args: self.add_frame(frame)
+
+        # Set values
+        self.set_properties(kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_projection(cls):
+
+        """
+        This function ...
+        :return:
+        """
+
+        raise NotImplementedError("Not implemented for multi frame instrument")
+
+    # -----------------------------------------------------------------
+
+    def add_frame(self, frame):
+
+        """
+        This function ...
+        :param frame:
+        :return:
+        """
+
+        # Add the frame
+        self.frames.append(frame)
+
+# -----------------------------------------------------------------
+
+class InstrumentFrame(SimplePropertyComposite):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(InstrumentFrame, self).__init__()
+
+        # Define properties
+        self.add_property("pixels_x", "positive_integer", "x pixels", None)
+        self.add_property("pixels_y", "positive_integer", "y pixels", None)
+        self.add_property("field_x", "quantity", "x field", None)
+        self.add_property("field_y", "quantity", "y field", None)
+
+        # Set properties
+        self.set_properties(kwargs)
+
+# -----------------------------------------------------------------

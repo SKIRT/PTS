@@ -89,26 +89,6 @@ class SkirtArguments(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_config(cls, config):
-
-        """
-        This function ...
-        :param config:
-        :return:
-        """
-
-        # Create a new instance
-        arguments = cls()
-
-        # Loop over the entries in the configuration and create an attribute with the same name
-        for entry in config: setattr(arguments, entry, config[entry])
-
-        # Return the arguments instance
-        return arguments
-
-    # -----------------------------------------------------------------
-
-    @classmethod
     def from_definition(cls, definition, logging_options, parallelization, emulate=False):
 
         """
@@ -131,10 +111,11 @@ class SkirtArguments(object):
             arguments.input_path = definition.input_path
             arguments.output_path = definition.output_path
 
+            # Set other
             arguments.single = True
-
             arguments.emulate = emulate
 
+            # Return the arguments object
             return arguments
 
         # If the first argument defines multiple simulations
@@ -405,6 +386,7 @@ def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, th
         # If 'process to core' binding must be enabled, add the 'cpus-per-proc' option
         # (see https://www.open-mpi.org/faq/?category=tuning)
         if bind_to_cores:
+
             # Hyperthreading: threads_per_core will be > 1
             # No hyperthreading: threads_per_core will be 1
             # cores / process = (cores / thread) * (threads / process)

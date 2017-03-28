@@ -61,9 +61,6 @@ class ModelingComponent(Configurable):
         # PTS directories
         self.kernels_path = None
 
-        # The path to the fitting configuration file
-        #self.fitting_configuration_path = None
-
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -81,9 +78,6 @@ class ModelingComponent(Configurable):
 
         # Check for the presence of the configuration file
         if not fs.is_file(self.config_file_path): raise ValueError("The current working directory (" + self.config.path + ") is not a radiative transfer modeling directory (the configuration file is missing)")
-
-        # We can now safely create the environment
-        self.environment = ModelingEnvironment(self.config.path)
 
         # Determine the path to the kernels user directory
         self.kernels_path = fs.join(introspection.pts_user_dir, "kernels")
@@ -357,6 +351,42 @@ class ModelingComponent(Configurable):
         """
 
         return self.modeling_configuration.modeling_type
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_galaxy_modeling(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.modeling_configuration.modeling_type == "galaxy"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_sed_modeling(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.modeling_configuration.modeling_type == "sed"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_images_modeling(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.modeling_configuration.modeling_type == "images"
 
     # -----------------------------------------------------------------
 
