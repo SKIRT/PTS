@@ -19,6 +19,12 @@ import copy
 import subprocess
 from lxml import etree
 from datetime import datetime
+from collections import defaultdict
+
+# Import astronomical modules
+from astropy.table import Table
+from astropy.utils import lazyproperty
+from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
@@ -35,6 +41,9 @@ from ...core.basics.range import RealRange
 from ...core.tools import stringify
 from ...core.basics.map import Map
 from ...core.tools import time
+from ...core.simulation.skifile import LabeledSkiFile
+from ...magic.core.frame import Frame
+from ...core.basics.unit import is_angle
 
 # -----------------------------------------------------------------
 
@@ -74,16 +83,14 @@ class FitSKIRTArguments(object):
     This class ...
     """
 
-    def __init__(self, definition, parallelization=None):
+    def __init__(self, definition, parallelization=None, single=True):
 
         """
         The constructor ...
         :param definition:
         :param parallelization:
+        :param single:
         """
-
-        print(definition.ski_path)
-        print(definition.input_path)
 
         # Check whether the ski file and the other input are in the same directory
         if fs.directory_of(definition.ski_path) != definition.input_path:
@@ -95,19 +102,26 @@ class FitSKIRTArguments(object):
             fs.copy_files(fs.files_in_path(definition.input_path), temp_path)
             fs.copy_file(definition.ski_path, temp_path)
 
-            # Set the
+            # Set the input path to the temporary directory
+            input_path = temp_path
+
+        # Otherwise, just use the defined input path
+        else: input_path = definition.input_path
 
         # Set the name of the ski file in the fski file
         fski = FskiFile(definition.fski_path)
         fski.set_ski_name(fs.name(definition.ski_path))
         fski.save()
 
+        # Single Fit run
+        self.single = single
+
         # Options for the ski file pattern
         self.fski_path = definition.fski_path
         self.relative = None
 
         # The input and output paths
-        self.input_path = definition.input_path
+        self.input_path = input_path
         self.output_path = definition.output_path
 
         # Options for parallelization
@@ -174,6 +188,28 @@ class FitSKIRTArguments(object):
 
         # Otherwise, return the list of argument values
         else: return arguments
+
+    # -----------------------------------------------------------------
+
+    def runs(self, run_name=None):
+
+        """
+        This function ...
+        :param run_name:
+        :return:
+        """
+
+        # Check whether the fski pattern is ought to represent only one particular run
+        if self.single:
+
+            # Create the run
+            run = FitSKIRTRun(self.fski_path, self.input_path, self.output_path, name=run_name)
+
+            # Return the FitSKIRT run
+            return run
+
+        # Else, just return the list of simulations (even when containing only one item)
+        else: raise NotImplementedError("Multiple fit runs with one FitSKIRTArguments object is not supported")
 
 # -----------------------------------------------------------------
 
@@ -396,6 +432,77 @@ class FskiFile(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def parameter_labels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize the list of labels
+        labels = []
+
+        parameter_ranges = self.get_parameter_ranges()
+        range_elements = self.get_children(self.get_child_with_name(parameter_ranges, "ranges"))
+        for element in range_elements:
+
+            # Get the parameter label
+            name = self.get_value(element, "label")
+
+            # Add to the list
+            labels.append(name)
+
+        # Return the list of parameter labels
+        return labels
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_units(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        parameter_ranges = self.get_parameter_ranges()
+        range_elements = self.get_children(self.get_child_with_name(parameter_ranges, "ranges"))
+
+        units = dict()
+
+        # Loop over the elements
+        for element in range_elements:
+
+            # Get properties
+            name = self.get_value(element, "label")
+            ptype = self.get_value(element, "quantityType")
+            pmin = self.get_value(element, "minimumValue")
+            pmax = self.get_value(element, "maximumValue")
+
+            # Dimensionless: no unit
+            if ptype == "dimless": unit = None
+
+            # Quantity
+            else:
+
+                quantity_type = skirt_quantities_to_pts_quantities[ptype]
+                parsing_function = getattr(parsing, quantity_type)
+                min_value = parsing_function(pmin)
+                max_value = parsing_function(pmax)
+
+                # Get the unit
+                unit = min_value.unit
+                assert unit == max_value.unit
+
+            # Set the unit
+            units[name] = unit
+
+        # Return the units
+        return units
+
+    # -----------------------------------------------------------------
+
     def get_ranges(self):
 
         """
@@ -436,6 +543,34 @@ class FskiFile(object):
 
         # Return the ranges dictionary
         return ranges
+
+    # -----------------------------------------------------------------
+
+    def set_parameter_range(self, label, parameter_range):
+
+        """
+        This function ...
+        :param label:
+        :param parameter_range:
+        :return:
+        """
+
+        parameter_ranges = self.get_parameter_ranges()
+        parent = self.get_child_with_name(parameter_ranges, "ranges")
+        elements = self.get_children(parent)
+
+        # Get the element
+        parameter_element = None
+        for element in elements:
+            if self.get_value(element, "label") == label:
+                parameter_element = element
+                break
+
+        # Set the minimum value
+        self.set_value(parameter_element, "minimumValue", stringify.stringify(parameter_range.min)[1])
+
+        # Set the maximum value
+        self.set_value(parameter_element, "maximumValue", stringify.stringify(parameter_range.max)[1])
 
     # -----------------------------------------------------------------
 
@@ -496,8 +631,8 @@ class FskiFile(object):
         parent = self.get_child_with_name(self.get_reference_images(), "images")
 
         # Set min and max
-        min_luminosities = [range.min for range in luminosity_ranges]
-        max_luminosities = [range.max for range in luminosity_ranges]
+        min_luminosities = [lum_range.min for lum_range in luminosity_ranges]
+        max_luminosities = [lum_range.max for lum_range in luminosity_ranges]
 
         # Attributes
         attrs = {"filename": filename, "minLuminosities": stringify.stringify(min_luminosities)[1], "maxLuminosities": stringify.stringify(max_luminosities)[1]}
@@ -511,7 +646,6 @@ class FskiFile(object):
 
         # Add to parent
         kernel_parent.append(kernel)
-
         image.append(kernel_parent)
 
         # Add the image
@@ -545,6 +679,41 @@ class FskiFile(object):
             names.append(name)
 
         return names
+
+    # -----------------------------------------------------------------
+
+    def get_frame_paths(self, input_path):
+
+        """
+        This function ...
+        :param input_path:
+        :return:
+        """
+
+        return [fs.join(input_path, filename) for filename in self.get_image_names()]
+
+    # -----------------------------------------------------------------
+
+    def get_frames(self, input_path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [Frame.from_file(path) for path in self.get_frame_paths(input_path)]
+
+    # -----------------------------------------------------------------
+
+    def get_filters(self, input_path):
+
+        """
+        This function ...
+        :param input_path:
+        :return:
+        """
+
+        return [frame.filter for frame in self.get_frames(input_path)]
 
     # -----------------------------------------------------------------
 
@@ -859,6 +1028,462 @@ class FskiFile(object):
 
 # -----------------------------------------------------------------
 
+class FitSKIRTRun(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, fski_path, input_path, output_path, name=None):
+
+        """
+        This function ...
+        :param fski_path:
+        :param input_path:
+        :param output_path:
+        :param name:
+        """
+
+        self.fski_path = fski_path
+        self.input_path = input_path
+        self.output_path = output_path
+        self.name = name
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def prefix(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.strip_extension(fs.name(self.fski_path))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fski_file(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return FskiFile(self.fski_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def parameter_labels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fski_file.parameter_labels
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def parameter_units(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fski_file.parameter_units
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ski_filename(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fski_file.ski_name
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ski_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.input_path, self.ski_filename)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ski_file(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return LabeledSkiFile(self.ski_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ski_file.wavelength_list
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fski_file.get_filters(self.input_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def filter_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [str(fltr) for fltr in self.filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_simulations_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.output_path, self.prefix + "_BESTsimulations.dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nstellar_components(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ski_file.nstellar_components
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ngenerations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.best_simulations_table)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_simulations_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Read in the table
+        table = Table.read(self.best_simulations_path, format="ascii")
+
+        # Get the parameter labels
+        labels = self.parameter_labels
+
+        # Change column names
+        table.rename_column("col1", "Generation index")
+
+        index = 2
+        for label in labels:
+            table.rename_column("col" + str(index), label)
+            index += 1
+
+        # Chi squared column
+        table.rename_column("col" + str(index), "Chi squared")
+        index += 1
+
+        # Loop over the filters
+        for name in self.filter_names:
+
+            # Loop over the stellar components
+            for component_index in range(self.nstellar_components):
+
+                # Rename
+                table.rename_column("col" + str(index), "Luminosity in " + name + " band for component " + str(component_index))
+
+                # Increment
+                index += 1
+
+        # The chi squared columns
+        for component_index in range(self.nstellar_components):
+            table.rename_column("col" + str(index), "Chi squared of component " + str(component_index))
+            index += 1
+
+        # Return the table
+        return table
+
+    # -----------------------------------------------------------------
+
+    def get_best_parameter_values(self, generation_index):
+
+        """
+        This function ...
+        :param generation_index:
+        :return:
+        """
+
+        values = dict()
+        for label in self.parameter_labels:
+
+            # Get value and unit
+            unit = self.parameter_units[label]
+            value = self.best_simulations_table[label][generation_index]
+
+            # Add the unit (or convert to Angle)
+            if unit is None: pass
+            elif is_angle(unit): value = Angle(value, unit)
+            else: value *= unit
+
+            # Set the value
+            values[label] = value
+
+        return values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_parameter_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_best_parameter_values(self.ngenerations-1)
+
+    # -----------------------------------------------------------------
+
+    def get_best_luminosities(self, generation_index):
+
+        """
+        This function ...
+        :param generation_index:
+        :return:
+        """
+
+        # Initialize dictionary
+        luminosities = defaultdict(list)
+
+        # Loop over the filters and stellar components
+        for name in self.filter_names:
+            for component_index in range(self.nstellar_components):
+
+                # Determine column name
+                column_name = "Luminosity in " + name + " band for component " + str(component_index)
+
+                # Get the luminosity
+                luminosities[name].append(self.best_simulations_table[column_name][generation_index])
+
+        # Return the luminosities
+        return luminosities
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_luminosities(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_best_luminosities(self.ngenerations-1)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def all_simulations_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.output_path, self.prefix + "_allsimulations.dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def all_simulations_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Table.read(self.all_simulations_path, format="ascii")
+
+    # -----------------------------------------------------------------
+
+    def filter_index(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return self.filter_names.index(str(fltr))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_image_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.output_path, extension="fits", contains="_Best")
+
+    # -----------------------------------------------------------------
+
+    def get_best_image_path(self, generation_index, fltr):
+
+        """
+        This function ...
+        :param generation_index:
+        :param fltr:
+        :return:
+        """
+
+        index = self.filter_index(fltr)
+        return fs.join(self.input_path, self.prefix + "_Best_" + str(generation_index) + "_" + str(index) + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def get_best_image(self, generation_index, fltr):
+
+        """
+        This function ...
+        :param generation_index:
+        :param fltr:
+        :return:
+        """
+
+        return Frame.from_file(self.get_best_image_path(generation_index, fltr))
+
+    # -----------------------------------------------------------------
+
+    def get_best_images(self, generation_index):
+
+        """
+        This function ...
+        :param generation_index:
+        :return:
+        """
+
+        # Initialize dictionary
+        frames = dict()
+
+        # Add the frames
+        for fltr in self.filters: frames[str(fltr)] = self.get_best_image(generation_index, fltr)
+
+        # Return
+        return frames
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def residual_image_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.output_path, extension="fits", contains="_Residual")
+
+    # -----------------------------------------------------------------
+
+    def get_residual_image_path(self, generation_index, fltr):
+
+        """
+        This function ...
+        :param generation_index:
+        :param fltr:
+        :return:
+        """
+
+        index = self.filter_index(fltr)
+        return fs.join(self.input_path, self.prefix + "_Residual_" + str(generation_index) + "_" + str(index) + ".fits")
+
+    # -----------------------------------------------------------------
+
+    def get_residual_image(self, generation_index, fltr):
+
+        """
+        This function ...
+        :param generation_index:
+        :param fltr:
+        :return:
+        """
+
+        return Frame.from_file(self.get_residual_image_path(generation_index, fltr))
+
+    # -----------------------------------------------------------------
+
+    def get_residual_images(self, generation_index):
+
+        """
+        This function ...
+        :param generation_index:
+        :return:
+        """
+
+        # Initilaize dictionary
+        frames = dict()
+
+        # Add the frames
+        for fltr in self.filters: frames[str(fltr)] = self.get_residual_image(generation_index, fltr)
+
+        # Return
+        return frames
+
+# -----------------------------------------------------------------
+
 class FitSKIRT(object):
 
     """
@@ -933,21 +1558,22 @@ class FitSKIRT(object):
             else: subprocess.call(command)
         else: self._process = subprocess.Popen(command, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
 
-        # Return the list of simulations so that their results can be followed up
-        #simulations = arguments.simulations(simulation_names=simulation_names)
+        # Return the list of fitskirt runs so that their results can be followed up
+        runs = arguments.runs()
 
         # Check whether FitSKIRT has started
         returncode = self._process.poll() if self._process is not None else None
         if wait or returncode is not None: # when wait=True, or returncode is not None, FitSKIRT executable should have finished
 
-            # Check presence of log file
-            #if not fs.is_file(simulations.logfilepath()): raise RuntimeError("SKIRT executable has stopped but log file is not present")
+            # Check presence of best simulations file
+            if arguments.single:
+                if not fs.is_file(runs.best_simulations_path): raise RuntimeError("FitSKIRT executable has stopped but best simulations table is not present")
 
             # Check presence of output files
             if fs.is_empty(definition.output_path): raise RuntimeError("FitSKIRT executable has stopped but no output present")
 
-        # Return the list of simulations
-        #return simulations
+        # Return the list of FitSKIRT runs (or single FitSKIRT run)
+        return runs
 
 # -----------------------------------------------------------------
 
@@ -977,6 +1603,9 @@ class FitSKIRTLauncher(Configurable):
 
         # The parallelization scheme
         self.parallelization = None
+
+        # The fit run
+        self.fit_run = None
 
     # -----------------------------------------------------------------
 
@@ -1141,7 +1770,7 @@ class FitSKIRTLauncher(Configurable):
         log.info("Launching FitSKIRT locally ...")
 
         # Run FitSKIRT
-        self.fitskirt.run(self.definition, silent=False, wait=True, parallelization=self.parallelization)
+        self.fit_run = self.fitskirt.run(self.definition, silent=False, wait=True, parallelization=self.parallelization)
 
     # -----------------------------------------------------------------
 

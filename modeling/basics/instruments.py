@@ -306,6 +306,10 @@ class MultiFrameInstrument(Instrument):
         # Call the constructor of the base class
         super(MultiFrameInstrument, self).__init__()
 
+        # Add basic properties
+        self.add_property("write_total", "boolean", "write total", False)
+        self.add_property("write_stellar_components", "boolean", "write stellar components", False)
+
         # Add the frames property
         self.add_property("frames", "instrument_frame_list", "list of instrument frames", [])
 

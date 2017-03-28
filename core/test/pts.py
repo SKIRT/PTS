@@ -280,6 +280,9 @@ class PTSTestSuite(Configurable):
         # If the 'open_output' flag is enabled, also enable the 'keep' flag
         if self.config.open_output: self.config.keep = True
 
+        # Check
+        if self.config.config is not None and len(self.test_names) > 1: raise ValueError("Cannot specifiy a test configuration when more than one test is getting launched")
+
     # -----------------------------------------------------------------
 
     def prompt(self):
@@ -342,7 +345,8 @@ class PTSTestSuite(Configurable):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Checking the configuration modules with their corresponding classes ...")
 
     # -----------------------------------------------------------------
 
@@ -399,12 +403,8 @@ class PTSTestSuite(Configurable):
                 config_module = imp.load_source(name + "_config", config_path)
                 definition = config_module.definition
 
-                if self.config.default:
-                    setter = PassiveConfigurationSetter(name, add_cwd=False, add_logging=False)
-                    config = setter.run(definition)
-                else:
-                    setter = InteractiveConfigurationSetter(name, add_cwd=False, add_logging=False)
-                    config = setter.run(definition, prompt_optional=True)
+                # Create the test configuration
+                config = create_test_configuration(definition, name, self.config.config, self.config.default)
 
                 # Load the test module
                 test_module = imp.load_source(name, filepath)
@@ -423,87 +423,6 @@ class PTSTestSuite(Configurable):
 
                 # Create Test instance
                 test = PTSTest(name, description, implementation, test_function, temp_path, self.config.keep, self.config.open_output)
-
-                # Add the test to the suite
-                self.tests[subproject].append(test)
-
-    # -----------------------------------------------------------------
-
-    def load_tests_old(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the tests ...")
-
-        # Loop over the subprojects
-        for subproject in self.test_names:
-
-            # Tests path for subproject
-            tests_path = fs.join(introspection.pts_subproject_dir(subproject), "tests")
-
-            # Inform the user
-            log.info("Loading tests for '" + subproject + "' subproject ...")
-
-            # Loop over the test names
-            for name in self.test_names[subproject]:
-
-                # Determine the test path
-                test_path = fs.join(tests_path, name)
-
-                # Determine an output path for the test
-                temp_path = fs.create_directory_in(introspection.pts_tests_dir, time.unique_name(name))
-
-                # Debugging
-                log.debug("Creating temporary directory '" + temp_path + "' for the test '" + name + "' ...")
-
-                # Find file with name test.py
-                filepath = fs.join(test_path, "test.py")
-
-                # Load the test module
-                test_module = imp.load_source(name, filepath)
-
-                # Get properties of the test module
-                description = test_module.description
-
-                # Iterate over these:
-                commands = test_module.commands
-
-                setup_function = test_module.setup
-                test_function = test_module.test
-
-                # Create Test instance
-                test = PTSTest(name, description, setup_function, test_function, temp_path, self.config.keep, self.config.open_output)
-
-                # Loop over the commands
-                for command in commands:
-
-                    the_command = command.command
-                    description = command.description
-                    settings_dict = command.settings
-                    input_dict = command.input_dict
-                    cwd = command.cwd
-                    finish = command.finish
-
-                    # Find match in the tables of configurable classes
-                    match = introspection.resolve_command_tables(the_command, tables)
-
-                    # Get info
-                    module_path = match.module_path
-                    class_name = match.class_name
-                    configuration_module_path = match.configuration_module_path
-
-                    # Get the class
-                    cls = introspection.get_class(module_path, class_name)
-
-                    # Determine the output path
-                    output_path = fs.absolute_path(fs.join(temp_path, cwd))
-
-                    # Add the component
-                    test.add_component(the_command, cls, configuration_module_path, settings_dict, output_path, input_dict, description, finish)
 
                 # Add the test to the suite
                 self.tests[subproject].append(test)
@@ -577,5 +496,50 @@ class PTSTestSuite(Configurable):
 
         # Inform the user
         log.info("Writing report ...")
+
+# -----------------------------------------------------------------
+
+def create_test_configuration(definition, test_name, config=None, default=False):
+
+    """
+    This function ...
+    :param definition:
+    :param test_name:
+    :param config:
+    :param default:
+    :return:
+    """
+
+    ## The test configuration is given
+    if config is not None:
+
+        # Debugging
+        log.debug("Setting options for the '" + test_name + "' test from the following dictionary:")
+        if log.is_debug():
+
+            print("")
+            for label in config: print(" - " + label + ": " + stringify.stringify(config[label])[1])
+            print("")
+
+        # Create the configuration
+        setter = DictConfigurationSetter(config, test_name, add_logging=False, add_cwd=False)
+        config = setter.run(definition)
+
+    # No test configuration is given, default flag is added
+    elif default:
+
+        # Create the configuration
+        setter = PassiveConfigurationSetter(test_name, add_cwd=False, add_logging=False)
+        config = setter.run(definition)
+
+    # No test configuration is given and default flag is not added
+    else:
+
+        # Create the configuration
+        setter = InteractiveConfigurationSetter(test_name, add_cwd=False, add_logging=False)
+        config = setter.run(definition, prompt_optional=True)
+
+    # Return the configuration
+    return config
 
 # -----------------------------------------------------------------

@@ -27,7 +27,9 @@ definition.add_flag("open_output", "open the output directory after each test fo
 # Advanced
 definition.add_flag("all", "perform all tests for the given subproject")
 definition.add_flag("default", "use all default options for the specific tests")
-
 definition.add_flag("remove_previous", "remove the output of previous runs of the same tests that are executed now")
+
+# Configuration of the test
+definition.add_optional("config", "dictionary", "options for the specific test (only one one test of one subproject is specified)")
 
 # -----------------------------------------------------------------

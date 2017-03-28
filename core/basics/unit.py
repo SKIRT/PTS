@@ -1371,6 +1371,19 @@ def is_inverse_frequency(unit):
 
 # -----------------------------------------------------------------
 
+def is_angle(unit):
+
+    """
+    This function ...
+    :param unit:
+    :return:
+    """
+
+    unit = parse_unit(unit)
+    return unit.physical_type == "angle"
+
+# -----------------------------------------------------------------
+
 def contains_wavelength(unit):
 
     """

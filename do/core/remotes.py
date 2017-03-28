@@ -13,7 +13,8 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.remote.host import find_host_ids, HostDownException
+from pts.core.remote.host import find_host_ids
+from pts.core.remote.utils import HostDownException
 from pts.core.remote.remote import Remote
 from pts.core.tools import formatting as fmt
 from pts.core.tools.logging import setup_log

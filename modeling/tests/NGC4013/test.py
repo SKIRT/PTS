@@ -13,6 +13,7 @@ import inspect
 
 # Import astronomical modules
 from astropy.units import dimensionless_angles
+from astropy.table import Table
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
@@ -29,6 +30,7 @@ from pts.modeling.basics.instruments import InstrumentFrame, MultiFrameInstrumen
 from pts.core.filter.filter import parse_filter
 from pts.modeling.fitting.fitskirt import FskiFile
 from pts.core.simulation.grids import CylindricalGrid
+from pts.core.tools import stringify
 
 # -----------------------------------------------------------------
 
@@ -113,6 +115,14 @@ initial_guesses["dust_length"] = parse_quantity("6600 pc")
 initial_guesses["dust_height"] = parse_quantity("250 pc")
 initial_guesses["dust_mass"] = parse_quantity("4e7 Msun")
 
+# Parameter units
+parameter_units = dict()
+for label in initial_guesses:
+    value = initial_guesses[label]
+    if hasattr(value, "unit"): unit = value.unit
+    else: unit = None
+    parameter_units[label] = unit
+
 # -----------------------------------------------------------------
 
 instrument_name = "earth"
@@ -177,6 +187,12 @@ class NGC4013Test(TestImplementation):
         # The FitSKIRT launcher
         self.launcher = None
 
+        # The best parameter values
+        self.best_parameter_values = None
+
+        # The best luminosities
+        self.best_luminosities = None
+
         # The modeler
         self.modeler = None
 
@@ -199,34 +215,43 @@ class NGC4013Test(TestImplementation):
         # 3. Load the fski file
         self.load_fski()
 
-        # 2. Load the images
+        # 4. Load the images
         self.load_images()
 
-        # 3. Create instrument
+        # 5. Create instrument
         self.create_instrument()
 
-        # 7. Create the wavelength grid
+        # 6. Create the wavelength grid
         self.create_wavelength_grid()
 
-        # 8. Create the dust grid
+        # 7. Create the dust grid
         self.create_dust_grid()
 
-        # 9. Create the ski file
+        # 8. Create the ski file
         self.adjust_ski()
 
-        # Create the fski file
+        # 9. Create the fski file
         self.adjust_fski()
 
-        # Write
+        # 10. Write
         self.write()
 
-        # 3. Launch with FitSKIRT
+        # 11. Launch with FitSKIRT
         self.launch_fitskirt()
 
-        # Setup the modeling
+        # Get the best values from FitSKIRT
+        self.get_best_parameter_values()
+
+        # Get best luminosities
+        self.get_best_luminositites()
+
+        # Show
+        self.show()
+
+        # 12. Setup the modeling
         self.setup_modelling()
 
-        # Model
+        # 13. Model
         self.model()
 
     # -----------------------------------------------------------------
@@ -369,7 +394,8 @@ class NGC4013Test(TestImplementation):
         position_angle = parse_angle("0 deg")
 
         # Create multiframe instrument
-        self.instrument = MultiFrameInstrument(distance=distance, inclination=inclination, azimuth=azimuth, position_angle=position_angle)
+        self.instrument = MultiFrameInstrument(distance=distance, inclination=inclination, azimuth=azimuth,
+                                               position_angle=position_angle, write_stellar_components=True)
 
         # Loop over the filters, create frames
         for fltr in self.config.fitting_filters:
@@ -426,7 +452,7 @@ class NGC4013Test(TestImplementation):
 
         # Create the grid
         self.dust_grid = CylindricalGrid(max_r=max_r, min_z=min_z, max_z=max_z, type_r="logarithmic", type_z="symmetric_power",
-                                         nbins_r=250, nbins_z=250, central_bin_fraction_r=0.0004, ratio_z=50)
+                                         nbins_r=250, nbins_z=250, central_bin_fraction_r=0.0004, ratio_z=50, write=False)
 
     # -----------------------------------------------------------------
 
@@ -473,6 +499,48 @@ class NGC4013Test(TestImplementation):
         # Set ski name
         self.fski.set_ski_name(fs.name(self.reference_ski_path))
 
+        # Set the parameter ranges
+        self.set_parameter_ranges()
+
+        # Set the reference images
+        self.set_reference_images()
+
+        # Set the genetic options
+        self.set_genetic_options()
+
+    # -----------------------------------------------------------------
+
+    def set_parameter_ranges(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the parameter ranges ...")
+
+        # Loop over the free parameters
+        for label in self.config.free_parameters:
+
+            # Get the parameter range
+            parameter_range = parameter_ranges[label]
+
+            # Set the range
+            self.fski.set_parameter_range(label, parameter_range)
+
+    # -----------------------------------------------------------------
+
+    def set_reference_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the reference images ...")
+
         # Remove reference images
         self.fski.remove_all_reference_images()
 
@@ -494,6 +562,18 @@ class NGC4013Test(TestImplementation):
 
             # Add reference image
             self.fski.add_reference_image(filename, luminosity_ranges, kernel_fwhm, self.config.kernel_type, self.config.kernel_dimension)
+
+    # -----------------------------------------------------------------
+
+    def set_genetic_options(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the genetic algorithm options ...")
 
         # Set genetic algorithm properties
         self.fski.set_population_size(self.config.nmodels)
@@ -579,6 +659,60 @@ class NGC4013Test(TestImplementation):
 
         # Run the command
         self.launcher = self.run_command(command)
+
+    # -----------------------------------------------------------------
+
+    def get_best_parameter_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the best parameter values according to FitSKIRT ...")
+
+        # Get best parameter values
+        self.best_parameter_values = self.launcher.fit_run.best_parameter_values
+
+    # -----------------------------------------------------------------
+
+    def get_best_luminositites(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the best luminosities according to FitSKIRT ...")
+
+        # Get luminosities
+        self.best_luminosities = self.launcher.fit_run.best_luminosities
+
+    # -----------------------------------------------------------------
+
+    def show(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        print("")
+        print("Best parameter values:")
+        print("")
+        for label in self.best_parameter_values: print(" - " + label + ": " + stringify.stringify(self.best_parameter_values[label])[1])
+        print("")
+
+        print("Best luminosities:")
+        print("")
+        for filter_name in self.best_luminosities:
+            print("  " + filter_name + ":")
+            print("")
+            for index in range(len(self.best_luminosities)):
+                print("   - component #" + str(index) + ": " + stringify.stringify(self.best_luminosities[filter_name][index])[1])
+            print("")
 
     # -----------------------------------------------------------------
 
