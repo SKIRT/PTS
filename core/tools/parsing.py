@@ -557,7 +557,8 @@ def string_list(argument):
     :return:
     """
 
-    return argument.split(",")
+    if argument == "": return []
+    else: return argument.split(",")
 
 # -----------------------------------------------------------------
 
@@ -569,7 +570,8 @@ def mixed_list(argument):
     :return:
     """
 
-    return [eval(value) for value in argument.split(",")]
+    if argument == "": return []
+    else: return [eval(value) for value in argument.split(",")]
 
 # -----------------------------------------------------------------
 
@@ -590,24 +592,26 @@ def duration(argument):
 
 # -----------------------------------------------------------------
 
-def integer_list(string):
+def integer_list(argument):
 
     """
     A list of integer values, based on a string denoting a certain range (e.g. '3-9') or a
     set of integer values seperated by commas ('2,14,20')
-    :param string:
+    :param argument:
     :return:
     """
 
-    if "-" in string and "," in string:
+    if argument == "": return []
 
-        parts = string.split(",")
+    if "-" in argument and "," in argument:
+
+        parts = argument.split(",")
         total_int_list = []
         for part in parts: total_int_list += integer_list(part)
         return total_int_list
 
     # Split the string
-    splitted = string.split('-')
+    splitted = argument.split('-')
 
     if len(splitted) == 0: raise ValueError("No range given")
     elif len(splitted) == 1:
@@ -650,9 +654,11 @@ def dictionary(argument):
     :return:
     """
 
-    d = eval("{" + argument + "}")
-    if not isinstance(d, dict): raise ValueError("Not a proper specification of a dictionary")
-    return d
+    if argument == "": return dict()
+    else:
+        d = eval("{" + argument + "}")
+        if not isinstance(d, dict): raise ValueError("Not a proper specification of a dictionary")
+        return d
 
 # -----------------------------------------------------------------
 
@@ -1160,8 +1166,6 @@ def lazy_broad_band_filter_list(argument):
 
     from ..filter.broad import BroadBandFilter
     from ..filter.broad import identifiers as broad_band_identifiers
-    from ..filter.narrow import NarrowBandFilter, generate_aliases_ranges, wavelength_range_for_spec
-    from ..filter.filter import parse_filter
 
     filters = []
     for arg in string_list(argument):
@@ -1177,6 +1181,8 @@ def lazy_broad_band_filter_list(argument):
             for spec in broad_band_identifiers:
 
                 identifier = broad_band_identifiers[spec]
+
+                print(spec)
 
                 if "instruments" in identifier:
                     if arg in identifier.instruments:
@@ -1289,5 +1295,30 @@ def sed_entry_list(argument):
     entries = []
     for item in string_list(argument): entries.append(sed_entry(item))
     return entries
+
+# -----------------------------------------------------------------
+
+def instrument_frame(argument):
+
+    """
+    This function ....
+    :param argument:
+    :return:
+    """
+
+    from ...modeling.basics.instruments import InstrumentFrame
+    return InstrumentFrame(**dictionary(argument))
+
+# -----------------------------------------------------------------
+
+def instrument_frame_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return [instrument_frame(arg) for arg in string_list(argument)]
 
 # -----------------------------------------------------------------

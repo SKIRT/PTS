@@ -11,7 +11,7 @@
     <instrumentSystem type="InstrumentSystem">
       <InstrumentSystem>
         <instruments type="Instrument">
-          <MultiFrameInstrument instrumentName="lol" distance="18.6 Mpc" inclination="[inclination:90 deg]" azimuth="0 deg" positionAngle="0 deg" writeTotal="false" writeStellarComps="true">
+          <MultiFrameInstrument instrumentName="lol" distance="18.6 Mpc" inclination="[inclination:90 deg]" f="0 deg" positionAngle="0 deg" writeTotal="false" writeStellarComps="true">
             <frames type="InstrumentFrame">
               <InstrumentFrame pixelsX="790" pixelsY="144" fieldOfViewX="28532.1166032953 pc" fieldOfViewY="5230.32167832168 pc"/>
               <InstrumentFrame pixelsX="790" pixelsY="144" fieldOfViewX="28532.1166032953 pc" fieldOfViewY="5230.32167832168 pc"/>
@@ -63,7 +63,7 @@
           </CompDustDistribution>
         </dustDistribution>
         <dustGrid type="DustGrid">
-          <Cylinder2DDustGrid writeGrid="false" maxR="25000 pc" minZ="-4000 pc" maxZ="4000 pc">
+          <Cylinder2DDustGrid writeGrid="false" maxR="- pc" minZ="-4000 pc" maxZ="4000 pc">
             <meshR type="Mesh">
               <LogMesh numBins="250" centralBinFraction="0.0004"/>
             </meshR>

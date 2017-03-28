@@ -140,7 +140,7 @@ class SkirtExec:
     ## This function does the same as the execute function, but obtains its arguments from a SkirtArguments object
     def run(self, definition_or_arguments, logging_options=None, parallelization=None, emulate=False, wait=True, silent=False, progress_bar=False):
 
-        # The simulation names for different ski pats
+        # The simulation names for different ski paths
         simulation_names = dict()
 
         # Simulation definition
@@ -178,6 +178,10 @@ class SkirtExec:
 
         if progress_bar and not wait: raise ValueError("Cannot show progress bar when 'wait' is False")
         if progress_bar: wait = False
+
+        # Debugging
+        command_string = " ".join(command)
+        log.debug("The command to launch SKIRT is: '" + command_string + "'")
 
         # Launch the SKIRT command
         if wait:

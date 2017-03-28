@@ -334,17 +334,21 @@ def str_from_real_or_integer(value):
 
 # -----------------------------------------------------------------
 
-def generate_from_two_parts(part_a, part_b, connectors=(" ", "-", ".", "_")):
+def generate_from_two_parts(part_a, part_b, connectors=(" ", "-", ".", "_"), also_reverse=False):
 
     """
     This function ...
     :param part_a:
     :param part_b:
     :param connectors:
+    :param also_reverse:
     :return:
     """
 
     for connector in connectors: yield part_a + connector + part_b
+
+    if also_reverse:
+        for connector in connectors: yield part_b + connector + part_a
 
 # -----------------------------------------------------------------
 

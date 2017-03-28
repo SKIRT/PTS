@@ -97,6 +97,14 @@ identifiers["ALMA.7"] = Map(observatories=["ALMA", "APEX"], channel=7)
 identifiers["ALMA.8"] = Map(observatories=["ALMA", "APEX"], channel=8)
 identifiers["ALMA.9"] = Map(observatories=["ALMA", "APEX"], channel=9)
 identifiers["ALMA.10"] = Map(observatories=["ALMA", "APEX"], channel=10)
+identifiers["OIG.U"] = Map(observatories=["TNG"], instruments=["Oig"], bands=["U"])
+identifiers["OIG.V"] = Map(observatories=["TNG"], instruments=["Oig"], bands=["V"])
+identifiers["OIG.B"] = Map(observatories=["TNG"], instruments=["Oig"], bands=["B"])
+identifiers["OIG.R"] = Map(observatories=["TNG"], instruments=["Oig"], bands=["R"])
+identifiers["NICS.H"] = Map(observatories=["TNG"], instruments=["Nics"], bands=["H"])
+identifiers["NICS.J"] = Map(observatories=["TNG"], instruments=["Nics"], bands=["J"])
+#identifiers["NICS.Js"] = Map(observatories=["TNG"], instruments=["Nics"], bands=["Js"]) we removed this because the spec was ambigious ...
+identifiers["NICS.K"] = Map(observatories=["TNG"], instruments=["Nics"], bands=["K"])
 
 # -----------------------------------------------------------------
 
@@ -268,7 +276,7 @@ def generate_aliases(identifier):
     if "system" in identifier and "bands" in identifier:
 
         for band in strings.case_combinations_list(identifier.bands, also_one_letter=False):
-            for string in strings.generate_from_two_parts(identifier.system, band): yield string
+            for string in strings.generate_from_two_parts(identifier.system, band, also_reverse=True): yield string
 
     # Combinations of instrument with band
     if "instruments" in identifier and "bands" in identifier:
@@ -276,7 +284,7 @@ def generate_aliases(identifier):
         for instrument in strings.case_combinations_list(identifier.instruments):
             for band in strings.case_combinations_list(identifier.bands, also_one_letter=False):
 
-                for string in strings.generate_from_two_parts(instrument, band): yield string
+                for string in strings.generate_from_two_parts(instrument, band, also_reverse=True): yield string
                 for string in strings.generate_from_two_parts("the " + instrument, band + "-band"): yield string
                 for string in strings.generate_from_two_parts("the " + instrument, band + " band"): yield string
 
@@ -296,7 +304,7 @@ def generate_aliases(identifier):
         for observatory in strings.case_combinations_list(identifier.observatories):
             for band in strings.case_combinations_list(identifier.bands, also_one_letter=False):
 
-                for string in strings.generate_from_two_parts(observatory, band): yield string
+                for string in strings.generate_from_two_parts(observatory, band, also_reverse=True): yield string
                 for string in strings.generate_from_two_parts("the " + observatory, band + "-band"): yield string
                 for string in strings.generate_from_two_parts("the " + observatory, band + "-band"): yield string
 
@@ -350,7 +358,7 @@ def generate_aliases(identifier):
         for survey in strings.case_combinations_list(identifier.surveys):
             for band in strings.case_combinations_list(identifier.bands, also_one_letter=False):
 
-                for string in strings.generate_from_two_parts(survey, band): yield string
+                for string in strings.generate_from_two_parts(survey, band, also_reverse=True): yield string
                 for string in strings.generate_from_two_parts("the " + survey, band + "-band"): yield string
                 for string in strings.generate_from_two_parts("the " + survey, band + " band"): yield string
 

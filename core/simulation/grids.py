@@ -39,7 +39,35 @@ def load_grid(path):
 
 # -----------------------------------------------------------------
 
+mesh_types = ["linear", "power", "symmetric_power", "logarithmic"]
+
+# -----------------------------------------------------------------
+
 class DustGrid(SimplePropertyComposite):
+
+    """
+    This function ...
+    """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
+    def __init__(self):
+
+        """
+        The constructor ...
+        """
+
+        # Call the constructor of the base class
+        super(DustGrid, self).__init__()
+
+        # Define properties
+        self.add_property("write", "boolean", "write grid", True)
+
+# -----------------------------------------------------------------
+
+class DustGrid3D(DustGrid):
 
     """
     This class ...
@@ -65,11 +93,10 @@ class DustGrid(SimplePropertyComposite):
         self.add_property("max_y", "quantity", "maximum y")
         self.add_property("min_z", "quantity", "minimum z")
         self.add_property("max_z", "quantity", "maximum z")
-        self.add_property("write", "boolean", "write grid", True)
 
 # -----------------------------------------------------------------
 
-class BinaryTreeDustGrid(DustGrid):
+class BinaryTreeDustGrid(DustGrid3D):
 
     """
     This class ...
@@ -100,7 +127,7 @@ class BinaryTreeDustGrid(DustGrid):
 
 # -----------------------------------------------------------------
 
-class OctTreeDustGrid(DustGrid):
+class OctTreeDustGrid(DustGrid3D):
 
     """
     This class ...
@@ -131,7 +158,7 @@ class OctTreeDustGrid(DustGrid):
 
 # -----------------------------------------------------------------
 
-class CartesianDustGrid(DustGrid):
+class CartesianDustGrid(DustGrid3D):
 
     """
     This class ...
@@ -153,6 +180,65 @@ class CartesianDustGrid(DustGrid):
         self.add_property("z_bins", "positive_integer", "number of z bins")
         self.add_property("mesh_type", "string", "mesh type", "linear")
         self.add_property("ratio", "real", "ratio", 1.)
+
+        # Set properties
+        self.set_properties(kwargs)
+
+# -----------------------------------------------------------------
+
+class DustGrid2D(DustGrid):
+
+    """
+    This class ...
+    """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
+    def __init__(self):
+
+        """
+        The constructor ...
+        """
+
+        # Call the constructor of the base class
+        super(DustGrid, self).__init__()
+
+# -----------------------------------------------------------------
+
+class CylindricalGrid(DustGrid):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, **kwargs):
+
+        """
+        The constructor ...
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(CylindricalGrid, self).__init__()
+
+        # Add properties
+        self.add_property("max_r", "quantity", "maximum radius")
+        self.add_property("min_z", "quantity", "minimum z")
+        self.add_property("max_z", "quantity", "maximum z")
+        self.add_property("nbins_r", "positive_integer", "number of bins in the radial direction")
+        self.add_property("nbins_z", "positive_integer", "number of bins in the axial direction")
+
+        # Specific
+        self.add_property("type_r", "string", "type of mesh in radial direction", choices=mesh_types)
+        self.add_property("type_z", "string", "type of mesh in axial direction", choices=mesh_types)
+
+        self.add_property("central_bin_fraction_r", "real", "central bin fraction in radial direction (for log mesh)")
+        self.add_property("central_bin_fraction_z", "real", "central bin fraction in axial direction (for log mesh)")
+
+        self.add_property("ratio_r", "real", "ratio in radial direction (for symmetric_power mesh)")
+        self.add_property("ratio_z", "real", "ratio in axial direction (for symmetric_power mesh")
 
         # Set properties
         self.set_properties(kwargs)

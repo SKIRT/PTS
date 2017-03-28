@@ -57,6 +57,9 @@ class ModelerBase(Configurable):
         # The path to the modeling directory
         self.modeling_path = None
 
+        # The modeling environment
+        self.environment = None
+
         # The modeling configuration
         self.modeling_config = None
 

@@ -40,6 +40,7 @@ from ..component.galaxy import get_galaxy_properties_path, get_data_seds_path, g
 from ...core.tools import filesystem as fs
 from ...core.filter.filter import parse_filter
 from ...magic.core.image import Image
+from ..core.environment import GalaxyModelingEnvironment
 
 # -----------------------------------------------------------------
 
@@ -183,6 +184,12 @@ class GalaxyModeler(ModelerBase):
         :return:
         """
 
+        # Call the setup function of the base class
+        super(GalaxyModeler, self).setup(**kwargs)
+
+        # Load the modeling environment
+        self.environment = GalaxyModelingEnvironment(self.modeling_path)
+
         # Get arguments
         self.properties = kwargs.pop("properties", None)
         self.seds = kwargs.pop("seds", None)
@@ -191,9 +198,6 @@ class GalaxyModeler(ModelerBase):
         # Bulge and disk model
         self.bulge_model = kwargs.pop("bulge_model", None)
         self.disk_model = kwargs.pop("disk_model", None)
-
-        # Call the setup function of the base class
-        super(GalaxyModeler, self).setup(**kwargs)
 
         # Check whether a remote is available for the heavy computations
         if self.moderator.host_id_for_single("other") is None: raise RuntimeError("The desired remote(s) for heavy computations are currently unavailable")

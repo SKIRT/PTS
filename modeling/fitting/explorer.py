@@ -307,8 +307,20 @@ class ParameterExplorer(FittingComponent):
 
         ## Miscellaneous
         self.launcher.config.analysis.misc.path = "misc"       # name of the misc output directory
-        self.launcher.config.analysis.misc.fluxes = True       # calculate observed fluxes
+        if self.is_images_modeling:
+            self.launcher.config.analysis.misc.fluxes = False
+            self.launcher.config.analysis.misc.images = True
+            self.launcher.config.analysis.misc.images_wcs = get_images_header_path(self.config.path)
+            self.launcher.config.analysis.misc.images_unit = "Jy"
+            self.launcher.config.analysis.misc.images_kernels = None
+            self.launcher.config.analysis.misc.rebin_wcs = None
+        else:
+            self.launcher.config.analysis.misc.fluxes = True       # calculate observed fluxes
+            self.launcher.config.analysis.misc.images = False
+        # observation_filters
         self.launcher.config.analysis.misc.observation_filters = self.observed_filter_names
+        # observation_instruments
+        self.launcher.config.analysis.misc.observation_instruments = [self.earth_instrument_name]
 
         # Set spectral convolution flag
         self.launcher.config.analysis.misc.spectral_convolution = self.fitting_run.fitting_configuration.spectral_convolution
@@ -317,7 +329,8 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.analysis.modeling_path = self.config.path
 
         # Set analyser classes
-        self.launcher.config.analysers = ["pts.modeling.fitting.modelanalyser.FitModelAnalyser"]
+        if self.is_images_modeling: self.launcher.config.analysers = ["pts.modeling.fitting.modelanalyser.SEDFitModelAnalyser"]
+        else: self.launcher.config.analysers = ["pts.modeling.fitting.modelanalyser.ImagesFitModelAnalyser"]
 
     # -----------------------------------------------------------------
 

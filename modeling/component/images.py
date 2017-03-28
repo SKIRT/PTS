@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.component.sed Contains the SEDModelingComponent class.
+## \package pts.modeling.component.sed Contains the ImagesModelingComponent class.
 
 # -----------------------------------------------------------------
 
@@ -16,18 +16,19 @@ from __future__ import absolute_import, division, print_function
 from abc import ABCMeta
 
 # Import astronomical modules
+from astropy.io.fits import Header
 from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from .component import ModelingComponent
 from ...core.tools import filesystem as fs
 from ...core.simulation.skifile import LabeledSkiFile
-from ...core.data.sed import ObservedSED
-from ..core.environment import SEDModelingEnvironment
+from ...magic.basics.coordinatesystem import CoordinateSystem
+from ..core.environment import ImagesModelingEnvironment
 
 # -----------------------------------------------------------------
 
-class SEDModelingComponent(ModelingComponent):
+class ImagesModelingComponent(ModelingComponent):
     
     """
     This class...
@@ -47,7 +48,7 @@ class SEDModelingComponent(ModelingComponent):
         """
 
         # Call the constructor of the base class
-        super(SEDModelingComponent, self).__init__(config, interactive)
+        super(ImagesModelingComponent, self).__init__(config, interactive)
 
     # -----------------------------------------------------------------
 
@@ -59,25 +60,38 @@ class SEDModelingComponent(ModelingComponent):
         """
 
         # Call the setup function of the base class
-        super(SEDModelingComponent, self).setup()
+        super(ImagesModelingComponent, self).setup()
 
         # Load the environment
-        self.environment = SEDModelingEnvironment(self.config.path)
+        self.environment = ImagesModelingEnvironment(self.config.path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def images_header(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Header.fromtextfile(self.environment.images_header_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def images_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return CoordinateSystem.from_file(self.environment.images_header_path)
 
 # -----------------------------------------------------------------
 
-def get_observed_sed_file_path(modeling_path):
-
-    """
-    This function ...
-    :return:
-    """
-
-    return fs.join(modeling_path, "sed.dat")
-
-# -----------------------------------------------------------------
-
-def get_observed_sed(modeling_path):
+def get_images_path(modeling_path):
 
     """
     This function ...
@@ -85,11 +99,11 @@ def get_observed_sed(modeling_path):
     :return:
     """
 
-    return ObservedSED.from_file(get_observed_sed_file_path(modeling_path))
+    return fs.join(modeling_path, "images")
 
 # -----------------------------------------------------------------
 
-def get_sed_plot_path(modeling_path):
+def get_images_paths(modeling_path):
 
     """
     This function ...
@@ -97,7 +111,43 @@ def get_sed_plot_path(modeling_path):
     :return:
     """
 
-    return fs.join(modeling_path, "sed.pdf")
+    return fs.files_in_path(get_images_path(modeling_path), extension="fits")
+
+# -----------------------------------------------------------------
+
+def get_images_header_path(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return fs.join(get_images_path(modeling_path), "header.txt")
+
+# -----------------------------------------------------------------
+
+def get_images_header(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return Header.fromtextfile(modeling_path)
+
+# -----------------------------------------------------------------
+
+def get_images_wcs(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return CoordinateSystem.from_file(get_images_header_path(modeling_path))
 
 # -----------------------------------------------------------------
 

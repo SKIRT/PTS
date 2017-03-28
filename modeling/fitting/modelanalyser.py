@@ -68,7 +68,7 @@ class FluxDifferencesTable(SmartTable):
 
 # -----------------------------------------------------------------
 
-class FitModelAnalyser(FittingComponent):
+class SEDFitModelAnalyser(FittingComponent):
 
     """
     This class ...
@@ -84,7 +84,7 @@ class FitModelAnalyser(FittingComponent):
         """
 
         # Call the constructor of the base class
-        super(FitModelAnalyser, self).__init__(config, interactive)
+        super(SEDFitModelAnalyser, self).__init__(config, interactive)
 
         # -- Attributes --
 
@@ -193,7 +193,7 @@ class FitModelAnalyser(FittingComponent):
         """
 
         # Call the setup function of the base class
-        super(FitModelAnalyser, self).setup(**kwargs)
+        super(SEDFitModelAnalyser, self).setup(**kwargs)
 
         # Get a reference to the flux calculator
         simulationanalyser = kwargs.pop("simulation_analyser")
@@ -396,5 +396,207 @@ class FitModelAnalyser(FittingComponent):
 
         # Save the table
         self.chi_squared_table.save()
+
+# -----------------------------------------------------------------
+
+class ImageResidualsTable(SmartTable):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(ImageResidualsTable, self).__init__(*args, **kwargs)
+
+        # Add column info
+        self.add_column_info("Instrument", str, None, "Instrument")
+        self.add_column_info("Band", str, None, "Band")
+        self.add_column_info("Mean relative difference", float, None, "mean relative residual")
+        self.add_column_info("Median relative difference", float, None, "median relative residual")
+        self.add_column_info("Standard deviation of relative difference", float, None, "standard deviation of relative residual")
+        self.add_column_info("Chi squared term", float, None, "Chi squared term")
+
+    # -----------------------------------------------------------------
+
+    def add_entry(self, instrument, band, mean, median, standard_deviation, chi_squared_term):
+
+        """
+        This function ...
+        :param instrument:
+        :param band:
+        :param mean:
+        :param median:
+        :param standard_deviation:
+        :param chi_squared_term
+        :return:
+        """
+
+        self.add_row([instrument, band, mean, median, standard_deviation, chi_squared_term])
+
+# -----------------------------------------------------------------
+
+class ImagesFitModelAnalyser(FittingComponent):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, config=None, interactive=False):
+
+        """
+        This function ...
+        :param config:
+        :param interactive:
+        """
+
+        # Call the constructor of the base class
+        super(ImagesFitModelAnalyser, self).__init__(config, interactive)
+
+        # -- Attributes --
+
+        # The simulation object
+        self.simulation = None
+
+        # The fitting run
+        self.fitting_run = None
+
+        # The name of the generation
+        self.generation_name = None
+
+        # The observed image maker
+        self.image_maker = None
+
+        # -----------------------------------------------------------------
+
+    @classmethod
+    def for_simulation(cls, simulation):
+        """
+        This function ...
+        :param simulation:
+        :return:
+        """
+
+        # Create the instance
+        analyser = cls()
+
+        # Set the modeling path as the working path for this class
+        analyser.config.path = simulation.analysis.modeling_path
+
+        # Set the task
+        analyser.simulation = simulation
+
+        # Return the instance
+        return analyser
+
+    # -----------------------------------------------------------------
+
+    def run(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # 1. Call the setup function
+        self.setup(**kwargs)
+
+        # 4. Calculate the residual maps
+        self.calculate_residuals()
+
+        # 5. Calculate the chi squared for this model
+        self.calculate_chi_squared()
+
+        # 6. Load the chi squared table
+        self.load_chi_squared_table()
+
+        # 7. Update the status of the generation if necessary
+        self.update_generation()
+
+        # 8. Write
+        self.write()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+
+    def calculate_residuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the residual maps of the observed and simulated images ...")
+
+        # In the flux-density tables derived from the simulation (created by the ObservedFluxCalculator object),
+        # search the one corresponding to the "earth" instrument
+        mock_sed_name = self.object_name + "_earth"
+        if mock_sed_name not in self.flux_calculator.mock_seds: raise RuntimeError("Could not find a mock observation SED for the 'earth' instrument")
+
+        # Get the mock SED
+        mock_sed = self.flux_calculator.mock_seds[mock_sed_name]
+
+        # Loop over the entries in the fluxdensity table (SED) derived from the simulation
+        for i in range(len(mock_sed)):
+            # Get instrument, band and flux density
+            instrument = mock_sed["Instrument"][i]
+            band = mock_sed["Band"][i]
+            fluxdensity = mock_sed["Photometry"][i]
+
+            # Find the corresponding flux in the SED derived from observation
+            observed_fluxdensity = self.observed_sed.photometry_for_band(instrument, band, unit="Jy").value
+
+    # -----------------------------------------------------------------
+
+    def calculate_chi_squared(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def load_chi_squared_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def update_generation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
 
 # -----------------------------------------------------------------

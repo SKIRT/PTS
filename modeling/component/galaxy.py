@@ -31,6 +31,7 @@ from ..basics.properties import GalaxyProperties
 from ...core.tools.logging import log
 from ...magic.prepare.batch import PreparationStatistics
 from .component import ModelingComponent
+from ..core.environment import GalaxyModelingEnvironment
 
 # -----------------------------------------------------------------
 
@@ -125,12 +126,6 @@ class GalaxyModelingComponent(ModelingComponent):
         # The path to the preparation statistics file
         self.preparation_statistics_path = None
 
-        # Paths to input maps
-        #self.old_stellar_map_path = None
-        #self.young_stellar_map_path = None
-        #self.ionizing_stellar_map_path = None
-        #self.dust_map_path = None
-
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -144,6 +139,9 @@ class GalaxyModelingComponent(ModelingComponent):
         super(GalaxyModelingComponent, self).setup(**kwargs)
 
         # -- Attributes --
+
+        # We can now safely create the environment
+        self.environment = GalaxyModelingEnvironment(self.config.path)
 
         # Get the name of the galaxy (the name of the base directory)
         self.galaxy_name = fs.name(self.config.path)
@@ -190,9 +188,6 @@ class GalaxyModelingComponent(ModelingComponent):
         # Set the path to the truncation/masks directory
         self.truncation_masks_path = fs.create_directory_in(self.truncation_path, "masks")
 
-        # The path to the truncation mask of the reference image (and rebinned images in the dataset)
-        #self.reference_mask_path = fs.join(self.truncation_masks_path, "reference.fits")
-
         # Set ...
         self.data_seds_path = fs.create_directory_in(self.data_path, "SEDs")
 
@@ -213,12 +208,6 @@ class GalaxyModelingComponent(ModelingComponent):
 
         # Set the path to the preparation statistics file
         self.preparation_statistics_path = fs.join(self.prep_path, "statistics.dat")
-
-        # Set the paths to input maps
-        #self.old_stellar_map_path = fs.join(self.environment.input_path, "old_stars.fits")
-        #self.young_stellar_map_path = fs.join(self.environment.input_path, "young_stars.fits")
-        #self.ionizing_stellar_map_path = fs.join(self.environment.input_path, "ionizing_stars.fits")
-        #self.dust_map_path = fs.join(self.environment.input_path, "dust.fits")
 
     # -----------------------------------------------------------------
 

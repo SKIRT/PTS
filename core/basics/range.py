@@ -23,6 +23,7 @@ from astropy.units import Quantity
 # Import the relevant PTS classes and modules
 from .unit import parse_unit as u
 from .unit import represent_unit as ru
+from .quantity import parse_quantity
 
 # -----------------------------------------------------------------
 
@@ -538,6 +539,10 @@ class QuantityRange(Range):
         :param invert:
         :param rearrange:
         """
+
+        # Convert strings
+        if isinstance(min_value, basestring): min_value = parse_quantity(min_value)
+        if isinstance(max_value, basestring): max_value = parse_quantity(max_value)
 
         # Convert everything so that min_value and max_value are floats in the same unit, and so that 'unit' is the corresponding Unit
         min_is_quantity = hasattr(min_value, "unit")

@@ -35,7 +35,8 @@ def stringify(value, scientific=False, decimal_places=2):
     # List or derived from list
     if isinstance(value, list):
 
-        if len(value) == 0: raise ValueError("Cannot stringify an empty list")
+        #if len(value) == 0: raise ValueError("Cannot stringify an empty list")
+        if len(value) == 0: return "list", ""
 
         strings = []
         ptype = None
@@ -71,7 +72,8 @@ def stringify(value, scientific=False, decimal_places=2):
     # Dictionary
     if isinstance(value, dict):
 
-        if len(value) == 0: raise ValueError("Cannot stringify an empty dictionary")
+        #if len(value) == 0: raise ValueError("Cannot stringify an empty dictionary")
+        if len(value) == 0: return "dictionary", ""
 
         keytype = None
         ptype = None
@@ -186,6 +188,9 @@ def stringify_not_list(value, scientific=False, decimal_places=2):
     elif introspection.lazy_isinstance(value, "SkyStretch", "pts.magic.basics.stretch"): return "skystretch", repr(value.ra.value) + " " + str(value.ra.unit) + "," + repr(value.dec.value) + " " + str(value.dec.unit)
     elif introspection.lazy_isinstance(value, "NarrowBandFilter", "pts.core.filter.narrow"): return "narrow_band_filter", str(value)
     elif introspection.lazy_isinstance(value, "BroadBandFilter", "pts.core.filter.broad"): return "broad_band_filter", str(value)
+
+    # Other
+    #elif introspection.isinstance(Instrument):
 
     else: raise ValueError("Unrecognized type: " + str(type(value)))
 
