@@ -32,14 +32,18 @@ class SimulationInput(object):
         :param kwargs:
         """
 
+        # Dictionary of filepaths
         self.paths = dict()
+
+        # Relative directory names
+        self.relative_directories = []
 
         # Add args
         for arg in args:
 
             if fs.is_file(arg): self.add_file(arg)
             elif fs.is_directory(arg): self.add_directory(arg)
-            else: raise IOError("The file or directory '" + arg + "' does not exist")
+            else: self.add_relative_directory(arg) # probably a relative directory (e.g. 'in')  #raise IOError("The file or directory '" + arg + "' does not exist")
 
         # Add kwargs
         for name in kwargs:
@@ -157,6 +161,18 @@ class SimulationInput(object):
 
     # -----------------------------------------------------------------
 
+    def add_relative_directory(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        self.relative_directories.append(name)
+
+    # -----------------------------------------------------------------
+
     @property
     def is_scattered(self):
 
@@ -207,6 +223,11 @@ class SimulationInput(object):
         This function ...
         :return:
         """
+
+        # If just a relative directory name is given, e.g. 'in'
+        if len(self.relative_directories) > 0 and len(self.paths) == 0:
+            assert len(self.relative_directories) == 1
+            return self.relative_directories[0]
 
         # Not scattered and filenames match their paths
         if not self.is_scattered and self.matching_filenames:
