@@ -24,7 +24,6 @@ from pts.core.tools.logging import log
 from pts.modeling.basics.models import load_3d_model
 from pts.modeling.basics.properties import GalaxyProperties
 from pts.magic.core.frame import Frame
-from pts.modeling.basics.instruments import SEDInstrument
 from pts.core.filter.broad import BroadBandFilter
 from pts.magic.basics.coordinatesystem import CoordinateSystem
 from pts.core.simulation.skifile import SkiFile
@@ -33,7 +32,7 @@ from pts.core.plot.wavelengthgrid import WavelengthGridPlotter
 from pts.core.plot.transmission import TransmissionPlotter
 from pts.modeling.basics.models import load_2d_model
 from pts.modeling.modeling.galaxy import fitting_filter_names
-from pts.core.basics.quantity import parse_quantity, PhotometricQuantity
+from pts.core.basics.quantity import PhotometricQuantity
 from pts.core.prep.wavelengthgrids import WavelengthGridGenerator
 from pts.core.prep.dustgrids import DustGridGenerator
 from pts.core.basics.quantity import parse_quantity
@@ -43,6 +42,7 @@ from pts.core.basics.unit import parse_unit as u
 from pts.core.tools import sequences, parsing, stringify
 from pts.modeling.config.parameters import parsing_types_for_parameter_types
 from pts.modeling.config.parameters import default_units
+from pts.core.remote.moderator import PlatformModerator
 
 # -----------------------------------------------------------------
 
@@ -163,11 +163,7 @@ default_free_parameters = ["dust_mass", "fuv_young", "fuv_ionizing"]
 
 # Define the free parameter types
 free_parameter_types = dict()
-# Parsing types
-#free_parameter_types["dust_mass"] = "mass_quantity"
-#free_parameter_types["fuv_young"] = "photometric_quantity"
-#free_parameter_types["fuv_ionizing"] = "photometric_quantity"
-#free_parameter_types["distance"] = "length_quantity"
+
 # Parameter types
 free_parameter_types["dust_mass"] = "mass"
 free_parameter_types["fuv_young"] = "spectral luminosity density"
@@ -231,6 +227,9 @@ class M81TestBase(TestImplementation):
 
         # Call the constructor of the base class
         super(M81TestBase, self).__init__(config, interactive)
+
+        # The platform moderator
+        self.moderator = None
 
         # The galaxy properties
         self.properties = None
@@ -398,6 +397,35 @@ class M81TestBase(TestImplementation):
 
         # Determine the path to the wavelength grid file
         self.wavelength_grid_path = fs.join(self.simulation_input_path, reference_wavelength_grid_filename)
+
+        # Set the execution platforms
+        self.set_platforms()
+
+    # -----------------------------------------------------------------
+
+    def set_platforms(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Determining execution platforms ...")
+
+        # Setup the platform moderator
+        self.moderator = PlatformModerator()
+
+        # Set platform for the reference simulation
+        if self.config.host_ids is None: self.moderator.add_local("reference")
+        else: self.moderator.add_single("reference", self.config.host_ids)
+
+        # Set platform(s) for fitting (simulations)
+        if self.config.host_ids is None: self.moderator.add_local("fitting")
+        else: self.moderator.add_ensemble("fitting", self.config.host_ids)
+
+        # Run the moderator
+        self.moderator.run()
 
     # -----------------------------------------------------------------
 

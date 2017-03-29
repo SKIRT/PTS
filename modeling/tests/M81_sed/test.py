@@ -143,10 +143,10 @@ class M81SEDTest(M81TestBase):
         # 18. Model
         self.model()
 
-        # legmegekge
+        # Get best parameter values
         self.get_best_parameter_values()
 
-        # gegjepgoeg
+        # Test
         self.test()
 
     # -----------------------------------------------------------------
@@ -243,7 +243,7 @@ class M81SEDTest(M81TestBase):
         settings_launch["input"] = self.simulation_input_path
         settings_launch["output"] = self.simulation_output_path
         settings_launch["create_output"] = True
-        #settings_launch["remote"] = self.host_id
+        settings_launch["remote"] = self.moderator.host_id_for_single("reference")
         settings_launch["attached"] = True
         settings_launch["progress_bar"] = True
 
@@ -506,7 +506,7 @@ class M81SEDTest(M81TestBase):
         settings_setup = dict()
         settings_setup["type"] = "sed"
         settings_setup["name"] = self.galaxy_name
-        settings_setup["fitting_host_ids"] = None
+        settings_setup["fitting_host_ids"] = self.moderator.host_ids_for_ensemble("fitting")
 
         # Create input dict for setup
         input_setup = dict()

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.basics.utils Contains remote utilities.
+## \package pts.core.tools.utils Contains utilities.
 
 # -----------------------------------------------------------------
 
@@ -14,19 +14,11 @@ from __future__ import absolute_import, division, print_function
 
 # -----------------------------------------------------------------
 
-class HostDownException(Exception):
+class UserIntervention(Exception):
 
     """
-    This exception should be raised when connection to a host is not possible because it is temporarily down
+    This exception should be called when user intervention / inspection is required and therefore
+    the execution should be halted or aborted.
     """
-
-# -----------------------------------------------------------------
-
-class DetachedCalculation(Exception):
-        
-   """
-   This exception should be raised when the calculation is continued remotely in detached mode, so that the
-   algorithm should be pauzed/aborted and its state saved.
-   """
 
 # -----------------------------------------------------------------

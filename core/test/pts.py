@@ -15,7 +15,6 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import imp
 from collections import defaultdict
-from types import FunctionType
 
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
@@ -27,6 +26,7 @@ from .imports import ImportsChecker
 from .test import PTSTest
 from ..tools import time
 from ..tools import stringify
+from ..remote.utils import DetachedCalculation
 
 # -----------------------------------------------------------------
 
@@ -456,7 +456,8 @@ class PTSTestSuite(Configurable):
                 log.start("Starting test '" + test.name + "' ...")
 
                 # Run the test
-                test.run()
+                try: test.run()
+                except DetachedCalculation: test.save()
 
     # -----------------------------------------------------------------
 
