@@ -2188,7 +2188,11 @@ def add_settings_from_dict(config, definition, dictionary):
     # Fixed
     for name in definition.fixed:
 
+        # Get properties
+        description = definition.fixed[name].description
         value = definition.fixed[name].value
+
+        # Set the value in the config
         config[name] = value
 
     # Required
@@ -2196,18 +2200,28 @@ def add_settings_from_dict(config, definition, dictionary):
 
         if not name in dictionary: raise ValueError("The option '" + name + "' is not specified in the configuration dictionary")
 
+        # Get properties
+        real_type = definition.required[name].type
+        description = definition.required[name].description
         choices = definition.required[name].choices
+        dynamic_list = definition.required[name].dynamic_list
+        suggestions = definition.required[name].suggestions
+        min_value = definition.required[name].min_value
+        max_value = definition.required[name].max_value
+        forbidden = definition.required[name].forbidden
 
         # Get the value specified in the dictionary
-        #value = dictionary[name]
         value = dict_that_is_emptied.pop(name)
 
-        # TODO: check type?
-
-        # Check with choices
-        if choices is not None:
-            choices_string = str(choices.keys()) if isinstance(choices, dict) else str(choices)
-            if value not in choices: raise ValueError("The value of '" + str(value) + "' for the option '" + name + "' is not valid: choices are: " + choices_string)
+        # Checks
+        check_list(name, value, real_type)
+        check_tuple(name, value, real_type)
+        check_dictionary(name, value, real_type)
+        check_type(name, value, real_type)
+        check_forbidden(name, value, real_type, forbidden)
+        check_min(name, value, real_type, min_value)
+        check_max(name, value, real_type, max_value)
+        check_choices(name, value, real_type, choices)
 
         # Set the value
         config[name] = value
@@ -2216,21 +2230,33 @@ def add_settings_from_dict(config, definition, dictionary):
     for name in definition.pos_optional:
 
         # Get properties
+        real_type = definition.pos_optional[name].type
+        description = definition.pos_optional[name].description
         default = definition.pos_optional[name].default
         choices = definition.pos_optional[name].choices
+        dynamic_list = definition.pos_optional[name].dynamic_list
+        suggestions = definition.pos_optional[name].suggestions
+        min_value = definition.pos_optional[name].min_value
+        max_value = definition.pos_optional[name].max_value
+        forbidden = definition.pos_optional[name].forbidden
 
         # Check if this option is specified in the dictionary
         if name in dictionary:
 
-            #value = dictionary[name]
+            # Get the value
             value = dict_that_is_emptied.pop(name)
 
-            # TODO: check type?
+            if value is not None:
 
-            # Check with choices
-            if value is not None and choices is not None:
-                choices_string = str(choices.keys()) if isinstance(choices, dict) else str(choices)
-                if value not in choices: raise ValueError("The value of '" + str(value) + "' for the option '" + name + "' is not valid: choices are: " + choices_string)
+                # Checks
+                check_list(name, value, real_type)
+                check_tuple(name, value, real_type)
+                check_dictionary(name, value, real_type)
+                check_type(name, value, real_type)
+                check_forbidden(name, value, real_type, forbidden)
+                check_min(name, value, real_type, min_value)
+                check_max(name, value, real_type, max_value)
+                check_choices(name, value, real_type, choices)
 
         # Use the default value otherwise
         else: value = default
@@ -2242,21 +2268,34 @@ def add_settings_from_dict(config, definition, dictionary):
     for name in definition.optional:
 
         # Get properties
+        real_type = definition.optional[name].type
+        description = definition.optional[name].description
         default = definition.optional[name].default
         choices = definition.optional[name].choices
+        letter = definition.optional[name].letter
+        dynamic_list = definition.optional[name].dynamic_list
+        suggestions = definition.optional[name].suggestions
+        min_value = definition.optional[name].min_value
+        max_value = definition.optional[name].max_value
+        forbidden = definition.optional[name].forbidden
 
         # Check if this option is specified in the dictionary
         if name in dictionary:
 
-            #value = dictionary[name]
+            # Get the value
             value = dict_that_is_emptied.pop(name)
 
-            # TODO: check type?
+            if value is not None:
 
-            # Check with choices
-            if value is not None and choices is not None:
-                choices_string = str(choices.keys()) if isinstance(choices, dict) else str(choices)
-                if value not in choices: raise ValueError("The value of '" + str(value) + "' for the option '" + name + "' is not valid: choices are: " + choices_string)
+                # Checks
+                check_list(name, value, real_type)
+                check_tuple(name, value, real_type)
+                check_dictionary(name, value, real_type)
+                check_type(name, value, real_type)
+                check_forbidden(name, value, real_type, forbidden)
+                check_min(name, value, real_type, min_value)
+                check_max(name, value, real_type, max_value)
+                check_choices(name, value, real_type, choices)
 
         # Use the default value otherwise
         else: value = default
@@ -2268,7 +2307,6 @@ def add_settings_from_dict(config, definition, dictionary):
     for name in definition.flags:
 
         # Get properties
-        #letter = definition.flags[name].letter
         default = definition.flags[name].default  # True or False
 
         # Check if this option is specified in the dictionary
@@ -2297,6 +2335,222 @@ def add_settings_from_dict(config, definition, dictionary):
 
     # Add leftover settings
     add_nested_dict_values_to_map(config, dict_that_is_emptied)
+
+# -----------------------------------------------------------------
+
+def check_list(name, value, real_type):
+
+    """
+    This function ...
+    :param name:
+    :param value:
+    :param real_type:
+    :return:
+    """
+
+    # For lists: check here
+    # List-type setting
+    if real_type.__name__.endswith("_list") and not isinstance(value, list): raise ValueError("The option '" + name + "' must be a list")
+
+# -----------------------------------------------------------------
+
+def check_tuple(name, value, real_type):
+
+    """
+    This function ...
+    :param name:
+    :param value:
+    :param real_type:
+    :return:
+    """
+
+    # For tuples: check here
+    if real_type.__name__.endswith("_tuple") and not isinstance(value, tuple): raise ValueError("The option '" + name + "' must be a tuple")
+
+# -----------------------------------------------------------------
+
+def check_dictionary(name, value, real_type):
+
+    """
+    This function ...
+    :param name:
+    :param value:
+    :param real_type:
+    :return:
+    """
+
+    # For dictionaries: check here
+    if real_type.__name__.endswith("_dictionary") and not isinstance(value, dict): raise ValueError("The option '" + name + "' must be a dictionary")
+
+# -----------------------------------------------------------------
+
+def check_type(name, value, real_type):
+
+    """
+    This function ...
+    :param name:
+    :param value:
+    :param real_type:
+    :return:
+    """
+
+    # TODO: Use derived and related types to check the type of the given value
+
+    # List-type setting
+    #if real_type.__name__.endswith("_list"):
+    #    pass
+
+    # Single-value setting
+    #else:
+    #    pass
+
+    return
+
+# -----------------------------------------------------------------
+
+def check_forbidden(name, value, real_type, forbidden):
+
+    """
+    This function ...
+    :param name:
+    :param value:
+    :param real_type:
+    :param forbidden:
+    :return:
+    """
+
+    # Check forbidden
+    if forbidden is None: return
+
+    # Check whether forbidden is a list
+    if not isinstance(forbidden, list): raise ValueError("Forbidden values for '" + name + "' must be a list")
+
+    # List-type setting
+    if real_type.__name__.endswith("_list"):
+
+        # Loop over the entries
+        for entry in value:
+            if entry in forbidden: raise ValueError("The value '" + stringify.stringify(entry)[1] + "' in '" + name + "' is forbidden")
+
+    # Single-value type setting
+    else:
+
+        if value in forbidden: raise ValueError("The value '" + stringify.stringify(value)[1] + " for '" + name + "' is forbidden")
+
+# -----------------------------------------------------------------
+
+def check_min(name, value, real_type, min_value):
+
+    """
+    This function ...
+    :param name:
+    :param value:
+    :param real_type:
+    :param min_value:
+    :return:
+    """
+
+    # Check min
+    if min_value is not None:
+
+        # List type setting
+        if real_type.__name__.endswith("_list"):
+
+            # Loop over the entries
+            for entry in value:
+
+                if entry < min_value: raise ValueError("The value '" + stringify.stringify(entry)[1] + "' for '" + name + "' is too low: minimum value is '" + stringify.stringify(min_value)[1] + "'")
+
+        # Single-value type setting
+        else:
+
+            if value < min_value: raise ValueError("The value '" + stringify.stringify(value)[1] + "' for '" + name + "' is too low: minimum value is '" + stringify.stringify(min_value)[1] + "'")
+
+# -----------------------------------------------------------------
+
+def check_max(name, value, real_type, max_value):
+
+    """
+    This function ...
+    :param name:
+    :param value:
+    :param real_type:
+    :param max_value:
+    :return:
+    """
+
+    if max_value is not None:
+
+        # List type setting
+        if real_type.__name__.endswith("_list"):
+
+            # Loop over the entries
+            for entry in value:
+
+                if entry > max_value: raise ValueError("The value '" + stringify.stringify(entry)[1] + "' for '" + name + "' is too high: maximum value is '" + stringify.stringify(max_value)[1] + "'")
+
+        # Single-value type setting
+        else:
+
+            if value > max_value: raise ValueError("The value '" + stringify.stringify(value)[1] + "' for '" + name + "' is too high: maximum value is '" + stringify.stringify(max_value)[1] + "'")
+
+# -----------------------------------------------------------------
+
+def check_choices(name, value, real_type, choices):
+
+    """
+    This function ...
+    :param name:
+    :param value:
+    :param real_type:
+    :param choices:
+    :return:
+    """
+
+    # No choices
+    if choices is None: return
+
+    # Check that choices is list
+    if not isinstance(choices, list) and not isinstance(choices, dict): raise ValueError("Choices for '" + name + "' must be a list")
+
+    # More than one choice
+    if len(choices) > 1:
+
+        # Convert the choices into a string
+        choices_string = stringify.stringify(choices.keys())[1] if isinstance(choices, dict) else stringify.stringify(choices)[1]
+
+        # Check whether the given value matches the allowed choices
+
+        # List-type setting
+        if real_type.__name__.endswith("_list"):  # list-type setting
+
+            # Loop over the entries in the given list
+            for entry in value:
+
+                # Check whether each entry appears in the choices
+                if entry not in choices: raise ValueError("The value '" + stringify.stringify(entry)[1] + "' in '" + name + "' is not valid, choices are: '" + choices_string + "'")
+
+        # Single-value setting and not None
+        else:
+            if value not in choices: raise ValueError("The value '" + stringify.stringify(value)[1] + "' for the option '" + name + "' is not valid, choices are: '" + choices_string + "'")
+
+    # Exactly one choice
+    else:
+
+        # List-type setting
+        if real_type.__name__.endswith("_list"):  # list-type setting
+
+            if isinstance(choices, dict): exact_value = [choices.keys()[0]]
+            else: exact_value = [choices[0]]
+
+        # Single-value setting
+        else:
+
+            if isinstance(choices, dict): exact_value = choices.keys()[0]
+            else: exact_value = choices[0]
+
+        # Check with the value that the only exact choice
+        if value != exact_value: raise ValueError("The value '" + stringify.stringify(value)[1] + "' for '" + name + "' is not valid: only allowed option is '" + stringify.stringify(exact_value)[1] + "'")
 
 # -----------------------------------------------------------------
 

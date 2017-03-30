@@ -84,7 +84,7 @@ class DustGrid3D(DustGrid):
         """
 
         # Call the constructor of the base class
-        super(DustGrid, self).__init__()
+        super(DustGrid3D, self).__init__()
 
         # Define properties
         self.add_property("min_x", "quantity", "minimum x")
@@ -203,7 +203,7 @@ class DustGrid2D(DustGrid):
         """
 
         # Call the constructor of the base class
-        super(DustGrid, self).__init__()
+        super(DustGrid2D, self).__init__()
 
 # -----------------------------------------------------------------
 

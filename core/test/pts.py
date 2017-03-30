@@ -281,7 +281,7 @@ class PTSTestSuite(Configurable):
         if self.config.open_output: self.config.keep = True
 
         # Check
-        if self.config.config is not None and len(self.test_names) > 1: raise ValueError("Cannot specifiy a test configuration when more than one test is getting launched")
+        if self.config.settings is not None and len(self.test_names) > 1: raise ValueError("Cannot specifiy test settings when more than one test is getting launched")
 
     # -----------------------------------------------------------------
 
@@ -404,7 +404,7 @@ class PTSTestSuite(Configurable):
                 definition = config_module.definition
 
                 # Create the test configuration
-                config = create_test_configuration(definition, name, self.config.config, self.config.default)
+                config = create_test_configuration(definition, name, self.config.settings, self.config.default)
 
                 # Load the test module
                 test_module = imp.load_source(name, filepath)
@@ -500,33 +500,33 @@ class PTSTestSuite(Configurable):
 
 # -----------------------------------------------------------------
 
-def create_test_configuration(definition, test_name, config=None, default=False):
+def create_test_configuration(definition, test_name, settings=None, default=False):
 
     """
     This function ...
     :param definition:
     :param test_name:
-    :param config:
+    :param settings:
     :param default:
     :return:
     """
 
-    ## The test configuration is given
-    if config is not None:
+    ## A test settings dict is given
+    if settings is not None:
 
         # Debugging
         log.debug("Setting options for the '" + test_name + "' test from the following dictionary:")
         if log.is_debug():
 
             print("")
-            for label in config: print(" - " + label + ": " + stringify.stringify(config[label])[1])
+            for label in settings: print(" - " + label + ": " + stringify.stringify(settings[label])[1])
             print("")
 
         # Create the configuration
-        setter = DictConfigurationSetter(config, test_name, add_logging=False, add_cwd=False)
+        setter = DictConfigurationSetter(settings, test_name, add_logging=False, add_cwd=False)
         config = setter.run(definition)
 
-    # No test configuration is given, default flag is added
+    # Settings are not given, default flag is added
     elif default:
 
         # Create the configuration
