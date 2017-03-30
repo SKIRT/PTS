@@ -309,13 +309,13 @@ class DBURLPost(DataBaseAdapter):
    # -----------------------------------------------------------------
 
    def insert(self, ga_engine):
+
       """ Sends the data to the URL using POST or GET
-
       :param ga_engine: the GA Engine
-
       .. versionchanged:: 0.6
          The method now receives the *ga_engine* parameter.
       """
+
       log.debug("Sending http request to %s.", self.url)
       stats = ga_engine.getStatistics()
       response = None
@@ -360,10 +360,15 @@ class DBSQLite(DataBaseAdapter):
    def __init__(self, dbname=constants.CDefSQLiteDBName, identify=None, resetDB=False,
                 resetIdentify=True, frequency=constants.CDefSQLiteStatsGenFreq,
                 commit_freq=constants.CDefSQLiteStatsCommitFreq):
-      """ The creator of the DBSQLite Class """
 
+      """
+      The creator of the DBSQLite Class
+      """
+
+      # Call the constructor of the base class
       super(DBSQLite, self).__init__(frequency, identify)
 
+      # Set attributes
       self.sqlite3mod = None
       self.connection = None
       self.resetDB = resetDB
@@ -403,13 +408,17 @@ class DBSQLite(DataBaseAdapter):
 
       temp_stats = statistics.Statistics()
 
-      if self.resetDB:
-         self.resetStructure(statistics.Statistics())
-
+      # NEW
       self.createStructure(temp_stats)
 
-      if self.resetIdentify:
-         self.resetTableIdentify()
+      # Reset
+      if self.resetDB: self.resetStructure(statistics.Statistics())
+
+      # Create structure
+      #self.createStructure(temp_stats)
+
+      # Reset
+      if self.resetIdentify: self.resetTableIdentify()
 
    # -----------------------------------------------------------------
 
@@ -482,8 +491,7 @@ class DBSQLite(DataBaseAdapter):
       log.debug("Creating table %s: %s.", constants.CDefSQLiteDBTable, pstmt)
       c.execute(pstmt)
 
-      pstmt = """create table if not exists %s(identify text, generation integer,
-              individual integer, fitness real, raw real)""" % (constants.CDefSQLiteDBTablePop)
+      pstmt = """create table if not exists %s (identify text, generation integer, individual integer, fitness real, raw real)""" % (constants.CDefSQLiteDBTablePop)
       log.debug("Creating table %s: %s.", constants.CDefSQLiteDBTablePop, pstmt)
       c.execute(pstmt)
       self.commit()
@@ -492,7 +500,9 @@ class DBSQLite(DataBaseAdapter):
 
    def resetTableIdentify(self):
 
-      """ Delete all records on the table with the same Identify """
+      """
+      Delete all records on the table with the same Identify
+      """
 
       c = self.getCursor()
       stmt = "delete from %s where identify = ?" % (constants.CDefSQLiteDBTable)
@@ -512,24 +522,28 @@ class DBSQLite(DataBaseAdapter):
 
    def resetStructure(self, stats):
 
-      """ Deletes de current structure and calls createStructure
+      """
+      Deletes de current structure and calls createStructure
       :param stats: the statistics object
       """
 
-      log.debug("Reseting structure, droping table and creating new empty table.")
+      # Debugging
+      log.debug("Resetting structure, droping table and creating new empty table")
+
       c = self.getCursor()
       c.execute("drop table if exists %s" % (constants.CDefSQLiteDBTable,))
       c.execute("drop table if exists %s" % (constants.CDefSQLiteDBTablePop,))
+
       self.commit()
       self.createStructure(stats)
 
    # -----------------------------------------------------------------
 
    def insert(self, ga_engine):
-      """ Inserts the statistics data to database
 
+      """
+      Inserts the statistics data to database
       :param ga_engine: the GA Engine
-
       .. versionchanged:: 0.6
          The method now receives the *ga_engine* parameter.
       """
@@ -772,8 +786,10 @@ class DBMySQLAdapter(DataBaseAdapter):
    def __init__(self, user, passwd, host=constants.CDefMySQLDBHost, port=constants.CDefMySQLDBPort,
                 db=constants.CDefMySQLDBName, identify=None, resetDB=False, resetIdentify=True,
                 frequency=constants.CDefMySQLStatsGenFreq, commit_freq=constants.CDefMySQLStatsCommitFreq):
-      """ The creator of the DBSQLite Class """
 
+      """ The creator of the DBMySQLAdapter Class """
+
+      # Callt he cosntructor of the base class
       super(DBMySQLAdapter, self).__init__(frequency, identify)
 
       self.mysqldbmod = None
@@ -794,8 +810,10 @@ class DBMySQLAdapter(DataBaseAdapter):
    def __repr__(self):
 
       """ The string representation of adapter """
+
       ret = "DBMySQLAdapter DB Adapter [identify='%s', host='%s', username='%s', db='%s']" % (self.getIdentify(),
             self.host, self.user, self.db)
+
       return ret
 
    # -----------------------------------------------------------------
@@ -819,11 +837,9 @@ class DBMySQLAdapter(DataBaseAdapter):
       temp_stats = statistics.Statistics()
       self.createStructure(temp_stats)
 
-      if self.resetDB:
-         self.resetStructure(statistics.Statistics())
+      if self.resetDB: self.resetStructure(statistics.Statistics())
 
-      if self.resetIdentify:
-         self.resetTableIdentify()
+      if self.resetIdentify: self.resetTableIdentify()
 
    # -----------------------------------------------------------------
 

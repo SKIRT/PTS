@@ -1223,8 +1223,8 @@ class GeneticEngine(object):
         for adapter in self.database_adapters:
 
             # Check the desired frequency
-            if self.currentGeneration % adapter.getStatsGenFreq() == 0:
-                adapter.insert(self)
+            #if self.currentGeneration % adapter.getStatsGenFreq() == 0:
+            adapter.insert(self)
 
     # -----------------------------------------------------------------
 
@@ -1372,7 +1372,8 @@ class GeneticEngine(object):
 
         # Finish the database adapters
         for adapter in self.database_adapters:
-            if not (self.currentGeneration % adapter.getStatsGenFreq() == 0): adapter.insert(self)
+            #if not (self.currentGeneration % adapter.getStatsGenFreq() == 0):
+            adapter.insert(self)
 
         # Stop the migration adapter ==> NO, NOW THIS IS THE RESPONSIBILITY OF THE MODULE THAT CREATES IT
         #if self.migrationAdapter:

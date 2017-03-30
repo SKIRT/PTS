@@ -100,6 +100,7 @@ class StepWiseOptimizer(Optimizer):
         """
 
         # Debugging
+        log.debug("")
         log.debug("Loading optimizer for run '" + run_id + "' from:")
         log.debug("")
         log.debug(" - Engine: " + engine_path)
