@@ -723,17 +723,13 @@ class SkiFile:
 
     ## This function returns the total number of spatial pixels from all the instruments (an SED counts for one pixel)
     def nspatialpixels(self):
-
         npixels = 0
-
         # Loop over the instruments
         for instrument in self.get_instruments():
-
             # Count SEDInstrument as one pixel, get the number of x and y pixels for other types of instrument and calculate the area
             instrument_type = instrument.tag
             if instrument_type == "SEDInstrument": npixels += 1
             else: npixels += int(instrument.attrib["pixelsX"]) * int(instrument.attrib["pixelsY"])
-
         # Return the total amount of spatial pixels
         return npixels
 
@@ -748,6 +744,12 @@ class SkiFile:
         # split the first result in separate strings, extract the numbers using the appropriate units
         units = self.units()
         return [units.convert(s, to_unit='micron', quantity='wavelength') for s in results[0].split(",")]
+
+    ## This property returns the wavelengths (for an oligochromatic simulation) as quantities
+    @property
+    def wavelength_list(self):
+        from ..basics.unit import parse_unit as u
+        return [wavelength * u("micron") for wavelength in self.wavelengths()]
 
     ## This function returns the first instrument's distance, in the specified units (default is 'pc').
     def instrumentdistance(self, unit='pc'):
@@ -1048,6 +1050,11 @@ class SkiFile:
         dust_system = self.get_dust_system()
         parent = dust_system.getparent()
         parent.getparent().remove(parent)
+
+    ## This property returns the number of stellar components
+    @property
+    def nstellar_components(self):
+        return len(self.get_stellar_component_ids())
 
     ## This function returns the list of stellar components
     def get_stellar_components(self, include_comments=False):
@@ -2915,7 +2922,7 @@ class SkiFile:
             # ratio_r=None, ratio_z=None, write_grid=False
             self.set_cylindrical_dust_grid(grid.max_r, grid.min_z, grid.max_z, grid.nbins_r, grid.nbins_z,
                                            fraction_r=grid.central_bin_fraction_r, fraction_z=grid.central_bin_fraction_z,
-                                           ratio_r=grid.ratio_r, ratio_z=grid.ratio_z)
+                                           ratio_r=grid.ratio_r, ratio_z=grid.ratio_z, write_grid=grid.write)
 
         # Invalid
         else: raise ValueError("Invalid grid type")
@@ -3263,7 +3270,9 @@ class SkiFile:
             # Make and add the new FullInstrument
             attrs = {"instrumentName": name, "distance": represent_quantity(distance),
                      "inclination": str_from_angle(inclination),
-                     "azimuth": str_from_angle(azimuth), "positionAngle": str_from_angle(position_angle)}
+                     "azimuth": str_from_angle(azimuth), "positionAngle": str_from_angle(position_angle),
+                     "writeTotal": str_from_bool(instrument.write_total, lower=True),
+                     "writeStellarComps": str_from_bool(instrument.write_stellar_components, lower=True)}
             instr = instruments.makeelement("MultiFrameInstrument", attrs)
 
             # Children

@@ -27,8 +27,8 @@ definition.add_optional("dust_grid_max_mass_fraction", "positive_real", "max mas
 definition.add_flag("transient_heating", "enable transient heating", False)
 definition.add_flag("selfabsorption", "enable dust selfabsorption", False)
 
-# For remote execution of reference simulation
-#definition.add_optional("host_ids", "string_list", "remote hosts to use for heavy computations (in order of preference)", choices=find_host_ids(schedulers=False))
+# For remote execution
+definition.add_optional("host_ids", "string_list", "remote hosts to use for heavy computations and simulations", choices=find_host_ids())
 
 # Fitting
 definition.add_optional("ngenerations", "positive_integer", "number of generations", 2)

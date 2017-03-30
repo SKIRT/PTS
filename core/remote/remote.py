@@ -26,7 +26,8 @@ from lxml import etree
 from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
-from .host import Host, HostDownException
+from .host import Host
+from .utils import HostDownException
 from .vpn import VPN
 from ..tools.logging import log
 from ..tools import parsing

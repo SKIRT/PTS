@@ -248,8 +248,6 @@ class PhotometricQuantity(Quantity):
 
         #print(self, self.unit, unit)
 
-        print("")
-
         # Determine conversion factor
         factor = self.unit.conversion_factor(unit, density=density, wavelength=wavelength, frequency=frequency, distance=distance, solid_angle=solid_angle, fltr=fltr, pixelscale=pixelscale)
 
