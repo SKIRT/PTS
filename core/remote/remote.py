@@ -1730,7 +1730,7 @@ class Remote(object):
 
         # Try connecting to the remote host
         try: self.connected = self.ssh.login(self.host.name, self.host.user, self.host.password, port=self.host.port, login_timeout=login_timeout)
-        except ExceptionPexpect: raise HostDownException()
+        except ExceptionPexpect: raise HostDownException(self.host.id)
 
         # Check whether connection was succesful
         if not self.connected: raise RuntimeError("Connection failed")

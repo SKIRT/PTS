@@ -308,13 +308,16 @@ class ParameterExplorer(FittingComponent):
         ## Miscellaneous
         self.launcher.config.analysis.misc.path = "misc"       # name of the misc output directory
         if self.is_images_modeling:
+
             self.launcher.config.analysis.misc.fluxes = False
             self.launcher.config.analysis.misc.images = True
             self.launcher.config.analysis.misc.images_wcs = get_images_header_path(self.config.path)
             self.launcher.config.analysis.misc.images_unit = "Jy"
             self.launcher.config.analysis.misc.images_kernels = None
             self.launcher.config.analysis.misc.rebin_wcs = None
+
         else:
+
             self.launcher.config.analysis.misc.fluxes = True       # calculate observed fluxes
             self.launcher.config.analysis.misc.images = False
         # observation_filters
@@ -329,8 +332,8 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.analysis.modeling_path = self.config.path
 
         # Set analyser classes
-        if self.is_images_modeling: self.launcher.config.analysers = ["pts.modeling.fitting.modelanalyser.SEDFitModelAnalyser"]
-        else: self.launcher.config.analysers = ["pts.modeling.fitting.modelanalyser.ImagesFitModelAnalyser"]
+        if self.is_images_modeling: self.launcher.config.analysers = ["pts.modeling.fitting.modelanalyser.ImagesFitModelAnalyser"]
+        else: self.launcher.config.analysers = ["pts.modeling.fitting.modelanalyser.SEDFitModelAnalyser"]
 
     # -----------------------------------------------------------------
 

@@ -244,7 +244,7 @@ class M81SEDTest(M81TestBase):
         settings_launch["output"] = self.simulation_output_path
         settings_launch["create_output"] = True
         settings_launch["remote"] = self.moderator.host_id_for_single("reference")
-        settings_launch["attached"] = True
+        settings_launch["attached"] = self.config.attached
         settings_launch["progress_bar"] = True
 
         # Create the analysis options
@@ -545,6 +545,10 @@ class M81SEDTest(M81TestBase):
         settings_model["nsimulations"] = self.config.nsimulations
         settings_model["fitting_settings"] = {"spectral_convolution": False}
 
+        # For remote execution
+        settings_model["attached"] = self.config.attached
+        settings_model["fitting_attached"] = self.config.attached
+
         # Input
         input_model = dict()
 
@@ -597,8 +601,6 @@ class M81SEDTest(M81TestBase):
         # Run the command
         self.modeler = self.run_command(command)
 
-        print(self.modeler.modeler.fitter.fitting_run.best_parameters_table)
-
     # -----------------------------------------------------------------
 
     def get_best_parameter_values(self):
@@ -611,7 +613,7 @@ class M81SEDTest(M81TestBase):
         # Inform the user
         log.info("Getting the best parameter values ...")
 
-
+        print(self.modeler.modeler.fitter.fitting_run.best_parameters_table)
 
     # -----------------------------------------------------------------
 

@@ -915,22 +915,21 @@ class GeneticEngine(object):
         index = 0
         for individual in population:
 
+            # Check if requested
             if check is not None:
 
-                # Get the parameter values for this individual
-                parameter_a = individual.genomeList[0]
-                parameter_b = individual.genomeList[1]
-                parameter_c = individual.genomeList[2]
+                # Loop over the parameters for this individual
+                for j in range(len(individual)):
 
-                parameter_a_check = check[0][index]
-                parameter_b_check = check[1][index]
-                parameter_c_check = check[2][index]
-                rel_diff_a = abs((parameter_a - parameter_a_check) / parameter_a)
-                rel_diff_b = abs((parameter_b - parameter_b_check) / parameter_b)
-                rel_diff_c = abs((parameter_c - parameter_c_check) / parameter_c)
-                assert np.isclose(parameter_a, parameter_a_check, rtol=1e-11), rel_diff_a
-                assert np.isclose(parameter_b, parameter_b_check, rtol=1e-11), rel_diff_b
-                assert np.isclose(parameter_c, parameter_c_check, rtol=1e-11), rel_diff_c
+                    # Get the individual parameter value and the check value
+                    value = individual.genomeList[j]
+                    check_value = check[j][index]
+
+                    # Calculate relative difference
+                    rel_diff = abs((value - check_value) / value)
+
+                    # Check whether they are close enough
+                    assert np.isclose(value, check_value, rtol=1e-11), rel_diff
 
             # Set the score
             individual.score = scores[index]

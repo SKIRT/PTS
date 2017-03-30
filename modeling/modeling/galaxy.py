@@ -42,6 +42,7 @@ from ...core.filter.filter import parse_filter
 from ...magic.core.image import Image
 from ..core.environment import GalaxyModelingEnvironment
 from ...core.remote.utils import DetachedCalculation
+from ...core.tools.utils import UserIntervention
 
 # -----------------------------------------------------------------
 
@@ -348,7 +349,7 @@ class GalaxyModeler(ModelerBase):
         if not self.config.attached:
             log.warning("The procedure that calculates the Poisson error maps for GALEX and SDSS is now running. "
                         "Wait for it to finished and resume the modeling afterwards")
-            raise DetachedCalculation()
+            raise DetachedCalculation(self.__class__, "get_data")
 
     # -----------------------------------------------------------------
 
@@ -445,11 +446,12 @@ class GalaxyModeler(ModelerBase):
         :return:
         """
 
+        # Initialize preparation
         self.initialize_preparation()
 
         # Give warning and exit
-        log.warning("Check the result of the source detection, make adjustments where necessary, and resume the modeling afterwards")
-        exit()
+        message = "Check the result of the source detection, make adjustments where necessary, and resume the modeling afterwards"
+        raise UserIntervention(message, self.__class__, "initialize_preparation")
 
     # -----------------------------------------------------------------
 

@@ -99,7 +99,7 @@ class ImagesFittingInitializer(FittingInitializerBase, ImagesModelingComponent):
         log.info("Loading the ski file template ...")
 
         # Load the ski file
-        self.ski = LabeledSkiFile(self.ski_path)
+        self.ski = LabeledSkiFile(self.environment.ski_path)
 
     # -----------------------------------------------------------------
 

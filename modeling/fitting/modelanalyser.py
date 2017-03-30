@@ -474,10 +474,11 @@ class ImagesFitModelAnalyser(FittingComponent):
         # The observed image maker
         self.image_maker = None
 
-        # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
     @classmethod
     def for_simulation(cls, simulation):
+
         """
         This function ...
         :param simulation:
@@ -534,6 +535,10 @@ class ImagesFitModelAnalyser(FittingComponent):
         :return:
         """
 
+        # Call the setup function of the base class
+        super(ImagesFitModelAnalyser, self).setup(**kwargs)
+
+    # -----------------------------------------------------------------
 
     def calculate_residuals(self):
 

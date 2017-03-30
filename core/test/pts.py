@@ -457,7 +457,7 @@ class PTSTestSuite(Configurable):
 
                 # Run the test
                 try: test.run()
-                except DetachedCalculation: test.save()
+                except DetachedCalculation as detached: test.save()
 
     # -----------------------------------------------------------------
 
