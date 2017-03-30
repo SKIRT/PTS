@@ -202,7 +202,7 @@ class PlatformModerator(object):
 
     # -----------------------------------------------------------------
 
-    def host_ids_for_ensemble(self, name):
+    def host_ids_for_ensemble(self, name, none_if_none=False):
 
         """
         This function ...
@@ -218,7 +218,8 @@ class PlatformModerator(object):
             if host_id in self.available_host_ids: host_ids.append(host_id)
 
         # Return the list of host IDs
-        return host_ids
+        if len(host_ids) == 0 and none_if_none: return None
+        else: return host_ids
 
     # -----------------------------------------------------------------
 

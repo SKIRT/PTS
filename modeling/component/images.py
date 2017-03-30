@@ -24,7 +24,6 @@ from .component import ModelingComponent
 from ...core.tools import filesystem as fs
 from ...core.simulation.skifile import LabeledSkiFile
 from ...magic.basics.coordinatesystem import CoordinateSystem
-from ..core.environment import ImagesModelingEnvironment
 
 # -----------------------------------------------------------------
 
@@ -63,7 +62,8 @@ class ImagesModelingComponent(ModelingComponent):
         super(ImagesModelingComponent, self).setup()
 
         # Load the environment
-        self.environment = ImagesModelingEnvironment(self.config.path)
+        # NO WE NEED TO DO IT IN THE BASE CLASS BECAUSE E.G. THE FITTINGCOMPONENT DIRECTLY INHERITS FROM THIS CLASS BUT ALSO NEEDS THE ENVIRONMENT
+        #self.environment = ImagesModelingEnvironment(self.config.path)
 
     # -----------------------------------------------------------------
 

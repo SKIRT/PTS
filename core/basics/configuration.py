@@ -565,16 +565,32 @@ def load_mapping(mappingfile, mapping, indent=""):
             # Remove comment after the declaration
             if "#" in line: line = line.split("#")[0]
 
-            try:
-                before, after = line.split(":", 1)
+            try: before, after = line.split(":", 1)
             except ValueError: print("ERROR processing: ", line)
 
             #print("declaration", before, after)
 
             if after.strip() == "":
 
-                state = 3  # state 3: just before "{" is expected to start subdefinition
-                continue
+                # Check if there is a specification
+                if before.endswith("]"):
+                    name = before.split("[")[0].strip()
+                    specification = before.split("[")[1].split("]")[0].strip()
+                else:
+                    name = before
+                    specification = None
+
+                if specification is None or specification == "section":
+                    state = 3 # state 3: just before "{" is expected to start subdefinition
+                    continue
+                else:
+                    if specification.endswith("list"): value = []
+                    elif specification.endswith("tuple"): value = ()
+                    elif specification.endswith("dictionary"): value = {}
+                    else: raise RuntimeError("Encountered empty value for '" + name + "' of type '" + specification)
+
+                    # Set the value
+                    mapping[name] = value
 
             else:
 

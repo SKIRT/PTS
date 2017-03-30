@@ -31,7 +31,6 @@ from ..basics.properties import GalaxyProperties
 from ...core.tools.logging import log
 from ...magic.prepare.batch import PreparationStatistics
 from .component import ModelingComponent
-from ..core.environment import GalaxyModelingEnvironment
 
 # -----------------------------------------------------------------
 
@@ -140,8 +139,9 @@ class GalaxyModelingComponent(ModelingComponent):
 
         # -- Attributes --
 
-        # We can now safely create the environment
-        self.environment = GalaxyModelingEnvironment(self.config.path)
+        # We can now safely create the environment:
+        # NO WE NEED TO DO IT IN THE BASE CLASS BECAUSE E.G. THE FITTINGCOMPONENT DIRECTLY INHERITS FROM THIS CLASS BUT ALSO NEEDS THE ENVIRONMENT
+        #self.environment = GalaxyModelingEnvironment(self.config.path)
 
         # Get the name of the galaxy (the name of the base directory)
         self.galaxy_name = fs.name(self.config.path)

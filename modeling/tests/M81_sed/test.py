@@ -506,7 +506,7 @@ class M81SEDTest(M81TestBase):
         settings_setup = dict()
         settings_setup["type"] = "sed"
         settings_setup["name"] = self.galaxy_name
-        settings_setup["fitting_host_ids"] = self.moderator.host_ids_for_ensemble("fitting")
+        settings_setup["fitting_host_ids"] = self.moderator.host_ids_for_ensemble("fitting", none_if_none=True)
 
         # Create input dict for setup
         input_setup = dict()

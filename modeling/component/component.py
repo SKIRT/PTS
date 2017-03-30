@@ -26,7 +26,7 @@ from ...core.tools import filesystem as fs
 from ...core.filter.broad import BroadBandFilter
 from ...core.basics.configuration import Configuration
 from ..core.history import ModelingHistory
-from ..core.environment import ModelingEnvironment
+from ..core.environment import GalaxyModelingEnvironment, SEDModelingEnvironment, ImagesModelingEnvironment
 
 # -----------------------------------------------------------------
 
@@ -72,6 +72,11 @@ class ModelingComponent(Configurable):
 
         # Call the setup function of the base class
         super(ModelingComponent, self).setup(**kwargs)
+
+        # Create the environment
+        if self.is_galaxy_modeling: self.environment = GalaxyModelingEnvironment(self.config.path)
+        elif self.is_sed_modeling: self.environment = SEDModelingEnvironment(self.config.path)
+        elif self.is_images_modeling: self.environment = ImagesModelingEnvironment(self.config.path)
 
         # Determine the path to the modeling configuration file
         self.config_file_path = fs.join(self.config.path, "modeling.cfg")

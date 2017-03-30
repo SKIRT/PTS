@@ -15,15 +15,11 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 from abc import ABCMeta
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from .component import ModelingComponent
 from ...core.tools import filesystem as fs
 from ...core.simulation.skifile import LabeledSkiFile
 from ...core.data.sed import ObservedSED
-from ..core.environment import SEDModelingEnvironment
 
 # -----------------------------------------------------------------
 
@@ -62,7 +58,8 @@ class SEDModelingComponent(ModelingComponent):
         super(SEDModelingComponent, self).setup()
 
         # Load the environment
-        self.environment = SEDModelingEnvironment(self.config.path)
+        # NO WE NEED TO DO IT IN THE BASE CLASS BECAUSE E.G. THE FITTINGCOMPONENT DIRECTLY INHERITS FROM THIS CLASS BUT ALSO NEEDS THE ENVIRONMENT
+        #self.environment = SEDModelingEnvironment(self.config.path)
 
 # -----------------------------------------------------------------
 
