@@ -228,7 +228,9 @@ elif len(table_matches) == 1 and len(matches) == 0:
         exact_command_name = subproject + "/" + command_name
 
         # Determine the log level
-        level = "DEBUG" if config.debug else "INFO"
+        level = "INFO"
+        if config.debug: level = "DEBUG"
+        if config.brief: level = "SUCCESS"
         log = logging.setup_log(level=level)
         log.start("Starting " + exact_command_name + " on remote host " + args.remote + " ...")
 
@@ -252,7 +254,9 @@ elif len(table_matches) == 1 and len(matches) == 0:
         logfile_path = fs.join(config.log_path, time.unique_name("log") + ".txt") if config.report else None
 
         # Determine the log level
-        level = "DEBUG" if config.debug else "INFO"
+        level = "INFO"
+        if config.debug: level = "DEBUG"
+        if config.brief: level = "SUCCESS"
 
         # Initialize the logger
         log = logging.setup_log(level=level, path=logfile_path)

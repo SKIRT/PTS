@@ -222,7 +222,7 @@ class GeneticEngine(object):
         self.new_population = None
 
         # Adapters
-        self.dbAdapter = None
+        self.database_adapters = []
         self.migrationAdapter = None
 
         self.time_init = None
@@ -305,7 +305,10 @@ class GeneticEngine(object):
         log.info("Saving the genetic algorithm engine to '" + path + "' ...")
 
         # Remove db adapter
-        self.dbAdapter = None
+        #self.dbAdapter = None
+
+        # Remove the adapters
+        self.database_adapters = []
 
         # Set the new path as the current path and save
         self.path = path
@@ -528,7 +531,7 @@ class GeneticEngine(object):
         ret += "\tMinimax Type:\t\t %s\n" % minimax_type.capitalize()
         ret += "\tElitism:\t\t %s\n" % self.elitism
         ret += "\tElitism Replacement:\t %d\n" % self.nElitismReplacement
-        ret += "\tDB Adapter:\t\t %s\n" % self.dbAdapter
+        #ret += "\tDB Adapter:\t\t %s\n" % self.dbAdapter
         for slot in self.allSlots:
             ret += "\t" + slot.__repr__()
         ret += "\n"
@@ -600,18 +603,31 @@ class GeneticEngine(object):
 
     # -----------------------------------------------------------------
 
-    def setDBAdapter(self, dbadapter=None):
+    def add_database_adapter(self, adapter):
 
         """
-        Sets the DB Adapter of the GA Engine
-        :param dbadapter: one of the :mod:`DBAdapters` classes instance
-        .. warning:: the use the of a DB Adapter can reduce the speed performance of the
-                     Genetic Algorithm.
+        This function ...
+        :param adapter:
+        :return:
         """
 
-        if (dbadapter is not None) and (not isinstance(dbadapter, DataBaseAdapter)):
-            utils.raiseException("The DB Adapter must be a DataBaseAdapter subclass", TypeError)
-        self.dbAdapter = dbadapter
+        # Add an adapter
+        self.database_adapters.append(adapter)
+
+    # -----------------------------------------------------------------
+
+    #def setDBAdapter(self, dbadapter=None):
+
+     #   """
+     #   Sets the DB Adapter of the GA Engine
+     #   :param dbadapter: one of the :mod:`DBAdapters` classes instance
+     #   .. warning:: the use the of a DB Adapter can reduce the speed performance of the
+     #                Genetic Algorithm.
+     #   """#
+     #
+     #   if (dbadapter is not None) and (not isinstance(dbadapter, DataBaseAdapter)):
+     #       utils.raiseException("The DB Adapter must be a DataBaseAdapter subclass", TypeError)
+     #   self.dbAdapter = dbadapter
 
     # -----------------------------------------------------------------
 
@@ -769,14 +785,14 @@ class GeneticEngine(object):
 
     # -----------------------------------------------------------------
 
-    def getDBAdapter(self):
-
-        """
-        Gets the DB Adapter of the GA Engine
-        :rtype: a instance from one of the :mod:`DBAdapters` classes
-        """
-
-        return self.dbAdapter
+    #def getDBAdapter(self):
+    #
+    #    """
+    #    Gets the DB Adapter of the GA Engine
+    #    :rtype: a instance from one of the :mod:`DBAdapters` classes
+    #    """
+    #
+    #    return self.dbAdapter
 
     # -----------------------------------------------------------------
 
@@ -967,10 +983,12 @@ class GeneticEngine(object):
         :return:
         """
 
-        if self.dbAdapter:
-            #print("HERE")
-            if self.currentGeneration % self.dbAdapter.getStatsGenFreq() == 0:
-                self.dumpStatsDB()
+        #if self.dbAdapter:
+        #    if self.currentGeneration % self.dbAdapter.getStatsGenFreq() == 0:
+        #        self.dumpStatsDB()
+
+        # NEW
+        self.dump_statistics_adapters()
 
         # Inform the user
         if not silent: log.info("Creating generation " + str(self.currentGeneration) + " ...")
@@ -1174,25 +1192,47 @@ class GeneticEngine(object):
 
     # -----------------------------------------------------------------
 
-    def dumpStatsDB(self):
+    #def dumpStatsDB(self):
+
+    #    """
+    #    Dumps the current statistics to database adapter
+    #    """
+
+    #    # Debugging
+    #    log.debug("Dumping stats to the DB Adapter ...")
+
+    #    self.internalPop.statistics()
+    #    self.dbAdapter.insert(self)
+
+    # -----------------------------------------------------------------
+
+    def dump_statistics_adapters(self):
 
         """
-        Dumps the current statistics to database adapter
+        This function ...
+        :return:
         """
 
         # Debugging
-        log.debug("Dumping stats to the DB Adapter ...")
+        log.debug("Dumping statistics to the database adapters ...")
 
+        # Calculate the statistics
         self.internalPop.statistics()
-        self.dbAdapter.insert(self)
+
+        # Loop over the adapters, add the state of the engine
+        for adapter in self.database_adapters:
+
+            # Check the desired frequency
+            if self.currentGeneration % adapter.getStatsGenFreq() == 0:
+                adapter.insert(self)
 
     # -----------------------------------------------------------------
 
     def evolve(self, freq_stats=0, progress_bar=False):
 
-        """ Do all the generations until the termination criteria, accepts
+        """
+        Do all the generations until the termination criteria, accepts
         the freq_stats (default is 0) to dump statistics at n-generation
-
         Example: ga_engine.evolve(freq_stats=10)
 
         :param freq_stats: if greater than 0, the statistics will be
@@ -1318,19 +1358,21 @@ class GeneticEngine(object):
         :return:
         """
 
-        if not silent:
+        # Inform the user
+        log.info("Finishing the evolution ...")
 
+        if not silent:
             self.printStats()
             self.printTimeElapsed()
 
         # Close the DB adapter ==> NO, NOW THIS IS THE RESPONSIBILITY OF THE MODULE THAT CREATES THE DBADAPTER
-        if self.dbAdapter:
+        #if self.dbAdapter:
+        #    if not (self.currentGeneration % self.dbAdapter.getStatsGenFreq() == 0): self.dumpStatsDB()
+        #    #self.dbAdapter.commit_and_close()
 
-            # Inform the user
-            #log.debug("Closing the DB Adapter")
-
-            if not (self.currentGeneration % self.dbAdapter.getStatsGenFreq() == 0): self.dumpStatsDB()
-            #self.dbAdapter.commit_and_close()
+        # Finish the database adapters
+        for adapter in self.database_adapters:
+            if not (self.currentGeneration % adapter.getStatsGenFreq() == 0): adapter.insert(self)
 
         # Stop the migration adapter ==> NO, NOW THIS IS THE RESPONSIBILITY OF THE MODULE THAT CREATES IT
         #if self.migrationAdapter:
@@ -1375,11 +1417,6 @@ class GeneticEngine(object):
         if freq_stats and not silent:
             if (self.currentGeneration % freq_stats == 0) or (self.getCurrentGeneration() == 0):
                 self.printStats()
-
-        # This is now done in the generate_new_population() function
-        #if self.dbAdapter:
-        #    if self.currentGeneration % self.dbAdapter.getStatsGenFreq() == 0:
-        #        self.dumpStatsDB()
 
         if stopFlagTerminationCriteria:
             log.debug("Evolution stopped by the Termination Criteria !")

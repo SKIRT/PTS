@@ -29,7 +29,7 @@ def LinearScaling(pop):
 
     from . import constants
 
-    log.debug("Running linear scaling.")
+    log.debug("Running linear scaling ...")
     pop.statistics()
     c = constants.CDefScaleLinearMultiplier
     a = b = delta = 0.0

@@ -80,6 +80,8 @@ class GeneticModelGenerator(ModelGenerator):
             #self.optimizer.config.writing.statistics_path = self.statistics_path
             #self.optimizer.config.writing.database_path = self.database_path
 
+            self.optimizer.config.run_id = self.fitting_run.name
+
             # Set initial flag
             self.initial = True
 
@@ -100,7 +102,7 @@ class GeneticModelGenerator(ModelGenerator):
                                                                 self.fitting_run.main_engine_path,
                                                                 self.fitting_run.main_prng_path,
                                                                 self.fitting_run.optimizer_config_path,
-                                                                self.statistics_path, self.database_path)
+                                                                self.statistics_path, self.database_path, self.fitting_run.name)
                 # Set initial flag
                 self.initial = False
 
@@ -115,6 +117,7 @@ class GeneticModelGenerator(ModelGenerator):
                 self.optimizer.config.writing.config_path = self.fitting_run.optimizer_config_path
                 self.optimizer.config.writing.statistics_path = self.statistics_path
                 self.optimizer.config.writing.database_path = self.database_path
+                self.optimizer.config.run_id = self.fitting_run.name
 
                 # Set initial flag
                 self.initial = True
@@ -180,7 +183,7 @@ class GeneticModelGenerator(ModelGenerator):
 
         # Fixed
         self.optimizer.config.min_or_max = "minimize"
-        self.optimizer.config.run_id = self.fitting_run.name
+        #self.optimizer.config.run_id = self.fitting_run.name # THIS IS NOW DONE IN THE SETUP
         self.optimizer.config.database_frequency = 1
         self.optimizer.config.statistics_frequency = 1
 

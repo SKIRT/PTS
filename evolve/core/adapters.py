@@ -107,7 +107,8 @@ class DataBaseAdapter(object):
     @abstractmethod
     def open(self, ga_engine):
 
-      """ This method is called one time to do the initialization of
+      """
+      This method is called one time to do the initialization of
       the DB Adapter
       :param ga_engine: the GA Engine
       """
@@ -160,8 +161,10 @@ class DBFileCSV(DataBaseAdapter):
 
       """ The creator of DBFileCSV Class """
 
+      # Call the constructor of the base class
       super(DBFileCSV, self).__init__(frequency, identify)
 
+      # The CSV module
       self.csvmod = None
 
       self.filename = filename
@@ -173,7 +176,9 @@ class DBFileCSV(DataBaseAdapter):
 
     def __repr__(self):
 
-      """ The string representation of adapter """
+      """
+      The string representation of adapter
+      """
 
       ret = "DBFileCSV DB Adapter [File='%s', identify='%s']" % (self.filename, self.getIdentify())
       return ret
@@ -182,62 +187,67 @@ class DBFileCSV(DataBaseAdapter):
 
     def open(self, ga_engine):
 
-      """
-      Open the CSV file or creates a new file
-      :param ga_engine: the GA Engine
-      .. versionchanged:: 0.6
+        """
+        Open the CSV file or creates a new file
+        :param ga_engine: the GA Engine
+        .. versionchanged:: 0.6
          The method now receives the *ga_engine* parameter.
-      """
+        """
 
-      if self.csvmod is None:
+        if self.csvmod is None:
          log.debug("Loading the csv module...")
          self.csvmod = utils.importSpecial("csv")
 
-      log.debug("Opening the CSV file to dump statistics '%s'", self.filename)
-      open_mode = 'w' if self.reset else 'a'
-      self.fHandle = open(self.filename, open_mode)
-      self.csvWriter = self.csvmod.writer(self.fHandle, delimiter=';')
+        # Debugging
+        log.debug("Opening the CSV file to dump statistics '%s'", self.filename)
+        open_mode = 'w' if self.reset else 'a'
+
+        self.fHandle = open(self.filename, open_mode)
+        self.csvWriter = self.csvmod.writer(self.fHandle, delimiter=',')
 
     # -----------------------------------------------------------------
 
     def close(self):
 
-      """ Closes the CSV file handle """
+        """ Closes the CSV file handle """
 
-      log.debug("Closing the CSV file [%s]", self.filename)
-      if self.fHandle:
-         self.fHandle.close()
+        log.debug("Closing the CSV file [%s]", self.filename)
+
+        if self.fHandle: self.fHandle.close()
 
     # -----------------------------------------------------------------
 
     def commit_and_close(self):
 
-      """ Commits and closes """
+        """
+        Commits and closes
+        """
 
-      self.close()
+        self.close()
 
     # -----------------------------------------------------------------
 
     def insert(self, ga_engine):
-      """ Inserts the stats into the CSV file
 
-      :param ga_engine: the GA Engine
-
-      .. versionchanged:: 0.6
+        """
+        Inserts the stats into the CSV file
+        :param ga_engine: the GA Engine
+        .. versionchanged:: 0.6
          The method now receives the *ga_engine* parameter.
-      """
+        """
 
-      stats = ga_engine.getStatistics()
-      generation = ga_engine.getCurrentGeneration()
-      line = [self.getIdentify(), generation]
-      line.extend(stats.asTuple())
-      self.csvWriter.writerow(line)
+        stats = ga_engine.getStatistics()
+        generation = ga_engine.getCurrentGeneration()
+        line = [self.getIdentify(), generation]
+        line.extend(stats.asTuple())
+        self.csvWriter.writerow(line)
 
 # -----------------------------------------------------------------
 
 class DBURLPost(DataBaseAdapter):
 
-   """ DBURLPost Class - Adapter to call an URL with statistics
+   """
+   DBURLPost Class - Adapter to call an URL with statistics
    Inheritance diagram for :class:`DBAdapters.DBURLPost`:
    .. inheritance-diagram:: DBAdapters.DBURLPost
    Example:

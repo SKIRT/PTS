@@ -207,7 +207,8 @@ class Optimizer(Configurable):
             reset = True
 
         # Create the database adapter
-        self.database = DBSQLite(dbname=filepath, identify=self.config.run_id, resetDB=reset, commit_freq=self.config.database_frequency, frequency=self.config.database_frequency)
+        self.database = DBSQLite(dbname=filepath, identify=self.config.run_id, resetDB=reset,
+                                 commit_freq=self.config.database_frequency, frequency=self.config.database_frequency, resetIdentify=False)
 
     # -----------------------------------------------------------------
 
@@ -636,11 +637,13 @@ class Optimizer(Configurable):
 
         # Set the database adapter
         self.database.open(self.engine)
-        self.engine.setDBAdapter(self.database)
+        #self.engine.setDBAdapter(self.database)
+        self.engine.add_database_adapter(self.database)
 
         # Set the adapter for the statistics table
         self.statistics.open(self.engine)
-        self.engine.setDBAdapter(self.statistics)
+        #self.engine.setDBAdapter(self.statistics)
+        self.engine.add_database_adapter(self.statistics)
 
     # -----------------------------------------------------------------
 

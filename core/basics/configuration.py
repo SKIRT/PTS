@@ -1500,6 +1500,7 @@ class ConfigurationSetter(object):
 
             self.definition.add_fixed("log_path", "the directory for the log file be written to", log_path)
             self.definition.add_flag("debug", "enable debug output")
+            self.definition.add_flag("brief", "brief output")
             self.definition.add_flag("report", "write a report file")
 
         # Add config path

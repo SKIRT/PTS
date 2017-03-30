@@ -52,16 +52,17 @@ class StepWiseOptimizer(Optimizer):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_directory(cls, dir_path):
+    def from_directory(cls, dir_path, run_id):
 
         """
         This function ...
         :param dir_path:
+        :param run_id:
         :return:
         """
 
         # Debugging
-        log.debug("Loading optimizer from '" + dir_path + "' ...")
+        log.debug("Loading optimizer for run '" + run_id + "' from '" + dir_path + "' ...")
 
         # Determine the path to the engine
         engine_path = fs.join(dir_path, "engine.pickle")
@@ -79,20 +80,27 @@ class StepWiseOptimizer(Optimizer):
         database_path = fs.join(dir_path, "database.db")
 
         # Create the optimizer instance and return it
-        return cls.from_paths(dir_path, engine_path, prng_path, config_path, statistics_path, database_path)
+        return cls.from_paths(dir_path, engine_path, prng_path, config_path, statistics_path, database_path, run_id)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_paths(cls, output_path, engine_path, prng_path, config_path, statistics_path, database_path):
+    def from_paths(cls, output_path, engine_path, prng_path, config_path, statistics_path, database_path, run_id):
 
         """
         This function ...
+        :param output_path:
+        :param engine_path:
+        :param prng_path:
+        :param config_path:
+        :param statistics_path:
+        :param database_path:
+        :param run_id:
         :return:
         """
 
         # Debugging
-        log.debug("Loading optimizer from:")
+        log.debug("Loading optimizer for run '" + run_id + "' from:")
         log.debug("")
         log.debug(" - Engine: " + engine_path)
         log.debug(" - PRNG: " + prng_path)
@@ -120,12 +128,12 @@ class StepWiseOptimizer(Optimizer):
         # Load the statistics (opening is done during initialization or evolution)
         if not fs.is_file(statistics_path): raise IOError("The statistics file could not be found at '" + statistics_path + "'")
         log.debug("Loading the statistics from '" + statistics_path + "' ...")
-        optimizer.statistics = DBFileCSV(filename=statistics_path, reset=False)
+        optimizer.statistics = DBFileCSV(filename=statistics_path, reset=False, identify=run_id)
 
         # Load the database (opening is done during initialization or evolution)
         if not fs.is_file(database_path): raise IOError("The database could not be found at '" + database_path + "'")
         log.debug("Loading the database from '" + database_path + "' ...")
-        optimizer.database = DBSQLite(dbname=database_path, resetDB=False)
+        optimizer.database = DBSQLite(dbname=database_path, resetDB=False, identify=run_id, resetIdentify=False)
 
         # Set the path
         optimizer.config.output = output_path
