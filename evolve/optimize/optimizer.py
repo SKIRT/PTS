@@ -26,6 +26,9 @@ from ..genomes.binarystring1d import G1DBinaryString
 from ..genomes.binarystring2d import G2DBinaryString
 from ...core.tools.logging import log
 from ..core.initializators import G1DListInitializatorReal, G1DListInitializatorInteger, HeterogeneousListInitializerReal, HeterogeneousListInitializerInteger
+from ..core.crossovers import G1DListCrossoverSinglePoint, G1DListCrossoverTwoPoint, G1DListCrossoverUniform, G1DListCrossoverOX
+from ..core.crossovers import G1DListCrossoverEdge, G1DListCrossoverCutCrossfill, G1DListCrossoverRealSBX
+from ..core.crossovers import G2DListCrossoverUniform, G2DListCrossoverSingleVPoint, G2DListCrossoverSingleHPoint
 from ..core.mutators import G1DListMutatorIntegerRange, G1DListMutatorIntegerGaussian, G1DListMutatorIntegerBinary
 from ..core.mutators import G1DListMutatorRealGaussian, G1DListMutatorRealRange
 from ..core.mutators import HeterogeneousListMutatorRealRange, HeterogeneousListMutatorRealGaussian
@@ -220,65 +223,176 @@ class Optimizer(Configurable):
         log.info("Initializing the starting genome ...")
 
         # Get the genome
-        genome = kwargs.pop("genome").clone() if "genome" in kwargs else None
+        if "genome" in kwargs: self.initial_genome = kwargs.pop("genome").clone()
+
+        # Create the genome if necessary
+        if self.initial_genome is None: self.create_genome()
+
+        # Set genome properties
+        self.set_genome_properties()
+
+        # Set initializator
+        self.set_genome_initializator(kwargs)
+
+        # Set mutator
+        self.set_genome_mutator(kwargs)
+
+        # Set crossover
+        self.set_genome_crossover(kwargs)
+
+    # -----------------------------------------------------------------
+
+    def create_genome(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the genome ...")
+
+        # List genome
+        if self.config.genome_type == "list":
+
+            # Create 1D genome
+            if self.config.genome_dimension == 1: genome = G1DList(self.config.nparameters)
+            elif self.config.genome_dimension == 2: genome = G2DList(self.config.nparameters, self.config.nparameters2)
+            else: raise ValueError("Dimensions > 2 are not supported")
+
+        # Binary string genome
+        elif self.config.genome_type == "binary_string":
+
+            # 1D or 2D
+            if self.config.genome_dimension == 1: genome = G1DBinaryString(self.config.nparameters)
+            elif self.config.genome_dimension == 2: genome = G2DBinaryString(self.config.nparameters, self.config.nparameters2)
+            else: raise ValueError("Dimensions > 2 are not supported")
+
+        # Invalid option
+        else: raise ValueError("Genome type must be 'list' or 'binary_string")
+
+        # Set the genome
+        self.initial_genome = genome
+
+    # -----------------------------------------------------------------
+
+    def set_genome_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting genome properties ...")
+
+        # Debugging
+        log.debug("Setting basic properties ...")
+
+        # Set basic properties
+        if self.config.parameter_range is not None: self.initial_genome.setParams(rangemin=self.config.parameter_range.min, rangemax=self.config.parameter_range.max)
+        if self.config.best_raw_score is not None: self.initial_genome.setParams(bestrawscore=self.config.best_raw_score)
+        if self.config.round_decimal is not None: self.initial_genome.setParams(rounddecimal=self.config.round_decimal)
+
+        # Debugging
+        log.debug("Setting parameter minima and maxima ...")
+
+        # Set minima or maxima for heterogeneous genome lists
+        if self.parameter_minima is not None: self.initial_genome.setParams(minima=self.parameter_minima)
+        if self.parameter_maxima is not None: self.initial_genome.setParams(maxima=self.parameter_maxima)
+
+        # Debugging
+        log.debug("Setting parameter centers and sigmas ...")
+
+        # Set parameter centers and sigmas
+        if self.parameter_centers is not None: self.initial_genome.setParams(centers=self.parameter_centers)
+        if self.parameter_sigmas is not None: self.initial_genome.setParams(sigmas=self.parameter_sigmas)
+
+    # -----------------------------------------------------------------
+
+    def set_genome_initializator(self, kwargs):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the initializator ...")
 
         # Get initializator
         initializator = kwargs.pop("initializator") if "initializator" in kwargs else None
 
+        # Set initializator
+        if initializator is not None: self.initial_genome.initializator.set(initializator)
+        else: self.initial_genome.initializator.set(self.get_initializator())
+
+    # -----------------------------------------------------------------
+
+    def set_genome_mutator(self, kwargs):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the mutator ...")
+
         # Get mutator
         mutator = kwargs.pop("mutator") if "mutator" in kwargs else None
+
+        # Set mutator
+        if mutator is not None: self.initial_genome.mutator.set(mutator)
+        else: self.initial_genome.mutator.set(self.get_mutator())
+
+    # -----------------------------------------------------------------
+
+    def set_genome_crossover(self, kwargs):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the crossover ...")
 
         # Get crossover function
         crossover = kwargs.pop("crossover") if "crossover" in kwargs else None
 
-        # Create the genome if necessary
-        if genome is None:
-
-            # List genome
-            if self.config.genome_type == "list":
-
-                # Create 1D genome
-                if self.config.genome_dimension == 1: genome = G1DList(self.config.nparameters)
-                elif self.config.genome_dimension == 2: genome = G2DList(self.config.nparameters, self.config.nparameters2)
-                else: raise ValueError("Dimensions > 2 are not supported")
-
-            # Binary string genome
-            elif self.config.genome_type == "binary_string":
-
-                # 1D or 2D
-                if self.config.genome_dimension == 1: genome = G1DBinaryString(self.config.nparameters)
-                elif self.config.genome_dimension == 2: genome = G2DBinaryString(self.config.nparameters, self.config.nparameters2)
-                else: raise ValueError("Dimensions > 2 are not supported")
-
-            # Invalid option
-            else: raise ValueError("Genome type must be 'list' or 'binary_string")
-
-        # Set basic properties
-        if self.config.parameter_range is not None: genome.setParams(rangemin=self.config.parameter_range.min, rangemax=self.config.parameter_range.max)
-        if self.config.best_raw_score is not None: genome.setParams(bestrawscore=self.config.best_raw_score)
-        if self.config.round_decimal is not None: genome.setParams(rounddecimal=self.config.round_decimal)
-
-        # Set minima or maxima for heterogeneous genome lists
-        if self.parameter_minima is not None: genome.setParams(minima=self.parameter_minima)
-        if self.parameter_maxima is not None: genome.setParams(maxima=self.parameter_maxima)
-
-        # Set parameter centers and sigmas
-        if self.parameter_centers is not None: genome.setParams(centers=self.parameter_centers)
-        if self.parameter_sigmas is not None: genome.setParams(sigmas=self.parameter_sigmas)
-
-        # Set initializator
-        if initializator is not None: genome.initializator.set(initializator)
-        else: genome.initializator.set(self.get_initializator())
-
-        # Set mutator
-        if mutator is not None: genome.mutator.set(mutator)
-        else: genome.mutator.set(self.get_mutator())
-
         # Set crossover
-        if crossover is not None: genome.crossover.set(crossover)
+        if crossover is not None: self.initial_genome.crossover.set(crossover)
+        else: self.initial_genome.crossover.set(self.get_crossover())
 
-        # Set the initial genome
-        self.initial_genome = genome
+    # -----------------------------------------------------------------
+
+    @property
+    def genome_dimension(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.initial_genome is not None: return self.initial_genome.dimension
+        else: return self.config.genome_dimension
+
+    # -----------------------------------------------------------------
+
+    @property
+    def genome_size(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Value for 1D, tuple for 2D
+
+        if self.initial_genome is not None: return self.initial_genome.getSize()
+        elif self.config.nparameters2 is None: return self.config.nparameters
+        else: return (self.config.nparameters, self.config.nparameters2)
 
     # -----------------------------------------------------------------
 
@@ -295,17 +409,11 @@ class Optimizer(Configurable):
         # Integer type
         if self.parameter_base_type == "integer":
 
-            #if self.config.heterogeneous: genome.initializator.set(HeterogeneousListInitializerInteger)
-            #else: genome.initializator.set(G1DListInitializatorInteger)
-
             if self.config.heterogeneous: return HeterogeneousListInitializerInteger
             else: return G1DListInitializatorInteger
 
         # Real type
         elif self.parameter_base_type == "real":
-
-            #if self.config.heterogeneous: genome.initializator.set(HeterogeneousListInitializerReal)
-            #genome.initializator.set(G1DListInitializatorReal)
 
             if self.config.heterogeneous: return HeterogeneousListInitializerReal
             else: return G1DListInitializatorReal
@@ -378,6 +486,73 @@ class Optimizer(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_crossover(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the crossover type ...")
+
+        # 1D genome
+        if self.config.genome_dimension == 1:
+
+            # Check whether the genome size is larger than one. In that case, always use the uniform crossover
+            if self.genome_size == 1:
+
+                # Give a warning that we are not using the user specificied option
+                log.warning("Uniform crossover will be used because the genome size is only one")
+                return G1DListCrossoverUniform
+
+            # Check whether the genome size is not zero
+            elif self.genome_size == 0: raise ValueError("The genome size cannot be zero")
+
+            # Single-point crossover
+            if self.config.crossover_method == "single_point": return G1DListCrossoverSinglePoint
+
+            # Dual-point crossover
+            elif self.config.crossover_method == "two_point": return G1DListCrossoverTwoPoint
+
+            # Uniform
+            elif self.config.crossover_method == "uniform": return G1DListCrossoverUniform
+
+            # OX
+            elif self.config.crossover_method == "OX": return G1DListCrossoverOX
+
+            # Edge
+            elif self.config.crossover_method == "edge": return G1DListCrossoverEdge
+
+            # Cut crossfill
+            elif self.config.crossover_method == "cut_crossfill": return G1DListCrossoverCutCrossfill
+
+            # Real SBX
+            elif self.config.crossover_method == "real_SBX": return G1DListCrossoverRealSBX
+
+            # Invalid
+            else: raise ValueError("Invalid crossover method for one-dimensional genomes")
+
+        # 2D genome
+        elif self.config.genome_dimension == 2:
+
+            # Uniform
+            if self.config.crossover_method == "uniform": return G2DListCrossoverUniform
+
+            # Vertical single-point
+            elif self.config.crossover_method == "single_vertical_point": return G2DListCrossoverSingleVPoint
+
+            # Horizontal single-point
+            elif self.config.crossover_method == "single_horizontal_point": return G2DListCrossoverSingleHPoint
+
+            # Invalid
+            else: raise ValueError("Invalid crossover method for two-dimensional genomes")
+
+        # Not supported number of dimensions
+        else: raise ValueError("Dimensions > 2 are not supported")
+
+    # -----------------------------------------------------------------
+
     def initialize_engine(self, **kwargs):
 
         """
@@ -389,8 +564,32 @@ class Optimizer(Configurable):
         # Inform the user
         log.info("Initializing the genetic engine ...")
 
-        # Create the genetic engine
+        # 1. Create the genetic engine
         self.engine = GeneticEngine(self.initial_genome)
+
+        # 2. Set options
+        self.set_engine_options()
+
+        # 3. Set plotter
+        self.set_engine_plotter(kwargs)
+
+        # 4. Set database and statistics
+        self.set_engine_database_and_statistics()
+
+        # 5. Set kwargs
+        self.set_engine_kwargs(kwargs)
+
+    # -----------------------------------------------------------------
+
+    def set_engine_options(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting genetic engine options ...")
 
         # Set options
         self.engine.terminationCriteria.set(RawScoreCriteria)
@@ -404,24 +603,36 @@ class Optimizer(Configurable):
         self.engine.setElitism(self.config.elitism)
         self.engine.setElitismReplacement(self.config.nelite_individuals)
 
-        # Get the callback function
-        #callback = kwargs.pop("callback") if "callback" in kwargs else None
+    # -----------------------------------------------------------------
 
-        # Get kwargs for the different functions
-        evaluator_kwargs = kwargs.pop("evaluator_kwargs") if "evaluator_kwargs" in kwargs else None
-        initializator_kwargs = kwargs.pop("initializator_kwargs") if "initializator_kwargs" in kwargs else None
-        mutator_kwargs = kwargs.pop("mutator_kwargs") if "mutator_kwargs" in kwargs else None
-        crossover_kwargs = kwargs.pop("crossover_kwargs") if "crossover_kwargs" in kwargs else None
-        #callback_kwargs = kwargs.pop("callback_kwargs") if "callback_kwargs" in kwargs else None
+    def set_engine_plotter(self, kwargs):
 
-        # Set the callback function
-        #if callback is not None: self.engine.stepCallback.set(callback)
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting plotter for the genetic engine ...")
 
         # Set generations plotter
         self.generations_plotter = kwargs.pop("generations_plotter", None)
         if self.generations_plotter is not None:
             self.generations_plotter.output_path = self.plot_path
             self.engine.stepCallback.set(self.generations_plotter.add_generation)
+
+    # -----------------------------------------------------------------
+
+    def set_engine_database_and_statistics(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the database and statistics adapters ...")
 
         # Set the database adapter
         self.database.open(self.engine)
@@ -431,12 +642,30 @@ class Optimizer(Configurable):
         self.statistics.open(self.engine)
         self.engine.setDBAdapter(self.statistics)
 
+    # -----------------------------------------------------------------
+
+    def set_engine_kwargs(self, kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the kwargs for the engine functions ...")
+
+        # Get kwargs for the different functions
+        evaluator_kwargs = kwargs.pop("evaluator_kwargs") if "evaluator_kwargs" in kwargs else None
+        initializator_kwargs = kwargs.pop("initializator_kwargs") if "initializator_kwargs" in kwargs else None
+        mutator_kwargs = kwargs.pop("mutator_kwargs") if "mutator_kwargs" in kwargs else None
+        crossover_kwargs = kwargs.pop("crossover_kwargs") if "crossover_kwargs" in kwargs else None
+
         # Set kwargs
         if evaluator_kwargs is not None: self.engine.set_kwargs("evaluator", evaluator_kwargs)
         if initializator_kwargs is not None: self.engine.set_kwargs("initializator", initializator_kwargs)
         if mutator_kwargs is not None: self.engine.set_kwargs("mutator", mutator_kwargs)
         if crossover_kwargs is not None: self.engine.set_kwargs("crossover", crossover_kwargs)
-        #if callback_kwargs is not None: self.engine.set_kwargs("callback", callback_kwargs)
 
     # -----------------------------------------------------------------
 

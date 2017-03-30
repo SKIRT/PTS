@@ -126,8 +126,7 @@ def G1DListCrossoverSinglePoint(genome, **args):
     gMom = args["mom"]
     gDad = args["dad"]
 
-    if len(gMom) == 1:
-      utils.raiseException("The 1D List have one element, can't use the Single Point Crossover method !", TypeError)
+    if len(gMom) == 1: raise RuntimeError("The 1D list has only one element, can't use the Single Point Crossover method")
 
     cut = prng.randint(1, len(gMom))
 
@@ -157,8 +156,7 @@ def G1DListCrossoverTwoPoint(genome, **args):
     gMom = args["mom"]
     gDad = args["dad"]
 
-    if len(gMom) == 1:
-      utils.raiseException("The 1D List have one element, can't use the Two Point Crossover method !", TypeError)
+    if len(gMom) == 1: raise RuntimeError("The 1D list has only one element, can't use the Two Point Crossover method")
 
     cuts = [prng.randint(1, len(gMom)), prng.randint(1, len(gMom))]
 
@@ -210,7 +208,9 @@ def G1DListCrossoverUniform(genome, **args):
 
 def G1DListCrossoverOX(genome, **args):
 
-    """ The OX Crossover for G1DList  (order crossover) """
+    """
+    The OX Crossover for G1DList  (order crossover)
+    """
 
     sister = None
     brother = None
@@ -451,7 +451,9 @@ def G2DListCrossoverUniform(genome, **args):
 
 def G2DListCrossoverSingleVPoint(genome, **args):
 
-    """ The crossover of G2DList, Single Vertical Point """
+    """
+    The crossover of G2DList, Single Vertical Point
+    """
 
     sister = None
     brother = None
@@ -478,7 +480,9 @@ def G2DListCrossoverSingleVPoint(genome, **args):
 
 def G2DListCrossoverSingleHPoint(genome, **args):
 
-    """ The crossover of G2DList, Single Horizontal Point """
+    """
+    The crossover of G2DList, Single Horizontal Point
+    """
 
     sister = None
     brother = None

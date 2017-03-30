@@ -386,6 +386,7 @@ class ModelerBase(Configurable):
         # Set the number of generations
         #if self.config.ngenerations is not None: explorer.config.ngenerations = self.config.ngenerations
         # NO: THIS ALWAYS HAVE TO BE ONE: BECAUSE HERE IN THIS CLASS WE ALREADY USE REPEAT(SELF.ADVANCE)
+        # IF NGENERATIONS > 1, THE CONTINUOUSOPTIMIZER IS USED INSTEAD OF THE STEPWISEOPTIMIZER
         self.explorer.config.ngenerations = 1
 
         # Set the number of simulations per generation

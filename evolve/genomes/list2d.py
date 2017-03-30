@@ -79,15 +79,25 @@ class G2DList(GenomeBase):
 
     # -----------------------------------------------------------------
 
+    dimension = 2
+
+    # -----------------------------------------------------------------
+
     def __init__(self, height, width, cloning=False):
 
-        """ The initializator of G2DList representation,
-        height and width must be specified """
+        """
+        The initializator of G2DList representation,
+        height and width must be specified
+        """
 
+        # Call the constructor of the base class
         super(G2DList, self).__init__()
+
+        # Set height and width
         self.height = height
         self.width = width
 
+        # Initialize data structure for the genes
         self.genomeList = [None] * height
         for i in xrange(height):
             self.genomeList[i] = [None] * width

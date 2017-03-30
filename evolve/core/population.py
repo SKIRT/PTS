@@ -307,7 +307,7 @@ class Population(object):
 
         if self.statted:
          return
-        log.debug("Running statistical calculations")
+        log.debug("Running statistical calculations ...")
         raw_sum = 0
 
         len_pop = len(self)

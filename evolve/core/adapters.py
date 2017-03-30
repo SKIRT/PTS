@@ -193,7 +193,7 @@ class DBFileCSV(DataBaseAdapter):
          log.debug("Loading the csv module...")
          self.csvmod = utils.importSpecial("csv")
 
-      log.debug("Opening the CSV file to dump statistics [%s]", self.filename)
+      log.debug("Opening the CSV file to dump statistics '%s'", self.filename)
       open_mode = 'w' if self.reset else 'a'
       self.fHandle = open(self.filename, open_mode)
       self.csvWriter = self.csvmod.writer(self.fHandle, delimiter=';')
@@ -385,10 +385,10 @@ class DBSQLite(DataBaseAdapter):
       """
 
       if self.sqlite3mod is None:
-         log.debug("Loading sqlite3 module...")
+         log.debug("Loading sqlite3 module ...")
          self.sqlite3mod = utils.importSpecial("sqlite3")
 
-      log.debug("Opening database, dbname=%s", self.dbName)
+      log.debug("Opening database from '%s'", self.dbName)
       self.connection = self.sqlite3mod.connect(self.dbName)
 
       temp_stats = statistics.Statistics()
@@ -418,11 +418,13 @@ class DBSQLite(DataBaseAdapter):
 
       """ Close the database connection """
 
-      log.debug("Closing database.")
+      log.debug("Closing database ...")
 
       if self.cursorPool:
+
          self.cursorPool.close()
          self.cursorPool = None
+
       self.connection.close()
 
    # -----------------------------------------------------------------
@@ -433,7 +435,7 @@ class DBSQLite(DataBaseAdapter):
       Commit changes to database
       """
 
-      log.debug("Commiting changes to database.")
+      log.debug("Commiting changes to database ...")
       self.connection.commit()
 
    # -----------------------------------------------------------------
@@ -446,17 +448,19 @@ class DBSQLite(DataBaseAdapter):
       """
 
       if not self.cursorPool:
+
          log.debug("Creating new cursor for database ...")
          self.cursorPool = self.connection.cursor()
          return self.cursorPool
-      else:
-         return self.cursorPool
+
+      else: return self.cursorPool
 
    # -----------------------------------------------------------------
 
    def createStructure(self, stats):
 
-      """ Create table using the Statistics class structure
+      """
+      Create table using the Statistics class structure
       :param stats: the statistics object
       """
 
@@ -828,7 +832,7 @@ class DBMySQLAdapter(DataBaseAdapter):
 
       """ Close the database connection """
 
-      log.debug("Closing database.")
+      log.debug("Closing database ...")
 
       if self.cursorPool:
          self.cursorPool.close()
@@ -839,9 +843,11 @@ class DBMySQLAdapter(DataBaseAdapter):
 
    def commit(self):
 
-      """ Commit changes to database """
+      """
+      Commit changes to database
+      """
 
-      log.debug("Commiting changes to database.")
+      log.debug("Commiting changes to database ...")
       self.connection.commit()
 
    # -----------------------------------------------------------------
@@ -872,12 +878,12 @@ class DBMySQLAdapter(DataBaseAdapter):
       for k, v in stats.items():
          pstmt += "%s %s, " % (k, self.typeDict[type(v)])
       pstmt = pstmt[:-2] + ")"
-      log.debug("Creating table %s: %s.", constants.CDefSQLiteDBTable, pstmt)
+      log.debug("Creating table %s: %s", constants.CDefSQLiteDBTable, pstmt)
       c.execute(pstmt)
 
       pstmt = """create table if not exists %s(identify VARCHAR(80), generation INTEGER,
               individual INTEGER, fitness DOUBLE(14,6), raw DOUBLE(14,6))""" % (constants.CDefMySQLDBTablePop)
-      log.debug("Creating table %s: %s.", constants.CDefMySQLDBTablePop, pstmt)
+      log.debug("Creating table %s: %s", constants.CDefMySQLDBTablePop, pstmt)
       c.execute(pstmt)
       self.commit()
 

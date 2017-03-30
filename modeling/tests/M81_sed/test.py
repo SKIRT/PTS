@@ -613,7 +613,11 @@ class M81SEDTest(M81TestBase):
         # Inform the user
         log.info("Getting the best parameter values ...")
 
-        print(self.modeler.modeler.fitter.fitting_run.best_parameters_table)
+        # Table
+        #self.best_parameter_values = self.modeler.modeler.fitter.fitting_run.best_parameters_table
+
+        # Get the best parameter values
+        self.best_parameter_values = self.modeler.modeler.fitter.fitting_run.best_parameter_values
 
     # -----------------------------------------------------------------
 
@@ -625,8 +629,15 @@ class M81SEDTest(M81TestBase):
         :return:
         """
 
-        print(self.real_parameter_values)
+        print("")
+        print("Test:")
 
+        for label in self.real_parameter_values:
+
+            print(label + ":")
+            print(" - Real value: " + stringify.stringify(self.real_parameter_values[label])[1])
+            print(" - Best fitted value: " + stringify.stringify(self.best_parameter_values[label])[1])
+            print("")
 
 # -----------------------------------------------------------------
 

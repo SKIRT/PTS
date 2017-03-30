@@ -29,14 +29,6 @@ from ..core import constants
 
 # -----------------------------------------------------------------
 
-#class HeterogeneousList(G1DBase):
-#
-#    """
-#    This function ...
-#    """
-
-
-
 class G1DList(G1DBase):
 
     """ G1DList Class - The 1D List chromosome representation
@@ -107,8 +99,10 @@ class G1DList(G1DBase):
         size parameter must be specified
         """
 
+        # Call the constructor of the base class
         super(G1DList, self).__init__(size)
 
+        # If we are not cloning
         if not cloning:
 
             self.initializator.set(constants.CDefG1DListInit)

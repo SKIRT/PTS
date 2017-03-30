@@ -25,30 +25,38 @@ from ...core.tools.random import prng
 
 class GenomeBase(object):
 
-   """
-   GenomeBase Class - The base of all chromosome representation
-   """
+    """
+    GenomeBase Class - The base of all chromosome representation
+    """
 
-   __slots__ = ["evaluator", "initializator", "mutator", "crossover", "internalParams", "score", "fitness"]
+    __slots__ = ["evaluator", "initializator", "mutator", "crossover", "internalParams", "score", "fitness"]
 
-   def __init__(self):
+    # -----------------------------------------------------------------
+
+    dimension = None
+
+    # -----------------------------------------------------------------
+
+    def __init__(self):
 
         """
         Genome Constructor
         """
 
+        # Create function slots
         self.evaluator = FunctionSlot("Evaluator")
         self.initializator = FunctionSlot("Initializator")
         self.mutator = FunctionSlot("Mutator")
         self.crossover = FunctionSlot("Crossover")
 
+        # Initialize attributes
         self.internalParams = {}
         self.score = 0.0
         self.fitness = 0.0
 
-   # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
-   def getRawScore(self):
+    def getRawScore(self):
 
         """
         Get the Raw Score of the genome
@@ -57,9 +65,9 @@ class GenomeBase(object):
 
         return self.score
 
-   # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
-   def getFitnessScore(self):
+    def getFitnessScore(self):
 
         """
         Get the Fitness Score of the genome
@@ -68,9 +76,9 @@ class GenomeBase(object):
 
         return self.fitness
 
-   # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
-   def __repr__(self):
+    def __repr__(self):
 
         """
         Returns a string representation of Genome
@@ -90,9 +98,9 @@ class GenomeBase(object):
 
         return ret
 
-   # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
-   def setParams(self, **args):
+    def setParams(self, **args):
 
         """
         Set the internal params
@@ -105,9 +113,9 @@ class GenomeBase(object):
 
         self.internalParams.update(args)
 
-   # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
-   def getParam(self, key, nvl=None):
+    def getParam(self, key, nvl=None):
 
         """
         Gets an internal parameter
@@ -122,9 +130,9 @@ class GenomeBase(object):
 
         return self.internalParams.get(key, nvl)
 
-   # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
-   def resetStats(self):
+    def resetStats(self):
 
         """
         Clear score and fitness of genome
@@ -133,9 +141,9 @@ class GenomeBase(object):
         self.score = 0.0
         self.fitness = 0.0
 
-   # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
-   def evaluate(self, **kwargs):
+    def evaluate(self, **kwargs):
 
         """
         Evaluate the genome
@@ -147,9 +155,9 @@ class GenomeBase(object):
         # Call each evalator function, add the score
         for it in self.evaluator.applyFunctions(self, **kwargs): self.score += it
 
-   # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
-   def initialize(self, **kwargs):
+    def initialize(self, **kwargs):
 
         """
         Initialize the genome
@@ -159,9 +167,9 @@ class GenomeBase(object):
         # Call each initializator function
         for it in self.initializator.applyFunctions(self, **kwargs): pass
 
-   # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
-   def mutate(self, **kwargs):
+    def mutate(self, **kwargs):
 
         """
         Called to mutate the genome
@@ -176,38 +184,38 @@ class GenomeBase(object):
 
         return nmuts
 
-   # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
-   def copy(self, g):
+    def copy(self, g):
 
-      """
-      Copy the current GenomeBase to 'g'
-      :param g: the destination genome
-      .. note:: If you are planning to create a new chromosome representation, you
+        """
+        Copy the current GenomeBase to 'g'
+        :param g: the destination genome
+        .. note:: If you are planning to create a new chromosome representation, you
                 **must** implement this method on your class.
-      """
+        """
 
-      g.score = self.score
-      g.fitness = self.fitness
-      g.evaluator = self.evaluator
-      g.initializator = self.initializator
-      g.mutator = self.mutator
-      g.crossover = self.crossover
-      g.internalParams = self.internalParams
+        g.score = self.score
+        g.fitness = self.fitness
+        g.evaluator = self.evaluator
+        g.initializator = self.initializator
+        g.mutator = self.mutator
+        g.crossover = self.crossover
+        g.internalParams = self.internalParams
 
-   # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
-   def clone(self):
+    def clone(self):
 
-      """ Clone this GenomeBase
-      :rtype: the clone genome
-      .. note:: If you are planning to create a new chromosome representation, you
+        """ Clone this GenomeBase
+        :rtype: the clone genome
+        .. note:: If you are planning to create a new chromosome representation, you
                 **must** implement this method on your class.
-      """
+        """
 
-      newcopy = GenomeBase()
-      self.copy(newcopy)
-      return newcopy
+        newcopy = GenomeBase()
+        self.copy(newcopy)
+        return newcopy
 
 # -----------------------------------------------------------------
 
@@ -224,6 +232,10 @@ class G1DBase(GenomeBase):
 
     # -----------------------------------------------------------------
 
+    dimension = 1
+
+    # -----------------------------------------------------------------
+
     def __init__(self, size):
 
         """
@@ -231,7 +243,10 @@ class G1DBase(GenomeBase):
         :param size:
         """
 
+        # Call the constructor of the base class
         super(G1DBase, self).__init__()
+
+        # Attributes
         self.genomeSize = size
         self.genomeList = []
 
@@ -331,6 +346,18 @@ class G1DBase(GenomeBase):
 
     # -----------------------------------------------------------------
 
+    def getSize(self):
+
+        """
+        This function ...
+        EXACTLY THE SAME AS THE GETLISTSIZE FUNCTION ABOVE
+        :return:
+        """
+
+        return self.genomeSize
+
+    # -----------------------------------------------------------------
+
     def resumeString(self):
 
         """
@@ -355,13 +382,13 @@ class G1DBase(GenomeBase):
 
     def remove(self, value):
 
-      """
-      Removes an item from the list
-      Example: genome.remove(44)
-      :param value: value to be added
-      """
+        """
+        Removes an item from the list
+        Example: genome.remove(44)
+        :param value: value to be added
+        """
 
-      self.genomeList.remove(value)
+        self.genomeList.remove(value)
 
     # -----------------------------------------------------------------
 
@@ -377,7 +404,8 @@ class G1DBase(GenomeBase):
 
     def copy(self, g):
 
-        """ Copy genome to 'g'
+        """
+        Copy genome to 'g'
         Example:
          genome_origin.copy(genome_destination)
         :param g: the destination instance

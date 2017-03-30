@@ -21,12 +21,12 @@ class UserIntervention(Exception):
     the execution should be halted or aborted.
     """
 
-    def __init__(self, message, configurable_class, function_name):
+    def __init__(self, message, cls, function_name):
 
         """
         The constructor ...
         :param message:
-        :param configurable_class:
+        :param cls:
         :param function_name:
         """
 
@@ -34,7 +34,7 @@ class UserIntervention(Exception):
         self.message = message
 
         # Set the class and function name
-        self.configurable_class = configurable_class
+        self.cls = cls
         self.function_name = function_name
 
         # Call the constructor of the base class

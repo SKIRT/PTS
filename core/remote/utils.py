@@ -45,11 +45,11 @@ class DetachedCalculation(Exception):
     algorithm should be pauzed/aborted and its state saved.
     """
 
-    def __init__(self, configurable_class, function_name):
+    def __init__(self, cls, function_name):
 
         """
         The constructor ...
-        :param configurable_class:
+        :param cls:
         :param function_name:
         """
 
@@ -62,7 +62,7 @@ class DetachedCalculation(Exception):
         # Special attributes
 
         # The class and function name
-        self.configurable_class = configurable_class
+        self.cls = cls
         self.function_name = function_name
 
         # Call the constructor of the base class

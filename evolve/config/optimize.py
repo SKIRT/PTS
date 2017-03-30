@@ -11,6 +11,12 @@ from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
+crossover_methods = ["single_point", "two_point", "uniform", "OX", "edge", "cut_crossfill", "real_SBX", "single_vertical_point", "single_horizontal_point"]
+mutation_methods = ["range", "gaussian", "binary"]
+min_or_max = ["minimize", "maximize"]
+
+# -----------------------------------------------------------------
+
 # Create the configuration
 definition = ConfigurationDefinition()
 
@@ -25,11 +31,12 @@ definition.add_optional("best_raw_score", "real", "best raw score")
 definition.add_optional("ngenerations", "positive_integer", "number of generations", 100)
 definition.add_optional("mutation_rate", "real", "mutation rate", 0.02)
 definition.add_optional("crossover_rate", "real", "crossover rate", 0.9)
+definition.add_optional("crossover_method", "string", "crossover method", default="single_point", choices=crossover_methods)
 definition.add_optional("stats_freq", "integer", "frequency of statistics (in number of generations)", 50)
 definition.add_optional("best_raw_score", "real", "best score for an individual")
 definition.add_optional("round_decimal", "integer", "round everything to this decimal place", 2)
-definition.add_optional("mutation_method", "string", "mutation method", choices=["range", "gaussian", "binary"])
-definition.add_optional("min_or_max", "string", "minimize or maximize", choices=["minimize", "maximize"])
+definition.add_optional("mutation_method", "string", "mutation method", choices=mutation_methods)
+definition.add_optional("min_or_max", "string", "minimize or maximize", choices=min_or_max)
 definition.add_optional("run_id", "string", "identifier for this run", default="run0")
 definition.add_optional("database_frequency", "positive_integer", "frequency of appending to the database (in the number of generations)", 1)
 definition.add_optional("statistics_frequency", "positive_integer", "frequency of appending to the statistics table", 1)

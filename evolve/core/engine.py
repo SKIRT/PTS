@@ -977,7 +977,7 @@ class GeneticEngine(object):
 
         # Clone the current internal population
         new_population = Population(self.internalPop)
-        log.debug("Population was cloned.")
+        log.debug("Population was cloned")
 
         #size_iterate = len(self.internalPop)
         size_iterate = self.internalPop.popSize

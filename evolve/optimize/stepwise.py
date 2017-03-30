@@ -60,6 +60,9 @@ class StepWiseOptimizer(Optimizer):
         :return:
         """
 
+        # Debugging
+        log.debug("Loading optimizer from '" + dir_path + "' ...")
+
         # Determine the path to the engine
         engine_path = fs.join(dir_path, "engine.pickle")
 
@@ -88,6 +91,17 @@ class StepWiseOptimizer(Optimizer):
         :return:
         """
 
+        # Debugging
+        log.debug("Loading optimizer from:")
+        log.debug("")
+        log.debug(" - Engine: " + engine_path)
+        log.debug(" - PRNG: " + prng_path)
+        log.debug(" - Configuration: " + config_path)
+        log.debug(" - Statistics: " + statistics_path)
+        log.debug(" - Database: " + database_path)
+        log.debug(" - Output: " + output_path)
+        log.debug("")
+
         # Load the engine
         engine = GeneticEngine.from_file(engine_path)
 
@@ -105,11 +119,13 @@ class StepWiseOptimizer(Optimizer):
 
         # Load the statistics (opening is done during initialization or evolution)
         if not fs.is_file(statistics_path): raise IOError("The statistics file could not be found at '" + statistics_path + "'")
+        log.debug("Loading the statistics from '" + statistics_path + "' ...")
         optimizer.statistics = DBFileCSV(filename=statistics_path, reset=False)
 
         # Load the database (opening is done during initialization or evolution)
         if not fs.is_file(database_path): raise IOError("The database could not be found at '" + database_path + "'")
-        optimizer.database = DBSQLite(dbname=database_path)
+        log.debug("Loading the database from '" + database_path + "' ...")
+        optimizer.database = DBSQLite(dbname=database_path, resetDB=False)
 
         # Set the path
         optimizer.config.output = output_path
@@ -277,9 +293,8 @@ class StepWiseOptimizer(Optimizer):
         # Inform the user
         log.info("Evolve ...")
 
-        # Set the database adapter again
-        self.database.open(self.engine)
-        self.engine.setDBAdapter(self.database)
+        # Set the database and statistics adapters again
+        self.set_engine_database_and_statistics()
 
         # Make sure we don't stop unexpectedly, always increment the number of generations we want
         # (it doesn't matter what the value is)
