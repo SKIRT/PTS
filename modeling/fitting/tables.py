@@ -357,6 +357,18 @@ class GenerationsTable(SmartTable):
     # -----------------------------------------------------------------
 
     @property
+    def ngenetic_generations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.genetic_generations)
+
+    # -----------------------------------------------------------------
+
+    @property
     def genetic_generations_with_initial(self):
 
         """
@@ -372,6 +384,18 @@ class GenerationsTable(SmartTable):
 
         # Return the list of generation name
         return names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ngenetic_generations_with_initial(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.genetic_generations_with_initial)
 
     # -----------------------------------------------------------------
 

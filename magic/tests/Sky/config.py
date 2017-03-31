@@ -5,10 +5,15 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-# -----------------------------------------------------------------
-#  Package initialization file
+# Import the relevant PTS classes and modules
+from pts.core.basics.configuration import ConfigurationDefinition
+from pts.core.remote.host import find_host_ids
+from pts.modeling.tests.base import possible_free_parameters, default_free_parameters
+from pts.modeling.fitting.configuration import genetic_definition
+
 # -----------------------------------------------------------------
 
-## \package pts.magic.tests
+# Create definition
+definition = ConfigurationDefinition(write_config=False)
 
 # -----------------------------------------------------------------

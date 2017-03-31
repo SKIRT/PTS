@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import sqlite3
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, ArgumentConfigurationSetter
 from pts.core.tools.logging import setup_log
 from pts.core.basics.range import IntegerRange
 
@@ -26,8 +26,9 @@ from pts.core.basics.range import IntegerRange
 definition = ConfigurationDefinition(write_config=False)
 definition.add_required("filename", "file_path", "database file name/path")
 definition.add_required("run_id", "string", "optimization run ID")
-definition.add_required("check", "nonnegative_integer", "")
-setter = InteractiveConfigurationSetter("check_database", add_cwd=False, add_logging=False)
+definition.add_required("check", "positive_integer", "check index")
+#setter = InteractiveConfigurationSetter("check_database", add_cwd=False, add_logging=False)
+setter = ArgumentConfigurationSetter("check_database", add_cwd=False, add_logging=False)
 config = setter.run(definition)
 
 # Create logger
@@ -59,7 +60,7 @@ individual_range = IntegerRange(1, 2)
 # -----------------------------------------------------------------
 
 # First check
-if config.index == 0:
+if config.check == 0:
 
     # Select multiple generations
     ret = c.execute("select distinct generation from population where identify = ? and generation between ? and ?", (identifier, generation_range.min, generation_range.max))
@@ -126,7 +127,7 @@ if config.index == 0:
 
 # -----------------------------------------------------------------
 
-elif config.index == 1:
+elif config.check == 1:
 
     #if options.genrange:
         #genrange = options.genrange.split(":")
@@ -141,7 +142,7 @@ elif config.index == 1:
 
 # -----------------------------------------------------------------
 
-elif config.index == 2: pass
+elif config.check == 2: pass
 
 # -----------------------------------------------------------------
 

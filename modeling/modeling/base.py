@@ -110,6 +110,18 @@ class ModelerBase(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def multiple_generations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.ngenerations > 1
+
+    # -----------------------------------------------------------------
+
     def setup(self, **kwargs):
 
         """
@@ -240,11 +252,29 @@ class ModelerBase(Configurable):
         # Load the generations table
         generations = get_generations_table(self.modeling_path, self.fitting_run_name)
 
-        # If finishing the generation is requested
-        if self.config.finish or (self.config.ngenerations > 1 and generations.ngenerations == self.config.ngenerations): self.finish()
+        # If we do multiple generations at once
+        if self.multiple_generations:
 
-        # Advance the fitting with a new generations
-        else: repeat(self.advance, self.config.ngenerations)
+            # Start: launch the initial generation
+            self.start()
+
+            # Advance: launch generations 0 -> (n-1)
+            repeat(self.advance, self.config.generations)
+
+            # Finish
+            self.finish()
+
+        # We just do one generation now, or finish
+        else:
+
+            # If finishing the generation is requested
+            if self.config.finish: self.finish()
+
+            # If this is the initial generation
+            elif generations.last_generation_name is None: self.start()
+
+            # Advance the fitting with a new generation
+            else: self.advance()
 
     # -----------------------------------------------------------------
 
@@ -272,6 +302,21 @@ class ModelerBase(Configurable):
 
     # -----------------------------------------------------------------
 
+    def start(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Starting with a randomly created generation ...")
+
+        # Explore
+        self.explore()
+
+    # -----------------------------------------------------------------
+
     def advance(self):
 
         """
@@ -285,9 +330,11 @@ class ModelerBase(Configurable):
         # Load the generations table
         generations = get_generations_table(self.modeling_path, self.fitting_run_name)
 
+        # Check whether there is a generation preceeding this one
+        if generations.last_generation_name is None: raise RuntimeError("Preceeding generation cannot be found")
+
         # Debugging
-        if generations.last_generation_name is not None: log.debug("Previous generation: " + generations.last_generation_name)
-        else: log.debug("Will be launching the initial generation ...")
+        log.debug("Previous generation: " + generations.last_generation_name)
 
         # If some generations have not finished, check the status of and retrieve simulations
         if generations.has_unfinished and self.has_configured_fitting_host_ids: self.synchronize()
@@ -303,7 +350,7 @@ class ModelerBase(Configurable):
         if generations.all_finished: self.explore()
 
         # Do SED fitting after the exploration step if it has been performed locally (simulations are done, evaluation can be done directly)
-        if self.moderator.single_is_local("fitting"): self.finish()
+        #if self.moderator.single_is_local("fitting"): self.finish()
 
     # -----------------------------------------------------------------
 

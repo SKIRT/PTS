@@ -26,3 +26,20 @@ def repeat(target, ntimes):
     for _ in range(ntimes): target()
 
 # -----------------------------------------------------------------
+
+def repeat_multiple(*targets, **kwargs):
+
+    """
+    This function ...
+    :param targets:
+    :param kwargs:
+    :return:
+    """
+
+    ntimes = kwargs.pop("ntimes")
+
+    # Repeat
+    for _ in range(ntimes):
+        for target in targets: target()
+
+# -----------------------------------------------------------------
