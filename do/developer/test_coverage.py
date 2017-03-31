@@ -22,6 +22,7 @@ from pts.core.tools import formatting as fmt
 from pts.core.test.pts import tests_for_subproject, path_for_test
 from pts.core.tools import filesystem as fs
 from pts.core.tools import sequences
+from pts.core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -35,6 +36,10 @@ classes = list(introspection.all_concrete_configurable_classes())
 
 # Initialize container
 in_tests = [False] * len(classes)
+
+# -----------------------------------------------------------------
+
+log = setup_log(level="INFO")
 
 # -----------------------------------------------------------------
 
@@ -54,7 +59,8 @@ for subproject in introspection.subprojects:
         test_module = imp.load_source(name, filepath)
 
         # Get properties of the test module
-        description = test_module.description
+        try: description = test_module.description
+        except AttributeError: log.warning("Description not specified for test '" + name + "'")
 
         # Iterate over these:
         commands = test_module.commands

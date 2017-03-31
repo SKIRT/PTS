@@ -20,9 +20,6 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 from skimage.restoration import inpaint
 
-# Import astronomical modules
-from photutils.background import Background
-
 # -----------------------------------------------------------------
 
 def inpaint_biharmonic(frame, mask):
@@ -237,28 +234,5 @@ def sincinterp(image, x, y, kernel_size=3 ):
 
     # Return the interpolated image
     return r
-
-# -----------------------------------------------------------------
-
-def low_res_interpolation(frame, downsample_factor, mask=None):
-
-    """
-    This function ...
-    :param frame:
-    :param downsample_factor:
-    :param mask:
-    :return:
-    """
-
-    # Calculate the x and y size of the low-resolution map of the data
-    low_res_x_size = int(round(frame.xsize / downsample_factor))
-    low_res_y_size = int(round(frame.ysize / downsample_factor))
-
-    # Create the background by interpolation
-    back = Background(np.asarray(frame), (low_res_y_size, low_res_x_size), filter_shape=(3, 3), filter_threshold=None, mask=mask,
-                      method='sextractor', backfunc=None, interp_order=3, sigclip_sigma=3.0, sigclip_iters=10)
-
-    # Return the data
-    return back
 
 # -----------------------------------------------------------------

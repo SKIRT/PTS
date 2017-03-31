@@ -115,11 +115,11 @@ class ApertureNoiseCalculator(Configurable):
         # Try the exact method
         success = self.try_exact()
 
-        # Try the interpolation method
+        # Try the extrapolation method
         if not success:
 
             # Debugging
-            log.debug("Unable to estiamte aperture noise using full-size randomly-placed sky apertures (only " + str(int(self.exact_calculator.sky_success_counter)) + " could be placed); switching to aperture extrapolation.")
+            log.debug("Unable to estimate aperture noise using full-size randomly-placed sky apertures (only " + str(int(self.exact_calculator.sky_success_counter)) + " could be placed); switching to aperture extrapolation.")
 
             # Try the extrapolation method
             success = self.try_extrapolation()

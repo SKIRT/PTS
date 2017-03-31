@@ -95,7 +95,10 @@ def tests_and_descriptions_for_subproject(subproject):
         test_module = imp.load_source(name, filepath)
 
         # Get the description
-        description = test_module.description
+        try: description = test_module.description
+        except AttributeError:
+            log.warning("Description for test '" + name + "' is not given")
+            description = "no description"
 
         # Add to the tests dictionary
         tests[name] = description
@@ -410,7 +413,8 @@ class PTSTestSuite(Configurable):
                 test_module = imp.load_source(name, filepath)
 
                 # Get properties of the test module
-                description = test_module.description
+                try: description = test_module.description
+                except AttributeError: raise RuntimeError("Description not specified for the '" + name + "' test")
 
                 # Get the test function
                 test_function = test_module.test

@@ -394,8 +394,10 @@ def GaussRing( x, params, mag=True, magOutput=True ):
 
 # -----------------------------------------------------------------
 
-def Gauss2Side( x, params, mag=True, magOutput=True ):
-	"""Compute surface brightness for a profile consisting of an asymmetric
+def Gauss2Side( x, params, mag=True, magOutput=True):
+
+	"""
+	Compute surface brightness for a profile consisting of an asymmetric
 	Gaussian, given input parameters in vector params:
 		params[0] = x-value of Gaussian center.
 		params[1] = A_gauss_mag [= magnitudes/sq.arcsec if mag=True]
@@ -438,8 +440,10 @@ def Gauss2Side( x, params, mag=True, magOutput=True ):
 
 # -----------------------------------------------------------------
 
-def GaussRing2Side( x, params, mag=True, magOutput=True ):
-	"""Compute surface brightness for a profile consisting of an asymmetric
+def GaussRing2Side(x, params, mag=True, magOutput=True):
+
+	"""
+	Compute surface brightness for a profile consisting of an asymmetric
 	Gaussian, given input parameters in vector params:
 		params[0] = ignored.
 		params[1] = A_gauss_mag [= magnitudes/sq.arcsec if mag=True]
@@ -489,9 +493,10 @@ def GaussRing2Side( x, params, mag=True, magOutput=True ):
 # the imfit-compatible functions given above.
 # -----------------------------------------------------------------
 
-def ExpMag( x, params ):
+def ExpMag(x, params):
 
-	"""Compute surface brightness for a profile consisting of an exponential,
+	"""
+	Compute surface brightness for a profile consisting of an exponential,
 	given input parameters in vector params:
 		params[0] = mu_0
 		params[1] = h
@@ -504,8 +509,10 @@ def ExpMag( x, params ):
 
 # -----------------------------------------------------------------
 
-def vdKBessel( r, mu00, h ):
-	"""Implements the f(r) part of van der Kruit & Searle's (1981) edge-on
+def vdKBessel(r, mu00, h):
+
+	"""
+	Implements the f(r) part of van der Kruit & Searle's (1981) edge-on
 	disk function.
 	For scalar values only!
 	"""
@@ -535,10 +542,13 @@ def EdgeOnDisk(rr, p):
 # counts/pixel and dimensions are in pixels
 
 def TotalMagExp( params, zeroPoint=0, magOut=True, ell=0.0 ):
-	"""Calculate the total magnitude (or flux if magOut=False) for an
+
+	"""
+	Calculate the total magnitude (or flux if magOut=False) for an
 	2D exponential with [I_0, h] = params, where I_0 is in counts/pixel
 	and h is in pixels.  Optionally, the ellipticity can be specified.
 	"""
+
 	I_0 = params[0]
 	h = params[1]
 	totalFlux = 2 * math.pi * I_0 * (h*h) * (1.0 - ell)
@@ -549,8 +559,10 @@ def TotalMagExp( params, zeroPoint=0, magOut=True, ell=0.0 ):
 
 # -----------------------------------------------------------------
 
-def TotalMagSersic( params, zeroPoint=0, magOut=True, ell=0.0 ):
-	"""Calculate the total magnitude (or flux if magOut=False) for a
+def TotalMagSersic( params, zeroPoint=0, magOut=True, ell=0.0):
+
+	"""
+	Calculate the total magnitude (or flux if magOut=False) for a
 	2D Sersic function with [n, I_e, r_e] = params, where I_0 is in counts/pixel
 	and h is in pixels.  Optionally, the ellipticity can be specified.
 	"""

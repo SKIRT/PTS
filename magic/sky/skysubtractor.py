@@ -46,6 +46,7 @@ from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
 from ...core.basics.distribution import Distribution
 from ..misc import chrisfuncs
+from ..core.mask import Mask as newMask
 
 # -----------------------------------------------------------------
 
@@ -110,21 +111,16 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, frame, principal_shape, sources_mask, extra_mask=None, saturation_region=None, animation=None):
+    def run(self, **kwargs):
 
         """
         This function ...
-        :param frame:
-        :param principal_shape:
-        :param sources_mask:
-        :param extra_mask:
-        :param saturation_region:
-        :param animation:
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(frame, principal_shape, sources_mask, extra_mask, saturation_region, animation)
+        self.setup(**kwargs)
 
         # 2. Create the sky region
         self.create_region()
@@ -177,37 +173,32 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self, frame, principal_shape, sources_mask, extra_mask=None, saturation_region=None, animation=None):
+    def setup(self, **kwargs):
 
         """
         This function ...
-        :param frame:
-        :param principal_shape:
-        :param sources_mask:
-        :param extra_mask:
-        :param saturation_region:
-        :param animation:
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(SkySubtractor, self).setup()
+        super(SkySubtractor, self).setup(**kwargs)
 
-        # Make a local reference to the image frame
-        self.frame = frame
+        # Get the frame
+        if "frame" in kwargs: self.frame = kwargs.pop("frame")
+        elif self.config.image is not None: self.frame = Frame.from_file(self.config.image)
+        else: raise ValueError("Frame must be given as input or image path should be set in configuration")
 
-        # Make a reference to the principal shape
-        self.principal_shape = principal_shape
+        # Get other required
+        self.sources_mask = kwargs.pop("sources_mask")
 
-        # Set the masks
-        self.sources_mask = sources_mask
-        self.extra_mask = extra_mask
+        # NOT REQUIRED ANYMORE
+        if "principal_shape" in kwargs: self.principal_shape = kwargs.pop("principal_shape")
 
-        # Set the saturation_region
-        self.saturation_region = saturation_region
-
-        # Make a reference to the animation
-        self.animation = animation
+        # Get optional input
+        self.extra_mask = kwargs.pop("extra_mask", None)
+        self.saturation_region = kwargs.pop("saturation_region", None)
+        self.animation = kwargs.pop("animation", None)
 
     # -----------------------------------------------------------------
 
@@ -223,11 +214,12 @@ class SkySubtractor(Configurable):
 
         # If the sky region has to be loaded from file
         if self.config.sky_region is not None:
-            sky_region = SkyRegion.from_file(self.config.sky_region)
+
+            sky_region = SkyRegionList.from_file(self.config.sky_region)
             self.region = sky_region.to_pixel(self.frame.wcs)
 
         # If no region file is given by the user, create an annulus from the principal ellipse
-        else:
+        elif self.principal_shape is not None:
 
             # Create the sky annulus
             annulus_outer_factor = self.config.mask.annulus_outer_factor
@@ -236,11 +228,13 @@ class SkySubtractor(Configurable):
             outer_shape = self.principal_shape * annulus_outer_factor
 
             # Create the annulus
-            annulus = Composite(outer_shape, inner_shape)
+            annulus = PixelCompositeRegion(outer_shape, inner_shape)
 
             # Create the sky region consisting of only the annulus
-            self.region = Region()
+            self.region = PixelRegionList()
             self.region.append(annulus)
+
+        #else: log.warning("No central region or sky regions have been defined")
 
     # -----------------------------------------------------------------
 
@@ -254,18 +248,32 @@ class SkySubtractor(Configurable):
         # Inform the user
         log.info("Creating the sky mask ...")
 
-        # Create a mask from the pixels outside of the sky region
-        outside_mask = self.region.to_mask(self.frame.xsize, self.frame.ysize).inverse()
+        masks = []
 
-        # Create a mask from the principal shape
-        principal_mask = self.principal_shape.to_mask(self.frame.xsize, self.frame.ysize)
+        if self.region is not None:
+
+            # Create a mask from the pixels outside of the sky region
+            outside_mask = self.region.to_mask(self.frame.xsize, self.frame.ysize).inverse()
+            masks.append(outside_mask)
+
+        if self.principal_shape is not None:
+
+            # Create a mask from the principal shape
+            principal_mask = self.principal_shape.to_mask(self.frame.xsize, self.frame.ysize)
+            masks.append(principal_mask)
+
+        # Sources mask
+        masks.append(self.sources_mask)
 
         #plotting.plot_mask(outside_mask, title="outside mask")
         #plotting.plot_mask(principal_mask, title="principal mask")
         #plotting.plot_mask(self.sources_mask, title="sources mask")
 
+        # NEW
+        self.mask = newMask.union(*masks)
+
         # Set the mask, make a copy of the input mask initially
-        self.mask = self.sources_mask + outside_mask + principal_mask
+        #self.mask = self.sources_mask + outside_mask + principal_mask
 
         # Add the extra mask (if specified)
         if self.extra_mask is not None: self.mask += self.extra_mask
