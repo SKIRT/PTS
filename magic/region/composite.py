@@ -117,6 +117,21 @@ class PixelCompositeRegion(CompositeRegion, PixelRegion):
 
         return PixelCoordinate(self.axis1_center, self.axis2_center)
 
+    # -----------------------------------------------------------------
+
+    def to_mask(self, x_size, y_size):
+
+        """
+        This function ...
+        :param x_size:
+        :param y_size:
+        :return:
+        """
+
+        from ..core.mask import Mask
+        masks = [element.to_mask(x_size, y_size) for element in self.elements]
+        return Mask.union(*masks)
+
 # -----------------------------------------------------------------
 
 class SkyCompositeRegion(CompositeRegion, SkyRegion):

@@ -84,7 +84,8 @@ def sigma_clip_mask(data, sigma_level=3.0, mask=None):
     #if not isinstance(new_mask, Mask): print(new_mask, mask)
 
     # Assert the mask is of type 'Mask'
-    assert isinstance(new_mask, Mask)
+    from ..core.mask import Mask as newMask
+    assert isinstance(new_mask, Mask) or isinstance(new_mask, newMask)
 
     # Return the new or updated mask
     return new_mask

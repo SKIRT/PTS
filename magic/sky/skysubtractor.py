@@ -28,7 +28,9 @@ from scipy.interpolate import SmoothBivariateSpline
 # from sklearn.pipeline import Pipeline
 
 # Import astronomical modules
-from photutils.background import Background
+from photutils.background import Background2D
+from photutils import SigmaClip
+from photutils import SExtractorBackground
 from astropy.modeling import models
 from astropy.modeling.fitting import LevMarLSQFitter
 from astropy import stats
@@ -130,6 +132,8 @@ class SkySubtractor(Configurable):
 
         # 4. Do an extra sigma-clipping step on the data
         if self.config.sigma_clip_mask: self.sigma_clip()
+
+        print(self.config)
 
         # 5. Estimate the sky (and sky noise)
         self.estimate()
@@ -345,7 +349,7 @@ class SkySubtractor(Configurable):
         elif self.config.estimation.method == "caapr": self.estimate_caapr()
 
         # Unkown sky estimation method
-        else: raise ValueError("Unknown sky estimation method")
+        else: raise ValueError("Unknown sky estimation method: '" + self.config.estimation.method + "'")
 
     # -----------------------------------------------------------------
 
@@ -420,8 +424,19 @@ class SkySubtractor(Configurable):
         # Inform the user
         log.info("Estimating the sky and sky noise by using photutils ...")
 
-        bkg = Background(self.frame, (50, 50), filter_shape=(3, 3), filter_threshold=None, mask=self.mask,
-                  method="sextractor", backfunc=None, interp_order=3, sigclip_sigma=3.0, sigclip_iters=10)
+        # PHOTUTILS 0.2
+        #bkg = Background(self.frame, (50, 50), filter_shape=(3, 3), filter_threshold=None, mask=self.mask,
+        #          method="sextractor", backfunc=None, interp_order=3, sigclip_sigma=3.0, sigclip_iters=10)
+
+        box_shape = (50,50)
+        filter_size = (3,3)
+
+        # NEW
+        sigma_clip = SigmaClip(sigma=3., iters=10)
+        # bkg_estimator = MedianBackground()
+        bkg_estimator = SExtractorBackground()
+        bkg = Background2D(self.frame, box_shape, filter_size=filter_size, sigma_clip=sigma_clip,
+                           bkg_estimator=bkg_estimator, mask=self.mask, filter_threshold=None)
 
         # Masked background
         masked_background = np.ma.masked_array(bkg.background, mask=self.mask)
@@ -466,9 +481,6 @@ class SkySubtractor(Configurable):
 
         # Inform the user
         log.info("Estimating the sky and sky noise by using or own procedures ...")
-
-        # Check whether the FWHM is defined for the frame
-        if self.frame.fwhm is None: raise RuntimeError("The FWHM of the frame is not defined: sky apertures cannot be generated")
 
         # Determine the aperture radius
         aperture_radius = self.determine_aperture_radius()
@@ -519,9 +531,19 @@ class SkySubtractor(Configurable):
         :return:
         """
 
-        # Determine the radius for the sky apertures
-        fwhm_pix = self.frame.fwhm_pix
-        radius = 4.0 * fwhm_pix
+        # Inform the user
+        log.info("Setting the aperture radius ...")
+
+        # Whether or not user has chosen this value
+        if self.config.estimation.aperture_radius is not None: radius = self.config.estimation.aperture_radius
+        else:
+
+            # Check whether the FWHM is defined for the frame
+            if self.frame.fwhm is None: raise RuntimeError("The FWHM of the frame is not defined: sky apertures cannot be generated")
+
+            # Determine the radius for the sky apertures
+            fwhm_pix = self.frame.fwhm_pix
+            radius = self.config.estimation.aperture_fwhm_factor * fwhm_pix
 
         # Debugging
         log.debug("Using sky apertures with a radius of " + str(radius) + " pixels")
@@ -743,7 +765,7 @@ class SkySubtractor(Configurable):
 
             center = aperture_centers[i]
 
-            circle = Circle(center, aperture_radius)
+            circle = PixelCircleRegion(center, aperture_radius)
 
             mask = Mask.from_shape(circle, self.frame.xsize, self.frame.ysize)
 

@@ -40,6 +40,7 @@ from ..basics.vector import Pixel
 from ...core.basics.unit import PhotometricUnit
 from ...core.basics.unit import parse_unit as u
 from ...core.filter.filter import parse_filter
+#from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -61,6 +62,11 @@ class Frame(NDDataArray):
         :param data:
         :param kwargs:
         """
+
+        # Check the data
+        #if data.dtype.type not in types.real_types:
+        #    if data.dtype.type in types.integer_types: pass
+        #    else: data = np.array(data, dtype=float)
 
         wcs = kwargs.pop("wcs", None)
         unit = kwargs.pop("unit", None)
@@ -1316,6 +1322,33 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def rotate(self, angle):
+
+        """
+        This function ...
+        :param angle:
+        :return:
+        """
+
+        data = ndimage.interpolation.rotate(self, angle.to("deg").value, reshape=False, order=1, mode='constant',
+                                            cval=float('nan'))
+        # Replace data
+        self._data = data
+
+        # Rotate wcs
+        if self.wcs is not None:
+
+            rotated_wcs = self.wcs.deepcopy()
+            rotated_wcs.rotateCD(angle)  # STILL UNTESTED
+
+            # Replace wcs
+            self.wcs = rotated_wcs
+
+        # Return mask of padded pixels
+        return self.nans()
+
+    # -----------------------------------------------------------------
+
     def rotated(self, angle):
 
         """
@@ -1326,7 +1359,7 @@ class Frame(NDDataArray):
 
         # Calculate the rotated array
         #frame[np.isnan(frame)] = 0.0
-        data = ndimage.interpolation.rotate(self, angle, reshape=False, order=1, mode='constant', cval=float('nan'))
+        data = ndimage.interpolation.rotate(self, angle.to("deg").value, reshape=False, order=1, mode='constant', cval=float('nan'))
         #new_frame = misc.imrotate(frame, angle, interp="bilinear")
 
         # Convert the wcs to header

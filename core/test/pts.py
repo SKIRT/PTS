@@ -454,7 +454,7 @@ class PTSTestSuite(Configurable):
             for test in self.tests[subproject]:
 
                 # Debugging
-                log.debug("Performing test " + str(counter+1) + " of " + str(len(self.tests[subproject])))
+                log.debug("Performing test " + str(counter+1) + " of " + str(len(self.tests[subproject])) + " ...")
 
                 # Start
                 log.start("Starting test '" + test.name + "' ...")

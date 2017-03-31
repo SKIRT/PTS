@@ -2202,6 +2202,8 @@ def add_settings_from_dict(config, definition, dictionary):
 
     dict_that_is_emptied = copy.deepcopy(dictionary)
 
+    removed_keys = []
+
     # Fixed
     for name in definition.fixed:
 
@@ -2215,7 +2217,7 @@ def add_settings_from_dict(config, definition, dictionary):
     # Required
     for name in definition.required:
 
-        if not name in dictionary: raise ValueError("The option '" + name + "' is not specified in the configuration dictionary")
+        if name not in dictionary: raise ValueError("The option '" + name + "' is not specified in the configuration dictionary")
 
         # Get properties
         real_type = definition.required[name].type
@@ -2229,6 +2231,7 @@ def add_settings_from_dict(config, definition, dictionary):
 
         # Get the value specified in the dictionary
         value = dict_that_is_emptied.pop(name)
+        removed_keys.append(name)
 
         # Checks
         check_list(name, value, real_type)
@@ -2262,6 +2265,7 @@ def add_settings_from_dict(config, definition, dictionary):
 
             # Get the value
             value = dict_that_is_emptied.pop(name)
+            removed_keys.append(name)
 
             if value is not None:
 
@@ -2301,6 +2305,7 @@ def add_settings_from_dict(config, definition, dictionary):
 
             # Get the value
             value = dict_that_is_emptied.pop(name)
+            removed_keys.append(name)
 
             if value is not None:
 
@@ -2327,7 +2332,9 @@ def add_settings_from_dict(config, definition, dictionary):
         default = definition.flags[name].default  # True or False
 
         # Check if this option is specified in the dictionary
-        if name in dictionary: value = dict_that_is_emptied.pop(name)
+        if name in dictionary:
+            value = dict_that_is_emptied.pop(name)
+            removed_keys.append(name)
 
         # Use the default value otherwise
         else: value = default
@@ -2348,10 +2355,20 @@ def add_settings_from_dict(config, definition, dictionary):
         else: section_dictionary = dict() # new empty dict
 
         # Add the settings
-        add_settings_from_dict(config[name], section_definition, section_dictionary)
+        removed_section_keys = add_settings_from_dict(config[name], section_definition, section_dictionary)
+
+        if name in dictionary:
+            #print(dict_that_is_emptied[name])
+            for key in removed_section_keys:
+                del dict_that_is_emptied[name][key]
+            #print(dict_that_is_emptied[name])
+            if len(dict_that_is_emptied[name]) == 0: del dict_that_is_emptied[name]
 
     # Add leftover settings
     add_nested_dict_values_to_map(config, dict_that_is_emptied)
+
+    # Return the list of removed keys
+    return removed_keys
 
 # -----------------------------------------------------------------
 
@@ -3340,8 +3357,11 @@ def add_nested_dict_values_to_map(mapping, dictionary):
         # Recursively call this function if the value is an other dictionary
         if isinstance(value, dict):
 
-            mapping[name] = Map()
-            add_nested_dict_values_to_map(mapping[name], value)
+            # Already existing submapping
+            if name in mapping: add_nested_dict_values_to_map(mapping[name], value)
+            else:
+                mapping[name] = Map()
+                add_nested_dict_values_to_map(mapping[name], value)
 
         # Else, add the value to the mapping
         else: mapping[name] = value

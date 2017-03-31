@@ -284,6 +284,11 @@ class DirectoryPath(Path):
 
 # -----------------------------------------------------------------
 
+if HAS_NP: boolean_types = [bool, np.bool]
+else: boolean_types = [bool]
+
+# -----------------------------------------------------------------
+
 def is_boolean_type(value):
 
     """
@@ -292,8 +297,14 @@ def is_boolean_type(value):
     :return:
     """
 
-    if HAS_NP: return isinstance(value, bool) or isinstance(value, np.bool)
-    else: return isinstance(value, bool)
+    for tp in boolean_types:
+        if type(value) == tp: return True
+    return False
+
+# -----------------------------------------------------------------
+
+if HAS_NP: integer_types = [int, np.int32, np.int64, np.uint32, np.uint64]
+else: integer_types = [int]
 
 # -----------------------------------------------------------------
 
@@ -305,8 +316,14 @@ def is_integer_type(value):
     :return:
     """
 
-    if HAS_NP: return isinstance(value, int) or isinstance(value, np.int32) or isinstance(value, np.int64) or isinstance(value, np.uint32) or isinstance(value, np.uint64)
-    else: return isinstance(value, int)
+    for tp in integer_types:
+        if type(value) == tp: return True
+    return False
+
+# -----------------------------------------------------------------
+
+if HAS_NP: real_types = [float, np.float32, np.float64]
+else: real_types = [float]
 
 # -----------------------------------------------------------------
 
@@ -318,8 +335,14 @@ def is_real_type(value):
     :return:
     """
 
-    if HAS_NP: return isinstance(value, float) or isinstance(value, np.float32) or isinstance(value, np.float64)
-    else: return isinstance(value, float)
+    for tp in real_types:
+        if type(value) == tp: return True
+    return False
+
+# -----------------------------------------------------------------
+
+if HAS_NP: string_types = [basestring, np.string_]
+else: string_types = [basestring]
 
 # -----------------------------------------------------------------
 
@@ -331,7 +354,8 @@ def is_string_type(value):
     :return:
     """
 
-    if HAS_NP: return isinstance(value, basestring) or isinstance(value, np.string_)
-    else: return isinstance(value, basestring)
+    for tp in string_types:
+        if type(value) == tp: return True
+    return False
 
 # -----------------------------------------------------------------

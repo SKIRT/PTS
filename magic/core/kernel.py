@@ -19,8 +19,8 @@ from scipy import ndimage
 from scipy.ndimage.interpolation import shift, zoom
 
 # Import astronomical modules
-from astropy.modeling import models, fitting
-from photutils.morphology import centroid_com, centroid_1dg, centroid_2dg
+#from astropy.modeling import models, fitting
+from photutils.centroids import centroid_com, centroid_1dg, centroid_2dg
 
 # Import the relevant PTS classes and modules
 from .frame import Frame

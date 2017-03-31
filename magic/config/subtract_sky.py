@@ -48,6 +48,8 @@ definition.sections["histogram"].add_flag("log_scale", "log scale", True)
 definition.add_section("estimation", "sky estimation")
 definition.sections["estimation"].add_optional("method", "string", "method used for sky estimation", "pts")
 definition.sections["estimation"].add_optional("finishing_step", "string", "finishing step", choices=["polynomial", "interpolation"])
+definition.sections["estimation"].add_optional("aperture_radius", "positive_real", "aperture radius in pixel coordinates (if not defined, aperture_fwhm_factor * fwhm of the frame will be used)")
+definition.sections["estimation"].add_optional("aperture_fwhm_factor", "positive_real", "aperture radius = aperture_fwhm_factor * frame FWHM", 4.0)
 
 # Setting zero outside
 definition.add_section("zero_outside", "setting zero outside")
