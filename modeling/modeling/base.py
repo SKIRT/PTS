@@ -259,7 +259,7 @@ class ModelerBase(Configurable):
             self.start()
 
             # Advance: launch generations 0 -> (n-1)
-            repeat(self.advance, self.config.generations)
+            repeat(self.advance, self.config.ngenerations)
 
             # Finish
             self.finish()

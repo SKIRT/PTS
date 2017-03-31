@@ -528,12 +528,14 @@ class DBSQLite(DataBaseAdapter):
       """
 
       # Debugging
-      log.debug("Resetting structure, droping table and creating new empty table")
+      log.debug("Resetting structure, dropping table and creating new empty table")
 
+      # Drop
       c = self.getCursor()
       c.execute("drop table if exists %s" % (constants.CDefSQLiteDBTable,))
       c.execute("drop table if exists %s" % (constants.CDefSQLiteDBTablePop,))
 
+      # Commit, create structure
       self.commit()
       self.createStructure(stats)
 
@@ -934,14 +936,20 @@ class DBMySQLAdapter(DataBaseAdapter):
 
    def resetStructure(self, stats):
 
-      """ Deletes de current structure and calls createStructure
+      """
+      Deletes de current structure and calls createStructure
       :param stats: the statistics object
       """
 
-      log.debug("Reseting structure, droping table and creating new empty table.")
+      # Debugging
+      log.debug("Reseting structure, dropping table and creating new empty table.")
+
+      # Drop
       c = self.getCursor()
       c.execute("drop table if exists %s" % (constants.CDefMySQLDBTable,))
       c.execute("drop table if exists %s" % (constants.CDefMySQLDBTablePop,))
+
+      # Commit, create structure
       self.commit()
       self.createStructure(stats)
 

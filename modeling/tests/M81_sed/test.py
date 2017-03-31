@@ -143,7 +143,7 @@ class M81SEDTest(M81TestBase):
         # 18. Model
         self.model()
 
-        # Get best parameter values
+        # 19. Get best parameter values
         self.get_best_parameter_values()
 
         # Test
@@ -262,19 +262,15 @@ class M81SEDTest(M81TestBase):
         analysis.plotting.grids = True
         analysis.plotting.reference_seds = fs.files_in_path(seds_path)
         analysis.misc.fluxes = True
-        #analysis.misc.images = True
+        analysis.misc.images = False
         analysis.misc.observation_filters = fitting_filter_names
         analysis.misc.observation_instruments = [instrument_name]
-        #analysis.misc.make_images_remote = self.host_id
-        #analysis.misc.images_wcs = self.reference_wcs_path
-        #analysis.misc.images_unit = "Jy/pix"
         analysis.misc.spectral_convolution = self.config.spectral_convolution
 
         # Set flux error bars
         dustpedia_sed = ObservedSED.from_file(dustpedia_sed_path)
         filter_names = dustpedia_sed.filter_names()
         errors = dustpedia_sed.errors()
-        #print([str(error) for error in errors])
         flux_errors = sequences.zip_into_dict(filter_names, [str(error) for error in errors])
         analysis.misc.flux_errors = flux_errors
 
@@ -299,6 +295,7 @@ class M81SEDTest(M81TestBase):
         # Inform the user
         log.info("Generating random initial parameter values ...")
 
+        # Get the low and high value
         low_factor = self.config.relative_range_initial.min
         high_factor = self.config.relative_range_initial.max
 
@@ -359,93 +356,167 @@ class M81SEDTest(M81TestBase):
         # Inform the user
         log.info("Adding the free parameter labels ...")
 
-        # Add the labels
+        # Add labels for absolute properties
+        self.add_labels_absolute()
+
+        # Add labels for stellar component properties
+        self.add_labels_stellar_components()
+
+        # Add labels for dust component properties
+        self.add_labels_dust_components()
+
+        # Add labels for instruments
+        self.add_labels_instruments()
+
+    # -----------------------------------------------------------------
+
+    def add_labels_absolute(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adding parameter labels for absolute simulation properties ...")
+
         # Loop over the free parameters
         for parameter_name in self.config.free_parameters:
 
             # Search in the absolute parameters
-            if parameter_name in free_parameters_absolute_paths:
+            if parameter_name not in free_parameters_absolute_paths: continue
 
-                # Determine path
-                path = free_parameters_absolute_paths[parameter_name]
+            # Determine path
+            path = free_parameters_absolute_paths[parameter_name]
 
-                # label
-                self.ski_template.add_label_to_path(path, parameter_name)
+            # label
+            self.ski_template.add_label_to_path(path, parameter_name)
+
+    # -----------------------------------------------------------------
+
+    def add_labels_stellar_components(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adding parameter labels for stellar component properties ...")
+
+        # Loop over the free parameters
+        for parameter_name in self.config.free_parameters:
 
             # Search in the stellar components
-            if parameter_name in free_parameters_relative_stellar_component_paths:
+            if parameter_name not in free_parameters_relative_stellar_component_paths: continue
 
-                # Determine the relative path to the property and the stellar component name
-                path, component_name = free_parameters_relative_stellar_component_paths[parameter_name]
+            # Determine the relative path to the property and the stellar component name
+            path, component_name = free_parameters_relative_stellar_component_paths[parameter_name]
 
-                if component_name is not None:
+            # Specific component is specified
+            if component_name is not None:
+
+                # Get the stellar component
+                stellar_component = self.ski_template.get_stellar_component(component_name)
+
+                # label
+                self.ski_template.add_label_to_path(path, parameter_name, stellar_component)
+
+            # Non-specific
+            else:
+
+                # Loop over the stellar components
+                for component_id in self.ski_template.get_stellar_component_ids():
 
                     # Get the stellar component
-                    stellar_component = self.ski_template.get_stellar_component(component_name)
+                    stellar_component = self.ski_template.get_stellar_component(component_id)
 
-                    # label
+                    # Label
                     self.ski_template.add_label_to_path(path, parameter_name, stellar_component)
 
-                else:
+    # -----------------------------------------------------------------
 
-                    # Loop over the stellar components
-                    for component_id in self.ski_template.get_stellar_component_ids():
+    def add_labels_dust_components(self):
 
-                        # Get the stellar component
-                        stellar_component = self.ski_template.get_stellar_component(component_id)
+        """
+        This function ...
+        :return:
+        """
 
-                        # Label
-                        self.ski_template.add_label_to_path(path, parameter_name, stellar_component)
+        # Inform the user
+        log.info("Adding labels for dust components ...")
+
+        # Loop over the free parameters
+        for parameter_name in self.config.free_parameters:
 
             # Dust components
-            if parameter_name in free_parameters_relative_dust_component_paths:
+            if parameter_name not in free_parameters_relative_dust_component_paths: continue
 
-                # Determine the relative path to the property and the dust component name
-                path, component_name = free_parameters_relative_dust_component_paths[parameter_name]
+            # Determine the relative path to the property and the dust component name
+            path, component_name = free_parameters_relative_dust_component_paths[parameter_name]
 
-                if component_name is not None:
+            # Specific component is specified
+            if component_name is not None:
+
+                # Get the dust component
+                dust_component = self.ski_template.get_dust_component(component_name)
+
+                # label
+                self.ski_template.add_label_to_path(path, parameter_name, dust_component)
+
+            # Non-specific
+            else:
+
+                # Loop over the dust components
+                for component_id in self.ski_template.get_dust_component_ids():
 
                     # Get the dust component
-                    dust_component = self.ski_template.get_dust_component(component_name)
+                    dust_component = self.ski_template.get_dust_component(component_id)
 
-                    # label
+                    # Label
                     self.ski_template.add_label_to_path(path, parameter_name, dust_component)
 
-                else:
+    # -----------------------------------------------------------------
 
-                    # Loop over the dust components
-                    for component_id in self.ski_template.get_dust_component_ids():
+    def add_labels_instruments(self):
 
-                        # Get the dust component
-                        dust_component = self.ski_template.get_dust_component(component_id)
+        """
+        This function ...
+        :return:
+        """
 
-                        # Label
-                        self.ski_template.add_label_to_path(path, parameter_name, dust_component)
+        # Inform the user
+        log.info("Adding parameter labels for instrument properties ...")
+
+        # Loop over the free parameters
+        for parameter_name in self.config.free_parameters:
 
             # Instruments
-            if parameter_name in free_parameters_relative_instruments_paths:
+            if parameter_name not in free_parameters_relative_instruments_paths: continue
 
-                # Determine the relative path to the property and the instrument name
-                path, instrument_name = free_parameters_relative_instruments_paths[parameter_name]
+            # Determine the relative path to the property and the instrument name
+            path, instrument_name = free_parameters_relative_instruments_paths[parameter_name]
 
-                if instrument_name is not None:
+            # Specific instrument is specified
+            if instrument_name is not None:
 
-                    # Get the instrument
+                # Get the instrument
+                instrument = self.ski.get_instrument(instrument_name)
+
+                # Label
+                self.ski_template.add_label_to_path(path, parameter_name, instrument)
+
+            # Non-specific
+            else:
+
+                # Loop over the instruments
+                for instrument_name in self.ski.get_instrument_names():
+
+                    # Get the instruemnt
                     instrument = self.ski.get_instrument(instrument_name)
 
                     # Label
                     self.ski_template.add_label_to_path(path, parameter_name, instrument)
-
-                else:
-
-                    # Loop over the instruments
-                    for instrument_name in self.ski.get_instrument_names():
-
-                        # Get the instruemnt
-                        instrument = self.ski.get_instrument(instrument_name)
-
-                        # Label
-                        self.ski_template.add_label_to_path(path, parameter_name, instrument)
 
     # -----------------------------------------------------------------
 
@@ -577,14 +648,11 @@ class M81SEDTest(M81TestBase):
         input_model["filters_config"] = filters_config
 
         # Create genetic config
-        #setter = PassiveConfigurationSetter("genetic", add_logging=False, add_cwd=False)
-        #genetic_config = setter.run(genetic_definition)
         input_model["genetic_config"] = Map(genetic=self.config.genetic)
 
         # Create ranges config
         ranges_config = Map()
-        for parameter_name in self.config.free_parameters:
-            # Define range
+        for parameter_name in self.config.free_parameters: # Define range
             ranges_config[parameter_name + "_range"] = self.config.relative_range_fitting * self.real_parameter_values[parameter_name]
         input_model["ranges_config"] = ranges_config
 
@@ -612,9 +680,6 @@ class M81SEDTest(M81TestBase):
 
         # Inform the user
         log.info("Getting the best parameter values ...")
-
-        # Table
-        #self.best_parameter_values = self.modeler.modeler.fitter.fitting_run.best_parameters_table
 
         # Get the best parameter values
         self.best_parameter_values = self.modeler.modeler.fitter.fitting_run.best_parameter_values

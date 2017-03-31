@@ -48,6 +48,12 @@ class SkyTest(TestImplementation):
         # Call the constructor of the base class
         super(SkyTest, self).__init__(config, interactive)
 
+        # The sources frame
+        self.sources = None
+
+        # The real sky frame
+        self.real_sky = None
+
         # The frame
         self.frame = None
 
@@ -100,7 +106,7 @@ class SkyTest(TestImplementation):
 
         # Create the image
         data = make_100gaussians_image()
-        self.frame = Frame(data)
+        self.sources = Frame(data)
 
     # -----------------------------------------------------------------
 
@@ -111,11 +117,20 @@ class SkyTest(TestImplementation):
         :return:
         """
 
-        ny, nx = data.shape
+        # Inform the user
+        log.info("Adding background ...")
+
+        ny, nx = self.sources.shape
         y, x = np.mgrid[:ny, :nx]
-        gradient = x * y / 5000.
-        data2 = data + gradient
-        plt.imshow(data2, norm=norm, origin='lower', cmap='Greys_r')
+
+        self.real_sky = Frame(x * y / 5000.)
+
+        # Construct the frame by adding background
+        self.frame = self.sources + self.real_sky
+
+        # Show
+        norm = ImageNormalize(stretch=SqrtStretch())
+        plt.imshow(self.frame, norm=norm, origin='lower', cmap='Greys_r')
 
     # -----------------------------------------------------------------
 
