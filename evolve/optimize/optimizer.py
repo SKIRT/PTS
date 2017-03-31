@@ -718,6 +718,50 @@ class Optimizer(Configurable):
 
         pass
 
+    # -----------------------------------------------------------------
+
+    def write_database(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the database ...")
+
+        # Commit all changes and close the database
+        self.database.commit_and_close()
+
+    # -----------------------------------------------------------------
+
+    def write_statistics(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the statistics ...")
+
+        # Commit all changes and close
+        self.statistics.commit_and_close()
+
+    # -----------------------------------------------------------------
+
+    def write_best(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the best individual ...")
+
+        pass
+
 # -----------------------------------------------------------------
 
 def show_best(best):

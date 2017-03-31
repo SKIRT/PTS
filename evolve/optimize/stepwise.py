@@ -387,6 +387,9 @@ class StepWiseOptimizer(Optimizer):
         # Save the database
         self.write_database()
 
+        # Save the statistics
+        self.write_statistics()
+
         # Write the new generation
         self.write_population()
 
@@ -452,21 +455,6 @@ class StepWiseOptimizer(Optimizer):
 
     # -----------------------------------------------------------------
 
-    def write_database(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the database ...")
-
-        # Commit all changes and close the database
-        self.database.commit_and_close()
-
-    # -----------------------------------------------------------------
-
     def write_population(self):
 
         """
@@ -481,20 +469,6 @@ class StepWiseOptimizer(Optimizer):
         for individual in self.population:
 
             pass
-
-    # -----------------------------------------------------------------
-
-    def write_best(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the best individual ...")
-
-        pass
 
     # -----------------------------------------------------------------
 

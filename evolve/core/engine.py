@@ -611,6 +611,9 @@ class GeneticEngine(object):
         :return:
         """
 
+        # Check
+        if not isinstance(adapter, DataBaseAdapter): raise ValueError("The adapter must be a DataBaseAdapter subclass")
+
         # Add an adapter
         self.database_adapters.append(adapter)
 
@@ -782,17 +785,6 @@ class GeneticEngine(object):
         if type(flag) != BooleanType:
             utils.raiseException("Elitism option must be True or False", TypeError)
         self.elitism = flag
-
-    # -----------------------------------------------------------------
-
-    #def getDBAdapter(self):
-    #
-    #    """
-    #    Gets the DB Adapter of the GA Engine
-    #    :rtype: a instance from one of the :mod:`DBAdapters` classes
-    #    """
-    #
-    #    return self.dbAdapter
 
     # -----------------------------------------------------------------
 
@@ -1192,20 +1184,6 @@ class GeneticEngine(object):
 
     # -----------------------------------------------------------------
 
-    #def dumpStatsDB(self):
-
-    #    """
-    #    Dumps the current statistics to database adapter
-    #    """
-
-    #    # Debugging
-    #    log.debug("Dumping stats to the DB Adapter ...")
-
-    #    self.internalPop.statistics()
-    #    self.dbAdapter.insert(self)
-
-    # -----------------------------------------------------------------
-
     def dump_statistics_adapters(self):
 
         """
@@ -1216,15 +1194,14 @@ class GeneticEngine(object):
         # Debugging
         log.debug("Dumping statistics to the database adapters ...")
 
-        # Calculate the statistics
+        # Calculate the statistics of the internal populations
         self.internalPop.statistics()
 
         # Loop over the adapters, add the state of the engine
         for adapter in self.database_adapters:
 
             # Check the desired frequency
-            #if self.currentGeneration % adapter.getStatsGenFreq() == 0:
-            adapter.insert(self)
+            if self.currentGeneration % adapter.getStatsGenFreq() == 0: adapter.insert(self)
 
     # -----------------------------------------------------------------
 
@@ -1372,8 +1349,7 @@ class GeneticEngine(object):
 
         # Finish the database adapters
         for adapter in self.database_adapters:
-            #if not (self.currentGeneration % adapter.getStatsGenFreq() == 0):
-            adapter.insert(self)
+            if not (self.currentGeneration % adapter.getStatsGenFreq() == 0): adapter.insert(self)
 
         # Stop the migration adapter ==> NO, NOW THIS IS THE RESPONSIBILITY OF THE MODULE THAT CREATES IT
         #if self.migrationAdapter:

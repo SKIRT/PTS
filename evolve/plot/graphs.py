@@ -539,7 +539,6 @@ if __name__ == "__main__":
    from matplotlib.font_manager import FontProperties
    import matplotlib.cm
    import sqlite3
-   import math
    import os
 
    print("Loading database and creating graph...")

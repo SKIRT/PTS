@@ -50,18 +50,26 @@ identifier = config.run_id
 
 # -----------------------------------------------------------------
 
-if config.index == 0:
+# Range of generations
+generation_range = IntegerRange(0, 1)
 
-    # Range of generations
-    generation_range = IntegerRange(0, 1)
+# Range of individuals
+individual_range = IntegerRange(1, 2)
+
+# -----------------------------------------------------------------
+
+# First check
+if config.index == 0:
 
     # Select multiple generations
     ret = c.execute("select distinct generation from population where identify = ? and generation between ? and ?", (identifier, generation_range.min, generation_range.max))
     generations = ret.fetchall()
 
-    if len(generations) == 0: raise RuntimeError("No generations found in the range")
+    # Select just one generation
+    #ret = c.execute("select distinct generation from population where identify = ?", (identifier,))
+    #generations = ret.fetchall()
 
-    individual_range = IntegerRange(1, 2)
+    if len(generations) == 0: raise RuntimeError("No generations found in the range")
 
     # The data
     pop = []
@@ -110,6 +118,7 @@ if config.index == 0:
 
         pop.append(pop_tmp)
 
+    # Close
     ret.close()
 
     # Show the data
@@ -119,11 +128,16 @@ if config.index == 0:
 
 elif config.index == 1:
 
-    # Select just one generation
-    ret = c.execute("select distinct generation from population where identify = ?", (identifier,))
-    generations = ret.fetchall()
+    #if options.genrange:
+        #genrange = options.genrange.split(":")
+    ret = c.execute("select * from statistics where identify = ? and generation between ? and ?", (identifier, generation_range.min, generation_range.max))
+    #else: ret = c.execute("select * from statistics where identify = ?", (options.identify,))
 
-    if len(generations) == 0: raise RuntimeError("No generations found")
+    pop = ret.fetchall()
+
+    ret.close()
+
+    print("Generations:", pop)
 
 # -----------------------------------------------------------------
 

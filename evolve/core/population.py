@@ -325,10 +325,9 @@ class Population(object):
          tmpvar += s
 
         tmpvar /= float((len(self) - 1))
-        try:
-         self.stats["rawDev"] = math_sqrt(tmpvar)
-        except:
-         self.stats["rawDev"] = 0.0
+
+        try: self.stats["rawDev"] = math_sqrt(tmpvar)
+        except ValueError: self.stats["rawDev"] = 0.0
 
         self.stats["rawVar"] = tmpvar
 
@@ -350,7 +349,8 @@ class Population(object):
 
     def worstFitness(self):
 
-        """ Return the worst scaled fitness individual of the population
+        """
+        Return the worst scaled fitness individual of the population
         :rtype: the individual
         """
 
@@ -361,7 +361,8 @@ class Population(object):
 
     def bestRaw(self, index=0):
 
-        """ Return the best raw score individual of population
+        """
+        Return the best raw score individual of population
         :param index: the *index* best raw individual
         :rtype: the individual
         .. versionadded:: 0.6
@@ -378,7 +379,8 @@ class Population(object):
 
     def worstRaw(self):
 
-        """ Return the worst raw score individual of population
+        """
+        Return the worst raw score individual of population
         :rtype: the individual
         .. versionadded:: 0.6
          The parameter `index`.

@@ -152,6 +152,15 @@ class ContinuousOptimizer(Optimizer):
         # Inform the user
         log.info("Writing ...")
 
+        # 1. Write the database
+        self.write_database()
+
+        # 2. Write the statistics
+        self.write_statistics()
+
+        # 3. Write the best individual
+        self.write_best()
+
     # -----------------------------------------------------------------
 
     def plot(self):
