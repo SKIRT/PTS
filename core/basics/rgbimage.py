@@ -311,8 +311,7 @@ class RGBImage:
     #    and returning a tuple of four RGBA values in range [0,1] for each element in the array -- in
     #    other words newshape = oldshape+(4,) -- where the A value is ignored.
     #
-    # \image html cmaps.pdf
-    # \image latex cmaps.pdf "Standard matplotlib color maps" height=0.9\textheight
+    # \image html cmaps.png
     #
     def applycmap(self, cmap):
         if not hasattr(cmap, "__call__"): cmap = plt.get_cmap(cmap)
