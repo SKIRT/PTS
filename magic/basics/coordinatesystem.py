@@ -600,13 +600,23 @@ class CoordinateSystem(wcs.WCS):
         ra_distance = abs(coordinates.ra_distance(dec_center, ra_begin, ra_end))
         dec_distance = abs(dec_end - dec_begin)
 
+        # NEW METHOD FROM ASTROPY
+        ra_distance_top = abs(SkyCoordinate(ra=ra_begin, dec=dec_end, unit="deg").separation(SkyCoordinate(ra=ra_end, dec=dec_end, unit="deg")).deg)
+        ra_distance_bottom = abs(SkyCoordinate(ra=ra_begin, dec=dec_begin, unit="deg").separation(SkyCoordinate(ra=ra_end, dec=dec_begin, unit="deg")).deg)
+        dec_distance_new = abs(SkyCoordinate(ra=ra_begin, dec=dec_begin, unit="deg").separation(SkyCoordinate(ra=ra_begin, dec=dec_end, unit="deg")).deg)
+
+        # Checks
+        assert np.isclose(ra_distance_top, ra_distance_bottom, rtol=0.05), (ra_distance_top, ra_distance_bottom)
+        assert np.isclose(ra_distance_top, ra_distance, rtol=0.05), (ra_distance_top, ra_distance)
+        assert np.isclose(dec_distance_new, dec_distance, rtol=0.05), (dec_distance_new, dec_distance)
+
         # Calculate the pixel scale of this image in degrees
         x_pixelscale_deg = self.pixelscale.x.to("deg").value
         y_pixelscale_deg = self.pixelscale.y.to("deg").value
 
         # Get the center pixel
-        ref_pix = self.wcs.crpix
-        ref_world = self.wcs.crval
+        #ref_pix = self.wcs.crpix
+        #ref_world = self.wcs.crval
 
         center = SkyCoordinate(ra=ra_center, dec=dec_center, unit="deg", frame="fk5")
 

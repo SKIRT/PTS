@@ -98,6 +98,9 @@ class TestImplementation(Configurable):
         input_dict = command.input_dict
         cwd = command.cwd
 
+        # Set the cwd if not specified
+        if not command.cwd_specified: cwd = self.path
+
         # Find match in the tables of configurable classes
         match = introspection.resolve_command_tables(the_command, tables)
 

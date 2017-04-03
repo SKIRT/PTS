@@ -14,13 +14,14 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import io
+import math
 import imageio
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
-
 from scipy.interpolate import CloughTocher2DInterpolator as intp
 from scipy.interpolate import SmoothBivariateSpline
+from scipy.ndimage import zoom
 
 # Test
 # from sklearn.preprocessing import PolynomialFeatures
@@ -32,8 +33,12 @@ from photutils.background import Background2D
 from photutils import SigmaClip
 from photutils import SExtractorBackground
 from astropy.modeling import models
-from astropy.modeling.fitting import LevMarLSQFitter
+from astropy.modeling.fitting import LevMarLSQFitter, LinearLSQFitter, SLSQPLSQFitter
 from astropy import stats
+from astropy.utils import lazyproperty
+from photutils.background import BkgZoomInterpolator, BkgIDWInterpolator
+from photutils.background.core import MeanBackground, MedianBackground, ModeEstimatorBackground, MMMBackground, SExtractorBackground, BiweightLocationBackground
+from photutils.background.core import StdBackgroundRMS, MADStdBackgroundRMS, BiweightMidvarianceBackgroundRMS
 
 # Import the relevant PTS classes and modules
 from ..core.frame import Frame
@@ -46,9 +51,20 @@ from ..region.list import PixelRegionList, SkyRegionList
 from ..tools import plotting, statistics, fitting, plotting
 from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
-from ...core.basics.distribution import Distribution
+#from ...core.basics.distribution import Distribution
 from ..misc import chrisfuncs
 from ..core.mask import Mask as newMask
+from ..core.cutout import CutoutMask
+
+# -----------------------------------------------------------------
+
+finishing_steps = ["mean", "median", "polynomial", "interpolation"]
+interpolation_methods = ["griddata", "zoom", "IDW", "spline"]
+
+# -----------------------------------------------------------------
+
+estimators = ["mean", "median", "mode", "MMM", "sextractor", "biweight_location"]
+noise_estimators = ["stddev", "MAD", "biweight_midvariance"]
 
 # -----------------------------------------------------------------
 
@@ -108,8 +124,20 @@ class SkySubtractor(Configurable):
 
         # Relevant for when estimation method is 'pts'
         self.apertures_frame = None
-        self.apertures_mean_frame = None
+        self.apertures_values_frame = None
         self.apertures_noise_frame = None
+        self.apertures_mask = None
+
+        # Aperture properties
+        self.napertures = None
+        self.aperture_radius = None
+        self.aperture_centers = None
+        self.aperture_values = None
+        self.aperture_noise_values = None
+        self.aperture_masks = None
+
+        # The interpolator
+        self.interpolator = None
 
     # -----------------------------------------------------------------
 
@@ -133,19 +161,23 @@ class SkySubtractor(Configurable):
         # 4. Do an extra sigma-clipping step on the data
         if self.config.sigma_clip_mask: self.sigma_clip()
 
-        print(self.config)
-
         # 5. Estimate the sky (and sky noise)
         self.estimate()
 
         # 6. Subtract the sky
-        self.subtract()
+        #self.subtract()
 
         # 7. Set the frame to zero outside of the principal galaxy
         if self.config.set_zero_outside: self.set_zero_outside()
 
         # 8. Eliminate negative values from the frame, set them to zero
         if self.config.eliminate_negatives: self.eliminate_negatives()
+
+        # 9. Write
+        if self.config.write: self.write()
+
+        # 10. Plot
+        if self.config.plot: self.plot()
 
     # -----------------------------------------------------------------
 
@@ -172,8 +204,9 @@ class SkySubtractor(Configurable):
         self.phot_sky = None
         self.phot_rms = None
         self.apertures_frame = None
-        self.apertures_mean_frame = None
+        self.apertures_values_frame = None
         self.apertures_noise_frame = None
+        self.apertures_mask = None
 
     # -----------------------------------------------------------------
 
@@ -366,6 +399,15 @@ class SkySubtractor(Configurable):
         # Create a frame filled with the mean value
         self.sky = self.mean
 
+        # Determine the global noise
+        self.noise = self.stddev_subtracted
+
+        # Debugging
+        log.debug("The estimated sky value is " + str(self.sky))
+        log.debug("The mean sky value after subtraction is " + str(self.mean_subtracted))
+        log.debug("The median sky value after subtraction is " + str(self.median_subtracted))
+        log.debug("The global noise is " + str(self.noise))
+
     # -----------------------------------------------------------------
 
     def estimate_sky_median(self):
@@ -380,6 +422,15 @@ class SkySubtractor(Configurable):
 
         # Create a frame filled with the median value
         self.sky = self.median
+
+        # Determine the global noise
+        self.noise = self.stddev_subtracted
+
+        # Debugging
+        log.debug("The estimated sky value is " + str(self.sky))
+        log.debug("The mean sky value after subtraction is " + str(self.mean_subtracted))
+        log.debug("The median sky value after subtraction is " + str(self.median_subtracted))
+        log.debug("The global noise is " + str(self.noise))
 
     # -----------------------------------------------------------------
 
@@ -412,6 +463,14 @@ class SkySubtractor(Configurable):
                          sky_subtracted=False,
                          fwhm=self.frame.fwhm)
 
+        # Set the noise
+        self.noise = self.stddev_subtracted
+
+        # Debugging
+        log.debug("The mean sky value after subtraction is " + str(self.mean_subtracted))
+        log.debug("The median sky value after subtraction is " + str(self.median_subtracted))
+        log.debug("The global noise is " + str(self.noise))
+
     # -----------------------------------------------------------------
 
     def estimate_sky_photutils(self):
@@ -424,12 +483,16 @@ class SkySubtractor(Configurable):
         # Inform the user
         log.info("Estimating the sky and sky noise by using photutils ...")
 
-        # PHOTUTILS 0.2
-        #bkg = Background(self.frame, (50, 50), filter_shape=(3, 3), filter_threshold=None, mask=self.mask,
-        #          method="sextractor", backfunc=None, interp_order=3, sigclip_sigma=3.0, sigclip_iters=10)
+        # Determine box size
+        if self.config.estimation.photutils_fixed_width is not None: box_shape = (self.config.estimation.photutils_fixed_width, self.config.estimation.photutils_fixed_width)
+        else:
+            # Determine radius
+            self.determine_aperture_radius()
+            integer_radius = int(math.ceil(self.aperture_radius))
+            box_shape = (2 * integer_radius, 2 * integer_radius)
 
-        box_shape = (50,50)
-        filter_size = (3,3)
+        # Determine filter size
+        filter_size = (self.config.estimation.photutils_filter_size, self.config.estimation.photutils_filter_size)
 
         # NEW
         sigma_clip = SigmaClip(sigma=3., iters=10)
@@ -442,8 +505,8 @@ class SkySubtractor(Configurable):
         masked_background = np.ma.masked_array(bkg.background, mask=self.mask)
         #plotting.plot_box(masked_background, title="masked background")
 
-        mean_sky = np.ma.mean(masked_background)
-        median_sky = np.median(masked_background.compressed())
+        # Masked background rms
+        masked_background_rms = np.ma.masked_array(bkg.background_rms, mask=self.mask)
 
         # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
         self.phot_sky = Frame(bkg.background,
@@ -467,8 +530,52 @@ class SkySubtractor(Configurable):
                                sky_subtracted=False,
                                fwhm=self.frame.fwhm)
 
-        # Set sky level
-        self.sky = median_sky
+        # Use global values
+        if self.config.estimation.photutils_global is not None:
+
+            mean_sky = np.ma.mean(masked_background)
+            median_sky = np.median(masked_background.compressed())
+
+            # Median
+            if self.config.estimation.photutils_global == "median":
+
+                # Set sky level
+                self.sky = median_sky
+
+                # Set noise
+                self.noise = np.ma.mean(masked_background_rms)
+
+            # Mean
+            elif self.config.estimation.photutils_global == "mean":
+
+                # Set sky level
+                self.sky = mean_sky
+
+                # Set noise
+                self.noise = np.ma.mean(masked_background_rms)
+
+            # Invalid
+            else: raise ValueError("Invalid option for 'photutils_global'")
+
+            # Debugging
+            log.debug("The estimated sky value is " + str(self.sky))
+            log.debug("The mean value after subtraction is " + str(self.mean_subtracted))
+            log.debug("The median value after subtraction is " + str(self.median_subtracted))
+            log.debug("The standard deviation after subtraction is " + str(self.stddev_subtracted))
+            log.debug("The estimated noise is " + str(self.noise))
+
+        # Use frames
+        else:
+
+            # Set original photutils frames
+            self.sky = self.phot_sky
+            self.noise = self.phot_rms
+
+            # Debugging
+            log.debug("The mean value after subtraction is " + str(self.mean_subtracted))
+            log.debug("The median value after subtraction is " + str(self.median_subtracted))
+            log.debug("The standard deviation after subtraction is " + str(self.stddev_subtracted))
+            log.debug("The estimated noise is " + str(self.noise))
 
     # -----------------------------------------------------------------
 
@@ -480,47 +587,22 @@ class SkySubtractor(Configurable):
         """
 
         # Inform the user
-        log.info("Estimating the sky and sky noise by using or own procedures ...")
+        log.info("Estimating the sky and sky noise by randomly placing apertures ...")
 
-        # Determine the aperture radius
-        aperture_radius = self.determine_aperture_radius()
+        # 1. Determine the aperture radius
+        self.determine_aperture_radius()
 
-        # Determine the number of apertures to use
-        napertures = self.determine_number_of_apertures(aperture_radius)
+        # 2. Determine the number of apertures to use
+        self.determine_number_of_apertures()
 
-        # Generate the apertures
-        aperture_centers, aperture_means, aperture_stddevs = self.generate_apertures(aperture_radius, napertures)
+        # 3. Create the apertures
+        self.create_apertures()
 
-        # Remove outliers
-        aperture_centers, aperture_means, aperture_stddevs = self.remove_aperture_outliers(aperture_centers, aperture_means, aperture_stddevs)
+        # 4. Create aperture frames
+        self.create_aperture_frames()
 
-        # Calculate the large-scale variation level
-        large_scale_variations_error = aperture_means.std()
-
-        # Calculate the mean pixel-by-pixel noise over all apertures
-        pixel_to_pixel_noise = np.mean(aperture_stddevs)
-
-        # Determine the median sky level
-        self.sky = np.median(aperture_means)
-
-        # Determine the noise by quadratically adding the large scale variation and the mean pixel-by-pixel noise
-        self.noise = np.sqrt(large_scale_variations_error**2 + pixel_to_pixel_noise**2)
-
-        # Debugging
-        log.debug("The estimated sky level is " + str(self.sky))
-        log.debug("The estimated sky noise level is " + str(self.noise))
-
-        # Create aperture frames
-        self.create_aperture_frames(aperture_centers, aperture_means, aperture_stddevs, aperture_radius)
-
-        # Finishing step
-        if self.config.estimation.finishing_step is None: pass
-        elif self.config.estimation.finishing_step == "polynomial": self.fit_polynomial_to_apertures(aperture_centers, aperture_means)
-        elif self.config.estimation.finishing_step == "interpolation": self.interpolate_apertures(aperture_centers, aperture_means)
-        else: raise ValueError("Invalid finishing step")
-
-        #self.plot_interpolated(aperture_centers, aperture_means)
-        #self.try_to_interpolate_smart(aperture_centers, aperture_means)
+        # 5. Finish
+        self.finish_sky()
 
     # -----------------------------------------------------------------
 
@@ -548,18 +630,33 @@ class SkySubtractor(Configurable):
         # Debugging
         log.debug("Using sky apertures with a radius of " + str(radius) + " pixels")
 
-        # Return the aperture radius
-        return radius
+        # Set the aperture radius
+        self.aperture_radius = radius
 
     # -----------------------------------------------------------------
 
-    def determine_number_of_apertures(self, radius):
+    @lazyproperty
+    def aperture_area(self):
 
         """
         This function ...
-        :param radius:
         :return:
         """
+
+        circle_area = np.pi * self.aperture_radius ** 2
+        return circle_area
+
+    # -----------------------------------------------------------------
+
+    def determine_number_of_apertures(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Determining the number of apertures ...")
 
         npixels = np.sum(self.mask.inverse())
 
@@ -571,34 +668,53 @@ class SkySubtractor(Configurable):
         # which is approximately equal to 0.907
         # See: https://www.quora.com/How-many-3-75-inch-circles-will-fit-inside-a-17-inch-square
         coverable_area = 0.907 * npixels
-        circle_area = np.pi * radius ** 2
-        optimal_number_of_apertures = coverable_area / circle_area
+        optimal_number_of_apertures = coverable_area / self.aperture_area
 
         # Debugging
         log.debug("The upper limit to the number of apertures that fit in the part of the frame that is not masked "
                   "(assuming hexagonal packing) is " + str(optimal_number_of_apertures))
 
-        # Determine the number of apertures that are going to be used, take a third of the upper limit
-        napertures = int(optimal_number_of_apertures / 3.)
+        # Determine the number of apertures that are going to be used
+        napertures = int(optimal_number_of_apertures * self.config.estimation.relative_napertures_max)
+
+        # Don't take less than 'min_napertures'
+        napertures = max(napertures, self.config.min_apertures)
 
         # Debugging
         log.debug("A total of " + str(napertures) + " apertures are going to be used to estimate the sky ...")
 
-        # Return the number of apertures
-        return napertures
+        # Set the number of apertures
+        self.napertures = napertures
 
     # -----------------------------------------------------------------
 
-    def generate_apertures(self, radius, napertures):
+    def create_apertures(self):
 
         """
         This function ...
-        :param radius:
-        :param napertures:
         :return:
         """
 
-        circle_area = np.pi * radius ** 2
+        # Inform the user
+        log.info("Creating the apertures ...")
+
+        # Generate the apertures
+        aperture_centers, aperture_values, aperture_noise_values = self.generate_apertures()
+
+        # Remove outliers
+        self.aperture_centers, self.aperture_values, self.aperture_noise_values = self.remove_aperture_outliers(aperture_centers, aperture_values, aperture_noise_values)
+
+    # -----------------------------------------------------------------
+
+    def generate_apertures(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Generating the apertures ...")
 
         # Get arrays of the coordinates of all pixels that are not masked
         pixels_y, pixels_x = np.where(self.mask.inverse())
@@ -616,8 +732,9 @@ class SkySubtractor(Configurable):
         aperture_centers = []
         aperture_means = []
         aperture_stddevs = []
+        aperture_masks = []
 
-        # Draw 100 random coordinates
+        # Draw random apertures
         while True:
 
             # Draw a random pixel index
@@ -631,7 +748,7 @@ class SkySubtractor(Configurable):
             center = PixelCoordinate(x, y)
 
             # Create a circular aperture
-            circle = PixelCircleRegion(center, radius)
+            circle = PixelCircleRegion(center, self.aperture_radius)
 
             # Create a Source from the frame
             source = Detection.from_shape(self.frame, circle, 1.3)
@@ -642,7 +759,7 @@ class SkySubtractor(Configurable):
 
             # Calculate the overlap fraction with the sky mask
             number_of_overlapping_pixels = np.sum(overlapping)
-            overlap_fraction = number_of_overlapping_pixels / circle_area
+            overlap_fraction = number_of_overlapping_pixels / self.aperture_area
 
             # If the overlap fraction is larger than 50% for this aperture, skip it
             if overlap_fraction >= 0.5:
@@ -655,20 +772,21 @@ class SkySubtractor(Configurable):
 
             # Calculate the overlap fraction with the apertures mask
             number_of_overlapping_pixels = np.sum(overlapping)
-            overlap_fraction = number_of_overlapping_pixels / circle_area
+            overlap_fraction = number_of_overlapping_pixels / self.aperture_area
 
             # If the overlap fraction is larger than 10% for this aperture, skip it
             if overlap_fraction >= 0.1:
                 log.debug("For this aperture, an overlap fraction of more than 10% was found with other apertures, skipping ...")
+                continue
 
             # Add the aperture area to the mask
             apertures_mask[source.y_slice, source.x_slice] += source.mask
 
             # Debugging
-            log.debug("Placed aperture " + str(current_napertures+1) + " of " + str(napertures) + " ({0:.2f}%)".format((current_napertures+1)/napertures*100.))
+            log.debug("Placed aperture " + str(current_napertures+1) + " of " + str(self.napertures) + " ({0:.2f}%)".format((current_napertures+1)/self.napertures*100.))
 
+            # Add a frame to the animation
             if self.animation is not None:
-
                 plt.figure()
                 plt.imshow(apertures_mask, origin="lower")
                 plt.title("Aperture mask")
@@ -679,8 +797,11 @@ class SkySubtractor(Configurable):
                 buf.close()
                 self.animation.add_frame(im)
 
+            aperture_mask = sky_mask_cutout + source.background_mask
+            cutout_mask = CutoutMask(aperture_mask, source.x_min, source.x_max, source.y_min, source.y_max)
+
             # Calculate the mean sky value in this aperture
-            masked_array_cutout = np.ma.MaskedArray(source.cutout, mask=sky_mask_cutout + source.background_mask)
+            masked_array_cutout = np.ma.MaskedArray(source.cutout, mask=aperture_mask)
 
             # plotting.plot_box(masked_array_cutout)
 
@@ -693,15 +814,17 @@ class SkySubtractor(Configurable):
             # print("aperture median:", aperture_median, aperture_median2)
             # print("aperture stddev:", aperture_std)
 
+            # Add properties of the aperture
             aperture_centers.append(center)
             aperture_means.append(aperture_mean)
             aperture_stddevs.append(aperture_stddev)
+            aperture_masks.append(cutout_mask)
 
             # Another succesful aperture
             current_napertures += 1
 
             # Stop when we have reached the desired number of apertures
-            if current_napertures == napertures: break
+            if current_napertures == self.napertures: break
 
         # Create Numpy arrays from the aperture means and standard deviations
         aperture_means = np.array(aperture_means)
@@ -716,11 +839,17 @@ class SkySubtractor(Configurable):
 
         """
         This function ...
+        :param aperture_centers:
+        :param aperture_means:
+        :param aperture_stddevs:
         :return:
         """
 
-        means_distribution = Distribution.from_values(aperture_means, bins=50)
-        stddevs_distribution = Distribution.from_values(aperture_stddevs, bins=50)
+        # Inform the user
+        log.info("Removing aperture outliers ...")
+
+        #means_distribution = Distribution.from_values(aperture_means, bins=50)
+        #stddevs_distribution = Distribution.from_values(aperture_stddevs, bins=50)
 
         #means_distribution.plot("Aperture means before sigma-clipping")
         #stddevs_distribution.plot("Aperture stddevs before sigma-clipping")
@@ -731,12 +860,13 @@ class SkySubtractor(Configurable):
         for i in range(len(clip_mask)):
             if clip_mask[i]: continue
             else: clipped_aperture_centers.append(aperture_centers[i])
+
         aperture_centers = clipped_aperture_centers
         aperture_means = np.ma.MaskedArray(aperture_means, clip_mask).compressed()
         aperture_stddevs = np.ma.MaskedArray(aperture_stddevs, clip_mask).compressed()
 
-        means_distribution = Distribution.from_values(aperture_means, bins=50)
-        stddevs_distribution = Distribution.from_values(aperture_stddevs, bins=50)
+        #means_distribution = Distribution.from_values(aperture_means, bins=50)
+        #stddevs_distribution = Distribution.from_values(aperture_stddevs, bins=50)
 
         #means_distribution.plot("Aperture means after sigma-clipping")
         #stddevs_distribution.plot("Aperture stddevs after sigma-clipping")
@@ -746,52 +876,183 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def create_aperture_frames(self, aperture_centers, aperture_means, aperture_stddevs, aperture_radius):
+    def create_aperture_frames(self):
 
         """
         This function ...
-        :param aperture_centers:
-        :param aperture_means:
-        :param aperture_stddevs:
-        :param aperture_radius:
         :return:
         """
 
+        # Inform the user
+        log.info("Creating aperture frames ...")
+
+        # Initialize frames and mask
         self.apertures_frame = Frame.nans_like(self.frame)
         self.apertures_mean_frame = Frame.nans_like(self.frame)
         self.apertures_noise_frame = Frame.nans_like(self.frame)
+        self.apertures_mask = newMask.empty_like(self.frame)
 
-        for i in range(len(aperture_centers)):
+        # Loop over the apertures
+        for i in range(len(self.aperture_centers)):
 
-            center = aperture_centers[i]
-
-            circle = PixelCircleRegion(center, aperture_radius)
-
+            # Create mask
+            center = self.aperture_centers[i]
+            circle = PixelCircleRegion(center, self.aperture_radius)
             mask = Mask.from_shape(circle, self.frame.xsize, self.frame.ysize)
 
+            # Set
             self.apertures_frame[mask] = self.frame[mask]
-            self.apertures_mean_frame[mask] = aperture_means[i]
-            self.apertures_noise_frame[mask] = aperture_stddevs[i]
+            self.apertures_mean_frame[mask] = self.aperture_values[i]
+            self.apertures_noise_frame[mask] = self.aperture_noise_values[i]
+            self.apertures_mask[mask][self.aperture_masks[i]] = True
 
     # -----------------------------------------------------------------
 
-    def fit_polynomial_to_apertures(self, aperture_centers, aperture_means):
+    def finish_sky(self):
 
         """
         This function ...
         :return:
         """
 
-        x_values = [center.x for center in aperture_centers]
-        y_values = [center.y for center in aperture_centers]
+        # Inform the user
+        log.info("Finishing the sky map ...")
+
+        # Finishing step
+        if self.config.estimation.finishing_step == "mean": self.set_sky_mean()
+        elif self.config.estimation.finishing_step == "median": self.set_sky_median()
+        elif self.config.estimation.finishing_step == "polynomial": self.fit_polynomial_to_apertures()
+        elif self.config.estimation.finishing_step == "interpolation": self.interpolate_apertures()
+        else: raise ValueError("Invalid finishing step")
+
+    # -----------------------------------------------------------------
+
+    def set_sky_mean(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the sky to the mean of the aperture fluxes ...")
+
+        # Determine the mean sky level
+        self.sky = np.mean(self.aperture_values)
+
+        # Determine the global noise level
+        self.noise = self.calculate_global_noise_level_constant_sky()
+
+        # Debugging
+        log.debug("The estimated sky level is " + str(self.sky))
+        log.debug("The estimated sky noise level is " + str(self.noise))
+
+    # -----------------------------------------------------------------
+
+    def set_sky_median(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the sky to the median of the aperture fluxes ...")
+
+        # Determine the median sky level
+        self.sky = np.median(self.aperture_values)
+
+        # Calculate the global noise level
+        self.noise = self.calculate_global_noise_level_constant_sky()
+
+        # Debugging
+        log.debug("The estimated sky level is " + str(self.sky))
+        log.debug("The estimated sky noise level is " + str(self.noise))
+
+    # -----------------------------------------------------------------
+
+    def calculate_global_noise_level_constant_sky(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the global noise value for methods that calculate a single, constant sky value for the entire image ...")
+
+        # Calculate large scale variation and pixel to pixel noise
+        large_scale_variations_error, pixel_to_pixel_noise = self.calculate_large_scale_variation_and_pixel_to_pixel_noise()
+
+        # Determine the noise by quadratically adding the large scale variation and the mean pixel-by-pixel noise
+        value = np.sqrt(large_scale_variations_error ** 2 + pixel_to_pixel_noise ** 2)
+
+        # Return the noise value
+        return value
+
+    # -----------------------------------------------------------------
+
+    def calculate_large_scale_variation_and_pixel_to_pixel_noise(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the large scale variation and the pixel to pixel noise of the apertures ...")
+
+        # Calculate the large-scale variation level
+        large_scale_variations_error = self.aperture_values.std()
+
+        # Calculate the mean pixel-by-pixel noise over all apertures
+        pixel_to_pixel_noise = np.mean(self.aperture_noise_values)
+
+        # Return the result
+        return large_scale_variations_error, pixel_to_pixel_noise
+
+    # -----------------------------------------------------------------
+
+    def calculate_global_noise_level_variate_sky(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the global noise value for methods that calculate a variable sky map ...")
+
+        # Calculate large scale variation and pixel to pixel noise
+        large_scale_variations_error, pixel_to_pixel_noise = self.calculate_large_scale_variation_and_pixel_to_pixel_noise()
+
+        # Return the average pixel-to-pixel noise
+        return pixel_to_pixel_noise
+
+    # -----------------------------------------------------------------
+
+    def fit_polynomial_to_apertures(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Fitting a polynomial to the values in each aperture ...")
+
+        # Get list of x and y coordinates
+        x_values = [center.x for center in self.aperture_centers]
+        y_values = [center.y for center in self.aperture_centers]
 
         # -- Fit polynomial --
 
         # Fit polynomial to aperture means
-        degree = 4
-        poly_init = models.Polynomial2D(degree=degree)
-        fit_model = LevMarLSQFitter()
-        polynomial = fit_model(poly_init, x_values, y_values, aperture_means)
+        poly_init = models.Polynomial2D(degree=self.config.estimation.polynomial_degree)
+        #fit_model = LevMarLSQFitter()
+        #fit_model = NonLinearLSQFitter()
+        fit_model = SLSQPLSQFitter()
+        polynomial = fit_model(poly_init, x_values, y_values, self.aperture_values)
 
         # Create x and y meshgrid for evaluating
         y_grid, x_grid = np.mgrid[:self.frame.ysize, :self.frame.xsize]
@@ -799,6 +1060,7 @@ class SkySubtractor(Configurable):
         # Evaluate the model
         data = polynomial(x_grid, y_grid)
 
+        # Set the sky
         self.sky = Frame(data)
 
         # plotting.plot_box(data)
@@ -816,22 +1078,45 @@ class SkySubtractor(Configurable):
         # Set new sky frame
         #self.sky = Frame(data)
 
+        ## NEW: NOISE
+
+        # Calculate the global noise level
+        self.noise = self.calculate_global_noise_level_variate_sky()
+
     # -----------------------------------------------------------------
 
-    def interpolate_apertures(self, aperture_centers, aperture_means):
+    def interpolate_apertures(self):
 
         """
         This function ...
-        :param aperture_centers:
-        :param aperture_means:
         :return:
         """
 
         # Inform the user
-        log.info("Interpolating between the mean values of each aperture to fill the sky frame ...")
+        log.info("Interpolating between the values of each aperture to fill the sky frame ...")
 
-        x_values = np.array([center.x for center in aperture_centers])
-        y_values = np.array([center.y for center in aperture_centers])
+        # Choose method
+        if self.config.estimation.interpolation_method == "griddata": self.interpolate_griddata()
+        elif self.config.estimation.interpolation_method == "zoom": self.interpolate_zoom()
+        elif self.config.estimation.interpolation_method == "IDW": self.interpolate_idw()
+        elif self.config.estimation.interpolation_method == "spline": self.interpolate_spline()
+        else: raise ValueError("Invalid interpolation method: " + self.config.estimation.interpolation_method)
+
+    # -----------------------------------------------------------------
+
+    def interpolate_griddata(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Interpolating the aperture fluxes using the 'griddata' method")
+
+        # Get lists of x and y values
+        x_values = np.array([center.x for center in self.aperture_centers])
+        y_values = np.array([center.y for center in self.aperture_centers])
 
         x_ticks = np.arange(0, self.frame.xsize, 1)
         y_ticks = np.arange(0, self.frame.ysize, 1)
@@ -840,25 +1125,117 @@ class SkySubtractor(Configurable):
         # Set the sky frame
         self.sky = Frame(z_grid)
 
+        # Calculate the global noise level
+        self.noise = self.calculate_global_noise_level_variate_sky()
+
     # -----------------------------------------------------------------
 
-    def interpolate_apertures_try(self, aperture_centers, aperture_means):
+    def interpolate_zoom(self):
 
         """
         This function ...
         :return:
         """
 
-        return
+        # Inform the user
+        log.info("Interpolating the aperture fluxes using the 'zoom' method ...")
 
-        x_values = np.array([center.x for center in aperture_centers])
-        y_values = np.array([center.y for center in aperture_centers])
+        # UNFORTUNATELY, something like this is not possible
+
+        # Create the interpolator
+        #self.interpolator = BkgZoomInterpolator()
+
+        # Interpolate
+        #data = self.interpolator(self.background_mesh, self)
+        #self.sky = Frame(data)
+
+        # IMPLEMENTATION OF BKGZOOMINTERPOLATOR:
+
+        mesh = np.asanyarray(mesh)
+        if np.ptp(mesh) == 0:
+            return np.zeros_like(bkg2d_obj.data) + np.min(mesh)
+
+        #if bkg2d_obj.edge_method == 'pad':
+        if False:
+
+            # The mesh is first resized to the larger padded-data size
+            # (i.e. zoom_factor should be an integer) and then cropped
+            # back to the final data size.
+
+            zoom_factor = (int(bkg2d_obj.nyboxes * bkg2d_obj.box_size[0] /
+                               mesh.shape[0]),
+                           int(bkg2d_obj.nxboxes * bkg2d_obj.box_size[1] /
+                               mesh.shape[1]))
+            result = zoom(mesh, zoom_factor, order=self.order, mode=self.mode,
+                          cval=self.cval)
+
+            return result[0:bkg2d_obj.data.shape[0], 0:bkg2d_obj.data.shape[1]]
+
+        else:
+
+            # The mesh is resized directly to the final data size.
+            zoom_factor = (float(bkg2d_obj.data.shape[0] / mesh.shape[0]),
+                           float(bkg2d_obj.data.shape[1] / mesh.shape[1]))
+
+            return zoom(mesh, zoom_factor, order=self.order, mode=self.mode,
+                        cval=self.cval)
+
+    # -----------------------------------------------------------------
+
+    def interpolate_idw(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Interpolating the aperture fluxes using the 'IDW' method ...")
+
+        # Create the interpolator
+        self.interpolator = BkgIDWInterpolator()
+
+        # Interpolate
+        data = self.interpolator(self.background_mesh, self)
+        self.sky = Frame(data)
+
+        # IMPLEMENTATION OF BKGIDWINTERPOLATOR:
+
+        mesh = np.asanyarray(mesh)
+        if np.ptp(mesh) == 0:
+            return np.zeros_like(bkg2d_obj.data) + np.min(mesh)
+
+        mesh1d = mesh[bkg2d_obj.mesh_yidx, bkg2d_obj.mesh_xidx]
+        f = ShepardIDWInterpolator(bkg2d_obj.yx, mesh1d,
+                                   leafsize=self.leafsize)
+        data = f(bkg2d_obj.data_coords, n_neighbors=self.n_neighbors,
+                 power=self.power, reg=self.reg)
+
+        data = data.reshape(bkg2d_obj.data.shape)
+
+
+
+    # -----------------------------------------------------------------
+
+    def interpolate_spline(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Interpolating the aperture fluxes using the 'spline' method ...")
+
+        # Get lists of the x and y values
+        x_values = np.array([center.x for center in self.aperture_centers])
+        y_values = np.array([center.y for center in self.aperture_centers])
 
         #X, Y = np.meshgrid(x_values, y_values)
 
         X = x_values
         Y = y_values
-        Z = aperture_means
+        Z = self.aperture_means
 
         #print(X, Y, Z)
         #print(len(X), len(Y), len(Z))
@@ -947,26 +1324,6 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def try_to_interpolate_smart(self, aperture_centers, aperture_means):
-
-        """
-        This function ...
-        :param aperture_centers:
-        :param aperture_means:
-        :return:
-        """
-
-        model = Pipeline([('poly', PolynomialFeatures(degree=3)), ('linear', LinearRegression(fit_intercept=False))])
-
-        # fit to an order-3 polynomial data
-        x = np.arange(5)
-
-        y = 3 - 2 * x + x ** 2 - x ** 3
-
-        model = model.fit(x[:, np.newaxis], y)
-
-    # -----------------------------------------------------------------
-
     def estimate_caapr(self):
 
         """
@@ -983,7 +1340,6 @@ class SkySubtractor(Configurable):
 
         # Define Keflavich function to downsample an array
         def Downsample(myarr, factor, estimator=np.nanmean):
-
             ys, xs = myarr.shape
             crarr = myarr[:ys - (ys % int(factor)), :xs - (xs % int(factor))]
             dsarr = estimator(np.concatenate([[crarr[i::factor, j::factor]
@@ -1073,18 +1429,18 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def subtract(self):
+    #def subtract(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
         # Inform the user
-        log.info("Subtracting the sky from the frame ...")
+        #log.info("Subtracting the sky from the frame ...")
 
         # Subtract the estimated sky from the image frame
-        self.frame -= self.sky
+        #self.frame -= self.sky
 
     # -----------------------------------------------------------------
 
@@ -1100,7 +1456,7 @@ class SkySubtractor(Configurable):
 
         # Create a mask from the principal galaxy region
         factor = self.config.zero_outside.factor
-        mask = Mask.from_shape(self.principal_ellipse * factor, self.frame.xsize, self.frame.ysize).inverse()
+        mask = Mask.from_shape(self.principal_shape * factor, self.frame.xsize, self.frame.ysize).inverse()
 
         # Set the primary frame zero outside the principal ellipse
         self.frame[mask] = 0.0
@@ -1119,6 +1475,42 @@ class SkySubtractor(Configurable):
 
         # Set all negative pixels to zero
         self.frame[self.frame <= 0.] = 0.0
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write histrogram
+        #self.write_histogram()
+
+        # Write apertures frame
+        if self.config.estimation.method == "pts": self.write_apertures()
+
+        # Write aperture means
+        if self.config.estimation.method == "pts": self.write_apertures_value()
+
+        # Write aperture noise
+        if self.config.estimation.method == "pts": self.write_apertures_noise()
+
+        # Write region
+        self.write_region()
+
+        # Write mask
+        self.write_mask()
+
+        # Write sky
+        self.write_sky()
+
+        # Write noise
+        self.write_noise()
 
     # -----------------------------------------------------------------
 
@@ -1158,7 +1550,145 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    @property
+    def write_apertures(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the aperture frame ...")
+
+        # Determine the path
+        path = self.output_path_file("apertures.fits")
+
+        # Save
+        self.apertures_frame.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_apertures_value(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the aperture values frame ...")
+
+        # Determine the path
+        path = self.output_path_file("aperture_values.fits")
+
+        # Save
+        self.apertures_mean_frame.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_apertures_noise(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the aperture noise frame ...")
+
+        # Determine the path
+        path = self.output_path_file("aperture_noise.fits")
+
+        # Save
+        self.apertures_noise_frame.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_region(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the region ...")
+
+        # Determine the path
+        path = self.output_path_file("sky.reg")
+
+        # Save
+        self.region.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_mask(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the mask ...")
+
+        # Determine the path
+        path = self.output_path_file("mask.fits")
+
+        # Save
+        self.mask.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_sky(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the sky ...")
+
+        # Determine the path
+        path = self.output_path_file("sky.fits")
+
+        # Save
+        self.sky_frame.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_noise(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the noise ...")
+
+        # Determine the path
+        path = self.output_path_file("noise.fits")
+
+        # Save
+        self.noise_frame.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def sky_frame(self):
 
         """
@@ -1220,5 +1750,53 @@ class SkySubtractor(Configurable):
 
         # Return the standard deviation of the sigma-clipped frame
         return np.ma.masked_array(self.frame, mask=self.mask).std()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def subtracted(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.frame - self.sky
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mean_subtracted(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.ma.mean(np.ma.masked_array(self.subtracted, mask=self.mask))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def median_subtracted(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.median(np.ma.masked_array(self.subtracted, mask=self.mask).compressed())
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def stddev_subtracted(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.ma.masked_array(self.subtracted, mask=self.mask).std()
 
 # -----------------------------------------------------------------

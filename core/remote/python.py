@@ -552,6 +552,7 @@ class AttachedPythonSession(RemotePythonSession):
         # Call the constructor of the base class
         super(AttachedPythonSession, self).__init__(output_path)
 
+        # Import the remote class
         from .remote import Remote
 
         # The remote connection

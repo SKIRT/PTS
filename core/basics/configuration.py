@@ -657,6 +657,19 @@ def load_mapping(mappingfile, mapping, indent=""):
 
 # -----------------------------------------------------------------
 
+def save_mapping(path, mapping):
+
+    """
+    This function ...
+    :param path:
+    :param mapping:
+    :return:
+    """
+
+    with open(path, 'w') as fh: write_mapping(fh, mapping)
+
+# -----------------------------------------------------------------
+
 def write_mapping(mappingfile, mapping, indent=""):
 
     """

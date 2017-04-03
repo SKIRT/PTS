@@ -27,6 +27,7 @@ from .test import PTSTest
 from ..tools import time
 from ..tools import stringify
 from ..remote.utils import DetachedCalculation
+from ..basics.table import SmartTable
 
 # -----------------------------------------------------------------
 
@@ -128,8 +129,64 @@ def path_for_test(subproject, name):
 
 # -----------------------------------------------------------------
 
-#scripts = introspection.get_scripts()
 tables = introspection.get_arguments_tables()
+
+# -----------------------------------------------------------------
+
+class PTSTestsTable(SmartTable):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(PTSTestsTable, self).__init__(*args, **kwargs)
+
+        # Add column info
+        self.add_column_info("Name", str, None, "name of the test")
+        self.add_column_info("Start time", str, None, "timestamp for start of command")
+        self.add_column_info("End time", str, None, "timestamp for end of command")
+
+    # -----------------------------------------------------------------
+
+    def add_test(self, test):
+
+        """
+        This function ...
+        :param test:
+        :return:
+        """
+
+        values = []
+
+        self.add_row(values)
+
+# -----------------------------------------------------------------
+
+# Determine path, initialize if not present
+tests_table_path = fs.join(introspection.pts_tests_dir, "tests.dat")
+if not fs.is_file(tests_table_path):
+    table = PTSTestsTable()
+    table.saveto(tests_table_path)
+
+# -----------------------------------------------------------------
+
+def load_tests_table():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return PTSTestsTable.from_file(tests_table_path)
 
 # -----------------------------------------------------------------
 
@@ -159,6 +216,9 @@ class PTSTestSuite(Configurable):
 
         # The tests
         self.tests = defaultdict(list)
+
+        # The tests table
+        self.table = None
 
     # -----------------------------------------------------------------
 
@@ -251,6 +311,9 @@ class PTSTestSuite(Configurable):
 
         # Call the setup function of the base class
         super(PTSTestSuite, self).setup(**kwargs)
+
+        # Load the tests table
+        self.table = load_tests_table()
 
         # Tests are specified
         if "tests" in kwargs:
@@ -407,7 +470,7 @@ class PTSTestSuite(Configurable):
                 definition = config_module.definition
 
                 # Create the test configuration
-                config = create_test_configuration(definition, name, self.config.settings, self.config.default)
+                config = create_test_configuration(definition, name, self.config.settings, self.config.default, temp_path=temp_path)
 
                 # Load the test module
                 test_module = imp.load_source(name, filepath)
@@ -461,7 +524,16 @@ class PTSTestSuite(Configurable):
 
                 # Run the test
                 try: test.run()
-                except DetachedCalculation as detached: test.save()
+                except DetachedCalculation as detached:
+
+                    # Give warning
+                    log.warning("The test '" + test.name + "' of the '" + subproject + "' subproject is being detached: progress and retrieval information are being saved into the tests table ...")
+
+                    # Save the test
+                    test.save()
+
+                    # Add an entry to the table
+                    self.table.add_test()
 
     # -----------------------------------------------------------------
 
@@ -504,7 +576,7 @@ class PTSTestSuite(Configurable):
 
 # -----------------------------------------------------------------
 
-def create_test_configuration(definition, test_name, settings=None, default=False):
+def create_test_configuration(definition, test_name, settings=None, default=False, temp_path=None):
 
     """
     This function ...
@@ -512,6 +584,7 @@ def create_test_configuration(definition, test_name, settings=None, default=Fals
     :param test_name:
     :param settings:
     :param default:
+    :param temp_path:
     :return:
     """
 
@@ -543,6 +616,11 @@ def create_test_configuration(definition, test_name, settings=None, default=Fals
         # Create the configuration
         setter = InteractiveConfigurationSetter(test_name, add_cwd=False, add_logging=False)
         config = setter.run(definition, prompt_optional=True)
+
+    #print(config.path)
+    # Set the working directory to the temporary test path
+    #config.path = temp_path
+    #print(config.path)
 
     # Return the configuration
     return config

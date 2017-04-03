@@ -41,7 +41,7 @@ from ...magic.core.kernel import ConvolutionKernel
 from ...modeling.preparation import unitconversion
 from ..basics.mask import Mask
 from ...core.basics.composite import SimplePropertyComposite
-from ...core.remote.python import RemotePythonSession
+from ...core.remote.python import AttachedPythonSession
 
 # -----------------------------------------------------------------
 
@@ -1261,7 +1261,7 @@ def _convolve(image, kernel_path, kernel_fwhm, visualisation_path=None, host_id=
         log.info("Convolution will be performed remotely on host '" + host_id + "' ...")
 
         # Create remote image, convolve and make local again
-        session = RemotePythonSession.from_host_id(host_id)
+        session = AttachedPythonSession(host_id)
         remote_image = RemoteImage.from_local(image, session)
         remote_image.convolve(kernel, allow_huge=True)
         new_image = remote_image.to_local()
@@ -1307,7 +1307,7 @@ def _rebin(image, reference_wcs, exact, host_id=None):
         log.info("Rebinning will be performed remotely on host '" + host_id + "' ...")
 
         # Create remote image, rebin and make local again
-        session = RemotePythonSession.from_host_id(host_id)
+        session = AttachedPythonSession(host_id)
         remote_image = RemoteImage.from_local(image, session)
         remote_image.rebin(reference_wcs, exact=exact)
         new_image = remote_image.to_local()
@@ -1368,7 +1368,11 @@ def _subtract_sky(image, config, principal_sky_region, saturation_sky_region=Non
     sky_subtractor = SkySubtractor(config)
 
     # Run the sky subtractor
-    sky_subtractor.run(image.frames.primary, principal_shape, image.masks.sources, extra_mask, saturation_region, skysubtractor_animation)
+    sky_subtractor.run(frame=image.frames.primary, principal_shape=principal_shape, sources_mask=image.masks.sources,
+                       extra_mask=extra_mask, saturation_region=saturation_region, animation=skysubtractor_animation)
+
+    # Set the subtracted frame as the primary frame
+    image.replace_frame("primary", sky_subtractor.subtracted)
 
     # Add the sky frame to the image
     image.add_frame(sky_subtractor.sky_frame, "sky")
