@@ -7,7 +7,7 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.magic.sky.skysubtractor import finishing_steps, interpolation_methods
+from pts.magic.sky.skysubtractor import estimation_methods, finishing_steps, interpolation_methods, estimators, noise_estimators
 
 # -----------------------------------------------------------------
 
@@ -27,7 +27,7 @@ definition.add_flag("sigma_clip_mask", "sigma-clippin", True)
 definition.add_flag("estimate", "estimate the sky", True)
 
 # Set zero outside of the principal galaxy
-definition.add_flag("set_zero_outside", "set zero outside of principal galaxy", False)
+definition.add_flag("set_zero_outside", "set zero outside of principal galaxy", True)
 
 # Eliminate negative values (replace them by zero)
 definition.add_flag("eliminate_negatives", "replace negative pixels by zero", False)
@@ -47,7 +47,7 @@ definition.sections["histogram"].add_flag("log_scale", "log scale", True)
 
 # Estimation
 definition.add_section("estimation", "sky estimation")
-definition.sections["estimation"].add_optional("method", "string", "method used for sky estimation", "pts")
+definition.sections["estimation"].add_optional("method", "string", "method used for sky estimation", "pts", choices=estimation_methods)
 definition.sections["estimation"].add_optional("finishing_step", "string", "finishing step", choices=finishing_steps, default="interpolation")
 definition.sections["estimation"].add_optional("interpolation_method", "string", "method of interpolation (finishing step)", choices=interpolation_methods, default="zoom")
 definition.sections["estimation"].add_optional("aperture_radius", "positive_real", "aperture radius in pixel coordinates (if not defined, aperture_fwhm_factor * fwhm of the frame will be used)")
@@ -60,6 +60,7 @@ definition.sections["estimation"].add_optional("noise_estimator", "string", "est
 definition.sections["estimation"].add_optional("photutils_fixed_width", "positive_integer", "fixed value for the width of the grid meshes (otherwise 2 * aperture_fwhm_factor * fwhm is used or 2 * aperture_radius)", suggestions=[50])
 definition.sections["estimation"].add_optional("photutils_filter_size", "positive_integer", "filter size", 3)
 definition.sections["estimation"].add_optional("photutils_global", "string", "use photutils method but only use the global mean/median value and noise (if None, actual frames are used)", choices=["mean", "median"], suggestions=["median"])
+definition.sections["estimation"].add_optional("relative_mesh_scale", "positive_real", "scale of the meshes relative to the aperture width = 2 x aperture radius", 1.0)
 
 # Setting zero outside
 definition.add_section("zero_outside", "setting zero outside")

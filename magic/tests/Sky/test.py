@@ -115,6 +115,9 @@ class SkyTest(TestImplementation):
         # Sky reference estimation
         self.reference_sky = None
 
+        # Path
+        self.subtraction_path = None
+
         # The sky subtractor
         self.subtractor = None
 
@@ -181,6 +184,9 @@ class SkyTest(TestImplementation):
 
         # Call the setup function of the base class
         super(SkyTest, self).setup(**kwargs)
+
+        # Set the subtraction path
+        self.subtraction_path = fs.create_directory_in(self.path, "subtraction")
 
     # -----------------------------------------------------------------
 
@@ -775,7 +781,7 @@ class SkyTest(TestImplementation):
         input_dict["extra_mask"] = self.rotation_mask
 
         # Create command
-        command = Command("subtract_sky", "subtract the sky from an artificially created image", settings, input_dict)
+        command = Command("subtract_sky", "subtract the sky from an artificially created image", settings, input_dict, cwd=self.subtraction_path)
 
         # Run the subtraction
         self.subtractor = self.run_command(command)
