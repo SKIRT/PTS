@@ -24,10 +24,7 @@ from pts.do.commandline import Command
 from pts.core.test.implementation import TestImplementation
 from pts.magic.core.frame import Frame
 from pts.magic.core.mask import Mask
-
-# -----------------------------------------------------------------
-
-# https://photutils.readthedocs.io/en/stable/photutils/background.html
+from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -51,6 +48,10 @@ class SourcesTest(TestImplementation):
 
         # Call the constructor of the base class
         super(SourcesTest, self).__init__(config, interactive)
+
+        # Paths
+        self.find_path = None
+        self.extract_path = None
 
         # The frame
         self.frame = None
@@ -93,6 +94,10 @@ class SourcesTest(TestImplementation):
         # Call the setup function of the base class
         super(SourcesTest, self).setup(**kwargs)
 
+        # Set paths
+        self.find_path = fs.create_directory_in(self.path, "find")
+        self.extract_path = fs.create_directory_in(self.path, "extract")
+
     # -----------------------------------------------------------------
 
     def find(self):
@@ -101,6 +106,18 @@ class SourcesTest(TestImplementation):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Finding the sources ...")
+
+        # Settings
+        settings = dict()
+
+        # Input
+        input_dict = dict()
+
+        # Construct the command
+        command = Command("find_sources", "find sources", settings, input_dict, cwd=None, finish=None)
 
     # -----------------------------------------------------------------
 

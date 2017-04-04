@@ -768,8 +768,8 @@ class SkyTest(TestImplementation):
         settings["estimation"] = dict()
         settings["estimation"]["aperture_radius"] = self.aperture_radius
         settings["write"] = True
-        settings["estimation"]["finishing_step"] = "polynomial"
-        settings["estimation"]["polynomial_degree"] = self.config.polynomial_degree
+        #settings["estimation"]["finishing_step"] = "polynomial"
+        #settings["estimation"]["polynomial_degree"] = self.config.polynomial_degree
 
         # Input
         input_dict = dict()

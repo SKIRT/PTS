@@ -796,7 +796,7 @@ class SkySubtractor(Configurable):
         napertures = int(optimal_number_of_apertures * self.config.estimation.relative_napertures_max)
 
         # Don't take less than 'min_napertures'
-        napertures = max(napertures, self.config.min_apertures)
+        napertures = max(napertures, self.config.estimation.min_napertures)
 
         # Debugging
         log.debug("A total of " + str(napertures) + " apertures are going to be used to estimate the sky ...")
@@ -892,10 +892,10 @@ class SkySubtractor(Configurable):
         log.info("Creating the apertures ...")
 
         # Generate the apertures
-        aperture_centers, aperture_values, aperture_noise_values = self.generate_apertures()
+        aperture_centers, aperture_values, aperture_noise_values, aperture_masks = self.generate_apertures()
 
         # Remove outliers
-        self.aperture_centers, self.aperture_values, self.aperture_noise_values = self.remove_aperture_outliers(aperture_centers, aperture_values, aperture_noise_values)
+        self.aperture_centers, self.aperture_values, self.aperture_noise_values, self.aperture_masks = self.remove_aperture_outliers(aperture_centers, aperture_values, aperture_noise_values, aperture_masks)
 
     # -----------------------------------------------------------------
 
@@ -1035,17 +1035,18 @@ class SkySubtractor(Configurable):
         aperture_noise_values = np.array(aperture_noise_values)
 
         # Return the aperture properties
-        return aperture_centers, aperture_values, aperture_noise_values
+        return aperture_centers, aperture_values, aperture_noise_values, aperture_masks
 
     # -----------------------------------------------------------------
 
-    def remove_aperture_outliers(self, aperture_centers, aperture_values, aperture_noise_values):
+    def remove_aperture_outliers(self, aperture_centers, aperture_values, aperture_noise_values, aperture_masks):
 
         """
         This function ...
         :param aperture_centers:
         :param aperture_values:
         :param aperture_noise_values:
+        :param aperture_masks:
         :return:
         """
 
@@ -1070,6 +1071,10 @@ class SkySubtractor(Configurable):
         aperture_values = np.ma.MaskedArray(aperture_values, clip_mask).compressed()
         aperture_noise_values = np.ma.MaskedArray(aperture_noise_values, clip_mask).compressed()
 
+        indices = np.ma.MaskedArray(range(len(aperture_masks)), mask=clip_mask).compressed()
+        clipped_aperture_masks = []
+        for index in indices: clipped_aperture_masks.append(aperture_masks[index])
+
         #means_distribution = Distribution.from_values(aperture_means, bins=50)
         #stddevs_distribution = Distribution.from_values(aperture_stddevs, bins=50)
 
@@ -1077,7 +1082,7 @@ class SkySubtractor(Configurable):
         #stddevs_distribution.plot("Aperture stddevs after sigma-clipping")
 
         # Return the sigma-clipped aperture properties
-        return aperture_centers, aperture_values, aperture_noise_values
+        return aperture_centers, aperture_values, aperture_noise_values, clipped_aperture_masks
 
     # -----------------------------------------------------------------
 
@@ -1109,7 +1114,7 @@ class SkySubtractor(Configurable):
             self.apertures_frame[mask] = self.frame[mask]
             self.apertures_values_frame[mask] = self.aperture_values[i]
             self.apertures_noise_frame[mask] = self.aperture_noise_values[i]
-            self.apertures_mask[mask][self.aperture_masks[i]] = True
+            self.apertures_mask[self.aperture_masks[i]] = True
 
     # -----------------------------------------------------------------
 
@@ -1161,23 +1166,23 @@ class SkySubtractor(Configurable):
         interpolator = NearestNDInterpolator(points, values)
 
         # Set filled values frame
-        self.filled_values = Frame.zeros_like(self.frame)
+        self.mesh.filled_values = Frame.zeros_like(self.frame)
 
         # Fill
         for x in range(self.frame.xsize):
             for y in range(self.frame.ysize):
-                self.filled_values[y, x] = interpolator(x, y)
+                self.mesh.filled_values[y, x] = interpolator(x, y)
 
         # Create interpolator for noise values
         interpolator = NearestNDInterpolator(points, noise_values)
 
         # Set filled noise values frame
-        self.filled_noise = Frame.zeros_like(self.frame)
+        self.mesh.filled_noise = Frame.zeros_like(self.frame)
 
         # Fill
         for x in range(self.frame.xsize):
             for y in range(self.frame.ysize):
-                self.filled_noise[y, x] = interpolator(x, y)
+                self.mesh.filled_noise[y, x] = interpolator(x, y)
 
     # -----------------------------------------------------------------
 
@@ -1199,8 +1204,8 @@ class SkySubtractor(Configurable):
 
         if (xextra + yextra) == 0:
             # no resizing of the data is necessary
-            data_ma = np.ma.masked_array(self.filled_values.data, mask=self.mask)
-            noise_ma = np.ma.masked_array(self.filled_noise.data, mask=self.mask)
+            data_ma = np.ma.masked_array(self.mesh.filled_values.data, mask=self.mask)
+            noise_ma = np.ma.masked_array(self.mesh.filled_noise.data, mask=self.mask)
         else:
             # pad or crop the data
             #if self.edge_method == 'pad':
@@ -1213,8 +1218,8 @@ class SkySubtractor(Configurable):
             #    raise ValueError('edge_method must be "pad" or "crop"')
 
             # Pad
-            data_ma = self._pad_data(self.filled_values.data, yextra, xextra)
-            noise_ma = self._pad_data(self.filled_noise.data, yextra, xextra)
+            data_ma = self._pad_data(self.mesh.filled_values.data, yextra, xextra)
+            noise_ma = self._pad_data(self.mesh.filled_noise.data, yextra, xextra)
             nyboxes = data_ma.shape[0] // self.mesh_size
             nxboxes = data_ma.shape[1] // self.mesh_size
 
@@ -1238,12 +1243,14 @@ class SkySubtractor(Configurable):
         mesh_shape = (nyboxes, nxboxes)
         mesh_yidx, mesh_xidx = np.unravel_index(mesh_idx, mesh_shape)
 
+        #print(mesh_yidx, mesh_xidx)
+
         # Set mesh properties
         self.mesh.nxboxes = nxboxes
         self.mesh.nyboxes = nyboxes
         self.mesh.shape = mesh_shape
         self.mesh.mesh_xidx = mesh_xidx
-        self.mesh.mesh_yidy = mesh_yidx
+        self.mesh.mesh_yidx = mesh_yidx
         self.mesh.value_data = mesh_value_data
         self.mesh.noise_data = mesh_noise_data
 
@@ -1256,6 +1263,9 @@ class SkySubtractor(Configurable):
         :param data:
         :return:
         """
+
+        # Inform the user
+        log.info("Selecting meshes ...")
 
         exclude_mesh_percentile = 10.
 
@@ -1382,6 +1392,10 @@ class SkySubtractor(Configurable):
         power = 1.
         reg = 0.
         #
+
+        print(self.mesh.mesh_yidx.shape, self.mesh.mesh_xidx.shape)
+        print(self.mesh.mesh_yidx)
+        print(self.mesh.mesh_xidx)
 
         # Create interpolator based on the aperture data
         yx = np.column_stack([self.mesh.mesh_yidx, self.mesh.mesh_xidx])
@@ -2059,8 +2073,8 @@ class SkySubtractor(Configurable):
         # Write aperture noise
         if self.config.estimation.method == "pts": self.write_apertures_noise()
 
-        # Write filled (nearest neigbour)
-        if self.config.estimation.method == "pts": self.write_filled()
+        # Write mesh
+        if self.mesh is not None: self.write_mesh()
 
         # Write region
         self.write_region()
@@ -2136,6 +2150,27 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
+    def write_mesh(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing mesh data ...")
+
+        # Write filled
+        self.write_filled()
+
+        # Write mesh values
+        self.write_mesh_values()
+
+        # Write mesh noise
+        self.write_mesh_noise()
+
+    # -----------------------------------------------------------------
+
     def write_filled(self):
 
         """
@@ -2168,7 +2203,7 @@ class SkySubtractor(Configurable):
         path = self.output_path_file("filled_values.fits")
 
         # Save
-        self.filled_values.saveto(path)
+        self.mesh.filled_values.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -2186,7 +2221,43 @@ class SkySubtractor(Configurable):
         path = self.output_path_file("filled_noise.fits")
 
         # Save
-        self.filled_noise.saveto(path)
+        self.mesh.filled_noise.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_mesh_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing interpolated mesh values ...")
+
+        # Detetermine the path
+        path = self.output_path_file("interpolated_values_mesh.fits")
+
+        # Write
+        self.mesh.interpolated_values.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_mesh_noise(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing interpolated mesh noise ...")
+
+        # Determine the path
+        path = self.output_path_file("interpolated_noise_mesh.fits")
+
+        # Write
+        self.mesh.interpolated_noise.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -2436,7 +2507,7 @@ class SkySubtractor(Configurable):
         :return:
         """
 
-        return np.ma.mean(np.ma.masked_array(self.subtracted, mask=self.mask))
+        return np.ma.mean(np.ma.masked_array(self.subtracted, mask=self.mask.data))
 
     # -----------------------------------------------------------------
 
@@ -2448,7 +2519,7 @@ class SkySubtractor(Configurable):
         :return:
         """
 
-        return np.median(np.ma.masked_array(self.subtracted, mask=self.mask).compressed())
+        return np.median(np.ma.masked_array(self.subtracted, mask=self.mask.data).compressed())
 
     # -----------------------------------------------------------------
 
@@ -2460,6 +2531,6 @@ class SkySubtractor(Configurable):
         :return:
         """
 
-        return np.ma.masked_array(self.subtracted, mask=self.mask).std()
+        return np.ma.masked_array(self.subtracted, mask=self.mask.data).std()
 
 # -----------------------------------------------------------------

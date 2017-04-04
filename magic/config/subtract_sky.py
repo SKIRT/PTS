@@ -56,10 +56,10 @@ definition.sections["estimation"].add_optional("relative_napertures_max", "posit
 definition.sections["estimation"].add_optional("min_napertures", "positive_integer", "minimum number of sky apertures", 40)
 definition.sections["estimation"].add_optional("polynomial_degree", "positive_integer", "degree of the polynomial for the finishing step", 2)
 definition.sections["estimation"].add_optional("estimator", "string", "estimator for the sky in each aperture", choices=estimators, default="sextractor")
-definition.sections["estimation"].add_optional("noise_estimator", "string", "estimator for the noise in each aperture", choices=noise_estimators, default="std")
+definition.sections["estimation"].add_optional("noise_estimator", "string", "estimator for the noise in each aperture", choices=noise_estimators, default="stddev")
 definition.sections["estimation"].add_optional("photutils_fixed_width", "positive_integer", "fixed value for the width of the grid meshes (otherwise 2 * aperture_fwhm_factor * fwhm is used or 2 * aperture_radius)", suggestions=[50])
 definition.sections["estimation"].add_optional("photutils_filter_size", "positive_integer", "filter size", 3)
-definition.sections["estimation"].add_optional("photutils_global", "string", "use photutils method but only use the global mean/median value and noise (if None, actual frames are used)", choices=["mean", "median"], suggestions=["median"])
+definition.sections["estimation"].add_optional("photutils_global", "string", "use photutils method but only use the global mean/median value and noise (if None, actual frames are used)", choices=["mean", "median"]) #suggestions=["median"])
 definition.sections["estimation"].add_optional("relative_mesh_scale", "positive_real", "scale of the meshes relative to the aperture width = 2 x aperture radius", 1.0)
 
 # Setting zero outside
