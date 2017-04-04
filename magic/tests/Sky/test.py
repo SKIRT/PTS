@@ -743,7 +743,7 @@ class SkyTest(TestImplementation):
         if self.config.plot: plotting.plot_box(bkg.background, title="background from photutils")
 
         # Set the sky
-        self.reference_sky = Frame(bkg.background * ~self.total_mask.data)
+        self.reference_sky = Frame(bkg.background)
 
         # Set bkg object
         self.photutils_bkg = bkg
@@ -766,10 +766,14 @@ class SkyTest(TestImplementation):
         # Settings
         settings = dict()
         settings["estimation"] = dict()
+        settings["estimation"]["method"] = "photutils"
         settings["estimation"]["aperture_radius"] = self.aperture_radius
         settings["write"] = True
         #settings["estimation"]["finishing_step"] = "polynomial"
         #settings["estimation"]["polynomial_degree"] = self.config.polynomial_degree
+        #settings["estimation"]["fill_method"] = "cubic"
+
+        settings["plot"] = True
 
         # Input
         input_dict = dict()

@@ -31,7 +31,7 @@ definition.add_optional("constant_sky", "real", "constant sky value", 5.)
 definition.add_flag("rotate", "rotate", True)
 definition.add_optional("rotation_angle", "angle", "rotation angle", "20 deg", convert_default=True)
 
-definition.add_optional("aperture_fwhm_factor", "positive_real", "aperture FWHM factor", 4.0)
+definition.add_optional("aperture_fwhm_factor", "positive_real", "aperture FWHM factor", 3.0)
 
 definition.add_optional("galaxy_central_flux", "real", "central flux of galaxy", 100.)
 definition.add_optional("galaxy_sersic_index", "real", "sersic index", 1.5)

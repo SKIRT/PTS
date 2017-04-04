@@ -21,7 +21,7 @@ definition.add_optional("image", "file_path", "name/path of the input image")
 definition.add_optional("sky_region", "file_path", "region file for the sky estimation")
 
 # Perform sigma-clipping step
-definition.add_flag("sigma_clip_mask", "sigma-clippin", True)
+definition.add_flag("sigma_clip_mask", "sigma-clipping", True)
 
 # Estimate the sky (obviously)
 definition.add_flag("estimate", "estimate the sky", True)
@@ -39,7 +39,8 @@ definition.sections["mask"].add_optional("annulus_outer_factor", "real", "sky an
 
 # Sigma clipping
 definition.add_section("sigma_clipping", "sigma clipping")
-definition.sections["sigma_clipping"].add_optional("sigma_level", "real", "sigma level", 3.0)
+definition.sections["sigma_clipping"].add_optional("sigma_level", "positive_real", "sigma level", 3.0)
+definition.sections["sigma_clipping"].add_optional("niterations", "positive_integer", "number of iterations", 5)
 
 # Histogram
 definition.add_section("histogram", "histogram")
@@ -47,20 +48,23 @@ definition.sections["histogram"].add_flag("log_scale", "log scale", True)
 
 # Estimation
 definition.add_section("estimation", "sky estimation")
-definition.sections["estimation"].add_optional("method", "string", "method used for sky estimation", "pts", choices=estimation_methods)
+definition.sections["estimation"].add_optional("method", "string", "method used for sky estimation", "photutils", choices=estimation_methods)
 definition.sections["estimation"].add_optional("finishing_step", "string", "finishing step", choices=finishing_steps, default="interpolation")
 definition.sections["estimation"].add_optional("interpolation_method", "string", "method of interpolation (finishing step)", choices=interpolation_methods, default="zoom")
 definition.sections["estimation"].add_optional("aperture_radius", "positive_real", "aperture radius in pixel coordinates (if not defined, aperture_fwhm_factor * fwhm of the frame will be used)")
-definition.sections["estimation"].add_optional("aperture_fwhm_factor", "positive_real", "aperture radius = aperture_fwhm_factor * frame FWHM", 4.0)
+definition.sections["estimation"].add_optional("aperture_fwhm_factor", "positive_real", "aperture radius = aperture_fwhm_factor * frame FWHM", 3.0)
 definition.sections["estimation"].add_optional("relative_napertures_max", "positive_real", "fraction of the theoretical maximal number of apertures to be actually used", 0.5)
-definition.sections["estimation"].add_optional("min_napertures", "positive_integer", "minimum number of sky apertures", 40)
+definition.sections["estimation"].add_optional("min_napertures", "positive_integer", "minimum number of sky apertures", 50)
 definition.sections["estimation"].add_optional("polynomial_degree", "positive_integer", "degree of the polynomial for the finishing step", 2)
 definition.sections["estimation"].add_optional("estimator", "string", "estimator for the sky in each aperture", choices=estimators, default="sextractor")
 definition.sections["estimation"].add_optional("noise_estimator", "string", "estimator for the noise in each aperture", choices=noise_estimators, default="stddev")
 definition.sections["estimation"].add_optional("photutils_fixed_width", "positive_integer", "fixed value for the width of the grid meshes (otherwise 2 * aperture_fwhm_factor * fwhm is used or 2 * aperture_radius)", suggestions=[50])
 definition.sections["estimation"].add_optional("photutils_filter_size", "positive_integer", "filter size", 3)
 definition.sections["estimation"].add_optional("photutils_global", "string", "use photutils method but only use the global mean/median value and noise (if None, actual frames are used)", choices=["mean", "median"]) #suggestions=["median"])
-definition.sections["estimation"].add_optional("relative_mesh_scale", "positive_real", "scale of the meshes relative to the aperture width = 2 x aperture radius", 1.0)
+definition.sections["estimation"].add_optional("relative_mesh_scale", "positive_real", "scale of the meshes relative to the aperture width = 2 x aperture radius", 0.5)
+definition.sections["estimation"].add_flag("fill_before_mesh", "fill frame with aperture values before mesh (instead of just creating mesh from aperture values)", False)
+definition.sections["estimation"].add_optional("fill_method", "string", "fill method", "NN", choices=["NN", "linear", "cubic", "quintic", "zoom"])
+#definition.sections["estimation"].add_flag("do_mesh", "grid into mesh before final interpolation", True)
 
 # Setting zero outside
 definition.add_section("zero_outside", "setting zero outside")
@@ -69,5 +73,9 @@ definition.sections["zero_outside"].add_optional("factor", "real", "factor", 2.0
 # Flags
 definition.add_flag("write", "writing")
 definition.add_flag("plot", "plotting")
+
+# Add extra mask to output
+definition.add_flag("add_extra_mask", "add the extra mask to the output maps", True)
+definition.add_optional("mask_value", "real", "value to replace masked pixels", 0.0)
 
 # -----------------------------------------------------------------

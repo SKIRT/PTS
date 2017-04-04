@@ -54,13 +54,14 @@ def sigma_clip_mask_list(data, sigma=3.0, mask=None):
 
 # -----------------------------------------------------------------
 
-def sigma_clip_mask(data, sigma_level=3.0, mask=None):
+def sigma_clip_mask(data, sigma_level=3.0, mask=None, niters=None):
 
     """
     This function ...
     :param data:
     :param sigma_level:
     :param mask:
+    :param niters: None means till convergence is achieved
     :return:
     """
 
@@ -68,7 +69,7 @@ def sigma_clip_mask(data, sigma_level=3.0, mask=None):
     x_values, y_values, z_values = general.split_xyz(data, mask=mask)
 
     # Sigma-clip z-values that are outliers
-    masked_z_values = sigma_clip(z_values, sigma=sigma_level, iters=None, copy=False)
+    masked_z_values = sigma_clip(z_values, sigma=sigma_level, iters=niters, copy=False)
 
     # Copy the mask or create a new one if none was provided
     new_mask = copy.deepcopy(mask) if mask is not None else Mask(np.zeros_like(data))

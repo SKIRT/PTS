@@ -23,7 +23,7 @@ from scipy.interpolate import CloughTocher2DInterpolator as intp
 from scipy.interpolate import SmoothBivariateSpline
 from scipy.ndimage import zoom
 from itertools import product
-from scipy.interpolate import NearestNDInterpolator
+from scipy.interpolate import NearestNDInterpolator, interp2d
 
 # Test
 # from sklearn.preprocessing import PolynomialFeatures
@@ -31,6 +31,8 @@ from scipy.interpolate import NearestNDInterpolator
 # from sklearn.pipeline import Pipeline
 
 # Import astronomical modules
+from astropy.visualization import SqrtStretch
+from astropy.visualization.mpl_normalize import ImageNormalize
 from photutils.background import Background2D
 from photutils import SigmaClip
 from photutils import SExtractorBackground
@@ -60,6 +62,8 @@ from ..core.mask import Mask as newMask
 from ..core.cutout import CutoutMask
 from ...core.basics.map import Map
 from ...core.basics.configuration import save_mapping
+from ...core.basics.distribution import Distribution
+from ...core.plot.distribution import DistributionPlotter
 
 # -----------------------------------------------------------------
 
@@ -121,6 +125,9 @@ class SkySubtractor(Configurable):
         # The output mask (combined input + bad mask + galaxy annulus mask + expanded saturation mask + sigma-clipping mask)
         self.mask = None
 
+        # The output mask, but without sigma clipping
+        self.mask_not_clipped = None
+
         # The estimated sky (a single floating point value or a Frame, depending on the estimation method)
         self.sky = None
 
@@ -155,8 +162,18 @@ class SkySubtractor(Configurable):
         # The statistics
         self.statistics = None
 
+        # Filled data
+        self.filled_values = None
+        self.filled_noise = None
+
         # Mesh info
-        self.mesh = Map()
+        self.mesh = None
+
+        # Photutils bkg
+        self.photutils_bkg = None
+
+        # The distributions
+        self.distributions = Map()
 
     # -----------------------------------------------------------------
 
@@ -183,14 +200,11 @@ class SkySubtractor(Configurable):
         # 5. Estimate the sky (and sky noise)
         self.estimate()
 
-        # 7. Set the frame to zero outside of the principal galaxy
-        if self.config.set_zero_outside: self.set_zero_outside()
-
-        # 8. Eliminate negative values from the frame, set them to zero
-        if self.config.eliminate_negatives: self.eliminate_negatives()
-
         # Set statistics
         self.set_statistics()
+
+        # Create distributions
+        self.create_distributions()
 
         # 9. Write
         if self.config.write: self.write()
@@ -392,6 +406,9 @@ class SkySubtractor(Configurable):
         # NEW
         self.mask = newMask.union(*masks)
 
+        # Save as the unclipped mask
+        self.mask_not_clipped = self.mask
+
     # -----------------------------------------------------------------
 
     def sigma_clip(self):
@@ -404,19 +421,8 @@ class SkySubtractor(Configurable):
         # Inform the user
         log.info("Performing sigma-clipping on the pixel values ...")
 
-        ### TEMPORARY: WRITE OUT MASK BEFORE CLIPPING
-
-        # Create a frame where the objects are masked
-        #frame = copy.deepcopy(self.frame)
-        #frame[self.mask] = float(self.config.writing.mask_value)
-
-        # Save the masked frame
-        #frame.saveto("masked_sky_frame_notclipped.fits")
-
-        ###
-
         # Create the sigma-clipped mask
-        self.mask = statistics.sigma_clip_mask(self.frame, self.config.sigma_clipping.sigma_level, self.mask)
+        self.mask = statistics.sigma_clip_mask(self.frame, self.config.sigma_clipping.sigma_level, self.mask, self.config.sigma_clipping.niterations)
 
     # -----------------------------------------------------------------
 
@@ -555,25 +561,29 @@ class SkySubtractor(Configurable):
         else:
             # Determine radius
             self.determine_aperture_radius()
-            integer_radius = int(math.ceil(self.aperture_radius))
-            box_shape = (2 * integer_radius, 2 * integer_radius)
+            box_shape = (self.integer_aperture_diameter, self.integer_aperture_diameter)
 
         # Determine filter size
         filter_size = (self.config.estimation.photutils_filter_size, self.config.estimation.photutils_filter_size)
 
         # NEW
-        sigma_clip = SigmaClip(sigma=3., iters=10)
+        # NO SIGMA CLIP BECAUSE WE HAVE ALREADY DONE THAT OURSELVES
+        #sigma_clip = SigmaClip(sigma=3., iters=10)
+        sigma_clip = None
         # bkg_estimator = MedianBackground()
         bkg_estimator = SExtractorBackground()
         bkg = Background2D(self.frame, box_shape, filter_size=filter_size, sigma_clip=sigma_clip,
                            bkg_estimator=bkg_estimator, mask=self.mask, filter_threshold=None)
 
+        # Keep the background 2D object
+        self.photutils_bkg = bkg
+
         # Masked background
-        masked_background = np.ma.masked_array(bkg.background, mask=self.mask)
+        masked_background = np.ma.masked_array(bkg.background, mask=self.mask.data)
         #plotting.plot_box(masked_background, title="masked background")
 
         # Masked background rms
-        masked_background_rms = np.ma.masked_array(bkg.background_rms, mask=self.mask)
+        masked_background_rms = np.ma.masked_array(bkg.background_rms, mask=self.mask.data)
 
         # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
         self.phot_sky = Frame(bkg.background,
@@ -642,7 +652,6 @@ class SkySubtractor(Configurable):
             log.debug("The mean value after subtraction is " + str(self.mean_subtracted))
             log.debug("The median value after subtraction is " + str(self.median_subtracted))
             log.debug("The standard deviation after subtraction is " + str(self.stddev_subtracted))
-            log.debug("The estimated noise is " + str(self.noise))
 
     # -----------------------------------------------------------------
 
@@ -706,6 +715,18 @@ class SkySubtractor(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def integer_aperture_radius(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return int(math.ceil(self.aperture_radius))
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def aperture_diameter(self):
 
         """
@@ -714,6 +735,18 @@ class SkySubtractor(Configurable):
         """
 
         return 2.0 * self.aperture_radius
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def integer_aperture_diameter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 2 * self.integer_aperture_radius
 
     # -----------------------------------------------------------------
 
@@ -1118,7 +1151,7 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def create_mesh(self):
+    def create_mesh_from_filled(self):
 
         """
         This function ...
@@ -1126,10 +1159,7 @@ class SkySubtractor(Configurable):
         """
 
         # Inform the user
-        log.info("Creating mesh ...")
-
-        # Make a map filled with the aperture values
-        self.make_filled_value_map()
+        log.info("Creating mesh from filled frames ...")
 
         # Determine properties of the mesh
         self.determine_mesh_properties()
@@ -1142,7 +1172,7 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def make_filled_value_map(self):
+    def create_mesh_from_apertures(self):
 
         """
         This function ...
@@ -1150,7 +1180,129 @@ class SkySubtractor(Configurable):
         """
 
         # Inform the user
-        log.info("Making a map filled with the aperture values using nearest-neighbor interpolation ...")
+        log.info("Creating mesh from aperture values ...")
+
+        # Determine mesh properties
+        self.determine_mesh_properties_from_apertures()
+
+        # ...
+
+    # -----------------------------------------------------------------
+
+    def determine_mesh_properties_from_apertures(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Determining mesh properties ...")
+
+        # Determine number of boxes in both directions
+        nyboxes = self.frame.ysize // self.mesh_size
+        nxboxes = self.frame.xsize // self.mesh_size
+        yextra = self.frame.ysize % self.mesh_size
+        xextra = self.frame.xsize % self.mesh_size
+
+        if (xextra + yextra) == 0:
+            # no resizing of the data is necessary
+            data_ma = np.ma.masked_array(self.filled_values.data, mask=self.mask.data)
+            noise_ma = np.ma.masked_array(self.filled_noise.data, mask=self.mask.data)
+        else:
+            # Pad
+            #data_ma = self._pad_data(self.filled_values.data, yextra, xextra)
+            #noise_ma = self._pad_data(self.filled_noise.data, yextra, xextra)
+            nyboxes = data_ma.shape[0] // self.mesh_size
+            nxboxes = data_ma.shape[1] // self.mesh_size
+
+        # a reshaped 2D array with mesh data along the x axis
+        #mesh_value_data = np.ma.swapaxes(data_ma.reshape(nyboxes, self.mesh_size, nxboxes, self.mesh_size), 1, 2).reshape(nyboxes * nxboxes, self.mesh_area)
+        #mesh_noise_data = np.ma.swapaxes(noise_ma.reshape(nyboxes, self.mesh_size, nxboxes, self.mesh_size), 1, 2).reshape(nyboxes * nxboxes, self.mesh_area)
+
+        # Select meshes
+        #mesh_idx = self.select_meshes(mesh_value_data)
+
+        # The mesh data
+        #mesh_value_data = mesh_value_data[mesh_idx, :]
+
+        # The mesh noise data
+        #mesh_noise_data = mesh_noise_data[mesh_idx, :]
+
+        mesh_shape = (nyboxes, nxboxes)
+        #mesh_yidx, mesh_xidx = np.unravel_index(mesh_idx, mesh_shape)
+
+        # Create arrays of mesh_xidx and mesh_yidx
+        mesh_xidx = []
+        mesh_yidx = []
+        #noise_values = []
+        for i in range(len(self.aperture_centers)):
+
+            #points.append([self.aperture_centers[i].x, self.aperture_centers[i].y])
+            #values.append(self.aperture_values[i])
+
+            # WHICH MESH DOES THIS APERTURE FALL IN?
+            xid = None
+            yid = None
+
+            ## This is all never going to work...
+
+            mesh_xidx.append(xid)
+            mesh_yidx.append(yid)
+
+        # Create mesh info
+        self.mesh = Map()
+
+        # Set mesh properties
+        self.mesh.box_size = self.mesh_size
+        self.mesh.box_area = self.mesh_area
+        self.mesh.nxboxes = nxboxes
+        self.mesh.nyboxes = nyboxes
+        self.mesh.shape = mesh_shape
+        self.mesh.mesh_xidx = mesh_xidx
+        self.mesh.mesh_yidx = mesh_yidx
+        #self.mesh.value_data = mesh_value_data
+        #self.mesh.noise_data = mesh_noise_data
+
+        # Debugging
+        log.debug("")
+        log.debug("Mesh properties:")
+        log.debug("")
+        log.debug(" - box size: " + str(self.mesh.box_size))
+        log.debug(" - box area: " + str(self.mesh.box_area))
+        log.debug(" - nxboxes: " + str(self.mesh.nxboxes))
+        log.debug(" - nyboxes: " + str(self.mesh.nyboxes))
+        log.debug(" - total nboxes: " + str(self.mesh.nxboxes * self.mesh.nyboxes))
+        log.debug("")
+
+    # -----------------------------------------------------------------
+
+    def make_filled_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making maps filled with the aperture values ...")
+
+        # Choose the fill method
+        if self.config.estimation.fill_method == "NN": self.make_filled_maps_nn()
+        elif self.config.estimation.fill_method == "zoom": self.make_filled_maps_zoom()
+        else: self.make_filled_maps_interpolate()
+
+    # -----------------------------------------------------------------
+
+    def make_filled_maps_nn(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making a map filled with the aperture values and noise using nearest-neighbor interpolation ...")
 
         # Create array of points and values
         points = []
@@ -1162,27 +1314,131 @@ class SkySubtractor(Configurable):
             values.append(self.aperture_values[i])
             noise_values.append(self.aperture_noise_values[i])
 
+        #print("points", points)
+        #print("values", values)
+
         # Create interpolator for values
         interpolator = NearestNDInterpolator(points, values)
 
         # Set filled values frame
-        self.mesh.filled_values = Frame.zeros_like(self.frame)
+        self.filled_values = Frame.zeros_like(self.frame)
 
         # Fill
         for x in range(self.frame.xsize):
             for y in range(self.frame.ysize):
-                self.mesh.filled_values[y, x] = interpolator(x, y)
+                self.filled_values[y, x] = interpolator(x, y)
+
+        # Multiply each patch with its area
+        #for unique_value in np.unique(self.mesh.filled_values):
+        #    where = self.mesh.filled_values == unique_value
+        #    patch_area = np.sum(where)
+        #    self.mesh.filled_values[where] *= patch_area
+
+        #print("points", points)
+        #print("noise values", noise_values)
 
         # Create interpolator for noise values
         interpolator = NearestNDInterpolator(points, noise_values)
 
         # Set filled noise values frame
-        self.mesh.filled_noise = Frame.zeros_like(self.frame)
+        self.filled_noise = Frame.zeros_like(self.frame)
 
         # Fill
         for x in range(self.frame.xsize):
             for y in range(self.frame.ysize):
-                self.mesh.filled_noise[y, x] = interpolator(x, y)
+                self.filled_noise[y, x] = interpolator(x, y)
+
+        # Multiply each patch with its area
+        #for unique_value in np.unique(self.mesh.filled_noise):
+        #    where = self.mesh.filled_noise == unique_value
+        #    patch_area = np.sum(where)
+        #    self.mesh.filled_noise[where] *= patch_area
+
+    # -----------------------------------------------------------------
+
+    def make_filled_maps_zoom(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making filled maps using the zoom method ...")
+
+        # Create array of points and values
+        x = []
+        y = []
+        values = []
+        noise_values = []
+        for i in range(len(self.aperture_centers)):
+            x.append(self.aperture_centers[i].x)
+            y.append(self.aperture_centers[i].y)
+            values.append(self.aperture_values[i])
+            noise_values.append(self.aperture_noise_values[i])
+
+        x = np.array(x)
+        y = np.array(y)
+        values = np.array(values)
+        noise_values = np.array(noise_values)
+
+
+
+    # -----------------------------------------------------------------
+
+    def make_filled_maps_interpolate(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making maps filled with the aperture values and noise using 2D interpolation ...")
+
+        # Create array of points and values
+        x = []
+        y = []
+        values = []
+        noise_values = []
+        for i in range(len(self.aperture_centers)):
+            x.append(self.aperture_centers[i].x)
+            y.append(self.aperture_centers[i].y)
+            values.append(self.aperture_values[i])
+            noise_values.append(self.aperture_noise_values[i])
+
+        x = np.array(x)
+        y = np.array(y)
+        values = np.array(values)
+        noise_values = np.array(noise_values)
+
+        # Debugging
+        print("x", x.shape)
+        print("y", y.shape)
+        print("values", values.shape)
+        print("noise_values", noise_values.shape)
+
+        # Interpolate values
+        values_function = interp2d(x, y, values, kind=self.config.estimation.fill_method)
+
+        # Set filled values frame
+        self.filled_values = Frame.zeros_like(self.frame)
+
+        # Fill
+        for xi in range(self.frame.xsize):
+            for yi in range(self.frame.ysize):
+                self.filled_values[yi, xi] = values_function(xi, yi)
+
+        # Interpolate noise
+        noise_function = interp2d(x, y, noise_values, kind=self.config.estimation.fill_method)
+
+        # Set filled noise values frame
+        self.filled_noise = Frame.zeros_like(self.frame)
+
+        # Fill
+        for xi in range(self.frame.xsize):
+            for yi in range(self.frame.ysize):
+                self.filled_noise[yi, xi] = noise_function(xi, yi)
 
     # -----------------------------------------------------------------
 
@@ -1204,8 +1460,8 @@ class SkySubtractor(Configurable):
 
         if (xextra + yextra) == 0:
             # no resizing of the data is necessary
-            data_ma = np.ma.masked_array(self.mesh.filled_values.data, mask=self.mask)
-            noise_ma = np.ma.masked_array(self.mesh.filled_noise.data, mask=self.mask)
+            data_ma = np.ma.masked_array(self.filled_values.data, mask=self.mask.data)
+            noise_ma = np.ma.masked_array(self.filled_noise.data, mask=self.mask.data)
         else:
             # pad or crop the data
             #if self.edge_method == 'pad':
@@ -1218,8 +1474,8 @@ class SkySubtractor(Configurable):
             #    raise ValueError('edge_method must be "pad" or "crop"')
 
             # Pad
-            data_ma = self._pad_data(self.mesh.filled_values.data, yextra, xextra)
-            noise_ma = self._pad_data(self.mesh.filled_noise.data, yextra, xextra)
+            data_ma = self._pad_data(self.filled_values.data, yextra, xextra)
+            noise_ma = self._pad_data(self.filled_noise.data, yextra, xextra)
             nyboxes = data_ma.shape[0] // self.mesh_size
             nxboxes = data_ma.shape[1] // self.mesh_size
 
@@ -1243,9 +1499,15 @@ class SkySubtractor(Configurable):
         mesh_shape = (nyboxes, nxboxes)
         mesh_yidx, mesh_xidx = np.unravel_index(mesh_idx, mesh_shape)
 
-        #print(mesh_yidx, mesh_xidx)
+        #print("mesh yidx", mesh_yidx)
+        #print("mesh_xidx", mesh_xidx)
+
+        # Create mesh info
+        self.mesh = Map()
 
         # Set mesh properties
+        self.mesh.box_size = self.mesh_size
+        self.mesh.box_area = self.mesh_area
         self.mesh.nxboxes = nxboxes
         self.mesh.nyboxes = nyboxes
         self.mesh.shape = mesh_shape
@@ -1253,6 +1515,19 @@ class SkySubtractor(Configurable):
         self.mesh.mesh_yidx = mesh_yidx
         self.mesh.value_data = mesh_value_data
         self.mesh.noise_data = mesh_noise_data
+
+        # Debugging
+        log.debug("")
+        log.debug("Mesh properties:")
+        log.debug("")
+        log.debug(" - box size: " + str(self.mesh.box_size))
+        log.debug(" - box area: " + str(self.mesh.box_area))
+        log.debug(" - nxboxes: " + str(self.mesh.nxboxes))
+        log.debug(" - nyboxes: " + str(self.mesh.nyboxes))
+        log.debug(" - total nboxes: " + str(self.mesh.nxboxes * self.mesh.nyboxes))
+        log.debug("")
+
+        #print(self.mesh.value_data)
 
     # -----------------------------------------------------------------
 
@@ -1348,11 +1623,14 @@ class SkySubtractor(Configurable):
         # Inform the user
         log.info("Creating mesh of aperture values ...")
 
+        # Create meshed values
+        self.mesh.meshed_values = self.create_meshed_data(self.mesh.value_data)
+
         # Interpolate to create mesh
-        interpolated = self.interpolate_meshes(self.mesh.value_data)
+        interpolated = self.interpolate_meshes(self.mesh.meshed_values)
 
         # Set interpolated mesh
-        self.mesh.interpolated_values = interpolated
+        self.mesh.interpolated_values = Frame(interpolated)
 
     # -----------------------------------------------------------------
 
@@ -1366,11 +1644,37 @@ class SkySubtractor(Configurable):
         # Inform the user
         log.info("Creating mesh of noise values ...")
 
+        # Create meshed values
+        self.mesh.meshed_noise = self.create_meshed_data(self.mesh.noise_data)
+
         # Interpolate to create mesh
-        interpolated = self.interpolate_meshes(self.mesh.noise_data)
+        interpolated = self.interpolate_meshes(self.mesh.meshed_noise)
 
         # Set interpolated mesh
-        self.mesh.interpolated_noise = interpolated
+        self.mesh.interpolated_noise = Frame(interpolated)
+
+    # -----------------------------------------------------------------
+
+    def create_meshed_data(self, data):
+
+        """
+        This function ...
+        :param data:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating mesh data by taking the mean value in each box ...")
+
+        # Convert the data to have the mean value in each box
+        converted_data = []
+        for box_index in range(data.shape[0]):
+            mean_box_value = np.ma.mean(data[box_index:])
+            converted_data.append(mean_box_value)
+        converted_data = np.array(converted_data)
+
+        # Return thed ata
+        return converted_data
 
     # -----------------------------------------------------------------
 
@@ -1393,12 +1697,13 @@ class SkySubtractor(Configurable):
         reg = 0.
         #
 
-        print(self.mesh.mesh_yidx.shape, self.mesh.mesh_xidx.shape)
-        print(self.mesh.mesh_yidx)
-        print(self.mesh.mesh_xidx)
+        #print(self.mesh.mesh_yidx.shape, self.mesh.mesh_xidx.shape)
+        #print(self.mesh.mesh_yidx)
+        #print(self.mesh.mesh_xidx)
 
         # Create interpolator based on the aperture data
         yx = np.column_stack([self.mesh.mesh_yidx, self.mesh.mesh_xidx])
+
         f = ShepardIDWInterpolator(yx, data)
 
         # Determine the new coordinates
@@ -1644,14 +1949,23 @@ class SkySubtractor(Configurable):
         # Inform the user
         log.info("Interpolating the aperture fluxes using the 'zoom' method ...")
 
-        # Create mesh
-        self.create_mesh()
+        # First fill
+        if self.config.estimation.fill_before_mesh:
+
+            # Make filled
+            self.make_filled_maps()
+
+            # Create mesh from filled
+            self.create_mesh_from_filled()
+
+        # Create mesh directly from apertures
+        else: self.create_mesh_from_apertures
 
         # Final interpolation using zoom method
-        data = self.final_interpolation_zoom(self.mesh.interpolated_values)
+        data = self.final_interpolation_zoom(self.mesh.interpolated_values.data)
 
         # Final noise data
-        noise = self.final_interpolation_zoom(self.mesh.interpolated_noise)
+        noise = self.final_interpolation_zoom(self.mesh.interpolated_noise.data)
 
         # Set data
         self.sky = Frame(data)
@@ -1789,6 +2103,20 @@ class SkySubtractor(Configurable):
     # -----------------------------------------------------------------
 
     def interpolate_spline(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Interpolating the aperture fluxes using the 'spline' method ...")
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def interpolate_spline_old(self):
 
         """
         This function ...
@@ -2002,40 +2330,6 @@ class SkySubtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def set_zero_outside(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Setting the frame zero outside of the principal galaxy ...")
-
-        # Create a mask from the principal galaxy region
-        factor = self.config.zero_outside.factor
-        mask = Mask.from_shape(self.principal_shape * factor, self.frame.xsize, self.frame.ysize).inverse()
-
-        # Set the primary frame zero outside the principal ellipse
-        self.frame[mask] = 0.0
-
-    # -----------------------------------------------------------------
-
-    def eliminate_negatives(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Setting pixels with negative value to zero ...")
-
-        # Set all negative pixels to zero
-        self.frame[self.frame <= 0.] = 0.0
-
-    # -----------------------------------------------------------------
-
     def set_statistics(self):
 
         """
@@ -2051,6 +2345,118 @@ class SkySubtractor(Configurable):
         self.statistics.mean = self.mean_subtracted
         self.statistics.median = self.median_subtracted
         self.statistics.stddev = self.stddev_subtracted
+
+    # -----------------------------------------------------------------
+
+    def create_distributions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating distributions ...")
+
+        # Create a masked array
+        #masked = np.ma.masked_array(self.frame, mask=self.mask)
+        #masked_clipped = np.ma.masked_array(self.frame, mask=self.clipped_mask)
+
+        # Create a figure
+        #fig = plt.figure()
+
+        #min_value = self.mean - 4.0 * self.stddev
+        #max_value = self.mean + 4.0 * self.stddev
+
+        #value_range = (min_value, max_value)
+
+        # Plot the histograms
+        # b: blue, g: green, r: red, c: cyan, m: magenta, y: yellow, k: black, w: white
+        #plt.subplot(211)
+        #plt.hist(masked.compressed(), 200, range=value_range, alpha=0.5, normed=1, facecolor='g', histtype='stepfilled',
+        #         label='not clipped')
+        #if self.config.histogram.log_scale: plt.semilogy()
+
+        #plt.subplot(212)
+        #plt.hist(masked_clipped.compressed(), 200, range=value_range, alpha=0.5, normed=1, facecolor='g',
+        #         histtype='stepfilled', label='clipped')
+        #if self.config.histogram.log_scale: plt.semilogy()
+
+        # Save the figure
+        #plt.savefig(self.config.writing.histogram_path, bbox_inches='tight', pad_inches=0.25)
+        #plt.close()
+
+        # Create original distribution
+        self.create_original_distribution()
+
+        # Create no-clipping distribution
+        self.create_noclipping_distribution()
+
+        # Create subtracted distribution
+        self.create_subtracted_distribution()
+
+    # -----------------------------------------------------------------
+
+    def create_original_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating distribution of original pixel values with sigma-clipping ...")
+
+        # Get original pixel values
+        original_1d = self.frame_masked_array.compressed()
+
+        # Create distribution of original pixel values
+        original = Distribution.from_values(original_1d)
+
+        # Set distribution
+        self.distributions.original = original
+
+    # -----------------------------------------------------------------
+
+    def create_noclipping_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating distribution of original pixel values without sigma-clipping ...")
+
+        # Get original pixel values, but not sigma-clipped
+        not_clipped_1d = self.not_clipped_masked_array.compressed()
+
+        # Create distribution of pixel values
+        not_clipped = Distribution.from_values(not_clipped_1d)
+
+        # Set distribution
+        self.distributions.not_clipped = not_clipped
+
+    # -----------------------------------------------------------------
+
+    def create_subtracted_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating distribution of subtracted pixel values ...")
+
+        # Get the subtracted pixel values
+        subtracted_1d = self.subtracted_masked_array.compressed()
+
+        # Create distribution of subtracted pixel values
+        subtracted = Distribution.from_values(subtracted_1d)
+
+        # Set distribution
+        self.distributions.subtracted = subtracted
 
     # -----------------------------------------------------------------
 
@@ -2072,6 +2478,9 @@ class SkySubtractor(Configurable):
 
         # Write aperture noise
         if self.config.estimation.method == "pts": self.write_apertures_noise()
+
+        # Write filled
+        if self.filled_values is not None: self.write_filled()
 
         # Write mesh
         if self.mesh is not None: self.write_mesh()
@@ -2160,9 +2569,6 @@ class SkySubtractor(Configurable):
         # Inform the user
         log.info("Writing mesh data ...")
 
-        # Write filled
-        self.write_filled()
-
         # Write mesh values
         self.write_mesh_values()
 
@@ -2203,7 +2609,7 @@ class SkySubtractor(Configurable):
         path = self.output_path_file("filled_values.fits")
 
         # Save
-        self.mesh.filled_values.saveto(path)
+        self.filled_values.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -2221,7 +2627,7 @@ class SkySubtractor(Configurable):
         path = self.output_path_file("filled_noise.fits")
 
         # Save
-        self.mesh.filled_noise.saveto(path)
+        self.filled_noise.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -2382,6 +2788,9 @@ class SkySubtractor(Configurable):
         # Plot histograms
         self.plot_histograms()
 
+        # Plot photutils mesh
+        if self.config.estimation.method == "photutils": self.plot_photutils_mesh()
+
     # -----------------------------------------------------------------
 
     def plot_histograms(self):
@@ -2392,32 +2801,106 @@ class SkySubtractor(Configurable):
         """
 
         # Inform the user
-        log.info("Writing sky histogram to " + self.config.writing.histogram_path +  " ...")
+        log.info("Writing histograms ...")
 
-        # Create a masked array
-        masked = np.ma.masked_array(self.frame, mask=self.mask)
-        masked_clipped = np.ma.masked_array(self.frame, mask=self.clipped_mask)
+        # Write original
+        self.write_original_histogram()
 
-        # Create a figure
-        fig = plt.figure()
+        # Write noclipping
+        self.write_noclipping_histogram()
 
-        min_value = self.mean - 4.0 * self.stddev
-        max_value = self.mean + 4.0 * self.stddev
+        # Write subtracted
+        self.write_subtracted_histogram()
 
-        value_range = (min_value, max_value)
+    # -----------------------------------------------------------------
 
-        # Plot the histograms
-        #b: blue, g: green, r: red, c: cyan, m: magenta, y: yellow, k: black, w: white
-        plt.subplot(211)
-        plt.hist(masked.compressed(), 200, range=value_range, alpha=0.5, normed=1, facecolor='g', histtype='stepfilled', label='not clipped')
-        if self.config.histogram.log_scale: plt.semilogy()
+    def write_original_histogram(self):
 
-        plt.subplot(212)
-        plt.hist(masked_clipped.compressed(), 200, range=value_range, alpha=0.5, normed=1, facecolor='g', histtype='stepfilled', label='clipped')
-        if self.config.histogram.log_scale: plt.semilogy()
+        """
+        This function ...
+        :return:
+        """
 
-        # Save the figure
-        plt.savefig(self.config.writing.histogram_path, bbox_inches='tight', pad_inches=0.25)
+        # Inform the user
+        log.info("Writing original histogram ...")
+
+        # Add distribution
+        plotter = DistributionPlotter()
+        plotter.add_distribution(self.distributions.original, "original")
+
+        # Determine the path
+        path = self.output_path_file("histogram_original.pdf")
+
+        # Run the plotter
+        plotter.run(output_path=path)
+
+    # -----------------------------------------------------------------
+
+    def write_noclipping_histogram(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing noclipping histogram ...")
+
+        # Add distribution
+        plotter = DistributionPlotter()
+        plotter.add_distribution(self.distributions.not_clipped, "noclipping")
+
+        # Determine the path
+        path = self.output_path_file("histogram_notclipped.pdf")
+
+        # Run the plotter
+        plotter.run(output_path=path)
+
+    # -----------------------------------------------------------------
+
+    def write_subtracted_histogram(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing subtracted histogram ...")
+
+        # Add distribution
+        plotter = DistributionPlotter()
+        plotter.add_distribution(self.distributions.subtracted, "subtracted")
+
+        # Determine the path
+        path = self.output_path_file("histogram_subtracted.pdf")
+
+        # Run the plotter
+        plotter.run(output_path=path)
+
+    # -----------------------------------------------------------------
+
+    def plot_photutils_mesh(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the photutils mesh ...")
+
+        # Plot meshes
+        plt.figure()
+        norm = ImageNormalize(stretch=SqrtStretch())
+        plt.imshow(self.frame, origin='lower', cmap='Greys_r', norm=norm)
+        self.photutils_bkg.plot_meshes(outlines=True, color='#1f77b4')
+
+        # Determine path
+        path = self.output_path_file("photutils_mesh.pdf")
+
+        # Save
+        plt.savefig(path)
         plt.close()
 
     # -----------------------------------------------------------------
@@ -2430,8 +2913,16 @@ class SkySubtractor(Configurable):
         :return:
         """
 
-        if isinstance(self.sky, Frame): return self.sky
-        else: return Frame(np.full(self.frame.shape, self.sky))
+        # Get the frame
+        if isinstance(self.sky, Frame): result = self.sky
+        else: result = Frame(np.full(self.frame.shape, self.sky))
+
+        # Mask
+        if self.extra_mask is not None and self.config.add_extra_mask:
+            result[self.extra_mask] = self.config.mask_value
+
+        # Return the result
+        return result
 
     # -----------------------------------------------------------------
 
@@ -2443,8 +2934,16 @@ class SkySubtractor(Configurable):
         :return:
         """
 
-        if isinstance(self.noise, Frame): return self.noise
-        else: return Frame(np.full(self.frame.shape, self.noise))
+        # Get the frame
+        if isinstance(self.noise, Frame): result = self.noise
+        else: result = Frame(np.full(self.frame.shape, self.noise))
+
+        # Mask
+        if self.extra_mask is not None and self.config.add_extra_mask:
+            result[self.extra_mask] = self.config.mask_value
+
+        # Return the result
+        return result
 
     # -----------------------------------------------------------------
 
@@ -2495,7 +2994,69 @@ class SkySubtractor(Configurable):
         :return:
         """
 
-        return self.frame - self.sky
+        # Subtract
+        result = self.frame - self.sky
+
+        # Set zero outside
+        if self.config.set_zero_outside:
+
+            # Create a mask from the principal galaxy region
+            factor = self.config.zero_outside.factor
+            mask = Mask.from_shape(self.principal_shape * factor, self.frame.xsize, self.frame.ysize).inverse()
+
+            # Set the primary frame zero outside the principal ellipse
+            result[mask] = self.config.mask_value
+
+        # Eliminate negatives
+        if self.config.eliminate_negatives:
+
+            # Set all negative pixels to zero
+            result[result <= 0.] = 0.0
+
+        # mask extra
+        if self.extra_mask is not None and self.config.add_extra_mask:
+
+            # Set to zero
+            result[self.extra_mask] = self.config.mask_value
+
+        # Return the result
+        return result
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def frame_masked_array(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.ma.masked_array(self.frame.data, mask=self.mask.data)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def not_clipped_masked_array(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.ma.masked_array(self.frame.data, mask=self.mask_not_clipped.data)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def subtracted_masked_array(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.ma.masked_array(self.subtracted.data, mask=self.mask.data)
 
     # -----------------------------------------------------------------
 
