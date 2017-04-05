@@ -29,7 +29,7 @@ from ..core.frame import Frame, sum_frames_quadratically
 from ..core.image import Image
 from ..core.dataset import DataSet
 from ..region.list import SkyRegionList
-from ...magic.misc.kernels import AnianoKernels
+from ...magic.convolution.aniano import AnianoKernels
 from ...magic.sources.extractor import SourceExtractor
 from ...magic.sky.skysubtractor import SkySubtractor
 from ...core.basics.animation import Animation

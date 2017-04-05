@@ -614,7 +614,9 @@ def create_galaxy_catalog(coordinate_box):
 
     # Indicate which galaxy is the principal galaxy
     principal_column = [False] * number_of_galaxies
-    principal_index = max(range(number_of_galaxies), key=lambda index: major_column[index])
+
+    # Determine the index of the galaxy with the maximal major axis length
+    principal_index = max(range(number_of_galaxies), key=lambda index: (major_column[index] if major_column[index] is not None else 0.0))
     principal_column[principal_index] = True
 
     # Loop over the other galaxies, check if they are companion galaxies of the principal galax

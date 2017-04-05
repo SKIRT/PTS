@@ -1330,8 +1330,8 @@ class Frame(NDDataArray):
         :return:
         """
 
-        data = ndimage.interpolation.rotate(self, angle.to("deg").value, reshape=False, order=1, mode='constant',
-                                            cval=float('nan'))
+        data = ndimage.interpolation.rotate(self.data, angle.to("deg").value, reshape=False, order=1, mode='constant', cval=float('nan'))
+
         # Replace data
         self._data = data
 
@@ -1346,6 +1346,19 @@ class Frame(NDDataArray):
 
         # Return mask of padded pixels
         return self.nans()
+
+    # -----------------------------------------------------------------
+
+    def rotation_mask(self, angle):
+
+        """
+        This function ...
+        :param angle:
+        :return:
+        """
+
+        data = ndimage.interpolation.rotate(self.data, angle.to("deg").value, reshape=False, order=1, mode='constant', cval=float('nan'))
+        return Mask(np.isnan(data))
 
     # -----------------------------------------------------------------
 

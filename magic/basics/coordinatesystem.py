@@ -567,6 +567,54 @@ class CoordinateSystem(wcs.WCS):
     # -----------------------------------------------------------------
 
     @property
+    def min_ra(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ra_range.min
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_ra(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ra_range.max
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_dec(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dec_range.min
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_dec(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        return self.dec_range.max
+
+    # -----------------------------------------------------------------
+
+    @property
     def coordinate_range(self):
 
         """

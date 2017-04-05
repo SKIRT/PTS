@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.misc.kernels Contains the AnianoKernels class.
+## \package pts.magic.convolution.aniano Contains the AnianoKernels class.
 
 # -----------------------------------------------------------------
 
@@ -20,20 +20,12 @@ from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from ..core.kernel import ConvolutionKernel
-from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...core.tools import archive
 from ...core.filter.filter import parse_filter
 from ...core.basics.unit import parse_unit
-
-# -----------------------------------------------------------------
-
-# The path to the PTS kernels directory
-#kernels_path = fs.join(introspection.pts_user_dir, "kernels")
-if not fs.is_directory(introspection.pts_ext_dir): fs.create_directory(introspection.pts_ext_dir)
-kernels_path = fs.join(introspection.pts_ext_dir, "kernels")
-if not fs.is_directory(kernels_path): fs.create_directory(kernels_path)
+from .kernels import Kernels, kernels_path, get_fwhm, has_variable_fwhm
 
 # -----------------------------------------------------------------
 
@@ -53,33 +45,6 @@ aniano_psf_files_link = aniano_psf_files_link_2012
 
 # -----------------------------------------------------------------
 
-# Reference: Common-Resolution Convolution Kernels for Space- and Ground-Based Telescopes (G. Aniano et. al)
-fwhms = {"GALEX_FUV": 4.48 * parse_unit("arcsec"),
-         "GALEX_NUV": 5.05 * parse_unit("arcsec"),
-         "IRAC_3.6": 1.90 * parse_unit("arcsec"),
-         "IRAC_4.5": 1.81 * parse_unit("arcsec"),
-         "IRAC_5.8": 2.11 * parse_unit("arcsec"),
-         "IRAC_8.0": 2.82 * parse_unit("arcsec"),
-         "WISE_FRAME_3.4": 5.79 * parse_unit("arcsec"),
-         "WISE_FRAME_4.6": 6.37 * parse_unit("arcsec"),
-         "WISE_FRAME_11.6": 6.60 * parse_unit("arcsec"),
-         "WISE_FRAME_22.1": 11.89 * parse_unit("arcsec"),
-         "MIPS_24": 6.43 * parse_unit("arcsec"),
-         "MIPS_70": 18.74 * parse_unit("arcsec"),
-         "MIPS_160": 38.78 * parse_unit("arcsec"),
-         "PACS_70": 5.67 * parse_unit("arcsec"),
-         "PACS_100": 7.04 * parse_unit("arcsec"),
-         "PACS_160": 11.18 * parse_unit("arcsec"),
-         "SPIRE_250": 18.15 * parse_unit("arcsec"),
-         "SPIRE_350": 24.88 * parse_unit("arcsec"),
-         "SPIRE_500": 36.09 * parse_unit("arcsec")}
-
-# -----------------------------------------------------------------
-
-variable_fwhms = ["SDSS u", "SDSS g", "SDSS r", "SDSS i", "SDSS z"]
-
-# -----------------------------------------------------------------
-
 aniano_names = {"UVOT UVM2": "Gauss_02.5",
                 "UVOT UVW1": "Gauss_02.5",
                 "UVOT UVW2": "Gauss_03.0",
@@ -88,7 +53,7 @@ aniano_names = {"UVOT UVM2": "Gauss_02.5",
                 "SDSS u": "BiGauss_02.0",  # FWHM is actually variable
                 "SDSS g": "BiGauss_02.0",  # FWHM is actually variable
                 "SDSS r": "BiGauss_02.0",  # FWHM is actually variable
-                "Mosaic Halpha": "Gauss_03.0",
+                "Halpha": "Gauss_03.0",
                 "SDSS i": "BiGauss_02.0",  # FWHM is actually variable
                 "SDSS z": "BiGauss_02.0",  # FWHM is actually variable
                 "2MASS J": "Gauss_03.5",
@@ -113,7 +78,94 @@ aniano_names = {"UVOT UVM2": "Gauss_02.5",
 
 # -----------------------------------------------------------------
 
-class AnianoKernels(object):
+filter_names = {"GALEX_FUV": "GALEX FUV",
+                 "GALEX_NUV": "GALEX NUV",
+                 "IRAC_3.6": "IRAC I1",
+                 "IRAC_4.5": "IRAC I2",
+                 "IRAC_5.8": "IRAC I3",
+                 "IRAC_8.0": "IRAC I4",
+                 "WISE_FRAME_3.4": "WISE W1",
+                 "WISE_FRAME_4.6": "WISE W2",
+                 "WISE_FRAME_11.6": "WISE W3",
+                 "WISE_FRAME_22.1": "WISE W4",
+                 "MIPS_24": "Mips 24mu",
+                 "MIPS_70": "Mips 70mu",
+                 "MIPS_160": "Mips 160mu",
+                 "PACS_70": "Pacs blue",
+                 "PACS_100": "Pacs green",
+                 "PACS_160": "Pacs red",
+                 "SPIRE_250": "SPIRE PSW",
+                 "SPIRE_350": "SPIRE PMW",
+                 "SPIRE_500": "SPIRE PLW"}
+
+# -----------------------------------------------------------------
+
+def get_filters_and_aniano_names_lists():
+
+    """
+    This function ...
+    :return:
+    """
+
+    filters = []
+    names = []
+
+    for filter_name, aniano_name in aniano_names.iteritems():
+
+        filters.append(parse_filter(filter_name))
+        names.append(aniano_name)
+
+    # Return the lists
+    return filters, names
+
+# -----------------------------------------------------------------
+
+def get_aniano_name_from_filter(fltr):
+
+    """
+    This function ...
+    :param fltr:
+    :return:
+    """
+
+    filters, names = get_filters_and_aniano_names_lists()
+    index = filters.index(fltr)
+    return names[index]
+
+# -----------------------------------------------------------------
+
+def get_filter_from_aniano_name(name):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    return parse_filter(filter_names[name])
+
+# -----------------------------------------------------------------
+
+def get_fwhm_for_aniano_name(psf_name):
+
+    """
+    This function ...
+    :param psf_name:
+    :return:
+    """
+
+    # Find the appropriate FWHM
+    if "Gauss" in psf_name or "Moffet" in psf_name: fwhm = float(psf_name.split("_")[1]) * parse_unit("arcsec")
+    elif psf_name in filter_names:
+        fltr = get_filter_from_aniano_name(psf_name)
+        fwhm = get_fwhm(fltr)
+    else: fwhm = None
+
+    return fwhm
+
+# -----------------------------------------------------------------
+
+class AnianoKernels(Kernels):
 
     """
     This class ...
@@ -125,6 +177,9 @@ class AnianoKernels(object):
         This function ...
         :return:
         """
+
+        # Call the constructor of the base class
+        super(AnianoKernels, self).__init__()
 
         # The path to the directory where the Aniano kernels are saved (to be reused)
         self.kernels_path = fs.create_directory_in(kernels_path, "aniano")
@@ -153,9 +208,8 @@ class AnianoKernels(object):
         if kernel.fwhm is None:
 
             # Find the appropriate FWHM
-            if "Gauss" in to_psf_name or "Moffet" in to_psf_name: fwhm = float(to_psf_name.split("_")[1]) * parse_unit("arcsec")
-            elif to_psf_name in fwhms: fwhm = fwhms[to_psf_name]
-            else: fwhm = to_fwhm
+            fwhm = get_fwhm_for_aniano_name(to_psf_name)
+            if fwhm is None: fwhm = to_fwhm
 
             # Set the FWHM of the kernel
             kernel.fwhm = fwhm
@@ -184,7 +238,7 @@ class AnianoKernels(object):
         if isinstance(to_filter, basestring): to_filter = parse_filter(to_filter)
 
         # For variable FWHM of input image
-        if str(from_filter) in variable_fwhms: # Is SDSS
+        if has_variable_fwhm(from_filter): # Is SDSS
 
             # Check whether FWHM is specified
             if from_fwhm is None: raise ValueError("When convolving an SDSS image, the FWHM of that image must be specified")
@@ -199,7 +253,7 @@ class AnianoKernels(object):
         else: from_psf_name = aniano_names[str(from_filter)]
 
         # For variable FWHM of image with target resolution
-        if str(to_filter) in variable_fwhms: # Is SDSS
+        if has_variable_fwhm(to_filter): # Is SDSS
 
             # Check whether FWHM is specified
             if to_fwhm is None: raise ValueError("When convolving to the resolution of a SDSS image, the FWHM of that image must be specified")
@@ -225,13 +279,10 @@ class AnianoKernels(object):
             self.download_kernel(kernel_file_basename)
 
             # Find the appropriate FWHM
-            if "Gauss" in to_psf_name or "Moffet" in to_psf_name: fwhm = float(to_psf_name.split("_")[1]) * parse_unit("arcsec")
-            elif to_psf_name in fwhms: fwhm = fwhms[to_psf_name]
-            else: fwhm = None
+            fwhm = get_fwhm_for_aniano_name(to_psf_name)
 
             # Set the FWHM of the kernel
             kernel = ConvolutionKernel.from_file(kernel_file_path, fwhm=fwhm)
-            #kernel.fwhm = fwhm
             kernel.saveto(kernel_file_path)
 
         # Return
@@ -255,9 +306,7 @@ class AnianoKernels(object):
         psf = ConvolutionKernel.from_file(psf_path)
 
         # Get the FWHM of the PSF
-        if "Gauss" in psf_name or "Moffet" in psf_name: fwhm = float(psf_name.split("_")[1]) * parse_unit("arcsec")
-        elif psf_name in fwhms: fwhm = fwhms[psf_name]
-        else: fwhm = None
+        fwhm = get_fwhm_for_aniano_name(psf_name)
 
         # Set the FWHM of the PSF
         psf.fwhm = fwhm
@@ -290,9 +339,7 @@ class AnianoKernels(object):
             self.download_psf(basename)
 
             # Get the FWHM of the PSF
-            if "Gauss" in psf_name or "Moffet" in psf_name: fwhm = float(psf_name.split("_")[1]) * parse_unit("arcsec")
-            elif psf_name in fwhms: fwhm = fwhms[psf_name]
-            else: fwhm = None
+            fwhm = get_fwhm_for_aniano_name(psf_name)
 
             # Set the FWHM of the PSF
             psf = ConvolutionKernel.from_file(psf_file_path, fwhm=fwhm)
@@ -300,27 +347,6 @@ class AnianoKernels(object):
 
         if return_name: return psf_file_path, psf_name
         else: return psf_file_path # Return the local PSF path
-
-    # -----------------------------------------------------------------
-
-    def get_fwhm(self, fltr):
-
-        """
-        This function ...
-        :param fltr:
-        :return:
-        """
-
-        # Determine the aniano name for the PSF
-        psf_name = aniano_names[str(fltr)]
-
-        # Get the FWHM of the PSF
-        if "Gauss" in psf_name or "Moffet" in psf_name: fwhm = float(psf_name.split("_")[1]) * parse_unit("arcsec")
-        elif psf_name in fwhms: fwhm = fwhms[psf_name]
-        else: fwhm = None
-
-        # Return the FWHM
-        return fwhm
 
     # -----------------------------------------------------------------
 
@@ -496,27 +522,5 @@ def closest_half_integer_string(number):
 
     value = closest_half_integer(number)
     return "{0:.1f}".format(round(value, 1))
-
-# -----------------------------------------------------------------
-
-# Reference: http://pypher.readthedocs.org/en/latest/
-
-# -----------------------------------------------------------------
-
-class PypherKernels(object):
-
-    """
-    This class ...
-    """
-
-    def __init__(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # The path to the directory where the generated Pypher kernels are saved (to be reused)
-        self.path = fs.join(kernels_path, "pypher")
 
 # -----------------------------------------------------------------

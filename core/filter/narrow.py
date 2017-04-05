@@ -419,4 +419,16 @@ class NarrowBandFilter(Filter):
 
         return self.wavelength
 
+    # -----------------------------------------------------------------
+
+    @property
+    def effective(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.wavelength
+
 # -----------------------------------------------------------------

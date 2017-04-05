@@ -3366,7 +3366,7 @@ class SkiFile:
         """
 
         # Import the instrument classes
-        from ...modeling.basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument, FullInstrument
+        from ...modeling.basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument, FullInstrument, MultiFrameInstrument
 
         # Get the instrument
         instrument = self.get_instrument(name)
@@ -3446,6 +3446,44 @@ class SkiFile:
             return FullInstrument(field_x=fieldx, field_y=fieldy, pixels_x=pixelsx, pixels_y=pixelsy, center_x=centerx,
                                   center_y=centery, distance=distance, inclination=inclination, azimuth=azimuth,
                                   position_angle=pa, scattering_levels=scattlevels)
+
+        # MultiFrameInstrument
+        elif instrument.tag == "MultiFrameInstrument":
+
+            from ...modeling.basics.instruments import InstrumentFrame
+
+            distance = self.get_quantity(instrument, "distance")
+            inclination = self.get_angle(instrument, "inclination")
+            azimuth = self.get_angle(instrument, "azimuth")
+            pa = self.get_angle(instrument, "positionAngle")
+
+            write_total = self.get_boolean(instrument, "writeTotal")
+            write_stellar_components = self.get_boolean(instrument, "writeStellarComps")
+
+            # Create the instrument
+            instr = MultiFrameInstrument(distance=distance, inclination=inclination, azimuth=azimuth, position_angle=pa,
+                                         write_total=write_total, write_stellar_components=write_stellar_components)
+
+            # Get the frames
+            frames = self.get_child_with_name(instrument, "frames")
+
+            # Loop over the frames
+            for frame in frames.getchildren():
+
+                # Get properties
+                pixelsx = int(self.get_value(frame, "pixelsX"))
+                pixelsy = int(self.get_value(frame, "pixelsY"))
+                fieldx = self.get_quantity(frame, "fieldOfViewX")
+                fieldy = self.get_quantity(frame, "fieldOfViewY")
+
+                # Create the frame
+                frm = InstrumentFrame(pixels_x=pixelsx, pixels_y=pixelsy, field_x=fieldx, field_y=fieldy)
+
+                # Add the frame
+                instr.add_frame(frm)
+
+            # Return the instrument
+            return instr
 
         # Unrecognized instrument
         else: raise ValueError("Unrecognized instrument: " + instrument.tag)

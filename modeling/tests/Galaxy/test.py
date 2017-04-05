@@ -30,7 +30,7 @@ from pts.magic.basics.coordinatesystem import CoordinateSystem
 from pts.magic.basics.stretch import PixelStretch
 from pts.magic.basics.coordinate import PixelCoordinate
 from pts.magic.basics.pixelscale import Pixelscale
-from pts.magic.misc.kernels import AnianoKernels
+from pts.magic.convolution.aniano import AnianoKernels
 from pts.core.filter.filter import parse_filter
 from pts.core.test.implementation import TestImplementation
 from pts.core.tools.logging import log

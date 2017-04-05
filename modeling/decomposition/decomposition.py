@@ -28,7 +28,7 @@ from ...magic.region.ellipse import SkyEllipseRegion
 from ...magic.region.list import SkyRegionList
 from ..basics.models import SersicModel3D, ExponentialDiskModel3D
 from ..basics.instruments import SimpleInstrument
-from ...magic.misc.kernels import AnianoKernels
+from ...magic.convolution.aniano import AnianoKernels
 from ..basics.projection import GalaxyProjection, FaceOnProjection, EdgeOnProjection
 from .s4g import S4GDecomposer
 #from .fitting import FittingDecomposer

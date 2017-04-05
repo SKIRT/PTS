@@ -26,21 +26,33 @@ class ExtendedSourceCatalog(SmartTable):
     This class ...
     """
 
-    column_info = [("Name", str, None, "Name of the galaxy"),
-                    ("RA", float, "deg", "Right ascension"),
-                    ("DEC", float, "deg", "Declination"),
-                    ("Redshift", float, None, "Redshift"),
-                    ("Type", str, None, "Galaxy type"),
-                    ("Names", str, None, "Alternative names"),
-                    ("Distance", float, "Mpc", "distance"),
-                    ("Incl", float, "deg", "inclination"),
-                    ("D25", float, "arcmin", "D25"),
-                    ("Major", float, "arcmin", "Major axis length"),
-                    ("Minor", float, "arcmin", "Minor axis length"),
-                    ("Posangle", float, "deg", "Position angle"),
-                    ("Principal", bool, None, "Is principal galaxy"),
-                    ("Companions", str, None, "Companion galaxies"),
-                    ("Parent", str, None, "Parent galaxy (is companion galaxy)")]
+    def __init__(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(ExtendedSourceCatalog, self).__init__(*args, **kwargs)
+
+        # Add column info
+        self.add_column_info("Name", str, None, "Name of the galaxy")
+        self.add_column_info("RA", float, "deg", "Right ascension")
+        self.add_column_info("DEC", float, "deg", "Declination")
+        self.add_column_info("Redshift", float, None, "Redshift")
+        self.add_column_info("Type", str, None, "Galaxy type")
+        self.add_column_info("Names", str, None, "Alternative names")
+        self.add_column_info("Distance", float, "Mpc", "distance")
+        self.add_column_info("Incl", float, "deg", "inclination")
+        self.add_column_info("D25", float, "arcmin", "D25")
+        self.add_column_info("Major", float, "arcmin", "Major axis length")
+        self.add_column_info("Minor", float, "arcmin", "Minor axis length")
+        self.add_column_info("Posangle", float, "deg", "Position angle")
+        self.add_column_info("Principal", bool, None, "Is principal galaxy")
+        self.add_column_info("Companions", str, None, "Companion galaxies")
+        self.add_column_info("Parent", str, None, "Parent galaxy (is companion galaxy)")
 
     # -----------------------------------------------------------------
 

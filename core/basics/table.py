@@ -57,6 +57,9 @@ class SmartTable(Table):
         # Path
         self.path = None
 
+        # Initialize 'density' meta object
+        if "density" not in self.meta: self.meta["density"] = []
+
     # -----------------------------------------------------------------
 
     def add_column_info(self, name, dtype, unit, description):
@@ -70,6 +73,7 @@ class SmartTable(Table):
         :return:
         """
 
+        if isinstance(unit, basestring): unit = u(unit)
         self.column_info.append((name, dtype, unit, description))
 
     # -----------------------------------------------------------------

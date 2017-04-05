@@ -633,8 +633,57 @@ class SourceFinder(Configurable):
         # Initialize the galaxy table
         self.galaxy_table = GalaxyTable(filters=self.filters)
 
-        # Initialiee the star table
+        # Initialize the star table
         self.star_table = StarTable(filters=self.filters)
+
+        # Load extended sources catalog
+        self.load_extended_sources_catalog(kwargs)
+
+        # Load point sources catalog
+        self.load_point_sources_catalog(kwargs)
+
+    # -----------------------------------------------------------------
+
+    def load_extended_sources_catalog(self, kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading catalog of extended sources ...")
+
+        # From kwargs
+        if "extended_source_catalog" in kwargs: self.extended_source_catalog = kwargs.pop("extended_source_catalog")
+
+        # From file
+        elif self.config.extended_sources_catalog is not None: self.extended_source_catalog = ExtendedSourceCatalog.from_file(self.config.extended_sources_catalog)
+
+        # Not specified
+        else: pass
+
+    # -----------------------------------------------------------------
+
+    def load_point_sources_catalog(self, kwargs):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading catalog of point sources ...")
+
+        # From kwargs
+        if "point_source_catalog" in kwargs: self.point_source_catalog = kwargs.pop("point_source_catalog")
+
+        # From file
+        elif self.config.point_sources_catalog is not None: self.point_source_catalog = PointSourceCatalog.from_file(self.config.point_sources_catalog)
+
+        # Not specified
+        else: pass
 
     # -----------------------------------------------------------------
 
@@ -723,9 +772,8 @@ class SourceFinder(Configurable):
         # Inform the user
         log.info("Finding the galaxies ...")
 
-        # Fetch catalog of extended sources
-        if self.config.extended_sources_catalog is not None: self.extended_source_catalog = ExtendedSourceCatalog.from_file(self.config.extended_sources_catalog)
-        else: self.fetch_extended_sources_catalog()
+        # Fetch catalog of extended sources if necessary
+        if self.extended_source_catalog is None: self.fetch_extended_sources_catalog()
 
         # Find extended sources
         self.find_extended_sources()
@@ -886,9 +934,8 @@ class SourceFinder(Configurable):
         # Inform the user
         log.info("Finding the stars ...")
 
-        # Get catalog
-        if self.config.point_sources_catalog is not None: self.point_source_catalog = PointSourceCatalog.from_file(self.config.point_sources_catalog)
-        else: self.fetch_point_sources_catalog()
+        # Fetch catalog if necessary
+        if self.point_source_catalog is None: self.fetch_point_sources_catalog()
 
         # Find point sources
         self.find_point_sources()

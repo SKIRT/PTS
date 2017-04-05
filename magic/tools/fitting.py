@@ -599,8 +599,45 @@ def sigma(model):
     """
 
     if isinstance(model, models.Gaussian2D): return Extent(x=model.x_stddev.value, y=model.y_stddev.value).norm
-    elif isinstance(model, models.AiryDisk2D): return 0.42 * model.radius * 0.81989397882
+    elif isinstance(model, models.AiryDisk2D): return airy_radius_to_gaussian_sigma(model.radius)
     else: raise ValueError("Unsupported model type: " + str(type(model)))
+
+# -----------------------------------------------------------------
+
+def airy_radius_to_gaussian_sigma(radius):
+
+    """
+    This function ...
+    :param radius:
+    :return:
+    """
+
+    return 0.42 * radius * 0.81989397882
+
+# -----------------------------------------------------------------
+
+def gaussian_sigma_to_airy_radius(sigma):
+
+    """
+    This function ...
+    :param sigma:
+    :return:
+    """
+
+    return sigma / (0.42 * 0.81989397882)
+
+# -----------------------------------------------------------------
+
+def fwhm_to_airy_radius(fwhm):
+
+    """
+    This function ...
+    :param fwhm:
+    :return:
+    """
+
+    sigma = statistics.fwhm_to_sigma * fwhm
+    return gaussian_sigma_to_airy_radius(sigma)
 
 # -----------------------------------------------------------------
 
@@ -612,7 +649,7 @@ def fwhm(model):
     :return:
     """
 
-    return 2.355 * sigma(model)
+    return statistics.sigma_to_fwhm * sigma(model)
 
 # -----------------------------------------------------------------
 
