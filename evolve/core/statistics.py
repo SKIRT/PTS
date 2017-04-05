@@ -10,6 +10,8 @@
 
 # -----------------------------------------------------------------
 
+from collections import OrderedDict
+
 class Statistics(object):
 
     """
@@ -33,16 +35,15 @@ class Statistics(object):
         """ The Statistics Class creator """
 
         # 'fit' means 'fitness'
-        self.internalDict = {
-            "rawMax": 0.0,
-            "rawMin": 0.0,
-            "rawAve": 0.0,
-            "rawDev": 0.0,
-            "rawVar": 0.0,
-            "fitMax": 0.0,
-            "fitMin": 0.0,
-            "fitAve": 0.0
-        }
+        self.internalDict = OrderedDict()
+        self.internalDict["rawMax"] = 0.0
+        self.internalDict["rawMin"] = 0.0
+        self.internalDict["rawAve"] = 0.0
+        self.internalDict["rawDev"] = 0.0
+        self.internalDict["rawVar"] = 0.0
+        self.internalDict["fitMax"] = 0.0
+        self.internalDict["fitMin"] = 0.0
+        self.internalDict["fitAve"] = 0.0
 
         self.descriptions = {
             "rawMax": "Maximum raw score",
