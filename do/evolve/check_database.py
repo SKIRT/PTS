@@ -27,6 +27,7 @@ definition = ConfigurationDefinition(write_config=False)
 definition.add_required("filename", "file_path", "database file name/path")
 definition.add_required("run_id", "string", "optimization run ID")
 definition.add_required("check", "positive_integer", "check index")
+definition.add_optional("generations", "integer_range", "range of generations", "0>1", convert_default=True)
 #setter = InteractiveConfigurationSetter("check_database", add_cwd=False, add_logging=False)
 setter = ArgumentConfigurationSetter("check_database", add_cwd=False, add_logging=False)
 config = setter.run(definition)
@@ -51,8 +52,7 @@ identifier = config.run_id
 
 # -----------------------------------------------------------------
 
-# Range of generations
-generation_range = IntegerRange(0, 1)
+generation_range = config.generations
 
 # Range of individuals
 individual_range = IntegerRange(1, 2)
