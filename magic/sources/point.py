@@ -74,10 +74,19 @@ class PointSourceTable(SmartTable):
         :return:
         """
 
-        # Values for the row
-        values = []
+        # Inform the user
+        log.info("Adding source " + str(source.index) + " to the table of point sources ...")
 
         # Get point source properties
+        ra = source.position.ra
+        dec = source.position.dec
+        detected = source.has_detection
+        flux = None
+        flux_error = None
+        fwhm = source.fwhm
+
+        # Construct the row
+        values = [ra, dec, detected, flux, flux_error, fwhm]
 
         # Add a row
         self.add_row(values)

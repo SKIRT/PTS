@@ -52,6 +52,9 @@ class ParallelTarget(object):
         # The number of completed processes
         self.ncompleted = 0
 
+        # The process pool
+        self.pool = None
+
     # -----------------------------------------------------------------
 
     def __enter__(self):
@@ -67,9 +70,12 @@ class ParallelTarget(object):
         # Reset the number of tasks
         self.ntasks = 0
 
-        # Initialize the process pool
-        self.pool = Pool(processes=self.nprocesses)
-        self.nprocesses = self.pool._processes # make sure nprocesses is set
+        # Initialize the process pool if required
+        if self.nprocesses > 1:
+            self.pool = Pool(processes=self.nprocesses)
+            self.nprocesses = self.pool._processes # make sure nprocesses is set
+
+        # Return ourselves
         return self
 
     # -----------------------------------------------------------------
@@ -87,13 +93,23 @@ class ParallelTarget(object):
         self.ntasks += 1
 
         # Launch
-        result = self.pool.apply_async(self.target, args=tuple(args), kwds=kwargs, callback=self.complete)
-        output = PendingOutput(result)
+        if self.pool is not None:
+
+            result = self.pool.apply_async(self.target, args=tuple(args), kwds=kwargs, callback=self.complete)
+            output = PendingOutput(result)
+
+        else:
+
+            output = self.target(*args, **kwargs)
+            self.complete()
+            output = ReadyOutput(output)
+
+        # Return the output
         return output
 
     # -----------------------------------------------------------------
 
-    def complete(self, result):
+    def complete(self, result=None):
 
         """
         This function ...
@@ -125,8 +141,9 @@ class ParallelTarget(object):
             print(traceback)
 
         # Close and join the process pool
-        self.pool.close()
-        self.pool.join()
+        if self.pool is not None:
+            self.pool.close()
+            self.pool.join()
 
 # -----------------------------------------------------------------
 
@@ -180,6 +197,57 @@ class PendingOutput(object):
         """
 
         if self.output is None: self.request()
+        return self.output[item]
+
+# -----------------------------------------------------------------
+
+class ReadyOutput(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, output):
+
+        """
+        This function ...
+        :param output:
+        """
+
+        self.output = output
+
+    # -----------------------------------------------------------------
+
+    def request(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def __iter__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for item in self.output: yield item
+
+    # -----------------------------------------------------------------
+
+    def __getitem__(self, item):
+
+        """
+        This function ...
+        :param item:
+        :return:
+        """
+
         return self.output[item]
 
 # -----------------------------------------------------------------

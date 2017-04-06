@@ -155,10 +155,15 @@ class S4G(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Getting the galaxy properties")
+
+        # Name
         self.get_ngc_name()
 
         #self.get_dustpedia_info()
 
+        # S4G
         self.get_s4g_properties()
 
         #self.get_inclination()

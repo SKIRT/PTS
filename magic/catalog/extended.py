@@ -275,7 +275,7 @@ class ExtendedSourceCatalog(SmartTable):
         redshift = row["Redshift"]
         galaxy_type = row["Type"]
         position = self.get_position(index)
-        names = row["Nmes"].split(",")
+        names = row["Names"].split(",") if row["Names"] is not None else None
         distance = row["Distance"]
         inclination = row["Incl"]
         d25 = row["D25"]
@@ -283,7 +283,7 @@ class ExtendedSourceCatalog(SmartTable):
         minor = row["Minor"]
         position_angle = row["Posangle"]
         principal = row["Principal"]
-        companions = row["Companions"].split(",")
+        companions = row["Companions"].split(",") if row["Companions"] is not None else None
         parent = row["Parent"]
 
         # Create a new ExtendedSource instance

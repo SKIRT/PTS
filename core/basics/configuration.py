@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
+import importlib
 from abc import ABCMeta, abstractmethod
 from types import NoneType
 import sys
@@ -47,6 +48,46 @@ related_types.append(["quantity", "photometric_quantity", "photometric_density_q
 related_types.append(["unit", "photometric_unit", "photometric_density_unit"])
 related_types.append(["filter", "narrow_band_filter", "broad_band_filter"])
 related_types.append(["broad_band_filter_list", "lazy_filter_list", "narrow_band_list"])
+
+# -----------------------------------------------------------------
+
+def create_configuration_passive(command_name, class_name, configuration_module_path, config_dict, description=None):
+
+    """
+    This function ...
+    :param command_name:
+    :param class_name:
+    :param configuration_module_path:
+    :param config_dict:
+    :param description:
+    :return:
+    """
+
+    # Find definition
+    try:
+        configuration_module = importlib.import_module(configuration_module_path)
+        definition = getattr(configuration_module, "definition")
+    except ImportError:
+        log.warning("No configuration definition found for the " + class_name + " class")
+        definition = ConfigurationDefinition()  # Create new configuration definition
+
+    ## SET THE INPUT FILENAMES
+    #if input_dict is not None:
+        #config_dict["input"] = dict()
+        #for name in input_dict:
+        #    config_dict["input"][name] = name + "." + input_dict[name].default_extension  # generate a default filename
+
+    ## CREATE THE CONFIGURATION
+
+    # Create the configuration setter
+    if config_dict is None: config_dict = dict()  # no problem if all options are optional
+    setter = DictConfigurationSetter(config_dict, command_name, description)
+
+    # Create the configuration from the definition and from the provided configuration dictionary
+    config = setter.run(definition)
+
+    # Return the configuration
+    return config
 
 # -----------------------------------------------------------------
 

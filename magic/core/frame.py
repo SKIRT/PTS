@@ -41,6 +41,7 @@ from ...core.basics.unit import PhotometricUnit
 from ...core.basics.unit import parse_unit as u
 from ...core.filter.filter import parse_filter
 #from ...core.tools import types
+from .mask import Mask as newMask
 
 # -----------------------------------------------------------------
 
@@ -803,8 +804,8 @@ class Frame(NDDataArray):
         :return:
         """
 
-        # Return the pivot wavelength of the frame's filter, if defined
-        if self.filter is not None: return self.filter.effective
+        # Return the wavelength of the frame's filter, if defined
+        if self.filter is not None: return self.filter.wavelength
         else: return self._wavelength # return the wavelength (if defined, is None otherwise)
 
     # -----------------------------------------------------------------
@@ -1358,7 +1359,7 @@ class Frame(NDDataArray):
         """
 
         data = ndimage.interpolation.rotate(self.data, angle.to("deg").value, reshape=False, order=1, mode='constant', cval=float('nan'))
-        return Mask(np.isnan(data))
+        return newMask(np.isnan(data))
 
     # -----------------------------------------------------------------
 

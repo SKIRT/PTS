@@ -678,6 +678,52 @@ def create_galaxy_catalog(coordinate_box):
 
 # -----------------------------------------------------------------
 
+def get_galaxy_s4g_one_component_info(name):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    # The Vizier querying object
+    vizier = Vizier()
+    vizier.ROW_LIMIT = -1
+
+    # Get the "galaxies" table
+    result = vizier.query_object(name, catalog=["J/ApJS/219/4/galaxies"])
+    table = result[0]
+
+    # PA: [0.2/180] Outer isophote position angle
+    # e_PA: [0/63] Standard deviation in PA
+    # Ell:  [0.008/1] Outer isophote ellipticity
+    # e_Ell: [0/0.3] Standard deviation in Ell
+
+    # PA1: Elliptical isophote position angle in deg
+    # n: Sersic index
+    # Re: effective radius in arcsec
+
+    # Tmag: total magnitude
+
+    s4g_name = table["Name"][0]
+
+    pa = Angle(table["PA"][0] - 90., "deg")
+    pa_error = Angle(table["e_PA"][0], "deg")
+
+    ellipticity = table["Ell"][0]
+    ellipticity_error = table["e_Ell"][0]
+
+    n = table["n"][0]
+
+    re = table["Re"][0] * u("arcsec")
+
+    mag = table["Tmag"][0]
+
+    # Return the results
+    return s4g_name, pa, ellipticity, n, re, mag
+
+# -----------------------------------------------------------------
+
 def get_galaxy_info(name, position):
 
     """

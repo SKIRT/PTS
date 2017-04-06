@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
+import math
 import numpy as np
 
 # Import astronomical modules
@@ -215,5 +216,53 @@ def cutoff(values, method, limit):
         return np.ma.max(masked_values)
 
     else: raise ValueError("Invalid cutoff method (must be 'percentage' or 'sigma_clip'")
+
+# -----------------------------------------------------------------
+
+def inverse_gaussian(center, sigma, amplitude, y):
+
+    """
+    This function ...
+    :param center:
+    :param sigma:
+    :param amplitude:
+    :param y:
+    :return:
+    """
+
+    x = np.sqrt( - 2. * sigma**2 * np.log(y * np.sqrt(2. * math.pi * sigma**2) / amplitude)) + center
+    return x
+
+# -----------------------------------------------------------------
+
+def gaussian(center, sigma, amplitude, x):
+
+    """
+    This function ...
+    :param center:
+    :param sigma:
+    :param amplitude:
+    :param x:
+    :return:
+    """
+
+    normal = 1. / np.sqrt(2. * math.pi * sigma**2 ) * np.exp( - ( x - center)**2 / (2. * sigma**2))
+    return normal * amplitude
+
+# -----------------------------------------------------------------
+
+def test_inverse(x, center, sigma, amplitude):
+
+    """
+    This function ...
+    :param x:
+    :param center:
+    :param sigma:
+    :param amplitude:
+    :return:
+    """
+
+    y = gaussian(center, sigma, amplitude, x)
+    return inverse_gaussian(center, sigma, amplitude, y)
 
 # -----------------------------------------------------------------

@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-from multiprocessing import Pool
-
 # Import the relevant PTS classes and modules
 from .extended import ExtendedSourceFinder
 from .point import PointSourceFinder
@@ -37,6 +34,10 @@ from ...core.data.sed import ObservedSED
 from ...core.filter.broad import BroadBandFilter
 from ...core.basics.curve import FilterCurve
 from ...core.basics.unit import parse_unit as u
+from ...core.tools.parallelization import ParallelTarget
+from ..core.frame import Frame
+from ...core.tools import filesystem as fs
+from ...core.tools import introspection, time
 
 # -----------------------------------------------------------------
 
@@ -136,6 +137,9 @@ class GalaxyTable(SmartTable):
         :return:
         """
 
+        # Setup if necessary
+        if len(self.colnames) == 0: self.setup()
+
         values = []
 
         index = galaxy.index
@@ -154,7 +158,8 @@ class GalaxyTable(SmartTable):
             fltr = BroadBandFilter(name.split(" flux")[0])
 
             # Get flux
-            flux = galaxy.sed.photometry_for_filter(fltr)
+            if galaxy.sed is not None and fltr in galaxy.sed.filters(): flux = galaxy.sed.photometry_for_filter(fltr)
+            else: flux = None
 
             # Add the flux to the values
             values.append(flux)
@@ -361,9 +366,6 @@ class SourceFinder(Configurable):
         super(SourceFinder, self).__init__(config, interactive)
 
         # -- Attributes --
-
-        # The process pool
-        self.pool = None
 
         # The frames
         self.frames = dict()
@@ -584,9 +586,6 @@ class SourceFinder(Configurable):
 
         # Call the setup function of the base class
         super(SourceFinder, self).setup(**kwargs)
-
-        # Initialize the process pool
-        self.pool = Pool(processes=self.config.nprocesses)
 
         # Load the images (from config or input kwargs)
         if "frames" in kwargs:
@@ -814,32 +813,56 @@ class SourceFinder(Configurable):
         # Dictionary to keep result handles
         results = dict()
 
-        # Loop over the images
-        for name in self.frames:
+        # Parallel execution
+        #with ParallelTarget(detect_extended_sources, self.config.nprocesses) as target:
+        with ParallelTarget(detect_extended_sources_wrapper, self.config.nprocesses) as target:
 
-            # Ignore if requested
-            if name in self.ignore: continue
+            # Loop over the images
+            for name in self.frames:
 
-            # Get the frame
-            frame = self.frames[name]
+                # Ignore if requested
+                if name in self.ignore: continue
 
-            # Get masks
-            special_mask = self.special_masks[name] if name in self.special_masks else None
-            ignore_mask = self.ignore_masks[name] if name in self.ignore_masks else None
-            bad_mask = None
+                # Get the frame
+                frame = self.frames[name]
 
-            # Get configuration
-            config = self.config.galaxies.copy()
+                # Get masks
+                special_mask = self.special_masks[name] if name in self.special_masks else None
+                ignore_mask = self.ignore_masks[name] if name in self.ignore_masks else None
+                bad_mask = None
 
-            # Do the detection
-            result = self.pool.apply_async(detect_extended_sources, args=(frame, self.extended_source_catalog, config, special_mask, ignore_mask, bad_mask,))
-            results[name] = result
+                # Get configuration
+                config = self.config.extended.copy()
+
+                # Save temporarily
+                temp_path = fs.create_directory_in(introspection.pts_temp_dir, time.unique_name("sourcefinder_" + name))
+                frame_path = fs.join(temp_path, "frame.fits")
+                special_mask_path = fs.join(temp_path, "special_mask.fits") if special_mask is not None else None
+                ignore_mask_path = fs.join(temp_path, "ignore_mask.fits") if ignore_mask is not None else None
+                bad_mask_path = fs.join(temp_path, "bad_mask.fits") if bad_mask is not None else None
+
+                # Save
+                frame.saveto(frame_path)
+                if special_mask is not None: special_mask.saveto(special_mask_path)
+                if ignore_mask is not None: ignore_mask.saveto(ignore_mask_path)
+                if bad_mask is not None: bad_mask.saveto(bad_mask_path)
+
+                # Do the detection
+                # Call the target function
+                #result = target(frame, self.extended_source_catalog, config, special_mask, ignore_mask, bad_mask)
+                result = target(frame_path, self.extended_source_catalog, config, special_mask_path, ignore_mask_path, bad_mask_path)
+
+                # Set the result handle
+                results[name] = result
 
         # Process results
         for name in results:
 
+            # Request output
+            results[name].request()
+
             # Get result
-            table, regions, segments = results[name].get()
+            table, regions, segments = results[name].output
 
             # Set galaxies
             self.extended_tables[name] = table
@@ -850,10 +873,6 @@ class SourceFinder(Configurable):
             # Set segmentation map
             # Add the segmentation map of the galaxies
             self.segments[name].add_frame(segments, "extended")
-
-        # Close and join the process pool
-        #self.pool.close()
-        #self.pool.join()
 
     # -----------------------------------------------------------------
 
@@ -884,6 +903,8 @@ class SourceFinder(Configurable):
 
                 # Add the flux to the SED
                 if flux is not None: sed.add_point(self.frames[name].filter, flux)
+
+            if len(sed) == 0: sed = None
 
             # Get other properties
             name = self.extended_source_catalog.get_name(index)
@@ -963,7 +984,7 @@ class SourceFinder(Configurable):
         min_pixelscale = self.min_pixelscale
 
         # Fetch
-        self.point_source_catalog = self.fetcher.get_point_source_catalog(coordinate_box, min_pixelscale, self.config.stars.fetching.catalogs)
+        self.point_source_catalog = self.fetcher.get_point_source_catalog(coordinate_box, min_pixelscale, self.config.point.fetching.catalogs)
 
     # -----------------------------------------------------------------
 
@@ -977,46 +998,56 @@ class SourceFinder(Configurable):
         # Dictionary to keep result handles
         results = dict()
 
-        # Loop over the images
-        for name in self.frames:
+        # Parallel execution
+        with ParallelTarget(detect_point_sources, self.config.nprocesses) as target:
 
-            # Ignore if requested
-            if name in self.ignore: continue
-            if name in self.ignore_stars: continue
+            # Loop over the images
+            for name in self.frames:
 
-            # Get the frame
-            frame = self.frames[name]
+                # Ignore if requested
+                if name in self.ignore: continue
+                if name in self.ignore_stars: continue
 
-            # Don't run the star finder if the wavelength of this image is greater than 25 micron
-            if frame.wavelength is not None or frame.wavelength > wavelengths.ranges.ir.mir.max:
+                # Get the frame
+                frame = self.frames[name]
 
-                # No star subtraction for this image
-                log.info("Finding point sources will not be performed for the '" + name + "' image")
-                continue
+                print(frame.wavelength)
 
-            # Inform the user
-            log.info("Finding the point sources ...")
+                # Don't run the star finder if the wavelength of this image is greater than 25 micron
+                if frame.wavelength is not None or frame.wavelength > wavelengths.ranges.ir.mir.max:
 
-            # Get masks
-            special_mask = self.special_masks[name] if name in self.special_masks else None
-            ignore_mask = self.ignore_masks[name] if name in self.ignore_masks else None
-            bad_mask = None
+                    # No star subtraction for this image
+                    log.info("Finding point sources will not be performed for the '" + name + "' image")
+                    continue
 
-            # Create configuration
-            config = self.config.stars.copy()
-            if name in self.star_finder_settings: config.set_items(self.star_finder_settings[name])
+                # Inform the user
+                log.info("Finding the point sources ...")
 
-            # Do the detection
-            result = self.pool.apply_async(detect_point_sources, args=(frame, self.galaxies, self.point_source_catalog, config, special_mask, ignore_mask, bad_mask,))
-            results[name] = result
+                # Get masks
+                special_mask = self.special_masks[name] if name in self.special_masks else None
+                ignore_mask = self.ignore_masks[name] if name in self.ignore_masks else None
+                bad_mask = None
+
+                # Create configuration
+                config = self.config.point.copy()
+                if name in self.star_finder_settings: config.set_items(self.star_finder_settings[name])
+
+                # Call the target function
+                result = target(frame, self.galaxies, self.point_source_catalog, config, special_mask, ignore_mask, bad_mask)
+
+                # Add the result
+                results[name] = result
 
         # Process results
         for name in results:
 
+            # Request
+            results[name].request()
+
             # Get result
             # stars, star_region_list, saturation_region_list, star_segments, kernel, statistics
             #stars, star_region_list, saturation_region_list, star_segments, kernel, statistics = results[name].get()
-            table, regions, saturation_regions, segments = results[name].get()
+            table, regions, saturation_regions, segments = results[name].output
 
             # Set table
             self.point_tables[name] = table
@@ -1037,10 +1068,6 @@ class SourceFinder(Configurable):
 
             # Show the FWHM
             #log.info("The FWHM that could be fitted to the point sources in the " + name + " image is " + str(self.statistics[name].fwhm))
-
-        # Close and join the process pool
-        self.pool.close()
-        self.pool.join()
 
     # -----------------------------------------------------------------
 
@@ -1065,6 +1092,9 @@ class SourceFinder(Configurable):
 
             # Loop over the frames
             for name in self.frames:
+
+                # Point source detection was not performed for this image
+                if name not in self.point_tables: continue
 
                 # Get the flux for this frame
                 flux = self.point_tables[name].get_flux(index)
@@ -1174,57 +1204,60 @@ class SourceFinder(Configurable):
         # Dictionary to keep result handles
         results = dict()
 
-        # Loop over the frames
-        for name in self.frames:
+        # Parallel execution
+        with ParallelTarget(detect_other, self.config.nprocesses) as target:
 
-            # Ignore if requested
-            if name in self.ignore: continue
-            if name in self.ignore_other_sources: continue
+            # Loop over the frames
+            for name in self.frames:
 
-            # Get the frame
-            frame = self.frames[name]
+                # Ignore if requested
+                if name in self.ignore: continue
+                if name in self.ignore_other_sources: continue
 
-            # If the wavelength of this image is greater than 25 micron, don't classify the sources that are found
-            #if frame.wavelength is not None and frame.wavelength > wavelengths.ranges.ir.mir.max: self.trained_finder.config.classify = False
-            #else: self.trained_finder.config.classify = True
+                # Get the frame
+                frame = self.frames[name]
 
-            # Get masks
-            special_mask = self.special_masks[name] if name in self.special_masks else None
-            ignore_mask = self.ignore_masks[name] if name in self.ignore_masks else None
-            bad_mask = None
+                # If the wavelength of this image is greater than 25 micron, don't classify the sources that are found
+                #if frame.wavelength is not None and frame.wavelength > wavelengths.ranges.ir.mir.max: self.trained_finder.config.classify = False
+                #else: self.trained_finder.config.classify = True
 
-            # Create the configuration
-            config = self.config.other_sources.copy()
+                # Get masks
+                special_mask = self.special_masks[name] if name in self.special_masks else None
+                ignore_mask = self.ignore_masks[name] if name in self.ignore_masks else None
+                bad_mask = None
 
-            galaxies = self.galaxies
+                # Create the configuration
+                config = self.config.other_sources.copy()
 
-            # Get other input
-            #galaxies = self.galaxies[name]
-            stars = self.stars[name]
-            galaxy_segments = self.segments[name].frames.galaxies
-            star_segments = self.segments[name].frames.stars
-            kernel = self.psfs[name]
+                galaxies = self.galaxies
 
-            # Do the detection
-            # frame, config, galaxies, stars, galaxy_segments, star_segments, kernel, special_mask, ignore_mask, bad_mask
-            result = self.pool.apply_async(detect_other, args=(frame, config, galaxies, stars, galaxy_segments, star_segments, kernel, special_mask, ignore_mask, bad_mask,))
-            results[name] = result
+                # Get other input
+                #galaxies = self.galaxies[name]
+                stars = self.stars[name]
+                galaxy_segments = self.segments[name].frames.galaxies
+                star_segments = self.segments[name].frames.stars
+                kernel = self.psfs[name]
+
+                # Call the target function
+                result = target(frame, config, galaxies, stars, galaxy_segments, star_segments, kernel, special_mask, ignore_mask, bad_mask)
+
+                # Add the result
+                results[name] = result
 
         # Process results
         for name in results:
 
+            # Request
+            results[name].request()
+
             # Get the result
-            region_list, segments = results[name].get()
+            region_list, segments = results[name].output
 
             # Add the region
             self.other_regions[name] = region_list
 
             # Add the segmentation map of the other sources
             self.segments[name].add_frame(segments, "other")
-
-        # Close and join the process pool
-        self.pool.close()
-        self.pool.join()
 
     # -----------------------------------------------------------------
 
@@ -1466,6 +1499,47 @@ class SourceFinder(Configurable):
 
 # -----------------------------------------------------------------
 
+def serialize_input(*args):
+
+    """
+    This function ...
+    :param args:
+    :return:
+    """
+
+    pass
+
+# -----------------------------------------------------------------
+
+def detect_extended_sources_wrapper(frame_path, catalog, config, special_mask_path, ignore_mask_path, bad_mask_path):
+
+    """
+    This function ...
+    :param frame_path:
+    :param catalog:
+    :param config:
+    :param special_mask_path:
+    :param ignore_mask_path:
+    :param bad_mask_path:
+    :return:
+    """
+
+    # Open the frame
+    frame = Frame.from_file(frame_path)
+
+    # Open the masks
+    special_mask = Mask.from_file(special_mask_path) if special_mask_path is not None else None
+    ignore_mask = Mask.from_file(ignore_mask_path) if ignore_mask_path is not None else None
+    bad_mask = Mask.from_file(bad_mask_path) if bad_mask_path is not None else None
+
+    # Implementation
+    table, regions, segments = detect_extended_sources(frame, catalog, config, special_mask, ignore_mask, bad_mask)
+
+    # Return
+    return table, regions, segments
+
+# -----------------------------------------------------------------
+
 def detect_extended_sources(frame, catalog, config, special_mask, ignore_mask, bad_mask):
 
     """
@@ -1481,6 +1555,9 @@ def detect_extended_sources(frame, catalog, config, special_mask, ignore_mask, b
 
     # Create the galaxy finder
     finder = ExtendedSourceFinder(config)
+
+    # Inform the user
+    log.info("Starting detection of extended sources ...")
 
     # Run the finder
     finder.run(frame=frame, catalog=catalog, special_mask=special_mask, ignore_mask=ignore_mask, bad_mask=bad_mask)
@@ -1538,6 +1615,30 @@ def detect_extended_sources(frame, catalog, config, special_mask, ignore_mask, b
 
 # -----------------------------------------------------------------
 
+def detect_point_sources_wrapper(frame_path, galaxies, catalog, config, special_mask, ignore_mask, bad_mask):
+
+    """
+    This function ...
+    :param frame_path:
+    :param galaxies:
+    :param catalog:
+    :param config:
+    :param special_mask:
+    :param ignore_mask:
+    :param bad_mask:
+    :return:
+    """
+
+    # Open the frame
+    frame = Frame.from_file(frame_path)
+
+    # Call the implementation
+    table, regions, saturation_regions, segments = detect_point_sources(frame, galaxies, catalog, config, special_mask, ignore_mask, bad_mask)
+
+    return
+
+# -----------------------------------------------------------------
+
 def detect_point_sources(frame, galaxies, catalog, config, special_mask, ignore_mask, bad_mask):
 
     """
@@ -1554,6 +1655,9 @@ def detect_point_sources(frame, galaxies, catalog, config, special_mask, ignore_
 
     # Create the star finder
     finder = PointSourceFinder(config)
+
+    # Inform the user
+    log.info("Starting detection of point sources ...")
 
     # Run the finder
     finder.run(frame=frame, galaxies=galaxies, catalog=catalog, special_mask=special_mask, ignore_mask=ignore_mask, bad_mask=bad_mask)
@@ -1623,6 +1727,33 @@ def detect_point_sources(frame, galaxies, catalog, config, special_mask, ignore_
 
 # -----------------------------------------------------------------
 
+def detect_other_wrapper(frame_path, config, galaxies, stars, galaxy_segments, star_segments, kernel, special_mask, ignore_mask, bad_mask):
+
+    """
+    This function ...
+    :param frame_path:
+    :param config:
+    :param galaxies:
+    :param stars:
+    :param galaxy_segments:
+    :param star_segments:
+    :param kernel:
+    :param special_mask:
+    :param ignore_mask:
+    :param bad_mask:
+    :return:
+    """
+
+    # Open the frame
+    frame = Frame.from_file(frame_path)
+
+    # Implementation
+    other_sky_region, other_segments = detect_other(frame, config, galaxies, stars, galaxy_segments, star_segments, kernel, special_mask, ignore_mask, bad_mask)
+
+    return other_sky_region, other_segments
+
+# -----------------------------------------------------------------
+
 def detect_other(frame, config, galaxies, stars, galaxy_segments, star_segments, kernel, special_mask, ignore_mask, bad_mask):
 
     """
@@ -1642,6 +1773,9 @@ def detect_other(frame, config, galaxies, stars, galaxy_segments, star_segments,
 
     # Create the other source finder
     finder = OtherSourceFinder(config)
+
+    # Inform the user
+    log.info("Starting detection of other sources ...")
 
     # Run the finder just to find sources
     finder.run(frame=frame, galaxies=galaxies, stars=stars, special_mask=special_mask,

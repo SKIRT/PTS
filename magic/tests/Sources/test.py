@@ -19,6 +19,7 @@ from astropy.coordinates import Angle
 from astropy.utils import lazyproperty
 from astropy.modeling.models import Gaussian2D, AiryDisk2D
 from photutils.datasets import make_noise_image
+from astropy.modeling.models import Sersic2D
 
 # Import the relevant PTS classes and modules
 from pts.core.tools.logging import log
@@ -44,10 +45,17 @@ from pts.magic.catalog.extended import ExtendedSourceCatalog
 from pts.magic.catalog.point import PointSourceCatalog
 from pts.magic.tools import fitting, statistics
 from pts.magic.convolution.kernels import has_variable_fwhm, get_fwhm
+from pts.magic.basics.vector import Pixel
+from pts.magic.tools.catalogs import get_galaxy_info
+from pts.magic.region.ellipse import PixelEllipseRegion
+from pts.magic.basics.coordinate import PixelCoordinate
+from pts.magic.basics.stretch import PixelStretch
+from pts.magic.tools import catalogs
+from pts.core.remote.remote import Remote
 
 # -----------------------------------------------------------------
 
-description = "Test the source extraction"
+description = "Test the source detection and extraction"
 
 # -----------------------------------------------------------------
 
@@ -85,8 +93,13 @@ class SourcesTest(TestImplementation):
         # Call the constructor of the base class
         super(SourcesTest, self).__init__(config, interactive)
 
+        # The remote
+        self.remote = None
+
         # Paths
         self.data_path = None
+        self.data_frames_path = None
+        self.data_masks_path = None
         self.find_path = None
         self.extract_path = None
 
@@ -114,6 +127,12 @@ class SourcesTest(TestImplementation):
 
         # The real FWHMs
         self.real_fwhms = dict()
+
+        # The source finder
+        self.finder = None
+
+        # The source extractors
+        self.extractors = dict()
 
     # -----------------------------------------------------------------
 
@@ -185,8 +204,15 @@ class SourcesTest(TestImplementation):
 
         # Set paths
         self.data_path = fs.create_directory_in(self.path, "data")
+        self.data_frames_path = fs.create_directory_in(self.data_path, "frames")
+        self.data_masks_path = fs.create_directory_in(self.data_path, "masks")
         self.find_path = fs.create_directory_in(self.path, "find")
         self.extract_path = fs.create_directory_in(self.path, "extract")
+
+        # Set remote
+        if self.config.remote is not None:
+            self.remote = Remote()
+            self.remote.setup(self.config.remote)
 
     # -----------------------------------------------------------------
 
@@ -678,7 +704,7 @@ class SourcesTest(TestImplementation):
                 mask = frame.rotation_mask(angle)
 
             # Don't rotate
-            else: mask = Mask.empty(self.config.shape[1], self.config.shape[0])
+            else: mask = Mask.empty_like(frame)
 
             # Set the mask
             self.rotation_masks[fltr] = mask
@@ -737,9 +763,35 @@ class SourcesTest(TestImplementation):
         self.extended_source_catalog = ExtendedSourceCatalog()
 
         # Add principal galaxy
+        self.add_principal_galaxy()
 
         # Point sources
         self.point_source_catalog = PointSourceCatalog()
+
+    # -----------------------------------------------------------------
+
+    def add_principal_galaxy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adding principal galaxy ...")
+
+        # Get info
+        name, position, redshift, galaxy_type, names, distance, inclination, d25, major, minor, pa = get_galaxy_info("M81", self.properties.center)
+
+        ra = position.ra
+        dec = position.dec
+
+        principal = True
+        companions = []
+        parent = None
+
+        # Add to the catalog
+        self.extended_source_catalog.add_entry("M81", ra, dec, redshift, galaxy_type, names, distance, inclination, d25, major, minor, pa, principal, companions, parent)
 
     # -----------------------------------------------------------------
 
@@ -846,6 +898,94 @@ class SourcesTest(TestImplementation):
         # Inform the user
         log.info("Making extended sources ...")
 
+        # Loop over the filters
+        for fltr in self.frames:
+
+            # Get the frame
+            frame = self.frames[fltr]
+
+            # Loop over the sources
+            for index in range(len(self.extended_source_catalog)):
+
+                principal = self.extended_source_catalog["Principal"][index]
+
+                # Determine flux
+                if principal: central_flux = 1e2
+                else: central_flux = np.random.uniform(10,50)
+
+                # Get pixel position
+                coordinate = self.extended_source_catalog.get_position(index).to_pixel(frame.wcs)
+
+                initial_sersic_amplitude = central_flux
+                initial_sersic_x_0 = coordinate.x
+                initial_sersic_y_0 = coordinate.y
+
+                if principal:
+
+                    s4g_name, pa, ellipticity, n, re, mag = catalogs.get_galaxy_s4g_one_component_info("M81")
+
+                    angle = Angle(pa, "deg")
+                    angle_deg = pa
+
+                    effective_radius = re.to("arcsec").value / frame.average_pixelscale.to("arcsec").value
+
+                    initial_sersic_n = n
+                    initial_sersic_r_eff = effective_radius
+                    initial_sersic_ellip = ellipticity
+                    initial_sersic_theta = np.deg2rad(angle_deg)
+
+                    # 1 / axial_ratio = 1 - ellipticity
+                    axial_ratio = 1. / (1. - ellipticity)
+
+                else:
+
+                    # Get position angle and axes lengths
+                    pa = self.extended_source_catalog["Posangle"][index]
+                    major = self.extended_source_catalog["Major"][index]
+                    minor = self.extended_source_catalog["Minor"][index]
+                    axial_ratio = major / minor
+
+                    angle = Angle(pa, "deg")
+                    angle_deg = pa
+
+                    effective_radius = major
+
+                    # Produce guess values
+                    initial_sersic_r_eff = effective_radius
+                    initial_sersic_n = self.config.galaxy_sersic_index
+                    initial_sersic_ellip = (axial_ratio - 1.0) / axial_ratio
+                    initial_sersic_theta = np.deg2rad(angle_deg)
+
+                # Produce sersic model from guess parameters, for time trials
+                sersic_x, sersic_y = np.meshgrid(np.arange(frame.xsize), np.arange(frame.ysize))
+                sersic_model = Sersic2D(amplitude=initial_sersic_amplitude, r_eff=initial_sersic_r_eff,
+                                        n=initial_sersic_n, x_0=initial_sersic_x_0,
+                                        y_0=initial_sersic_y_0, ellip=initial_sersic_ellip,
+                                        theta=initial_sersic_theta)
+
+                sersic_map = sersic_model(sersic_x, sersic_y)
+
+                # Limit galaxy?
+                if self.config.limit_galaxy:
+
+                    limit_radius = self.config.galaxy_relative_asymptotic_radius * effective_radius
+
+                    # Create galaxy region
+                    galaxy_center = PixelCoordinate(initial_sersic_x_0, initial_sersic_y_0)
+                    galaxy_radius = PixelStretch(limit_radius, limit_radius / axial_ratio)
+                    galaxy_region = PixelEllipseRegion(galaxy_center, galaxy_radius, angle)
+
+                    galaxy_mask = galaxy_region.to_mask(frame.xsize, frame.ysize)
+
+                    # Set galaxy map zero outside certain radius
+                    sersic_map[galaxy_mask.inverse()] = 0.0
+
+                # Add
+                frame += sersic_map
+
+            # mask
+            frame[self.rotation_masks[fltr]] = 0.0
+
     # -----------------------------------------------------------------
 
     def make_point_sources(self):
@@ -858,6 +998,22 @@ class SourcesTest(TestImplementation):
         # Inform the user
         log.info("Making point sources ...")
 
+        # Call the appropriate function
+        if self.config.vary_fwhm: self.make_point_sources_variable_fwhm()
+        else: self.make_point_sources_fixed_fwhm()
+
+    # -----------------------------------------------------------------
+
+    def make_point_sources_variable_fwhm(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making point sources with a variable FWHM in each band ...")
+
         # Loop over the 'star' filters
         for fltr in self.star_filters:
 
@@ -865,7 +1021,9 @@ class SourcesTest(TestImplementation):
             log.debug("Making point sources for the '" + str(fltr) + "' image ...")
 
             # Get y and x
-            #y, x = np.indices(self.frames[fltr].shape)
+            if not self.config.only_local:
+                y, x = np.indices(self.frames[fltr].shape)
+            else: y = x = None
 
             # Get pixelscale
             pixelscale = self.frames[fltr].average_pixelscale
@@ -884,7 +1042,7 @@ class SourcesTest(TestImplementation):
                 counter += 1
 
                 # Debugging
-                log.debug("Adding source " + str(counter) + " of " + str(len(self.point_source_catalog)) + " ...")
+                log.debug("Adding point source " + str(counter) + " of " + str(len(self.point_source_catalog)) + " ...")
 
                 # Check whether it falls in the frame
                 if not self.frames[fltr].contains(coordinate): continue
@@ -892,8 +1050,11 @@ class SourcesTest(TestImplementation):
                 # Convert into pixel coordinate
                 pixel_coordinate = coordinate.to_pixel(self.frames[fltr].wcs)
 
+                # Get the corresponding pixel
+                pixel = Pixel.for_coordinate(pixel_coordinate)
+
                 # Check whether not masked
-                if self.rotation_masks[fltr][int(pixel_coordinate.y), int(pixel_coordinate.x)]: continue
+                if self.rotation_masks[fltr][pixel.y, pixel.x]: continue
 
                 # Generate random deviation
                 x_deviation = np.random.normal(0.0, 1.)
@@ -915,48 +1076,136 @@ class SourcesTest(TestImplementation):
                 # Add the deviation
                 fwhm_pix += fwhm_deviation
 
-                # Generate a random amplitude
-                amplitude = float(np.random.uniform(5., 100.))
+                # Generate a random amplitude (from 100 till 100 000)
+                amplitude_exponent = np.random.uniform(2., 5.)
+                amplitude = 10**amplitude_exponent
 
                 # Determine sigma
                 sigma = statistics.fwhm_to_sigma * fwhm_pix
 
-                sigma_level = 3.
+                # Only 'render' the Gaussian locally
+                if self.config.only_local: min_x, max_x, min_y, max_y, rel_center = determine_patch_for_psf(pixel_coordinate, amplitude, sigma, max_x_pixel=self.frames[fltr].xsize-1, max_y_pixel=self.frames[fltr].ysize-1, keep_in_frame=True)
 
-                # Determine x and y range for evaluation
-                min_x = max(int(math.floor(pixel_coordinate.x - sigma_level * sigma)), 0)
-                max_x = min(int(math.ceil(pixel_coordinate.x + sigma_level * sigma)), self.frames[fltr].xsize - 1)
-                min_y = max(int(math.floor(pixel_coordinate.y - sigma_level * sigma)), 0)
-                max_y = min(int(math.ceil(pixel_coordinate.y + sigma_level * sigma)), self.frames[fltr].ysize - 1)
+                # Render each Gaussian over the entire frame
+                else:
+                    min_x = max_x = min_y = max_y = None
+                    rel_center = pixel_coordinate
 
-                # Create relative centers
-                rel_x = pixel_coordinate.x - min_x
-                rel_y = pixel_coordinate.y - min_y
-
-                # 2D GAussian model
-                if self.config.psf_model == "gaussian":
-
-                    # Create the model
-                    model = Gaussian2D(amplitude=amplitude, x_mean=rel_x, y_mean=rel_y, x_stddev=sigma, y_stddev=sigma)
-
-                # Airy disk model
-                elif self.config.psf_model == "airydisk":
-
-                    # Determine the radius
-                    radius = fitting.gaussian_sigma_to_airy_radius(sigma)
-
-                    # Create the model
-                    model = AiryDisk2D(amplitude=amplitude, x_0=rel_x, y_0=rel_y, radius=radius)
-
-                # Invalid
-                else: raise ValueError("Not a valid model")
+                # Make the model
+                model = create_model(self.config.psf_model, amplitude, rel_center, sigma)
 
                 # Evaluate the model
-                y, x = np.indices((max_y - min_y, max_x - min_x))
+                if self.config.only_local: y, x = np.indices((max_y - min_y, max_x - min_x))
                 data = model(x, y)
 
                 # Add the data
-                self.frames[fltr][min_y:max_y, min_x:max_x] += data
+                if self.config.only_local: self.frames[fltr][min_y:max_y, min_x:max_x] += data
+                else: self.frames[fltr] += data
+
+    # -----------------------------------------------------------------
+
+    def make_point_sources_fixed_fwhm(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making point sources with a fixed FWHM in each band ...")
+
+        # Loop over the 'star' filters
+        for fltr in self.star_filters:
+
+            # Debugging
+            log.debug("Making point sources for the '" + str(fltr) + "' image ...")
+
+            # Get pixelscale
+            pixelscale = self.frames[fltr].average_pixelscale
+
+            # Debugging
+            log.debug("The pixelscale of the image is " + stringify.stringify(pixelscale)[1])
+
+            # Determine the FWHM in pixel coordinates
+            fwhm_pix = self.real_fwhms[fltr].to("arcsec").value / pixelscale.to("arcsec").value
+
+            # Determine sigma
+            sigma = statistics.fwhm_to_sigma * fwhm_pix
+
+            # Only 'render' the Gaussian locally
+            origin = PixelCoordinate(0.0, 0.0)
+            amplitude = 1.
+            min_x, max_x, min_y, max_y, rel_center = determine_patch_for_psf(origin, amplitude, sigma, keep_in_frame=False)
+
+            # Make the model
+            model = create_model(self.config.psf_model, amplitude, rel_center, sigma)
+
+            # Evalute the model
+            y, x = np.indices((max_y - min_y, max_x - min_x))
+            data = model(x, y)
+
+            # Keep track of the number of sources
+            counter = 0
+
+            # Loop over the coordinates in the point sources catalog
+            for coordinate in self.point_source_catalog.coordinates():
+
+                counter += 1
+
+                # Debugging
+                log.debug("Adding source " + str(counter) + " of " + str(len(self.point_source_catalog)) + " ...")
+
+                # Check whether it falls in the frame
+                if not self.frames[fltr].contains(coordinate): continue
+
+                # Convert into pixel coordinate
+                pixel_coordinate = coordinate.to_pixel(self.frames[fltr].wcs)
+
+                # Get the corresponding pixel
+                pixel = Pixel.for_coordinate(pixel_coordinate)
+
+                # Check whether not masked
+                if self.rotation_masks[fltr][pixel.y, pixel.x]: continue
+
+                # Generate a random amplitude (from 100 till 100 000)
+                amplitude_exponent = np.random.uniform(2., 5.)
+                amplitude = 10 ** amplitude_exponent
+
+                # Calculate absolute minima and maxima
+                source_min_x = min_x + pixel.x
+                source_max_x = max_x + pixel.x
+                source_min_y = min_y + pixel.y
+                source_max_y = max_y + pixel.y
+
+                source_xsize = source_max_x - source_min_x
+                source_ysize = source_max_y - source_min_y
+
+                # Correct
+                if source_min_x < 0:
+                    cut_x_min = - source_min_x
+                    source_min_x = 0
+                else: cut_x_min = 0
+
+                if source_max_x >= self.frames[fltr].xsize:
+                    cut_x_max = source_xsize - (source_max_x - self.frames[fltr].xsize)
+                    source_max_x = self.frames[fltr].xsize
+                else: cut_x_max = source_xsize
+
+                if source_min_y < 0:
+                    cut_y_min = - source_min_y
+                    source_min_y = 0
+                else: cut_y_min = 0
+
+                if source_max_y >= self.frames[fltr].ysize:
+                    cut_y_max = source_ysize - (source_max_y - self.frames[fltr].ysize)
+                    source_max_y = self.frames[fltr].ysize
+                else: cut_y_max = source_ysize
+
+                # Create the final data for this source
+                source_data = data[cut_y_min:cut_y_max, cut_x_min:cut_x_max] * amplitude
+
+                # Add the data
+                self.frames[fltr][source_min_y:source_max_y, source_min_x:source_max_x] += source_data
 
     # -----------------------------------------------------------------
 
@@ -1051,7 +1300,7 @@ class SourcesTest(TestImplementation):
             name = str(fltr)
 
             # Determine path for this frame
-            path = fs.join(self.data_path, name + ".fits")
+            path = fs.join(self.data_frames_path, name + ".fits")
 
             # Save the frame
             self.frames[fltr].saveto(path)
@@ -1061,6 +1310,18 @@ class SourcesTest(TestImplementation):
 
             # Add the frame to the dataset
             self.dataset.add_path(name, path)
+
+            # Determine the path for the mask
+            mask_path = fs.join(self.data_masks_path, name + ".fits")
+
+            # Save the mask
+            self.rotation_masks[fltr].saveto(mask_path)
+
+            # Debugging
+            log.debug("Adding mask ...")
+
+            # Add the mask
+            self.dataset.add_mask_path(name, mask_path)
 
         # Determine database path
         path = fs.join(self.path, "database.dat")
@@ -1082,14 +1343,21 @@ class SourcesTest(TestImplementation):
 
         # Settings
         settings = dict()
+        #settings["input"] =
+        settings["output"] = self.find_path
+        settings["nprocesses"] = self.config.nprocesses
 
         # Input
         input_dict = dict()
-
         input_dict["dataset"] = self.dataset
+        input_dict["extended_source_catalog"] = self.extended_source_catalog
+        input_dict["point_source_catalog"] = self.point_source_catalog
 
         # Construct the command
-        command = Command("find_sources", "find sources", settings, input_dict, cwd=None, finish=None)
+        command = Command("find_sources", "find sources", settings, input_dict)
+
+        # Run the command
+        self.finder = self.run_command(command, remote=self.remote)
 
     # -----------------------------------------------------------------
 
@@ -1100,6 +1368,32 @@ class SourcesTest(TestImplementation):
         :return:
         """
 
+        # Inform the user
+        log.info("Extracting the sources ...")
+
+        # Loop over the images
+        for fltr in self.frames:
+
+            # Inform the user
+            log.info("Extracting the sources for the '" + str(fltr) + "' image ...")
+
+            # Settings
+            settings = dict()
+            settings["input"] = self.find_path
+            settings["output"] = fs.create_directory_in(self.extract_path, str(fltr))
+
+            # Input
+            input_dict = dict()
+
+            # Construct the command
+            command = Command("extract", "extract the sources", settings, input_dict)
+
+            # Run the command
+            extractor = self.run_command(command, remote=self.remote)
+
+            # Add the extractor
+            self.extractors[fltr] = extractor
+
     # -----------------------------------------------------------------
 
     def write(self):
@@ -1109,6 +1403,9 @@ class SourcesTest(TestImplementation):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing ...")
+
     # -----------------------------------------------------------------
 
     def plot(self):
@@ -1117,6 +1414,9 @@ class SourcesTest(TestImplementation):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Plotting ...")
 
 # -----------------------------------------------------------------
 
@@ -1129,5 +1429,79 @@ def test(temp_path):
     """
 
     pass
+
+# -----------------------------------------------------------------
+
+def determine_patch_for_psf(center, amplitude, sigma, cutoff_fraction=1e-4, max_x_pixel=None, max_y_pixel=None, keep_in_frame=False):
+
+    """
+    This function ...
+    :param center:
+    :param amplitude:
+    :param sigma:
+    :param cutoff_fraction:
+    :param max_x_pixel:
+    :param max_y_pixel:
+    :param keep_in_frame:
+    :return:
+    """
+
+    # Check at which sigma level the Gaussian has decreased 3 orders of magnitude
+    sigma_level = statistics.inverse_gaussian(0.0, sigma, amplitude, amplitude * cutoff_fraction) / sigma
+
+    # Determine x and y range for evaluation
+    min_x = int(math.floor(center.x - sigma_level * sigma))
+    if keep_in_frame: min_x = max(min_x, 0)
+
+    max_x = int(math.ceil(center.x + sigma_level * sigma))
+    if keep_in_frame: max_x = min(max_x, max_x_pixel)
+
+    min_y = int(math.floor(center.y - sigma_level * sigma))
+    if keep_in_frame: min_y = max(min_y, 0)
+
+    max_y = int(math.ceil(center.y + sigma_level * sigma))
+    if keep_in_frame: max_y = min(max_y, max_y_pixel)
+
+    # Create relative centers
+    rel_x = center.x - min_x
+    rel_y = center.y - min_y
+    rel_center = PixelCoordinate(rel_x, rel_y)
+
+    # Return
+    return min_x, max_x, min_y, max_y, rel_center
+
+# -----------------------------------------------------------------
+
+def create_model(model_name, amplitude, center, sigma):
+
+    """
+    This function ...
+    :param model_name:
+    :param amplitude:
+    :param center:
+    :param sigma:
+    :return:
+    """
+
+    # 2D GAussian model
+    if model_name == "gaussian":
+
+        # Create the model
+        model = Gaussian2D(amplitude=amplitude, x_mean=center.x, y_mean=center.y, x_stddev=sigma, y_stddev=sigma)
+
+    # Airy disk model
+    elif model_name == "airydisk":
+
+        # Determine the radius
+        radius = fitting.gaussian_sigma_to_airy_radius(sigma)
+
+        # Create the model
+        model = AiryDisk2D(amplitude=amplitude, x_0=center.x, y_0=center.y, radius=radius)
+
+    # Invalid
+    else: raise ValueError("Not a valid model")
+
+    # Return the model
+    return model
 
 # -----------------------------------------------------------------

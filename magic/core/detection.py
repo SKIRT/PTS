@@ -522,7 +522,7 @@ class Detection(object):
 
         if not np.all(self.mask):
 
-            mean, median, stddev = statistics.sigma_clipped_statistics(box, mask=self.mask)
+            mean, median, stddev = statistics.sigma_clipped_statistics(box, mask=self.mask.data)
             threshold = mean + stddev * sigma_level
 
         else: threshold = detect_threshold(box, snr=2.0) #snr=2.0

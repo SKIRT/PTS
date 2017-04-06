@@ -714,6 +714,12 @@ class BroadBandFilter(Filter):
         elif self._FilterID.startswith("Uniform"): return None
         else: return self._FilterID.split("_")[0]
 
+    ## This function returns 'the' wavelength of the filter
+    @property
+    def wavelength(self):
+        if self.effective is not None: return self.effective
+        else: return self.center
+
     ## This function returns the mean wavelength for the filter, in micron.
     def meanwavelength(self):
         return self._WavelengthMean

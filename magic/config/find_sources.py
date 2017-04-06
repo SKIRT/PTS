@@ -18,7 +18,7 @@ from pts.core.tools.parallelization import ncores
 definition = ConfigurationDefinition()
 
 # The dataset or image
-definition.add_required("dataset", "file_path", "name of the dataset file or image file")
+definition.add_positional_optional("dataset", "file_path", "name of the dataset file or image file")
 
 # Number of parallel processes
 definition.add_optional("nprocesses", "integer", "number of parallel processes", max(8, ncores()))

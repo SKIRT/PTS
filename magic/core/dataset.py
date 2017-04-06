@@ -42,6 +42,10 @@ class DataSet(object):
     This class...
     """
 
+    default_extension = "dat"
+
+    # -----------------------------------------------------------------
+
     def __init__(self):
 
         """
