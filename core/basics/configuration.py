@@ -30,6 +30,7 @@ from ..tools import filesystem as fs
 from ..tools.logging import log
 from .composite import SimplePropertyComposite
 from ..tools import introspection
+from ..tools import numbers
 
 # -----------------------------------------------------------------
 
@@ -43,7 +44,7 @@ subtypes["unit"] = ["photometric_unit", "photometric_density_unit"]
 related_types = []
 related_types.append(["integer", "positive_integer", "negative_integer", "even_integer", "even_positive_integer", "even_negative_integer", "odd_integer", "odd_positive_integer", "odd_negative_integer"])
 related_types.append(["real", "fraction", "positive_real", "negative_real"])
-related_types.append(["string", "file_path", "directory_path"])
+related_types.append(["string", "file_path", "directory_path", "string_no_spaces"])
 related_types.append(["quantity", "photometric_quantity", "photometric_density_quantity"])
 related_types.append(["unit", "photometric_unit", "photometric_density_unit"])
 related_types.append(["filter", "narrow_band_filter", "broad_band_filter"])
@@ -1403,16 +1404,10 @@ class ConfigurationDefinition(object):
 
         # Get the real default value
         if default is not None:
-            if convert_default:
-                if user_type.endswith("list") and isinstance(default, list):
-                    real_base_type = getattr(parsing, user_type.split("_list")[0])
-                    default = [get_real_value(arg, real_base_type) for arg in default]
-                else: default = get_real_value(default, real_type)
-            else: # check default
-                default_type, default_string = stringify.stringify(default)
-                #if default_type != user_type and user_type not in subtypes[default_type]:
-                if default_type != user_type and not are_related_types(default_type, user_type):
-                    raise ValueError("Default value is not of the right type: " + default_type + " instead of " + user_type)
+
+            # Convert or check default value
+            if convert_default: default = parse_default(default, user_type, real_type)
+            else: default = check_default(default, user_type)
 
         # Add
         self.pos_optional[name] = Map(type=real_type, description=description, default=default, choices=choices,
@@ -1451,16 +1446,10 @@ class ConfigurationDefinition(object):
 
         # Get the real default value
         if default is not None:
-            if convert_default:
-                if user_type.endswith("list") and isinstance(default, list):
-                    real_base_type = getattr(parsing, user_type.split("_list")[0])
-                    default = [get_real_value(arg, real_base_type) for arg in default]
-                else: default = get_real_value(default, real_type)
-            else: # check default
-                default_type, default_string = stringify.stringify(default)
-                #if default_type != user_type and user_type not in subtypes[default_type]:
-                if default_type != user_type and not are_related_types(default_type, user_type):
-                    raise ValueError("Default value is not of the right type: " + default_type + " instead of " + user_type)
+
+            # Convert or check default value
+            if convert_default: default = parse_default(default, user_type, real_type)
+            else: default = check_default(default, user_type)
 
         # Add
         self.optional[name] = Map(type=real_type, description=description, default=default, choices=choices,
@@ -3489,5 +3478,95 @@ def construct_type(real_type, min_value, max_value, forbidden):
 
         # Return the new function
         return the_type
+
+# -----------------------------------------------------------------
+
+def parse_default(default, user_type, real_type):
+
+    """
+    This function ...
+    :param default:
+    :param user_type:
+    :param real_type:
+    :return:
+    """
+
+    if user_type.endswith("list") and isinstance(default, list):
+
+        real_base_type = getattr(parsing, user_type.split("_list")[0])
+        default = [get_real_value(arg, real_base_type) for arg in default]
+
+    else: default = get_real_value(default, real_type)
+
+    # Return the default value
+    return default
+
+# -----------------------------------------------------------------
+
+def check_default(default, user_type):
+
+    """
+    This function ...
+    :param default:
+    :param user_type:
+    :return:
+    """
+
+    default_type, default_string = stringify.stringify(default)
+    if default_type != user_type and not are_related_types(default_type, user_type):
+
+        # List-like property
+        if user_type.endswith("list"):
+
+            base_type = user_type.split("_list")[0]
+            new_default = []
+            for value in default:
+                try:
+                    #print(value, type(value), base_type)
+                    value = check_default_single_value(value, base_type)
+                    new_default.append(value)
+                except ValueError: raise ValueError("Default value '" + str(default) + "' is not of the right type '" + user_type + "'")
+            default = new_default
+
+        # Single-value property
+        else: default = try_to_convert_to_type(default, user_type)
+
+    # Return the check default value
+    return default
+
+# -----------------------------------------------------------------
+
+def check_default_single_value(default, user_type):
+
+    """
+    Thi function ...
+    :param value:
+    :param user_type:
+    :return:
+    """
+
+    default_type, default_string = stringify.stringify(default)
+    if default_type != user_type and not are_related_types(default_type, user_type):
+
+        default = try_to_convert_to_type(default, user_type)
+
+    # Return the checked default value
+    return default
+
+# -----------------------------------------------------------------
+
+def try_to_convert_to_type(default, user_type):
+
+    """
+    This function ...
+    :param default:
+    :param user_type:
+    :return:
+    """
+
+    if user_type == "mixed": return default
+    elif parent_type(user_type) == "integer" and numbers.is_integer(default): default = int(default)
+    elif parent_type(user_type) == "real" and numbers.is_integer(default): default = float(default)
+    else:  raise ValueError("Default value '" + str(default) + "'is not of the right type '" + user_type + "'")
 
 # -----------------------------------------------------------------

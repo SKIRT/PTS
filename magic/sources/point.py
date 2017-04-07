@@ -36,6 +36,7 @@ from ..tools import plotting
 from ..basics.stretch import PixelStretch
 from ...core.basics.table import SmartTable
 from ...core.basics.unit import parse_unit as u
+from ..basics.vector import Pixel
 
 # -----------------------------------------------------------------
 
@@ -242,6 +243,9 @@ class PointSourceFinder(Configurable):
         # The mask of bad pixels
         self.bad_mask = None
 
+        # The mask of the principal galaxy
+        self.principal_mask = None
+
         # The stellar catalog
         self.catalog = None
 
@@ -326,6 +330,9 @@ class PointSourceFinder(Configurable):
         self.ignore_mask = kwargs.pop("ignore_mask", None)
         self.bad_mask = kwargs.pop("bad_mask", None)
 
+        # Principal galaxy mask
+        self.principal_mask = kwargs.pop("principal_mask", None)
+
         # Get the galaxy list
         self.galaxies = kwargs.pop("galaxies")
 
@@ -397,6 +404,9 @@ class PointSourceFinder(Configurable):
                 # Calculate the pixel position of the galaxy in the frame
                 pixel_position = position.to_pixel(self.frame.wcs)
 
+                # Get corresponding pixel
+                pixel = Pixel.for_coordinate(pixel_position)
+
                 # Create a source
                 source = self.catalog.create_source(index)
 
@@ -419,7 +429,8 @@ class PointSourceFinder(Configurable):
                 else:
 
                     # Check whether this star is on top of the galaxy, and label it so (by default, star.on_galaxy is False)
-                    if self.galaxies is not None: star_on_galaxy = self.galaxies.principal.contains(pixel_position)
+                    #if self.galaxies is not None: star_on_galaxy = self.galaxies.principal.contains(pixel_position)
+                    if self.principal_mask is not None: star_on_galaxy = self.principal_mask[pixel.y, pixel.x]
                     else: star_on_galaxy = False
                     on_galaxy_column[index] = star_on_galaxy
 
@@ -542,6 +553,7 @@ class PointSourceFinder(Configurable):
         # If requested, perform sigma-clipping to the list of FWHM's to filter out outliers
         if self.config.fitting.sigma_clip_fwhms:
 
+            print(self.fwhms_pix)
             mean, median, stddev = statistics.sigma_clipped_statistics(self.fwhms_pix, self.config.fitting.fwhm_sigma_level)
             lower = median - self.config.fitting.fwhm_sigma_level * stddev
             upper = median + self.config.fitting.fwhm_sigma_level * stddev

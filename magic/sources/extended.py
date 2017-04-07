@@ -306,28 +306,26 @@ class ExtendedSourceFinder(Configurable):
             position = self.catalog.get_position(index)
 
             # If the source falls outside of the frame, skip it
-            if not self.frame.contains(position): source = None
+            if not self.frame.contains(position): continue
 
-            else:
+            # Calculate the pixel position of the galaxy in the frame
+            pixel_position = position.to_pixel(self.frame.wcs)
 
-                # Calculate the pixel position of the galaxy in the frame
-                pixel_position = position.to_pixel(self.frame.wcs)
+            # Create a source
+            source = self.catalog.create_source(index)
 
-                # Create a source
-                source = self.catalog.create_source(index)
+            # Enable track record if requested
+            #if self.config.track_record: galaxy.enable_track_record()
 
-                # Enable track record if requested
-                #if self.config.track_record: galaxy.enable_track_record()
+            # Set attributes based on masks (special and ignore)
+            if self.special_mask is not None: source.special = self.special_mask.masks(pixel_position)
+            if self.ignore_mask is not None: source.ignore = self.ignore_mask.masks(pixel_position)
 
-                # Set attributes based on masks (special and ignore)
-                if self.special_mask is not None: source.special = self.special_mask.masks(pixel_position)
-                if self.ignore_mask is not None: source.ignore = self.ignore_mask.masks(pixel_position)
+            # If the input mask masks this galaxy's position, set to None
+            if self.bad_mask is not None and self.bad_mask.masks(pixel_position) and not source.principal: source = None
 
-                # If the input mask masks this galaxy's position, set to None
-                if self.bad_mask is not None and self.bad_mask.masks(pixel_position) and not source.principal: source = None
-
-                # Add the new source to the list
-                self.sources.append(source)
+            # Add the new source to the list
+            self.sources.append(source)
 
         # Debug messages
         log.debug(self.principal.name + " is the principal galaxy in the frame")

@@ -749,12 +749,26 @@ class Mask(np.ndarray):
     # -----------------------------------------------------------------
 
     @property
-    def xsize(self): return self.shape[1]
+    def xsize(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self.shape[1]
 
     # -----------------------------------------------------------------
 
     @property
-    def ysize(self): return self.shape[0]
+    def ysize(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self.shape[0]
 
     # -----------------------------------------------------------------
 

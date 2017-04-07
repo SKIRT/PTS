@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.maps.stars.young Contains the YoungStellarMapMaker class.
+## \package pts.modeling.maps.youngstars Contains the YoungStellarMapMaker class.
 
 # -----------------------------------------------------------------
 
@@ -86,6 +86,9 @@ class YoungStellarMapMaker(MapsComponent):
         # 2. Load the necessary frames
         self.load_frames()
 
+        # Load the necessary maps
+        self.load_maps()
+
         # 3. Calculate the significance masks
         self.calculate_significance()
 
@@ -139,7 +142,7 @@ class YoungStellarMapMaker(MapsComponent):
         self.load_fuv()
 
         # Load the disk image and normalize to unity
-        self.load_disk()
+        #self.load_disk()
 
     # -----------------------------------------------------------------
 
@@ -156,24 +159,46 @@ class YoungStellarMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def load_disk(self):
+    def load_maps(self):
 
         """
-        This function ...
+        THis function ...
         :return:
         """
 
         # Inform the user
-        log.info("Loading the disk image ...")
+        log.info("Loading maps ...")
 
-        # Get disk frame
-        self.disk = self.masked_disk_frame
+        # Load FUV attenuation map
+        self.load_fuv_attenuation_map()
 
-        # Normalize the disk image
-        self.disk.normalize()
-        self.disk.unit = None
+        # Load old stellar map
+        self.load_old_stellar_map()
 
     # -----------------------------------------------------------------
+
+    def load_fuv_attenuation_map(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the map of the FUV attenuation ...")
+
+    # -----------------------------------------------------------------
+
+    def load_old_stellar_map(self):
+
+        """
+        This function ...
+        """
+
+        # Inform the user
+        log.info("Loading the map of old stars ...")
+
+# -----------------------------------------------------------------
 
     def calculate_significance(self):
 
@@ -200,8 +225,42 @@ class YoungStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Making the map of young non-ionizing stars ...")
 
-        # Loop over the different colour options
-        #for factor in (self.config.factor_range.linear(self.config.factor_nvalues, as_list=True) + [self.config.best_factor]):
+        # Correct for internal attenuation
+        self.correct_for_attenuation()
+
+        # Subtract the contribution of old stars
+        self.subtract_old_contribution()
+
+    # -----------------------------------------------------------------
+
+    def correct_for_attenuation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Correcting for attenuation ...")
+
+        # attenuation = -2.5 log (total / transparent)
+
+        exponent = attenuation / 2.5
+        transparent = total * 10**exponent
+
+    # -----------------------------------------------------------------
+
+    def subtract_old_contribution(self):
+
+        """
+        Thisnfunction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Subtracting the old contribution ...")
+
+        # Loop over the different fraction
         for factor in self.config.factor_range.linear(self.config.factor_nvalues, as_list=True):
 
             # Calculate the non ionizing young stars map from the FUV data

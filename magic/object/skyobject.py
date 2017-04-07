@@ -39,4 +39,17 @@ class SkyObject(object):
         self.position = kwargs.pop("position")
         self.sed = kwargs.pop("sed")
 
+    # -----------------------------------------------------------------
+
+    def pixel_position(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        # Get the x and y coordinate of the object's position
+        return self.position.to_pixel(wcs)
+
 # -----------------------------------------------------------------

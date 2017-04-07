@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import imp
+import importlib
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
@@ -239,6 +240,9 @@ class PTSTestSuite(Configurable):
         # 3. Check the import statements
         self.check_imports()
 
+        # Check the commands
+        self.check_commands()
+
         # Check configurations
         self.check_configurations()
 
@@ -401,6 +405,58 @@ class PTSTestSuite(Configurable):
         self.checker.config.show = False
         self.checker.config.write = False
         self.checker.run()
+
+    # -----------------------------------------------------------------
+
+    def check_commands(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Check the command tables ...")
+
+        # Get the argument tables
+        tables = introspection.get_arguments_tables()
+
+        # Loop over the subprojects
+        for subproject in tables:
+
+            table = tables[subproject]
+
+            # Loop over the commands
+            for index in range(len(table["Command"])):
+
+                command_name = table["Command"][index]
+                description = table["Description"][index]
+                class_path_relative = table["Path"][index]
+                class_path = "pts." + subproject + "." + class_path_relative
+                module_path, class_name = class_path.rsplit('.', 1)
+
+                #configuration_method = table["Configuration method"][index]
+
+                # Determine the configuration module path
+                configuration_name = table["Configuration"][index]
+                if configuration_name == "--": configuration_name = command_name
+                configuration_module_path = "pts." + subproject + ".config." + configuration_name
+
+                # Find definition
+                #try:
+                #    configuration_module = importlib.import_module(configuration_module_path)
+                #    definition = getattr(configuration_module, "definition")
+                #except ImportError:
+                #    log.warning("No configuration definition found for the " + class_name + " class")
+                #    definition = ConfigurationDefinition()  # Create new configuration definition
+
+                # Find configuration module
+                configuration_module_file_path = fs.join(introspection.pts_subproject_dir(subproject), "config", configuration_name + ".py")
+                if not fs.is_file(configuration_module_file_path): log.warning("The configuration module cannot be found for the '" + class_name + "' class")
+
+                # Find the class
+                try: cls = introspection.get_class(module_path, class_name)
+                except ValueError: log.warning("The class '" + class_name + "' could not be found in module '" + module_path + "'")
 
     # -----------------------------------------------------------------
 

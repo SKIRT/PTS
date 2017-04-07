@@ -45,8 +45,14 @@ class MapsComponent(GalaxyModelingComponent):
 
         # -- Attributes --
 
-        # The path to the maps/dust directory
-        self.maps_dust_path = None
+        # The path to the maps/colours directory
+        self.maps_colours_path = None
+
+        # The path to the maps/tir directory
+        self.maps_tir_path = None
+
+        # The path to the maps/attenuation directory
+        self.maps_attenuation_path = None
 
         # The path to the maps/old directory
         self.maps_old_path = None
@@ -56,6 +62,9 @@ class MapsComponent(GalaxyModelingComponent):
 
         # The path to the maps/ionizing directory
         self.maps_ionizing_path = None
+
+        # The path to the maps/dust directory
+        self.maps_dust_path = None
 
     # -----------------------------------------------------------------
 
@@ -70,8 +79,14 @@ class MapsComponent(GalaxyModelingComponent):
         # Call the setup function of the base class
         super(MapsComponent, self).setup(**kwargs)
 
-        # Set the path to the maps/dust directory
-        self.maps_dust_path = fs.create_directory_in(self.maps_path, "dust")
+        # The path to the maps/colours directory
+        self.maps_colours_path = fs.create_directory_in(self.maps_path, "colours")
+
+        # The path to the maps/TIR directory
+        self.maps_tir_path = fs.create_directory_in(self.maps_path, "tir")
+
+        # The path to the maps/attenuation directory
+        self.maps_attenuation_path = fs.create_directory_in(self.maps_path, "attenuation")
 
         # Set the path to the maps/old directory
         self.maps_old_path = fs.create_directory_in(self.maps_path, "old")
@@ -81,6 +96,9 @@ class MapsComponent(GalaxyModelingComponent):
 
         # Set the path to the maps/ionizing directory
         self.maps_ionizing_path = fs.create_directory_in(self.maps_path, "ionizing")
+
+        # Set the path to the maps/dust directory
+        self.maps_dust_path = fs.create_directory_in(self.maps_path, "dust")
 
 # -----------------------------------------------------------------
 

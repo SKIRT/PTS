@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.maps.stars.old Contains the OldStellarMapMaker class.
+## \package pts.modeling.maps.oldstars.disk Contains the DiskOldStellarMapMaker class.
 
 # -----------------------------------------------------------------
 
@@ -20,7 +20,7 @@ from ....magic.core.image import Image
 
 # -----------------------------------------------------------------
 
-class OldStellarMapMaker(MapsComponent):
+class DiskOldStellarMapMaker(MapsComponent):
 
     """
     This class...
@@ -35,7 +35,7 @@ class OldStellarMapMaker(MapsComponent):
         """
 
         # Call the constructor of the base class
-        super(OldStellarMapMaker, self).__init__(config, interactive)
+        super(DiskOldStellarMapMaker, self).__init__(config, interactive)
 
         # -- Attributes --
 
@@ -97,7 +97,7 @@ class OldStellarMapMaker(MapsComponent):
         """
 
         # Call the setup function of the base class
-        super(OldStellarMapMaker, self).setup()
+        super(DiskOldStellarMapMaker, self).setup()
 
     # -----------------------------------------------------------------
 

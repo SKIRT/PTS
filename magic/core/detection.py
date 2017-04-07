@@ -559,7 +559,7 @@ class Detection(object):
         box = self.subtracted if self.has_background else self.cutout
 
         # Calculate the sigma-clipped statistics of the box
-        mean, median, stddev = statistics.sigma_clipped_statistics(box, sigma=3.0, mask=self.background_mask) # Sigma 3.0 for clipping is what photutils uses in detect_threshold
+        mean, median, stddev = statistics.sigma_clipped_statistics(box, sigma=3.0, mask=self.background_mask.data) # Sigma 3.0 for clipping is what photutils uses in detect_threshold
         #sigma_level = 1.5   # I once tried to investigate why some clear peaks were not detected, did not have time ..
         threshold = median + (sigma_level * stddev)
 
@@ -683,6 +683,22 @@ class Detection(object):
 
         # Return the zoomed-out source
         return new_source
+
+    # -----------------------------------------------------------------
+
+    def contains(self, position):
+
+        """
+        This function ...
+        :param position:
+        :return:
+        """
+
+        # If the position does not lie within the cutout box of the galaxy's source, return False
+        if not self.cutout.contains(position): return False
+
+        # If it does, check whether the pixel position is masked by the mask of the galaxy's source
+        return self.mask.masks(self.cutout.rel_position(position))
 
     # -----------------------------------------------------------------
 

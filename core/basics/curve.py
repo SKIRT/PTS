@@ -458,6 +458,20 @@ class FilterCurve(WavelengthCurve):
 
     # -----------------------------------------------------------------
 
+    def has_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        for index in range(len(self)):
+            if self["Instrument"] == fltr.instrument and self["Band"] == fltr.band: return True
+        return False
+
+    # -----------------------------------------------------------------
+
     def only_broad_band(self):
 
         """

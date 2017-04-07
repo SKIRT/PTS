@@ -59,15 +59,6 @@ class GalaxyModelingComponent(ModelingComponent):
         # Attributes
         self.galaxy_name = None
 
-        # Modeling directories
-        self.data_path = None
-        self.prep_path = None
-        self.truncation_path = None
-        self.phot_path = None
-        self.maps_path = None
-        self.components_path = None
-        self.deprojection_path = None
-
         # The path to the DustPedia observed SED
         self.observed_sed_dustpedia_path = None
 
@@ -84,12 +75,6 @@ class GalaxyModelingComponent(ModelingComponent):
         self.bulge_model_path = None
         self.disk_model_path = None
 
-        # The paths to the different galaxy projections
-        # NOW MOVED TO DECOMPOSITIONCOMPONENT
-        #self.earth_projection_path = None
-        #self.edgeon_projection_path = None
-        #self.faceon_projection_path = None
-
         # The path to the components/images directory
         self.components_images_path = None
 
@@ -100,9 +85,6 @@ class GalaxyModelingComponent(ModelingComponent):
 
         # The path to the truncation/masks directory
         self.truncation_masks_path = None
-
-        # The path to the truncation mask of the reference image (and rebinned images in the dataset)
-        #self.reference_mask_path = None
 
         # The path to the data/seds directory
         self.data_seds_path = None
@@ -139,21 +121,8 @@ class GalaxyModelingComponent(ModelingComponent):
 
         # -- Attributes --
 
-        # We can now safely create the environment:
-        # NO WE NEED TO DO IT IN THE BASE CLASS BECAUSE E.G. THE FITTINGCOMPONENT DIRECTLY INHERITS FROM THIS CLASS BUT ALSO NEEDS THE ENVIRONMENT
-        #self.environment = GalaxyModelingEnvironment(self.config.path)
-
         # Get the name of the galaxy (the name of the base directory)
         self.galaxy_name = fs.name(self.config.path)
-
-        # Get the full paths to the necessary subdirectories and CREATE THEM
-        self.data_path = fs.create_directory_in(self.config.path, "data")
-        self.prep_path = fs.create_directory_in(self.config.path, "prep")
-        self.truncation_path = fs.create_directory_in(self.config.path, "truncated")
-        self.phot_path = fs.create_directory_in(self.config.path, "phot")
-        self.maps_path = fs.create_directory_in(self.config.path, "maps")
-        self.components_path = fs.create_directory_in(self.config.path, "components")
-        self.deprojection_path = fs.create_directory_in(self.config.path, "deprojection")
 
         # Set the path to the DustPedia observed SED
         self.observed_sed_dustpedia_path = fs.join(self.data_path, "fluxes.dat")
@@ -170,12 +139,6 @@ class GalaxyModelingComponent(ModelingComponent):
         # Set the paths to the bulge and disk models
         self.bulge_model_path = fs.join(self.components_models_path, "bulge.mod")
         self.disk_model_path = fs.join(self.components_models_path, "disk.mod")
-
-        # The paths to the different galaxy projections
-        # NOW MOVED TO DECOMPOSITIONCOMPONENT
-        #self.earth_projection_path = fs.join(self.components_projections_path, "earth.proj")
-        #self.edgeon_projection_path = fs.join(self.components_projections_path, "edgeon.proj")
-        #self.faceon_projection_path = fs.join(self.components_projections_path, "faceon.proj")
 
         # Set the path to the components/images directory
         self.components_images_path = fs.create_directory_in(self.components_path, "images")
@@ -208,6 +171,90 @@ class GalaxyModelingComponent(ModelingComponent):
 
         # Set the path to the preparation statistics file
         self.preparation_statistics_path = fs.join(self.prep_path, "statistics.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def data_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.data_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def prep_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.prep_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def truncation_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.truncation_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def phot_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.phot_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.maps_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def components_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.components_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def deprojection_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.deprojection_path
 
     # -----------------------------------------------------------------
 

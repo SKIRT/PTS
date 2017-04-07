@@ -54,7 +54,7 @@ colour_combinations = {"FUV-H": ("GALEX FUV", "2MASS H"),
 
 # -----------------------------------------------------------------
 
-class CorteseDustMapMaker(MapsComponent):
+class AttenuationDustMapMaker(MapsComponent):
 
     """
     This class...
@@ -69,7 +69,7 @@ class CorteseDustMapMaker(MapsComponent):
         """
 
         # Call the constructor of the base class
-        super(CorteseDustMapMaker, self).__init__(config, interactive)
+        super(AttenuationDustMapMaker, self).__init__(config, interactive)
 
         # -- Attributes --
 

@@ -437,9 +437,12 @@ class SourceFinder(Configurable):
         # Settings for the star finder for different bands
         self.star_finder_settings = dict()
 
-        # Extended sources and point source
+        # Extended sources and point sources
         self.extended_sources = dict()
         self.point_sources = dict()
+
+        # Principal masks
+        self.principal_masks = dict()
 
         # Galaxy and star lists
         self.galaxies = GalaxyList()
@@ -862,7 +865,7 @@ class SourceFinder(Configurable):
             results[name].request()
 
             # Get result
-            table, regions, segments = results[name].output
+            table, regions, segments, principal_mask = results[name].output
 
             # Set galaxies
             self.extended_tables[name] = table
@@ -873,6 +876,9 @@ class SourceFinder(Configurable):
             # Set segmentation map
             # Add the segmentation map of the galaxies
             self.segments[name].add_frame(segments, "extended")
+
+            # Set mask of principal galaxy
+            self.principal_masks[name] = principal_mask
 
     # -----------------------------------------------------------------
 
@@ -1011,10 +1017,8 @@ class SourceFinder(Configurable):
                 # Get the frame
                 frame = self.frames[name]
 
-                print(frame.wavelength)
-
                 # Don't run the star finder if the wavelength of this image is greater than 25 micron
-                if frame.wavelength is not None or frame.wavelength > wavelengths.ranges.ir.mir.max:
+                if frame.wavelength is None or frame.wavelength > wavelengths.ranges.ir.mir.max:
 
                     # No star subtraction for this image
                     log.info("Finding point sources will not be performed for the '" + name + "' image")
@@ -1033,7 +1037,7 @@ class SourceFinder(Configurable):
                 if name in self.star_finder_settings: config.set_items(self.star_finder_settings[name])
 
                 # Call the target function
-                result = target(frame, self.galaxies, self.point_source_catalog, config, special_mask, ignore_mask, bad_mask)
+                result = target(frame, self.galaxies, self.point_source_catalog, config, special_mask, ignore_mask, bad_mask, self.principal_masks[name])
 
                 # Add the result
                 results[name] = result
@@ -1103,52 +1107,8 @@ class SourceFinder(Configurable):
                 if flux is not None: sed.add_point(self.frames[name].filter, flux)
 
             # Check whether it can be identified as a star
-
-            fuv = BroadBandFilter("FUV")
-            nuv = BroadBandFilter("NUV")
-
-            # Check the FUV-NUV colour
-            fuv_nuv_colour = sed.colour(fuv, nuv)
-
-            if abs(fuv_nuv_colour) < 0.75: continue # not a star
-
-            #| FUV - NUV | > 0.75
-            # if they are detected at the 1σ level in their particular wavelength
-            # band.
-
-            # IRAC colours (see below). At these wavelengths, however, the
-            # non-M 31 point sources are a mix of foreground stars and background
-            # galaxies. Furthermore, some bright sources may be associated
-            # with HII regions in M 31 and must not be masked. We designed
-            # a scheme based on the technique by Muñoz-Mateos et al.
-            # (2009b), which was successfully applied to the SINGS galaxies.
-            # Foreground stars have almost no PAH emission, while the diffuse
-            # ISM in galaxies shows a roughly constant F5.8/F8 ratio (Draine
-            # & Li 2007). Background galaxies are redshifted spirals or ellipticals
-            # and can consequently have a wide range in F5.8/F8. It is
-            # thus possible to construct a rough filter relying on the difference
-            # in MIR flux ratios. First, it was checked which point source extracted
-            # from the IRAC 3.6 µm had a non-detection at 8 µm. This
-            # criterion proved to be sufficient to select the foreground stars
-            # in the field. A second, colour-based, criterion disentangled the
-            # background galaxies from the HII regions:
-
-            irac_i1 = BroadBandFilter("IRAC I1")
-            irac_i3 = BroadBandFilter("IRAC I3")
-            irac_i4 = BroadBandFilter("IRAC I4")
-
-            # 0.29 < F5.8 / F8 < 0.85
-            # F3.6 / F5.8 < 1.58
-
-            i3_i4_colour = sed.colour(irac_i3, irac_i4)
-            i1_i3_colour = sed.colour(irac_i1, irac_i3)
-
-            if i3_i4_colour < 0.29: continue
-            if i3_i4_colour > 0.85: continue
-
-            if i1_i3_colour > 1.58: continue
-
-            ###
+            # If the SED cannot correspond to a star, skip this source
+            if not is_stellar_sed(sed): continue
 
             # Get other properties
             catalog = self.point_source_catalog.get_catalog(index)
@@ -1533,10 +1493,10 @@ def detect_extended_sources_wrapper(frame_path, catalog, config, special_mask_pa
     bad_mask = Mask.from_file(bad_mask_path) if bad_mask_path is not None else None
 
     # Implementation
-    table, regions, segments = detect_extended_sources(frame, catalog, config, special_mask, ignore_mask, bad_mask)
+    table, regions, segments, principal_mask = detect_extended_sources(frame, catalog, config, special_mask, ignore_mask, bad_mask)
 
     # Return
-    return table, regions, segments
+    return table, regions, segments, principal_mask
 
 # -----------------------------------------------------------------
 
@@ -1610,8 +1570,11 @@ def detect_extended_sources(frame, catalog, config, special_mask, ignore_mask, b
     # Return the output
     #return galaxies, region_list, segments
 
+    # Get mask of principal galaxy
+    principal_mask = finder.principal_mask
+
     # Return the source table, regions and segments
-    return table, regions, segments
+    return table, regions, segments, principal_mask
 
 # -----------------------------------------------------------------
 
@@ -1639,7 +1602,7 @@ def detect_point_sources_wrapper(frame_path, galaxies, catalog, config, special_
 
 # -----------------------------------------------------------------
 
-def detect_point_sources(frame, galaxies, catalog, config, special_mask, ignore_mask, bad_mask):
+def detect_point_sources(frame, galaxies, catalog, config, special_mask, ignore_mask, bad_mask, principal_mask):
 
     """
     This function ...
@@ -1650,6 +1613,7 @@ def detect_point_sources(frame, galaxies, catalog, config, special_mask, ignore_
     :param special_mask:
     :param ignore_mask:
     :param bad_mask:
+    :param principal_mask:
     :return:
     """
 
@@ -1660,7 +1624,8 @@ def detect_point_sources(frame, galaxies, catalog, config, special_mask, ignore_
     log.info("Starting detection of point sources ...")
 
     # Run the finder
-    finder.run(frame=frame, galaxies=galaxies, catalog=catalog, special_mask=special_mask, ignore_mask=ignore_mask, bad_mask=bad_mask)
+    finder.run(frame=frame, galaxies=galaxies, catalog=catalog, special_mask=special_mask, ignore_mask=ignore_mask,
+               bad_mask=bad_mask, principal_mask=principal_mask)
 
     if finder.regions is not None:
 
@@ -2110,5 +2075,68 @@ def find_star_in_list(stars, index):
         if star.index == index: return star
 
     return None
+
+# -----------------------------------------------------------------
+
+def is_stellar_sed(sed):
+
+    """
+    This function ...
+    :param sed:
+    :return:
+    """
+
+    fuv = BroadBandFilter("FUV")
+    nuv = BroadBandFilter("NUV")
+
+    # Check the FUV-NUV colour, if possible
+    if sed.has_filter(fuv) and sed.has_filter(nuv):
+
+        fuv_nuv_colour = sed.colour(fuv, nuv)
+        if abs(fuv_nuv_colour) < 0.75: return False
+
+    # | FUV - NUV | > 0.75
+    # if they are detected at the 1σ level in their particular wavelength
+    # band.
+
+    # IRAC colours (see below). At these wavelengths, however, the
+    # non-M 31 point sources are a mix of foreground stars and background
+    # galaxies. Furthermore, some bright sources may be associated
+    # with HII regions in M 31 and must not be masked. We designed
+    # a scheme based on the technique by Muñoz-Mateos et al.
+    # (2009b), which was successfully applied to the SINGS galaxies.
+    # Foreground stars have almost no PAH emission, while the diffuse
+    # ISM in galaxies shows a roughly constant F5.8/F8 ratio (Draine
+    # & Li 2007). Background galaxies are redshifted spirals or ellipticals
+    # and can consequently have a wide range in F5.8/F8. It is
+    # thus possible to construct a rough filter relying on the difference
+    # in MIR flux ratios. First, it was checked which point source extracted
+    # from the IRAC 3.6 µm had a non-detection at 8 µm. This
+    # criterion proved to be sufficient to select the foreground stars
+    # in the field. A second, colour-based, criterion disentangled the
+    # background galaxies from the HII regions:
+
+    irac_i1 = BroadBandFilter("IRAC I1")
+    irac_i3 = BroadBandFilter("IRAC I3")
+    irac_i4 = BroadBandFilter("IRAC I4")
+
+    # 0.29 < F5.8 / F8 < 0.85
+    # F3.6 / F5.8 < 1.58
+
+    # Check i3 i4 color, if possible
+    if sed.has_filter(irac_i3) and sed.has_filter(irac_i4):
+
+        i3_i4_colour = sed.colour(irac_i3, irac_i4)
+        if i3_i4_colour < 0.29: return False
+        if i3_i4_colour > 0.85: return False
+
+    # Check the i1 i3 color, if possible
+    if sed.has_filter(irac_i1) and sed.has_filter(irac_i3):
+
+        i1_i3_colour = sed.colour(irac_i1, irac_i3)
+        if i1_i3_colour > 1.58: return False
+
+    # All checks passed (or none were possible), return True
+    return True
 
 # -----------------------------------------------------------------
