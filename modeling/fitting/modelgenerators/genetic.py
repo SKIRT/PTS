@@ -248,9 +248,6 @@ class GeneticModelGenerator(ModelGenerator):
             chi_squared = chi_squared_table.chi_squared_for(simulation_name)
             chi_squared_values.append(chi_squared)
 
-        # Get the scores
-        scores = chi_squared_table["Chi squared"]
-
         # Check individual values with parameter table of the last generation
         check = []
         for label in self.fitting_run.free_parameter_labels:
@@ -258,7 +255,7 @@ class GeneticModelGenerator(ModelGenerator):
             check.append(values)
 
         # Set the scores
-        self.scores = scores
+        self.scores = chi_squared_values
         self.scores_check = check
 
     # -----------------------------------------------------------------
