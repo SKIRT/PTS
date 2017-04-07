@@ -14,7 +14,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import imp
-import importlib
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
@@ -22,13 +21,15 @@ from ..tools.logging import log
 from ..basics.configurable import Configurable
 from ..tools import introspection
 from ..tools import filesystem as fs
-from ..basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, DictConfigurationSetter, PassiveConfigurationSetter
+from ..basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
 from .imports import ImportsChecker
 from .test import PTSTest
 from ..tools import time
 from ..tools import stringify
 from ..remote.utils import DetachedCalculation
-from ..basics.table import SmartTable
+from .table import load_tests_table
+from ..basics.configuration import create_configuration
+from ..tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -134,63 +135,6 @@ tables = introspection.get_arguments_tables()
 
 # -----------------------------------------------------------------
 
-class PTSTestsTable(SmartTable):
-
-    """
-    This class ...
-    """
-
-    def __init__(self, *args, **kwargs):
-
-        """
-        This function ...
-        :param args:
-        :param kwargs:
-        """
-
-        # Call the constructor of the base class
-        super(PTSTestsTable, self).__init__(*args, **kwargs)
-
-        # Add column info
-        self.add_column_info("Name", str, None, "name of the test")
-        self.add_column_info("Start time", str, None, "timestamp for start of command")
-        self.add_column_info("End time", str, None, "timestamp for end of command")
-
-    # -----------------------------------------------------------------
-
-    def add_test(self, test):
-
-        """
-        This function ...
-        :param test:
-        :return:
-        """
-
-        values = []
-
-        self.add_row(values)
-
-# -----------------------------------------------------------------
-
-# Determine path, initialize if not present
-tests_table_path = fs.join(introspection.pts_tests_dir, "tests.dat")
-if not fs.is_file(tests_table_path):
-    table = PTSTestsTable()
-    table.saveto(tests_table_path)
-
-# -----------------------------------------------------------------
-
-def load_tests_table():
-
-    """
-    This function ...
-    :return:
-    """
-
-    return PTSTestsTable.from_file(tests_table_path)
-
-# -----------------------------------------------------------------
-
 class PTSTestSuite(Configurable):
 
     """
@@ -235,22 +179,22 @@ class PTSTestSuite(Configurable):
         self.setup(**kwargs)
 
         # 2. Prompt for which test has to be executed
-        if not self.test_names_for_all_subprojects: self.prompt()
+        if not self.test_names_for_all_subprojects and not self.config.only_checks: self.prompt()
 
         # 3. Check the import statements
-        self.check_imports()
+        if self.config.check_imports: self.check_imports()
 
         # Check the commands
-        self.check_commands()
+        if self.config.check_commands: self.check_commands()
 
         # Check configurations
-        self.check_configurations()
+        if self.config.check_commands: self.check_configurations()
 
         # 4. Load tests
-        self.load_tests()
+        if not self.config.only_checks: self.load_tests()
 
         # 5. Run tests
-        self.run_tests()
+        if not self.config.only_checks: self.run_tests()
 
         # 6. Show
         if self.config.show: self.show()
@@ -525,8 +469,14 @@ class PTSTestSuite(Configurable):
                 config_module = imp.load_source(name + "_config", config_path)
                 definition = config_module.definition
 
+                # Show test settings
+                if self.config.settings is not None:
+                    # Debugging
+                    log.debug("Setting options for the '" + name + "' test from the following dictionary:")
+                    if log.is_debug(): fmt.print_dictionary(self.config.settings)
+
                 # Create the test configuration
-                config = create_test_configuration(definition, name, self.config.settings, self.config.default, temp_path=temp_path)
+                config = create_configuration(name, definition, self.config.settings, self.config.default)
 
                 # Load the test module
                 test_module = imp.load_source(name, filepath)
@@ -629,56 +579,5 @@ class PTSTestSuite(Configurable):
 
         # Inform the user
         log.info("Writing report ...")
-
-# -----------------------------------------------------------------
-
-def create_test_configuration(definition, test_name, settings=None, default=False, temp_path=None):
-
-    """
-    This function ...
-    :param definition:
-    :param test_name:
-    :param settings:
-    :param default:
-    :param temp_path:
-    :return:
-    """
-
-    ## A test settings dict is given
-    if settings is not None:
-
-        # Debugging
-        log.debug("Setting options for the '" + test_name + "' test from the following dictionary:")
-        if log.is_debug():
-
-            print("")
-            for label in settings: print(" - " + label + ": " + stringify.stringify(settings[label])[1])
-            print("")
-
-        # Create the configuration
-        setter = DictConfigurationSetter(settings, test_name, add_logging=False, add_cwd=False)
-        config = setter.run(definition)
-
-    # Settings are not given, default flag is added
-    elif default:
-
-        # Create the configuration
-        setter = PassiveConfigurationSetter(test_name, add_cwd=False, add_logging=False)
-        config = setter.run(definition)
-
-    # No test configuration is given and default flag is not added
-    else:
-
-        # Create the configuration
-        setter = InteractiveConfigurationSetter(test_name, add_cwd=False, add_logging=False)
-        config = setter.run(definition, prompt_optional=True)
-
-    #print(config.path)
-    # Set the working directory to the temporary test path
-    #config.path = temp_path
-    #print(config.path)
-
-    # Return the configuration
-    return config
 
 # -----------------------------------------------------------------

@@ -18,6 +18,12 @@ definition = ConfigurationDefinition()
 definition.add_positional_optional("subprojects", "string_list", "update on a remote system", subprojects_with_tests())
 definition.add_positional_optional("tests", "string_list", "test(s) to perform (when one subproject is specified)")
 
+# Flags
+definition.add_flag("check_imports", "check import statements", True)
+definition.add_flag("check_commands", "check commands", True)
+definition.add_flag("check_configurations", "check configurations", True)
+definition.add_flag("only_checks", "only performs checks, no actual test cases", False)
+
 # Add flags
 definition.add_flag("keep", "keep the output")
 definition.add_flag("show", "show results")

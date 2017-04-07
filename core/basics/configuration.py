@@ -52,6 +52,43 @@ related_types.append(["broad_band_filter_list", "lazy_filter_list", "narrow_band
 
 # -----------------------------------------------------------------
 
+def create_configuration(name, definition, settings=None, default=False):
+
+    """
+    This function ...
+    :param name:
+    :param definition:
+    :param settings:
+    :param default:
+    :return: 
+    """
+
+    ## A test settings dict is given
+    if settings is not None:
+
+        # Create the configuration
+        setter = DictConfigurationSetter(settings, name, add_logging=False, add_cwd=False)
+        config = setter.run(definition)
+
+    # Settings are not given, default flag is added
+    elif default:
+
+        # Create the configuration
+        setter = PassiveConfigurationSetter(name, add_cwd=False, add_logging=False)
+        config = setter.run(definition)
+
+    # No test configuration is given and default flag is not added
+    else:
+
+        # Create the configuration
+        setter = InteractiveConfigurationSetter(name, add_cwd=False, add_logging=False)
+        config = setter.run(definition, prompt_optional=True)
+
+    # Return the configuration
+    return config
+
+# -----------------------------------------------------------------
+
 def create_configuration_passive(command_name, class_name, configuration_module_path, config_dict, description=None):
 
     """
@@ -71,12 +108,6 @@ def create_configuration_passive(command_name, class_name, configuration_module_
     except ImportError:
         log.warning("No configuration definition found for the " + class_name + " class")
         definition = ConfigurationDefinition()  # Create new configuration definition
-
-    ## SET THE INPUT FILENAMES
-    #if input_dict is not None:
-        #config_dict["input"] = dict()
-        #for name in input_dict:
-        #    config_dict["input"][name] = name + "." + input_dict[name].default_extension  # generate a default filename
 
     ## CREATE THE CONFIGURATION
 

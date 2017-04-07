@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from .stringify import stringify_list_fancy
+from .stringify import stringify_list_fancy, stringify
 from . import filesystem as fs
 from .logging import log
 
@@ -250,5 +250,19 @@ def print_directories_in_list(lst, name):
         print("")
         print(stringify_list_fancy(lst, lines_prefix="  ")[1])
         print("")
+
+# -----------------------------------------------------------------
+
+def print_dictionary(dictionary):
+
+    """
+    This function ...
+    :param dictionary: 
+    :return: 
+    """
+
+    print("")
+    for label in dictionary: print(" - " + label + ": " + stringify(dictionary[label])[1])
+    print("")
 
 # -----------------------------------------------------------------
