@@ -11,11 +11,14 @@ inspect_preparation | -- | preparation.inspector.PreparationInspector | argument
 decompose | -- | decomposition.decomposition.GalaxyDecomposer | arguments | Run the bulge-disk decomposition for the galaxy as part of the radiative transfer modeling
 decomposition_residuals | -- | decomposition.residuals.DecompositionResidualsCalculator | arguments | Calculate the residuals between the 3.6 micron image and the simulated bulge and disk images
 truncate | -- | truncation.truncation.Truncator | interactive | Determine the truncation region
+make_colour_maps | -- | maps.colour.colour.ColourMapMaker | arguments | Make colour maps
+make_tir_maps | -- | maps.tir.tir.TIRMapMaker | arguments | Make TIR map
+make_attenuation_maps | -- | maps.attenuation.attenuation.AttenuationMapMaker | arguments | Make attenuation maps
+make_old_stars_map | -- | maps.oldstars.old.OldStellarMapMaker | arguments | Make map of old stars
+make_young_stars_map | -- | maps.youngstars.young.YoungStellarMapMaker | arguments | Make map of young stars
+make_ionizing_stars_map | -- | maps.ionizingstars.ionizing.IonizingStellarMapMaker | arguments | Make map of ionizing stars
+make_dust_map | -- | maps.dust.dust.DustMapMaker | arguments | Make dust map
 photometry | -- | photometry.photometry.PhotoMeter | interactive | Calculate the photometry of the different input images
-make_old_map | -- | maps.stars.old.OldStellarMapMaker | arguments | Make the map of the old stellar disk
-make_young_map | -- | maps.stars.young.YoungStellarMapMaker | interactive | Make the map of the young stellar disk
-make_ionizing_map | -- | maps.stars.ionizing.IonizingStellarMapMaker | interactive | Make the map of the ionizing stellar population
-make_dust_map | -- | maps.dust.dust.DustMapMaker | arguments | Make the map of the dust distribution
 deproject | -- | deprojection.deprojector.Deprojector | arguments | Deproject the maps
 build_sed | -- | build.sed.SEDModelBuilder | arguments | Build the model for SED modeling
 build_images | -- | build.images.ImagesModelBuilder | arguments | Build the model for images modeling
@@ -55,13 +58,6 @@ fit_blackbody_grid | -- | maps.dust.fitter.GridBlackBodyFitter | arguments | Fit
 fit_blackbody_genetic | -- | maps.dust.fitter.GeneticBlackBodyFitter | arguments | Fit black body curve to dust SEDs for different galaxies or different pixels of a galaxy
 make_movie | -- | show.movie.MovieMaker | arguments | Make a movie from the galaxy model
 make_rgb | -- | show.rgb.RGBImageMaker | arguments | Make RGB images from the galaxy model
-make_colour_maps | -- | maps.colour.colour.ColourMapMaker | arguments | Make colour maps
-make_tir_maps | -- | maps.tir.tir.TIRMapMaker | arguments | Make TIR map
-make_attenuation_maps | -- | maps.attenuation.attenuation.AttenuationMapMaker | arguments | Make attenuation maps
-make_old_stars_map | -- | maps.oldstars.old.OldStellarMapMaker | arguments | Make map of old stars
-make_young_stars_map | -- | maps.youngstars.young.YoungStellarMapMaker | arguments | Make map of young stars
-make_ionizing_stars_map | -- | maps.ionizingstars.ionizing.IonizingStellarMapMaker | arguments | Make map of ionizing stars
-make_dust_map | -- | maps.dust.dust.DustMapMaker | arguments | Make dust map
 make_dust_buat | -- | maps.dust.buat.BuatDustMapMaker | arguments | Make dust map based on Buat prescriptions
 make_dust_attenuation | -- | maps.dust.cortese.CorteseDustMapMaker | arguments | Make dust map based on Cortese calibrations
 make_dust_emission | -- | maps.dust.emission.EmissionDustMapMaker | arguments | Make dust map based on emission in a certain band

@@ -861,6 +861,62 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def converted_to(self, to_unit, wavelength=None, frequency=None, distance=None, solid_angle=None):
+
+        """
+        This function ...
+        :param to_unit: 
+        :param wavelength: 
+        :param frequency: 
+        :param distance: 
+        :param solid_angle: 
+        :return: 
+        """
+
+        new = self.copy()
+        new.convert_to(to_unit, wavelength=wavelength, frequency=frequency, distance=distance, solid_angle=solid_angle)
+        return new
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_angular_area_unit(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.unit.corresponding_angular_area_unit
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_angular_area_unit(self, distance=None, solid_angle=None):
+
+        """
+        This function ...
+        :param distance: 
+        :param solid_angle: 
+        :return: 
+        """
+
+        self.convert_to(self.corresponding_angular_area_unit, distance=distance, solid_angle=solid_angle)
+
+    # -----------------------------------------------------------------
+
+    def converted_to_corresponding_angular_area_unit(self, distance=None, solid_angle=None):
+
+        """
+        This function ...
+        :param distance: 
+        :param solid_angle: 
+        :return: 
+        """
+
+        return self.converted_to(self.corresponding_angular_area_unit, distance=distance, solid_angle=solid_angle)
+
+    # -----------------------------------------------------------------
+
     def sum(self):
 
         """
@@ -991,7 +1047,7 @@ class Frame(NDDataArray):
         if not self.has_wcs: raise RuntimeError("Cannot rebin a frame without coordinate system")
 
         # Check the unit
-        if self.unit is not None and not (self.unit.is_intensity or self.unit.is_surface_brightness): raise ValueError("Cannot rebin a frame that is not in intensity or surface brightness units. First convert the units.")
+        if self.unit is not None and not self.unit.is_per_angular_area: raise ValueError("Cannot rebin a frame that is expressed per angular area. First convert the units.")
 
         # Calculate rebinned data and footprint of the original image
         if exact: new_data, footprint = reproject_exact((self._data, self.wcs), reference_wcs, shape_out=reference_wcs.shape, parallel=parallel)
@@ -1729,5 +1785,18 @@ def sum_frames_quadratically(*args):
     #arrays = [np.array(arg)**2 for arg in args]
     arrays = [arg.data**2 for arg in args]
     return Frame(np.sqrt(np.sum(arrays, axis=0)))
+
+# -----------------------------------------------------------------
+
+def linear_combination(frames, coefficients):
+
+    """
+    This function ...
+    :param frames: 
+    :param coefficients: 
+    :return: 
+    """
+
+    return sum_frames([coefficients * frame for frame in frames])
 
 # -----------------------------------------------------------------

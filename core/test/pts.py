@@ -28,7 +28,7 @@ from ..tools import time
 from ..tools import stringify
 from ..remote.utils import DetachedCalculation
 from .table import load_tests_table
-from ..basics.configuration import create_configuration
+from ..basics.configuration import create_configuration_flexible
 from ..tools import formatting as fmt
 
 # -----------------------------------------------------------------
@@ -476,7 +476,7 @@ class PTSTestSuite(Configurable):
                     if log.is_debug(): fmt.print_dictionary(self.config.settings)
 
                 # Create the test configuration
-                config = create_configuration(name, definition, self.config.settings, self.config.default)
+                config = create_configuration_flexible(name, definition, self.config.settings, self.config.default)
 
                 # Load the test module
                 test_module = imp.load_source(name, filepath)

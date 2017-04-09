@@ -16,24 +16,19 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import astronomical modules
-from astropy import constants
+from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
-from ....core.tools import introspection, tables
 from ....core.tools import filesystem as fs
 from ....core.tools.logging import log
 from ..component import MapsComponent
-from ....magic.core.frame import Frame
 from ....core.basics.unit import parse_unit as u
-
-
-# The path to the table containing the Galametz calibration parameters
-galametz_table_path = fs.join(introspection.pts_dat_dir("modeling"), "galametz.dat")
+from ....magic.misc.galametz import GalametzTIRCalibration
+from ....magic.core.frame import Frame
 
 # -----------------------------------------------------------------
 
-speed_of_light = constants.c
-solar_luminosity = 3.846e26 * u("W")
+possible_filters = ["IRAC I4", "MIPS 24mu", "Pacs 70", "Pacs 100", "Pacs 160", "SPIRE 250"]
 
 # -----------------------------------------------------------------
 
@@ -51,41 +46,21 @@ class SingleBandTIRMapMaker(MapsComponent):
         """
 
         # Call the constructor of the base class
-        super(TIRtoFUVMapMaker, self).__init__()
+        super(SingleBandTIRMapMaker, self).__init__()
 
         # -- Attributes --
 
-        # Maps/dust/tirfuv path
-        self.maps_tirfuv_path = None
-
-        # Frames and error maps
+        # The frames
         self.frames = dict()
+
+        # The error maps
         self.errors = dict()
 
-        # FUV and TIR map in SI units (W/m2)
-        self.fuv_si = None
-        self.tir_si = None
+        # The maps
+        self.maps = dict()
 
-        # The TIR to FUV ratio map
-        self.tir_to_fuv = None
-        self.log_tir_to_fuv = None
-
-        # The table with the calibration factors from galametz (TIR ..)
-        self.galametz = None
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def requirements(cls, config=None):
-
-        """
-        This function ...
-        :param config:
-        :return:
-        """
-
-        config = cls.get_config(config)
-        return []
+        # The Galametz TIR calibration object
+        self.galametz = GalametzTIRCalibration()
 
     # -----------------------------------------------------------------
 
@@ -99,17 +74,11 @@ class SingleBandTIRMapMaker(MapsComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Load the image frames and errors
-        self.load_frames()
+        # 2. Load the data
+        self.load_data()
 
-        # 3. Make the FUV map in W/m2 unit
-        self.make_fuv()
-
-        # 4. Make the TIR map in W/m2 unit
-        self.make_tir()
-
-        # 5. Make the TIR to FUV ratio map
-        self.make_tir_to_fuv()
+        # 4. Make the maps
+        self.make_maps()
 
         # 6. Writing
         self.write()
@@ -124,211 +93,93 @@ class SingleBandTIRMapMaker(MapsComponent):
         """
 
         # Call the setup function of the base class
-        super(TIRtoFUVMapMaker, self).setup()
-
-        # Load the Galametz et al. table
-        self.galametz = tables.from_file(galametz_table_path, format="ascii.commented_header")
-
-        # Create a maps/dust/cortese directory
-        self.maps_tirfuv_path = fs.create_directory_in(self.maps_dust_path, "tir fuv")
+        super(SingleBandTIRMapMaker, self).setup()
 
     # -----------------------------------------------------------------
 
-    def load_frames(self):
+    @lazyproperty
+    def available_filters(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        filters = []
+
+        # Loop over the colours
+        for fltr in self.config.filters:
+
+            # If no image is avilalbe for this filters, skip
+            if not self.dataset.has_frame_for_filter(fltr): continue
+
+            # otherwise, add to the list of filters
+            filters.append(fltr)
+
+        # Return the available filters
+        return filters
+
+    # -----------------------------------------------------------------
+
+    def load_data(self):
 
         """
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Loading the data ...")
+
+        # Loop over the filters
+        for fltr in self.available_filters:
+
+            # Debugging
+            log.debug("Loading the '" + str(fltr) + "' frame ...")
+
+            # Load the frame
+            frame = self.dataset.get_frame_for_filter(fltr)
+            self.frames[fltr] = frame
+
+            # Load the error map
+            errors = self.dataset.load_errormap_for_filter(fltr)
+            self.errors[fltr] = errors
+
+    # -----------------------------------------------------------------
+
+    def make_maps(self):
+
+        """
+        THis function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Making the TIR maps ...")
 
         # Get the galaxy distance
         distance = self.galaxy_properties.distance
 
-        # Load all the frames and error maps
-        for name in self.requirements(self.config):
+        # Loop over the frames
+        for fltr in self.frames:
 
-            frame = self.dataset.get_frame(name)
-            errors = self.dataset.get_errormap(name)
+            # Debugging
+            log.debug("Making TIR map from the '" + str(fltr) + "' frame ...")
 
-            ## CONVERT TO LSUN
+            # Get the parameters
+            a, b = self.galametz.get_parameters_single(fltr)
 
-            # Get pixelscale and wavelength
-            pixelscale = frame.average_pixelscale
-            wavelength = frame.filter.pivot
+            # Convert to neutral luminosity
+            frame = self.frames[fltr].convert_to("W", density=True, distance=distance)
 
-            ##
+            # Calculate the TIR
+            logtir = a * np.log(frame.data) + b
+            tir = Frame(10**logtir)
+            tir.unit = u("W", density=True)
+            tir.wcs = frame.wcs
 
-            # Conversion from MJy / sr to Jy / sr
-            conversion_factor = 1e6
-
-            # Conversion from Jy / sr to Jy / pix(2)
-            conversion_factor *= (pixelscale ** 2).to("sr/pix2").value
-
-            # Conversion from Jy / pix to W / (m2 * Hz) (per pixel)
-            conversion_factor *= 1e-26
-
-            # Conversion from W / (m2 * Hz) (per pixel) to W / (m2 * m) (per pixel)
-            conversion_factor *= (speed_of_light / wavelength**2).to("Hz/m").value
-
-            # Conversion from W / (m2 * m) (per pixel) [SPECTRAL FLUX] to W / m [SPECTRAL LUMINOSITY]
-            conversion_factor *= (4. * np.pi * distance**2).to("m2").value
-
-            # Conversion from W / m [SPECTRAL LUMINOSITY] to W [LUMINOSITY]
-            conversion_factor *= wavelength.to("m").value
-
-            # Conversion from W to Lsun
-            conversion_factor *= 1. / solar_luminosity.to("W").value
-
-            ## CONVERT
-
-            frame *= conversion_factor
-            frame.unit = "Lsun"
-
-            errors *= conversion_factor
-            errors.unit = "Lsun"
-
-            # Add the frame and error map to the appropriate dictionary
-            self.frames[name] = frame
-            self.errors[name] = errors
-
-    # -----------------------------------------------------------------
-
-    def make_fuv(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the FUV map in W/m2 units ...")
-
-        ## Convert the FUV map from Lsun to W/m2
-
-        assert self.frames["GALEX FUV"].unit == "Lsun"
-
-        ## Convert the TIR map from Lsun to W / m2
-
-        conversion_factor = 1.0
-
-        # Conversion from Lsun to W
-
-        conversion_factor *= solar_luminosity.to("W").value
-
-        # Conversion from W [LUMINOSITY] to W / m2 [FLUX]
-        distance = self.galaxy_properties.distance
-        conversion_factor /= (4. * np.pi * distance ** 2).to("m2").value
-
-        # FUV in W/M2
-        self.fuv_si = self.frames["GALEX FUV"] * conversion_factor
-        self.fuv_si.unit = "W/m2"
-
-    # -----------------------------------------------------------------
-
-    def make_tir(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the TIR map in W/m2 units ...")
-
-        ## GET THE GALAMETZ PARAMETERS
-        a, b, c = self.get_galametz_parameters("MIPS 24mu", "Pacs blue", "Pacs red")
-
-        assert a == 2.133
-        assert b == 0.681
-        assert c == 1.125
-
-        # MIPS, PACS BLUE AND PACS RED CONVERTED TO LSUN (ABOVE)
-        # Galametz (2013) formula for Lsun units
-        tir_map = a * self.frames["MIPS 24mu"] + b * self.frames["Pacs blue"] + c * self.frames["Pacs red"]
-
-        ## Convert the TIR map from Lsun to W / m2
-
-        conversion_factor = 1.0
-
-        # Conversion from Lsun to W
-
-        conversion_factor *= solar_luminosity.to("W").value
-
-        # Conversion from W [LUMINOSITY] to W / m2 [FLUX]
-        distance = self.galaxy_properties.distance
-        conversion_factor /= (4. * np.pi * distance**2).to("m2").value
-
-        ## CONVERT AND SET NEW UNIT
-
-        self.tir_si = Frame(tir_map * conversion_factor)
-        self.tir_si.unit = "W/m2"
-
-    # -----------------------------------------------------------------
-
-    def get_galametz_parameters(self, *args):
-
-        """
-        This function ...
-        :param args:
-        :return:
-        """
-
-        galametz_column_names = {"MIPS 24mu": "c24",
-                                 "Pacs blue": "c70",
-                                 "Pacs green": "c100",
-                                 "Pacs red": "c160",
-                                 "SPIRE PSW": "c250"}
-
-        # Needed column names
-        needed_column_names = [galametz_column_names[filter_name] for filter_name in args]
-
-        # List of not needed column names
-        colnames = self.galametz.colnames
-        not_needed_column_names = [name for name in colnames if name not in needed_column_names]
-
-        not_needed_column_names.remove("R2")
-        not_needed_column_names.remove("CV(RMSE)")
-
-        # The parameters
-        parameters = None
-
-        # Loop over the entries in the galametz table
-        for i in range(len(self.galametz)):
-
-            if is_appropriate_galametz_entry(self.galametz, i, needed_column_names, not_needed_column_names):
-
-                parameters = []
-                for name in needed_column_names: parameters.append(self.galametz[name][i])
-                break
-
-            else: continue
-
-        # Return the parameters
-        return parameters
-
-    # -----------------------------------------------------------------
-
-    def make_tir_to_fuv(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the TIR to FUV map ...")
-
-        # CALCULATE FUV AND TIR MAP IN W/M2 UNIT
-
-        ## FUV IN W/M2
-
-        ## TIR IN W/M2
-
-        # CALCULATE TIR TO FUV RATIO
-
-        # The ratio of TIR and FUV
-        self.tir_to_fuv = self.tir_si / self.fuv_si
-        self.log_tir_to_fuv = Frame(np.log10(self.tir_to_fuv))
+            # Set the TIR map
+            self.maps[fltr] = tir
 
     # -----------------------------------------------------------------
 
@@ -342,112 +193,28 @@ class SingleBandTIRMapMaker(MapsComponent):
         # Inform the user
         log.info("Writing ...")
 
-        # Write the TIR map
-        self.write_tir()
-
-        # Write the FUV map in SI units
-        self.write_fuv()
-
-        # Write the TIR to FUV ratio map
-        self.write_tir_to_fuv()
-
-        # Write the logarithm of TIR to FUV
-        self.write_log_tir_to_fuv()
+        # Write the maps
+        self.write_maps()
 
     # -----------------------------------------------------------------
 
-    def write_tir(self):
+    def write_maps(self):
 
         """
         This function ...
-        :return:
+        :return: 
         """
 
         # Inform the user
-        log.info("Writing the TIR map ...")
+        log.info("Writing the maps ...")
 
-        # Determine path
-        path = fs.join(self.maps_tirfuv_path, "TIR.fits")
+        # Loop over the maps
+        for fltr in self.maps:
 
-        # Write
-        self.tir_si.saveto(path)
+            # Determine the path
+            path = fs.join(self.maps_tir_path, str(fltr) + ".fits")
 
-    # -----------------------------------------------------------------
-
-    def write_fuv(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the FUV map ...")
-
-        # Determine path
-        path = fs.join(self.maps_tirfuv_path, "FUV.fits")
-
-        # Write
-        self.fuv_si.saveto(path)
-
-    # -----------------------------------------------------------------
-
-    def write_tir_to_fuv(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the TIR to FUV map ...")
-
-        # Determine path
-        path = fs.join(self.maps_tirfuv_path, "TIR-FUV.fits")
-
-        # Write
-        self.tir_to_fuv.saveto(path)
-
-    # -----------------------------------------------------------------
-
-    def write_log_tir_to_fuv(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the logarithm of the TIR to FUV map ...")
-
-        # Determine the path
-        path = fs.join(self.maps_tirfuv_path, "logTIR-FUV.fits")
-
-        # Write
-        self.log_tir_to_fuv.saveto(path)
-
-# -----------------------------------------------------------------
-
-def is_appropriate_galametz_entry(table, i, needed_cols, not_needed_cols):
-
-    """
-    This function ...
-    :return:
-    """
-
-    # Check if masked columns
-    for name in not_needed_cols:
-
-        # Verify that this entry is masked
-        if not table[name].mask[i]: return False
-
-    # Check needed cols
-    for name in needed_cols:
-
-        # Verify that this entry is not masked
-        if table[name].mask[i]: return False
-
-    # No mismatches found, thus appropriate entry
-    return True
+            # Save
+            self.maps[fltr].saveto(path)
 
 # -----------------------------------------------------------------

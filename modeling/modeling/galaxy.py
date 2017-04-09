@@ -623,19 +623,19 @@ class GalaxyModeler(ModelerBase):
         if "make_colour_maps" not in self.history: self.make_colour_maps()
 
         # Create the TIR map
-        if "make_tir_map" not in self.history: self.make_tir_map()
+        if "make_tir_maps" not in self.history: self.make_tir_map()
 
         # Create the attenuation map(s)
         if "make_attenuation_maps" not in self.history: self.make_attenuation_maps()
 
         # Create the map of the old stellar disk
-        if "make_old_map" not in self.history: self.make_old_stellar_map()
+        if "make_old_stars_map" not in self.history: self.make_old_stellar_map()
 
         # Create the map of the young stellar population
-        if "make_young_map" not in self.history: self.make_young_stellar_map()
+        if "make_young_stars_map" not in self.history: self.make_young_stellar_map()
 
         # Create the map of the ionizing stellar population
-        if "make_ionizing_map" not in self.history: self.make_ionizing_stellar_map()
+        if "make_ionizing_stars_map" not in self.history: self.make_ionizing_stellar_map()
 
         # Create the dust map
         if "make_dust_map" not in self.history: self.make_dust_map()

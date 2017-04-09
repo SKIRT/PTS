@@ -462,6 +462,22 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    def has_frame_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr: 
+        :return: 
+        """
+
+        # Get the name
+        name = self.get_name_for_filter(fltr)
+
+        if name is None: return False
+        else: return True
+
+    # -----------------------------------------------------------------
+
     def get_frame_for_filter(self, fltr, masked=True):
 
         """
@@ -479,6 +495,45 @@ class DataSet(object):
 
         # Return the frame
         return self.get_frame(name, masked=masked)
+
+    # -----------------------------------------------------------------
+
+    def has_errormap_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr: 
+        :return: 
+        """
+
+        # Get the name
+        name = self.get_name_for_filter(fltr)
+
+        # If name, return False
+        if name is None: return False
+
+        # Check whether error map is present
+        return name in self.error_paths
+
+    # -----------------------------------------------------------------
+
+    def get_errormap_for_filter(self, fltr, masked=True):
+
+        """
+        THis function ...
+        :param fltr: 
+        :param masked: 
+        :return: 
+        """
+
+        # Get the name
+        name = self.get_name_for_filter(fltr)
+
+        # No frame is found for this filter
+        if name is None: return None
+
+        # Return the error map
+        return self.get_errormap(name, masked=masked)
 
     # -----------------------------------------------------------------
 

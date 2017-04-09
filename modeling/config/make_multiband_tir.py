@@ -7,16 +7,14 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
+from pts.modeling.maps.tir.multi import possible_filters
 
 # -----------------------------------------------------------------
 
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
-# The significance level
-definition.add_optional("i1_significance", "real", "the significance level of the IRAC I1 image below which to cut-off the stellar map", 3.0)
-
-# Remove holes from the cutoff mask
-definition.add_flag("remove_holes", "remove holes from the total cutoff mask")
+# The filters
+definition.add_positional_optional("filters", "filter_list", "filters to use for making the TIR maps", default=possible_filters, choices=possible_filters, convert_default=True)
 
 # -----------------------------------------------------------------

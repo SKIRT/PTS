@@ -19,6 +19,46 @@ from functools import partial
 
 # -----------------------------------------------------------------
 
+def permutate(lst, lengths=None):
+
+    """
+    This function ...
+    :param lst: 
+    :param lengths: 
+    :return: 
+    """
+
+    if lengths is None: return itertools.permutations(lst)
+    elif isinstance(lengths, int): return itertools.permutations(lst, r=lengths)
+    elif isinstance(lengths, list):
+        result = []
+        for length in lengths: result.extend(itertools.permutations(lst, r=length))
+        return result
+    else: raise ValueError("Invalid value for 'lengths'")
+
+# -----------------------------------------------------------------
+
+def combinations(lst, lengths, repeat=False):
+
+    """
+    This function ...
+    :param lst: 
+    :param lengths: 
+    :param repeat:
+    :return: 
+    """
+
+    combination_function = itertools.combinations_with_replacement if repeat else itertools.combinations
+
+    if isinstance(lengths, int): return combination_function(lst, r=lengths)
+    elif isinstance(lengths, list):
+        result = []
+        for length in lengths: result.extend(combination_function(lst, r=length))
+        return result
+    else: raise ValueError("Invalid value for 'lengths")
+
+# -----------------------------------------------------------------
+
 def interleave(seqs):
 
     """ Interleave a sequence of sequences

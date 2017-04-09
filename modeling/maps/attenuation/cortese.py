@@ -99,29 +99,6 @@ class CorteseAttenuationMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def requirements(cls, config=None):
-
-        """
-        This function ...
-        :param config:
-        :return:
-        """
-
-        config = cls.get_config(config)
-
-        if config.ssfr_colour == "FUV-H": colour_bands = ["FUV", "2MASS H"]
-        elif config.ssfr_colour == "FUV-i": colour_bands = ["FUV", "SDSS i"]
-        elif config.ssfr_colour == "FUV-r": colour_bands = ["FUV", "SDSS r"]
-        elif config.ssfr_colour == "FUV-g": colour_bands = ["FUV", "SDSS g"]
-        elif config.ssfr_colour == "FUV-B": colour_bands = ["FUV", "B"]
-        else: raise ValueError("Invalid SSFR colour option")
-
-        # Combine
-        return combine_unique(TIRtoFUVMapMaker.requirements(), colour_bands)
-
-    # -----------------------------------------------------------------
-
     def run(self, log_tir_to_fuv):
 
         """

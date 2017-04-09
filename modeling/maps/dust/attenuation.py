@@ -160,7 +160,7 @@ class AttenuationDustMapMaker(MapsComponent):
         """
 
         # Call the setup function of the base class
-        super(CorteseDustMapMaker, self).setup()
+        super(AttenuationDustMapMaker, self).setup()
 
         # Load the Cortese et al. 2008 table
         self.cortese = tables.from_file(cortese_table_path, format="ascii.commented_header")

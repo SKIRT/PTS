@@ -17,22 +17,22 @@ import numpy as np
 
 # Import astronomical modules
 from astropy import constants
+from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from ....core.tools import introspection, tables
 from ....core.tools import filesystem as fs
 from ....core.tools.logging import log
 from ..component import MapsComponent
-from ....magic.core.frame import Frame
+from ....magic.core.frame import Frame, linear_combination
 from ....core.basics.unit import parse_unit as u
+from ....magic.misc.galametz import GalametzTIRCalibration
+from ....core.tools import sequences
 
 # -----------------------------------------------------------------
 
 # The path to the table containing the parameters from Cortese et. al 2008
 cortese_table_path = fs.join(introspection.pts_dat_dir("modeling"), "cortese.dat")
-
-# The path to the table containing the Galametz calibration parameters
-galametz_table_path = fs.join(introspection.pts_dat_dir("modeling"), "galametz.dat")
 
 # -----------------------------------------------------------------
 
@@ -41,7 +41,11 @@ solar_luminosity = 3.846e26 * u("W")
 
 # -----------------------------------------------------------------
 
-class TIRtoFUVMapMaker(MapsComponent):
+possible_filters = ["MIPS 24mu", "Pacs blue", "Pacs green", "Pacs red", "SPIRE 250"]
+
+# -----------------------------------------------------------------
+
+class MultiBandTIRMapMaker(MapsComponent):
 
     """
     This class...
@@ -55,7 +59,7 @@ class TIRtoFUVMapMaker(MapsComponent):
         """
 
         # Call the constructor of the base class
-        super(TIRtoFUVMapMaker, self).__init__()
+        super(MultiBandTIRMapMaker, self).__init__()
 
         # -- Attributes --
 
@@ -66,30 +70,11 @@ class TIRtoFUVMapMaker(MapsComponent):
         self.frames = dict()
         self.errors = dict()
 
-        # FUV and TIR map in SI units (W/m2)
-        self.fuv_si = None
-        self.tir_si = None
+        # The TIR maps
+        self.maps = dict()
 
-        # The TIR to FUV ratio map
-        self.tir_to_fuv = None
-        self.log_tir_to_fuv = None
-
-        # The table with the calibration factors from galametz (TIR ..)
-        self.galametz = None
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def requirements(cls, config=None):
-
-        """
-        This function ...
-        :param config:
-        :return:
-        """
-
-        config = cls.get_config(config)
-        return ["GALEX FUV", "MIPS 24mu", "Pacs blue", "Pacs red"]
+        # The galametz calibration object
+        self.galametz = GalametzTIRCalibration()
 
     # -----------------------------------------------------------------
 
@@ -103,17 +88,11 @@ class TIRtoFUVMapMaker(MapsComponent):
         # 1. Call the setup function
         self.setup()
 
-        # 2. Load the image frames and errors
-        self.load_frames()
+        # 2. Load the data
+        self.load_data()
 
-        # 3. Make the FUV map in W/m2 unit
-        self.make_fuv()
-
-        # 4. Make the TIR map in W/m2 unit
-        self.make_tir()
-
-        # 5. Make the TIR to FUV ratio map
-        self.make_tir_to_fuv()
+        # 4. Make the TIR maps
+        self.make_maps()
 
         # 6. Writing
         self.write()
@@ -128,28 +107,76 @@ class TIRtoFUVMapMaker(MapsComponent):
         """
 
         # Call the setup function of the base class
-        super(TIRtoFUVMapMaker, self).setup()
-
-        # Load the Galametz et al. table
-        self.galametz = tables.from_file(galametz_table_path, format="ascii.commented_header")
-
-        # Create a maps/dust/cortese directory
-        self.maps_tirfuv_path = fs.create_directory_in(self.maps_dust_path, "tir fuv")
+        super(MultiBandTIRMapMaker, self).setup()
 
     # -----------------------------------------------------------------
 
-    def load_frames(self):
+    @lazyproperty
+    def available_filters(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        filters = []
+
+        # Loop over the colours
+        for fltr in self.config.filters:
+
+            # If no image is avilalbe for this filters, skip
+            if not self.dataset.has_frame_for_filter(fltr): continue
+
+            # otherwise, add to the list of filters
+            filters.append(fltr)
+
+        # Return the available filters
+        return filters
+
+    # -----------------------------------------------------------------
+
+    def load_data(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Loading the data ...")
+
+        # Loop over the filters
+        for fltr in self.available_filters:
+
+            # Debugging
+            log.debug("Loading the '" + str(fltr) + "' frame ...")
+
+            # Load the frame
+            frame = self.dataset.get_frame_for_filter(fltr)
+            self.frames[fltr] = frame
+
+            # Load the error map, if present
+            if not self.dataset.has_errormap_for_for_filter(fltr): continue
+            errors = self.dataset.get_errormap_for_filter(fltr)
+            self.errors[fltr] = errors
+
+    # -----------------------------------------------------------------
+
+    def load_frames_old(self):
 
         """
         This function ...
         :return:
         """
 
+        # Inform the user
+        log.info("Loading the frames ...")
+
         # Get the galaxy distance
         distance = self.galaxy_properties.distance
 
         # Load all the frames and error maps
-        for name in self.requirements(self.config):
+        for name in names:
 
             frame = self.dataset.get_frame(name)
             errors = self.dataset.get_errormap(name)
@@ -197,39 +224,46 @@ class TIRtoFUVMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def make_fuv(self):
+    def make_maps(self):
 
         """
         This function ...
-        :return:
+        :return: 
         """
 
         # Inform the user
-        log.info("Creating the FUV map in W/m2 units ...")
+        log.info("Making the TIR maps ...")
 
-        ## Convert the FUV map from Lsun to W/m2
-
-        assert self.frames["GALEX FUV"].unit == "Lsun"
-
-        ## Convert the TIR map from Lsun to W / m2
-
-        conversion_factor = 1.0
-
-        # Conversion from Lsun to W
-
-        conversion_factor *= solar_luminosity.to("W").value
-
-        # Conversion from W [LUMINOSITY] to W / m2 [FLUX]
+        # Get the galaxy distance
         distance = self.galaxy_properties.distance
-        conversion_factor /= (4. * np.pi * distance ** 2).to("m2").value
 
-        # FUV in W/M2
-        self.fuv_si = self.frames["GALEX FUV"] * conversion_factor
-        self.fuv_si.unit = "W/m2"
+        # Loop over each combination of 2 or 3 filters
+        for filters in sequences.combinations(self.available_filters, lengths=[2,3]):
+
+            # Check if the combination if possible
+            if not self.galametz.has_combination_multi(*filters): continue
+
+            # Get the parameters
+            coefficients = self.galametz.get_parameters_multi(*filters)
+
+            # Get the frames in neutral luminosity
+            frames = []
+            for fltr in filters: frames.append(self.frames[fltr].converted_to("W", density=True, distance=distance))
+
+            # Calculate the TIR
+            tir = linear_combination(frames, coefficients)
+            tir.unit = u("W", density=True)
+            tir.wcs = frames[0].wcs
+
+            # Determine keys
+            combination = tuple([str(fltr) for fltr in filters])
+
+            # Set the TIR map
+            self.maps[combination] = tir
 
     # -----------------------------------------------------------------
 
-    def make_tir(self):
+    def make_tir_old(self):
 
         """
         This function ...
@@ -240,7 +274,7 @@ class TIRtoFUVMapMaker(MapsComponent):
         log.info("Creating the TIR map in W/m2 units ...")
 
         ## GET THE GALAMETZ PARAMETERS
-        a, b, c = self.get_galametz_parameters("MIPS 24mu", "Pacs blue", "Pacs red")
+        a, b, c = self.galametz.get_parameters_multi("MIPS 24mu", "Pacs blue", "Pacs red")
 
         assert a == 2.133
         assert b == 0.681
@@ -269,73 +303,6 @@ class TIRtoFUVMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def get_galametz_parameters(self, *args):
-
-        """
-        This function ...
-        :param args:
-        :return:
-        """
-
-        galametz_column_names = {"MIPS 24mu": "c24",
-                                 "Pacs blue": "c70",
-                                 "Pacs green": "c100",
-                                 "Pacs red": "c160",
-                                 "SPIRE PSW": "c250"}
-
-        # Needed column names
-        needed_column_names = [galametz_column_names[filter_name] for filter_name in args]
-
-        # List of not needed column names
-        colnames = self.galametz.colnames
-        not_needed_column_names = [name for name in colnames if name not in needed_column_names]
-
-        not_needed_column_names.remove("R2")
-        not_needed_column_names.remove("CV(RMSE)")
-
-        # The parameters
-        parameters = None
-
-        # Loop over the entries in the galametz table
-        for i in range(len(self.galametz)):
-
-            if is_appropriate_galametz_entry(self.galametz, i, needed_column_names, not_needed_column_names):
-
-                parameters = []
-                for name in needed_column_names: parameters.append(self.galametz[name][i])
-                break
-
-            else: continue
-
-        # Return the parameters
-        return parameters
-
-    # -----------------------------------------------------------------
-
-    def make_tir_to_fuv(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the TIR to FUV map ...")
-
-        # CALCULATE FUV AND TIR MAP IN W/M2 UNIT
-
-        ## FUV IN W/M2
-
-        ## TIR IN W/M2
-
-        # CALCULATE TIR TO FUV RATIO
-
-        # The ratio of TIR and FUV
-        self.tir_to_fuv = self.tir_si / self.fuv_si
-        self.log_tir_to_fuv = Frame(np.log10(self.tir_to_fuv))
-
-    # -----------------------------------------------------------------
-
     def write(self):
 
         """
@@ -347,111 +314,30 @@ class TIRtoFUVMapMaker(MapsComponent):
         log.info("Writing ...")
 
         # Write the TIR map
-        self.write_tir()
-
-        # Write the FUV map in SI units
-        self.write_fuv()
-
-        # Write the TIR to FUV ratio map
-        self.write_tir_to_fuv()
-
-        # Write the logarithm of TIR to FUV
-        self.write_log_tir_to_fuv()
+        self.write_maps()
 
     # -----------------------------------------------------------------
 
-    def write_tir(self):
+    def write_maps(self):
 
         """
         This function ...
-        :return:
+        :return: 
         """
 
         # Inform the user
-        log.info("Writing the TIR map ...")
+        log.info("Writing the TIR maps ...")
 
-        # Determine path
-        path = fs.join(self.maps_tirfuv_path, "TIR.fits")
+        # Loop over the combinations
+        for combination in self.maps:
 
-        # Write
-        self.tir_si.saveto(path)
+            # Determine name
+            name = "-".join(combination)
 
-    # -----------------------------------------------------------------
+            # Determine path
+            path = fs.join(self.maps_tir_path, name + ".fits")
 
-    def write_fuv(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the FUV map ...")
-
-        # Determine path
-        path = fs.join(self.maps_tirfuv_path, "FUV.fits")
-
-        # Write
-        self.fuv_si.saveto(path)
-
-    # -----------------------------------------------------------------
-
-    def write_tir_to_fuv(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the TIR to FUV map ...")
-
-        # Determine path
-        path = fs.join(self.maps_tirfuv_path, "TIR-FUV.fits")
-
-        # Write
-        self.tir_to_fuv.saveto(path)
-
-    # -----------------------------------------------------------------
-
-    def write_log_tir_to_fuv(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the logarithm of the TIR to FUV map ...")
-
-        # Determine the path
-        path = fs.join(self.maps_tirfuv_path, "logTIR-FUV.fits")
-
-        # Write
-        self.log_tir_to_fuv.saveto(path)
-
-# -----------------------------------------------------------------
-
-def is_appropriate_galametz_entry(table, i, needed_cols, not_needed_cols):
-
-    """
-    This function ...
-    :return:
-    """
-
-    # Check if masked columns
-    for name in not_needed_cols:
-
-        # Verify that this entry is masked
-        if not table[name].mask[i]: return False
-
-    # Check needed cols
-    for name in needed_cols:
-
-        # Verify that this entry is not masked
-        if table[name].mask[i]: return False
-
-    # No mismatches found, thus appropriate entry
-    return True
+            # Save the map
+            self.maps[combination].saveto(path)
 
 # -----------------------------------------------------------------

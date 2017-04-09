@@ -907,6 +907,32 @@ class PhotometricUnit(CompositeUnit):
     # -----------------------------------------------------------------
 
     @property
+    def is_per_angular_area(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.is_intensity or self.is_surface_brightness
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_angular_area_unit(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if self.is_per_angular_area: return self.copy()
+        elif self.is_flux or self.is_luminosity: return PhotometricUnit(str(self) + " / sr", density=self.density)
+        else: raise RuntimeError("Unknown unit")
+
+    # -----------------------------------------------------------------
+
+    @property
     def base_physical_type(self):
 
         """

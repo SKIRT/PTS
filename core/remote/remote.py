@@ -131,11 +131,12 @@ class Remote(object):
     This function ...
     """
 
-    def __init__(self, log_conda=False):
+    def __init__(self, log_conda=False, host_id=None):
 
         """
         The constructor ...
         :param log_conda:
+        :param host_id:
         :return:
         """
 
@@ -165,6 +166,10 @@ class Remote(object):
 
         # Remember the commands that were executed on the remote host
         self.commands = []
+
+        # If host ID is given, setup
+        if host_id is not None:
+            if not self.setup(host_id): log.warning("The connection could not be made. Run setup().")
 
     # -----------------------------------------------------------------
 
