@@ -37,7 +37,7 @@ from ..basics.task import Task
 from ..tools import introspection
 from ..tools.introspection import possible_cpp_compilers, possible_mpi_compilers, possible_mpirun_names
 from .python import AttachedPythonSession, DetachedPythonSession
-from ..basics.unit import parse_unit as u
+from ..units.parsing import parse_unit as u
 from ..basics.map import Map
 from ..tools import strings
 
@@ -3071,7 +3071,7 @@ class Remote(object):
         :return:
         """
 
-        from ..basics.quantity import parse_quantity
+        from ..units.parsing import parse_quantity
 
         command = "du -sh " + path
         output = self.execute(command)
@@ -3089,10 +3089,10 @@ class Remote(object):
         :return:
         """
 
-        from ..basics.quantity import parse_quantity
+        from ..units.parsing import parse_quantity
 
         command = "du -sh " + path
-        output = self.execute(path)
+        output = self.execute(command)
 
         string = output[0].split(" ")[0].lower() + "byte"
         return parse_quantity(string)
@@ -5412,7 +5412,7 @@ class Remote(object):
         :return:
         """
 
-        from ..basics.quantity import parse_quantity
+        from ..units.parsing import parse_quantity
 
         if self.host.quota_command is None: return None
 

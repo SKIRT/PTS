@@ -37,7 +37,7 @@ from .polygon import PolygonRegion, PixelPolygonRegion, SkyPolygonRegion, Physic
 from .text import TextRegion, PixelTextRegion, SkyTextRegion, PhysicalTextRegion
 from .composite import CompositeRegion, PixelCompositeRegion, SkyCompositeRegion, PhysicalCompositeRegion
 from ...core.tools.strings import stripwhite_around
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

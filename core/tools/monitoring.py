@@ -21,11 +21,16 @@ import multiprocessing
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from ..basics.unit import parse_unit as u
+from ..units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
 def memory_usage():
+
+    """
+    This function ...
+    :return: 
+    """
 
     # If we are on linux
     if platform == "linux" or platform == "linux2":

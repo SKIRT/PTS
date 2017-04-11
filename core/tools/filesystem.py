@@ -548,7 +548,7 @@ def directory_size(path):
     :return:
     """
 
-    from ..basics.unit import parse_unit as u
+    from ..units.parsing import parse_unit as u
     total_size = 0. * u("byte")
     for dirpath, dirnames, filenames in os.walk(path):
         for f in filenames:
@@ -567,7 +567,7 @@ def file_size(path):
     :return:
     """
 
-    from ..basics.unit import parse_unit as u
+    from ..units.parsing import parse_unit as u
     return os.path.getsize(path) * u("byte")
 
 # -----------------------------------------------------------------

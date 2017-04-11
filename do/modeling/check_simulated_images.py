@@ -28,7 +28,7 @@ from pts.magic.core.datacube import DataCube
 from pts.magic.core.remote import RemoteDataCube
 from pts.core.filter.broad import BroadBandFilter
 from pts.core.remote.python import AttachedPythonSession
-from pts.core.basics.unit import parse_unit as u
+from pts.core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

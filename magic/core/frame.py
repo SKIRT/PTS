@@ -37,8 +37,8 @@ from ..basics.mask import Mask, MaskBase
 from ...core.tools import filesystem as fs
 from ...core.tools import archive
 from ..basics.vector import Pixel
-from ...core.basics.unit import PhotometricUnit
-from ...core.basics.unit import parse_unit as u
+from ...core.units.unit import PhotometricUnit
+from ...core.units.parsing import parse_unit as u
 from ...core.filter.filter import parse_filter
 #from ...core.tools import types
 from .mask import Mask as newMask

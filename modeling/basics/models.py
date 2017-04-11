@@ -18,12 +18,11 @@ from abc import ABCMeta
 
 # Import astronomical modules
 from astropy.coordinates import Angle
-from astropy.modeling.models import Sersic2D
 from astropy.units import dimensionless_angles
 
 # Import the relevant PTS classes and modules
 from ...core.basics.composite import SimplePropertyComposite
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

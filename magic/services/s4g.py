@@ -33,7 +33,7 @@ from ..basics.coordinate import SkyCoordinate
 from ...modeling.basics.properties import GalaxyProperties
 from ...modeling.basics.models import SersicModel3D, ExponentialDiskModel3D
 from ...core.tools import formatting as fmt
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

@@ -13,14 +13,12 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import numpy as np
 from scipy import interpolate
 
 # Import the relevant PTS classes and modules
 from .table import SmartTable
-from ..tools import tables
 from ..filter.filter import parse_filter
-from .unit import parse_unit as u
+from ..units.parsing import parse_unit as u
 from ..tools import arrays
 from ..filter.broad import BroadBandFilter
 from ..filter.narrow import NarrowBandFilter

@@ -29,7 +29,7 @@ from pts.magic.core.frame import Frame
 from pts.magic.core.mask import Mask
 from pts.core.tools import filesystem as fs
 from pts.magic.core.dataset import DataSet
-from pts.core.basics.unit import parse_unit as u
+from pts.core.units.parsing import parse_unit as u
 from pts.modeling.tests.base import m81_data_path
 from pts.modeling.basics.properties import GalaxyProperties
 from pts.core.filter.filter import parse_filter

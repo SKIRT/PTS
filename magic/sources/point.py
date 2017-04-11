@@ -35,7 +35,7 @@ from ...core.tools.logging import log
 from ..tools import plotting
 from ..basics.stretch import PixelStretch
 from ...core.basics.table import SmartTable
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 from ..basics.vector import Pixel
 
 # -----------------------------------------------------------------

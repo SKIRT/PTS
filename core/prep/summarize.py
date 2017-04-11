@@ -20,7 +20,7 @@ from ..simulation.skifile import SkiFile, LabeledSkiFile
 from ..tools import formatting as fmt
 from ..tools import stringify
 from ..filter.filter import Filter
-from ..basics.quantity import represent_quantity
+from ..units.stringify import represent_quantity
 from ..basics.configurable import Configurable
 from ..tools.logging import log
 

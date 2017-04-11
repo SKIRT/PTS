@@ -21,10 +21,10 @@ from pts.magic.sources.finder import SourceFinder
 from pts.magic.catalog.importer import CatalogImporter
 from pts.magic.core.image import Image
 from pts.magic.region.list import PixelRegionList, SkyRegionList
-from pts.core.tools import configuration
+from pts.core.basics import configuration
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
-from pts.core.basics.unit import parse_unit as u
+from pts.core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

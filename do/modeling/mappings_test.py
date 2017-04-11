@@ -35,7 +35,7 @@ from pts.core.simulation.wavelengthgrid import WavelengthGrid
 from pts.core.plot.seds import plotseds
 from pts.modeling.basics.projection import GalaxyProjection
 from pts.modeling.basics.instruments import FullInstrument, FrameInstrument, SimpleInstrument
-from pts.core.basics.unit import parse_unit as u
+from pts.core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

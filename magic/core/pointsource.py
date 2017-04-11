@@ -24,7 +24,7 @@ from ..analysis import sources
 from ..region.ellipse import PixelEllipseRegion
 from ...core.tools.logging import log
 from ..basics.stretch import PixelStretch
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

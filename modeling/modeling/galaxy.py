@@ -36,7 +36,7 @@ from ...core.basics.range import QuantityRange
 from .base import ModelerBase
 from ..config.parameters import units as parameter_units
 from ..config.parameters import default_ranges, types, parameter_descriptions
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 from ..build.model import ModelBuilder
 from ..build.representation import RepresentationBuilder
 from ..component.galaxy import get_galaxy_properties_path, get_data_seds_path, get_data_images_path

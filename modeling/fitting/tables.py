@@ -21,7 +21,7 @@ from ...core.basics.table import SmartTable
 from ...core.tools import tables
 from ...core.basics.range import RealRange
 from ...core.basics.curve import FilterCurve
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 from ...core.tools import time
 
 # -----------------------------------------------------------------

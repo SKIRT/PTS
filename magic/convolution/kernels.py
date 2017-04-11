@@ -19,7 +19,7 @@ from abc import ABCMeta, abstractmethod
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.filter.filter import parse_filter
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

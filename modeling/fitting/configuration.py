@@ -27,7 +27,7 @@ from .run import FittingRun
 from ...core.basics.configuration import prompt_string
 from ..build.component import get_representations_for_model, get_representation_path, get_pixelscale_for_representation
 from ..build.representation import Representation
-from ...core.basics.quantity import represent_quantity
+from ...core.units.stringify import represent_quantity
 from ...evolve.config.optimize import crossover_methods, mutation_methods
 
 # -----------------------------------------------------------------

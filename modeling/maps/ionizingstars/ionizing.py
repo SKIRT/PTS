@@ -27,7 +27,7 @@ from ....core.plot.distribution import DistributionPlotter
 from ....magic.region.composite import PixelCompositeRegion
 from ....magic.region.list import PixelRegionList
 from ....magic.core.image import Image
-from ....core.basics.unit import parse_unit as u
+from ....core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

@@ -25,7 +25,7 @@ from ....core.tools.logging import log
 from ....magic.services.spire import SPIRE
 from ....core.basics.configurable import Configurable
 from ....core.basics.range import RealRange, QuantityRange
-from ....core.basics.unit import parse_unit as u
+from ....core.units.parsing import parse_unit as u
 
 # PTS evolution classes and modules
 from ....evolve.core.engine import GeneticEngine, RawScoreCriteria

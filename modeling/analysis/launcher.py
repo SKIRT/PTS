@@ -33,7 +33,7 @@ from ...core.prep.wavelengthgrids import create_one_subgrid_wavelength_grid
 from ...core.prep.dustgrids import create_one_dust_grid
 from .info import AnalysisRunInfo
 from ...core.advanced.dustgridtool import DustGridTool
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 from ...core.basics.configuration import prompt_string
 from ..fitting.run import get_best_model_for_generation, get_ski_file_for_simulation
 from ..fitting.component import load_fitting_run

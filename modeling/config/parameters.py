@@ -7,8 +7,8 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.core.basics.unit import parse_unit as u
-from pts.core.basics.unit import represent_unit as ru
+from pts.core.units.parsing import parse_unit as u
+from pts.core.units.stringify import represent_unit as ru
 
 # -----------------------------------------------------------------
 

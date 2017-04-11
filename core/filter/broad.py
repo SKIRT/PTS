@@ -728,7 +728,7 @@ class BroadBandFilter(Filter):
     # function to support PTS installations without Astropy for users that don't use this (new) function.
     @property
     def mean(self):
-        from ..basics.unit import parse_unit as u
+        from ..units.parsing import parse_unit as u
         return self.meanwavelength() * u("micron")
 
     ## This function returns the effective wavelength for the filter, in micron.
@@ -739,7 +739,7 @@ class BroadBandFilter(Filter):
     # function to support PTS installations without Astropy for users that don't use this (new) function.
     @property
     def effective(self):
-        from ..basics.unit import parse_unit as u
+        from ..units.parsing import parse_unit as u
         return self.effectivewavelength() * u("micron") if self._WavelengthEff is not None else None
 
     ## This function returns the minimum wavelength for the filter, in micron.
@@ -750,7 +750,7 @@ class BroadBandFilter(Filter):
     # function to support PTS installations without Astropy for users that don't use this (new) function.
     @property
     def min(self):
-        from ..basics.unit import parse_unit as u
+        from ..units.parsing import parse_unit as u
         return self.minwavelength() * u("micron")
 
     ## This function returns the maximum wavelength for the filter, in micron.
@@ -761,7 +761,7 @@ class BroadBandFilter(Filter):
     #  function to support PTS installations without Astropy for users that don't use this (new) function.
     @property
     def max(self):
-        from ..basics.unit import parse_unit as u
+        from ..units.parsing import parse_unit as u
         return self.maxwavelength() * u("micron")
 
     ## This function returns the center wavelength for the filter, in micron. The center wavelength is
@@ -774,7 +774,7 @@ class BroadBandFilter(Filter):
     #  support PTS installations without Astropy for users that don't use this (new) function.
     @property
     def center(self):
-        from ..basics.unit import parse_unit as u
+        from ..units.parsing import parse_unit as u
         return self.centerwavelength() * u("micron")
 
     ## This function returns the pivot wavelength for the filter, in micron. The pivot wavelength is defined
@@ -793,7 +793,7 @@ class BroadBandFilter(Filter):
     #  support PTS installations without Astropy for users that don't use this (new) function.
     @property
     def pivot(self):
-        from ..basics.unit import parse_unit as u
+        from ..units.parsing import parse_unit as u
         return self.pivotwavelength() * u("micron")
 
     ## This function returns the effective bandwith, in micron.
@@ -802,12 +802,12 @@ class BroadBandFilter(Filter):
 
     @property
     def bandwidth(self):
-        from ..basics.unit import parse_unit as u
+        from ..units.parsing import parse_unit as u
         return self.effective_bandwidth() * u("micron") if self._EffWidth is not None else None
 
     @property
     def fwhm(self):
-        from ..basics.unit import parse_unit as u
+        from ..units.parsing import parse_unit as u
         return self._FWHM * u("micron") if self._FWHM is not None else None
 
     @property
@@ -906,7 +906,7 @@ def load_planck(filterspec):
 
     # Import Astropy stuff
     from astropy.units import spectral
-    from ..basics.unit import parse_unit as u
+    from ..units.parsing import parse_unit as u
 
     this_path = os.path.dirname(os.path.abspath(__file__))
     core_path = os.path.dirname(this_path)
@@ -961,7 +961,7 @@ def load_alma(filterspec, pwv=0.2):
 
     # Import Astropy stuff
     from astropy.units import spectral
-    from ..basics.unit import parse_unit as u
+    from ..units.parsing import parse_unit as u
 
     this_path = os.path.dirname(os.path.abspath(__file__))
     core_path = os.path.dirname(this_path)

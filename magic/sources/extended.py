@@ -27,7 +27,7 @@ from ...core.tools.logging import log
 from ...core.basics.table import SmartTable
 from ..core.mask import Mask
 from ..basics.coordinate import SkyCoordinate
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

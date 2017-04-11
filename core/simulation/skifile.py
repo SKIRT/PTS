@@ -748,7 +748,7 @@ class SkiFile:
     ## This property returns the wavelengths (for an oligochromatic simulation) as quantities
     @property
     def wavelength_list(self):
-        from ..basics.unit import parse_unit as u
+        from ..units.parsing import parse_unit as u
         return [wavelength * u("micron") for wavelength in self.wavelengths()]
 
     ## This function returns the first instrument's distance, in the specified units (default is 'pc').
@@ -831,7 +831,7 @@ class SkiFile:
         if self.oligochromatic(): warnings.warn("The simulation is already oligochromatic")
         else:
 
-            from ..basics.quantity import represent_quantity
+            from ..units.stringify import represent_quantity
 
             simulation = self.tree.xpath("//PanMonteCarloSimulation")[0]
             simulation.tag = "OligoMonteCarloSimulation"
@@ -1553,7 +1553,7 @@ class SkiFile:
     #  - if filter_or_wavelength is a wavelength [as an Astropy quantity], the luminosity should be the spectral luminosity [as Astropy quantity] at that wavelength
     def set_stellar_component_luminosity(self, component_id, luminosity, filter_or_wavelength=None):
 
-        from ..basics.quantity import represent_quantity
+        from ..units.stringify import represent_quantity
 
         # Remove stellar component normalization, return the parent
         parent = self.remove_stellar_component_normalization(component_id)
@@ -1704,7 +1704,7 @@ class SkiFile:
         # Get parent
         parent = self.remove_dust_component_normalization(component_id)
 
-        from ..basics.quantity import is_mass, parse_quantity, represent_quantity
+        from ..units.helper import is_mass, parse_quantity, represent_quantity
 
         # If mass is given: dust mass normalization
         if is_mass(value):
@@ -1760,7 +1760,7 @@ class SkiFile:
     def get_wavelengths(self, input_path):
 
         from .wavelengthgrid import WavelengthGrid
-        from ..basics.unit import parse_unit as u
+        from ..units.parsing import parse_unit as u
 
         # Wavelengths file
         if self.uses_wavelength_file:
@@ -1834,7 +1834,7 @@ class SkiFile:
     ## This function sets the wavelengths for an oligochromatic simulation
     def set_wavelengths(self, *args):
 
-        from ..basics.quantity import represent_quantity
+        from ..units.stringify import represent_quantity
 
         # Remove the old wavelength grid
         parent = self.remove_wavelength_grid()
@@ -1855,7 +1855,7 @@ class SkiFile:
     ## This function sets the wavelength grid to a NestedLogWavelengthGrid
     def set_nestedlog_wavelength_grid(self, min_lambda, max_lambda, points, min_lambda_sub, max_lambda_sub, points_sub, write):
 
-        from ..basics.quantity import represent_quantity
+        from ..units.stringify import represent_quantity
 
         parent = self.remove_wavelength_grid()
 
@@ -1869,7 +1869,7 @@ class SkiFile:
     ## This functions sets the wavelength grid to a LogWavelengthGrid
     def set_log_wavelength_grid(self, min_lambda, max_lambda, points, write):
 
-        from ..basics.quantity import represent_quantity
+        from ..units.stringify import represent_quantity
 
         parent = self.remove_wavelength_grid()
 
@@ -2003,7 +2003,7 @@ class SkiFile:
     ## This function sets the geometry of the specified stellar component to a FITS file
     def set_stellar_component_fits_geometry(self, component_id, filename, pixelscale, position_angle, inclination, x_size, y_size, x_center, y_center, scale_height):
 
-        from ..basics.quantity import represent_quantity
+        from ..units.stringify import represent_quantity
 
         # Get parent
         parent = self.remove_stellar_component_geometry(component_id)
@@ -2027,7 +2027,7 @@ class SkiFile:
     ## This function sets the geometry of the specified dust component to a FITS file
     def set_dust_component_fits_geometry(self, component_id, filename, pixelscale, position_angle, inclination, x_size, y_size, x_center, y_center, scale_height):
 
-        from ..basics.quantity import represent_quantity
+        from ..units.stringify import represent_quantity
 
         # Get parent
         parent = self.remove_dust_component_geometry(component_id)
@@ -2051,7 +2051,7 @@ class SkiFile:
     ## This function sets the geometry of the specified stellar component to a ring geometry
     def set_stellar_component_ring_geometry(self, component_id, radius, width, height):
 
-        from ..basics.quantity import represent_quantity
+        from ..units.stringify import represent_quantity
 
         # Get parent
         parent = self.remove_stellar_component_geometry(component_id)
@@ -2064,7 +2064,7 @@ class SkiFile:
     ## This function sets the geometry of the specified dust component to a ring geometry
     def set_dust_component_ring_geometry(self, component_id, radius, width, height):
 
-        from ..basics.quantity import represent_quantity
+        from ..units.stringify import represent_quantity
 
         # Get parent
         parent = self.remove_dust_component_geometry(component_id)
@@ -2322,7 +2322,7 @@ class SkiFile:
     ## This function adds clumpiness to a stellar component geometry
     def add_stellar_component_clumpiness(self, component_id, fraction, count, radius, cutoff=False, kernel_type="uniform"):
 
-        from ..basics.quantity import represent_quantity
+        from ..units.stringify import represent_quantity
 
         # Get the geometry
         geometry = self.get_stellar_component_geometry(component_id)
@@ -2361,7 +2361,7 @@ class SkiFile:
     ## This function adds clumpiness to a dust component geometry
     def add_dust_component_clumpiness(self, component_id, fraction, count, radius, cutoff=False, kernel_type="uniform"):
 
-        from ..basics.quantity import represent_quantity
+        from ..units.stringify import represent_quantity
 
         # Get the geometry
         geometry = self.get_dust_component_geometry(component_id)
@@ -2402,7 +2402,7 @@ class SkiFile:
 
         class_name = "SpiralStructureGeometryDecorator"
 
-        from ..basics.quantity import represent_quantity
+        from ..units.stringify import represent_quantity
 
         # Get the geometry
         geometry = self.get_dust_component_geometry(component_id)
@@ -2436,7 +2436,7 @@ class SkiFile:
 
         class_name = "SpiralStructureGeometryDecorator"
 
-        from ..basics.quantity import represent_quantity
+        from ..units.stringify import represent_quantity
 
         # Get the geometry
         geometry = self.get_dust_component_geometry(component_id)
@@ -2654,7 +2654,7 @@ class SkiFile:
     ## This function sets a MAPPINGS SED template for the stellar component with the specified id
     def set_stellar_component_mappingssed(self, component_id, metallicity, compactness, pressure, covering_factor):
 
-        from ..basics.quantity import represent_quantity
+        from ..units.stringify import represent_quantity
 
         # Get the parent, remove current SED
         parent = self.remove_stellar_component_sed(component_id)
@@ -2951,7 +2951,7 @@ class SkiFile:
     ## This function sets a cartesian dust grid for the dust system
     def set_cartesian_dust_grid(self, min_x, max_x, min_y, max_y, min_z, max_z, x_bins, y_bins, z_bins, mesh_type="linear", ratio=1., write_grid=True):
 
-        from ..basics.quantity import represent_quantity
+        from ..units.stringify import represent_quantity
 
         parent = self.remove_dust_grid()
 
@@ -3064,7 +3064,7 @@ class SkiFile:
     def set_cylindrical_dust_grid(self, max_r, min_z, max_z, nbins_r, nbins_z, fraction_r=None, fraction_z=None,
                                   ratio_r=None, ratio_z=None, write_grid=False):
 
-        from ..basics.quantity import represent_quantity
+        from ..units.stringify import represent_quantity
 
         parent = self.remove_dust_grid()
 
@@ -3257,7 +3257,7 @@ class SkiFile:
 
             # Add the multi frame instrument
 
-            from ..basics.quantity import represent_quantity
+            from ..units.stringify import represent_quantity
 
             # Get the 'instruments' element
             instruments = self.get_instruments(as_list=False)
@@ -3298,7 +3298,7 @@ class SkiFile:
     def add_frame_instrument(self, name, distance, inclination, azimuth, position_angle, field_x, field_y,
                                   pixels_x, pixels_y, center_x, center_y):
 
-        from ..basics.quantity import represent_quantity
+        from ..units.stringify import represent_quantity
 
         # Get the 'instruments' element
         instruments = self.get_instruments(as_list=False)
@@ -3314,7 +3314,7 @@ class SkiFile:
     def add_full_instrument(self, name, distance, inclination, azimuth, position_angle, field_x, field_y,
                             pixels_x, pixels_y, center_x, center_y, scattering_levels=0, counts=False):
 
-        from ..basics.quantity import represent_quantity
+        from ..units.stringify import represent_quantity
 
         # Get the 'instruments' element
         instruments = self.get_instruments(as_list=False)
@@ -3331,7 +3331,7 @@ class SkiFile:
     def add_simple_instrument(self, name, distance, inclination, azimuth, position_angle, field_x, field_y,
                               pixels_x, pixels_y, center_x, center_y):
 
-        from ..basics.quantity import represent_quantity
+        from ..units.stringify import represent_quantity
 
         # Get the 'instruments' element
         instruments = self.get_instruments(as_list=False)
@@ -3346,7 +3346,7 @@ class SkiFile:
     ## This function adds an SEDInstrument to the instrument system
     def add_sed_instrument(self, name, distance, inclination, azimuth, position_angle):
 
-        from ..basics.quantity import represent_quantity
+        from ..units.stringify import represent_quantity
 
         # Get the 'instruments' element
         instruments = self.get_instruments(as_list=False)
@@ -3778,8 +3778,8 @@ class SkiFile:
     def get_quantity(self, element, name, default_unit=None):
 
         # Import here to avoid import errors for this module for users without an Astropy installation
-        from ..basics.quantity import parse_quantity
-        from ..basics.unit import parse_unit
+        from ..units.parsing import parse_quantity
+        from ..units.parsing import parse_unit
 
         string = element.get(name)
         try:
@@ -3811,8 +3811,8 @@ class SkiFile:
     def set_quantity(self, element, name, value, default_unit=None):
 
         # Import here to avoid import errors for this module for users without an Astropy installation
-        from ..basics.quantity import represent_quantity
-        from ..basics.unit import represent_unit, parse_unit
+        from ..units.stringify import represent_quantity, represent_unit
+        from ..units.parsing import parse_unit
 
         if hasattr(value, "unit"): string = represent_quantity(value)
         elif default_unit is not None: string = repr(value) + " " + represent_unit(parse_unit(default_unit))
@@ -4185,8 +4185,8 @@ class LabeledSkiFile(SkiFile):
         """
 
         # Import Astropy here to avoid import errors for this module for users without an Astropy installation
-        from ..basics.quantity import parse_quantity
-        from ..basics.unit import parse_unit
+        from ..units.parsing import parse_quantity
+        from ..units.parsing import parse_unit
 
         # Get string value
         prop = self.get_value(element, name)
@@ -4216,8 +4216,8 @@ class LabeledSkiFile(SkiFile):
         """
 
         # Import here to avoid import errors for this module for users without an Astropy installation
-        from ..basics.quantity import represent_quantity
-        from ..basics.unit import represent_unit, parse_unit
+        from ..units.stringify import represent_quantity, represent_unit
+        from ..units.parsing import parse_unit
 
         # Stringify the value
         if hasattr(value, "unit"): string = represent_quantity(value)

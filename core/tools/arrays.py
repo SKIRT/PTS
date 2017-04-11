@@ -17,8 +17,8 @@ import copy
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from ..basics.unit import parse_unit
-from ..basics.quantity import PhotometricQuantity
+from ..units.parsing import parse_unit
+from ..units.quantity import PhotometricQuantity
 
 # -----------------------------------------------------------------
 

@@ -19,7 +19,7 @@ from collections import OrderedDict
 from ...core.tools.logging import log
 from ...core.filter.filter import parse_filter, Filter
 from ..region.list import SkyRegionList
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 from .frame import Frame
 from ..basics.coordinatesystem import CoordinateSystem
 from ..tools import coordinates

@@ -28,7 +28,7 @@ from ...core.basics.configurable import Configurable
 from ..tools import catalogs
 from ...modeling.preparation import unitconversion
 from ...core.tools import formatting as fmt
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

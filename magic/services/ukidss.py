@@ -27,7 +27,7 @@ from ...core.filter.filter import parse_filter
 from ..tools import catalogs
 from ..basics.coordinate import SkyCoordinate
 from ...core.tools import network
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 from ...core.tools import tables
 
 # -----------------------------------------------------------------

@@ -26,7 +26,7 @@ from ..build.component import get_stellar_component_names, get_dust_component_na
 from ..basics.projection import EdgeOnProjection, FaceOnProjection, GalaxyProjection
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...core.basics.configuration import prompt_string
-from ...core.basics.quantity import represent_quantity
+from ...core.units.stringify import represent_quantity
 from ...core.simulation.grids import load_grid
 
 # -----------------------------------------------------------------

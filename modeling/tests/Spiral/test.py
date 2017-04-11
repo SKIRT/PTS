@@ -13,7 +13,7 @@ import inspect
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
-from pts.core.basics.unit import parse_unit as u
+from pts.core.units.parsing import parse_unit as u
 from pts.core.basics.configuration import Configuration
 from pts.core.simulation.skifile import LabeledSkiFile
 from pts.core.basics.range import QuantityRange, RealRange

@@ -22,10 +22,9 @@ from ..basics.emissionlines import EmissionLines, EmissionLine
 from ..basics.configurable import Configurable
 from ..basics.table import SmartTable
 from ..basics.range import QuantityRange
-from ..basics.unit import parse_unit as u
+from ..units.parsing import parse_unit as u
 from ..filter.broad import BroadBandFilter
 from ..filter.narrow import NarrowBandFilter
-from ..plot.transmission import TransmissionPlotter
 from ..basics.range import IntegerRange
 
 # -----------------------------------------------------------------

@@ -17,12 +17,12 @@ import numpy as np
 
 # Import the relevant PTS classes and modules
 from ..basics.curve import WavelengthCurve, FilterCurve
-from ..basics.unit import PhotometricUnit
+from ..units.unit import PhotometricUnit
 from ..tools import tables
 from ..filter.broad import BroadBandFilter
 from ...magic.tools.colours import calculate_colour
 from ...core.basics.errorbar import ErrorBar
-from ..basics.unit import parse_unit as u
+from ..units.parsing import parse_unit as u
 from ..tools import filesystem as fs
 from ..filter.filter import parse_filter
 from ..tools import arrays

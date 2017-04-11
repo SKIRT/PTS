@@ -19,9 +19,9 @@ from astropy.units import spectral
 # Import the relevant PTS classes and modules
 from pts.core.test.implementation import TestImplementation
 from pts.core.tools.logging import log
-from pts.core.basics.unit import PhotometricUnit
-from pts.core.basics.unit import parse_unit as u
-from pts.core.basics.quantity import parse_quantity
+from pts.core.units.unit import PhotometricUnit
+from pts.core.units.parsing import parse_unit as u
+from pts.core.units.parsing import parse_quantity
 from pts.core.tools import filesystem as fs
 from pts.core.data.sed import SED, ObservedSED
 from pts.core.plot.sed import SEDPlotter

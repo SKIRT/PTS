@@ -20,8 +20,8 @@ from collections import OrderedDict
 from astropy.table import Table, MaskedColumn
 
 # Import the relevant PTS classes and modules
-from .unit import PhotometricUnit
-from .unit import parse_unit as u
+from ..units.unit import PhotometricUnit
+from ..units.parsing import parse_unit as u
 from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------

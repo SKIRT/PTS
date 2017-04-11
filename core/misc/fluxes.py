@@ -27,7 +27,7 @@ from ..filter.broad import BroadBandFilter
 from ..filter.filter import parse_filter
 from ..data.sed import SED
 from ...magic.services.spire import SPIRE
-from ..basics.unit import parse_unit as u
+from ..units.parsing import parse_unit as u
 from ..data.sed import ObservedSED
 from ..tools import sequences
 from ..basics.configurable import Configurable

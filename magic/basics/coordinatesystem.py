@@ -31,7 +31,7 @@ from ..region.rectangle import SkyRectangleRegion
 from .stretch import SkyStretch
 from ..tools import coordinates
 from .pixelscale import Pixelscale
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 from ...core.basics.range import QuantityRange
 from pts.magic.basics.stretch import PixelStretch
 from ...core.tools.logging import log

@@ -23,7 +23,7 @@ from astropy.units import spectral
 from ...core.basics.configurable import Configurable
 from ...core.tools import tables
 from ...core.tools.logging import log
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

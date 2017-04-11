@@ -25,7 +25,7 @@ from ....core.tools import filesystem as fs
 from ....core.tools.logging import log
 from ..component import MapsComponent
 from ....magic.tools.colours import make_colour_map
-from ....core.basics.unit import parse_unit as u
+from ....core.units.parsing import parse_unit as u
 from ....core.tools.sequences import combine_unique
 #from .tirtofuv import TIRtoFUVMapMaker
 

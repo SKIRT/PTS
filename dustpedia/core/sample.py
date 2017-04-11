@@ -24,7 +24,7 @@ from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...magic.basics.coordinate import SkyCoordinate
 from ...magic.tools import catalogs
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

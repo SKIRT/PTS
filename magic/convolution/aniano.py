@@ -24,7 +24,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...core.tools import archive
 from ...core.filter.filter import parse_filter
-from ...core.basics.unit import parse_unit
+from ...core.units.parsing import parse_unit
 from .kernels import Kernels, kernels_path, get_fwhm, has_variable_fwhm
 
 # -----------------------------------------------------------------

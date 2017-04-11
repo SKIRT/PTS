@@ -33,7 +33,7 @@ from ..core.kernel import ConvolutionKernel
 from ..core.remote import RemoteImage
 from ..core.frame import Frame
 from ...core.remote.python import AttachedPythonSession
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

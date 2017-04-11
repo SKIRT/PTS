@@ -33,7 +33,7 @@ from ..object.star import Star
 from ...core.data.sed import ObservedSED
 from ...core.filter.broad import BroadBandFilter
 from ...core.basics.curve import FilterCurve
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 from ...core.tools.parallelization import ParallelTarget
 from ..core.frame import Frame
 from ...core.tools import filesystem as fs
