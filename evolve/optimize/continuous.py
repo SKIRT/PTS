@@ -104,6 +104,9 @@ class ContinuousOptimizer(Optimizer):
         # 5. Initialize engine
         self.initialize_engine(**kwargs)
 
+        # 6. Initialize population
+        self.initialize_population()
+
     # -----------------------------------------------------------------
 
     def evolve(self):

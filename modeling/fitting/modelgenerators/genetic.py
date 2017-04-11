@@ -181,6 +181,12 @@ class GeneticModelGenerator(ModelGenerator):
         self.optimizer.config.round_decimal = self.fitting_run.genetic_settings.round_decimal
         self.optimizer.config.mutation_method = self.fitting_run.genetic_settings.mutation_method
 
+        # User, scaling
+        self.optimizer.config.scaling_method = self.fitting_run.genetic_settings.scaling_method
+
+        # User, selector
+        self.optimizer.config.selector_method = self.fitting_run.genetic_settings.selector_method
+
         # Fixed
         self.optimizer.config.min_or_max = "minimize"
         #self.optimizer.config.run_id = self.fitting_run.name # THIS IS NOW DONE IN THE SETUP

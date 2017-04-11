@@ -28,7 +28,7 @@ from ...core.basics.configuration import prompt_string
 from ..build.component import get_representations_for_model, get_representation_path, get_pixelscale_for_representation
 from ..build.representation import Representation
 from ...core.units.stringify import represent_quantity
-from ...evolve.config.optimize import crossover_methods, mutation_methods
+from ...evolve.config.optimize import crossover_methods, mutation_methods, scaling_methods, selector_methods
 
 # -----------------------------------------------------------------
 
@@ -43,6 +43,8 @@ default_round_decimal = 3
 default_mutation_method = "range"
 default_elitism = True
 default_nelite_individuals = 1
+default_scaling_method = "linear"
+default_selector_method = "rank"
 
 # -----------------------------------------------------------------
 
@@ -55,6 +57,8 @@ genetic_definition.add_optional("crossover_rate", "real", "crossover rate", defa
 genetic_definition.add_optional("crossover_method", "string", "crossover method", default_crossover_method, choices=crossover_methods)
 genetic_definition.add_optional("round_decimal", "integer", "round everything to this decimal place", default_round_decimal)
 genetic_definition.add_optional("mutation_method", "string", "mutation method", default_mutation_method, choices=mutation_methods)
+genetic_definition.add_optional("scaling_method", "string", "scaling method", default_scaling_method, choices=scaling_methods)
+genetic_definition.add_optional("selector_method", "string", "selector method", default_selector_method, choices=selector_methods)
 
 # Flags
 genetic_definition.add_flag("elitism", "enable elitism", default_elitism)

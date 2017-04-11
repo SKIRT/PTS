@@ -247,7 +247,10 @@ class StepWiseOptimizer(Optimizer):
         # 4. Initialize engine
         self.initialize_engine(**kwargs)
 
-        # 5. Initialize the evolution (the initial generation)
+        # 5. Initialize the initial population
+        self.initialize_population()
+
+        # 6. Initialize the evolution (the initial generation)
         self.initialize_evolution()
 
     # -----------------------------------------------------------------

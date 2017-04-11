@@ -41,6 +41,8 @@ from ...core.tools import stringify
 from ..core.adapters import DBFileCSV, DBSQLite
 from ...core.tools import filesystem as fs
 from ...core.tools import types
+from ..core.scaling import LinearScaling, SigmaTruncScaling, PowerLawScaling, BoltzmannScaling, ExponentialScaling, SaturatedScaling
+from ..core.selectors import GRankSelector, GUniformSelector, GTournamentSelector, GTournamentSelectorAlternative, GRouletteWheel
 
 # -----------------------------------------------------------------
 
@@ -571,13 +573,16 @@ class Optimizer(Configurable):
         # 2. Set options
         self.set_engine_options()
 
-        # 3. Set plotter
+        # 3. Set the selector
+        self.set_engine_selector()
+
+        # 4. Set plotter
         self.set_engine_plotter(kwargs)
 
-        # 4. Set database and statistics
+        # 5. Set database and statistics
         self.set_engine_database_and_statistics()
 
-        # 5. Set kwargs
+        # 6. Set kwargs
         self.set_engine_kwargs(kwargs)
 
     # -----------------------------------------------------------------
@@ -603,6 +608,36 @@ class Optimizer(Configurable):
         # Set elitism options
         self.engine.setElitism(self.config.elitism)
         self.engine.setElitismReplacement(self.config.nelite_individuals)
+
+    # -----------------------------------------------------------------
+
+    def set_engine_selector(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Setting the genetic engine selector ...")
+
+        # Rank selector
+        if self.config.selector_method == "rank": self.engine.selector.set(GRankSelector)
+
+        # Uniform selector
+        elif self.config.selector_method == "uniform": self.engine.selector.set(GUniformSelector)
+
+        # Tournament selector
+        elif self.config.selector_method == "tournament": self.engine.selector.set(GTournamentSelector)
+
+        # Alternative tournament selector
+        elif self.config.selector_method == "tournament_alternative": self.engine.selector.set(GTournamentSelectorAlternative)
+
+        # Roulette wheel selector
+        elif self.config.selector_method == "roulette_wheel": self.engine.selector.set(GRouletteWheel)
+
+        # Invalid
+        else: raise ValueError("Invalid selector method")
 
     # -----------------------------------------------------------------
 
@@ -637,12 +672,10 @@ class Optimizer(Configurable):
 
         # Set the database adapter
         self.database.open(self.engine)
-        #self.engine.setDBAdapter(self.database)
         self.engine.add_database_adapter(self.database)
 
         # Set the adapter for the statistics table
         self.statistics.open(self.engine)
-        #self.engine.setDBAdapter(self.statistics)
         self.engine.add_database_adapter(self.statistics)
 
     # -----------------------------------------------------------------
@@ -669,6 +702,58 @@ class Optimizer(Configurable):
         if initializator_kwargs is not None: self.engine.set_kwargs("initializator", initializator_kwargs)
         if mutator_kwargs is not None: self.engine.set_kwargs("mutator", mutator_kwargs)
         if crossover_kwargs is not None: self.engine.set_kwargs("crossover", crossover_kwargs)
+
+    # -----------------------------------------------------------------
+
+    def initialize_population(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Initializing the population ...")
+
+        # Get the population
+        pop = self.engine.getPopulation()
+
+        # Set scaling method
+        self.set_population_scaling(pop)
+
+    # -----------------------------------------------------------------
+
+    def set_population_scaling(self, population):
+
+        """
+        This function ...
+        :param population: 
+        :return: 
+        """
+        
+        # Inform the user
+        log.info("Setting the population scaling method ...")
+
+        # Linear scaling
+        if self.config.scaling_method == "linear": population.scaleMethod.set(LinearScaling)
+
+        # Sigma truncation scaling
+        elif self.config.scaling_method == "sigma_truncation": population.scaleMethod.set(SigmaTruncScaling)
+
+        # Power law scaling
+        elif self.config.scaling_method == "power_law": population.scaleMethod.set(PowerLawScaling)
+
+        # Boltzmann scaling
+        elif self.config.scaling_method == "boltzmann": population.scaleMethod.set(BoltzmannScaling)
+
+        # Exponential scaling
+        elif self.config.scaling_method == "exponential": population.scaleMethod.set(ExponentialScaling)
+
+        # Saturated scaling
+        elif self.config.scaling_method == "saturated": population.scaleMethod.set(SaturatedScaling)
+
+        # Invalid
+        else: raise ValueError("Invalid scaling method '" + self.config.scaling_method + "'")
 
     # -----------------------------------------------------------------
 
