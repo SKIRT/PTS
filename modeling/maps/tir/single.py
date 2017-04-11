@@ -167,15 +167,16 @@ class SingleBandTIRMapMaker(MapsComponent):
             log.debug("Making TIR map from the '" + str(fltr) + "' frame ...")
 
             # Get the parameters
-            a, b = self.galametz.get_parameters_single(fltr)
+            a, b = self.galametz.get_parameters_single_brightness(fltr)
 
-            # Convert to neutral luminosity
-            frame = self.frames[fltr].convert_to("W", density=True, distance=distance)
+            # Convert to neutral intrinsic surface brightness
+            frame = self.frames[fltr].convert_to("W/kpc2", density=True, distance=distance, brightness=True,
+                                                 density_strict=True, brightness_strict=True)
 
-            # Calculate the TIR
+            # Calculate the TIR map in W/kpc2 (intrinsic surface brightness)
             logtir = a * np.log(frame.data) + b
             tir = Frame(10**logtir)
-            tir.unit = u("W", density=True)
+            tir.unit = u("W/kpc2", density=False, brightness=True, density_strict=True, brightness_strict=True)
             tir.wcs = frame.wcs
 
             # Set the TIR map

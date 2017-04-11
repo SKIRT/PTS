@@ -777,7 +777,20 @@ def photometric_density_unit(argument):
     """
 
     from ..basics.unit import PhotometricUnit
-    return PhotometricUnit(argument, density=True, strict=True)
+    return PhotometricUnit(argument, density=True, density_strict=True)
+
+# -----------------------------------------------------------------
+
+def photometric_brightness_unit(argument):
+
+    """
+    THis function ...
+    :param argument: 
+    :return: 
+    """
+
+    from ..basics.unit import PhotometricUnit
+    return PhotometricUnit(argument, brightness=True, brightness_strict=True)
 
 # -----------------------------------------------------------------
 

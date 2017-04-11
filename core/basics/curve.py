@@ -211,7 +211,7 @@ class WavelengthCurve(Curve):
 
     # -----------------------------------------------------------------
 
-    def value_for_wavelength(self, wavelength, unit=None, add_unit=True, density=False):
+    def value_for_wavelength(self, wavelength, unit=None, add_unit=True, density=False, brightness=False):
 
         """
         This function ...
@@ -219,6 +219,7 @@ class WavelengthCurve(Curve):
         :param unit:
         :param add_unit:
         :param density:
+        :param brightness:
         :return:
         """
 
@@ -227,7 +228,7 @@ class WavelengthCurve(Curve):
 
         # Convert unit if necessary
         if unit is not None:
-            unit = u(unit, density=density)
+            unit = u(unit, density=density, brightness=brightness)
             value = value.to(unit)
 
         # Remove unit if requested
@@ -252,7 +253,7 @@ class WavelengthCurve(Curve):
 
     # -----------------------------------------------------------------
 
-    def values(self, unit=None, asarray=False, add_unit=True, conversion_info=None, density=False):
+    def values(self, unit=None, asarray=False, add_unit=True, conversion_info=None, density=False, brightness=False):
 
         """
         This function ...
@@ -261,14 +262,15 @@ class WavelengthCurve(Curve):
         :param add_unit:
         :param conversion_info:
         :param density:
+        :param brightness:
         :return:
         """
 
         if conversion_info is None: conversion_info = dict()
         conversion_info["wavelengths"] = self.wavelengths()
 
-        if asarray: return arrays.plain_array(self[self.value_name], unit=unit, array_unit=self.column_unit(self.value_name), conversion_info=conversion_info, density=density)
-        else: return arrays.array_as_list(self[self.value_name], unit=unit, add_unit=add_unit, array_unit=self.column_unit(self.value_name), conversion_info=conversion_info, density=density)
+        if asarray: return arrays.plain_array(self[self.value_name], unit=unit, array_unit=self.column_unit(self.value_name), conversion_info=conversion_info, density=density, brightness=brightness)
+        else: return arrays.array_as_list(self[self.value_name], unit=unit, add_unit=add_unit, array_unit=self.column_unit(self.value_name), conversion_info=conversion_info, density=density, brightness=brightness)
 
 # -----------------------------------------------------------------
 
@@ -310,7 +312,7 @@ class FilterCurve(WavelengthCurve):
 
     # -----------------------------------------------------------------
 
-    def value_for_band(self, instrument, band, unit=None, add_unit=True, density=False):
+    def value_for_band(self, instrument, band, unit=None, add_unit=True, density=False, brightness=False):
 
         """
         This function ...
@@ -319,6 +321,7 @@ class FilterCurve(WavelengthCurve):
         :param unit:
         :param add_unit:
         :param density:
+        :param brightness:
         :return:
         """
 
@@ -329,7 +332,7 @@ class FilterCurve(WavelengthCurve):
         if not has_unit and unit is not None: raise ValueError("Cannot determine the unit of quantity so values cannot be converted to " + str(unit))
 
         # Parse the target unit
-        if unit is not None: unit = u(unit, density=density)
+        if unit is not None: unit = u(unit, density=density, brightness=brightness)
 
         # Loop over all the entries in the table
         for i in range(len(self)):
@@ -366,7 +369,7 @@ class FilterCurve(WavelengthCurve):
 
     # -----------------------------------------------------------------
 
-    def value_for_filter(self, fltr, unit=None, add_unit=True, density=False):
+    def value_for_filter(self, fltr, unit=None, add_unit=True, density=False, brightness=False):
 
         """
         This function ...
@@ -374,10 +377,11 @@ class FilterCurve(WavelengthCurve):
         :param unit:
         :param add_unit:
         :param density:
+        :param brightness:
         :return:
         """
 
-        return self.value_for_band(fltr.instrument, fltr.band, unit, add_unit, density=density)
+        return self.value_for_band(fltr.instrument, fltr.band, unit, add_unit, density=density, brightness=brightness)
 
     # -----------------------------------------------------------------
 

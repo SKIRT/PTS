@@ -83,8 +83,13 @@ output_replacements["solLum"] = "Lsun"
 
 # SURFACE BRIGHTNESS: W/m2/sr
 # WAVELENGTH SURFACE BRIGHTNESS DENSITY: W/m2/sr/micron
-# FREQUENCY SURFACE BRIGHTNESS DENSITY: W/m2/sr/micron
+# FREQUENCY SURFACE BRIGHTNESS DENSITY: W/m2/sr/Hz
 # NEUTRAL SURFACE BRIGHTNESS DENSITY: W/m2/sr
+
+# INTRINSIC SURFACE BRIGHTNESS: W / kpc2
+# WAVELENGTH INTRINSIC SURFACE BRIGHTNESS DENSITY: W / kpc2 / micron
+# FREQUENCY INTRINSIC SURFACE BRIGHTNESS DENSITY: W / kpc2 / Hz
+# NEUTRAL INTRINSIC SURFACE BRIGHTNESS DENSITY: W / kpc2
 
 # -----------------------------------------------------------------
 
@@ -315,16 +320,19 @@ def clean_unit_string(string):
 
 # -----------------------------------------------------------------
 
-def parse_unit(argument, density=False):
+def parse_unit(argument, density=False, brightness=False, density_strict=False, brightness_strict=False):
 
     """
     This function ...
     :param argument:
     :param density:
+    :param brightness:
+    :param density_strict:
+    :param brightness_strict:
     :return:
     """
 
-    try: unit = PhotometricUnit(argument, density=density)
+    try: unit = PhotometricUnit(argument, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
     except ValueError:
         if isinstance(argument, basestring): argument = clean_unit_string(argument)
         unit = Unit(argument)
@@ -467,12 +475,9 @@ def analyse_unit(unit):
     base_unit = Unit("")
     wavelength_unit = Unit("")
     frequency_unit = Unit("")
-    distance_unit = Unit("")
+    length_unit = Unit("")
+
     solid_angle_unit = Unit("")
-
-    #print(unit, type(unit))
-
-    #base_types = physical_base_types(unit, power=1)
 
     base_types = physical_base_types_units_and_powers_as_dict(unit, power=1)
 
@@ -537,11 +542,6 @@ def analyse_unit(unit):
                 # Correct with factor
                 unit = CompositeUnit(factor * unit.scale, unit.bases, unit.powers)
 
-    #print(unit)
-
-    #print(unit)
-    #exit()
-
     # Loop over the bases
     for base, power in zip(unit.bases, unit.powers):
 
@@ -549,6 +549,7 @@ def analyse_unit(unit):
 
             if base.physical_type == "spectral flux density":
 
+                # Decompose the unit
                 sf, bu, wu, fu, du, su = analyse_unit(base.represents)
 
                 scale_factor *= sf
@@ -570,7 +571,8 @@ def analyse_unit(unit):
 
                 if du != "":
 
-                    if distance_unit != "": raise ValueError("Encountered two distance units: " + str(distance_unit) + " and " + str(du))
+                    if length_unit != "": raise ValueError("Encountered two length units: " + str(length_unit) + " and " + str(du))
+                    #if distance_unit != "": raise ValueError("Encountered two distance units: " + str(distance_unit) + " and " + str(du))
                     distance_unit = du
 
                 if su != "":
@@ -608,10 +610,12 @@ def analyse_unit(unit):
         elif base.physical_type == "length":
 
             if power == -1: wavelength_unit = base
-            elif power == -2: distance_unit = base ** 2
+            #elif power == -2: distance_unit = base ** 2
+            elif power == -2: length_unit = base ** 2
             elif power == -3:
                 wavelength_unit = base
-                distance_unit = base ** 2
+                #distance_unit = base ** 2
+                length_unit = base ** 2
             else: raise ValueError("Not a photometric unit: found length^" + str(power) + " dimension")
 
         # Frequency unit
@@ -639,7 +643,8 @@ def analyse_unit(unit):
     if base_unit is None or base_unit == "": raise ValueError("Not a photometric unit: found no unit of energy or luminosity")
 
     # Return
-    return scale_factor, base_unit, wavelength_unit, frequency_unit, distance_unit, solid_angle_unit
+    #return scale_factor, base_unit, wavelength_unit, frequency_unit, distance_unit, solid_angle_unit
+    return scale_factor, base_unit, wavelength_unit, frequency_unit, length_unit, solid_angle_unit
 
 # -----------------------------------------------------------------
 
@@ -653,25 +658,39 @@ class PhotometricUnit(CompositeUnit):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, unit, density=False, strict=False):
+    def __init__(self, unit, density=False, density_strict=False, brightness=False, brightness_strict=False):
 
         """
         The constructor ...
         :param unit:
         :param density:
-        :param strict: if strict is True, density=True or density=False is interepreted as a strong necessity:
-        an error will be thrown if this class thinks the passed flag is not correctly representing the quantity
+        :param brightness:
+        :param strict: if strict is True, density=True or density=False and brightness=True and brightness=False
+        is interepreted as a strong necessity:
+        an error will be thrown if this class thinks the passed flag is not correctly representing the quantity.
+        If strict=False, this means that the density and brightness flag will be used as a guideline, in other words,
+        the unit will be a 'density' or 'brightness' according to the flag WHEN IN DOUBT.
         """
+
+        # Unit attributes
+        self._base_unit = Unit("")
+        self._wavelength_unit = Unit("")
+        self._frequency_unit = Unit("")
+        self._distance_unit = Unit("")
+        self._extent_unit = Unit("")
+        self._solid_angle_unit = Unit("")
 
         # Already a photometric unit
         if isinstance(unit, PhotometricUnit):
 
             self.density = unit.density
+            self.brightness = unit.brightness
             self.scale_factor = unit.scale_factor
             self.base_unit = unit.base_unit
             self.wavelength_unit = unit.wavelength_unit
             self.frequency_unit = unit.frequency_unit
             self.distance_unit = unit.distance_unit
+            self.extent_unit = unit.extent_unit
             self.solid_angle_unit = unit.solid_angle_unit
 
         # Regular unit
@@ -690,19 +709,237 @@ class PhotometricUnit(CompositeUnit):
             # Set whether it represents a density
             self.density = density
 
+            # Set whether it represents a brightness
+            #self.brightness = brightness
+
             # Analyse the unit
-            self.scale_factor, self.base_unit, self.wavelength_unit, self.frequency_unit, self.distance_unit, self.solid_angle_unit = analyse_unit(unit)
+            self.scale_factor, self.base_unit, self.wavelength_unit, self.frequency_unit, length_unit, self.solid_angle_unit = analyse_unit(unit)
 
             # If the wavelength unit is not None or the frequency unit is not None, we have a spectral density
             if self.wavelength_unit is not None and self.wavelength_unit != "":
-                if strict and not self.density: raise ValueError("The passed unit string does not correspond to a spectral density")
+                if density_strict and not self.density: raise ValueError("The passed unit string does not correspond to a spectral density")
                 self.density = True
             if self.frequency_unit is not None and self.frequency_unit != "":
-                if strict and not self.density: raise ValueError("The passed unit string does not correspond to a spectral density")
+                if density_strict and not self.density: raise ValueError("The passed unit string does not correspond to a spectral density")
                 self.density = True
+
+            # Set the distance or intrinsic scale (extent) unit
+            if self.solid_angle_unit != "":
+
+                # if there is a solid angle unit, we can never have an intrinsic surface
+                # brightness, which is only power/area. That's why we make the distinction here.
+
+                # Check whether we have an angular surface brightness
+                if length_unit != "":
+
+                    # Check if brightness flag is OK
+                    if not brightness and brightness_strict: raise ValueError("The passed unit correspond to a surface brightness")
+
+                    # Set the distance unit
+                    self.distance_unit = length_unit
+
+                    # Set the extent unit
+                    self.extent_unit = ""
+
+                # No length unit, we have an intensity
+                else:
+
+                    # Check if brightness flag is OK
+                    if brightness and brightness_strict: raise ValueError("The passed unit string does not correspond to a surface brightness")
+
+                    # Set the distance and extent units to nothing
+                    self.distance_unit = ""
+                    self.extent_unit = ""
+
+            # No solid angle unit, intrinsic surface brightness is possible
+            else:
+
+                # No length unit, we have an energy, count rate or (spectral) luminosity
+                if length_unit == "":
+
+                    # Check if the brightness flag is OK
+                    if brightness and brightness_strict: raise ValueError("The passed unit string does not correspond to a surface brightness")
+
+                    # Set the distance and extent units to nohting
+                    self.distance_unit = ""
+                    self.extent_unit = ""
+
+                # There is a length unit, we have either flux or intrinsic surface brightness
+                else:
+
+                    # Whether we have flux or instrinsic surface brigthness is completely dependent on the brigthness flag
+                    if brightness:
+
+                        self.distance_unit = ""
+                        self.extent_unit = length_unit
+
+                    # FLUX
+                    else:
+
+                        self.distance_unit = length_unit
+                        self.extent_unit = ""
+
+            # Last checks to be sure
+            if density and density_strict and not self.is_spectral_density: raise ValueError("The passed unit string does not correspond to a spectral density")
+            if not density and density_strict and self.is_spectral_density: raise ValueError("The passed unit string corresponds to a spectral density")
+            if brightness and brightness_strict and not self.is_brightness: raise ValueError("The passed unit string does not correspond to a brightness")
+            if not brightness and brightness_strict and self.is_brightness: raise ValueError("The passed unit string corresponds to a brightness")
 
         # Call the constructor of the base class
         super(PhotometricUnit, self).__init__(unit.scale, unit.bases, unit.powers)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def base_unit(self):
+
+        """
+        This property ...
+        :return: 
+        """
+
+        return self._base_unit
+
+    # -----------------------------------------------------------------
+
+    @base_unit.setter
+    def base_unit(self, unit):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if isinstance(unit, basestring): unit = Unit(unit)
+        self._base_unit = unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelength_unit(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self._wavelength_unit
+
+    # -----------------------------------------------------------------
+
+    @wavelength_unit.setter
+    def wavelength_unit(self, unit):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if isinstance(unit, basestring): unit = Unit(unit)
+        self._wavelength_unit = unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def frequency_unit(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self._frequency_unit
+
+    # -----------------------------------------------------------------
+
+    @frequency_unit.setter
+    def frequency_unit(self, unit):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if isinstance(unit, basestring): unit = Unit(unit)
+        self._frequency_unit = unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def distance_unit(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self._distance_unit
+
+    # -----------------------------------------------------------------
+
+    @distance_unit.setter
+    def distance_unit(self, unit):
+
+        """
+        This funciton ...
+        :param unit: 
+        :return: 
+        """
+
+        if isinstance(unit, basestring): unit = Unit(unit)
+        self._distance_unit = unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extent_unit(self):
+        
+        """
+        This property ...
+        :return: 
+        """
+
+        return self._extent_unit
+
+    # -----------------------------------------------------------------
+
+    @extent_unit.setter
+    def extent_unit(self, unit):
+
+        """
+        This function ...
+        :param unit: 
+        :return: 
+        """
+
+        if isinstance(unit, basestring): unit = Unit(unit)
+        self._extent_unit = unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def solid_angle_unit(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self._solid_angle_unit
+
+    # -----------------------------------------------------------------
+
+    @solid_angle_unit.setter
+    def solid_angle_unit(self, unit):
+        
+        """
+        This function ...
+        :param unit: 
+        :return: 
+        """
+        
+        if isinstance(unit, basestring): unit = Unit(unit)
+        self._solid_angle_unit = unit
 
     # -----------------------------------------------------------------
 
@@ -895,6 +1132,30 @@ class PhotometricUnit(CompositeUnit):
     # -----------------------------------------------------------------
 
     @property
+    def is_brightness(self):
+        
+        """
+        THis function ...
+        :return: 
+        """
+
+        return self.is_intrinsic_surface_brightness or self.is_surface_brightness
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_intrinsic_surface_brightness(self):
+        
+        """
+        THis function ...
+        :return: 
+        """
+
+        return self.base_physical_type == "intrinsic surface brightness"
+
+    # -----------------------------------------------------------------
+
+    @property
     def is_surface_brightness(self):
 
         """
@@ -940,18 +1201,29 @@ class PhotometricUnit(CompositeUnit):
         :return:
         """
 
+        # The base unit is a power
         if self.base_unit.physical_type == "power":
 
+            # / m2 dependence
             if self.distance_unit != "":
+
                 if self.solid_angle_unit != "": base = "surface brightness"
                 else: base = "flux"
+
+            # / kpc2 dependence
+            elif self.extent_unit != "": base = "intrinsic surface brightness"
+
+            # No length unit
             else:
+
                 if self.solid_angle_unit != "": base = "intensity"
                 else: base = "luminosity"
 
+        # The base unit is a frequency
         elif self.base_unit.physical_type == "frequency":
             base = "detection rate"
 
+        # The base unit is dimensionless
         else: base = "detections"
 
         # Return the base type
@@ -1054,7 +1326,7 @@ class PhotometricUnit(CompositeUnit):
     # -----------------------------------------------------------------
 
     def conversion_factor(self, to_unit, density=False, wavelength=None, frequency=None, distance=None, solid_angle=None,
-                          fltr=None, pixelscale=None):
+                          fltr=None, pixelscale=None, brightness=False):
 
         """
         This function ...
@@ -1066,11 +1338,12 @@ class PhotometricUnit(CompositeUnit):
         :param solid_angle:
         :param fltr:
         :param pixelscale:
+        :param brightness:
         :return:
         """
 
         # Parse "to unit"
-        to_unit = PhotometricUnit(to_unit, density=density)
+        to_unit = PhotometricUnit(to_unit, density=density, brightness=brightness)
 
         # Determine wavelength and frequency
         if wavelength is not None:
@@ -1084,9 +1357,7 @@ class PhotometricUnit(CompositeUnit):
 
         # Same type
         if self.physical_type == to_unit.physical_type:
-            #factor = self.scale_factor * self / self.to_unit
             factor = (self / to_unit).to("")
-            #return factor.scale
             return factor
 
         # Convert
@@ -1177,6 +1448,7 @@ class PhotometricUnit(CompositeUnit):
         # Different base type, luminosity
         elif self.base_physical_type == "luminosity":
 
+            # Luminosity to flux
             if to_unit.base_physical_type == "flux":
 
                 if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
@@ -1187,6 +1459,7 @@ class PhotometricUnit(CompositeUnit):
                 # Determine factor
                 factor = new_unit.to(to_unit).value
 
+            # Luminosity to intensity
             elif to_unit.base_physical_type == "intensity":
 
                 if solid_angle is None: raise ValueError("Solid angle should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
@@ -1197,6 +1470,7 @@ class PhotometricUnit(CompositeUnit):
                 # Determine factor
                 factor = new_unit.to(to_unit).value
 
+            # Luminosity to surface brightness
             elif to_unit.base_physical_type == "surface brightness":
 
                 if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
@@ -1204,6 +1478,19 @@ class PhotometricUnit(CompositeUnit):
 
                 # Divide by 4 pi distance**2 and solid angle
                 new_unit /= (4.0 * math.pi * distance**2 * solid_angle)
+
+                # Determine factor
+                factor = new_unit.to(to_unit).value
+
+            # Luminosity to intrinsic surface brightness
+            elif to_unit.is_intrinsic_surface_brightness:
+
+                if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+                if pixelscale is None: raise ValueError("Pixelscale should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+
+                # Divide by pixel area
+                area = pixelscale.pixel_area(distance)
+                new_unit /= area
 
                 # Determine factor
                 factor = new_unit.to(to_unit).value
@@ -1217,6 +1504,7 @@ class PhotometricUnit(CompositeUnit):
         # Different base type, flux
         elif self.base_physical_type == "flux":
 
+            # Flux to luminosity
             if to_unit.base_physical_type == "luminosity":
 
                 if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
@@ -1227,6 +1515,7 @@ class PhotometricUnit(CompositeUnit):
                 # Determine factor
                 factor = new_unit.to(to_unit).value
 
+            # Flux to surface brightness
             elif to_unit.base_physical_type == "surface brightness":
 
                 if solid_angle is None: raise ValueError("Solid angle should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
@@ -1237,6 +1526,7 @@ class PhotometricUnit(CompositeUnit):
                 # Determine factor
                 factor = new_unit.to(to_unit).value
 
+            # Flux to intensity
             elif to_unit.base_physical_type == "intensity":
 
                 if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
@@ -1244,7 +1534,23 @@ class PhotometricUnit(CompositeUnit):
 
                 # Divide by solid angle
                 # Multiply by 4 pi distance**2
-                new_unit /= solid_angle * (4.0 * math.pi * distance ** 2)
+                new_unit *= (4.0 * math.pi * distance ** 2) / solid_angle
+
+                # Determine factor
+                factor = new_unit.to(to_unit).value
+
+            # Flux to intrinsic surface brightness
+            elif to_unit.is_intrinsic_surface_brightness:
+
+                if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+                if pixelscale is None: raise ValueError("Pixelscale should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+
+                # Multiply by 4 pi distance**2
+                new_unit *= 4.0 * math.pi * distance ** 2
+
+                # Divide by pixel area
+                area = pixelscale.pixel_area(distance)
+                new_unit /= area
 
                 # Determine factor
                 factor = new_unit.to(to_unit).value
@@ -1258,6 +1564,7 @@ class PhotometricUnit(CompositeUnit):
         # Different base type, intensity
         elif self.base_physical_type == "intensity":
 
+            # Intensity to luminosity
             if to_unit.base_physical_type == "luminosity":
 
                 if solid_angle is None: raise ValueError("Solid angle should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
@@ -1268,6 +1575,7 @@ class PhotometricUnit(CompositeUnit):
                 # Determine factor
                 factor = new_unit.to(to_unit).value
 
+            # Intensity to flux
             elif to_unit.base_physical_type == "flux":
 
                 if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
@@ -1280,6 +1588,7 @@ class PhotometricUnit(CompositeUnit):
                 # Determine factor
                 factor = new_unit.to(to_unit).value
 
+            # Intensity to surface brightness
             elif to_unit.base_physical_type == "surface brightness":
 
                 if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
@@ -1290,15 +1599,33 @@ class PhotometricUnit(CompositeUnit):
                 # Determine factor
                 factor = new_unit.to(to_unit).value
 
+            # Intensity to intrinsic surface brightness
+            elif to_unit.is_intrinsic_surface_brightness:
+
+                if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+                if solid_angle is None: raise ValueError("Solid angle should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+                if pixelscale is None: raise ValueError("Pixelscale should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+
+                # Multiply by solid angle
+                new_unit *= solid_angle
+
+                # Divide by pixel area
+                area = pixelscale.pixel_area(distance)
+                new_unit /= area
+
+                # Determine factor
+                factor = new_unit.to(to_unit).value
+
             # Invalid
             else: raise RuntimeError("We shouldn't reach this part")
 
             # Return the conversion factor
             return factor
 
-        # Different base type, surface brightness
-        else:
+        # Surface brightness
+        elif self.base_physical_type == "surface brightness":
 
+            # Surface brightness to luminosity
             if to_unit.base_physical_type == "luminosity":
 
                 if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
@@ -1310,6 +1637,7 @@ class PhotometricUnit(CompositeUnit):
                 # Determine factor
                 factor = new_unit.to(to_unit).value
 
+            # Surface brightness to flux
             elif to_unit.base_physical_type == "flux":
 
                 if solid_angle is None: raise ValueError("Solid angle should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
@@ -1320,6 +1648,7 @@ class PhotometricUnit(CompositeUnit):
                 # Determine factor
                 factor = new_unit.to(to_unit).value
 
+            # Surface brightness to intensity
             elif to_unit.base_physical_type == "intensity":
 
                 if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
@@ -1330,11 +1659,105 @@ class PhotometricUnit(CompositeUnit):
                 # Determine factor
                 factor = new_unit.to(to_unit).value
 
+            # Surface brightness to intrinsic surface brightness
+            elif to_unit.base_physical_type == "intrinsic surface brightness":
+
+                if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+                if solid_angle is None: raise ValueError("Solid angle should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+                if pixelscale is None: raise ValueError("Pixelscale should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+
+                # Multiply by 4 pi distance**2
+                new_unit *= (4.0 * math.pi * distance **2)
+
+                # Multiply by solid angle / area
+                new_unit *= solid_angle
+
+                # Divide by pixel area
+                area = pixelscale.pixel_area(distance)
+                new_unit /= area
+
+                # Determine factor
+                factor = new_unit.to(to_unit).value
+
             # Invalid
             else: raise RuntimeError("We shouldn't reach this part")
 
             # Return the conversion factor
             return factor
+
+        # Intrinsic surface brightness
+        elif self.base_physical_type == "intrinsic surface brightness":
+
+            # Intrinsic surface brightness to luminosity
+            if to_unit.base_physical_type == "luminosity":
+
+                if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+
+                # Multiply by the pixelarea
+                area = pixelscale.pixel_area(distance)
+                new_unit *= area
+
+                # Determine factor
+                factor = new_unit.to(to_unit).value
+
+            # Intrinsic surface brightness to flux
+            elif to_unit.base_physical_type == "flux":
+
+                if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+                if pixelscale is None: raise ValueError("Pixelscale should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+
+                # Multiply by the pixelarea
+                area = pixelscale.pixel_area(distance)
+                new_unit *= area
+
+                # Divide by 4 pi distance**2
+                new_unit /= (4.0 * math.pi * distance ** 2)
+
+                # Determine the factor
+                factor = new_unit.to(to_unit).value
+
+            # Intrinsic surface brightness to intensity
+            elif to_unit.base_physical_type == "intensity":
+
+                if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+                if pixelscale is None: raise ValueError("Pixelscale should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+                if solid_angle is None: raise ValueError("Solid angle should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+
+                # Multiply by the pixelarea
+                area = pixelscale.pixel_area(distance)
+                new_unit *= area
+
+                # Divide by solid angle
+                new_unit /= solid_angle
+
+                # Determine the factor
+                factor = new_unit.to(to_unit).value
+
+            # Intrinsic surface brightness to surface brightness
+            elif to_unit.base_physical_type == "surface brightness":
+
+                if distance is None: raise ValueError("Distance should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+                if pixelscale is None: raise ValueError("Pixelscale should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+                if solid_angle is None: raise ValueError("Solid angle should be specified for conversion from " + self.physical_type + " to " + to_unit.physical_type)
+
+                # Multiply by the pixelarea
+                area = pixelscale.pixel_area(distance)
+                new_unit *= area
+
+                # Divide by the solid angle
+                new_unit /= solid_angle
+
+                # Divide by 4 pi distance**2
+                new_unit /= (4.0 * math.pi * distance ** 2)
+
+                # Determine the factor
+                factor = new_unit.to(to_unit).value
+
+            # Invalid
+            else: raise RuntimeError("We shouldn't reach this part")
+
+        # Unknown base type
+        else: raise RuntimeError("Unknown base type:" + self.base_physical_type)
 
 # -----------------------------------------------------------------
 

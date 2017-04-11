@@ -835,7 +835,8 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def convert_to(self, to_unit, wavelength=None, frequency=None, distance=None, solid_angle=None):
+    def convert_to(self, to_unit, wavelength=None, frequency=None, distance=None, solid_angle=None, density=False,
+                   brightness=False, density_strict=False, brightness_strict=False):
 
         """
         This function ...
@@ -844,11 +845,14 @@ class Frame(NDDataArray):
         :param frequency:
         :param distance:
         :param solid_angle:
+        :param density:
+        :param brightness:
         :return:
         """
 
         # Calculate the conversion factor
-        factor = self.unit.conversion_factor(self, to_unit, wavelength, frequency, distance, solid_angle)
+        factor = self.unit.conversion_factor(self, to_unit, wavelength, frequency, distance, solid_angle, density=density,
+                                             brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
 
         # Multiply the frame with the conversion factor
         self.__imul__(factor)
@@ -861,7 +865,8 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def converted_to(self, to_unit, wavelength=None, frequency=None, distance=None, solid_angle=None):
+    def converted_to(self, to_unit, wavelength=None, frequency=None, distance=None, solid_angle=None, density=False,
+                     brightness=False, density_strict=False, brightness_strict=False):
 
         """
         This function ...
@@ -870,11 +875,16 @@ class Frame(NDDataArray):
         :param frequency: 
         :param distance: 
         :param solid_angle: 
+        :param density:
+        :param brightness:
+        :param density_strict:
+        :param brightness_strict:
         :return: 
         """
 
         new = self.copy()
-        new.convert_to(to_unit, wavelength=wavelength, frequency=frequency, distance=distance, solid_angle=solid_angle)
+        new.convert_to(to_unit, wavelength=wavelength, frequency=frequency, distance=distance, solid_angle=solid_angle,
+                       density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
         return new
 
     # -----------------------------------------------------------------

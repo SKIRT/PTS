@@ -26,11 +26,13 @@ from ...core.filter.filter import parse_filter, Filter
 # The path to the Galametz data directory
 galametz_path = fs.join(introspection.pts_dat_dir("magic"), "Galametz")
 
-# The path to the table containing the single band data
-single_band_table_path = fs.join(galametz_path, "single.dat")
+# The patsh to the tables containing the single band data
+single_band_luminosity_table_path = fs.join(galametz_path, "single_luminosity.dat")
+single_band_brightness_table_path = fs.join(galametz_path, "single_brightness.dat")
 
 # The path to the table containing the Galametz calibration parameters
-multi_band_table_path = fs.join(galametz_path, "multi.dat")
+multi_band_luminosity_table_path = fs.join(galametz_path, "multi_luminosity.dat")
+multi_band_brightness_table_path = fs.join(galametz_path, "multi_brightness.dat")
 
 # -----------------------------------------------------------------
 
@@ -55,10 +57,16 @@ class GalametzTIRCalibration(object):
         """
 
         # Load the table with the single band data
-        self.single = tables.from_file(single_band_table_path, format="ascii.commented_header")
+        self.single_luminosity = tables.from_file(single_band_luminosity_table_path, format="ascii.commented_header")
+
+        # Load the table with the single band data for surface brightness
+        self.single_brightness = tables.from_file(single_band_brightness_table_path, format="ascii.commented_header")
 
         # Load the table with the multi band data
-        self.multi = tables.from_file(multi_band_table_path, format="ascii.commented_header")
+        self.multi_luminosity = tables.from_file(multi_band_luminosity_table_path, format="ascii.commented_header")
+
+        # Load the table with the multi band data for surface brightness
+        self.multi_brightness = tables.from_file(multi_band_brightness_table_path, format="ascii.commented_header")
 
     # -----------------------------------------------------------------
 
@@ -70,7 +78,7 @@ class GalametzTIRCalibration(object):
         :return: 
         """
 
-        return [parse_filter(filter_name) for filter_name in self.single["Band"]]
+        return [parse_filter(filter_name) for filter_name in self.single_luminosity["Band"]]
 
     # -----------------------------------------------------------------
 
@@ -85,7 +93,7 @@ class GalametzTIRCalibration(object):
 
     # -----------------------------------------------------------------
 
-    def get_parameters_single(self, fltr):
+    def get_parameters_single_luminosity(self, fltr):
 
         """
         This function ...
@@ -94,11 +102,11 @@ class GalametzTIRCalibration(object):
         """
 
         index = self.index_for_filter_single(fltr)
-        return [self.single["ai"][index], self.single["bi"][index]]
+        return [self.single_luminosity["ai"][index], self.single_luminosity["bi"][index]]
 
     # -----------------------------------------------------------------
 
-    def get_scatter_single(self, fltr):
+    def get_parameters_single_brightness(self, fltr):
 
         """
         This function ...
@@ -107,7 +115,33 @@ class GalametzTIRCalibration(object):
         """
 
         index = self.index_for_filter_single(fltr)
-        return self.single["scatter"][index]
+        return [self.single_brightness["ai"][index], self.single_brightness["bi"][index]]
+
+    # -----------------------------------------------------------------
+
+    def get_scatter_single_luminosity(self, fltr):
+
+        """
+        This function ...
+        :param fltr: 
+        :return: 
+        """
+
+        index = self.index_for_filter_single(fltr)
+        return self.single_luminosity["scatter"][index]
+
+    # -----------------------------------------------------------------
+
+    def get_scatter_single_brightness(self, fltr):
+
+        """
+        This function ...
+        :param fltr: 
+        :return: 
+        """
+
+        index = self.index_for_filter_single(fltr)
+        return self.single_brightness["scatter"][index]
 
     # -----------------------------------------------------------------
 
@@ -123,7 +157,7 @@ class GalametzTIRCalibration(object):
 
     # -----------------------------------------------------------------
 
-    def has_combination_multi(self, *args):
+    def has_combination_multi_luminosity(self, *args):
 
         """
         This function ...
@@ -135,9 +169,30 @@ class GalametzTIRCalibration(object):
         needed_column_names, not_needed_column_names = self.get_column_names_multi(*args)
 
         # Loop over the entries in the galametz table
-        for i in range(len(self.multi)):
-            if is_appropriate_galametz_entry(self.multi, i, needed_column_names, not_needed_column_names): return True
+        for i in range(len(self.multi_luminosity)):
+            if is_appropriate_galametz_entry(self.multi_luminosity, i, needed_column_names, not_needed_column_names): return True
 
+        # No row is found
+        return False
+
+    # -----------------------------------------------------------------
+
+    def has_combination_multi_brightness(self, *args):
+
+        """
+        This function ...
+        :param args: 
+        :return: 
+        """
+
+        # Get column names
+        needed_column_names, not_needed_column_names = self.get_column_names_multi(*args)
+
+        # Loop over the entries in the table
+        for i in range(len(self.multi_brightness)):
+            if is_appropriate_galametz_entry(self.multi_brightness, i, needed_column_names, not_needed_column_names): return True
+
+        # No row is found
         return False
 
     # -----------------------------------------------------------------
@@ -159,7 +214,7 @@ class GalametzTIRCalibration(object):
             needed_column_names.append(name)
 
         # List of not needed column names
-        colnames = self.multi.colnames
+        colnames = self.multi_luminosity.colnames
         not_needed_column_names = [name for name in colnames if name not in needed_column_names]
 
         not_needed_column_names.remove("R2")
@@ -170,7 +225,7 @@ class GalametzTIRCalibration(object):
 
     # -----------------------------------------------------------------
 
-    def get_parameters_multi(self, *args):
+    def get_parameters_multi_luminosity(self, *args):
 
         """
         This function ...
@@ -185,12 +240,42 @@ class GalametzTIRCalibration(object):
         parameters = None
 
         # Loop over the entries in the galametz table
-        for i in range(len(self.multi)):
+        for i in range(len(self.multi_luminosity)):
 
-            if is_appropriate_galametz_entry(self.multi, i, needed_column_names, not_needed_column_names):
+            if is_appropriate_galametz_entry(self.multi_luminosity, i, needed_column_names, not_needed_column_names):
 
                 parameters = []
-                for name in needed_column_names: parameters.append(self.multi[name][i])
+                for name in needed_column_names: parameters.append(self.multi_luminosity[name][i])
+                break
+
+            else: continue
+
+        # Return the parameters
+        return parameters
+
+    # -----------------------------------------------------------------
+
+    def get_parameters_multi_brightness(self, *args):
+
+        """
+        This function ...
+        :param args: 
+        :return: 
+        """
+
+        # Column names
+        needed_column_names, not_needed_column_names = self.get_column_names_multi(*args)
+
+        # The parameters
+        parameters = None
+
+        # Loop over the entries in the table
+        for i in range(len(self.multi_brightness)):
+
+            if is_appropriate_galametz_entry(self.multi_brightness, i, needed_column_names, not_needed_column_names):
+
+                parameters = []
+                for name in needed_column_names: parameters.append(self.multi_brightness[name][i])
                 break
 
             else: continue

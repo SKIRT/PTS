@@ -1004,20 +1004,24 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def convert_to(self, to_unit, distance=None, density=False):
+    def convert_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False, brightness_strict=False):
 
         """
         This function ...
         :param to_unit:
         :param distance:
         :param density:
+        :param brightness:
+        :param density_strict:
+        :param brightness_strict:
         """
 
         # Inform the user
         log.debug("Converting the unit of the image from " + str(self.unit) + " to " + str(to_unit) + " ...")
 
         # Calculate the conversion factor
-        factor = self.unit.conversion_factor(to_unit, density=density, filter=self.filter, pixelscale=self.pixelscale, distance=distance)
+        factor = self.unit.conversion_factor(to_unit, density=density, filter=self.filter, pixelscale=self.pixelscale,
+                                             distance=distance, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
 
         # Debug message
         log.debug("Conversion factor = " + str(factor))

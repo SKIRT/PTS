@@ -18,13 +18,14 @@ from astropy.coordinates import Angle
 
 # -----------------------------------------------------------------
 
-def parse_quantity(argument, density=False, physical_type=None):
+def parse_quantity(argument, density=False, physical_type=None, brightness=False):
 
     """
     This function ...
     :param argument:
     :param density:
     :param physical_type:
+    :param brightness:
     :return:
     """
 
@@ -34,7 +35,7 @@ def parse_quantity(argument, density=False, physical_type=None):
 
         number = argument.value
         unit = argument.unit
-        unit = parse_unit(unit, density=density)
+        unit = parse_unit(unit, density=density, brightness=brightness)
 
     else:
 
@@ -50,7 +51,7 @@ def parse_quantity(argument, density=False, physical_type=None):
                 argument = argument[:-1]
         if units == "": raise ValueError("Unit is not specified")
 
-        unit = parse_unit(units.strip(), density=density)
+        unit = parse_unit(units.strip(), density=density, brightness=brightness)
 
     # Check physical type
     if physical_type is not None:

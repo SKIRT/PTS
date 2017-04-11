@@ -12,32 +12,17 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import numpy as np
-
 # Import astronomical modules
-from astropy import constants
 from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
-from ....core.tools import introspection, tables
 from ....core.tools import filesystem as fs
 from ....core.tools.logging import log
 from ..component import MapsComponent
-from ....magic.core.frame import Frame, linear_combination
+from ....magic.core.frame import linear_combination
 from ....core.basics.unit import parse_unit as u
 from ....magic.misc.galametz import GalametzTIRCalibration
 from ....core.tools import sequences
-
-# -----------------------------------------------------------------
-
-# The path to the table containing the parameters from Cortese et. al 2008
-cortese_table_path = fs.join(introspection.pts_dat_dir("modeling"), "cortese.dat")
-
-# -----------------------------------------------------------------
-
-speed_of_light = constants.c
-solar_luminosity = 3.846e26 * u("W")
 
 # -----------------------------------------------------------------
 
@@ -162,68 +147,6 @@ class MultiBandTIRMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def load_frames_old(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the frames ...")
-
-        # Get the galaxy distance
-        distance = self.galaxy_properties.distance
-
-        # Load all the frames and error maps
-        for name in names:
-
-            frame = self.dataset.get_frame(name)
-            errors = self.dataset.get_errormap(name)
-
-            ## CONVERT TO LSUN
-
-            # Get pixelscale and wavelength
-            pixelscale = frame.average_pixelscale
-            wavelength = frame.filter.pivot
-
-            ##
-
-            # Conversion from MJy / sr to Jy / sr
-            conversion_factor = 1e6
-
-            # Conversion from Jy / sr to Jy / pix(2)
-            conversion_factor *= (pixelscale ** 2).to("sr/pix2").value
-
-            # Conversion from Jy / pix to W / (m2 * Hz) (per pixel)
-            conversion_factor *= 1e-26
-
-            # Conversion from W / (m2 * Hz) (per pixel) to W / (m2 * m) (per pixel)
-            conversion_factor *= (speed_of_light / wavelength**2).to("Hz/m").value
-
-            # Conversion from W / (m2 * m) (per pixel) [SPECTRAL FLUX] to W / m [SPECTRAL LUMINOSITY]
-            conversion_factor *= (4. * np.pi * distance**2).to("m2").value
-
-            # Conversion from W / m [SPECTRAL LUMINOSITY] to W [LUMINOSITY]
-            conversion_factor *= wavelength.to("m").value
-
-            # Conversion from W to Lsun
-            conversion_factor *= 1. / solar_luminosity.to("W").value
-
-            ## CONVERT
-
-            frame *= conversion_factor
-            frame.unit = "Lsun"
-
-            errors *= conversion_factor
-            errors.unit = "Lsun"
-
-            # Add the frame and error map to the appropriate dictionary
-            self.frames[name] = frame
-            self.errors[name] = errors
-
-    # -----------------------------------------------------------------
-
     def make_maps(self):
 
         """
@@ -241,18 +164,22 @@ class MultiBandTIRMapMaker(MapsComponent):
         for filters in sequences.combinations(self.available_filters, lengths=[2,3]):
 
             # Check if the combination if possible
-            if not self.galametz.has_combination_multi(*filters): continue
+            if not self.galametz.has_combination_multi_brightness(*filters): continue
 
             # Get the parameters
-            coefficients = self.galametz.get_parameters_multi(*filters)
+            coefficients = self.galametz.get_parameters_multi_brightness(*filters)
 
-            # Get the frames in neutral luminosity
+            # Get the frames
             frames = []
-            for fltr in filters: frames.append(self.frames[fltr].converted_to("W", density=True, distance=distance))
+            for fltr in filters:
+
+                # Convert the frame to neutral intrinsic surface brightness and add it to the list
+                frame = self.frames[fltr].converted_to("W/kpc2", density=True, brightness=True, density_strict=True, brightness_strict=True)
+                frames.append(frame)
 
             # Calculate the TIR
             tir = linear_combination(frames, coefficients)
-            tir.unit = u("W", density=True)
+            tir.unit = u("W/kpc2", density=False, brightness=True, density_strict=True, brightness_strict=True)
             tir.wcs = frames[0].wcs
 
             # Determine keys
@@ -263,43 +190,43 @@ class MultiBandTIRMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def make_tir_old(self):
+    #def make_tir_old(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
         # Inform the user
-        log.info("Creating the TIR map in W/m2 units ...")
+        #log.info("Creating the TIR map in W/m2 units ...")
 
         ## GET THE GALAMETZ PARAMETERS
-        a, b, c = self.galametz.get_parameters_multi("MIPS 24mu", "Pacs blue", "Pacs red")
+        #a, b, c = self.galametz.get_parameters_multi("MIPS 24mu", "Pacs blue", "Pacs red")
 
-        assert a == 2.133
-        assert b == 0.681
-        assert c == 1.125
+        #assert a == 2.133
+        #assert b == 0.681
+        #assert c == 1.125
 
         # MIPS, PACS BLUE AND PACS RED CONVERTED TO LSUN (ABOVE)
         # Galametz (2013) formula for Lsun units
-        tir_map = a * self.frames["MIPS 24mu"] + b * self.frames["Pacs blue"] + c * self.frames["Pacs red"]
+        #tir_map = a * self.frames["MIPS 24mu"] + b * self.frames["Pacs blue"] + c * self.frames["Pacs red"]
 
         ## Convert the TIR map from Lsun to W / m2
 
-        conversion_factor = 1.0
+        #conversion_factor = 1.0
 
         # Conversion from Lsun to W
 
-        conversion_factor *= solar_luminosity.to("W").value
+        #conversion_factor *= solar_luminosity.to("W").value
 
         # Conversion from W [LUMINOSITY] to W / m2 [FLUX]
-        distance = self.galaxy_properties.distance
-        conversion_factor /= (4. * np.pi * distance**2).to("m2").value
+        #distance = self.galaxy_properties.distance
+        #conversion_factor /= (4. * np.pi * distance**2).to("m2").value
 
         ## CONVERT AND SET NEW UNIT
 
-        self.tir_si = Frame(tir_map * conversion_factor)
-        self.tir_si.unit = "W/m2"
+        #self.tir_si = Frame(tir_map * conversion_factor)
+        #self.tir_si.unit = "W/m2"
 
     # -----------------------------------------------------------------
 
