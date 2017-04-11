@@ -194,8 +194,6 @@ class ContinuousOptimizer(Optimizer):
         # Inform the user
         log.info("Plotting the scores ...")
 
-
-
     # -----------------------------------------------------------------
 
     def plot_heat_map(self):
@@ -204,5 +202,7 @@ class ContinuousOptimizer(Optimizer):
         This function ...
         :return:
         """
+
+        pass
 
 # -----------------------------------------------------------------
