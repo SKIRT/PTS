@@ -22,6 +22,7 @@ definition.add_positional_optional("tests", "string_list", "test(s) to perform (
 definition.add_flag("check_imports", "check import statements", True)
 definition.add_flag("check_commands", "check commands", True)
 definition.add_flag("check_configurations", "check configurations", True)
+definition.add_flag("check_packages", "check package definitions", True)
 definition.add_flag("only_checks", "only performs checks, no actual test cases", False)
 
 # Add flags

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.maps.dust.cortese Contains the CorteseDustMapMaker class.
+## \package pts.modeling.maps.ssfr.ssfr Contains the SSFRMapMaker class.
 
 # -----------------------------------------------------------------
 
@@ -13,16 +13,13 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ....magic.core.frame import Frame
-from ....core.tools import introspection, tables
-from ....core.tools import filesystem as fs
 from ....core.tools.logging import log
 from ..component import MapsComponent
-from .cortese import CorteseAttenuationMapMaker
+from .colours import ColoursSSFRMapMaker
 
 # -----------------------------------------------------------------
 
-class AttenuationMapMaker(MapsComponent):
+class SSFRMapMaker(MapsComponent):
 
     """
     This class...
@@ -37,43 +34,56 @@ class AttenuationMapMaker(MapsComponent):
         """
 
         # Call the constructor of the base class
-        super(AttenuationMapMaker, self).__init__(config, interactive)
+        super(SSFRMapMaker, self).__init__(config, interactive)
+
+        # -- Attributes --
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def run(self):
 
         """
         This function ...
-        :param kwargs:
         :return:
         """
 
-        # Setup
-        self.setup(**kwargs)
+        # 1. Call the setup function
+        self.setup()
 
-        # Cortese
-        self.make_cortese_attenuation_maps()
+        # Make SSFR maps based on colours
+        self.make_ssfr_colours()
 
-        # Write
+        # 5. Writing
         self.write()
 
     # -----------------------------------------------------------------
 
-    def make_cortese_attenuation_maps(self):
+    def setup(self):
 
         """
         This function ...
         :return:
         """
 
+        # Call the setup function of the base class
+        super(SSFRMapMaker, self).setup()
+
+    # -----------------------------------------------------------------
+
+    def make_ssfr_colours(self):
+
+        """
+        THis function ...
+        :return: 
+        """
+
         # Inform the user
-        log.info("Making Cortese attenuation maps ...")
+        log.info("Making sSFR maps based on colours ...")
 
         # Create the map maker
-        maker = CorteseAttenuationMapMaker()
+        maker = ColoursSSFRMapMaker()
 
-        # Run the map maker
+        # Run the maker
         maker.run()
 
     # -----------------------------------------------------------------
@@ -81,10 +91,11 @@ class AttenuationMapMaker(MapsComponent):
     def write(self):
 
         """
-        This function ...
-        :return:
+        THis function ...
+        :return: 
         """
 
-        pass
+        # Inform the user
+        log.info("Writing ...")
 
 # -----------------------------------------------------------------

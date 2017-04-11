@@ -190,6 +190,9 @@ class PTSTestSuite(Configurable):
         # Check configurations
         if self.config.check_commands: self.check_configurations()
 
+        # Check package definitions
+        if self.config.check_packages: self.check_packages()
+
         # 4. Load tests
         if not self.config.only_checks: self.load_tests()
 
@@ -413,6 +416,22 @@ class PTSTestSuite(Configurable):
 
         # Inform the user
         log.info("Checking the configuration modules with their corresponding classes ...")
+
+    # -----------------------------------------------------------------
+
+    def check_packages(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Checking the package definitions ...")
+
+        # Check these kinds of definitions at the top of each module:
+
+        # ## \package pts.magic.misc.cortese Contains the GalametzTIRCalibration class.
 
     # -----------------------------------------------------------------
 

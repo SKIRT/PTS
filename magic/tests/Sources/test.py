@@ -35,9 +35,6 @@ from pts.modeling.basics.properties import GalaxyProperties
 from pts.core.filter.filter import parse_filter
 from pts.magic.basics.coordinatesystem import CoordinateSystem
 from pts.magic.catalog.fetcher import CatalogFetcher
-from pts.magic.basics.stretch import SkyStretch
-from pts.magic.region.rectangle import SkyRectangleRegion
-from pts.magic.tools import coordinates
 from pts.magic.basics.coordinate import SkyCoordinate
 from pts.core.tools import stringify
 from pts.magic.tools import wavelengths
@@ -52,6 +49,7 @@ from pts.magic.basics.coordinate import PixelCoordinate
 from pts.magic.basics.stretch import PixelStretch
 from pts.magic.tools import catalogs
 from pts.core.remote.remote import Remote
+from pts.magic.core.list import CoordinateSystemList
 
 # -----------------------------------------------------------------
 
@@ -107,7 +105,7 @@ class SourcesTest(TestImplementation):
         self.properties = None
 
         # The coordinate systems
-        self.coordinate_systems = dict()
+        self.coordinate_systems = CoordinateSystemList()
 
         # The frames
         self.frames = dict()
@@ -276,338 +274,10 @@ class SourcesTest(TestImplementation):
             wcs = CoordinateSystem.from_header_file(path)
 
             # Add the coordinate system
-            self.coordinate_systems[fltr] = wcs
+            self.coordinate_systems.append(wcs, fltr=fltr)
 
             # Break the loop if we have enough
             if nfilters_stars == self.config.nfilters_stars and nfilters_extra == self.config.nfilters_extra: break
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def min_ra(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        min_ra = None
-
-        # Loop over the coordinate systems
-        for fltr in self.coordinate_systems:
-
-            wcs = self.coordinate_systems[fltr]
-            wcs_min_ra = wcs.min_ra
-
-            if min_ra is None or min_ra > wcs_min_ra: min_ra = wcs_min_ra
-
-        return min_ra
-
-    # -----------------------------------------------------------------
-
-    @property
-    def min_ra_deg(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.min_ra.to("deg").value
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def max_ra(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        max_ra = None
-
-        # Loop over the coordinate systems
-        for fltr in self.coordinate_systems:
-
-            wcs = self.coordinate_systems[fltr]
-            wcs_max_ra = wcs.max_ra
-
-            if max_ra is None or max_ra < wcs_max_ra: max_ra = wcs_max_ra
-
-        return max_ra
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def max_ra_deg(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.max_ra.to("deg").value
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def ra_center(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return 0.5 * (self.min_ra + self.max_ra)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def ra_center_deg(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.ra_center.to("deg").value
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def ra_range(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        the_range = None
-
-        # Loop over the coordinate systems
-        for fltr in self.coordinate_systems:
-
-            wcs = self.coordinate_systems[fltr]
-
-            if the_range is None: the_range = wcs.ra_range
-            else: the_range.adjust(wcs.ra_range)
-
-        # Return the range
-        return the_range
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def min_dec(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        min_dec = None
-
-        # Loop over the coordinate systems
-        for fltr in self.coordinate_systems:
-
-            wcs = self.coordinate_systems[fltr]
-            wcs_min_dec = wcs.min_dec
-
-            if min_dec is None or min_dec > wcs_min_dec: min_dec = wcs_min_dec
-
-        # Return
-        return min_dec
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def min_dec_deg(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.min_dec.to("deg").value
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def max_dec(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        max_dec = None
-
-        # Loop over the coordinate systems
-        for fltr in self.coordinate_systems:
-
-            wcs = self.coordinate_systems[fltr]
-            wcs_max_dec = wcs.max_dec
-
-            if max_dec is None or max_dec < wcs_max_dec: max_dec = wcs_max_dec
-
-        # Return
-        return max_dec
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def dec_center(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        dec_center = 0.5 * (self.min_dec + self.max_dec)
-        return dec_center
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def dec_center_deg(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.dec_center.to("deg").value
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def max_dec_deg(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.max_dec.to("deg").value
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def dec_range(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        the_range = None
-
-        # Loop over the coordinate systems
-        for fltr in self.coordinate_systems:
-
-            wcs = self.coordinate_systems[fltr]
-
-            if the_range is None: the_range = wcs.dec_range
-            else: the_range.adjust(wcs.dec_range)
-
-        # Return the dec range
-        return the_range
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def center(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return SkyCoordinate(self.ra_center_deg, self.dec_center_deg, unit="deg")
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def coordinate_range(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Calculate the actual RA and DEC distance in degrees
-        ra_distance = abs(coordinates.ra_distance(self.dec_center_deg, self.min_ra_deg, self.max_ra_deg))
-        dec_distance = abs(self.max_dec_deg - self.min_dec_deg)
-
-        # Create RA and DEC span as quantities
-        ra_span = ra_distance * u("deg")
-        dec_span = dec_distance * u("deg")
-
-        # Return the center coordinate and the RA and DEC span
-        return self.center, ra_span, dec_span
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def bounding_box(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get coordinate range
-        center, ra_span, dec_span = self.coordinate_range
-
-        # Create box
-        radius = SkyStretch(0.5 * ra_span, 0.5 * dec_span)
-        box = SkyRectangleRegion(center, radius)
-
-        # Return the box
-        return box
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def min_pixelscale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        pixelscale = None
-
-        # Loop over the coordinate systems
-        for fltr in self.coordinate_systems:
-
-            wcs = self.coordinate_systems[fltr]
-            if pixelscale is None or wcs.average_pixelscale < pixelscale: pixelscale = wcs.average_pixelscale
-
-        # Return the minimum pixelscale
-        return pixelscale
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def max_pixelscale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        pixelscale = None
-
-        # Loop over the coordinate systems
-        for fltr in self.coordinate_systems:
-
-            wcs = self.coordinate_systems[fltr]
-            if pixelscale is None or wcs.average_pixelscale > pixelscale: pixelscale = wcs.average_pixelscale
-
-        # Return the maximum pixelscale
-        return pixelscale
 
     # -----------------------------------------------------------------
 
@@ -622,7 +292,7 @@ class SourcesTest(TestImplementation):
         log.info("Initializing the frames ...")
 
         # Loop over the filters
-        for fltr in self.coordinate_systems:
+        for fltr in self.coordinate_systems.filters:
 
             # Debugging
             log.debug("Initializing the '" + str(fltr) + "' frame ...")
@@ -741,10 +411,10 @@ class SourcesTest(TestImplementation):
         log.info("Fetching catalogs ...")
 
         # Get extended source catalog
-        self.extended_source_catalog = self.fetcher.get_extended_source_catalog(self.bounding_box)
+        self.extended_source_catalog = self.fetcher.get_extended_source_catalog(self.coordinate_systems.bounding_box)
 
         # Fetch
-        self.point_source_catalog = self.fetcher.get_point_source_catalog(self.bounding_box, self.min_pixelscale, self.config.point_source_catalogs)
+        self.point_source_catalog = self.fetcher.get_point_source_catalog(self.coordinate_systems.bounding_box, self.coordinate_systems.min_pixelscale, self.config.point_source_catalogs)
 
     # -----------------------------------------------------------------
 
@@ -856,8 +526,8 @@ class SourcesTest(TestImplementation):
         log.info("Creating random point sources ...")
 
         # Generate random coordinates
-        right_ascensions = np.random.uniform(self.min_ra_deg, self.max_ra_deg, size=self.config.nrandom_sources)
-        declinations = np.random.uniform(self.min_dec_deg, self.max_dec_deg, size=self.config.nrandom_sources)
+        right_ascensions = np.random.uniform(self.coordinate_systems.min_ra_deg, self.coordinate_systems.max_ra_deg, size=self.config.nrandom_sources)
+        declinations = np.random.uniform(self.coordinate_systems.min_dec_deg, self.coordinate_systems.max_dec_deg, size=self.config.nrandom_sources)
 
         # Loop over the coordinates
         for ra, dec in zip(right_ascensions, declinations):

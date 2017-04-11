@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.misc.galametz Contains the GalametzTIRCalibration class.
+## \package pts.magic.calibrations.galametz Contains the GalametzTIRCalibration class.
 
 # -----------------------------------------------------------------
 

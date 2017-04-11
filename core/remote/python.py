@@ -584,6 +584,23 @@ class AttachedPythonSession(RemotePythonSession):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_host_id(cls, host_id, assume_pts=False):
+
+        """
+        This function ...
+        :param host_id:
+        :param assume_pts:
+        :return:
+        """
+
+        from .remote import Remote
+        remote = Remote()
+        remote.setup(host_id)
+        return cls(remote, assume_pts=assume_pts)
+
+    # -----------------------------------------------------------------
+
     def send_line(self, line, show_output=False, timeout=None):
 
         """

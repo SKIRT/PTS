@@ -21,7 +21,7 @@ from ....core.tools.logging import log
 from ..component import MapsComponent
 from ....magic.core.frame import linear_combination
 from ....core.basics.unit import parse_unit as u
-from ....magic.misc.galametz import GalametzTIRCalibration
+from ....magic.calibrations.galametz import GalametzTIRCalibration
 from ....core.tools import sequences
 
 # -----------------------------------------------------------------

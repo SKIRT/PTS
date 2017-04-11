@@ -34,9 +34,6 @@ from ....core.tools.sequences import combine_unique
 # The path to the table containing the parameters from Cortese et. al 2008
 cortese_table_path = fs.join(introspection.pts_dat_dir("modeling"), "cortese.dat")
 
-# The path to the table containing the Galametz calibration parameters
-galametz_table_path = fs.join(introspection.pts_dat_dir("modeling"), "galametz.dat")
-
 # -----------------------------------------------------------------
 
 speed_of_light = constants.c
@@ -137,7 +134,7 @@ class CorteseAttenuationMapMaker(MapsComponent):
         """
 
         # Call the setup function of the base class
-        super(CorteseDustMapMaker, self).setup()
+        super(CorteseAttenuationMapMaker, self).setup()
 
         # Load the Cortese et al. 2008 table
         self.cortese = tables.from_file(cortese_table_path, format="ascii.commented_header")

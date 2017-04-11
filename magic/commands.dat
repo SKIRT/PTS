@@ -3,10 +3,10 @@ aperture_correction | -- | photometry.aperturecorrector.ApertureCorrector | inte
 prepare_images | -- | prepare.batch.BatchImagePreparer | arguments | Prepare a dataset of images or a single image of a galaxy
 summarize_images | -- | misc.summarizer.ImageSummarizer | arguments | Summarize the properties of a set of images
 create_dataset | -- | core.dataset.DataSetCreator | arguments | Create a dataset from a set of images
-list_ned | -- | misc.ned.NED | arguments | List images found on NED
-get_s4g | -- | misc.s4g.S4G | arguments | Get galaxy components from S4G study
+list_ned | -- | services.ned.NED | arguments | List images found on NED
+get_s4g | -- | services.s4g.S4G | arguments | Get galaxy components from S4G study
 get_projections | -- | misc.project.Projector | arguments | Create projections for creating a simulation of a galaxy according to the galaxy parameters
-get_seds | -- | misc.seds.SEDFetcher | arguments | Fetch reference SEDs for a certain galaxy
+get_seds | -- | services.seds.SEDFetcher | arguments | Fetch reference SEDs for a certain galaxy
 find_sources | -- | sources.finder.SourceFinder | arguments | Find sources for the images in a dataset or a single image
 import_catalogs | -- | catalog.importer.CatalogImporter | arguments | Import galactic and stellar catalogs
 find_extended | -- | sources.extended.ExtendedSourceFinder | arguments | Find extended sources in an image

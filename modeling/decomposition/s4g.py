@@ -17,7 +17,7 @@ from .component import DecompositionComponent
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
 from ...core.tools import introspection
-from ...magic.misc.s4g import S4G
+from ...magic.services.s4g import S4G
 
 # -----------------------------------------------------------------
 

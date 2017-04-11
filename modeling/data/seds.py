@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from .component import DataComponent
-from ...magic.misc.seds import SEDFetcher as _SEDFetcher
+from ...magic.services.seds import SEDFetcher as _SEDFetcher
 
 # -----------------------------------------------------------------
 

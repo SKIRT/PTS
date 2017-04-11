@@ -22,12 +22,12 @@ from astropy import constants
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.magic.core.frame import Frame
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter, InteractiveConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
 from pts.core.simulation.wavelengthgrid import WavelengthGrid
 from pts.magic.core.datacube import DataCube
 from pts.magic.core.remote import RemoteDataCube
 from pts.core.filter.broad import BroadBandFilter
-from pts.core.remote.python import RemotePythonSession
+from pts.core.remote.python import AttachedPythonSession
 from pts.core.basics.unit import parse_unit as u
 
 # -----------------------------------------------------------------
@@ -148,7 +148,7 @@ wavelengths = wavelength_grid.wavelengths(asarray=True) # list of wavelengths
 datacube_path = fs.join(modeling_path, "fit_before_new", "best", "images", "M81_earth_total.fits")
 
 # Local or remote
-session = RemotePythonSession.from_host_id(config.remote)
+session = AttachedPythonSession.from_host_id(config.remote)
 if config.remote is not None: datacube = RemoteDataCube.from_file(datacube_path, wavelength_grid, session)
 else: datacube = DataCube.from_file(datacube_path, wavelength_grid)
 

@@ -5,54 +5,51 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.maps.colour.colour Contains the ColourMapMaker class.
+## \package pts.modeling.maps.ssfr.ssfr Contains the SSFRMapMaker class.
 
 # -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import numpy as np
-
 # Import astronomical modules
 from astropy.utils import lazyproperty
 
-# Import standard modules
-from ..component import MapsComponent
+# Import the relevant PTS classes and modules
 from ....core.tools.logging import log
+from ..component import MapsComponent
+from ....magic.tools.colours import get_filters_for_colour
 from ....core.tools import filesystem as fs
-from ....magic.tools.colours import make_colour_map, get_filters_for_colour
 
 # -----------------------------------------------------------------
 
-# This list is not exclusive
-colour_strings = ["FUV-NUV", "FUV-H", "FUV-u", "FUV-g", "FUV-r", "FUV-i", "FUV-z", "Pacs 70-Pacs 100", "Pacs 100-Pacs 160",
-                  "Pacs 160-SPIRE 250", "SPIRE 250-SPIRE 350", "SPIRE 350-SPIRE 500"]
+ssfr_colours = ["FUV-H", "FUV-i", "FUV-r", "FUV-g", "FUV-B"]
 
 # -----------------------------------------------------------------
 
-class ColourMapMaker(MapsComponent):
+class ColoursSSFRMapMaker(MapsComponent):
 
     """
-    This class ...
+    This class...
     """
-        
+
     def __init__(self, config=None, interactive=False):
 
         """
-        This function ...
-        :param config:
+        The constructor ...
         :param interactive:
+        :return:
         """
 
         # Call the constructor of the base class
-        super(ColourMapMaker, self).__init__(config, interactive)
+        super(ColoursSSFRMapMaker, self).__init__(config, interactive)
 
-        # The frames
-        self.frames = dict()
+        # -- Attributes --
 
-        # The maps
+        # The colour maps
+        self.colours = dict()
+
+        # The sSFR maps
         self.maps = dict()
 
     # -----------------------------------------------------------------
@@ -65,16 +62,16 @@ class ColourMapMaker(MapsComponent):
         :return:
         """
 
-        # Setup
+        # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Load the data
-        self.load_data()
+        # 2. Load the colour maps
+        self.load_colours()
 
-        # Make the maps
+        # 3. Make maps
         self.make_maps()
 
-        # Write
+        # 4. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -87,8 +84,8 @@ class ColourMapMaker(MapsComponent):
         :return:
         """
 
-        # Call the setup fucntion of the base class
-        super(ColourMapMaker, self).setup(**kwargs)
+        # Call the setup function of the base class
+        super(ColoursSSFRMapMaker, self).setup(**kwargs)
 
     # -----------------------------------------------------------------
 
@@ -106,47 +103,43 @@ class ColourMapMaker(MapsComponent):
         for colour in self.config.colours:
 
             # Get the two filters
-            for fltr in get_filters_for_colour(colour):
+            fltr_a, fltr_b = get_filters_for_colour(colour)
 
-                # If either one of the two images is not available, we can not calculate the colour
-                if not self.dataset.has_frame_for_filter(fltr): break
+            # has_colour_map_for_filters
+            if not self.has_colour_map_for_filters(fltr_a, fltr_b): continue
 
-            # Break not encountered
-            else: colours.append(colour)
+            # Add
+            colours.append(colour)
 
         # Return colours
         return colours
 
     # -----------------------------------------------------------------
 
-    def load_data(self):
+    def load_colours(self):
 
         """
         This function ...
-        :return:
+        :return: 
         """
 
         # Inform the user
-        log.info("Loading the data ...")
+        log.info("Loading the colour maps ...")
 
-        # Loop over the colours
+        # Loop over the available colours
         for colour in self.available_colours:
 
             # Debugging
-            log.debug("Loading frames for the '" + colour + "' colour ...")
+            log.debug("Loading the '" + colour + "' colour map ...")
 
-            # Get the two filters, load frames
-            for fltr in get_filters_for_colour(colour):
+            # Get the two filters
+            fltr_a, fltr_b = get_filters_for_colour(colour)
 
-                # Already loaded
-                if fltr in self.frames: continue
+            # Get the colour map
+            colour_map = self.get_colour_map_for_filters(fltr_a, fltr_b)
 
-                # Debugging
-                log.debug("Loading the '" + str(fltr) + "' frame ...")
-
-                # Load
-                frame = self.dataset.get_frame_for_filter(fltr)
-                self.frames[fltr] = frame
+            # Add the colour map
+            self.colours[colour] = colour_map
 
     # -----------------------------------------------------------------
 
@@ -158,24 +151,15 @@ class ColourMapMaker(MapsComponent):
         """
 
         # Inform the user
-        log.info("Making the colour maps ...")
+        log.info("Making the sSFR maps ...")
 
-        # Loop over the colours
-        for colour in self.available_colours:
+        # Loop over the colour maps
+        for colour in self.colours:
 
-            # Get the two filters
-            fltr_a, fltr_b = get_filters_for_colour(colour)
+            # Get the map
+            colour_map = self.colours[colour]
 
-            # Rebin the frames to the same pixelgrid
-            frame_a, frame_b = self.rebin_to_highest_pixelscale(self.frames[fltr_a], self.frames[fltr_b])
-
-            # Convert the frames to the same unit
-            frame_a, frame_b = self.convert_to_same_unit(frame_a, frame_b, unit="Jy")
-
-            # Create the map
-            colour_map = make_colour_map(frame_a, frame_b)
-
-            # Add the map
+            # Set as sSFR map
             self.maps[colour] = colour_map
 
     # -----------------------------------------------------------------
@@ -203,16 +187,15 @@ class ColourMapMaker(MapsComponent):
         """
 
         # Inform the user
-        log.info("Writing the colour maps ...")
+        log.info("Writing the sSFR maps ...")
 
-        # Loop over the colours
-        for colour in self.available_colours:
+        # Loop over the maps
+        for colour in self.maps:
 
-            # Determine the path
-            path = fs.join(self.maps_colours_path, colour + ".fits")
+            # Determine path
+            path = fs.join(self.maps_ssfr_path, colour + ".fits")
 
-            # Save the map
+            # Save
             self.maps[colour].saveto(path)
 
 # -----------------------------------------------------------------
-

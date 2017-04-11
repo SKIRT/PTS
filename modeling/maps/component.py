@@ -23,6 +23,8 @@ from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import filesystem as fs
 from ...magic.convolution.aniano import AnianoKernels
 from ...core.tools.logging import log
+from ...magic.tools.colours import get_filters_for_colour
+from ...magic.core.frame import Frame
 
 # -----------------------------------------------------------------
 
@@ -52,6 +54,9 @@ class MapsComponent(GalaxyModelingComponent):
 
         # The path to the maps/colours directory
         self.maps_colours_path = None
+
+        # The path to the maps/ssfr directory
+        self.maps_ssfr_path = None
 
         # The path to the maps/tir directory
         self.maps_tir_path = None
@@ -86,6 +91,9 @@ class MapsComponent(GalaxyModelingComponent):
 
         # The path to the maps/colours directory
         self.maps_colours_path = fs.create_directory_in(self.maps_path, "colours")
+
+        # The path to the maps/ssfr directory
+        self.maps_ssfr_path = fs.create_directory_in(self.maps_path, "ssfr")
 
         # The path to the maps/TIR directory
         self.maps_tir_path = fs.create_directory_in(self.maps_path, "tir")
@@ -132,8 +140,12 @@ class MapsComponent(GalaxyModelingComponent):
         # Inform the user
         log.info("Converting frames to the same unit ...")
 
-        # Get the unit of the first frame
-        unit = frames[0].unit
+        # Check if the unit is defined
+        if "unit" in kwargs: unit = kwargs.pop("unit")
+        else: unit = frames[0].unit
+
+        # Debugging
+        log.debug("Converting to unit '" + str(unit) + "' ...")
 
         # Initialize list for converted frames
         new_frames = []
@@ -222,6 +234,99 @@ class MapsComponent(GalaxyModelingComponent):
 
         # Return the convolved frames
         return new_frames
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colour_map_filters(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        filters = []
+
+        # Loop over the images in the colour maps directory
+        for path, name in fs.files_in_path(self.maps_colours_path, extension="fits", returns=["path", "name"]):
+
+            # Get the filters
+            fltr_a, fltr_b = get_filters_for_colour(name)
+
+            # Add a tuple
+            filters.append((fltr_a, fltr_b))
+
+        # Return the list
+        return filters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colour_map_filters_and_paths(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        filters = dict()
+
+        # Loop over the images in the colour maps directory
+        for path, name in fs.files_in_path(self.maps_colours_path, extension="fits", returns=["path", "name"]):
+
+            # Get the filters
+            fltr_a, fltr_b = get_filters_for_colour(name)
+
+            # Add
+            filters[(fltr_a, fltr_b)] = path
+
+        # Return the dictionary
+        return filters
+
+    # -----------------------------------------------------------------
+
+    def has_colour_map_for_filters(self, fltr_a, fltr_b):
+
+        """
+        This function ...
+        :param fltr_a: 
+        :param fltr_b: 
+        :return: 
+        """
+
+        # Loop over the filters of the existing colour maps
+        for fltr_ai, fltr_bi in self.colour_map_filters:
+
+            if (fltr_ai, fltr_bi) == (fltr_a, fltr_b): return True
+            if (fltr_bi, fltr_ai) == (fltr_a, fltr_b): return True
+
+        # No colour map encountered
+        return False
+
+    # -----------------------------------------------------------------
+
+    def get_colour_map_for_filters(self, fltr_a, fltr_b):
+
+        """
+        This function ...
+        :param fltr_a: 
+        :param fltr_b: 
+        :return: 
+        """
+
+        # Loop over the existing colour maps
+        filters = self.colour_map_filters_and_paths
+        for fltr_ai, fltr_bi in filters:
+
+            # Get the path
+            path = filters[(fltr_ai, fltr_bi)]
+
+            # Check colours
+            if (fltr_ai, fltr_bi) == (fltr_a, fltr_b): return Frame.from_file(path)
+            if (fltr_bi, fltr_ai) == (fltr_a, fltr_b): return -1. * Frame.from_file(path)
+
+        # No colour map encountered
+        return None
 
 # -----------------------------------------------------------------
 

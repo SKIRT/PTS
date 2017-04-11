@@ -341,8 +341,8 @@ def is_real_type(value):
 
 # -----------------------------------------------------------------
 
-if HAS_NP: string_types = [basestring, np.string_]
-else: string_types = [basestring]
+if HAS_NP: string_types = [basestring, str, np.string_]
+else: string_types = [basestring, str]
 
 # -----------------------------------------------------------------
 
@@ -355,7 +355,13 @@ def is_string_type(value):
     """
 
     for tp in string_types:
+
+        # Literal
         if type(value) == tp: return True
+
+        # Derived from
+        if isinstance(value, tp): return True
+
     return False
 
 # -----------------------------------------------------------------

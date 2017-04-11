@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
-from pts.magic.misc.ukidss import UKIDSS
+from pts.magic.services.ukidss import UKIDSS
 
 # -----------------------------------------------------------------
 

@@ -130,8 +130,8 @@ console.runcode("from pts.magic.core.kernel import ConvolutionKernel")
 console.runcode("from pts.magic.core.remote import RemoteFrame, RemoteImage, RemoteDataCube")
 
 if config.host_id is not None:
-    console.runcode("from pts.core.remote.python import RemotePythonSession")
-    console.runcode("session = RemotePythonSession.from_host_id('" + config.host_id + "')")
+    console.runcode("from pts.core.remote.python import AttachedRemotePythonSession")
+    console.runcode("session = AttachedRemotePythonSession.from_host_id('" + config.host_id + "')")
 else: console.runcode("session = None")
 
 # Do the interaction

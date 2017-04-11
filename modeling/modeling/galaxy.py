@@ -46,6 +46,8 @@ from ...magic.core.image import Image
 from ..core.environment import GalaxyModelingEnvironment
 from ...core.remote.utils import DetachedCalculation
 from ...core.tools.utils import UserIntervention
+from ..maps.ssfr.ssfr import SSFRMapMaker
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -406,7 +408,7 @@ class GalaxyModeler(ModelerBase):
         for filter_name in self.images:
 
             # Open the image if necessary
-            if isinstance(self.images[filter_name], basestring): image = Image.from_file(self.images[filter_name])
+            if types.is_string_type(self.images[filter_name]): image = Image.from_file(self.images[filter_name])
             else: image = self.images[filter_name]
 
             # Determine the path
@@ -622,6 +624,9 @@ class GalaxyModeler(ModelerBase):
         # Create colour maps
         if "make_colour_maps" not in self.history: self.make_colour_maps()
 
+        # Create sSFR maps
+        if "make_ssfr_maps" not in self.history: self.make_ssfr_maps()
+
         # Create the TIR map
         if "make_tir_maps" not in self.history: self.make_tir_map()
 
@@ -662,6 +667,30 @@ class GalaxyModeler(ModelerBase):
         maker.config.path = self.modeling_path
 
         # Run maker
+        maker.run()
+
+    # -----------------------------------------------------------------
+
+    def make_ssfr_maps(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Making the sSFR maps ...")
+
+        # Create the sSFR maps
+        maker = SSFRMapMaker()
+
+        # Add an entry to the history
+        self.history.add_entry(maker.command_name())
+
+        # Set the working directory
+        maker.config.path = self.modeling_path
+
+        # Run the maker
         maker.run()
 
     # -----------------------------------------------------------------

@@ -23,7 +23,7 @@ from ....core.tools import filesystem as fs
 from ....core.tools.logging import log
 from ..component import MapsComponent
 from ....core.basics.unit import parse_unit as u
-from ....magic.misc.galametz import GalametzTIRCalibration
+from ....magic.calibrations.galametz import GalametzTIRCalibration
 from ....magic.core.frame import Frame
 
 # -----------------------------------------------------------------
