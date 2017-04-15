@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.prep.smile import SKIRTSmileSchema
 from pts.core.tools import formatting as fmt
-from pts.core.basics.unit import stringify_unit
+from pts.core.units.stringify import stringify_unit
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.basics.configuration import ArgumentConfigurationSetter
 

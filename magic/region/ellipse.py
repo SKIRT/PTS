@@ -24,8 +24,9 @@ from photutils.geometry import elliptical_overlap_grid, circular_overlap_grid, r
 from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
 from ..basics.coordinate import PixelCoordinate, SkyCoordinate, PhysicalCoordinate
 from ..basics.stretch import PixelStretch, SkyStretch, PhysicalStretch
-from ..basics.mask import Mask
-from ...core.basics.unit import parse_unit as u
+#from ..basics.mask import Mask
+from ...core.units.parsing import parse_unit as u
+from ..core.mask import Mask
 
 # -----------------------------------------------------------------
 

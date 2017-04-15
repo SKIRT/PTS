@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import astronomical modules
-from astropy.units import Unit
+from astropy.units import Unit, dimensionless_angles
 
 # Import standard modules
 from .vector import Extent
@@ -109,6 +109,57 @@ class Pixelscale(Extent):
 
         solid_angle = (self.abs_x * self.abs_y).to("sr")
         return solid_angle
+
+    # -----------------------------------------------------------------
+
+    def x_extent(self, distance):
+
+        """
+        This function ...
+        :param distance: 
+        :return: 
+        """
+
+        length_x = (self.abs_x * distance).to("kpc", equivalencies=dimensionless_angles())
+        return length_x
+
+    # -----------------------------------------------------------------
+
+    def y_extent(self, distance):
+
+        """
+        This function ...
+        :param distance: 
+        :return: 
+        """
+
+        length_y = (self.abs_y * distance).to("kpc", equivalencies=dimensionless_angles())
+        return length_y
+
+    # -----------------------------------------------------------------
+
+    def extent(self, distance):
+
+        """
+        This function ...
+        :param distance: 
+        :return: 
+        """
+
+        from .stretch import PhysicalStretch
+        return PhysicalStretch(self.x_extent(distance), self.y_extent(distance))
+
+    # -----------------------------------------------------------------
+
+    def pixel_area(self, distance):
+
+        """
+        This function ...
+        :param distance: 
+        :return: 
+        """
+
+        return self.x_extent(distance) * self.y_extent(distance)
 
 # -----------------------------------------------------------------
 

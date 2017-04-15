@@ -24,12 +24,11 @@ from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
 from ...core.basics.configurable import Configurable
 from ..misc.calibration import CalibrationError
-from ..misc.extinction import GalacticExtinction
+from ..services.extinction import GalacticExtinction
 from ..core.frame import Frame, sum_frames_quadratically
 from ..core.image import Image
 from ..core.dataset import DataSet
-from ..region.list import SkyRegionList
-from ...magic.misc.kernels import AnianoKernels
+from ...magic.convolution.aniano import AnianoKernels
 from ...magic.sources.extractor import SourceExtractor
 from ...magic.sky.skysubtractor import SkySubtractor
 from ...core.basics.animation import Animation
@@ -41,7 +40,8 @@ from ...magic.core.kernel import ConvolutionKernel
 from ...modeling.preparation import unitconversion
 from ..basics.mask import Mask
 from ...core.basics.composite import SimplePropertyComposite
-from ...core.remote.python import RemotePythonSession
+from ...core.remote.python import AttachedPythonSession
+from ..core.list import NamedImageList
 
 # -----------------------------------------------------------------
 
@@ -89,8 +89,8 @@ class BatchImagePreparer(Configurable):
         # Call the constructor of the base class
         super(BatchImagePreparer, self).__init__(config, interactive)
 
-        # The images
-        self.images = dict()
+        # The image list
+        self.images = NamedImageList()
 
         # The attenuations
         self.attenuations = dict()
@@ -138,128 +138,14 @@ class BatchImagePreparer(Configurable):
         :return:
         """
 
-        # Check if name not already used
-        if name in self.images: raise ValueError("Already an image with the name " + name)
-
-        # Set the image
-        self.images[name] = image
+        # Set the image: check is done in this function
+        self.images.append(image, name=name)
 
         # Check the output path
         if self.config.write and output_path is None: raise ValueError("Output path must be specified if 'write' option is enabled in configuration")
 
         # Set the output path
         if output_path is not None: self.output_paths[name] = output_path
-
-    # -----------------------------------------------------------------
-
-    @property
-    def min_fwhm(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        fwhm = None
-
-        # Loop over the images
-        for name in self.images:
-            if fwhm is None or self.images[name].fwhm < fwhm: fwhm = self.images[name].fwhm
-
-        # Return the minimum FWHM
-        return fwhm
-
-    # -----------------------------------------------------------------
-
-    @property
-    def max_fwhm(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        fwhm = None
-
-        # Loop over the images
-        for name in self.images:
-            if fwhm is None or self.images[name].fwhm > fwhm: fwhm = self.images[name].fwhm
-
-        # Return the maximum FWHM
-        return fwhm
-
-    # -----------------------------------------------------------------
-
-    @property
-    def max_pixelscale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        pixelscale = None
-
-        # Loop over the images
-        for name in self.images:
-
-            wcs = self.images[name].wcs
-            if pixelscale is None or wcs.average_pixelscale > pixelscale: pixelscale = wcs.average_pixelscale
-
-        # Return the maximum pixelscale
-        return pixelscale
-
-    # -----------------------------------------------------------------
-
-    @property
-    def min_pixelscale(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        pixelscale = None
-
-        # Loop over the images
-        for name in self.images:
-
-            wcs = self.images[name].wcs
-            if pixelscale is None or wcs.average_pixelscale < pixelscale: pixelscale = wcs.average_pixelscale
-
-        # Return the minimum pixelscale
-        return pixelscale
-
-    # -----------------------------------------------------------------
-
-    @property
-    def bounding_box(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Region of all the bounding boxes
-        boxes_region = SkyRegionList()
-
-        # Add the bounding boxes as sky rectangles
-        for name in self.images: boxes_region.append(self.images[name].wcs.bounding_box)
-
-        # Return the bounding box of the region of rectangles
-        return boxes_region.bounding_box
-
-    # -----------------------------------------------------------------
-
-    @property
-    def center_coordinate(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.bounding_box.center
 
     # -----------------------------------------------------------------
 
@@ -300,18 +186,43 @@ class BatchImagePreparer(Configurable):
         self.pool = Pool(processes=self.config.nprocesses)
 
         # Load the images (from config or input kwargs)
-        if "images" in kwargs: self.images = kwargs.pop("images")
-        elif "dataset" in kwargs:
-            dataset = kwargs.pop("dataset")
-            self.images = dataset.get_images()
-            self.output_paths = dataset.get_directory_paths()
-        else: self.load_images()
+        self.set_images(kwargs)
 
         # Set rebinning wcs
         self.set_rebinning_wcs()
 
         # Set convolution filter
         self.set_convolution_filter()
+
+    # -----------------------------------------------------------------
+
+    def set_images(self, kwargs):
+
+        """
+        This function ...
+        :param kwargs: 
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Setting the images ...")
+
+        # Images dict/list passed
+        if "images" in kwargs:
+
+            images = kwargs.pop("images")
+            if isinstance(images, dict): images = NamedImageList.from_dictionary(images)
+            self.images = images
+
+        # Dataset passed
+        elif "dataset" in kwargs:
+
+            dataset = kwargs.pop("dataset")
+            self.images = dataset.get_imagelist()
+            self.output_paths = dataset.get_directory_paths()
+
+        # Load images from path(s)
+        else: self.load_images()
 
     # -----------------------------------------------------------------
 
@@ -326,7 +237,7 @@ class BatchImagePreparer(Configurable):
         max_pixelscale_filter = None
 
         # Loop over the images
-        for name in self.images:
+        for name in self.images.names:
 
             # Get the pixelscale
             pixelscale = self.images[name].average_pixelscale
@@ -358,7 +269,7 @@ class BatchImagePreparer(Configurable):
         max_fwhm_filter = None
 
         # Loop over the images
-        for name in self.images:
+        for name in self.images.names:
 
             # Get the FWHM
             fwhm = self.images[name].fwhm
@@ -386,6 +297,9 @@ class BatchImagePreparer(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Loading the images ...")
+
         # Create new dataset
         if self.config.dataset.endswith(".fits"):
 
@@ -408,7 +322,7 @@ class BatchImagePreparer(Configurable):
             dataset = DataSet.from_file(self.config.dataset)
 
             # Get the images
-            self.images = dataset.get_images()
+            self.images = dataset.get_imagelist()
 
             # Get the directory paths
             self.output_paths = dataset.get_directory_paths()
@@ -429,7 +343,7 @@ class BatchImagePreparer(Configurable):
         log.info("Getting the galactic extinction ...")
 
         # Create the galactic extinction calculator
-        extinction = GalacticExtinction(self.center_coordinate)
+        extinction = GalacticExtinction(self.images.center_coordinate)
 
         # Loop over the images
         for label in self.images:
@@ -662,7 +576,7 @@ class BatchImagePreparer(Configurable):
         """
 
         # Loop over the images
-        for label in self.images:
+        for label in self.images.names:
 
             # Check whether unit conversion is necessary
             if self._needs_unit_conversion(label): yield label, self.images[label]
@@ -738,7 +652,7 @@ class BatchImagePreparer(Configurable):
         """
 
         # Loop over the images
-        for label in self.images:
+        for label in self.images.names:
 
             # Check if convolution is necessary
             if self._needs_convolution(label): yield label, self.images[label]
@@ -799,7 +713,7 @@ class BatchImagePreparer(Configurable):
         """
 
         # Loop over the images
-        for label in self.images:
+        for label in self.images.names:
 
             # Check if rebinning is necessary
             if not self._needs_rebinning(label): yield label, self.images[label]
@@ -870,7 +784,7 @@ class BatchImagePreparer(Configurable):
         """
 
         # Loop over the image
-        for label in self.images:
+        for label in self.images.names:
 
             # Check whether the image has to be sky subtracted
             if self._needs_sky_subtraction(label): yield label, self.images[label]
@@ -905,7 +819,7 @@ class BatchImagePreparer(Configurable):
         log.info("Calculating calibration uncertainty maps ...")
 
         # Loop over the images
-        for label in self.images:
+        for label in self.images.names:
 
             # Debugging
             log.debug("Calculating calibration uncertainties for '" + label + "' image ...")
@@ -1102,7 +1016,7 @@ class BatchImagePreparer(Configurable):
         log.info("Writing the images ...")
 
         # Loop over the images
-        for name in self.images:
+        for name in self.images.names:
 
             # Get the output path
             if name not in self.output_paths: raise ValueError("Output directory not specified for '" + name + "' image")
@@ -1261,7 +1175,7 @@ def _convolve(image, kernel_path, kernel_fwhm, visualisation_path=None, host_id=
         log.info("Convolution will be performed remotely on host '" + host_id + "' ...")
 
         # Create remote image, convolve and make local again
-        session = RemotePythonSession.from_host_id(host_id)
+        session = AttachedPythonSession(host_id)
         remote_image = RemoteImage.from_local(image, session)
         remote_image.convolve(kernel, allow_huge=True)
         new_image = remote_image.to_local()
@@ -1307,7 +1221,7 @@ def _rebin(image, reference_wcs, exact, host_id=None):
         log.info("Rebinning will be performed remotely on host '" + host_id + "' ...")
 
         # Create remote image, rebin and make local again
-        session = RemotePythonSession.from_host_id(host_id)
+        session = AttachedPythonSession(host_id)
         remote_image = RemoteImage.from_local(image, session)
         remote_image.rebin(reference_wcs, exact=exact)
         new_image = remote_image.to_local()
@@ -1368,7 +1282,11 @@ def _subtract_sky(image, config, principal_sky_region, saturation_sky_region=Non
     sky_subtractor = SkySubtractor(config)
 
     # Run the sky subtractor
-    sky_subtractor.run(image.frames.primary, principal_shape, image.masks.sources, extra_mask, saturation_region, skysubtractor_animation)
+    sky_subtractor.run(frame=image.frames.primary, principal_shape=principal_shape, sources_mask=image.masks.sources,
+                       extra_mask=extra_mask, saturation_region=saturation_region, animation=skysubtractor_animation)
+
+    # Set the subtracted frame as the primary frame
+    image.replace_frame("primary", sky_subtractor.subtracted)
 
     # Add the sky frame to the image
     image.add_frame(sky_subtractor.sky_frame, "sky")

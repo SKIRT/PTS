@@ -23,17 +23,20 @@ from ..preparation.preparer import DataPreparer
 from ..decomposition.decomposition import GalaxyDecomposer
 from ..truncation.truncation import Truncator
 from ..photometry.photometry import PhotoMeter
-from ..maps.stars.old import OldStellarMapMaker
-from ..maps.stars.young import YoungStellarMapMaker
-from ..maps.stars.ionizing import IonizingStellarMapMaker
+from ..maps.oldstars.old import OldStellarMapMaker
+from ..maps.youngstars.young import YoungStellarMapMaker
+from ..maps.ionizingstars.ionizing import IonizingStellarMapMaker
 from ..maps.dust.dust import DustMapMaker
+from ..maps.colour.colour import ColourMapMaker
+from ..maps.attenuation.attenuation import AttenuationMapMaker
+from ..maps.tir.tir import TIRMapMaker
 from ..fitting.configuration import FittingConfigurer
 from ..fitting.initialization.galaxy import GalaxyFittingInitializer
 from ...core.basics.range import QuantityRange
 from .base import ModelerBase
 from ..config.parameters import units as parameter_units
 from ..config.parameters import default_ranges, types, parameter_descriptions
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 from ..build.model import ModelBuilder
 from ..build.representation import RepresentationBuilder
 from ..component.galaxy import get_galaxy_properties_path, get_data_seds_path, get_data_images_path
@@ -43,6 +46,8 @@ from ...magic.core.image import Image
 from ..core.environment import GalaxyModelingEnvironment
 from ...core.remote.utils import DetachedCalculation
 from ...core.tools.utils import UserIntervention
+from ..maps.ssfr.ssfr import SSFRMapMaker
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -403,7 +408,7 @@ class GalaxyModeler(ModelerBase):
         for filter_name in self.images:
 
             # Open the image if necessary
-            if isinstance(self.images[filter_name], basestring): image = Image.from_file(self.images[filter_name])
+            if types.is_string_type(self.images[filter_name]): image = Image.from_file(self.images[filter_name])
             else: image = self.images[filter_name]
 
             # Determine the path
@@ -616,17 +621,125 @@ class GalaxyModeler(ModelerBase):
         # Inform the user
         log.info("Making the maps describing the model geometries ...")
 
+        # Create colour maps
+        if "make_colour_maps" not in self.history: self.make_colour_maps()
+
+        # Create sSFR maps
+        if "make_ssfr_maps" not in self.history: self.make_ssfr_maps()
+
+        # Create the TIR map
+        if "make_tir_maps" not in self.history: self.make_tir_map()
+
+        # Create the attenuation map(s)
+        if "make_attenuation_maps" not in self.history: self.make_attenuation_maps()
+
         # Create the map of the old stellar disk
-        if "make_old_map" not in self.history: self.make_old_stellar_map()
+        if "make_old_stars_map" not in self.history: self.make_old_stellar_map()
 
         # Create the map of the young stellar population
-        if "make_young_map" not in self.history: self.make_young_stellar_map()
+        if "make_young_stars_map" not in self.history: self.make_young_stellar_map()
 
         # Create the map of the ionizing stellar population
-        if "make_ionizing_map" not in self.history: self.make_ionizing_stellar_map()
+        if "make_ionizing_stars_map" not in self.history: self.make_ionizing_stellar_map()
 
         # Create the dust map
         if "make_dust_map" not in self.history: self.make_dust_map()
+
+    # -----------------------------------------------------------------
+
+    def make_colour_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making the colour maps ...")
+
+        # Create the colour maps
+        maker = ColourMapMaker()
+
+        # Add an entry to the history
+        self.history.add_entry(maker.command_name())
+
+        # Set the working directory
+        maker.config.path = self.modeling_path
+
+        # Run maker
+        maker.run()
+
+    # -----------------------------------------------------------------
+
+    def make_ssfr_maps(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Making the sSFR maps ...")
+
+        # Create the sSFR maps
+        maker = SSFRMapMaker()
+
+        # Add an entry to the history
+        self.history.add_entry(maker.command_name())
+
+        # Set the working directory
+        maker.config.path = self.modeling_path
+
+        # Run the maker
+        maker.run()
+
+    # -----------------------------------------------------------------
+
+    def make_tir_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making the TIR map ...")
+
+        # Create the TIR map maker
+        maker = TIRMapMaker()
+
+        # Add an entry to the history
+        self.history.add_entry(maker.command_name())
+
+        # Set the working directory
+        maker.config.path = self.modeling_path
+
+        # Run the maker
+        maker.run()
+
+    # -----------------------------------------------------------------
+
+    def make_attenuation_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making the attenuation maps ...")
+
+        # Create the attenuation map maker
+        maker = AttenuationMapMaker()
+
+        # Add an entry to the history
+        self.history.add_entry(maker.command_name())
+
+        # Set the working directory
+        maker.config.path = self.modeling_path
+
+        # Run the maker
+        maker.run()
 
     # -----------------------------------------------------------------
 

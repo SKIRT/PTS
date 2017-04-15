@@ -552,6 +552,7 @@ class AttachedPythonSession(RemotePythonSession):
         # Call the constructor of the base class
         super(AttachedPythonSession, self).__init__(output_path)
 
+        # Import the remote class
         from .remote import Remote
 
         # The remote connection
@@ -580,6 +581,23 @@ class AttachedPythonSession(RemotePythonSession):
 
         # Import PTS stuff
         if assume_pts: self.import_pts()
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_host_id(cls, host_id, assume_pts=False):
+
+        """
+        This function ...
+        :param host_id:
+        :param assume_pts:
+        :return:
+        """
+
+        from .remote import Remote
+        remote = Remote()
+        remote.setup(host_id)
+        return cls(remote, assume_pts=assume_pts)
 
     # -----------------------------------------------------------------
 

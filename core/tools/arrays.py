@@ -17,8 +17,8 @@ import copy
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from ..basics.unit import parse_unit
-from ..basics.quantity import PhotometricQuantity
+from ..units.parsing import parse_unit
+from ..units.quantity import PhotometricQuantity
 
 # -----------------------------------------------------------------
 
@@ -119,7 +119,7 @@ def find_closest_below_index(array, value, array_unit=None):
 
 # -----------------------------------------------------------------
 
-def array_as_list(array, add_unit=True, unit=None, masked_value=None, array_unit=None, conversion_info=None, density=False):
+def array_as_list(array, add_unit=True, unit=None, masked_value=None, array_unit=None, conversion_info=None, density=False, brightness=False):
 
     """
     This function ...
@@ -130,6 +130,7 @@ def array_as_list(array, add_unit=True, unit=None, masked_value=None, array_unit
     :param array_unit:
     :param conversion_info:
     :param density:
+    :param brightness:
     :return:
     """
 
@@ -155,7 +156,7 @@ def array_as_list(array, add_unit=True, unit=None, masked_value=None, array_unit
     if array_unit is None and hasattr(array, "unit"): array_unit = array.unit
 
     # Parse the unit
-    if unit is not None: unit = parse_unit(unit, density=density)
+    if unit is not None: unit = parse_unit(unit, density=density, brightness=brightness)
 
     #print("array unit", array_unit)
     #print("unit", unit)
@@ -218,7 +219,7 @@ def array_as_list(array, add_unit=True, unit=None, masked_value=None, array_unit
 
 # -----------------------------------------------------------------
 
-def plain_array(column, unit=None, array_unit=None, conversion_info=None, density=False):
+def plain_array(column, unit=None, array_unit=None, conversion_info=None, density=False, brightness=False):
 
     """
     This function ...
@@ -227,9 +228,10 @@ def plain_array(column, unit=None, array_unit=None, conversion_info=None, densit
     :param array_unit:
     :param conversion_info:
     :param density:
+    :param brightness:
     :return:
     """
 
-    return np.array(array_as_list(column, unit=unit, add_unit=False, masked_value=float('nan'), array_unit=array_unit, conversion_info=conversion_info, density=density))
+    return np.array(array_as_list(column, unit=unit, add_unit=False, masked_value=float('nan'), array_unit=array_unit, conversion_info=conversion_info, density=density, brightness=brightness))
 
 # -----------------------------------------------------------------

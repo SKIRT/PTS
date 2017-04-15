@@ -25,7 +25,7 @@ from ....core.launch.pts import PTSRemoteLauncher
 from .fitter import GridBlackBodyFitter, GeneticBlackBodyFitter
 from ....magic.tools import wavelengths
 from ....magic.basics.vector import Pixel
-from ....core.basics.unit import parse_unit as u
+from ....core.units.parsing import parse_unit as u
 
 # PTS evolution classes and modules
 from ....evolve.core.engine import GeneticEngine, RawScoreCriteria

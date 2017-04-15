@@ -239,4 +239,17 @@ class Pixel(Vector):
         # Call the constructor of the base class
         super(Pixel, self).__init__(x, y)
 
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def for_coordinate(cls, coordinate):
+
+        """
+        This function ...
+        :param coordinate:
+        :return:
+        """
+
+        return cls(int(coordinate.x), int(coordinate.y))
+
 # -----------------------------------------------------------------

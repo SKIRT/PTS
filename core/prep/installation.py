@@ -28,7 +28,7 @@ from ..tools import git
 from ..tools import conda
 from ..tools import time
 from ..remote.modules import Modules
-from ..basics.unit import parse_unit as u
+from ..units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

@@ -12,6 +12,9 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import traceback
+
 # Import the relevant PTS classes and modules
 from ..region.list import PixelRegionList, SkyRegionList
 from ..basics.stretch import PixelStretch
@@ -24,7 +27,7 @@ from ...core.tools.logging import log
 from ...core.basics.table import SmartTable
 from ..core.mask import Mask
 from ..basics.coordinate import SkyCoordinate
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -62,13 +65,18 @@ class ExtendedSourceTable(SmartTable):
         :return:
         """
 
-        # Values for the row
-        values = []
+        # Inform the user
+        log.info("Adding source " + str(source.index) + " to the table of extended sources ...")
 
         # Get extended source properties
-
+        ra = source.position.ra
+        dec = source.position.dec
         detected = source.has_detection
-        #contour = source.has_contour
+        flux = None
+        flux_error = None
+
+        # Construct the row
+        values = [ra, dec, detected, flux, flux_error]
 
         # Add a row
         self.add_row(values)
@@ -298,28 +306,26 @@ class ExtendedSourceFinder(Configurable):
             position = self.catalog.get_position(index)
 
             # If the source falls outside of the frame, skip it
-            if not self.frame.contains(position): source = None
+            if not self.frame.contains(position): continue
 
-            else:
+            # Calculate the pixel position of the galaxy in the frame
+            pixel_position = position.to_pixel(self.frame.wcs)
 
-                # Calculate the pixel position of the galaxy in the frame
-                pixel_position = position.to_pixel(self.frame.wcs)
+            # Create a source
+            source = self.catalog.create_source(index)
 
-                # Create a source
-                source = self.catalog.create_source(index)
+            # Enable track record if requested
+            #if self.config.track_record: galaxy.enable_track_record()
 
-                # Enable track record if requested
-                #if self.config.track_record: galaxy.enable_track_record()
+            # Set attributes based on masks (special and ignore)
+            if self.special_mask is not None: source.special = self.special_mask.masks(pixel_position)
+            if self.ignore_mask is not None: source.ignore = self.ignore_mask.masks(pixel_position)
 
-                # Set attributes based on masks (special and ignore)
-                if self.special_mask is not None: source.special = self.special_mask.masks(pixel_position)
-                if self.ignore_mask is not None: source.ignore = self.ignore_mask.masks(pixel_position)
+            # If the input mask masks this galaxy's position, set to None
+            if self.bad_mask is not None and self.bad_mask.masks(pixel_position) and not source.principal: source = None
 
-                # If the input mask masks this galaxy's position, set to None
-                if self.bad_mask is not None and self.bad_mask.masks(pixel_position) and not source.principal: source = None
-
-                # Add the new source to the list
-                self.sources.append(source)
+            # Add the new source to the list
+            self.sources.append(source)
 
         # Debug messages
         log.debug(self.principal.name + " is the principal galaxy in the frame")
@@ -364,7 +370,7 @@ class ExtendedSourceFinder(Configurable):
 
                     outer_factor = self.config.detection.background_outer_factor
                     expansion_factor = self.config.detection.d25_expansion_factor
-                    source.source_from_parameters(self.frame, outer_factor, expansion_factor)
+                    source.detection_from_parameters(self.frame, outer_factor, expansion_factor)
 
                 else:
 
@@ -375,15 +381,15 @@ class ExtendedSourceFinder(Configurable):
                         log.error("Error during detection")
                         print(type(e))
                         print(e)
-                        #traceback.print_exc()
-                        if self.config.plot_track_record_if_exception:
-                            if source.has_track_record: source.track_record.plot()
-                            else: log.warning("Track record is not enabled")
+                        traceback.print_exc()
+                        #if self.config.plot_track_record_if_exception:
+                        #    if source.has_track_record: source.track_record.plot()
+                        #    else: log.warning("Track record is not enabled")
 
             # If a source was not found for the principal or companion galaxies, force it
             outer_factor = self.config.detection.background_outer_factor
-            if source.principal and not source.has_source: source.source_from_parameters(self.frame, outer_factor)
-            elif source.companion and not source.has_source and source.has_extent: source.source_from_parameters(self.frame, outer_factor)
+            if source.principal and not source.has_detection: source.detection_from_parameters(self.frame, outer_factor)
+            elif source.companion and not source.has_source and source.has_extent: source.detection_from_parameters(self.frame, outer_factor)
 
         # Inform the user
         log.info("Found a detection for {0} out of {1} objects ({2:.2f}%)".format(self.have_detection, len(self.sources), self.have_source/len(self.sources)*100.0))

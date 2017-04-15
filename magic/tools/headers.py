@@ -25,9 +25,9 @@ from ...core.filter.filter import parse_filter
 from ..basics.coordinatesystem import CoordinateSystem
 from ...core.tools.logging import log
 from ..basics.pixelscale import Pixelscale
-from ...core.basics.unit import PhotometricUnit
-from ...core.basics.unit import parse_unit as u
-from ...core.basics.quantity import parse_quantity
+from ...core.units.unit import PhotometricUnit
+from ...core.units.parsing import parse_unit as u
+from ...core.units.parsing import parse_quantity
 
 # -----------------------------------------------------------------
 

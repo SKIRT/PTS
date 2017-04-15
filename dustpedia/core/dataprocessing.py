@@ -25,7 +25,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools import tables
 from ...core.tools import time
 from ...magic.tools import mosaicing
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

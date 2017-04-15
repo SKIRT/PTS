@@ -27,7 +27,7 @@ from pts.magic.tools import statistics, plotting, fitting
 from pts.magic.region.ellipse import PixelEllipseRegion
 from pts.magic.basics.vector import Extent
 from .component import DecompositionComponent
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

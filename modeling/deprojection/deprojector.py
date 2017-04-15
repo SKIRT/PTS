@@ -25,7 +25,7 @@ from ...core.tools import introspection
 from ...core.simulation.skifile import LabeledSkiFile
 from ..basics.instruments import FrameInstrument
 from ...magic.core.frame import Frame
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

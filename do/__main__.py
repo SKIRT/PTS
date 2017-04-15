@@ -31,19 +31,22 @@
 # Import standard modules
 import sys
 import argparse
-import importlib
 
 # Import the relevant PTS modules
 from pts.core.tools import introspection, parsing
 from pts.core.tools import filesystem as fs
 from pts.core.tools import time
-from pts.do.commandline import show_all_available, show_possible_matches, start_target
+from pts.do.commandline import show_all_available, show_possible_matches
 from pts.modeling.welcome import welcome as welcome_modeling
 from pts.magic.welcome import welcome as welcome_magic
 from pts.evolve.welcome import welcome as welcome_evolve
 from pts.dustpedia.welcome import welcome as welcome_dustpedia
 from pts.core.basics.configuration import create_configuration
-from pts.do.commandline import Command
+from pts.modeling.setup import setup as setup_modeling, finish as finish_modeling
+from pts.magic.setup import setup as setup_magic, finish as finish_magic
+from pts.evolve.setup import setup as setup_evolve, finish as finish_evolve
+from pts.dustpedia.setup import setup as setup_dustpedia, finish as finish_dustpedia
+from pts.do.run import run_locally, run_remotely
 
 # -----------------------------------------------------------------
 
@@ -112,12 +115,6 @@ sys.argv = ["pts", args.do_command] + args.options
 matches = introspection.find_matches_scripts(script_name, scripts)
 table_matches = introspection.find_matches_tables(script_name, tables)
 
-# Create the command
-#description = ""
-#settings_dict = dictionary(args.options)
-#input_dict =
-#command = Command(args.do_command, description, settings_dict, input_dict, cwd=".")
-
 # No match
 if len(matches) + len(table_matches) == 0:
 
@@ -175,150 +172,62 @@ elif len(table_matches) == 1 and len(matches) == 0:
     elif subproject == "dustpedia": welcome_dustpedia()
     elif subproject == "evolve": welcome_evolve()
 
-    # Get the class
-    cls = introspection.get_class(module_path, class_name)
-
     # Import things
     from pts.core.tools import logging
 
     # Get the configuration definition
-    #definition = introspection.get_configuration_definition(configuration_module_path)
     definition = introspection.get_configuration_definition_pts_not_yet_in_pythonpath(configuration_module_path)
 
     # If not specified on the command line (before the command name), then use the default specified in the commands.dat file
     if configuration_method is None: configuration_method = configuration_method_table
 
-    #print(definition)
-    #print(configuration_method)
-
     # Create the configuration
     config = create_configuration(definition, command_name, description, configuration_method)
 
-    ## SAVE THE CONFIG
+    ## SAVE THE CONFIG if requested
     if config.write_config:
         config_file_path = fs.join(config.config_dir_path(), command_name + ".cfg")
         config.saveto(config_file_path)
-    ##
 
+    # If this is not a re-run
     if not args.rerun:
-
         if not fs.is_directory(introspection.pts_user_config_dir): fs.create_directory(introspection.pts_user_config_dir)
-
-        # NEW: CACHE THE CONFIG
+        # CACHE THE CONFIG
         config_cache_path = fs.join(introspection.pts_user_config_dir, command_name + ".cfg")
         config.saveto(config_cache_path)
 
-    ##
+    # Setup function
+    if subproject == "modeling": setup_modeling(command_name, fs.cwd())
+    elif subproject == "magic": setup_magic(command_name, fs.cwd())
+    elif subproject == "dustpedia": setup_dustpedia(command_name, fs.cwd())
+    elif subproject == "evolve": setup_evolve(command_name, fs.cwd())
 
-    # Mark begin of modeling command for history
-    if subproject == "modeling" and command_name != "setup" and command_name != "model":
+    # Determine the log level
+    level = "INFO"
+    if config.debug: level = "DEBUG"
+    if config.brief: level = "SUCCESS"
 
-        from ..modeling.component.component import load_modeling_history
-        history = load_modeling_history(fs.cwd())
-        history.add_entry(command_name)
-        history.save()
+    # Determine log path
+    if args.remote is None: logfile_path = fs.join(config.log_path, time.unique_name("log") + ".txt") if config.report else None
+    else: logfile_path = None
+
+    # Initialize the logger
+    log = logging.setup_log(level=level, path=logfile_path)
+
+    # Exact command name
+    exact_command_name = subproject + "/" + command_name
 
     # If the PTS command has to be executed remotely
-    if args.remote is not None:
-
-        # Additional imports
-        from pts.core.remote.remote import Remote
-
-        # Exact command name
-        exact_command_name = subproject + "/" + command_name
-
-        # Determine the log level
-        level = "INFO"
-        if config.debug: level = "DEBUG"
-        if config.brief: level = "SUCCESS"
-        log = logging.setup_log(level=level)
-        log.start("Starting " + exact_command_name + " on remote host " + args.remote + " ...")
-
-        # Debugging
-        log.debug("Initializing the remote ...")
-
-        # Initialize the remote execution environment
-        remote = Remote()
-        remote.setup(args.remote)
-
-        # Run PTS remotely
-        task = remote.run_pts(exact_command_name, config, keep_remote_output=args.keep)
-
-        # Succesfully submitted
-        log.success("Succesfully submitted the PTS job to the remote host")
+    if args.remote is not None: run_remotely(exact_command_name, config, args.keep, args.remote, log)
 
     # The PTS command has to be executed locally
-    else:
+    else: run_locally(exact_command_name, module_path, class_name, config, args.input_files, args.output_files, args.output, log)
 
-        # Determine the log file path
-        logfile_path = fs.join(config.log_path, time.unique_name("log") + ".txt") if config.report else None
-
-        # Determine the log level
-        level = "INFO"
-        if config.debug: level = "DEBUG"
-        if config.brief: level = "SUCCESS"
-
-        # Initialize the logger
-        log = logging.setup_log(level=level, path=logfile_path)
-        log.start("Starting " + command_name + " ...")
-
-        # Create the class instance, configure it with the configuration settings
-        inst = cls(config)
-
-        # Set input files
-        input_dict = {}
-        if args.input_files is not None:
-
-            # Loop over the names of the input variables
-            for name in args.input_files:
-
-                # Get class path
-                classpath, filepath = args.input_files[name]
-                modulepath, classname = classpath.rsplit(".", 1)
-
-                # Get input class
-                input_module = importlib.import_module(modulepath)
-                input_class = getattr(input_module, classname)
-
-                # Open the input file
-                input_object = input_class(filepath)
-
-                # Set to input dict
-                input_dict[name] = input_object
-
-        # Start
-        start_target(command_name, inst.run, **input_dict)
-
-        # Write output files
-        if args.output_files is not None:
-
-            types = dict()
-
-            # Loop over the names of the attributes for output
-            for name in args.output_files:
-
-                # Get filepath
-                filepath = args.output_files[name]
-
-                # Get the output object
-                output_object = getattr(inst, name)
-
-                # Set the type
-                types[name] = type(output_object).__module__ + "." + type(output_object).__name__
-
-                # Save the output object
-                real_filepath = filepath + "." + type(output_object).default_extension
-                output_object.saveto(real_filepath)
-
-            # Save the types
-            from pts.core.tools import serialization
-            types_path = fs.join(args.output, "types.dat")
-            serialization.write_dict(types, types_path)
-
-    # Mark the end of this modeling script
-    if subproject == "modeling" and command_name != "setup" and command_name != "model_galaxy" and command_name != "model_sed":
-        history.mark_end()
-        history.save()
+    # Finish function
+    if subproject == "modeling": finish_modeling(command_name, fs.cwd())
+    elif subproject == "magic": finish_magic(command_name, fs.cwd())
+    elif subproject == "dustpedia": finish_dustpedia(command_name, fs.cwd())
+    elif subproject == "evolve": finish_evolve(command_name, fs.cwd())
 
 # Show possible matches if there are more than just one
 else:

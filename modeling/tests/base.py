@@ -32,13 +32,13 @@ from pts.core.plot.wavelengthgrid import WavelengthGridPlotter
 from pts.core.plot.transmission import TransmissionPlotter
 from pts.modeling.basics.models import load_2d_model
 from pts.modeling.modeling.galaxy import fitting_filter_names
-from pts.core.basics.quantity import PhotometricQuantity
+from pts.core.units.quantity import PhotometricQuantity
 from pts.core.prep.wavelengthgrids import WavelengthGridGenerator
 from pts.core.prep.dustgrids import DustGridGenerator
-from pts.core.basics.quantity import parse_quantity
+from pts.core.units.parsing import parse_quantity
 from pts.magic.region.list import SkyRegionList
 from pts.core.filter.filter import parse_filter
-from pts.core.basics.unit import parse_unit as u
+from pts.core.units.parsing import parse_unit as u
 from pts.core.tools import sequences, parsing, stringify
 from pts.modeling.config.parameters import parsing_types_for_parameter_types
 from pts.modeling.config.parameters import default_units

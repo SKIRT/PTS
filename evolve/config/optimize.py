@@ -15,6 +15,10 @@ crossover_methods = ["single_point", "two_point", "uniform", "OX", "edge", "cut_
 mutation_methods = ["range", "gaussian", "binary"]
 min_or_max = ["minimize", "maximize"]
 
+scaling_methods = ["linear", "sigma_truncation", "power_law", "boltzmann", "exponential", "saturated"]
+
+selector_methods = ["rank", "uniform", "tournament", "tournament_alternative", "roulette_wheel"]
+
 # -----------------------------------------------------------------
 
 # Create the configuration
@@ -40,6 +44,8 @@ definition.add_optional("min_or_max", "string", "minimize or maximize", choices=
 definition.add_optional("run_id", "string", "identifier for this run", default="run0")
 definition.add_optional("database_frequency", "positive_integer", "frequency of appending to the database (in the number of generations)", 1)
 definition.add_optional("statistics_frequency", "positive_integer", "frequency of appending to the statistics table", 1)
+definition.add_optional("scaling_method", "string", "scaling method", "linear", choices=scaling_methods)
+definition.add_optional("selector_method", "string", "selector method", "rank", choices=selector_methods)
 
 # Other
 definition.add_optional("output", "directory_path", "output directory")

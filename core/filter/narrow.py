@@ -144,7 +144,7 @@ def wavelengths_for_spec(spec):
     """
 
     # Import statements
-    from ..basics.quantity import parse_quantity
+    from ..units.parsing import parse_quantity
 
     wavelengths = dict()
 
@@ -213,8 +213,8 @@ class NarrowBandFilter(Filter):
         """
 
         from astropy.units import Quantity
-        from ..basics.quantity import parse_quantity
-        from ..basics.unit import represent_unit
+        from ..units.parsing import parse_quantity
+        from ..units.stringify import represent_unit
 
         observatory = None
         instrument = None
@@ -411,6 +411,18 @@ class NarrowBandFilter(Filter):
 
     @property
     def pivot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.wavelength
+
+    # -----------------------------------------------------------------
+
+    @property
+    def effective(self):
 
         """
         This function ...

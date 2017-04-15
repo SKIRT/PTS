@@ -26,7 +26,7 @@ from ..tools import formatting as fmt
 from pts.core.tools import stringify
 from pts.core.plot.transmission import TransmissionPlotter
 from pts.core.data.transmission import TransmissionCurve
-from pts.core.basics.quantity import represent_quantity
+from pts.core.units.stringify import represent_quantity
 from ..basics.configurable import Configurable
 from ..tools.logging import log
 from ..tools import parsing

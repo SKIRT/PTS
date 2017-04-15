@@ -24,7 +24,7 @@ from ..analysis import sources
 from ..region.ellipse import PixelEllipseRegion
 from ...core.tools.logging import log
 from ..basics.stretch import PixelStretch
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -58,7 +58,7 @@ class PointSource(Source):
         self.psf_model = None
 
         # FWHM
-        self.fwhm = None
+        #self.fwhm = None
 
         # Saturation detection
         self.saturation = None
@@ -74,6 +74,18 @@ class PointSource(Source):
         """
 
         return self.psf_model is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fwhm(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fitting.fwhm(self.psf_model) if self.has_model else None
 
     # -----------------------------------------------------------------
 

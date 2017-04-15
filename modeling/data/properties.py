@@ -24,13 +24,11 @@ from astroquery.ned import Ned
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from .component import DataComponent
-from ..preparation import unitconversion
-from ...core.basics.errorbar import ErrorBar
 from ...magic.basics.coordinate import SkyCoordinate
 from ..basics.properties import GalaxyProperties
 from ...core.tools import tables
 from ...dustpedia.core.database import DustPediaDatabase, get_account
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

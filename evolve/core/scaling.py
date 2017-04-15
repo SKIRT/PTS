@@ -63,7 +63,9 @@ def LinearScaling(pop):
 
 def SigmaTruncScaling(pop):
 
-    """ Sigma Truncation scaling scheme, allows negative scores """
+    """
+    Sigma Truncation scaling scheme, allows negative scores
+    """
 
     from . import constants
 
@@ -83,7 +85,8 @@ def SigmaTruncScaling(pop):
 
 def PowerLawScaling(pop):
 
-    """ Power Law scaling scheme
+    """
+    Power Law scaling scheme
     .. warning :: Power Law Scaling is only for positive raw scores
     """
 
@@ -102,7 +105,8 @@ def PowerLawScaling(pop):
 
 def BoltzmannScaling(pop):
 
-    """ Boltzmann scaling scheme. You can specify the **boltz_temperature** to the
+    """
+    Boltzmann scaling scheme. You can specify the **boltz_temperature** to the
     population parameters, this parameter will set the start temperature. You
     can specify the **boltz_factor** and the **boltz_min** parameters, the **boltz_factor**
     is the value that the temperature will be subtracted and the **boltz_min** is the

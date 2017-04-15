@@ -17,7 +17,7 @@ from ..basics.table import SmartTable
 from ..tools import tables, time
 from ..simulation.simulation import SkirtSimulation, RemoteSimulation
 from ..tools.logging import log
-from ..basics.unit import parse_unit as u
+from ..units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

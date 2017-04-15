@@ -31,13 +31,19 @@ definition.add_optional("constant_sky", "real", "constant sky value", 5.)
 definition.add_flag("rotate", "rotate", True)
 definition.add_optional("rotation_angle", "angle", "rotation angle", "20 deg", convert_default=True)
 
-definition.add_optional("aperture_fwhm_factor", "positive_real", "aperture FWHM factor", 4.0)
+definition.add_optional("aperture_fwhm_factor", "positive_real", "aperture FWHM factor", 3.0)
 
 definition.add_optional("galaxy_central_flux", "real", "central flux of galaxy", 100.)
 definition.add_optional("galaxy_sersic_index", "real", "sersic index", 1.5)
 definition.add_optional("galaxy_position", "pixelcoordinate", "galaxy position", "250,150", convert_default=True)
-definition.add_optional("galaxy_effective_radius", "positive_real", "galaxy effective radius in pixels", 50.)
+definition.add_optional("galaxy_effective_radius", "positive_real", "galaxy effective radius in pixels", 30.)
 definition.add_optional("galaxy_angle", "angle", "galaxy angle", "52 deg", convert_default=True)
 definition.add_optional("galaxy_axial_ratio", "positive_real", "axial ratio", 2.0)
+definition.add_optional("galaxy_relative_asymptotic_radius", "positive_real", "radius of the galaxy mask relative to the effective radius", 4.)
+
+definition.add_optional("polynomial_degree", "positive_integer", "degree of polynomial", 2)
+
+definition.add_section("plotting", "plotting options")
+definition.sections["plotting"].add_flag("meshes", "plot meshes")
 
 # -----------------------------------------------------------------

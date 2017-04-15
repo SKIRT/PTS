@@ -19,7 +19,7 @@ from ...core.simulation.execute import SkirtExec
 from ...core.simulation.arguments import SkirtArguments
 from ...core.basics.map import Map
 from ..simulation.grids import load_grid
-from ..basics.unit import parse_unit as u
+from ..units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

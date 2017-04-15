@@ -13,10 +13,10 @@ import inspect
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
-from pts.core.basics.unit import parse_unit as u
+from pts.core.units.parsing import parse_unit as u
 from pts.core.tools.logging import log
 from pts.do.commandline import Command
-from pts.magic.misc.kernels import AnianoKernels
+from pts.magic.convolution.aniano import AnianoKernels
 from pts.magic.basics.coordinatesystem import CoordinateSystem
 from pts.modeling.basics.instruments import FullInstrument
 from pts.core.filter.filter import parse_filter

@@ -104,6 +104,9 @@ class ContinuousOptimizer(Optimizer):
         # 5. Initialize engine
         self.initialize_engine(**kwargs)
 
+        # 6. Initialize population
+        self.initialize_population()
+
     # -----------------------------------------------------------------
 
     def evolve(self):
@@ -191,8 +194,6 @@ class ContinuousOptimizer(Optimizer):
         # Inform the user
         log.info("Plotting the scores ...")
 
-
-
     # -----------------------------------------------------------------
 
     def plot_heat_map(self):
@@ -201,5 +202,7 @@ class ContinuousOptimizer(Optimizer):
         This function ...
         :return:
         """
+
+        pass
 
 # -----------------------------------------------------------------

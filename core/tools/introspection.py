@@ -1768,6 +1768,7 @@ def get_arguments_tables():
                 line = line[:-1]
                 if not line: continue
                 splitted = line.split(" | ")
+                if len(splitted) != 5: raise SyntaxError("The following row is wrong: '" + line + "'")
                 commands.append(splitted[0])
                 configuration.append(splitted[1])
                 where.append(splitted[2])
@@ -2047,10 +2048,12 @@ def get_class(module_path, class_name):
     """
 
     # Get the class of the configurable of which an instance has to be created
-    module = import_module(module_path)
+    try: module = import_module(module_path)
+    except ImportError: raise ValueError("The module '" + module_path + "' does not exist")
+
     try: cls = getattr(module, class_name)
     except AttributeError:
-        raise Exception("The class '" + class_name + "' could not be found in the module '" + module_path + "'")
+        raise ValueError("The class '" + class_name + "' could not be found in the module '" + module_path + "'")
 
     # Return the class
     return cls

@@ -19,6 +19,7 @@ import os
 # Import the relevant PTS classes and modules
 from ..remote.jobscript import JobScript as _JobScript
 from ..tools import filesystem as fs
+from ..tools import numbers
 
 # -----------------------------------------------------------------
 
@@ -342,7 +343,7 @@ class SKIRTJobScript(_JobScript):
 
                 # Divide the processes over the nodes
                 processes_per_node = arguments.parallel.processes / nodes
-                if not is_integer(processes_per_node): raise RuntimeError("Impossible parallelization scheme: " + str(arguments.parallel.processes) + " cannot be distributed over " + str(nodes) + " nodes")
+                if not numbers.is_integer(processes_per_node): raise RuntimeError("Impossible parallelization scheme: " + str(arguments.parallel.processes) + " cannot be distributed over " + str(nodes) + " nodes")
                 processes_per_node = int(processes_per_node)
 
             else:
@@ -408,17 +409,5 @@ def get_requirements(processors, cores_per_node, full_node=False):
 
     # Return the number of nodes and processors per node
     return nodes, ppn
-
-# -----------------------------------------------------------------
-
-def is_integer(value):
-
-    """
-    This function ...
-    :param value:
-    :return:
-    """
-
-    return int(value) == value
 
 # -----------------------------------------------------------------

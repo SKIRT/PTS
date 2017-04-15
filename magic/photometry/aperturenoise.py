@@ -47,7 +47,7 @@ from ..region.circle import PixelCircleRegion
 from ..region.composite import PixelCompositeRegion
 from ..core.source import Source
 from ..misc import chrisfuncs
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

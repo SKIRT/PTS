@@ -19,46 +19,10 @@ from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...magic.misc.imageimporter import ImageImporter
 from ...magic.core.frame import Frame
-from ...core.basics.animation import Animation
 from ...magic.core.dataset import DataSet
 from ...core.launch.pts import PTSRemoteLauncher
-from ...core.basics.unit import parse_unit as u
-
-# -----------------------------------------------------------------
-
-# Reference: Common-Resolution Convolution Kernels for Space- and Ground-Based Telescopes (G. Aniano et. al)
-fwhms = {"GALEX FUV": 4.48 * u("arcsec"),
-         "GALEX NUV": 5.05 * u("arcsec"),
-         "Mosaic Halpha": 2.0 * u("arcsec"),
-         "IRAC I1": 1.90 * u("arcsec"),
-         "IRAC I2": 1.81 * u("arcsec"),
-         "IRAC I3": 2.11 * u("arcsec"),
-         "IRAC I4": 2.82 * u("arcsec"),
-         "WISE W1": 5.79 * u("arcsec"),
-         "WISE W2": 6.37 * u("arcsec"),
-         "WISE W3": 6.60 * u("arcsec"),
-         "WISE W4": 11.89 * u("arcsec"),
-         "MIPS 24mu": 6.43 * u("arcsec"),
-         "MIPS 70mu": 18.74 * u("arcsec"),
-         "MIPS 160mu": 38.78 * u("arcsec"),
-         "Pacs blue": 5.67 * u("arcsec"),
-         "Pacs green": 7.04 * u("arcsec"),
-         "Pacs red": 11.18 * u("arcsec"),
-         "SPIRE PSW": 18.15 * u("arcsec"),
-         "SPIRE PMW": 24.88 * u("arcsec"),
-         "SPIRE PLW": 36.09 * u("arcsec")}
-
-# -----------------------------------------------------------------
-
-# For M81:
-#fwhms_from_finding = {"2MASS H": 4.640929858306589 * Unit("arcsec"),
-#                      "2MASS J": 4.580828087551186 * Unit("arcsec"),
-#                      "2MASS Ks": 4.662813601376219 * Unit("arcsec"),
-#                      "SDSS g": 2.015917936060279 * Unit("arcsec"),
-#                      "SDSS i": 1.85631074608032 * Unit("arcsec"),
-#                      "SDSS r": 2.026862297071852 * Unit("arcsec"),
-#                      "SDSS u": 2.327165667182196 * Unit("arcsec"),
-#                      "SDSS z": 1.841443699129355 * Unit("arcsec")}
+from ...core.filter.filter import parse_filter
+from ...magic.convolution.kernels import get_fwhm, has_variable_fwhm
 
 # -----------------------------------------------------------------
 
@@ -212,9 +176,12 @@ class PreparationInitializer(PreparationComponent):
             bad_region_path = fs.join(self.data_path, "bad", prep_name + ".reg")
             if not fs.is_file(bad_region_path): bad_region_path = None
 
+            # Get the filter
+            fltr = parse_filter(prep_name)
+
             # Set the FWHM if the instrument has a fixed PSF
-            if prep_name in fwhms: fwhm = fwhms[prep_name]
-            else: fwhm = None
+            if has_variable_fwhm(fltr): fwhm = None
+            else: fwhm = get_fwhm(fltr)
 
             # Debugging
             log.debug("Loading image " + image_path + " as " + prep_name + " ...")

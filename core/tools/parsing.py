@@ -750,7 +750,7 @@ def unit(argument):
     :return:
     """
 
-    from ..basics.unit import parse_unit
+    from ..units.parsing import parse_unit
     return parse_unit(argument) # can be photometric, but doesn't need to be
 
 # -----------------------------------------------------------------
@@ -763,7 +763,7 @@ def photometric_unit(argument):
     :return:
     """
 
-    from ..basics.unit import PhotometricUnit
+    from ..units.unit import PhotometricUnit
     return PhotometricUnit(argument)
 
 # -----------------------------------------------------------------
@@ -776,8 +776,21 @@ def photometric_density_unit(argument):
     :return:
     """
 
-    from ..basics.unit import PhotometricUnit
-    return PhotometricUnit(argument, density=True, strict=True)
+    from ..units.unit import PhotometricUnit
+    return PhotometricUnit(argument, density=True, density_strict=True)
+
+# -----------------------------------------------------------------
+
+def photometric_brightness_unit(argument):
+
+    """
+    THis function ...
+    :param argument: 
+    :return: 
+    """
+
+    from ..units.unit import PhotometricUnit
+    return PhotometricUnit(argument, brightness=True, brightness_strict=True)
 
 # -----------------------------------------------------------------
 
@@ -789,7 +802,7 @@ def length_unit(argument):
     :return:
     """
 
-    from ..basics.unit import parse_unit
+    from ..units.parsing import parse_unit
     unit = parse_unit(argument)
     if unit.physical_type != "length": raise ValueError("Not a length unit")
     else: return unit
@@ -814,7 +827,7 @@ def quantity(argument):
     (1.0, '')
     """
 
-    from ..basics.quantity import parse_quantity
+    from ..units.parsing import parse_quantity
     return parse_quantity(argument)
 
 # -----------------------------------------------------------------
@@ -827,7 +840,7 @@ def photometric_quantity(argument):
     :return:
     """
 
-    from ..basics.quantity import parse_quantity
+    from ..units.parsing import parse_quantity
     return parse_quantity(argument)
 
 # -----------------------------------------------------------------
@@ -840,7 +853,7 @@ def photometric_density_quantity(argument):
     :return:
     """
 
-    from ..basics.quantity import parse_quantity
+    from ..units.parsing import parse_quantity
     return parse_quantity(argument, density=True)
 
 # -----------------------------------------------------------------
@@ -853,7 +866,7 @@ def length_quantity(argument):
     :return:
     """
 
-    from ..basics.quantity import parse_quantity
+    from ..units.parsing import parse_quantity
     qty = parse_quantity(argument)
     if qty.unit.physical_type != "length": raise ValueError("Not a length")
     return qty
@@ -868,7 +881,7 @@ def temperature_quantity(argument):
     :return:
     """
 
-    from ..basics.quantity import parse_quantity
+    from ..units.parsing import parse_quantity
     qty = parse_quantity(argument)
     if qty.unit.physical_type != "temperature": raise ValueError("Not a temperature")
     return qty
@@ -883,7 +896,7 @@ def mass_quantity(argument):
     :return:
     """
 
-    from ..basics.quantity import parse_quantity
+    from ..units.parsing import parse_quantity
     qty = parse_quantity(argument)
     if qty.unit.physical_type != "mass": raise ValueError("Not a mass")
     return qty
@@ -898,7 +911,7 @@ def mass_density_quantity(argument):
     :return:
     """
 
-    from ..basics.quantity import parse_quantity
+    from ..units.parsing import parse_quantity
     qty = parse_quantity(argument)
     if qty.unit.physical_type != "mass density": raise ValueError("Not a mass density")
     return qty
@@ -913,7 +926,7 @@ def angle(argument):
     :return:
     """
 
-    from ..basics.quantity import parse_angle
+    from ..units.parsing import parse_angle
     return parse_angle(argument)
 
 # -----------------------------------------------------------------

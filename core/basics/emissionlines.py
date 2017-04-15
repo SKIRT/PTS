@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from .unit import parse_unit as u
+from ..units.parsing import parse_unit as u
 from ..tools import strings
 
 # -----------------------------------------------------------------

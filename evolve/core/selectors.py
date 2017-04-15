@@ -60,7 +60,9 @@ GRankSelector.cacheCount = None
 
 def GUniformSelector(population, **args):
 
-   """ The Uniform Selector """
+   """
+   The Uniform Selector
+   """
 
    return population[prng.randint(0, len(population))]
 
@@ -68,7 +70,8 @@ def GUniformSelector(population, **args):
 
 def GTournamentSelector(population, **args):
 
-   """ The Tournament Selector
+   """
+   The Tournament Selector
    It accepts the *tournamentPool* population parameter.
    .. note::
       the Tournament Selector uses the Roulette Wheel to
@@ -92,13 +95,15 @@ def GTournamentSelector(population, **args):
    else:
       choosen = minimax_operator(tournament_pool, key=lambda ind: ind.score)
 
+   # Return the choosen one
    return choosen
 
 # -----------------------------------------------------------------
 
 def GTournamentSelectorAlternative(population, **args):
 
-   """ The alternative Tournament Selector
+   """
+   The alternative Tournament Selector
    This Tournament Selector don't uses the Roulette Wheel
    It accepts the *tournamentPool* population parameter.
    .. versionadded: 0.6
@@ -124,7 +129,9 @@ def GTournamentSelectorAlternative(population, **args):
 
 def GRouletteWheel(population, **args):
 
-   """ The Roulette Wheel selector """
+   """
+   The Roulette Wheel selector
+   """
 
    psum = None
    if args["popID"] != GRouletteWheel.cachePopID:
@@ -158,7 +165,9 @@ GRouletteWheel.cacheWheel = None
 
 def GRouletteWheel_PrepareWheel(population):
 
-   """ A preparation for Roulette Wheel selection """
+   """
+   A preparation for Roulette Wheel selection
+   """
 
    from . import constants
 

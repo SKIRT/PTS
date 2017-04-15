@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ..tools import formatting as fmt
 from ..tools.logging import log
 from .configurable import RemotesConfigurable
-from ..basics.unit import parse_unit as u
+from ..units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

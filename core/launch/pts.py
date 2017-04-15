@@ -21,14 +21,14 @@ import tempfile
 from ..remote.remote import Remote
 from ..tools import introspection
 from ..tools.logging import log
-from ..basics.configuration import ConfigurationDefinition, DictConfigurationSetter
 from ..tools import filesystem as fs
 from ..basics.task import Task
 from ...do.commandline import start_target
+from ..basics.configuration import create_configuration_passive
 
 # -----------------------------------------------------------------
 
-def launch_local(pts_command, config_dict, input_dict=None, analysers=None, analysis_info=None):
+def launch_local(pts_command, config_dict, input_dict=None, analysers=None, analysis_info=None, description=None, cwd=None):
 
     """
     This function ...
@@ -37,23 +37,39 @@ def launch_local(pts_command, config_dict, input_dict=None, analysers=None, anal
     :param input_dict:
     :param analysers:
     :param analysis_info:
+    :param description:
+    :param cwd:
     :return:
     """
 
     # Resolve the PTS command
-    subproject, command_name, description, class_name, class_module_path, configuration_module_path, configuration_method = find_match(pts_command)
+    subproject, command_name, command_description, class_name, class_module_path, configuration_module_path, configuration_method = find_match(pts_command)
+
+    # Set description
+    if description is None: description = command_description
 
     # Create the configuration
-    config = create_configuration(command_name, class_name, configuration_module_path, config_dict, input_dict, description)
+    config = create_configuration_passive(command_name, class_name, configuration_module_path, config_dict, description)
+
+    # Set the log level temporarily
+    previous_level = log.level
+    level = "INFO"
+    if config.debug: level = "DEBUG"
+    if config.brief: level = "SUCCESS"
+    log.setLevel(level)
 
     # Get the class
     cls = introspection.get_class(class_module_path, class_name)
+
+    # Change working directory
+    if cwd is not None: fs.change_cwd(cwd)
 
     # Create the class instance, configure it with the configuration settings
     inst = cls(config)
 
     # Start
-    start_target(command_name, inst.run)
+    if input_dict is None: input_dict = {}
+    start_target(command_name, inst.run, **input_dict)
 
     # Exact command name
     exact_command_name = subproject + "/" + command_name
@@ -70,6 +86,40 @@ def launch_local(pts_command, config_dict, input_dict=None, analysers=None, anal
     # Do the analysis
     task.analyse()
 
+    # Reset the log level
+    log.setLevel(previous_level)
+
+    # Return the instance
+    return inst
+
+# -----------------------------------------------------------------
+
+def launch_remote(remote, pts_command, config_dict, input_dict=None, analysers=None, analysis_info=None,
+                  return_output_names=None, unpack=False, use_session=False, local_output_path=None):
+
+    """
+    This function ...
+    :param remote:
+    :param pts_command:
+    :param config_dict:
+    :param input_dict:
+    :param analysers:
+    :param analysis_info:
+    :param return_output_names:
+    :param unpack:
+    :param use_session:
+    :param local_output_path:
+    :return:
+    """
+
+    # Create the PTS remote launcher
+    launcher = PTSRemoteLauncher(remote=remote)
+
+    # Run
+    return launcher.run_and_analyse(pts_command, config_dict, local_output_path, analysers, analysis_info,
+                                    use_session=use_session, input_dict=input_dict, return_output_names=return_output_names,
+                                    unpack=unpack)
+
 # -----------------------------------------------------------------
 
 class PTSRemoteLauncher(object):
@@ -78,17 +128,19 @@ class PTSRemoteLauncher(object):
     This class ...
     """
 
-    def __init__(self):
+    def __init__(self, remote=None):
 
         """
         The constructor ...
+        :param remote:
         :return:
         """
 
         # -- Attributes --
 
         # Create the remote execution context
-        self.remote = Remote()
+        if remote is not None: self.remote = remote
+        else: self.remote = Remote()
 
     # -----------------------------------------------------------------
 
@@ -168,7 +220,8 @@ class PTSRemoteLauncher(object):
 
     # -----------------------------------------------------------------
 
-    def run_and_analyse(self, pts_command, config_dict, local_output_path, analysers, analysis_info, use_session=True):
+    def run_and_analyse(self, pts_command, config_dict, local_output_path, analysers, analysis_info, use_session=True,
+                        input_dict=None, return_output_names=None, unpack=False):
 
         """
         This function ...
@@ -178,11 +231,19 @@ class PTSRemoteLauncher(object):
         :param analysers:
         :param analysis_info:
         :param use_session:
+        :param input_dict:
+        :param return_output_names:
+        :param unpack:
         :return:
         """
 
         # Run attached
-        config = self.run_attached(pts_command, config_dict, return_config=True, use_session=use_session)
+        if return_output_names is not None: output, config = self.run_attached(pts_command, config_dict, return_config=True, use_session=use_session,
+                                                            input_dict=input_dict, return_output_names=return_output_names,
+                                                                               unpack=unpack)
+        else:
+            config = self.run_attached(pts_command, config_dict, return_config=True, use_session=use_session, input_dict=input_dict)
+            output = None
 
         # Create a new Task object
         task = Task(pts_command, config.to_string())
@@ -208,6 +269,9 @@ class PTSRemoteLauncher(object):
 
         # Analyse
         task.analyse()
+
+        # Return output
+        if return_output_names is not None: return output
 
     # -----------------------------------------------------------------
 
@@ -633,7 +697,7 @@ class PTSRemoteLauncher(object):
         subproject, command_name, description, class_name, class_module_path, configuration_module_path, configuration_method = find_match(pts_command)
 
         # Create the configuration
-        config = create_configuration(command_name, class_name, configuration_module_path, config_dict, input_dict, description)
+        config = create_configuration_passive(command_name, class_name, configuration_module_path, config_dict, description)
 
         # Exact command name
         exact_command_name = subproject + "/" + command_name
@@ -694,48 +758,5 @@ def find_match(pts_command):
 
     # Return
     return subproject, command_name, description, class_name, module_path, configuration_module_path, configuration_method_table
-
-# -----------------------------------------------------------------
-
-def create_configuration(command_name, class_name, configuration_module_path, config_dict, input_dict=None, description=None):
-
-    """
-    This function ...
-    :param command_name:
-    :param class_name:
-    :param configuration_module_path:
-    :param config_dict:
-    :param input_dict:
-    :param description:
-    :return:
-    """
-
-    # Find definition
-    try:
-        configuration_module = importlib.import_module(configuration_module_path)
-        definition = getattr(configuration_module, "definition")
-    except ImportError:
-        log.warning("No configuration definition found for the " + class_name + " class")
-        definition = ConfigurationDefinition()  # Create new configuration definition
-
-    ## SET THE INPUT FILENAMES
-
-    if input_dict is not None:
-
-        config_dict["input"] = dict()
-        for name in input_dict:
-            config_dict["input"] = name + "." + input_dict[name].default_extension  # generate a default filename
-
-    ## CREATE THE CONFIGURATION
-
-    # Create the configuration setter
-    if config_dict is None: config_dict = dict()  # no problem if all options are optional
-    setter = DictConfigurationSetter(config_dict, command_name, description)
-
-    # Create the configuration from the definition and from the provided configuration dictionary
-    config = setter.run(definition)
-
-    # Return the configuration
-    return config
 
 # -----------------------------------------------------------------

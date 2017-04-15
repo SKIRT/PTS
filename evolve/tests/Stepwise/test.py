@@ -1,0 +1,1590 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+# *****************************************************************
+# **       PTS -- Python Toolkit for working with SKIRT          **
+# **       © Astronomical Observatory, Ghent University          **
+# *****************************************************************
+
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import standard modules
+import numpy as np
+from collections import defaultdict
+
+# Import the relevant PTS classes and modules
+from pts.core.tools import filesystem as fs
+from pts.core.basics.range import RealRange
+from pts.core.test.implementation import TestImplementation
+from pts.core.tools.logging import log
+from pts.core.tools.loops import repeat
+from pts.evolve.optimize.stepwise import StepWiseOptimizer
+from pts.core.tools import types
+from .tables import ScoresTable
+from pts.modeling.fitting.tables import GenerationsTable, ParametersTable
+from pts.modeling.fitting.explorer import GenerationInfo
+from pts.core.tools import stringify
+from pts.modeling.fitting.tables import ModelProbabilitiesTable
+from pts.modeling.fitting.tables import BestParametersTable
+from pts.core.tools import time, tables
+
+# -----------------------------------------------------------------
+
+description = "finding the maximum of the function defined by Charbonneau (1995) using the StepWiseOptimizer"
+
+# -----------------------------------------------------------------
+
+# Define properties
+nparameters = 2
+#nindividuals = 80
+parameter_range = RealRange(0., 1.)
+#best_raw_score = float('inf')
+best_raw_score = 100
+#round_decimal = None
+#ngenerations = 1000
+#mutation_rate = 0.03
+#crossover_rate = 1.0
+#stats_freq = 100
+#mutation_method = "range" # or gaussian, or binary
+min_or_max = "maximize"
+
+# -----------------------------------------------------------------
+
+run_name = "run_0"
+
+# -----------------------------------------------------------------
+
+# labels and ranges
+free_parameter_labels = ["x", "y"]
+free_parameter_ranges = {"x": parameter_range, "y": parameter_range}
+
+# Parameter units
+parameter_units = dict()
+
+# -----------------------------------------------------------------
+
+class StepWiseTest(TestImplementation):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, config=None, interactive=False):
+
+        """
+        This function ...
+        :param config:
+        :param interactive:
+        """
+
+        # Call the constructor of the base class
+        super(StepWiseTest, self).__init__(config, interactive)
+
+        # Paths
+        self.main_engine_path = None
+        self.main_prng_path = None
+        self.optimizer_config_path = None
+        self.generations_path = None
+        self.generations_table_path = None
+
+        # The database path
+        self.database_path = None
+
+        # The statistics path
+        self.statistics_path = None
+
+        # The optimizer
+        self.optimizer = None
+
+        # Initial flag
+        self.initial = None
+
+        # The parameter ranges
+        self.ranges = dict()
+
+        # The scores and check
+        self.scores = None
+        self.scores_check = None
+
+        # The generation info
+        self.generation = None
+
+        # The generations table
+        self.generations_table = None
+
+        self.prob_path = None
+
+        # The directory with the probability tables for all finished generations
+        self.prob_generations_path = None
+
+        # Set the path to the best parameters table
+        self.best_parameters_table_path = None
+
+        ## Per generation
+
+        # The scores table
+        self.scores_table = None
+
+        # The parameters table
+        self.parameters_table = None
+
+        # Paths
+        self.generation_path = None
+        self.parameters_table_path = None
+        self.scores_table_path = None
+
+        # The model probabilities tables
+        self.model_probabilities = dict()
+
+        self.prob_generations_table_paths = dict()
+
+        # The dictionary with the list of the model parameters
+        self.parameters = defaultdict(list)
+
+    # -----------------------------------------------------------------
+
+    def run(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # 1. Call the setup function
+        self.setup(**kwargs)
+
+        # 2. Optimize
+        self.optimize()
+
+        # Writing
+        self.write()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(StepWiseTest, self).setup(**kwargs)
+
+        # Set paths
+        self.main_engine_path = fs.join(self.path, "engine.pickle")
+        self.main_prng_path = fs.join(self.path, "prng.pickle")
+        self.optimizer_config_path = fs.join(self.path, "optimizer.cfg")
+        self.generations_path = fs.create_directory_in(self.path, "generations")
+        self.generations_table_path = fs.join(self.path, "generations.dat")
+
+        # Set the path to the database
+        self.database_path = fs.join(self.path, "database.db")
+
+        # Set the path to the statistics file
+        self.statistics_path = fs.join(self.path, "statistics.csv")
+
+        # The directory with the probability tables for all finished generations
+        self.prob_path = fs.create_directory_in(self.path, "prob")
+        self.prob_generations_path = fs.create_directory_in(self.prob_path, "generations")
+
+        # Set the path to the best parameters table
+        self.best_parameters_table_path = fs.join(self.path, "best_parameters.dat")
+
+    # -----------------------------------------------------------------
+
+    def optimize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Optimizing ...")
+
+        # Start: launch the initial generation
+        self.start()
+
+        # Advance: launch generations 0 -> (n-1)
+        repeat(self.advance, self.config.ngenerations)
+
+        # Finish
+        self.finish()
+
+    # -----------------------------------------------------------------
+
+    def start(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Starting with a randomly created generation ...")
+
+        # Create the generations table
+        self.create_generations_table()
+
+        # Explore
+        self.explore()
+
+    # -----------------------------------------------------------------
+
+    def create_generations_table(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Creating the generations table ...")
+
+        # Create the table
+        self.generations_table = GenerationsTable(parameters=free_parameter_labels, units=parameter_units)
+        #self.generations_table.saveto(self.generations_table_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def individual_names_dict(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        individual_names = dict()
+        for generation_name in self.generations_table.generation_names:
+            individual_names[generation_name] = self.parameters_table.simulation_names
+        return individual_names
+
+    # -----------------------------------------------------------------
+
+    def advance(self):
+
+        """
+        THis function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Advancing the fitting with a new generation ...")
+
+        # Check whether there is a generation preceeding this one
+        if self.generations_table.last_generation_name is None: raise RuntimeError("Preceeding generation cannot be found")
+
+        # Debugging
+        log.debug("Previous generation: " + self.generations_table.last_generation_name)
+
+        # Debugging
+        if self.generations_table.has_finished: log.debug("There are finished generations: " + stringify.stringify(self.generations_table.finished_generations)[1])
+        if has_unevaluated_generations(self.generations_table, self.model_probabilities, self.individual_names_dict): log.debug("There are unevaluated generations: " + stringify.stringify(get_unevaluated_generations(self.generations_table, self.model_probabilities, self.individual_names_dict))[1])
+
+        # If some generations have finished, fit the SED
+        if self.generations_table.has_finished and has_unevaluated_generations(self.generations_table, self.model_probabilities, self.individual_names_dict): self.score()
+
+        # If all generations have finished, explore new generation of models
+        if self.generations_table.all_finished: self.explore()
+
+    # -----------------------------------------------------------------
+
+    def finish(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Evaluating last generation ...")
+
+        # Check the current number of generations
+        current_ngenerations = self.generations_table.ngenerations
+        if current_ngenerations <= 1: raise RuntimeError("Need at least one generation after the initial generation to finish the fitting")
+        if current_ngenerations == 0: raise RuntimeError("There are no generations")
+
+        # Check if there are unfinished generations
+        has_unfinished = has_unfinished_generations(self.generations_table)
+        if has_unfinished: log.warning("There are unfinished generations, but evaluating finished simulations anyway ...")
+
+        # Check if there are unevaluated generations
+        if not has_unevaluated_generations(self.generations_table, self.model_probabilities, self.individual_names_dict): log.success("All generations have already been evaluated")
+
+        # Do the SED fitting step
+        self.score()
+
+        # Success
+        if not has_unfinished: log.success("Succesfully evaluated all generations")
+
+    # -----------------------------------------------------------------
+
+    def explore(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Exploring the parameter space ...")
+
+        # 1. Reset the generation
+        self.reset_generation()
+
+        # 2. Create the generation info
+        self.create_generation_info()
+
+        # 3. Create the generation directory
+        self.create_generation_directory()
+
+        # 4. Generate the parameters
+        self.generate()
+
+        # 5. Evaluate
+        self.evaluate()
+
+        # 6. Write exploration output
+        self.write_exploration()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def generation_names(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.generations_table.generation_names
+
+    # -----------------------------------------------------------------
+
+    def reset_generation(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Resetting the generation ...")
+
+        # Set the generation info to None
+        self.generation = None
+
+        # Set paths to None
+        self.generation_path = None
+        self.parameters_table_path = None
+        self.scores_table_path = None
+
+        # Parameters table
+        self.parameters_table = None
+
+        # Scores table
+        self.scores_table = None
+
+        # The model probabilities tables
+        self.model_probabilities = dict()
+
+        #
+        self.prob_generations_table_paths = dict()
+
+        # The dictionary with the list of the model parameters
+        self.parameters = defaultdict(list)
+
+    # -----------------------------------------------------------------
+
+    def create_generation_info(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Creating the generation info ...")
+
+        # Not the initial generation
+        if "initial" in self.generation_names:
+
+            # Set index and name
+            generation_index = self.last_genetic_generation_index + 1
+            generation_name = str("Generation " + str(generation_index))
+
+        # Initial generation
+        else:
+
+            generation_index = None
+            generation_name = "initial"
+
+        # Create the generation info object
+        self.generation = GenerationInfo()
+
+        # Set the generation info
+        self.generation.name = generation_name
+        self.generation.index = generation_index
+        self.generation.method = "genetic"
+        self.generation.wavelength_grid_level = None
+        self.generation.nsimulations = self.config.nindividuals
+        self.generation.npackages = None
+        self.generation.selfabsorption = None
+        self.generation.transient_heating = None
+
+    # -----------------------------------------------------------------
+
+    def create_generation_directory(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Creating the generation directory ...")
+
+        # Create
+        self.generation_path = fs.create_directory_in(self.generations_path, self.generation.name)
+
+        # Set paths
+        self.parameters_table_path = fs.join(self.generation_path, "parameters.dat")
+        self.scores_table_path = fs.join(self.generation_path, "scores.dat")
+
+        # Initialize the parameters table
+        self.parameters_table = ParametersTable()
+        self.parameters_table.saveto(self.parameters_table_path)
+
+        # Initialize the scores table
+        self.scores_table = ScoresTable()
+        self.scores_table.saveto(self.scores_table_path)
+
+    # -----------------------------------------------------------------
+
+    def generate(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Generating the parameter values ...")
+
+        # Reset
+        self.reset_optimizer()
+
+        # Setup
+        self.set_optimizer()
+
+        # Set parameters
+        self.set_parameters()
+
+        # Run the optimizer
+        self.run_optimizer()
+
+    # -----------------------------------------------------------------
+
+    def reset_optimizer(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Resetting the optimizer ...")
+
+        # Set to None
+        self.optimizer = None
+
+    # -----------------------------------------------------------------
+
+    def set_optimizer(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Setting the optimizer ...")
+
+        # Load or create the optimizer
+        if fs.is_file(self.main_engine_path): self.load_optimizer()
+        else: self.create_optimizer()
+
+        # Set settings
+        self.set_optimizer_settings()
+
+    # -----------------------------------------------------------------
+
+    def load_optimizer(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Loading the optimizer ...")
+
+        # Load the optimizer from files
+        self.optimizer = StepWiseOptimizer.from_paths(self.path, self.main_engine_path, self.main_prng_path, self.optimizer_config_path, self.statistics_path, self.database_path, run_name)
+
+        # Set initial flag
+        self.initial = False
+
+    # -----------------------------------------------------------------
+
+    def create_optimizer(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Creating the optimizer ...")
+
+        # Create a new optimizer and set paths
+        self.optimizer = StepWiseOptimizer()
+        self.optimizer.config.output = self.path
+        self.optimizer.config.writing.engine_path = self.main_engine_path
+        self.optimizer.config.writing.prng_path = self.main_prng_path
+        self.optimizer.config.writing.config_path = self.optimizer_config_path
+        self.optimizer.config.writing.statistics_path = self.statistics_path
+        self.optimizer.config.writing.database_path = self.database_path
+        self.optimizer.config.run_id = run_name
+
+        # Set initial flag
+        self.initial = True
+
+    # -----------------------------------------------------------------
+
+    def set_optimizer_settings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting optimizer settings ...")
+
+        ## In order of optimizer configuration
+
+        # Parameters
+        self.optimizer.config.nparameters = nparameters
+
+        # Number of generations and the number of individuals per generation
+        self.optimizer.config.ngenerations = self.config.ngenerations
+        self.optimizer.config.nindividuals = self.config.nindividuals
+
+        # User
+        self.optimizer.config.mutation_rate = self.config.genetic.mutation_rate
+        self.optimizer.config.crossover_rate = self.config.genetic.crossover_rate
+
+        # Fixed
+        self.optimizer.config.stats_freq = 1
+        self.optimizer.config.best_raw_score = 0.
+
+        # User
+        self.optimizer.config.round_decimal = self.config.genetic.round_decimal
+        self.optimizer.config.mutation_method = self.config.genetic.mutation_method
+
+        # User, scaling
+        self.optimizer.config.scaling_method = self.config.genetic.scaling_method
+
+        # User, selector
+        self.optimizer.config.selector_method = self.config.genetic.selector_method
+
+        # Fixed
+        self.optimizer.config.min_or_max = min_or_max
+        self.optimizer.config.database_frequency = 1
+        self.optimizer.config.statistics_frequency = 1
+
+        # Fixed
+        #self.optimizer.config.output = self.fitting_run.path
+
+        # Fixed
+        self.optimizer.config.elitism = self.config.genetic.elitism
+
+        # Fixed
+        self.optimizer.config.nelite_individuals = self.config.genetic.nelite_individuals
+
+        # Set heterogeneous flag
+        #self.optimizer.config.heterogeneous = True
+        self.optimizer.config.heterogeneous = False
+
+    # -----------------------------------------------------------------
+
+    def set_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the parameter ranges ...")
+
+        # Loop over the free parameters
+        for label in free_parameter_labels:
+
+            # Get range
+            parameter_range = free_parameter_ranges[label]
+
+            # Add the parameter
+            self.add_parameter(label, parameter_range)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_minima(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a list
+        minima = []
+
+        # Set the list values
+        for label in free_parameter_labels: minima.append(self.ranges[label].min)
+
+        # Return the minimal parameter values
+        return minima
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_maxima(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a list
+        maxima = []
+
+        # Set the list values
+        for label in free_parameter_labels: maxima.append(self.ranges[label].max)
+
+        # Return the maximal parameter values
+        return maxima
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_minima_scalar(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a list
+        minima = []
+
+        # Set the list values
+        for label in free_parameter_labels:
+
+            min_value = self.ranges[label].min
+
+            # Convert if necessary
+            if label in parameter_units and parameter_units[label] is not None:
+                unit = parameter_units[label]
+                min_value = min_value.to(unit).value
+
+            # Assert that is real type
+            assert types.is_real_type(min_value)
+            min_value = float(min_value)
+
+            # Add to list
+            minima.append(min_value)
+
+        # Return the minimal parameter values
+        return minima
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_maxima_scalar(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a list
+        maxima = []
+
+        # Set the list values
+        for label in free_parameter_labels:
+
+            max_value = self.ranges[label].max
+
+            # Convert if necessary
+            if label in parameter_units and parameter_units[label] is not None:
+                unit = parameter_units[label]
+                max_value = max_value.to(unit).value
+
+            # Assert that is real type
+            assert types.is_real_type(max_value)
+            max_value = float(max_value)
+
+            # Add to list
+            maxima.append(max_value)
+
+        # Return the maximal parameter values
+        return maxima
+
+    # -----------------------------------------------------------------
+
+    def add_parameter(self, label, parameter_range):
+
+        """
+        This function ...
+        :param label:
+        :param parameter_range:
+        :return:
+        """
+
+        self.ranges[label] = parameter_range
+
+    # -----------------------------------------------------------------
+
+    def run_optimizer(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Generating the new models ...")
+
+        # Set the scores
+        if not self.initial: self.set_scores()
+
+        evaluator = None
+        evaluator_kwargs = None
+
+        # Run the optimizer
+        self.optimizer.run(scores=self.scores, scores_check=self.scores_check, minima=self.parameter_minima_scalar,
+                           maxima=self.parameter_maxima_scalar, evaluator=evaluator, evaluator_kwargs=evaluator_kwargs)
+
+        # Get the parameter values of the new models
+        self.get_model_parameters()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def last_genetic_generation_name(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        highest_index = -1
+        name = None
+
+        # Find the name of the generation with the highest index
+        for i in range(len(self.generations_table)):
+            if not self.generations_table["Generation index"].mask[i]:
+                index = self.generations_table["Generation index"][i]
+                if index > highest_index:
+                    highest_index = index
+                    name = self.generations_table["Generation name"][i]
+
+        # Return the name of the generation with the highest index
+        return name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def last_genetic_or_initial_generation_name(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        name = self.last_genetic_generation_name
+
+        # Check whether the initial generation exists
+        if name is None and "initial" in self.generations_table["Generation name"]: name = "initial"
+
+        # Return the name
+        return name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def last_genetic_generation_index(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        highest_index = -1
+
+        # Find the highest index
+        for i in range(len(self.generations_table)):
+            if not self.generations_table["Generation index"].mask[i]:
+                index = self.generations_table["Generation index"][i]
+                if index  > highest_index: highest_index = index
+
+        # Return the highest generation index
+        return highest_index
+
+    # -----------------------------------------------------------------
+
+    def parameters_table_path_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return fs.join(self.generations_path, generation_name, "parameters.dat")
+
+    # -----------------------------------------------------------------
+
+    def scores_table_path_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return fs.join(self.generations_path, generation_name, "scores.dat")
+
+    # -----------------------------------------------------------------
+
+    def parameters_table_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name: 
+        :return: 
+        """
+
+        return ParametersTable.from_file(self.parameters_table_path_for_generation(generation_name))
+
+    # -----------------------------------------------------------------
+
+    def scores_table_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name: 
+        :return: 
+        """
+
+        return ScoresTable.from_file(self.scores_table_path_for_generation(generation_name))
+
+    # -----------------------------------------------------------------
+
+    def set_scores(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting scores from previous generation ...")
+
+        # Load the parameters table from the previous generation
+        parameters_table = self.parameters_table_for_generation(self.last_genetic_or_initial_generation_name)
+
+        # Load the chi squared table from the previous generation
+        scores_table = self.scores_table_for_generation(self.last_genetic_or_initial_generation_name)
+
+        # List of chi squared values in the same order as the parameters table
+        score_values = []
+
+        # Check whether the chi-squared and parameter tables match
+        for i in range(len(parameters_table)):
+            individual_name = parameters_table["Individual name"][i]
+            score = scores_table.score_for(individual_name)
+            score_values.append(score)
+
+        # Check individual values with parameter table of the last generation
+        check = []
+        for label in free_parameter_labels:
+            values = parameters_table[label]
+            check.append(values)
+
+        # Set the scores
+        self.scores = score_values
+        self.scores_check = check
+
+    # -----------------------------------------------------------------
+
+    def get_model_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the model parameters ...")
+
+        # Loop over the individuals of the population
+        for individual in self.optimizer.population:
+
+            # Loop over all the genes (parameters)
+            for i in range(len(individual)):
+
+                # Get the parameter value
+                value = individual[i]
+
+                # Add the parameter value to the dictionary
+                self.parameters[free_parameter_labels[i]].append(value)
+
+    # -----------------------------------------------------------------
+
+    def evaluate(self):
+
+        """
+        THis function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Evaluating ...")
+
+        # Loop over the different parameter values
+        for i in range(self.config.nindividuals):
+
+            # Get the parameter values as a dictionary
+            parameter_values = get_parameter_values_for_individual(self.parameters, i)
+
+            # Generate the individual name
+            individual_name = "x" + repr(parameter_values["x"]) + "_y" + repr(parameter_values["y"])
+
+            # Debugging
+            log.debug("Adding entry to the parameters table with:")
+            log.debug(" - Individual name: " + individual_name)
+            for label in parameter_values: log.debug(" - " + label + ": " + stringify.stringify_not_list(parameter_values[label])[1])
+
+            # Add an entry to the parameters table
+            self.parameters_table.add_entry(individual_name, parameter_values)
+
+            # Save the parameters table
+            self.parameters_table.save()
+
+            # Find the index in the table for this generation
+            index = tables.find_index(self.generations_table, self.generation.name, "Generation name")
+
+            # Get the number of simulations for this generation
+            nsimulations = self.generations_table["Number of simulations"][index]
+
+            # Get the number of entries in the chi squared table
+            nfinished_simulations = len(self.scores_table)
+
+            # Inform the user
+            log.info("Calculating the value ...")
+
+            # Calculate the value
+            value = eval_func_xy(parameter_values["x"], parameter_values["y"])
+
+            # Inform the user
+            log.info("Adding the score for the current model to the score table ...")
+
+            # Add entry
+            self.scores_table.add_entry(individual_name, value)
+
+            # Save the table
+            #self.chi_squared_table.save()
+
+    # -----------------------------------------------------------------
+
+    def write_exploration(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Writing after exploration step ...")
+
+        # Write generation
+        self.write_generation()
+
+        # Write parameters
+        self.write_parameters()
+
+        # Write scores
+        self.write_scores()
+
+    # -----------------------------------------------------------------
+
+    def write_generation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing generation info ...")
+
+        # Add an entry to the generations table
+        self.generations_table.add_entry(self.generation, self.ranges)
+
+        # Save the table
+        #self.generations_table.save()
+
+    # -----------------------------------------------------------------
+
+    def write_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the model parameters table ...")
+
+        # Save the parameters table
+        self.parameters_table.saveto(self.generation.parameters_table_path)
+
+    # -----------------------------------------------------------------
+
+    def write_scores(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the scores table ...")
+
+        # Save the chi squared table
+        self.scores_table.saveto(self.generation.chi_squared_table_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def finished_generations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.generations_table.finished_generations
+
+    # -----------------------------------------------------------------
+
+    def score(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Scoring engine ...")
+
+        # Check if there are finished generations
+        if len(self.finished_generations) == 0: raise RuntimeError("There are no finished generations")
+
+        # For each finished generation, determine the path to the probability table
+        for generation_name in self.finished_generations:
+
+            path = fs.join(self.prob_generations_path, generation_name + ".dat")
+            self.prob_generations_table_paths[generation_name] = path
+
+        # 2. Get the parameters of the best models for each generation
+        self.get_best_parameters()
+
+        # 3. Calculate the probabilities
+        self.calculate_probabilities()
+
+        # 4. Calculate the probability distributions
+        #self.create_distributions()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def best_parameters_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Open the table and return it
+        return BestParametersTable.from_file(self.best_parameters_table_path)
+
+    # -----------------------------------------------------------------
+
+    def is_finished_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return self.generations_table.is_finished(generation_name)
+
+    # -----------------------------------------------------------------
+
+    def best_parameter_values_for_generation(self, generation_name, return_chi_squared=False, only_finished=True):
+
+        """
+        This function ...
+        :param generation_name:
+        :param return_chi_squared:
+        :param only_finished:
+        :return:
+        """
+
+        # Check if the generation is finished (if this is required by the caller)
+        if only_finished:
+            if not self.is_finished_generation(generation_name): raise RuntimeError("The generation '" + generation_name + "' is not yet finished")
+
+        # Open the chi squared table
+        #chi_squared_table = self.chi_squared_table_for_generation(generation_name)
+        scores_table = self.scores_table_for_generation(generation_name)
+
+        # Get the name of the simulation with the lowest chi squared value
+        #best_simulation_name = chi_squared_table.best_simulation_name
+        best_individual_name = scores_table.best_individual_name
+
+        # Open the parameters table for this generation
+        parameters_table = self.parameters_table_for_generation(generation_name)
+
+        # Return the parameters of the best simulation
+        if return_chi_squared:
+            chi_squared = scores_table.score_for(best_individual_name)
+            return parameters_table.parameter_values_for_simulation(best_individual_name), chi_squared
+        else: return parameters_table.parameter_values_for_simulation(best_individual_name)
+
+    # -----------------------------------------------------------------
+
+    def get_best_parameters(self):
+
+        """
+        This function ...
+        """
+
+        # Inform the user
+        log.info("Getting the parameter values of the best model for the finished generations (if not already done) ...")
+
+        # Loop over the finished generations
+        for generation_name in self.finished_generations:
+
+            # Check if the generation is already in the best parameters table
+            if generation_name in self.best_parameters_table.generation_names: continue
+
+            # Otherwise, add the best parameter values
+            values, chi_squared = self.best_parameter_values_for_generation(generation_name, return_chi_squared=True)
+
+            # Add an entry to the best parameters table file
+            self.best_parameters_table.add_entry(generation_name, values, chi_squared)
+
+    # -----------------------------------------------------------------
+
+    def calculate_probabilities(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the probabilities ...")
+
+        # Calculate the probability tables
+        self.calculate_model_probabilities()
+
+        # Calcualte the combined probability tables (all finished generations)
+        #self.calculate_parameter_probabilities()
+
+    # -----------------------------------------------------------------
+
+    def calculate_model_probabilities(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the model probabilities for the finished generations (if not already done) ...")
+
+        # Loop over the finished generations
+        for generation_name in self.finished_generations:
+
+            # Check whether the probabilities table is already present for this generation
+            if fs.is_file(self.prob_generations_table_paths[generation_name]):
+
+                # Debugging
+                log.debug("Loading the model probabilities table for generation " + generation_name + " ...")
+
+                # Load the probabilities table
+                probabilities_table = ModelProbabilitiesTable.from_file(self.prob_generations_table_paths[generation_name])
+
+                # Add to the dictionary
+                self.model_probabilities[generation_name] = probabilities_table
+
+            # Otherwise, calculate the probabilities based on the chi squared table
+            else:
+
+                # Load the parameter table
+                parameter_table = self.parameters_table_for_generation(generation_name)
+
+                # Load the chi squared table
+                #chi_squared_table = self.chi_squared_table_for_generation(generation_name)
+                scores_table = self.scores_table_for_generation(generation_name)
+
+                # Sort the table for decreasing chi squared value
+                scores_table.sort("Scores")
+                scores_table.reverse()
+
+                # Get the chi squared values
+                scores = scores_table["Chi squared"]
+
+                # Calculate the probability for each model
+                probabilities = np.exp(-0.5 * scores)
+
+                # Create the probabilities table
+                probabilities_table = ModelProbabilitiesTable(parameters=free_parameter_labels, units=parameter_units)
+
+                # Add the entries to the model probabilities table
+                for i in range(len(scores_table)):
+
+                    # Get the simulation name
+                    simulation_name = scores_table["Individual name"][i]
+
+                    # Get a dictionary with the parameter values for this simulation
+                    parameter_values = parameter_table.parameter_values_for_simulation(simulation_name)
+
+                    # Add an entry to the table
+                    probabilities_table.add_entry(simulation_name, parameter_values, probabilities[i])
+
+                # Save the model probabilities table
+                probabilities_table.saveto(self.prob_generations_table_paths[generation_name])
+
+                # Add to the dictionary
+                self.model_probabilities[generation_name] = probabilities_table
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write the generations table
+        self.write_generations_table()
+
+    # -----------------------------------------------------------------
+
+    def write_generations_table(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Writing the generations table ...")
+
+        # Save
+        self.generations_table.saveto(self.generations_table_path)
+
+# -----------------------------------------------------------------
+
+def eval_func_xy(x, y):
+
+    """
+    This function ...
+    :param x:
+    :param y:
+    :return:
+    """
+
+    # Calculate z and return
+    z = (16 * x * (1. - x) * y * (1. - y) * np.sin(2. * np.pi * x) * np.sin(2. * np.pi * y) )**2
+    return z
+
+# -----------------------------------------------------------------
+
+def eval_func(chromosome, **kwargs):
+
+    """
+    The evaluation function
+    """
+
+    # Get x and y
+    x = chromosome[0]
+    y = chromosome[1]
+
+    # Return the value of the function
+    return eval_func_xy(x, y)
+
+# -----------------------------------------------------------------
+
+def evolve_callback(ga_engine, **kwargs):
+
+    """
+    This function ...
+    :param ga_engine:
+    :param kwargs:
+    :return:
+    """
+
+    # Get the coords
+    #coords = kwargs.pop("coordinates")
+
+    #if ga_engine.currentGeneration % 10 == 0:
+    #    best = ga_engine.bestIndividual()
+    #    write_tour_to_img(coords, best, "tsp_result_%d.png" % (ga_engine.currentGeneration,))
+    #return False
+
+
+    #return coords, cm
+
+    pass
+
+# -----------------------------------------------------------------
+# SETUP FUNCTION
+# -----------------------------------------------------------------
+
+def setup(temp_path):
+
+    """
+    This function ...
+    :param temp_path:
+    """
+
+    return
+
+# -----------------------------------------------------------------
+# OPTIMIZE
+# -----------------------------------------------------------------
+
+# Settings
+#settings_optimize = dict()
+#settings_optimize["output"] = None
+#settings_optimize["nparameters"] = nparameters
+#settings_optimize["nindividuals"] = nindividuals
+#settings_optimize["parameter_range"] = parameter_range
+#settings_optimize["best_raw_score"] = best_raw_score
+##settings_optimize["round_decimal"] = round_decimal
+#settings_optimize["ngenerations"] = ngenerations
+#settings_optimize["mutation_rate"] = mutation_rate
+#settings_optimize["crossover_rate"] = crossover_rate
+#settings_optimize["stats_freq"] = stats_freq
+##settings_optimize["mutation_method"] = mutation_method
+#settings_optimize["min_or_max"] = min_or_max
+
+# Input
+#input_optimize = dict()
+##input_optimize["genome"] = genome
+#input_optimize["evaluator"] = eval_func
+##input_optimize["initializator"] = G1DListTSPInitializator
+#input_optimize["mutator"] = G1DListMutatorSwap
+#input_optimize["crossover"] = G1DListCrossoverOX
+#input_optimize["callback"] = evolve_callback
+##input_optimize["adapter"] = sqlite_adapter
+
+# Create dictionary for extra arguments to the evalutor function
+##input_optimize["evaluator_kwargs"] = {"distances": cm}
+##input_optimize["callback_kwargs"] = {"coordinates": coords}
+
+# -----------------------------------------------------------------
+# TEST FUNCTION
+# -----------------------------------------------------------------
+
+def test(temp_path):
+
+    """
+    This function ...
+    """
+
+    return
+
+    # Remove 'callback' from the settings dictionary: we don't want to plot now
+    ##if "callback" in input_optimize: del input_optimize["callback"]
+
+    # Solve the problem with the original Pyevolve implementation
+    #best = reference.call(settings_optimize, input_optimize)
+
+    # Show the best individual
+    #show_best(best)
+
+# -----------------------------------------------------------------
+
+def is_evaluated(prob_table, individual_names):
+
+    """
+    This function ...
+    :param prob_table:
+    :param individual_names:
+    :return:
+    """
+
+    # Get the probabilities table
+    #prob_table = get_model_probabilities_table(modeling_path, fitting_run, generation_name)
+
+    if prob_table is None: return False
+
+    # Loop over all the simulation names of the generation
+    #for simulation_name in get_simulation_names(modeling_path, fitting_run, generation_name):
+    for individual_name in individual_names:
+
+        if not prob_table.has_simulation(individual_name): return False
+
+    # No simulation encountered that was not evaluated -> OK
+    return True
+
+# -----------------------------------------------------------------
+
+def get_generation_names(generations_table):
+
+    """
+    This function ...
+    :param generations_table:
+    :return:
+    """
+
+    # Get the generations table
+    #generations_table = get_generations_table(modeling_path, fitting_run)
+
+    # Return the generation names
+    return generations_table.generation_names
+
+# -----------------------------------------------------------------
+
+def get_unevaluated_generations(generations_table, prob_tables, individual_names):
+
+    """
+    This function ...
+    :param generations_table: 
+    :param prob_tables:
+    :param individual_names:
+    :return: 
+    """
+
+    generation_names = []
+
+    # Loop over the generations
+    for generation_name in get_generation_names(generations_table):
+
+        if not is_evaluated(prob_tables[generation_name], individual_names[generation_name]): generation_names.append(generation_name)
+
+    # Return the generation names
+    return generation_names
+
+# -----------------------------------------------------------------
+
+def has_unevaluated_generations(generations_table, prob_tables, individual_names):
+
+    """
+    This function ...
+    :param generations_table:
+    :param prob_tables:
+    :param individual_names:
+    :return:
+    """
+
+    # Loop over the generations
+    for generation_name in get_generation_names(generations_table):
+
+        # If at least one generation is not evaluated, return False
+        if not is_evaluated(prob_tables[generation_name], individual_names[generation_name]): return True
+
+    # No generation was encountered that was not completely evaluated
+    return False
+
+# -----------------------------------------------------------------
+
+def has_unfinished_generations(generations_table):
+
+    """
+    This function ...
+    :param generations_table:
+    :return:
+    """
+
+    # Open the generations table
+    table = generations_table
+    return table.has_unfinished
+
+# -----------------------------------------------------------------
+
+def get_parameter_values_for_individual(parameters, index):
+
+    """
+    This function ...
+    :param parameters:
+    :param index:
+    :param fitting_run:
+    :return:
+    """
+
+    # Set the parameter values as a dictionary for this individual model
+    parameter_values = dict()
+    for label in free_parameter_labels:
+
+        # Get the value for this model from the generator and get the unit defined for this parameter
+        value = parameters[label][index]
+
+        # Get unit (if any)
+        unit = get_parameter_unit(label)
+
+        # Set value with unit
+        if unit is not None: parameter_values[label] = value * unit
+
+        # Set dimensionless value
+        else: parameter_values[label] = value
+
+    # Return the parameter values
+    return parameter_values
+
+# -----------------------------------------------------------------
+
+def get_parameter_unit(label):
+
+    """
+    This function ...
+    :param label:
+    :param fitting_run:
+    :return:
+    """
+
+    if label in parameter_units:
+        if parameter_units[label] is None: return None
+        elif parameter_units[label] == "": return None
+        else: return parameter_units[label]
+    else: return None
+
+# -----------------------------------------------------------------

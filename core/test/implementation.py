@@ -20,9 +20,8 @@ from abc import abstractmethod, ABCMeta
 # Import the relevant PTS classes and modules
 from ..tools import filesystem as fs
 from ..tools import introspection
-from ..tools.logging import log
-from ..basics.configuration import DictConfigurationSetter
 from ..basics.configurable import Configurable
+from ..launch.pts import launch_local, launch_remote
 
 # -----------------------------------------------------------------
 
@@ -83,11 +82,12 @@ class TestImplementation(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run_command(self, command):
+    def run_command(self, command, remote=None):
 
         """
         This function ...
         :param command:
+        :param remote:
         :return:
         """
 
@@ -98,53 +98,46 @@ class TestImplementation(Configurable):
         input_dict = command.input_dict
         cwd = command.cwd
 
-        # Find match in the tables of configurable classes
-        match = introspection.resolve_command_tables(the_command, tables)
-
-        # Get info
-        module_path = match.module_path
-        class_name = match.class_name
-        configuration_module_path = match.configuration_module_path
-
-        # Get the class
-        cls = introspection.get_class(module_path, class_name)
+        # Set the cwd if not specified
+        if not command.cwd_specified: cwd = self.path
 
         # Determine the output path
         output_path = fs.absolute_path(fs.join(self.path, cwd))
 
-        ###
+        # Launch locally or remotely
+        if remote is not None: launch_remote(remote, the_command, settings_dict, input_dict)
+        else: launch_local(the_command, settings_dict, input_dict, description=description, cwd=output_path)
 
-        # Debugging
-        log.debug("Setting configuration for command '" + the_command + "' ...")
+        # Find match in the tables of configurable classes
+        #match = introspection.resolve_command_tables(the_command, tables)
+
+        # Get info
+        #module_path = match.module_path
+        #class_name = match.class_name
+        #configuration_module_path = match.configuration_module_path
+
+        # Get the class
+        #cls = introspection.get_class(module_path, class_name)
+
+        # Create the configuration
+        #config = create_configuration_passive(the_command, class_name, configuration_module_path, settings_dict, description)
 
         # Change working directory
-        fs.change_cwd(output_path)
-
-        # Get the configuration definition
-        configuration_module = importlib.import_module(configuration_module_path)
-        definition = getattr(configuration_module, "definition")
-
-        #print(settings_dict)
-
-        # Parse the configuration
-        setter = DictConfigurationSetter(settings_dict, the_command, description=description)
-        config = setter.run(definition)
-
-        #print(config)
+        #fs.change_cwd(output_path)
 
         # Set working directory (output directory)
-        config.path = output_path
+        #config.path = output_path
 
         # Create the class instance, configure it with the configuration settings
-        inst = cls(config)
+        #inst = cls(config)
 
         # Inform the user
-        log.info("Executing command '" + the_command + "': " + description + " ...")
+        #log.info("Executing command '" + the_command + "': " + description + " ...")
 
         # Run with input
-        inst.run(**input_dict)
+        #inst.run(**input_dict)
 
         # Return the instance
-        return inst
+        #return inst
 
 # -----------------------------------------------------------------

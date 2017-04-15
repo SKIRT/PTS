@@ -21,7 +21,7 @@ from ..advanced.dustgridtool import DustGridTool
 from ..tools import formatting as fmt
 from ..tools.logging import log
 from ..simulation.memory import MemoryRequirement
-from ..basics.unit import parse_unit as u
+from ..units.parsing import parse_unit as u
 from ..tools import time
 
 # -----------------------------------------------------------------

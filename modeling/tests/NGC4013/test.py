@@ -24,7 +24,7 @@ from pts.core.test.implementation import TestImplementation
 from pts.core.tools import introspection
 from pts.core.basics.range import RealRange, QuantityRange
 from pts.magic.core.frame import Frame
-from pts.core.basics.quantity import parse_quantity, parse_angle
+from pts.core.units.parsing import parse_quantity, parse_angle
 from pts.core.simulation.skifile import LabeledSkiFile
 from pts.modeling.basics.instruments import InstrumentFrame, MultiFrameInstrument
 from pts.core.filter.filter import parse_filter

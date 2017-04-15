@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ...core.data.sed import SED
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
-from ..basics.unit import parse_unit as u
+from ..units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

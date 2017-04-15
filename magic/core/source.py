@@ -32,18 +32,18 @@ class Source(object):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, index, position, special=False, ignore=False):
+    def __init__(self, **kwargs):
 
         """
         The constructor ...
-        :param position:
+        :param kwargs:
         """
 
         # Set attributes
-        self.index = index
-        self.position = position
-        self.special = special
-        self.ignore = ignore
+        self.index = kwargs.pop("index")
+        self.position = kwargs.pop("position")
+        self.special = kwargs.pop("special", False)
+        self.ignore = kwargs.pop("ignore", False)
         
         # The detection
         self.detection = None

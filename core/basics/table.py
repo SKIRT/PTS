@@ -20,8 +20,8 @@ from collections import OrderedDict
 from astropy.table import Table, MaskedColumn
 
 # Import the relevant PTS classes and modules
-from .unit import PhotometricUnit
-from .unit import parse_unit as u
+from ..units.unit import PhotometricUnit
+from ..units.parsing import parse_unit as u
 from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
@@ -57,6 +57,9 @@ class SmartTable(Table):
         # Path
         self.path = None
 
+        # Initialize 'density' meta object
+        if "density" not in self.meta: self.meta["density"] = []
+
     # -----------------------------------------------------------------
 
     def add_column_info(self, name, dtype, unit, description):
@@ -70,6 +73,7 @@ class SmartTable(Table):
         :return:
         """
 
+        if isinstance(unit, basestring): unit = u(unit)
         self.column_info.append((name, dtype, unit, description))
 
     # -----------------------------------------------------------------

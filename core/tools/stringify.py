@@ -174,12 +174,12 @@ def stringify_not_list(value, scientific=False, decimal_places=2):
     if types.is_boolean_type(value): return "boolean", str_from_bool(value)
     elif types.is_integer_type(value): return "integer", str_from_integer(value, scientific=scientific)
     elif types.is_real_type(value): return "real", str_from_real(value, scientific=scientific, decimal_places=decimal_places)
-    elif isinstance(value, basestring): return "string", value
+    elif types.is_string_type(value): return "string", value
     elif isinstance(value, NoneType): return "None", "None"
 
     # Special
-    elif introspection.lazy_isinstance(value, "UnitBase", "astropy.units"): return introspection.lazy_call("stringify_unit", "pts.core.basics.unit", value)
-    elif introspection.lazy_isinstance(value, "Quantity", "astropy.units"): return introspection.lazy_call("stringify_quantity", "pts.core.basics.quantity", value)
+    elif introspection.lazy_isinstance(value, "UnitBase", "astropy.units"): return introspection.lazy_call("stringify_unit", "pts.core.units.stringify", value)
+    elif introspection.lazy_isinstance(value, "Quantity", "astropy.units"): return introspection.lazy_call("stringify_quantity", "pts.core.units.stringify", value)
     elif introspection.lazy_isinstance(value, "Angle", "astropy.coordinates"): return "angle", str_from_angle(value)
     elif introspection.lazy_isinstance(value, "RealRange", "pts.core.basics.range"): return "real_range", repr(value)
     elif introspection.lazy_isinstance(value, "IntegerRange", "pts.core.basics.range"): return "integer_range", repr(value)

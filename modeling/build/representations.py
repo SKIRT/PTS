@@ -17,12 +17,10 @@ from astropy.units import dimensionless_angles
 
 # Import the relevant PTS classes and modules
 from .component import BuildComponent
-from ...core.prep.wavelengthgrids import WavelengthGridGenerator
 from ...core.prep.dustgrids import DustGridGenerator
 from ...core.tools.logging import log
 from ...core.basics.range import QuantityRange, RealRange
-from ...core.basics.unit import parse_unit as u
-from ...core.advanced.dustgridtool import DustGridTool
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

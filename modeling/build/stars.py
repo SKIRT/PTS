@@ -20,7 +20,7 @@ import numpy as np
 from ...core.tools.logging import log
 from ...core.basics.configuration import ConfigurationDefinition
 from ...core.basics.configuration import InteractiveConfigurationSetter, prompt_proceed, prompt_string
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 from ..core.mappings import Mappings
 from .general import GeneralBuilder
 from .component import model_map_filename

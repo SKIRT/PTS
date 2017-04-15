@@ -21,12 +21,15 @@ from ..tools.logging import log
 from ..basics.configurable import Configurable
 from ..tools import introspection
 from ..tools import filesystem as fs
-from ..basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, DictConfigurationSetter, PassiveConfigurationSetter
+from ..basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
 from .imports import ImportsChecker
 from .test import PTSTest
 from ..tools import time
 from ..tools import stringify
 from ..remote.utils import DetachedCalculation
+from .table import load_tests_table
+from ..basics.configuration import create_configuration_flexible
+from ..tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -128,7 +131,6 @@ def path_for_test(subproject, name):
 
 # -----------------------------------------------------------------
 
-#scripts = introspection.get_scripts()
 tables = introspection.get_arguments_tables()
 
 # -----------------------------------------------------------------
@@ -160,6 +162,9 @@ class PTSTestSuite(Configurable):
         # The tests
         self.tests = defaultdict(list)
 
+        # The tests table
+        self.table = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -174,19 +179,25 @@ class PTSTestSuite(Configurable):
         self.setup(**kwargs)
 
         # 2. Prompt for which test has to be executed
-        if not self.test_names_for_all_subprojects: self.prompt()
+        if not self.test_names_for_all_subprojects and not self.config.only_checks: self.prompt()
 
         # 3. Check the import statements
-        self.check_imports()
+        if self.config.check_imports: self.check_imports()
+
+        # Check the commands
+        if self.config.check_commands: self.check_commands()
 
         # Check configurations
-        self.check_configurations()
+        if self.config.check_commands: self.check_configurations()
+
+        # Check package definitions
+        if self.config.check_packages: self.check_packages()
 
         # 4. Load tests
-        self.load_tests()
+        if not self.config.only_checks: self.load_tests()
 
         # 5. Run tests
-        self.run_tests()
+        if not self.config.only_checks: self.run_tests()
 
         # 6. Show
         if self.config.show: self.show()
@@ -251,6 +262,9 @@ class PTSTestSuite(Configurable):
 
         # Call the setup function of the base class
         super(PTSTestSuite, self).setup(**kwargs)
+
+        # Load the tests table
+        self.table = load_tests_table()
 
         # Tests are specified
         if "tests" in kwargs:
@@ -341,6 +355,58 @@ class PTSTestSuite(Configurable):
 
     # -----------------------------------------------------------------
 
+    def check_commands(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Check the command tables ...")
+
+        # Get the argument tables
+        tables = introspection.get_arguments_tables()
+
+        # Loop over the subprojects
+        for subproject in tables:
+
+            table = tables[subproject]
+
+            # Loop over the commands
+            for index in range(len(table["Command"])):
+
+                command_name = table["Command"][index]
+                description = table["Description"][index]
+                class_path_relative = table["Path"][index]
+                class_path = "pts." + subproject + "." + class_path_relative
+                module_path, class_name = class_path.rsplit('.', 1)
+
+                #configuration_method = table["Configuration method"][index]
+
+                # Determine the configuration module path
+                configuration_name = table["Configuration"][index]
+                if configuration_name == "--": configuration_name = command_name
+                configuration_module_path = "pts." + subproject + ".config." + configuration_name
+
+                # Find definition
+                #try:
+                #    configuration_module = importlib.import_module(configuration_module_path)
+                #    definition = getattr(configuration_module, "definition")
+                #except ImportError:
+                #    log.warning("No configuration definition found for the " + class_name + " class")
+                #    definition = ConfigurationDefinition()  # Create new configuration definition
+
+                # Find configuration module
+                configuration_module_file_path = fs.join(introspection.pts_subproject_dir(subproject), "config", configuration_name + ".py")
+                if not fs.is_file(configuration_module_file_path): log.warning("The configuration module cannot be found for the '" + class_name + "' class")
+
+                # Find the class
+                try: cls = introspection.get_class(module_path, class_name)
+                except ValueError: log.warning("The class '" + class_name + "' could not be found in module '" + module_path + "'")
+
+    # -----------------------------------------------------------------
+
     def check_configurations(self):
 
         """
@@ -350,6 +416,22 @@ class PTSTestSuite(Configurable):
 
         # Inform the user
         log.info("Checking the configuration modules with their corresponding classes ...")
+
+    # -----------------------------------------------------------------
+
+    def check_packages(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Checking the package definitions ...")
+
+        # Check these kinds of definitions at the top of each module:
+
+        # ## \package pts.magic.misc.cortese Contains the GalametzTIRCalibration class.
 
     # -----------------------------------------------------------------
 
@@ -406,8 +488,14 @@ class PTSTestSuite(Configurable):
                 config_module = imp.load_source(name + "_config", config_path)
                 definition = config_module.definition
 
+                # Show test settings
+                if self.config.settings is not None:
+                    # Debugging
+                    log.debug("Setting options for the '" + name + "' test from the following dictionary:")
+                    if log.is_debug(): fmt.print_dictionary(self.config.settings)
+
                 # Create the test configuration
-                config = create_test_configuration(definition, name, self.config.settings, self.config.default)
+                config = create_configuration_flexible(name, definition, self.config.settings, self.config.default)
 
                 # Load the test module
                 test_module = imp.load_source(name, filepath)
@@ -461,7 +549,16 @@ class PTSTestSuite(Configurable):
 
                 # Run the test
                 try: test.run()
-                except DetachedCalculation as detached: test.save()
+                except DetachedCalculation as detached:
+
+                    # Give warning
+                    log.warning("The test '" + test.name + "' of the '" + subproject + "' subproject is being detached: progress and retrieval information are being saved into the tests table ...")
+
+                    # Save the test
+                    test.save()
+
+                    # Add an entry to the table
+                    self.table.add_test()
 
     # -----------------------------------------------------------------
 
@@ -501,50 +598,5 @@ class PTSTestSuite(Configurable):
 
         # Inform the user
         log.info("Writing report ...")
-
-# -----------------------------------------------------------------
-
-def create_test_configuration(definition, test_name, settings=None, default=False):
-
-    """
-    This function ...
-    :param definition:
-    :param test_name:
-    :param settings:
-    :param default:
-    :return:
-    """
-
-    ## A test settings dict is given
-    if settings is not None:
-
-        # Debugging
-        log.debug("Setting options for the '" + test_name + "' test from the following dictionary:")
-        if log.is_debug():
-
-            print("")
-            for label in settings: print(" - " + label + ": " + stringify.stringify(settings[label])[1])
-            print("")
-
-        # Create the configuration
-        setter = DictConfigurationSetter(settings, test_name, add_logging=False, add_cwd=False)
-        config = setter.run(definition)
-
-    # Settings are not given, default flag is added
-    elif default:
-
-        # Create the configuration
-        setter = PassiveConfigurationSetter(test_name, add_cwd=False, add_logging=False)
-        config = setter.run(definition)
-
-    # No test configuration is given and default flag is not added
-    else:
-
-        # Create the configuration
-        setter = InteractiveConfigurationSetter(test_name, add_cwd=False, add_logging=False)
-        config = setter.run(definition, prompt_optional=True)
-
-    # Return the configuration
-    return config
 
 # -----------------------------------------------------------------

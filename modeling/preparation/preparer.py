@@ -19,11 +19,11 @@ from .component import PreparationComponent
 from ...magic.prepare.batch import BatchImagePreparer
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
-from ...magic.misc.kernels import aniano_names
 from ...magic.misc.calibration import CalibrationError
 from ...core.launch.pts import PTSRemoteLauncher
 from ...magic.core.dataset import DataSet
-from ...magic.misc.kernels import AnianoKernels
+from ...magic.convolution.aniano import AnianoKernels, aniano_names
+from ...magic.convolution.kernels import get_fwhm
 
 # -----------------------------------------------------------------
 
@@ -140,7 +140,7 @@ class DataPreparer(PreparationComponent):
             for filter_name in self.config.exclude_filters:
 
                 # Get the resolution and the FWHM
-                fwhm = aniano.get_fwhm(self.spire_psw_filter)
+                fwhm = get_fwhm(self.spire_psw_filter)
                 image_name = self.initial_dataset.get_name_for_filter(filter_name)
                 pixelscale = self.initial_dataset.get_wcs(image_name).average_pixelscale
 

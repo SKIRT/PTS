@@ -24,11 +24,10 @@ from astropy import constants
 from ..tools import filesystem as fs
 from ..tools.logging import log
 from ..filter.broad import BroadBandFilter
-from ..filter.narrow import NarrowBandFilter
 from ..filter.filter import parse_filter
 from ..data.sed import SED
-from ...magic.misc.spire import SPIRE
-from ..basics.unit import parse_unit as u
+from ...magic.services.spire import SPIRE
+from ..units.parsing import parse_unit as u
 from ..data.sed import ObservedSED
 from ..tools import sequences
 from ..basics.configurable import Configurable

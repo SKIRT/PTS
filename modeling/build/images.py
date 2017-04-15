@@ -348,8 +348,7 @@ class ImagesModelBuilder(BuildComponent):
         for name in self.stellar_properties:
 
             # Create a directory
-            #component_path = self.output_path_file(name)
-            component_path = fs.join(self.model_stellar_path, name)
+            component_path = fs.join(self.model_stellar_path, str(name)) # name (component ID) can be an integer
             fs.create_directory(component_path)
 
             # Set the path
@@ -371,7 +370,7 @@ class ImagesModelBuilder(BuildComponent):
         for name in self.dust_properties:
 
             # Create a directory
-            component_path = fs.join(self.model_dust_path, name)
+            component_path = fs.join(self.model_dust_path, str(name)) # name (component ID) can be an integer
             fs.create_directory(component_path)
 
             # Set the path

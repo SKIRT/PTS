@@ -69,8 +69,8 @@ class QueueRunner(Configurable):
 time_left = None
 
 # Open the simulation queue
-queue_path = fs.join(pts_run_dir, name + ".queue")
-queue = SimulationQueue.from_file(queue_path)
+#queue_path = fs.join(pts_run_dir, name + ".queue")
+#queue = SimulationQueue.from_file(queue_path)
 
 # -----------------------------------------------------------------
 
@@ -81,7 +81,8 @@ skirt = SkirtExec()
 
 index = 0
 
-while time_left >= estimated_time:
+#while time_left >= estimated_time:
+while False:
 
     # update the records to indicate that a run has been scheduled and submit the job;
     # do this within a single transaction context to ensure that the scheduled job sees the updated records
@@ -133,11 +134,11 @@ while time_left >= estimated_time:
 
 
 # Launch new job if there are simulations left
-jobscript_path = fs.join()
+#jobscript_path = fs.join()
 
 #write("run_queue(...)") # start with runid = index
 
-jobscript = JobScript()
+#jobscript = JobScript()
 
 #jobscript.save()
 

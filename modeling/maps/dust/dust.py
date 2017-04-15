@@ -18,9 +18,8 @@ from ....core.tools.logging import log
 from .blackbody import BlackBodyDustMapMaker
 from .emission import EmissionDustMapMaker
 from .buat import BuatDustMapMaker
-from .cortese import CorteseDustMapMaker
+from .attenuation import AttenuationDustMapMaker
 from ....core.tools import filesystem as fs
-from .tirtofuv import TIRtoFUVMapMaker
 from ....magic.core.image import Image
 
 # -----------------------------------------------------------------
@@ -77,9 +76,6 @@ class DustMapMaker(MapsComponent):
         # 2. Calculate the significance masks
         self.calculate_significance()
 
-        # 2. Make the TIR to FUV map
-        if self.config.make_buat or self.config.make_cortese: self.make_tir_to_fuv()
-
         # 3.. Make a dust map based on black body pixel fitting
         if self.config.make_black_body: self.make_black_body()
 
@@ -89,17 +85,11 @@ class DustMapMaker(MapsComponent):
         # 5. Make a dust map based on Buat
         if self.config.make_buat: self.make_buat()
 
-        # 6. Make a dust map based on Cortese
-        if self.config.make_cortese: self.make_cortese()
-
-        # Make the final map
-        #self.make_map()
+        # 6. Make a dust map based on UV attenuation
+        if self.config.make_attenuation: self.make_attenuation()
 
         # Make the cutoff mask
         self.make_cutoff_mask()
-
-        # Cut-off the map
-        #self.cutoff_map()
 
         # 7. Writing
         self.write()
@@ -135,27 +125,6 @@ class DustMapMaker(MapsComponent):
         if self.config.pacs70_significance > 0: self.significance.add_mask(self.dataset.get_significance_mask("Pacs blue", self.config.pacs70_significance), "Pacs_blue")
         if self.config.pacs160_significance > 0: self.significance.add_mask(self.dataset.get_significance_mask("Pacs red", self.config.pacs160_significance), "Pacs_red")
         if self.config.h_significance > 0: self.significance.add_mask(self.dataset.get_significance_mask("2MASS H", self.config.h_significance), "2MASS_H")
-
-    # -----------------------------------------------------------------
-
-    def make_tir_to_fuv(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making the TIR to FUV map ...")
-
-        # Create the maker
-        maker = TIRtoFUVMapMaker()
-
-        # Run the maker
-        maker.run()
-
-        # Set the TIR to FUV map
-        self.log_tir_to_fuv = maker.log_tir_to_fuv
 
     # -----------------------------------------------------------------
 
@@ -223,7 +192,7 @@ class DustMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def make_cortese(self):
+    def make_attenuation(self):
 
         """
         This function ...
@@ -231,10 +200,10 @@ class DustMapMaker(MapsComponent):
         """
 
         # Inform the user
-        log.info("Making a dust map based on Cortese et al. ...")
+        log.info("Making a dust map based on the UV attenuation ...")
 
-        # Create the Cortese dust map maker
-        maker = CorteseDustMapMaker(self.config.cortese)
+        # Create the Attenuation dust map maker
+        maker = AttenuationDustMapMaker(self.config.cortese)
 
         # Run the maker
         maker.run(self.log_tir_to_fuv)

@@ -27,7 +27,7 @@ from ...magic.core.datacube import DataCube
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...magic.core.remote import RemoteDataCube
 from ..simulation.wavelengthgrid import WavelengthGrid
-from ..basics.unit import parse_unit as u
+from ..units.parsing import parse_unit as u
 from ..basics.configurable import Configurable
 from ..simulation.simulation import createsimulations
 

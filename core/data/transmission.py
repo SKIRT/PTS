@@ -22,7 +22,7 @@ from astropy.table import Table
 # Import the relevant PTS classes and modules
 from ..tools import tables, arrays
 from ..basics.curve import Curve
-from ..basics.unit import parse_unit as u
+from ..units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

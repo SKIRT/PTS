@@ -24,7 +24,7 @@ from pts.modeling.tests.base import free_parameters_relative_stellar_component_p
 from pts.modeling.tests.base import free_parameters_relative_instruments_paths, free_parameter_types
 from pts.core.data.sed import ObservedSED
 from pts.core.tools import stringify
-from pts.core.basics.quantity import parse_angle
+from pts.core.units.parsing import parse_angle
 from pts.modeling.tests.base import seds_path, dustpedia_sed_path
 from pts.core.tools import sequences
 from pts.core.basics.map import Map

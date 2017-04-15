@@ -33,6 +33,7 @@ from ...core.basics.configurable import Configurable
 from ...core.tools import tables
 from ..region.list import SkyRegionList
 from ..tools import headers
+from .list import NamedImageList, NamedFrameList
 
 # -----------------------------------------------------------------
 
@@ -41,6 +42,10 @@ class DataSet(object):
     """
     This class...
     """
+
+    default_extension = "dat"
+
+    # -----------------------------------------------------------------
 
     def __init__(self):
 
@@ -241,7 +246,7 @@ class DataSet(object):
         """
 
         # Initialize
-        fltrs = dict()
+        fltrs = OrderedDict()
 
         # Loop over the images
         for name in self.paths: fltrs[name] = self.get_frame(name, masked=False).filter
@@ -321,7 +326,7 @@ class DataSet(object):
         elif exclude is None: exclude = []
 
         # Initialize a dictionary
-        paths = dict()
+        paths = OrderedDict()
 
         # Loop over the frame paths
         for name in self.paths:
@@ -368,7 +373,7 @@ class DataSet(object):
         elif exclude is None: exclude = []
 
         # Initialize a dictionary for the frames
-        frames = dict()
+        frames = OrderedDict()
 
         # Loop over the frame paths
         for name in self.paths:
@@ -408,7 +413,7 @@ class DataSet(object):
         elif exclude is None: exclude = []
 
         # Initialize a dictionary for the error maps
-        errormaps = dict()
+        errormaps = OrderedDict()
 
         # Loop over the frame paths
         for name in self.paths:
@@ -428,6 +433,90 @@ class DataSet(object):
 
         # Return the dictionary of error maps
         return errormaps
+
+    # -----------------------------------------------------------------
+
+    def get_images(self, exclude=None, min_wavelength=None, max_wavelength=None):
+
+        """
+        This function ...
+        :param exclude:
+        :param min_wavelength:
+        :param max_wavelength:
+        :return: 
+        """
+
+        # Make sure exclude is a list
+        if isinstance(exclude, basestring): exclude = [exclude]
+        elif exclude is None: exclude = []
+
+        # Initialize a dictionary for the images
+        images = OrderedDict()
+
+        # Loop over the frame paths
+        for name in self.paths:
+
+            # Skip if name is in the exclude list
+            if exclude is not None and name in exclude: continue
+
+            # Load the image
+            image = self.get_image(name)
+
+            # Skip images of wavelengths smaller than the minimum or greater than the maximum
+            if min_wavelength is not None and image.wavelength < min_wavelength: continue
+            if max_wavelength is not None and image.wavelength > max_wavelength: continue
+
+            # Add the image
+            images[name] = image
+
+        # Return the dictionary of images
+        return images
+
+    # -----------------------------------------------------------------
+
+    def get_framelist(self, masked=True, mask_value=0.0, min_wavelength=None, max_wavelength=None, exclude=None):
+
+        """
+        This function ...
+        :param masked:
+        :param mask_value:
+        :param min_wavelength:
+        :param max_wavelength:
+        :param exclude:
+        :return: 
+        """
+
+        return NamedFrameList.from_dictionary(self.get_frames(masked, mask_value, min_wavelength, max_wavelength, exclude))
+
+    # -----------------------------------------------------------------
+
+    def get_errormaplist(self, masked=True, mask_value=0.0, min_wavelength=None, max_wavelength=None, exclude=None):
+
+        """
+        This function ...
+        :param masked:
+        :param mask_value:
+        :param min_wavelength:
+        :param max_wavelength:
+        :param exclude:
+        :return: 
+        """
+
+        return NamedFrameList.from_dictionary(self.get_errormaps(masked, mask_value, min_wavelength, max_wavelength, exclude))
+
+    # -----------------------------------------------------------------
+
+    def get_imagelist(self, exclude=None, min_wavelength=None, max_wavelength=None):
+
+        """
+        This function ...
+        :param exclude: 
+        :param min_wavelength: 
+        :param max_wavelength: 
+        :return: 
+        """
+
+        return NamedImageList.from_dictionary(self.get_images(exclude, min_wavelength, max_wavelength))
 
     # -----------------------------------------------------------------
 
@@ -458,6 +547,22 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    def has_frame_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr: 
+        :return: 
+        """
+
+        # Get the name
+        name = self.get_name_for_filter(fltr)
+
+        if name is None: return False
+        else: return True
+
+    # -----------------------------------------------------------------
+
     def get_frame_for_filter(self, fltr, masked=True):
 
         """
@@ -475,6 +580,45 @@ class DataSet(object):
 
         # Return the frame
         return self.get_frame(name, masked=masked)
+
+    # -----------------------------------------------------------------
+
+    def has_errormap_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr: 
+        :return: 
+        """
+
+        # Get the name
+        name = self.get_name_for_filter(fltr)
+
+        # If name, return False
+        if name is None: return False
+
+        # Check whether error map is present
+        return name in self.error_paths
+
+    # -----------------------------------------------------------------
+
+    def get_errormap_for_filter(self, fltr, masked=True):
+
+        """
+        THis function ...
+        :param fltr: 
+        :param masked: 
+        :return: 
+        """
+
+        # Get the name
+        name = self.get_name_for_filter(fltr)
+
+        # No frame is found for this filter
+        if name is None: return None
+
+        # Return the error map
+        return self.get_errormap(name, masked=masked)
 
     # -----------------------------------------------------------------
 

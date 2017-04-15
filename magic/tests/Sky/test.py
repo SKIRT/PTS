@@ -47,6 +47,9 @@ from pts.magic.region.ellipse import PixelEllipseRegion
 from pts.magic.basics.coordinate import PixelCoordinate
 from pts.magic.basics.stretch import PixelStretch
 from pts.magic.tools import statistics
+from pts.core.basics.map import Map
+from pts.core.tools import filesystem as fs
+from pts.core.basics.configuration import save_mapping
 
 # -----------------------------------------------------------------
 
@@ -104,14 +107,24 @@ class SkyTest(TestImplementation):
         # The galaxy
         self.galaxy_region = None
 
+        # SKY ESTIMATION
+
+        # Photutils Background2D object
+        self.photutils_bkg = None
+
         # Sky reference estimation
         self.reference_sky = None
 
-        # Sky estimated by PTS
-        self.estimated_sky = None
+        # Path
+        self.subtraction_path = None
 
         # The sky subtractor
         self.subtractor = None
+
+        # STATISTICS
+
+        # The statistics
+        self.statistics = Map()
 
     # -----------------------------------------------------------------
 
@@ -141,25 +154,22 @@ class SkyTest(TestImplementation):
         # 6. Make sky
         self.make_sky()
 
-        # 7. Statistics
-        self.statistics()
-
-        # 8. Sigma clip
-        self.sigma_clip()
-
-        # Mask sources
+        # 7. Mask sources
         self.mask_sources()
 
-        # Reference
+        # 8. Statistics
+        self.calculate_statistics()
+
+        # 9. Reference
         self.reference()
 
-        # Subtract
+        # 10. Subtract
         self.subtract()
 
-        # Write
+        # 11. Write
         self.write()
 
-        # Plot
+        # 12. Plot
         self.plot()
 
     # -----------------------------------------------------------------
@@ -174,6 +184,9 @@ class SkyTest(TestImplementation):
 
         # Call the setup function of the base class
         super(SkyTest, self).setup(**kwargs)
+
+        # Set the subtraction path
+        self.subtraction_path = fs.create_directory_in(self.path, "subtraction")
 
     # -----------------------------------------------------------------
 
@@ -353,7 +366,7 @@ class SkyTest(TestImplementation):
         # Mask
         self.galaxy[self.rotation_mask] = 0.0
 
-        limit_radius = 3.0 * effective_radius
+        limit_radius = self.config.galaxy_relative_asymptotic_radius * effective_radius
 
         # Create galaxy region
         galaxy_center = PixelCoordinate(initial_sersic_x_0, initial_sersic_y_0)
@@ -437,8 +450,6 @@ class SkyTest(TestImplementation):
         :return:
         """
 
-        #print(self.constant_sky)
-        #print(self.gradient_sky)
         return self.constant_sky + self.gradient_sky
 
     # -----------------------------------------------------------------
@@ -479,62 +490,6 @@ class SkyTest(TestImplementation):
 
     # -----------------------------------------------------------------
 
-    def statistics(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Calculating statistics ...")
-
-        flattened = np.ma.array(self.sources_with_noise.data, mask=self.rotation_mask.data).compressed()
-
-        median = np.median(flattened)
-        biweight_loc = biweight_location(flattened)
-
-        biweight_midvar = biweight_midvariance(flattened)
-        median_absolute_deviation = mad_std(flattened)
-
-        print("median", median)
-        print("biweigth_loc", biweight_loc)
-        print("biweight_midvar", biweight_midvar)
-        print("median_absolute_deviation", median_absolute_deviation)
-
-        # SAME RESULTS:
-
-        #median = np.median(self.original_frame)
-        #biweight_loc = biweight_location(self.original_frame)
-        #biweight_midvar = biweight_midvariance(self.original_frame)
-        #median_absolute_deviation = mad_std(self.original_frame)
-
-        #print("median", median)
-        #print("biweigth_loc", biweight_loc)
-        #print("biweight_midvar", biweight_midvar)
-        #print("median_absolute_deviation", median_absolute_deviation)
-
-    # -----------------------------------------------------------------
-
-    def sigma_clip(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Sigma-clipping ...")
-
-        # Sigma clip
-        mean, median, std = sigma_clipped_stats(self.sources_with_noise.data, sigma=3.0, iters=5, mask=self.rotation_mask)
-
-        print("sigma-clip mean:", mean)
-        print("sigma-clip median:", median)
-        print("sigma-clip std:", std)
-
-    # -----------------------------------------------------------------
-
     def mask_sources(self):
 
         """
@@ -549,15 +504,120 @@ class SkyTest(TestImplementation):
         mask = make_source_mask(self.sources_with_noise.data, snr=2, npixels=5, dilate_size=11, mask=self.rotation_mask)
         self.sources_mask = Mask(mask)
 
+        # Plot
+        if self.config.plot: plotting.plot_mask(self.sources_mask, title="sources mask")
+
+    # -----------------------------------------------------------------
+
+    def calculate_statistics(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating statistics ...")
+
+        # Calculate statistics no sigma clipping
+        self.calculate_statistics_no_clipping()
+
+        # Calculate statistics clipping
+        self.calculate_statistics_clipping()
+
+        # Calculate statistics masked sources
+        self.calculate_statistics_masked()
+
+    # -----------------------------------------------------------------
+
+    def calculate_statistics_no_clipping(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Compress (remove masked values)
+        flattened = np.ma.array(self.sources_with_noise.data, mask=self.rotation_mask.data).compressed()
+
+        median = np.median(flattened)
+        biweight_loc = biweight_location(flattened)
+
+        biweight_midvar = biweight_midvariance(flattened)
+        median_absolute_deviation = mad_std(flattened)
+
+        #print("median", median)
+        #print("biweigth_loc", biweight_loc)
+        #print("biweight_midvar", biweight_midvar)
+        #print("median_absolute_deviation", median_absolute_deviation)
+
+        self.statistics.no_clipping = Map()
+        self.statistics.no_clipping.median = median
+        self.statistics.no_clipping.biweight_loc = biweight_loc
+        self.statistics.no_clipping.biweight_midvar = biweight_midvar
+        self.statistics.no_clipping.median_absolute_deviation = median_absolute_deviation
+
+        # SAME RESULTS:
+
+        # median = np.median(self.original_frame)
+        # biweight_loc = biweight_location(self.original_frame)
+        # biweight_midvar = biweight_midvariance(self.original_frame)
+        # median_absolute_deviation = mad_std(self.original_frame)
+
+        # print("median", median)
+        # print("biweigth_loc", biweight_loc)
+        # print("biweight_midvar", biweight_midvar)
+        # print("median_absolute_deviation", median_absolute_deviation)
+
+    # -----------------------------------------------------------------
+
+    def calculate_statistics_clipping(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Sigma-clipping ...")
+
+        # Sigma clip
+        mean, median, std = sigma_clipped_stats(self.sources_with_noise.data, sigma=3.0, iters=5,
+                                                mask=self.rotation_mask)
+
+        #print("sigma-clip mean:", mean)
+        #print("sigma-clip median:", median)
+        #print("sigma-clip std:", std)
+
+        self.statistics.clipping = Map()
+        self.statistics.clipping.mean = mean
+        self.statistics.clipping.median = median
+        self.statistics.clipping.std = std
+
+    # -----------------------------------------------------------------
+
+    def calculate_statistics_masked(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating statistics with sources masked ...")
+
         # Statistics
         mean, median, std = sigma_clipped_stats(self.sources_with_noise.data, sigma=3.0, mask=self.total_mask.data, iters=5)
 
-        print("sigma-clip mean after source masking:", mean)
-        print("sigma-clip median after source masking:", median)
-        print("sigma_clip std after source masking:", std)
+        #print("sigma-clip mean after source masking:", mean)
+        #print("sigma-clip median after source masking:", median)
+        #print("sigma_clip std after source masking:", std)
 
-        # Plot
-        if self.config.plot: plotting.plot_mask(self.sources_mask, title="sources mask")
+        # Set the statistics
+        self.statistics.masked = Map()
+        self.statistics.masked.mean = mean
+        self.statistics.masked.median = median
+        self.statistics.masked.std = std
 
     # -----------------------------------------------------------------
 
@@ -672,24 +732,24 @@ class SkyTest(TestImplementation):
                            bkg_estimator=bkg_estimator, mask=self.total_mask.data)
 
         # Statistics
-        print("median background", bkg.background_median)
-        print("rms background", bkg.background_rms_median)
+        #print("median background", bkg.background_median)
+        #print("rms background", bkg.background_rms_median)
+
+        self.statistics.reference = Map()
+        self.statistics.reference.median = bkg.background_median
+        self.statistics.reference.rms = bkg.background_rms_median
 
         # Plot
         if self.config.plot: plotting.plot_box(bkg.background, title="background from photutils")
 
         # Set the sky
-        self.reference_sky = bkg.background * ~self.total_mask.data
+        self.reference_sky = Frame(bkg.background)
+
+        # Set bkg object
+        self.photutils_bkg = bkg
 
         # Plot
         if self.config.plot: plotting.plot_box(self.reference_sky, title="reference sky")
-
-        # Plot meshes
-        plt.figure()
-        norm = ImageNormalize(stretch=SqrtStretch())
-        plt.imshow(self.frame, origin='lower', cmap='Greys_r', norm=norm)
-        bkg.plot_meshes(outlines=True, color='#1f77b4')
-        plt.show()
 
     # -----------------------------------------------------------------
 
@@ -705,9 +765,15 @@ class SkyTest(TestImplementation):
 
         # Settings
         settings = dict()
-
         settings["estimation"] = dict()
+        settings["estimation"]["method"] = "photutils"
         settings["estimation"]["aperture_radius"] = self.aperture_radius
+        settings["write"] = True
+        #settings["estimation"]["finishing_step"] = "polynomial"
+        #settings["estimation"]["polynomial_degree"] = self.config.polynomial_degree
+        #settings["estimation"]["fill_method"] = "cubic"
+
+        settings["plot"] = True
 
         # Input
         input_dict = dict()
@@ -719,10 +785,46 @@ class SkyTest(TestImplementation):
         input_dict["extra_mask"] = self.rotation_mask
 
         # Create command
-        command = Command("subtract_sky", "subtract the sky from an artificially created image", settings, input_dict)
+        command = Command("subtract_sky", "subtract the sky from an artificially created image", settings, input_dict, cwd=self.subtraction_path)
 
         # Run the subtraction
         self.subtractor = self.run_command(command)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def estimated_sky(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.subtractor.sky_frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def subtracted(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.frame - self.estimated_sky
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sky_residual(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.estimated_sky - self.sky
 
     # -----------------------------------------------------------------
 
@@ -735,6 +837,9 @@ class SkyTest(TestImplementation):
 
         # Inform the user
         log.info("Writing ...")
+
+        # Write the sources with noise
+        self.write_sources()
 
         # Write the frame
         self.write_frame()
@@ -757,6 +862,27 @@ class SkyTest(TestImplementation):
         # Write residuals
         self.write_residual()
 
+        # Write the statistics
+        self.write_statistics()
+
+    # -----------------------------------------------------------------
+
+    def write_sources(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the sources frame with noise ...")
+
+        # Determine the path
+        path = fs.join(self.path, "sources_noise.fits")
+
+        # Save the frame
+        self.sources_with_noise.saveto(path)
+
     # -----------------------------------------------------------------
 
     def write_frame(self):
@@ -769,6 +895,12 @@ class SkyTest(TestImplementation):
         # Inform the user
         log.info("Writing the frame ...")
 
+        # Determine the path
+        path = fs.join(self.path, "frame.fits")
+
+        # SAve the frame
+        self.frame.saveto(path)
+
     # -----------------------------------------------------------------
 
     def write_real_sky(self):
@@ -779,7 +911,13 @@ class SkyTest(TestImplementation):
         """
 
         # Inform the user
-        log.info("Writing the real sky frame ...")
+        log.info("Writing the real sky map ...")
+
+        # Determine the path
+        path = fs.join(self.path, "real_sky.fits")
+
+        # Save the map
+        self.sky.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -793,6 +931,12 @@ class SkyTest(TestImplementation):
         # Inform the user
         log.info("Writing the sources mask ...")
 
+        # Determine the path
+        path = fs.join(self.path, "sources_mask.fits")
+
+        # Save
+        self.sources_mask.saveto(path)
+
     # -----------------------------------------------------------------
 
     def write_galaxy_mask(self):
@@ -805,6 +949,12 @@ class SkyTest(TestImplementation):
         # Inform the user
         log.info("Writing the galaxy mask ...")
 
+        # Determine the path
+        path = fs.join(self.path, "galaxy_mask.fits")
+
+        # Save
+        self.galaxy_mask.saveto(path)
+
     # -----------------------------------------------------------------
 
     def write_reference_sky(self):
@@ -813,6 +963,15 @@ class SkyTest(TestImplementation):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing the reference sky map ...")
+
+        # Determine the path
+        path = fs.join(self.path, "reference_sky.fits")
+
+        # Save
+        self.reference_sky.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -823,6 +982,33 @@ class SkyTest(TestImplementation):
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the estimated sky map ...")
+
+        # Determine the path
+        path = fs.join(self.path, "estimated_sky.fits")
+
+        # Save
+        self.estimated_sky.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_subtracted(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the sky-subtracted frame ...")
+
+        # Determine the path
+        path = fs.join(self.path, "subtracted.fits")
+
+        # Save
+        self.subtracted.saveto(path)
+
     # -----------------------------------------------------------------
 
     def write_residual(self):
@@ -831,6 +1017,33 @@ class SkyTest(TestImplementation):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing the residual map ...")
+
+        # Determine the path
+        path = fs.join(self.path, "residual.fits")
+
+        # Save
+        self.sky_residual.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_statistics(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the statistics ...")
+
+        # Determine the path
+        path = fs.join(self.path, "statistics.dat")
+
+        # Write
+        save_mapping(path, self.statistics)
 
     # -----------------------------------------------------------------
 
@@ -841,8 +1054,30 @@ class SkyTest(TestImplementation):
         :return:
         """
 
+        # Inofmrthe user
+        log.info("Plotting ...")
+
+        # Plot meshes
+        if self.config.plotting.meshes: self.plot_meshes()
+
+    # -----------------------------------------------------------------
+
+    def plot_meshes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the meshes ...")
+
+        # Plot meshes
+        plt.figure()
         norm = ImageNormalize(stretch=SqrtStretch())
-        plt.imshow(data, norm=norm, origin='lower', cmap='Greys_r')
+        plt.imshow(self.frame, origin='lower', cmap='Greys_r', norm=norm)
+        self.photutils_bkg.plot_meshes(outlines=True, color='#1f77b4')
+        plt.show()
 
 # -----------------------------------------------------------------
 

@@ -37,10 +37,11 @@ from ..basics.mask import Mask, MaskBase
 from ...core.tools import filesystem as fs
 from ...core.tools import archive
 from ..basics.vector import Pixel
-from ...core.basics.unit import PhotometricUnit
-from ...core.basics.unit import parse_unit as u
+from ...core.units.unit import PhotometricUnit
+from ...core.units.parsing import parse_unit as u
 from ...core.filter.filter import parse_filter
 #from ...core.tools import types
+from .mask import Mask as newMask
 
 # -----------------------------------------------------------------
 
@@ -803,8 +804,8 @@ class Frame(NDDataArray):
         :return:
         """
 
-        # Return the pivot wavelength of the frame's filter, if defined
-        if self.filter is not None: return self.filter.effective
+        # Return the wavelength of the frame's filter, if defined
+        if self.filter is not None: return self.filter.wavelength
         else: return self._wavelength # return the wavelength (if defined, is None otherwise)
 
     # -----------------------------------------------------------------
@@ -834,7 +835,8 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def convert_to(self, to_unit, wavelength=None, frequency=None, distance=None, solid_angle=None):
+    def convert_to(self, to_unit, wavelength=None, frequency=None, distance=None, solid_angle=None, density=False,
+                   brightness=False, density_strict=False, brightness_strict=False):
 
         """
         This function ...
@@ -843,11 +845,14 @@ class Frame(NDDataArray):
         :param frequency:
         :param distance:
         :param solid_angle:
+        :param density:
+        :param brightness:
         :return:
         """
 
         # Calculate the conversion factor
-        factor = self.unit.conversion_factor(self, to_unit, wavelength, frequency, distance, solid_angle)
+        factor = self.unit.conversion_factor(self, to_unit, wavelength, frequency, distance, solid_angle, density=density,
+                                             brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
 
         # Multiply the frame with the conversion factor
         self.__imul__(factor)
@@ -857,6 +862,68 @@ class Frame(NDDataArray):
 
         # Return the conversion factor
         return factor
+
+    # -----------------------------------------------------------------
+
+    def converted_to(self, to_unit, wavelength=None, frequency=None, distance=None, solid_angle=None, density=False,
+                     brightness=False, density_strict=False, brightness_strict=False):
+
+        """
+        This function ...
+        :param to_unit: 
+        :param wavelength: 
+        :param frequency: 
+        :param distance: 
+        :param solid_angle: 
+        :param density:
+        :param brightness:
+        :param density_strict:
+        :param brightness_strict:
+        :return: 
+        """
+
+        new = self.copy()
+        new.convert_to(to_unit, wavelength=wavelength, frequency=frequency, distance=distance, solid_angle=solid_angle,
+                       density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
+        return new
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_angular_area_unit(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.unit.corresponding_angular_area_unit
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_angular_area_unit(self, distance=None, solid_angle=None):
+
+        """
+        This function ...
+        :param distance: 
+        :param solid_angle: 
+        :return: 
+        """
+
+        self.convert_to(self.corresponding_angular_area_unit, distance=distance, solid_angle=solid_angle)
+
+    # -----------------------------------------------------------------
+
+    def converted_to_corresponding_angular_area_unit(self, distance=None, solid_angle=None):
+
+        """
+        This function ...
+        :param distance: 
+        :param solid_angle: 
+        :return: 
+        """
+
+        return self.converted_to(self.corresponding_angular_area_unit, distance=distance, solid_angle=solid_angle)
 
     # -----------------------------------------------------------------
 
@@ -990,7 +1057,7 @@ class Frame(NDDataArray):
         if not self.has_wcs: raise RuntimeError("Cannot rebin a frame without coordinate system")
 
         # Check the unit
-        if self.unit is not None and not (self.unit.is_intensity or self.unit.is_surface_brightness): raise ValueError("Cannot rebin a frame that is not in intensity or surface brightness units. First convert the units.")
+        if self.unit is not None and not self.unit.is_per_angular_area: raise ValueError("Cannot rebin a frame that is expressed per angular area. First convert the units.")
 
         # Calculate rebinned data and footprint of the original image
         if exact: new_data, footprint = reproject_exact((self._data, self.wcs), reference_wcs, shape_out=reference_wcs.shape, parallel=parallel)
@@ -1330,8 +1397,8 @@ class Frame(NDDataArray):
         :return:
         """
 
-        data = ndimage.interpolation.rotate(self, angle.to("deg").value, reshape=False, order=1, mode='constant',
-                                            cval=float('nan'))
+        data = ndimage.interpolation.rotate(self.data, angle.to("deg").value, reshape=False, order=1, mode='constant', cval=float('nan'))
+
         # Replace data
         self._data = data
 
@@ -1346,6 +1413,19 @@ class Frame(NDDataArray):
 
         # Return mask of padded pixels
         return self.nans()
+
+    # -----------------------------------------------------------------
+
+    def rotation_mask(self, angle):
+
+        """
+        This function ...
+        :param angle:
+        :return:
+        """
+
+        data = ndimage.interpolation.rotate(self.data, angle.to("deg").value, reshape=False, order=1, mode='constant', cval=float('nan'))
+        return newMask(np.isnan(data))
 
     # -----------------------------------------------------------------
 
@@ -1715,5 +1795,18 @@ def sum_frames_quadratically(*args):
     #arrays = [np.array(arg)**2 for arg in args]
     arrays = [arg.data**2 for arg in args]
     return Frame(np.sqrt(np.sum(arrays, axis=0)))
+
+# -----------------------------------------------------------------
+
+def linear_combination(frames, coefficients):
+
+    """
+    This function ...
+    :param frames: 
+    :param coefficients: 
+    :return: 
+    """
+
+    return sum_frames([coefficients * frame for frame in frames])
 
 # -----------------------------------------------------------------

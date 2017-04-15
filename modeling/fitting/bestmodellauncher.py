@@ -23,7 +23,7 @@ from ...core.tools.logging import log
 from ...core.launch.batchlauncher import BatchLauncher
 from ...core.advanced.runtimeestimator import RuntimeEstimator
 from ...core.launch.options import SchedulingOptions
-from ...magic.misc.kernels import AnianoKernels
+from ...magic.convolution.aniano import AnianoKernels
 from ...core.prep.wavelengthgrids import create_one_subgrid_wavelength_grid
 from ...core.prep.dustgrids import create_one_dust_grid
 from ...core.basics.emissionlines import EmissionLines

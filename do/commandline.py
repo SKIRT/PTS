@@ -41,7 +41,10 @@ class Command(object):
         """
 
         # Set working directory
-        if cwd is None: cwd = fs.cwd()
+        if cwd is None:
+            self.cwd_specified = False
+            cwd = fs.cwd()
+        else: self.cwd_specified = True
 
         # Set attributes
         self.command = command

@@ -24,7 +24,7 @@ from ...core.basics.configuration import ConfigurationDefinition, InteractiveCon
 from ..core.environment import ImagesModelingEnvironment
 from ..component.images import get_ski_input_path
 from ..build.images import ImagesModelBuilder
-#from ..build.imagesrepresentation import ImagesRepresentationBuilder
+from ..build.imagesrepresentation import ImagesRepresentationBuilder
 
 # -----------------------------------------------------------------
 

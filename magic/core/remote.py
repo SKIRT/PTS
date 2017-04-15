@@ -25,7 +25,7 @@ from .datacube import DataCube # IMPORTANT THAT THESE ARE IMPORTED !!
 from ...core.filter.filter import parse_filter
 from ...core.tools import parsing
 from ..basics.coordinatesystem import CoordinateSystem
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 

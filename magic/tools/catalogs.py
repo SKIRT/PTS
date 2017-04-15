@@ -32,7 +32,7 @@ from ...core.tools import tables
 from ...core.tools.logging import log
 from ..basics.coordinate import SkyCoordinate
 from ..basics.vector import Extent
-from ...core.basics.unit import parse_unit as u
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -614,7 +614,9 @@ def create_galaxy_catalog(coordinate_box):
 
     # Indicate which galaxy is the principal galaxy
     principal_column = [False] * number_of_galaxies
-    principal_index = max(range(number_of_galaxies), key=lambda index: major_column[index])
+
+    # Determine the index of the galaxy with the maximal major axis length
+    principal_index = max(range(number_of_galaxies), key=lambda index: (major_column[index] if major_column[index] is not None else 0.0))
     principal_column[principal_index] = True
 
     # Loop over the other galaxies, check if they are companion galaxies of the principal galax
@@ -673,6 +675,52 @@ def create_galaxy_catalog(coordinate_box):
     return name_column, ra_column, dec_column, redshift_column, type_column, alternative_names_column, distance_column, \
            inclination_column, d25_column, major_column, minor_column, pa_column, principal_column, companions_column, \
            parent_column
+
+# -----------------------------------------------------------------
+
+def get_galaxy_s4g_one_component_info(name):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    # The Vizier querying object
+    vizier = Vizier()
+    vizier.ROW_LIMIT = -1
+
+    # Get the "galaxies" table
+    result = vizier.query_object(name, catalog=["J/ApJS/219/4/galaxies"])
+    table = result[0]
+
+    # PA: [0.2/180] Outer isophote position angle
+    # e_PA: [0/63] Standard deviation in PA
+    # Ell:  [0.008/1] Outer isophote ellipticity
+    # e_Ell: [0/0.3] Standard deviation in Ell
+
+    # PA1: Elliptical isophote position angle in deg
+    # n: Sersic index
+    # Re: effective radius in arcsec
+
+    # Tmag: total magnitude
+
+    s4g_name = table["Name"][0]
+
+    pa = Angle(table["PA"][0] - 90., "deg")
+    pa_error = Angle(table["e_PA"][0], "deg")
+
+    ellipticity = table["Ell"][0]
+    ellipticity_error = table["e_Ell"][0]
+
+    n = table["n"][0]
+
+    re = table["Re"][0] * u("arcsec")
+
+    mag = table["Tmag"][0]
+
+    # Return the results
+    return s4g_name, pa, ellipticity, n, re, mag
 
 # -----------------------------------------------------------------
 

@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.tools import formatting as fmt
 from pts.modeling.config.parameters import possible_parameter_types, possible_parameter_types_descriptions, default_units
-from pts.core.basics.unit import represent_unit as ru
+from pts.core.units.stringify import represent_unit as ru
 
 # -----------------------------------------------------------------
 

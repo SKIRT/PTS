@@ -19,9 +19,9 @@ from astropy.units import spectral
 # Import the relevant PTS classes and modules
 from pts.core.test.implementation import TestImplementation
 from pts.core.tools.logging import log
-from pts.core.basics.unit import PhotometricUnit
-from pts.core.basics.unit import parse_unit as u
-from pts.core.basics.quantity import parse_quantity
+from pts.core.units.unit import PhotometricUnit
+from pts.core.units.parsing import parse_unit as u
+from pts.core.units.parsing import parse_quantity
 from pts.core.tools import filesystem as fs
 from pts.core.data.sed import SED, ObservedSED
 from pts.core.plot.sed import SEDPlotter
@@ -83,6 +83,12 @@ class UnitsTest(TestImplementation):
 
         # SED test
         self.test_sed()
+
+        # Test with solar units
+        self.test_solar()
+
+        # Test with surface brightness
+        self.test_brightness()
 
         # Plot
         if self.config.plot: self.plot()
@@ -265,6 +271,80 @@ class UnitsTest(TestImplementation):
         self.model_sed_1.convert_to(photometry_unit="Jy")
 
         print(self.model_sed_1)
+
+    # -----------------------------------------------------------------
+
+    def test_solar(self):
+
+        """
+        THis function ...
+        :return: 
+        """
+
+        # Inform the user
+        #log.info("Loading the frames ...")
+
+        #speed_of_light = constants.c
+        #solar_luminosity = 3.846e26 * u("W")
+
+        # Get the galaxy distance
+        #distance = self.galaxy_properties.distance
+
+        # Load all the frames and error maps
+        #for name in names:
+
+        frame = self.dataset.get_frame(name)
+        errors = self.dataset.get_errormap(name)
+
+        ## CONVERT TO LSUN
+
+        # Get pixelscale and wavelength
+        pixelscale = frame.average_pixelscale
+        wavelength = frame.filter.pivot
+
+        ##
+
+        # Conversion from MJy / sr to Jy / sr
+        conversion_factor = 1e6
+
+        # Conversion from Jy / sr to Jy / pix(2)
+        conversion_factor *= (pixelscale ** 2).to("sr/pix2").value
+
+        # Conversion from Jy / pix to W / (m2 * Hz) (per pixel)
+        conversion_factor *= 1e-26
+
+        # Conversion from W / (m2 * Hz) (per pixel) to W / (m2 * m) (per pixel)
+        conversion_factor *= (speed_of_light / wavelength ** 2).to("Hz/m").value
+
+        # Conversion from W / (m2 * m) (per pixel) [SPECTRAL FLUX] to W / m [SPECTRAL LUMINOSITY]
+        conversion_factor *= (4. * np.pi * distance ** 2).to("m2").value
+
+        # Conversion from W / m [SPECTRAL LUMINOSITY] to W [LUMINOSITY]
+        conversion_factor *= wavelength.to("m").value
+
+        # Conversion from W to Lsun
+        conversion_factor *= 1. / solar_luminosity.to("W").value
+
+        ## CONVERT
+
+        frame *= conversion_factor
+        frame.unit = "Lsun"
+
+        errors *= conversion_factor
+        errors.unit = "Lsun"
+
+        # Add the frame and error map to the appropriate dictionary
+        self.frames[name] = frame
+        self.errors[name] = errors
+
+    # -----------------------------------------------------------------
+
+    def test_brightness(self):
+
+        """
+        This function ...
+        :return: 
+        """
 
     # -----------------------------------------------------------------
 

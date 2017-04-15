@@ -21,9 +21,10 @@ import numpy as np
 from astropy.units import Quantity
 
 # Import the relevant PTS classes and modules
-from .unit import parse_unit as u
-from .unit import represent_unit as ru
-from .quantity import parse_quantity
+from ..units.parsing import parse_unit as u
+from ..units.stringify import represent_unit as ru
+from ..units.parsing import parse_quantity
+from ..tools import types
 
 # -----------------------------------------------------------------
 
@@ -541,8 +542,8 @@ class QuantityRange(Range):
         """
 
         # Convert strings
-        if isinstance(min_value, basestring): min_value = parse_quantity(min_value)
-        if isinstance(max_value, basestring): max_value = parse_quantity(max_value)
+        if types.is_string_type(min_value): min_value = parse_quantity(min_value)
+        if types.is_string_type(max_value): max_value = parse_quantity(max_value)
 
         # Convert everything so that min_value and max_value are floats in the same unit, and so that 'unit' is the corresponding Unit
         min_is_quantity = hasattr(min_value, "unit")
@@ -557,7 +558,7 @@ class QuantityRange(Range):
         elif (not min_is_quantity) and (not max_is_quantity):
 
             if unit is None: raise ValueError("Unit must be specified if min_value and max_value are not quantities")
-            elif isinstance(unit, basestring): unit = u(unit)
+            elif types.is_string_type(unit): unit = u(unit)
 
         else: raise ValueError("min_value and max_value must be either both quantities or both floats (with unit specified seperately)")
 

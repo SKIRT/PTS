@@ -20,11 +20,11 @@ from pts.core.filter.broad import BroadBandFilter
 from pts.magic.core.frame import Frame
 from pts.magic.core.remote import RemoteFrame
 from pts.magic.basics.coordinatesystem import CoordinateSystem
-from pts.magic.misc.extinction import GalacticExtinction
-from pts.magic.misc.kernels import AnianoKernels
+from pts.magic.services.extinction import GalacticExtinction
+from pts.magic.convolution.aniano import AnianoKernels
 from pts.magic.core.kernel import ConvolutionKernel
 from pts.core.tools import parsing
-from pts.core.remote.python import RemotePythonSession
+from pts.core.remote.python import AttachedPythonSession
 
 # -----------------------------------------------------------------
 
@@ -81,7 +81,7 @@ aniano = AnianoKernels()
 # -----------------------------------------------------------------
 
 remote_host_id = "nancy"
-session = RemotePythonSession.from_host_id(remote_host_id)
+session = AttachedPythonSession.from_host_id(remote_host_id)
 
 # -----------------------------------------------------------------
 

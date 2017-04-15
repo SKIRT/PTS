@@ -115,6 +115,15 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         # Call the constructor of the base class
         super(GalaxyModelingEnvironment, self).__init__(modeling_path)
 
+        # Get the full paths to the necessary subdirectories and CREATE THEM
+        self.data_path = fs.create_directory_in(self.path, "data")
+        self.prep_path = fs.create_directory_in(self.path, "prep")
+        self.truncation_path = fs.create_directory_in(self.path, "truncated")
+        self.phot_path = fs.create_directory_in(self.path, "phot")
+        self.maps_path = fs.create_directory_in(self.path, "maps")
+        self.components_path = fs.create_directory_in(self.path, "components")
+        self.deprojection_path = fs.create_directory_in(self.path, "deprojection")
+
 # -----------------------------------------------------------------
 
 class SEDModelingEnvironment(ModelingEnvironment):

@@ -26,13 +26,41 @@ class PointSourceCatalog(SmartTable):
     This class ...
     """
 
-    column_info = [("Catalog", str, None, "Original catalog"),
-                   ("ID", str, None, "ID in the catalog"),
-                   ("RA", float, "deg", "Right ascension"),
-                   ("DEC", float, "deg", "Declination"),
-                   ("RA error", float, "mas", "Error on right ascension"),
-                   ("DEC error", float, "mas", "Error on declination"),
-                   ("Confidence", int, None, "Confidence level")]
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(PointSourceCatalog, self).__init__(*args, **kwargs)
+
+        # Add columns
+        self.add_column_info("Catalog", str, None, "Original catalog")
+        self.add_column_info("ID", str, None, "ID in the catalog")
+        self.add_column_info("RA", float, "deg", "Right ascension")
+        self.add_column_info("DEC", float, "deg", "Declination")
+        self.add_column_info("RA error", float, "mas", "Error on right ascension")
+        self.add_column_info("DEC error", float, "mas", "Error on declination")
+        self.add_column_info("Confidence", int, None, "Confidence level")
+
+    # -----------------------------------------------------------------
+
+    def add_coordinate(self, coordinate, catalog=None, id=None, ra_error=None, dec_error=None):
+
+        """
+        This function ...
+        :param coordinate:
+        :param catalog:
+        :param id:
+        :param ra_error:
+        :param dec_error:
+        :return:
+        """
+
+        self.add_entry(catalog, id, coordinate.ra, coordinate.dec, ra_error, dec_error, confidence_level=None)
 
     # -----------------------------------------------------------------
 
@@ -53,6 +81,31 @@ class PointSourceCatalog(SmartTable):
         # Add
         values = [catalog, id, ra, dec, ra_error, dec_error, confidence_level]
         self.add_row(values)
+
+    # -----------------------------------------------------------------
+
+    def coordinates(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        coordinates = []
+
+        unit = self.column_unit("RA")
+        assert unit == self.column_unit("DEC")
+
+        for index in range(len(self)):
+
+            ra = self["RA"][index]
+            dec = self["DEC"][index]
+
+            coordinate = SkyCoordinate(ra=ra, dec=dec, unit=unit)
+            coordinates.append(coordinate)
+
+        # Return the coordinates
+        return coordinates
 
     # -----------------------------------------------------------------
 

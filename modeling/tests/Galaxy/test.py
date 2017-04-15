@@ -18,11 +18,11 @@ from astropy.units import dimensionless_angles
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
-from pts.core.basics.unit import parse_unit as u
+from pts.core.units.parsing import parse_unit as u
 from pts.core.simulation.skifile import LabeledSkiFile
 from pts.core.basics.map import Map
 from pts.do.commandline import Command
-from pts.core.basics.quantity import parse_quantity, parse_angle
+from pts.core.units.parsing import parse_quantity, parse_angle
 from pts.modeling.basics.instruments import FullInstrument
 from pts.modeling.basics.properties import GalaxyProperties
 from pts.magic.basics.coordinate import SkyCoordinate
@@ -30,7 +30,7 @@ from pts.magic.basics.coordinatesystem import CoordinateSystem
 from pts.magic.basics.stretch import PixelStretch
 from pts.magic.basics.coordinate import PixelCoordinate
 from pts.magic.basics.pixelscale import Pixelscale
-from pts.magic.misc.kernels import AnianoKernels
+from pts.magic.convolution.aniano import AnianoKernels
 from pts.core.filter.filter import parse_filter
 from pts.core.test.implementation import TestImplementation
 from pts.core.tools.logging import log

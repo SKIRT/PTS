@@ -93,11 +93,7 @@ class ExtendedSource(Source):
         :return:
         """
 
-        # If the position does not lie within the cutout box of the galaxy's source, return False
-        if not self.detection.cutout.contains(position): return False
-
-        # If it does, check whether the pixel position is masked by the mask of the galaxy's source
-        return self.detection.mask.masks(self.detection.cutout.rel_position(position))
+        return self.detection.contains(position)
 
     # -----------------------------------------------------------------
 

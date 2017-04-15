@@ -43,7 +43,7 @@ from ...core.basics.map import Map
 from ...core.tools import time
 from ...core.simulation.skifile import LabeledSkiFile
 from ...magic.core.frame import Frame
-from ...core.basics.unit import is_angle
+from ...core.units.helper import is_angle
 
 # -----------------------------------------------------------------
 
