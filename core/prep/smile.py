@@ -27,7 +27,7 @@ from ..tools import filesystem as fs
 from ..basics.map import Map
 from ..tools import xml
 from ..basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
-from ..unit.parsing import parse_unit as u
+from ..units.parsing import parse_unit as u
 from ..tools import parsing
 from ..tools import formatting as fmt
 from ..basics.configuration import print_mapping

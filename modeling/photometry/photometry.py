@@ -23,7 +23,7 @@ from ...core.data.sed import ObservedSED
 from ...core.basics.errorbar import ErrorBar, sum_errorbars_quadratically
 from ...core.plot.sed import SEDPlotter
 from ...magic.convolution.aniano import AnianoKernels
-from ...magic.misc.psfs import HerschelPSFs
+from ...magic.convolution.psfs import HerschelPSFs
 from ...magic.core.kernel import ConvolutionKernel
 from ...core.launch.pts import PTSRemoteLauncher
 from ...magic.misc.calibration import CalibrationError

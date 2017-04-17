@@ -451,6 +451,13 @@ class Cutout(np.ndarray):
         :return:
         """
 
+        from .mask import Mask
+        if isinstance(mask, Mask): mask = mask.data
+
+        print(self)
+
+        print(mask)
+
         # Do the fitting
         polynomial = fitting.fit_polynomial(self, order, mask=mask)
 
@@ -574,7 +581,7 @@ class Cutout(np.ndarray):
                 #plotting.plot_box(mask)
                 #plotting.plot_box(np.ma.masked_array(self, mask=mask))
                 #print("AND HEREEE!!!")
-                mask = mask.eroded(connectivity=2, iterations=1)
+                mask = mask.eroded_rc(connectivity=2, iterations=1)
                 #plotting.plot_box(np.ma.masked_array(self, mask=mask))
                 return self.fit_polynomial(3, mask=mask)
 

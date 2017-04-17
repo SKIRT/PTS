@@ -64,4 +64,21 @@ class ScoresTable(SmartTable):
         index = tables.find_index(self, individual_name, "Individual name")
         return self["Score"][index]
 
+    # -----------------------------------------------------------------
+
+    def add_entry(self, name, score):
+
+        """
+        This function ...
+        :param name:
+        :param score:
+        :return:
+        """
+
+        # Set the values
+        values = [name, score]
+
+        # Add a row to the table
+        self.add_row(values)
+
 # -----------------------------------------------------------------

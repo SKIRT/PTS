@@ -817,8 +817,8 @@ class SourceFinder(Configurable):
         results = dict()
 
         # Parallel execution
-        #with ParallelTarget(detect_extended_sources, self.config.nprocesses) as target:
-        with ParallelTarget(detect_extended_sources_wrapper, self.config.nprocesses) as target:
+        with ParallelTarget(detect_extended_sources, self.config.nprocesses) as target:
+        #with ParallelTarget(detect_extended_sources_wrapper, self.config.nprocesses) as target:
 
             # Loop over the images
             for name in self.frames:
@@ -838,22 +838,22 @@ class SourceFinder(Configurable):
                 config = self.config.extended.copy()
 
                 # Save temporarily
-                temp_path = fs.create_directory_in(introspection.pts_temp_dir, time.unique_name("sourcefinder_" + name))
-                frame_path = fs.join(temp_path, "frame.fits")
-                special_mask_path = fs.join(temp_path, "special_mask.fits") if special_mask is not None else None
-                ignore_mask_path = fs.join(temp_path, "ignore_mask.fits") if ignore_mask is not None else None
-                bad_mask_path = fs.join(temp_path, "bad_mask.fits") if bad_mask is not None else None
+                #temp_path = fs.create_directory_in(introspection.pts_temp_dir, time.unique_name("sourcefinder_" + name))
+                #frame_path = fs.join(temp_path, "frame.fits")
+                #special_mask_path = fs.join(temp_path, "special_mask.fits") if special_mask is not None else None
+                #ignore_mask_path = fs.join(temp_path, "ignore_mask.fits") if ignore_mask is not None else None
+                #bad_mask_path = fs.join(temp_path, "bad_mask.fits") if bad_mask is not None else None
 
                 # Save
-                frame.saveto(frame_path)
-                if special_mask is not None: special_mask.saveto(special_mask_path)
-                if ignore_mask is not None: ignore_mask.saveto(ignore_mask_path)
-                if bad_mask is not None: bad_mask.saveto(bad_mask_path)
+                #frame.saveto(frame_path)
+                #if special_mask is not None: special_mask.saveto(special_mask_path)
+                #if ignore_mask is not None: ignore_mask.saveto(ignore_mask_path)
+                #if bad_mask is not None: bad_mask.saveto(bad_mask_path)
 
                 # Do the detection
                 # Call the target function
-                #result = target(frame, self.extended_source_catalog, config, special_mask, ignore_mask, bad_mask)
-                result = target(frame_path, self.extended_source_catalog, config, special_mask_path, ignore_mask_path, bad_mask_path)
+                result = target(frame, self.extended_source_catalog, config, special_mask, ignore_mask, bad_mask)
+                #result = target(frame_path, self.extended_source_catalog, config, special_mask_path, ignore_mask_path, bad_mask_path)
 
                 # Set the result handle
                 results[name] = result

@@ -715,8 +715,8 @@ class Optimizer(Configurable):
         # Inform the user
         log.info("Initializing the population ...")
 
-        # Get the population
-        pop = self.engine.getPopulation()
+        # Get the internal population
+        pop = self.engine.get_population()
 
         # Set scaling method
         self.set_population_scaling(pop)

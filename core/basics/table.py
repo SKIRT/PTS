@@ -125,6 +125,22 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    def __getitem__(self, item):
+
+        """
+        This function ...
+        :param item: 
+        :return: 
+        """
+
+        # Run the setup if not yet performed
+        if len(self.colnames) == 0: self.setup()
+
+        # Call the implementation of the base class
+        return super(SmartTable, self).__getitem__(item)
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def from_file(cls, path):
 
@@ -384,6 +400,7 @@ class SmartTable(Table):
                 if coltype.startswith("string"): new_values.append("")
                 elif coltype.startswith("float"): new_values.append(0.)
                 elif coltype.startswith("int"): new_values.append(0)
+                elif coltype.startswith("bool"): new_values.append(False)
                 else: raise ValueError("Unknown column type: " + coltype)
 
         # Add the row

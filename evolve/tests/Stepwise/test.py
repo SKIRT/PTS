@@ -20,7 +20,8 @@ from pts.core.tools.logging import log
 from pts.core.tools.loops import repeat
 from pts.evolve.optimize.stepwise import StepWiseOptimizer
 from pts.core.tools import types
-from .tables import ScoresTable
+#from .tables import ScoresTable
+from pts.evolve.tests.Stepwise.tables import ScoresTable
 from pts.modeling.fitting.tables import GenerationsTable, ParametersTable
 from pts.modeling.fitting.explorer import GenerationInfo
 from pts.core.tools import stringify
@@ -36,16 +37,9 @@ description = "finding the maximum of the function defined by Charbonneau (1995)
 
 # Define properties
 nparameters = 2
-#nindividuals = 80
 parameter_range = RealRange(0., 1.)
 #best_raw_score = float('inf')
 best_raw_score = 100
-#round_decimal = None
-#ngenerations = 1000
-#mutation_rate = 0.03
-#crossover_rate = 1.0
-#stats_freq = 100
-#mutation_method = "range" # or gaussian, or binary
 min_or_max = "maximize"
 
 # -----------------------------------------------------------------
@@ -112,6 +106,7 @@ class StepWiseTest(TestImplementation):
         # The generations table
         self.generations_table = None
 
+        # The path to the prob directory
         self.prob_path = None
 
         # The directory with the probability tables for all finished generations
@@ -119,6 +114,9 @@ class StepWiseTest(TestImplementation):
 
         # Set the path to the best parameters table
         self.best_parameters_table_path = None
+
+        # The best parameters table
+        self.best_parameters_table = None
 
         ## Per generation
 
@@ -229,6 +227,9 @@ class StepWiseTest(TestImplementation):
         # Create the generations table
         self.create_generations_table()
 
+        # Create the best parameters table
+        self.create_best_parameters_table()
+
         # Explore
         self.explore()
 
@@ -247,6 +248,21 @@ class StepWiseTest(TestImplementation):
         # Create the table
         self.generations_table = GenerationsTable(parameters=free_parameter_labels, units=parameter_units)
         #self.generations_table.saveto(self.generations_table_path)
+
+    # -----------------------------------------------------------------
+
+    def create_best_parameters_table(self):
+
+        """
+        THis function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Creating the best parameters table ...")
+
+        # Create the table
+        self.best_parameters_table = BestParametersTable(parameters=free_parameter_labels, units=parameter_units)
 
     # -----------------------------------------------------------------
 
@@ -274,6 +290,8 @@ class StepWiseTest(TestImplementation):
 
         # Inform the user
         log.info("Advancing the fitting with a new generation ...")
+
+        #print(self.generations_table)
 
         # Check whether there is a generation preceeding this one
         if self.generations_table.last_generation_name is None: raise RuntimeError("Preceeding generation cannot be found")
@@ -344,6 +362,9 @@ class StepWiseTest(TestImplementation):
 
         # 4. Generate the parameters
         self.generate()
+
+        # Add the generation to the table (after generate because ranges have to be set)
+        self.add_generation()
 
         # 5. Evaluate
         self.evaluate()
@@ -438,6 +459,21 @@ class StepWiseTest(TestImplementation):
 
     # -----------------------------------------------------------------
 
+    def add_generation(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Adding the generation to the table ...")
+
+        # Add an entry to the generations table
+        self.generations_table.add_entry(self.generation, self.ranges)
+
+    # -----------------------------------------------------------------
+
     def create_generation_directory(self):
 
         """
@@ -456,7 +492,7 @@ class StepWiseTest(TestImplementation):
         self.scores_table_path = fs.join(self.generation_path, "scores.dat")
 
         # Initialize the parameters table
-        self.parameters_table = ParametersTable()
+        self.parameters_table = ParametersTable(parameters=free_parameter_labels, units=parameter_units)
         self.parameters_table.saveto(self.parameters_table_path)
 
         # Initialize the scores table
@@ -918,7 +954,7 @@ class StepWiseTest(TestImplementation):
 
         # Check whether the chi-squared and parameter tables match
         for i in range(len(parameters_table)):
-            individual_name = parameters_table["Individual name"][i]
+            individual_name = parameters_table["Simulation name"][i]
             score = scores_table.score_for(individual_name)
             score_values.append(score)
 
@@ -966,7 +1002,7 @@ class StepWiseTest(TestImplementation):
         """
 
         # Inform the user
-        log.info("Evaluating ...")
+        log.info("Evaluating the generation ...")
 
         # Loop over the different parameter values
         for i in range(self.config.nindividuals):
@@ -975,7 +1011,8 @@ class StepWiseTest(TestImplementation):
             parameter_values = get_parameter_values_for_individual(self.parameters, i)
 
             # Generate the individual name
-            individual_name = "x" + repr(parameter_values["x"]) + "_y" + repr(parameter_values["y"])
+            #individual_name = "x" + repr(parameter_values["x"]) + "_y" + repr(parameter_values["y"])
+            individual_name = "individual" + str(i)
 
             # Debugging
             log.debug("Adding entry to the parameters table with:")
@@ -986,16 +1023,13 @@ class StepWiseTest(TestImplementation):
             self.parameters_table.add_entry(individual_name, parameter_values)
 
             # Save the parameters table
-            self.parameters_table.save()
+            #self.parameters_table.save()
 
             # Find the index in the table for this generation
             index = tables.find_index(self.generations_table, self.generation.name, "Generation name")
 
             # Get the number of simulations for this generation
             nsimulations = self.generations_table["Number of simulations"][index]
-
-            # Get the number of entries in the chi squared table
-            nfinished_simulations = len(self.scores_table)
 
             # Inform the user
             log.info("Calculating the value ...")
@@ -1008,6 +1042,12 @@ class StepWiseTest(TestImplementation):
 
             # Add entry
             self.scores_table.add_entry(individual_name, value)
+
+            # Get the number of entries in the chi squared table
+            nfinished_simulations = len(self.scores_table)
+
+            # If this is the last simulation
+            if nsimulations == nfinished_simulations + 1: self.generations_table.set_finishing_time(self.generation.name, time.timestamp())
 
             # Save the table
             #self.chi_squared_table.save()
@@ -1025,7 +1065,7 @@ class StepWiseTest(TestImplementation):
         log.info("Writing after exploration step ...")
 
         # Write generation
-        self.write_generation()
+        #self.write_generation()
 
         # Write parameters
         self.write_parameters()
@@ -1046,7 +1086,7 @@ class StepWiseTest(TestImplementation):
         log.info("Writing generation info ...")
 
         # Add an entry to the generations table
-        self.generations_table.add_entry(self.generation, self.ranges)
+        #self.generations_table.add_entry(self.generation, self.ranges)
 
         # Save the table
         #self.generations_table.save()
@@ -1064,7 +1104,7 @@ class StepWiseTest(TestImplementation):
         log.info("Writing the model parameters table ...")
 
         # Save the parameters table
-        self.parameters_table.saveto(self.generation.parameters_table_path)
+        self.parameters_table.saveto(self.parameters_table_path)
 
     # -----------------------------------------------------------------
 
@@ -1079,7 +1119,7 @@ class StepWiseTest(TestImplementation):
         log.info("Writing the scores table ...")
 
         # Save the chi squared table
-        self.scores_table.saveto(self.generation.chi_squared_table_path)
+        self.scores_table.saveto(self.scores_table_path)
 
     # -----------------------------------------------------------------
 
@@ -1125,16 +1165,16 @@ class StepWiseTest(TestImplementation):
 
     # -----------------------------------------------------------------
 
-    @property
-    def best_parameters_table(self):
+    #@property
+    #def best_parameters_table(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
         # Open the table and return it
-        return BestParametersTable.from_file(self.best_parameters_table_path)
+        #return BestParametersTable.from_file(self.best_parameters_table_path)
 
     # -----------------------------------------------------------------
 
@@ -1260,11 +1300,11 @@ class StepWiseTest(TestImplementation):
                 scores_table = self.scores_table_for_generation(generation_name)
 
                 # Sort the table for decreasing chi squared value
-                scores_table.sort("Scores")
+                scores_table.sort("Score")
                 scores_table.reverse()
 
                 # Get the chi squared values
-                scores = scores_table["Chi squared"]
+                scores = scores_table["Score"]
 
                 # Calculate the probability for each model
                 probabilities = np.exp(-0.5 * scores)
@@ -1499,7 +1539,10 @@ def get_unevaluated_generations(generations_table, prob_tables, individual_names
     # Loop over the generations
     for generation_name in get_generation_names(generations_table):
 
-        if not is_evaluated(prob_tables[generation_name], individual_names[generation_name]): generation_names.append(generation_name)
+        if generation_name not in prob_tables: prob_table = None
+        else: prob_table = prob_tables[generation_name]
+
+        if not is_evaluated(prob_table, individual_names[generation_name]): generation_names.append(generation_name)
 
     # Return the generation names
     return generation_names
@@ -1519,8 +1562,11 @@ def has_unevaluated_generations(generations_table, prob_tables, individual_names
     # Loop over the generations
     for generation_name in get_generation_names(generations_table):
 
+        if generation_name not in prob_tables: prob_table = None
+        else: prob_table = prob_tables[generation_name]
+
         # If at least one generation is not evaluated, return False
-        if not is_evaluated(prob_tables[generation_name], individual_names[generation_name]): return True
+        if not is_evaluated(prob_table, individual_names[generation_name]): return True
 
     # No generation was encountered that was not completely evaluated
     return False

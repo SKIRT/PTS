@@ -335,6 +335,37 @@ class MaskBase(object):
 
     # -----------------------------------------------------------------
 
+    def eroded_rc(self, rank=2, connectivity=2, iterations=1):
+
+        """
+        This function ...
+        :param rank: 
+        :param connectivity: 
+        :param iterations: 
+        :return: 
+        """
+
+        new = self.copy()
+        new.erode_rc(rank, connectivity, iterations)
+        return new
+
+    # -----------------------------------------------------------------
+
+    def eroded(self, structure, iterations):
+
+        """
+        This function ...
+        :param structure: 
+        :param iterations: 
+        :return: 
+        """
+
+        new = self.copy()
+        new.erode(structure, iterations)
+        return new
+
+    # -----------------------------------------------------------------
+
     def open(self):
 
         """
