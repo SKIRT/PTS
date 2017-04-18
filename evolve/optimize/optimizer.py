@@ -43,6 +43,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools import types
 from ..core.scaling import LinearScaling, SigmaTruncScaling, PowerLawScaling, BoltzmannScaling, ExponentialScaling, SaturatedScaling
 from ..core.selectors import GRankSelector, GUniformSelector, GTournamentSelector, GTournamentSelectorAlternative, GRouletteWheel
+from ...core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -96,6 +97,9 @@ class Optimizer(Configurable):
         self.parameter_centers = None
         self.parameter_sigmas = None
 
+        # The parameter range
+        self.parameter_range = None
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -107,10 +111,10 @@ class Optimizer(Configurable):
         """
 
         # Parameter range is defined, not hetereogeneous
-        if self.config.parameter_range is not None:
+        if self.parameter_range is not None:
 
-            if isinstance(self.config.parameter_range, IntegerRange): return "integer"
-            elif isinstance(self.config.parameter_range, RealRange): return "real"
+            if isinstance(self.parameter_range, IntegerRange): return "integer"
+            elif isinstance(self.parameter_range, RealRange): return "real"
             else: raise ValueError("Invalid parameter range")
 
         # Parameter minima are defined, heterogeneous
@@ -135,6 +139,30 @@ class Optimizer(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def is_integer_parameter(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.parameter_base_type == "integer"
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def is_real_parameter(self):
+
+        """
+        THis function ...
+        :return: 
+        """
+
+        return self.parameter_base_type == "real"
+
+    # -----------------------------------------------------------------
+
     def setup(self, **kwargs):
 
         """
@@ -156,6 +184,36 @@ class Optimizer(Configurable):
         # Set the parameter centers and sigmas
         if "centers" in kwargs: self.parameter_centers = kwargs.pop("centers")
         if "sigmas" in kwargs: self.parameter_sigmas = kwargs.pop("sigmas")
+
+        # Set the parameter range (for uniform genome lists)
+        if "parameter_range" in kwargs: self.parameter_range = kwargs.pop("parameter_range")
+        else: self.parameter_range = self.config.parameter_range
+
+        # If minima and maxima are defined but not parameter_range, but the genome is not necessarily a heterogeneous genome,
+        # we need to set parameter_range as equal to both parameter ranges IF POSSIBLE ?
+        if self.parameter_range is None and self.parameter_minima is not None and self.parameter_maxima is not None:
+
+            # Check if they're the same
+            if sequences.all_equal(self.parameter_minima) and sequences.all_equal(self.parameter_maxima):
+
+                # Get the minimal and maximal value
+                min_value = self.parameter_minima[0]
+                max_value = self.parameter_maxima[0]
+
+                # Create the parameter range
+                if types.is_integer_type(min_value):
+                    if not types.is_integer_type(max_value): raise ValueError("Minimum and maximum values should be of the same type")
+                    self.parameter_range = IntegerRange(min_value, max_value)
+                elif types.is_real_type(min_value):
+                    if not types.is_real_type(max_value): raise ValueError("Minimum and maximum values should be of the same type")
+                    self.parameter_range = RealRange(min_value, max_value)
+                else: raise ValueError("Unknown type for maxima and minima")
+
+                # Not the same
+            elif not self.config.heterogeneous: raise ValueError("Parameter range must be defined for non-heterogeneous genomes")
+
+        # Debugging
+        if self.parameter_range is not None: log.debug("The parameter range is " + str(self.parameter_range))
 
     # -----------------------------------------------------------------
 
@@ -293,7 +351,7 @@ class Optimizer(Configurable):
         log.debug("Setting basic properties ...")
 
         # Set basic properties
-        if self.config.parameter_range is not None: self.initial_genome.setParams(rangemin=self.config.parameter_range.min, rangemax=self.config.parameter_range.max)
+        if self.parameter_range is not None: self.initial_genome.setParams(rangemin=self.parameter_range.min, rangemax=self.parameter_range.max)
         if self.config.best_raw_score is not None: self.initial_genome.setParams(bestrawscore=self.config.best_raw_score)
         if self.config.round_decimal is not None: self.initial_genome.setParams(rounddecimal=self.config.round_decimal)
 
@@ -410,13 +468,13 @@ class Optimizer(Configurable):
         log.info("Getting the initializator type ...")
 
         # Integer type
-        if self.parameter_base_type == "integer":
+        if self.is_integer_parameter:
 
             if self.config.heterogeneous: return HeterogeneousListInitializerInteger
             else: return G1DListInitializatorInteger
 
         # Real type
-        elif self.parameter_base_type == "real":
+        elif self.is_real_parameter:
 
             if self.config.heterogeneous: return HeterogeneousListInitializerReal
             else: return G1DListInitializatorReal
@@ -438,7 +496,7 @@ class Optimizer(Configurable):
         log.info("Getting the mutator type ...")
 
         # Integer type
-        if self.parameter_base_type == "integer":
+        if self.is_integer_parameter:
 
             # Range-based mutator
             if self.config.mutation_method == "range":
@@ -465,7 +523,7 @@ class Optimizer(Configurable):
             else: raise ValueError("Mutation method '" + self.config.mutation_method + "' not recognized")
 
         # Real type
-        elif self.parameter_base_type == "real":
+        elif self.is_real_parameter:
 
             # Range-based mutator
             if self.config.mutation_method == "range":

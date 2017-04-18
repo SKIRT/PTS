@@ -1040,6 +1040,9 @@ class StepWiseTest(TestImplementation):
             # Inform the user
             log.info("Adding the score for the current model to the score table ...")
 
+            # Debugging
+            log.debug("The score for this individual is " + str(value))
+
             # Add entry
             self.scores_table.add_entry(individual_name, value)
 
