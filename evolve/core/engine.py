@@ -225,12 +225,14 @@ class GeneticEngine(object):
         self.database_adapters = []
         self.migrationAdapter = None
 
+        # Properties
         self.time_init = None
         self.max_time = None
         self.interactiveMode = interactive
         self.interactiveGen = -1
         self.GPMode = False
 
+        # Function slots
         self.selector = FunctionSlot("Selector")
         self.stepCallback = FunctionSlot("Generation Step Callback")
         self.terminationCriteria = FunctionSlot("Termination Criteria")
@@ -455,6 +457,17 @@ class GeneticEngine(object):
         """
 
         return self.internalParams.get(key, nvl)
+
+    # -----------------------------------------------------------------
+
+    def get_parameters(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.internalParams.copy()
 
     # -----------------------------------------------------------------
 

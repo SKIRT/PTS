@@ -44,6 +44,7 @@ from ...core.tools import types
 from ..core.scaling import LinearScaling, SigmaTruncScaling, PowerLawScaling, BoltzmannScaling, ExponentialScaling, SaturatedScaling
 from ..core.selectors import GRankSelector, GUniformSelector, GTournamentSelector, GTournamentSelectorAlternative, GRouletteWheel
 from ...core.tools import sequences
+from ...core.tools.serialization import write_dict
 
 # -----------------------------------------------------------------
 
@@ -76,6 +77,9 @@ class Optimizer(Configurable):
 
         # The intial genome
         self.initial_genome = None
+
+        # The initial population
+        self.initial_population = None
 
         # The genetic algorithm engine
         self.engine = None
@@ -774,18 +778,17 @@ class Optimizer(Configurable):
         log.info("Initializing the population ...")
 
         # Get the internal population
-        pop = self.engine.get_population()
+        self.initial_population = self.engine.get_population()
 
         # Set scaling method
-        self.set_population_scaling(pop)
+        self.set_population_scaling()
 
     # -----------------------------------------------------------------
 
-    def set_population_scaling(self, population):
+    def set_population_scaling(self):
 
         """
         This function ...
-        :param population: 
         :return: 
         """
         
@@ -793,22 +796,22 @@ class Optimizer(Configurable):
         log.info("Setting the population scaling method ...")
 
         # Linear scaling
-        if self.config.scaling_method == "linear": population.scaleMethod.set(LinearScaling)
+        if self.config.scaling_method == "linear": self.initial_population.scaleMethod.set(LinearScaling)
 
         # Sigma truncation scaling
-        elif self.config.scaling_method == "sigma_truncation": population.scaleMethod.set(SigmaTruncScaling)
+        elif self.config.scaling_method == "sigma_truncation": self.initial_population.scaleMethod.set(SigmaTruncScaling)
 
         # Power law scaling
-        elif self.config.scaling_method == "power_law": population.scaleMethod.set(PowerLawScaling)
+        elif self.config.scaling_method == "power_law": self.initial_population.scaleMethod.set(PowerLawScaling)
 
         # Boltzmann scaling
-        elif self.config.scaling_method == "boltzmann": population.scaleMethod.set(BoltzmannScaling)
+        elif self.config.scaling_method == "boltzmann": self.initial_population.scaleMethod.set(BoltzmannScaling)
 
         # Exponential scaling
-        elif self.config.scaling_method == "exponential": population.scaleMethod.set(ExponentialScaling)
+        elif self.config.scaling_method == "exponential": self.initial_population.scaleMethod.set(ExponentialScaling)
 
         # Saturated scaling
-        elif self.config.scaling_method == "saturated": population.scaleMethod.set(SaturatedScaling)
+        elif self.config.scaling_method == "saturated": self.initial_population.scaleMethod.set(SaturatedScaling)
 
         # Invalid
         else: raise ValueError("Invalid scaling method '" + self.config.scaling_method + "'")
@@ -890,6 +893,149 @@ class Optimizer(Configurable):
 
         # Commit all changes and close
         self.statistics.commit_and_close()
+
+    # -----------------------------------------------------------------
+
+    def write_parameters(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Writing the parameters of the genetic engine and population ...")
+
+        # Write engine parameters
+        self.write_engine_parameters()
+
+        # Write genome parameters
+        if self.initial_genome is not None: self.write_genome_parameters()
+
+        # Write population parameters
+        if self.initial_population is not None: self.write_population_parameters()
+
+    # -----------------------------------------------------------------
+
+    def write_engine_parameters(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Writing the parameters of the engine ...")
+
+        # Get the parameters
+        parameters = self.engine.get_parameters()
+
+        # Function slots
+        selectors = self.engine.selector.names
+        callback = self.engine.stepCallback.names
+        termination = self.engine.terminationCriteria.names
+
+        # Add to parameters
+        parameters["selectors"] = selectors
+        parameters["callback"] = callback
+        parameters["termination"] = termination
+
+        # Other properties
+        minimax = self.engine.minimax
+        generations = self.engine.nGenerations
+        crossover_rate = self.engine.pCrossover
+        #population_size = self.engine.popSize
+        mutation_rate = self.engine.pMutation
+        elitism = self.engine.elitism
+        nelite_individuals = self.engine.nElitismReplacement
+
+        # Add to parameters
+        parameters["minimax"] = minimax
+        parameters["generations"] = generations
+        parameters["crossover_rate"] = crossover_rate
+        #parameters["population_size"] = population_size
+        parameters["mutation_rate"] = mutation_rate
+        parameters["elitism"] = elitism
+        parameters["nelite_individuals"] = nelite_individuals
+
+        # Determine the path
+        path = self.output_path_file("engine.param")
+
+        # Debugging
+        log.debug("Writing parameter dictionary to '" + path + "' ...")
+
+        # Write as dict
+        write_dict(parameters, path)
+
+    # -----------------------------------------------------------------
+
+    def write_genome_parameters(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Writing the parameters of the initial genome ...")
+
+        # Get the parameters
+        parameters = self.initial_genome.get_parameters()
+
+        # Function slots
+        initializators = self.initial_genome.initializator.names
+        mutators = self.initial_genome.mutator.names
+        crossover = self.initial_genome.crossover.names
+
+        # Add to parameters
+        parameters["initializators"] = initializators
+        parameters["mutators"] = mutators
+        parameters["crossover"] = crossover
+
+        # Other properties
+        dimension = self.initial_genome.dimension
+        size = self.initial_genome.getSize()
+
+        # Add to parameters
+        parameters["dimension"] = dimension
+        parameters["size"] = size
+
+        # Determine the path
+        path = self.output_path_file("genome.param")
+
+        # Debugging
+        log.debug("Writing parameter dictionary to '" + path + "' ...")
+
+        # Write as dict
+        write_dict(parameters, path)
+
+    # -----------------------------------------------------------------
+
+    def write_population_parameters(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Writing the parameters of the initial population ...")
+
+        # Get the parameters
+        parameters = self.initial_population.get_parameters()
+
+        # Function slots
+        scaling_functions = self.initial_population.scaleMethod.names
+        parameters["scaling"] = scaling_functions
+
+        # Determine the path
+        path = self.output_path_file("population.param")
+
+        # Debugging
+        log.debug("Writing parameter dictionary to '" + path + "' ...")
+
+        # Write as dict
+        write_dict(parameters, path)
 
     # -----------------------------------------------------------------
 

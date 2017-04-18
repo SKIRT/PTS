@@ -132,6 +132,17 @@ class GenomeBase(object):
 
     # -----------------------------------------------------------------
 
+    def get_parameters(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.internalParams.copy()
+
+    # -----------------------------------------------------------------
+
     def resetStats(self):
 
         """

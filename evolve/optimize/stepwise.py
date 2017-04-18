@@ -399,6 +399,9 @@ class StepWiseOptimizer(Optimizer):
         # Write the best individual
         self.write_best()
 
+        # Write the parameters
+        self.write_parameters()
+
     # -----------------------------------------------------------------
 
     def write_engine(self):

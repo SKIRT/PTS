@@ -62,7 +62,9 @@ class FunctionSlot(object):
 
     def __init__(self, name="Anonymous Function", rand_apply=False):
 
-      """ The creator of the FunctionSlot Class """
+      """
+      The creator of the FunctionSlot Class
+      """
 
       self.funcList = []
       self.funcWeights = []
@@ -114,18 +116,35 @@ class FunctionSlot(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def names(self):
+
+        """
+        THis function ...
+        :return: 
+        """
+
+        function_names = []
+        for fnc in self: function_names.append(fnc.__name__)
+        return function_names
+
+    # -----------------------------------------------------------------
+
     def __iter__(self):
+
       """ Return the function list iterator """
+
       return iter(self.funcList)
 
     # -----------------------------------------------------------------
 
     def __len__(self):
-      """ Return the number of functions on the slot
 
+      """ Return the number of functions on the slot
       .. versionadded:: 0.6
          The *__len__* method
       """
+
       return len(self.funcList)
 
     # -----------------------------------------------------------------

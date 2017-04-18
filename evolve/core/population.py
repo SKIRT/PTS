@@ -642,6 +642,17 @@ class Population(object):
 
     # -----------------------------------------------------------------
 
+    def get_parameters(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.internalParams.copy()
+
+    # -----------------------------------------------------------------
+
     def setParams(self, **args):
 
         """
