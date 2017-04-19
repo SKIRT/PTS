@@ -11,6 +11,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 from collections import defaultdict
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.mlab as mlab
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
@@ -20,7 +23,6 @@ from pts.core.tools.logging import log
 from pts.core.tools.loops import repeat
 from pts.evolve.optimize.stepwise import StepWiseOptimizer
 from pts.core.tools import types
-#from .tables import ScoresTable
 from pts.evolve.tests.Stepwise.tables import ScoresTable
 from pts.modeling.fitting.tables import GenerationsTable, ParametersTable
 from pts.modeling.fitting.explorer import GenerationInfo
@@ -28,10 +30,18 @@ from pts.core.tools import stringify
 from pts.modeling.fitting.tables import ModelProbabilitiesTable
 from pts.modeling.fitting.tables import BestParametersTable
 from pts.core.tools import time, tables
+from pts.evolve.analyse.database import load_database, get_scores
+from pts.evolve.analyse.statistics import load_statistics
+from pts.core.tools import sequences
 
 # -----------------------------------------------------------------
 
 description = "finding the maximum of the function defined by Charbonneau (1995) using the StepWiseOptimizer"
+
+# -----------------------------------------------------------------
+
+# Charbonneau parameter 'n'
+default_n = 9
 
 # -----------------------------------------------------------------
 
@@ -157,6 +167,12 @@ class StepWiseTest(TestImplementation):
 
         # Writing
         self.write()
+
+        # Plotting
+        if self.config.plot: self.plot()
+
+        # Test
+        self.test()
 
     # -----------------------------------------------------------------
 
@@ -421,6 +437,18 @@ class StepWiseTest(TestImplementation):
 
     # -----------------------------------------------------------------
 
+    def get_generation_name(self, index):
+
+        """
+        This function ...
+        :param index: 
+        :return: 
+        """
+
+        return str("Generation" + str(index))
+
+    # -----------------------------------------------------------------
+
     def create_generation_info(self):
 
         """
@@ -436,7 +464,7 @@ class StepWiseTest(TestImplementation):
 
             # Set index and name
             generation_index = self.last_genetic_generation_index + 1
-            generation_name = str("Generation " + str(generation_index))
+            generation_name = self.get_generation_name(generation_index)
 
         # Initial generation
         else:
@@ -474,6 +502,42 @@ class StepWiseTest(TestImplementation):
 
     # -----------------------------------------------------------------
 
+    def path_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name: 
+        :return: 
+        """
+
+        return fs.join(self.generations_path, generation_name)
+
+    # -----------------------------------------------------------------
+
+    def parameters_table_path_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name: 
+        :return: 
+        """
+
+        return fs.join(self.path_for_generation(generation_name), "parameters.dat")
+
+    # -----------------------------------------------------------------
+
+    def scores_table_path_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name: 
+        :return: 
+        """
+
+        return fs.join(self.path_for_generation(generation_name), "scores.dat")
+
+    # -----------------------------------------------------------------
+
     def create_generation_directory(self):
 
         """
@@ -485,11 +549,12 @@ class StepWiseTest(TestImplementation):
         log.info("Creating the generation directory ...")
 
         # Create
-        self.generation_path = fs.create_directory_in(self.generations_path, self.generation.name)
+        self.generation_path = self.path_for_generation(self.generation.name)
+        fs.create_directory(self.generation_path)
 
         # Set paths
-        self.parameters_table_path = fs.join(self.generation_path, "parameters.dat")
-        self.scores_table_path = fs.join(self.generation_path, "scores.dat")
+        self.parameters_table_path = self.parameters_table_path_for_generation(self.generation.name)
+        self.scores_table_path = self.scores_table_path_for_generation(self.generation.name)
 
         # Initialize the parameters table
         self.parameters_table = ParametersTable(parameters=free_parameter_labels, units=parameter_units)
@@ -882,30 +947,6 @@ class StepWiseTest(TestImplementation):
 
         # Return the highest generation index
         return highest_index
-
-    # -----------------------------------------------------------------
-
-    def parameters_table_path_for_generation(self, generation_name):
-
-        """
-        This function ...
-        :param generation_name:
-        :return:
-        """
-
-        return fs.join(self.generations_path, generation_name, "parameters.dat")
-
-    # -----------------------------------------------------------------
-
-    def scores_table_path_for_generation(self, generation_name):
-
-        """
-        This function ...
-        :param generation_name:
-        :return:
-        """
-
-        return fs.join(self.generations_path, generation_name, "scores.dat")
 
     # -----------------------------------------------------------------
 
@@ -1363,6 +1404,177 @@ class StepWiseTest(TestImplementation):
         # Save
         self.generations_table.saveto(self.generations_table_path)
 
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        THis function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        # Plot the function
+        self.plot_function()
+
+    # -----------------------------------------------------------------
+
+    def plot_function(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Plotting the function ...")
+
+        fig = plt.figure()
+        ax = fig.gca(projection='3d')
+        #jet = plt.get_cmap('jet')
+        cmap = plt.get_cmap("viridis")
+
+        # Determine range and number of samples
+        nxsamples = 200
+        nysamples = 200
+        min_value = parameter_range.min
+        max_value = parameter_range.max
+
+        x = np.linspace(min_value, max_value, nxsamples)
+        y = np.linspace(min_value, max_value, nysamples)
+
+        # Calculate data
+        X, Y = np.meshgrid(x, y)
+        Z = eval_func_xy(X, Y)
+        max_z = np.max(Z)
+
+        # Plot the surface
+        surf = ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=cmap, linewidth=0)
+        ax.set_zlim3d(0, max_z)
+
+        # Show the
+        plt.show()
+
+    # -----------------------------------------------------------------
+
+    def test(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Testing ...")
+
+        # Check the database
+        self.check_database()
+
+        # Check the statistics
+        self.check_statistics()
+
+    # -----------------------------------------------------------------
+
+    def check_database(self):
+
+        """
+        THis function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Checking the database ...")
+
+        # Load
+        #database = load_database(self.database_path)
+
+        # Loop over the generations
+        for index in range(self.config.ngenerations):
+
+            # Determine the generation name
+            generation_name = self.get_generation_name(index)
+
+            # Load the parameters table
+            parameters = self.parameters_table_for_generation(generation_name)
+
+            # Load the scores table
+            scores_table = self.scores_table_for_generation(generation_name)
+
+            # Sort scores
+            scores_table.sort_as(parameters.simulation_names)
+
+            # Get individual names and scores
+            individual_names = scores_table.individual_names
+            scores = scores_table.scores
+
+            # Get the scores from the database
+            scores_database = get_scores(self.database_path, run_name, index)
+
+            # Compare
+            #for j in range(len(scores)): print(scores["Score"][j], scores_database[j])
+
+            if sequences.contains_same_elements(scores, scores_database):
+
+                # Success
+                log.success(generation_name + ": elements OK")
+
+                # Check order
+                if scores == scores_database: log.success(generation_name + ": order OK")
+                else: log.error(generation_name + ": order not OK")
+
+            else:
+
+                log.error(generation_name + ":")
+
+                # First check
+                first_check = sequences.elements_not_in_other(scores, scores_database)
+                log.error("Scores not present in scores table from database (" + str(len(first_check)) + "):")
+                print(stringify.stringify_list_fancy(first_check)[1])
+
+                # Second check
+                second_check = sequences.elements_not_in_other(scores_database, scores)
+                log.error("Scores not present in database from scores table (" + str(len(second_check)) + "):")
+                print(stringify.stringify_list_fancy(second_check)[1])
+
+    # -----------------------------------------------------------------
+
+    def check_statistics(self):
+
+        """
+        THis function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Checking the statistics file ...")
+
+        # Load
+        statistics = load_statistics(self.statistics_path)
+
+        # Loop over the generations
+        for index in range(self.config.ngenerations):
+
+            # Determine the generation name
+            generation_name = self.get_generation_name(index)
+
+# -----------------------------------------------------------------
+
+def charbonneau(x, y, n):
+
+    """
+    This function ...
+    :param x: 
+    :param y: 
+    :param n: 
+    :return: 
+    """
+
+    # Calculate z and return
+    z = (16 * x * (1. - x) * y * (1. - y) * np.sin(n * np.pi * x) * np.sin(n * np.pi * y)) ** 2
+    return z
+
 # -----------------------------------------------------------------
 
 def eval_func_xy(x, y):
@@ -1371,12 +1583,11 @@ def eval_func_xy(x, y):
     This function ...
     :param x:
     :param y:
+    :param 9:
     :return:
     """
 
-    # Calculate z and return
-    z = (16 * x * (1. - x) * y * (1. - y) * np.sin(2. * np.pi * x) * np.sin(2. * np.pi * y) )**2
-    return z
+    return charbonneau(x, y, default_n)
 
 # -----------------------------------------------------------------
 
@@ -1596,7 +1807,6 @@ def get_parameter_values_for_individual(parameters, index):
     This function ...
     :param parameters:
     :param index:
-    :param fitting_run:
     :return:
     """
 
@@ -1626,7 +1836,6 @@ def get_parameter_unit(label):
     """
     This function ...
     :param label:
-    :param fitting_run:
     :return:
     """
 

@@ -14,7 +14,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import psutil
-from multiprocessing import Pool
 
 # Import astronomical modules
 from astropy.units import Unit
@@ -23,6 +22,18 @@ from astropy.units import Unit
 from . import introspection
 from . import terminal
 from .logging import log
+
+# Check the multiprocessing state and import modules
+try:
+   from multiprocessing import cpu_count, Pool
+   CPU_COUNT = cpu_count()
+   MULTI_PROCESSING = True if CPU_COUNT > 1 else False
+   log.debug("You have %d CPU cores and multiprocessing support is present")
+except ImportError:
+    cpu_count = Pool = None
+    CPU_COUNT = None
+    MULTI_PROCESSING = False
+    log.debug("You don't have multiprocessing support")
 
 # -----------------------------------------------------------------
 

@@ -24,6 +24,7 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
+from abc import ABCMeta, abstractmethod
 from math import sqrt as math_sqrt
 from functools import partial
 
@@ -32,18 +33,11 @@ import pts.evolve.core.constants as constants
 import pts.evolve.core.utils as utils
 from pts.evolve.core.functionslot import FunctionSlot
 from pts.evolve.core.statistics import Statistics
+from pts.core.basics.containers import NamedList
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
-
-try:
-   from multiprocessing import cpu_count, Pool
-   CPU_COUNT = cpu_count()
-   MULTI_PROCESSING = True if CPU_COUNT > 1 else False
-   log.debug("You have %d CPU cores, so the multiprocessing state is %s", CPU_COUNT, MULTI_PROCESSING)
-except ImportError:
-   MULTI_PROCESSING = False
-   log.debug("You don't have multiprocessing support")
+from ...core.tools.parallelization import MULTI_PROCESSING, Pool
 
 # -----------------------------------------------------------------
 
@@ -93,9 +87,218 @@ def multiprocessing_eval_full(ind, **kwargs):
 
 # -----------------------------------------------------------------
 
-class Population(object):
+class PopulationBase(object):
 
-    """ Population Class - The container for the population
+    """
+    This class ...
+    """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
+    def __init__(self, genome):
+
+        """
+        The constructor ...:
+        :param genome:
+        """
+
+        # Debugging
+        log.debug("New population instance, %s class genomes", genome.__class__.__name__)
+
+        # Set the genome
+        self.oneSelfGenome = genome
+
+        # The internal population representation
+        self.internalPop = None
+
+        self.internalParams = {}
+        self.multiProcessing = (False, False, None)
+
+        # Statistics
+        self.statted = False
+        self.stats = Statistics()
+
+        # Properties
+        self.sorted = False
+        self.minimax = constants.CDefPopMinimax
+        self.popSize = 0
+        self.sortType = constants.CDefPopSortType
+        self.scaleMethod = FunctionSlot("Scale Method")
+        self.scaleMethod.set(constants.CDefPopScale)
+        self.allSlots = [self.scaleMethod]
+
+    # -----------------------------------------------------------------
+
+    def setMinimax(self, minimax):
+
+        """
+        Sets the population minimax
+        Example:
+         pop.setMinimax(Consts.minimaxType["maximize"])
+        :param minimax: the minimax type
+        """
+
+        self.minimax = minimax
+
+    # -----------------------------------------------------------------
+
+    def __len__(self):
+
+        """
+        Return the length of population
+        """
+
+        return len(self.internalPop)
+
+    # -----------------------------------------------------------------
+
+    def clearFlags(self):
+
+        """
+        Clear the sorted and statted internal flags
+        """
+
+        self.sorted = False
+        self.statted = False
+
+    # -----------------------------------------------------------------
+
+    def getStatistics(self):
+
+        """
+        Return a Statistics class for statistics
+        :rtype: the :class:`Statistics.Statistics` instance
+        """
+
+        self.statistics()
+        return self.stats
+
+    # -----------------------------------------------------------------
+
+    def statistics(self):
+
+        """
+        Do statistical analysis of population and set 'statted' to True
+        """
+
+        if self.statted: return
+        log.debug("Running statistical calculations ...")
+        raw_sum = 0
+
+        len_pop = len(self)
+        for ind in xrange(len_pop): raw_sum += self[ind].score
+
+        # Set maximum, minimum and average
+        self.stats["rawMax"] = max(self, key=key_raw_score).score
+        self.stats["rawMin"] = min(self, key=key_raw_score).score
+        self.stats["rawAve"] = raw_sum / float(len_pop)
+
+        # Calculate the variance
+        tmpvar = 0.0
+        for ind in xrange(len_pop):
+            s = self[ind].score - self.stats["rawAve"]
+            s *= s
+            tmpvar += s
+        tmpvar /= float((len(self) - 1))
+
+        # Set the standard deviation
+        try: self.stats["rawDev"] = math_sqrt(tmpvar)
+        except ValueError: self.stats["rawDev"] = 0.0
+
+        # Set the variance
+        self.stats["rawVar"] = tmpvar
+
+        # Set statted flag
+        self.statted = True
+
+# -----------------------------------------------------------------
+
+class NamedPopulation(PopulationBase):
+
+    """
+    The NamedPopulation class: represents a population where each individual has a name
+    """
+
+    def __init__(self, genome):
+
+        """
+        This function ...
+        :param genome: 
+        """
+
+        # Call the constructor of the base class
+        super(NamedPopulation, self).__init__(genome)
+
+        # The containers of individuals
+        self.internalPop = NamedList()
+        self.internalPopRaw = NamedList()
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_population(cls, population):
+
+        """
+        This function ...
+        :param population: 
+        :return: 
+        """
+
+        pop = cls()
+
+        # Return the new population
+        return pop
+
+    # -----------------------------------------------------------------
+
+    def __getitem__(self, key):
+
+        """
+        Returns the specified individual from population
+        """
+
+        return self.internalPop[key]
+
+    # -----------------------------------------------------------------
+
+    def __iter__(self):
+
+        """
+        Returns the iterator of the population
+        """
+
+        return iter(self.internalPop)
+
+    # -----------------------------------------------------------------
+
+    def __setitem__(self, key, value):
+
+        """
+        Set an individual of population
+        """
+
+        self.internalPop[key] = value
+        self.clearFlags()
+
+    # -----------------------------------------------------------------
+
+    def clone_population(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return NamedPopulation.from_population(self)
+
+# -----------------------------------------------------------------
+
+class Population(PopulationBase):
+
+    """
+    Population Class - The container for the population
 
     **Examples**
       Get the population from the :class:`GSimpleGA.GSimpleGA` (GA Engine) instance
@@ -136,46 +339,46 @@ class Population(object):
         :param genome:
         """
 
-        if isinstance(genome, Population):
+        # Call the constructor of the base class
+        super(Population, self).__init__(genome)
 
-            self.oneSelfGenome = genome.oneSelfGenome
-            self.internalPop = []
-            self.internalPopRaw = []
-            self.popSize = genome.popSize
-            self.sortType = genome.sortType
-            self.sorted = False
-            self.minimax = genome.minimax
-            self.scaleMethod = genome.scaleMethod
-            self.allSlots = [self.scaleMethod]
+        # The containers of individuals
+        self.internalPop = []
+        self.internalPopRaw = []
 
-            self.internalParams = genome.internalParams
-            self.multiProcessing = genome.multiProcessing
+    # -----------------------------------------------------------------
 
-            self.statted = False
-            self.stats = Statistics()
+    @classmethod
+    def from_population(cls, population):
 
-        else:
+        """
+        This function ...
+        :param population: 
+        :return: 
+        """
 
-            # Debugging
-            log.debug("New population instance, %s class genomes", genome.__class__.__name__)
+        # Create new population
+        pop = cls()
 
-            self.oneSelfGenome = genome
-            self.internalPop = []
-            self.internalPopRaw = []
-            self.popSize = 0
-            self.sortType = constants.CDefPopSortType
-            self.sorted = False
-            self.minimax = constants.CDefPopMinimax
-            self.scaleMethod = FunctionSlot("Scale Method")
-            self.scaleMethod.set(constants.CDefPopScale)
-            self.allSlots = [self.scaleMethod]
+        # Set attributes
+        pop.oneSelfGenome = population.oneSelfGenome
+        pop.internalPop = []
+        pop.internalPopRaw = []
+        pop.popSize = population.popSize
+        pop.sortType = population.sortType
+        pop.sorted = False
+        pop.minimax = population.minimax
+        pop.scaleMethod = population.scaleMethod
+        pop.allSlots = [pop.scaleMethod]
 
-            self.internalParams = {}
-            self.multiProcessing = (False, False, None)
+        pop.internalParams = population.internalParams
+        pop.multiProcessing = population.multiProcessing
 
-            # Statistics
-            self.statted = False
-            self.stats = Statistics()
+        pop.statted = False
+        pop.stats = Statistics()
+
+        # Return the population
+        return pop
 
     # -----------------------------------------------------------------
 
@@ -205,18 +408,6 @@ class Population(object):
 
     # -----------------------------------------------------------------
 
-    def setMinimax(self, minimax):
-
-        """ Sets the population minimax
-        Example:
-         pop.setMinimax(Consts.minimaxType["maximize"])
-        :param minimax: the minimax type
-        """
-
-        self.minimax = minimax
-
-    # -----------------------------------------------------------------
-
     def __repr__(self):
 
         """
@@ -232,16 +423,6 @@ class Population(object):
         ret += "\n"
         ret += self.stats.__repr__()
         return ret
-
-    # -----------------------------------------------------------------
-
-    def __len__(self):
-
-        """
-        Return the length of population
-        """
-
-        return len(self.internalPop)
 
     # -----------------------------------------------------------------
 
@@ -276,68 +457,10 @@ class Population(object):
 
     # -----------------------------------------------------------------
 
-    def clearFlags(self):
-
-        """
-        Clear the sorted and statted internal flags
-        """
-
-        self.sorted = False
-        self.statted = False
-
-    # -----------------------------------------------------------------
-
-    def getStatistics(self):
-
-        """
-        Return a Statistics class for statistics
-        :rtype: the :class:`Statistics.Statistics` instance
-        """
-
-        self.statistics()
-        return self.stats
-
-    # -----------------------------------------------------------------
-
-    def statistics(self):
-
-        """
-        Do statistical analysis of population and set 'statted' to True
-        """
-
-        if self.statted:
-         return
-        log.debug("Running statistical calculations ...")
-        raw_sum = 0
-
-        len_pop = len(self)
-        for ind in xrange(len_pop):
-         raw_sum += self[ind].score
-
-        self.stats["rawMax"] = max(self, key=key_raw_score).score
-        self.stats["rawMin"] = min(self, key=key_raw_score).score
-        self.stats["rawAve"] = raw_sum / float(len_pop)
-
-        tmpvar = 0.0
-        for ind in xrange(len_pop):
-         s = self[ind].score - self.stats["rawAve"]
-         s *= s
-         tmpvar += s
-
-        tmpvar /= float((len(self) - 1))
-
-        try: self.stats["rawDev"] = math_sqrt(tmpvar)
-        except ValueError: self.stats["rawDev"] = 0.0
-
-        self.stats["rawVar"] = tmpvar
-
-        self.statted = True
-
-    # -----------------------------------------------------------------
-
     def bestFitness(self, index=0):
 
-        """ Return the best scaled fitness individual of population
+        """
+        Return the best scaled fitness individual of population
         :param index: the *index* best individual
         :rtype: the individual
         """
@@ -399,18 +522,20 @@ class Population(object):
         Sort the population
         """
 
-        if self.sorted:
-         return
+        # Already sorted?
+        if self.sorted: return
+
         rev = (self.minimax == constants.minimaxType["maximize"])
 
-        if self.sortType == constants.sortType["raw"]:
-         self.internalPop.sort(cmp=utils.cmp_individual_raw, reverse=rev)
+        if self.sortType == constants.sortType["raw"]: self.internalPop.sort(cmp=utils.cmp_individual_raw, reverse=rev)
         else:
-         self.scale()
-         self.internalPop.sort(cmp=utils.cmp_individual_scaled, reverse=rev)
-         self.internalPopRaw = self.internalPop[:]
-         self.internalPopRaw.sort(cmp=utils.cmp_individual_raw, reverse=rev)
 
+            self.scale()
+            self.internalPop.sort(cmp=utils.cmp_individual_scaled, reverse=rev)
+            self.internalPopRaw = self.internalPop[:]
+            self.internalPopRaw.sort(cmp=utils.cmp_individual_raw, reverse=rev)
+
+        # Set sorted flag
         self.sorted = True
 
     # -----------------------------------------------------------------
@@ -689,5 +814,16 @@ class Population(object):
         newpop = Population(self.oneSelfGenome)
         self.copy(newpop)
         return newpop
+
+    # -----------------------------------------------------------------
+
+    def clone_population(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return Population.from_population(self)
 
 # -----------------------------------------------------------------

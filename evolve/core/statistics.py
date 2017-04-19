@@ -10,7 +10,10 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
 from collections import OrderedDict
+
+# -----------------------------------------------------------------
 
 class Statistics(object):
 
@@ -26,15 +29,18 @@ class Statistics(object):
     **rawTot, fitTot**
        The total (sum) of raw scores and the fitness scores
     Example:
-       >>> stats = ga_engine.getStatistics()
-       >>> st["rawMax"]
+       >>> engine = ...
+       >>> stats = engine.getStatistics()
+       >>> stats["rawMax"]
        10.2
     """
 
     def __init__(self):
-        """ The Statistics Class creator """
 
+        """ The Statistics Class creator """
         # 'fit' means 'fitness'
+
+        # Use ordered dict so that asTuple() function gives expected result
         self.internalDict = OrderedDict()
         self.internalDict["rawMax"] = 0.0
         self.internalDict["rawMin"] = 0.0
@@ -45,6 +51,7 @@ class Statistics(object):
         self.internalDict["fitMin"] = 0.0
         self.internalDict["fitAve"] = 0.0
 
+        # Descriptions for the different statistics
         self.descriptions = {
             "rawMax": "Maximum raw score",
             "rawMin": "Minimum raw score",

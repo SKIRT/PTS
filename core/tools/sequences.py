@@ -178,3 +178,66 @@ def zip_into_dict(list_a, list_b):
     return dictionary
 
 # -----------------------------------------------------------------
+
+def contains_duplicates(sequence):
+
+    """
+    This function ...
+    :param sequence: 
+    :return: 
+    """
+
+    return len(set(sequence)) != len(sequence)
+
+# -----------------------------------------------------------------
+
+def contains_same_elements(sequence_a, sequence_b):
+
+    """
+    This function ...
+    :param sequence_a: 
+    :param sequence_b: 
+    :return: 
+    """
+
+    return set(sequence_a) == set(sequence_b)
+
+# -----------------------------------------------------------------
+
+def elements_not_in_other(sequence_a, sequence_b):
+
+    """
+    This function ...
+    :param sequence_a: 
+    :param sequence_b: 
+    :return: 
+    """
+
+    elements = set()
+
+    for element in sequence_a:
+
+        if element not in sequence_b: elements.add(element)
+
+    return list(elements)
+
+# -----------------------------------------------------------------
+
+def common_elements(sequence_a, sequence_b):
+
+    """
+    This function ...
+    :param sequence_a: 
+    :param sequence_b: 
+    :return: 
+    """
+
+    elements = set()
+
+    for element in sequence_a:
+
+        if element in sequence_b: elements.add(element)
+
+    return list(elements)
+
+# -----------------------------------------------------------------

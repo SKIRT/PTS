@@ -214,7 +214,7 @@ def fit_model_to_source(source, config, track_record=None, level=0, special=Fals
             plotting.plot_peak_model(source.cutout, rel_peak.x, rel_peak.y, rel_model, title="Center of source and peak do not match")
 
         # Create a new zoomed-in source
-        source = source.zoom(config.zoom_factor)
+        source = source.zoom(config.zoom_factor, min_xpixels=4, min_ypixels=4)
 
         # Estimate and subtract the background
         source.estimate_background(config.background_est_method, config.sigma_clip_background)

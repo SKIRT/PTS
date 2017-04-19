@@ -496,6 +496,7 @@ class Detection(object):
 
             no_clip_mask = None
 
+        # Add contamination
         if self.contamination is not None:
             mask = mask + self.contamination
             if no_clip_mask is not None: no_clip_mask = no_clip_mask + self.contamination
@@ -601,10 +602,14 @@ class Detection(object):
 
     # -----------------------------------------------------------------
 
-    def zoom(self, factor):
+    def zoom(self, factor, min_xpixels=None, min_ypixels=None, min_pixels=None):
 
         """
         This function ...
+        :param factor:
+        :param min_xpixels:
+        :param min_ypixels:
+        :param min_pixels:
         :return:
         """
 
@@ -612,7 +617,7 @@ class Detection(object):
         source = copy.deepcopy(self)
 
         # Zoom in on the cutout
-        source.cutout = self.cutout.zoom(self.center, factor)
+        source.cutout = self.cutout.zoom(self.center, factor, min_xpixels=min_xpixels, min_ypixels=min_ypixels, min_pixels=min_pixels)
 
         # Calculate the relative coordinate of the center for the cutout and background boxes
         rel_center = source.cutout.rel_position(self.center)

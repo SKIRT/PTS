@@ -30,7 +30,9 @@ from ...core.tools.random import prng
 
 def G1DBinaryStringInitializator(genome, **args):
 
-    """ 1D Binary String initializator """
+    """
+    1D Binary String initializator
+    """
 
     genome.genomeList = [prng.choice((0, 1)) for _ in xrange(genome.getListSize())]
 
@@ -91,7 +93,7 @@ def G1DListInitializatorReal(genome, **args):
     range_min = genome.getParam("rangemin", 0)
     range_max = genome.getParam("rangemax", 100)
 
-    genome.genomeList = [prng.uniform(range_min, range_max + 1) for i in xrange(genome.getListSize())]
+    genome.genomeList = [prng.uniform(range_min, range_max) for i in xrange(genome.getListSize())]
 
 # -----------------------------------------------------------------
 
@@ -160,8 +162,7 @@ def G2DListInitializatorReal(genome, **args):
 
     for i in xrange(genome.getHeight()):
         for j in xrange(genome.getWidth()):
-            randomReal = prng.uniform(genome.getParam("rangemin", 0),
-                                      genome.getParam("rangemax", 100) + 1)
+            randomReal = prng.uniform(genome.getParam("rangemin", 0), genome.getParam("rangemax", 100))
             genome.setItem(i, j, randomReal)
 
 # -----------------------------------------------------------------

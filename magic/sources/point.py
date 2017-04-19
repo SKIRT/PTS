@@ -553,8 +553,8 @@ class PointSourceFinder(Configurable):
         # If requested, perform sigma-clipping to the list of FWHM's to filter out outliers
         if self.config.fitting.sigma_clip_fwhms:
 
-            print(self.fwhms_pix)
-            mean, median, stddev = statistics.sigma_clipped_statistics(self.fwhms_pix, self.config.fitting.fwhm_sigma_level)
+            #print(self.fwhms_pix)
+            mean, median, stddev = statistics.sigma_clipped_statistics(self.fwhms_pix_valid, self.config.fitting.fwhm_sigma_level)
             lower = median - self.config.fitting.fwhm_sigma_level * stddev
             upper = median + self.config.fitting.fwhm_sigma_level * stddev
 
@@ -1104,6 +1104,18 @@ class PointSourceFinder(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def fwhms_valid(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return [value for value in self.fwhms if value is not None]
+
+    # -----------------------------------------------------------------
+
+    @property
     def fwhms_pix(self):
 
         """
@@ -1112,6 +1124,18 @@ class PointSourceFinder(Configurable):
         """
 
         return [(fwhm / self.frame.average_pixelscale.to("arcsec")).to("").value if fwhm is not None else None for fwhm in self.fwhms]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fwhms_pix_valid(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return [value for value in self.fwhm_pix if value is not None]
 
     # -----------------------------------------------------------------
 
@@ -1221,7 +1245,7 @@ class PointSourceFinder(Configurable):
         if self.config.use_frame_fwhm and self.frame.fwhm is not None: return self.frame.fwhm.to("arcsec")
 
         # If the list of FWHM values is empty (the stars were not fitted yet), return None
-        fwhms = self.fwhms
+        fwhms = self.fwhms_valid
         if len(fwhms) == 0: return None
 
         fwhm_values = [fwhm.to("arcsec").value for fwhm in fwhms]
@@ -1245,7 +1269,7 @@ class PointSourceFinder(Configurable):
         :return:
         """
 
-        return (self.fwhm / self.frame.average_pixelscale.to("arcsec/pix")).value
+        return (self.fwhm / self.frame.average_pixelscale.to("arcsec")).value if self.fwhm is not None else None
 
     # -----------------------------------------------------------------
 

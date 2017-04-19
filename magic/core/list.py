@@ -26,10 +26,12 @@ from ..tools import coordinates
 from ..basics.coordinate import SkyCoordinate
 from ..basics.stretch import SkyStretch
 from ..region.rectangle import SkyRectangleRegion
+from ...core.basics.containers import KeyList, NamedList
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
-class CoordinateSystemList(object):
+class CoordinateSystemList(KeyList):
 
     """
     This class ...
@@ -41,19 +43,20 @@ class CoordinateSystemList(object):
         THe constructor ...
         """
 
-        # The coordinate systems
-        self.systems = OrderedDict()
+        # Call the constructor of the base class
+        super(CoordinateSystemList, self).__init__()
 
     # -----------------------------------------------------------------
 
-    def __len__(self):
+    @property
+    def systems(self): # an alias for the contents for this subclass
 
         """
         This function ...
         :return: 
         """
 
-        return len(self.systems)
+        return self.contents
 
     # -----------------------------------------------------------------
 
@@ -65,7 +68,7 @@ class CoordinateSystemList(object):
         :return: 
         """
 
-        return self.systems.keys()
+        return self.keys
 
     # -----------------------------------------------------------------
 
@@ -77,8 +80,8 @@ class CoordinateSystemList(object):
         :return: 
         """
 
-        if isinstance(fltr, basestring): fltr = parse_filter(fltr)
-        return fltr in self.systems
+        if types.is_string_type(fltr): fltr = parse_filter(fltr)
+        return fltr in self.keys
 
     # -----------------------------------------------------------------
 
@@ -100,21 +103,10 @@ class CoordinateSystemList(object):
         else: raise ValueError("Invalid input")
 
         # Check the key
-        if fltr in self.systems: raise ValueError("Already a coordinate system for the '" + str(fltr) + "' filter")
+        if fltr in self.keys: raise ValueError("Already a coordinate system for the '" + str(fltr) + "' filter")
 
-        # Add to the dictionary
-        self.systems[fltr] = wcs
-
-    # -----------------------------------------------------------------
-
-    def __iter__(self):
-
-        """
-        THis function ...
-        :return: 
-        """
-
-        for name in self.systems: yield self.systems[name]
+        # Call the append function of the base class
+        super(CoordinateSystemList, self).append(fltr, wcs)
 
     # -----------------------------------------------------------------
 
@@ -127,12 +119,10 @@ class CoordinateSystemList(object):
         """
 
         # Get the filter
-        if isinstance(index_or_filter, basestring): fltr = parse_filter(index_or_filter)
-        elif isinstance(index_or_filter, Filter): fltr = index_or_filter
-        else: fltr = self.systems.keys()[index_or_filter]
+        if types.is_string_type(index_or_filter): index_or_filter = parse_filter(index_or_filter)
 
-        # Return the coordinate system
-        return self.systems[fltr]
+        # Call the function of the base class
+        return super(CoordinateSystemList, self).__getitem__(index_or_filter)
 
     # -----------------------------------------------------------------
 
@@ -482,7 +472,7 @@ class CoordinateSystemList(object):
 
 # -----------------------------------------------------------------
 
-class FrameList(object):
+class FrameList(KeyList):
 
     """
     This class ...
@@ -494,19 +484,20 @@ class FrameList(object):
         THe constructor ...
         """
 
-        # The frames
-        self.frames = OrderedDict()
+        # Call the constructor of the base class
+        super(FrameList, self).__init__()
 
     # -----------------------------------------------------------------
 
-    def __len__(self):
+    @property
+    def frames(self): # an alias for the contents for this subclass
 
         """
         This function ...
         :return: 
         """
 
-        return len(self.frames)
+        return self.contents
 
     # -----------------------------------------------------------------
 
@@ -518,7 +509,7 @@ class FrameList(object):
         :return: 
         """
 
-        return self.frames.keys()
+        return self.keys
 
     # -----------------------------------------------------------------
 
@@ -533,19 +524,8 @@ class FrameList(object):
         # Check keys
         if frame.fltr in self.frames: raise ValueError("Already a frame for the '" + str(frame.filter) + "' filter")
 
-        # Add the frame
-        self.frames[frame.filter] = frame
-
-    # -----------------------------------------------------------------
-
-    def __iter__(self):
-
-        """
-        THis function ...
-        :return: 
-        """
-
-        for name in self.frames: yield self.frames[name]
+        # Call the function of the base class
+        super(FrameList, self).append(frame.filter, frame)
 
     # -----------------------------------------------------------------
 
@@ -558,12 +538,10 @@ class FrameList(object):
         """
 
         # Get the filter
-        if isinstance(index_or_filter, basestring): fltr = parse_filter(index_or_filter)
-        elif isinstance(index_or_filter, Filter): fltr = index_or_filter
-        else: fltr = self.frames.keys()[index_or_filter]
+        if types.is_string_type(index_or_filter): index_or_filter = parse_filter(index_or_filter)
 
-        # Return the frame
-        return self.frames[fltr]
+        # Call the function of the base class
+        return super(FrameList, self).__getitem__(index_or_filter)
 
     # -----------------------------------------------------------------
 
@@ -1013,7 +991,7 @@ class FrameList(object):
 
 # -----------------------------------------------------------------
 
-class NamedFrameList(object):
+class NamedFrameList(NamedList):
 
     """
     This class ...
@@ -1025,7 +1003,20 @@ class NamedFrameList(object):
         This function ...
         """
 
-        self.frames = OrderedDict()
+        # Call the constructor of the base class
+        super(NamedFrameList, self).__init__()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def frames(self): # an alias for the contents for this subclass
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.contents
 
     # -----------------------------------------------------------------
 
@@ -1056,13 +1047,12 @@ class NamedFrameList(object):
         if name is None: name = frame.name
         if name is None: raise ValueError("Frame does not have a name")
 
-        if name in self.frames: raise ValueError("Already a frame with the name '" + name + "'")
-
-        self.frames[name] = frame
+        # Call the append function of the base class
+        super(NamedFrameList, self).append(name, frame)
 
 # -----------------------------------------------------------------
 
-class ImageList(object):
+class ImageList(KeyList):
         
     """
     This class ...
@@ -1074,11 +1064,24 @@ class ImageList(object):
         THe constructor ...
         """
 
-        self.images = OrderedDict()
+        # Call the constructor of the base class
+        super(ImageList, self).__init__()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def images(self): # an alias for the contents for this subclass
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.contents
 
 # -----------------------------------------------------------------
 
-class NamedImageList(object):
+class NamedImageList(NamedList):
 
     """
     This class ...
@@ -1090,7 +1093,20 @@ class NamedImageList(object):
         The constructor ...
         """
 
-        self.images = OrderedDict()
+        # Call the constructor of the base class
+        super(NamedImageList, self).__init__()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def images(self): # an alias for the contents for this subclass
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.contents
 
     # -----------------------------------------------------------------
 
@@ -1117,19 +1133,7 @@ class NamedImageList(object):
         :return: 
         """
 
-        return self.images.keys()
-
-    # -----------------------------------------------------------------
-
-    @property
-    def items(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        return self.images.items()
+        return self.keys
 
     # -----------------------------------------------------------------
 
@@ -1145,60 +1149,11 @@ class NamedImageList(object):
         if name is None: name = image.name
         if name is None: raise ValueError("Image does not have a name")
 
+        # Check
         if name in self.images: raise ValueError("Already an image with the name '" + name + "'")
 
-        self.images[name] = image
-
-    # -----------------------------------------------------------------
-
-    def __len__(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        return len(self.images)
-
-    # -----------------------------------------------------------------
-
-    def __iter__(self):
-
-        """
-        THis function ...
-        :return: 
-        """
-
-        for name in self.images: yield self.images[name]
-
-    # -----------------------------------------------------------------
-
-    def __getitem__(self, index_or_name):
-
-        """
-        This function ...
-        :param index_or_name:
-        :return: 
-        """
-
-        # Get the filter
-        if isinstance(index_or_name, basestring): name = index_or_name
-        else: name = self.images.keys()[index_or_name]
-
-        # Return the image
-        return self.images[name]
-
-    # -----------------------------------------------------------------
-
-    def __contains__(self, name):
-
-        """
-        This function ...
-        :param name: 
-        :return: 
-        """
-
-        return name in self.images
+        # Call the append function of the base class
+        super(NamedImageList, self).append(name, image)
 
     # -----------------------------------------------------------------
 

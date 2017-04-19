@@ -22,4 +22,7 @@ definition.add_optional("nindividuals", "even_integer", "number of individuals p
 # Genetic settings
 definition.import_section("genetic", "genetic algorithm settings", genetic_definition)
 
+# Flags
+definition.add_flag("plot", "plot", False)
+
 # -----------------------------------------------------------------

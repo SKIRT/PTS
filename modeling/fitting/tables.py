@@ -23,6 +23,7 @@ from ...core.basics.range import RealRange
 from ...core.basics.curve import FilterCurve
 from ...core.units.parsing import parse_unit as u
 from ...core.tools import time
+from ...core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -850,6 +851,27 @@ class ChiSquaredTable(SmartTable):
 
         # Add a row to the table
         self.add_row(values)
+
+    # -----------------------------------------------------------------
+
+    def sort_as(self, simulation_names):
+
+        """
+        This function ...
+        :param simulation_names: 
+        :return: 
+        """
+
+        if len(simulation_names) != len(self): raise ValueError("Number of simulations does not have the same length as the table")
+        if sequences.contains_duplicates(simulation_names): raise ValueError("Invalid list of simulation names: multiple occurences of the same name")
+
+        new_column = []
+
+        # Loop over the simulation names
+        for name in simulation_names: new_column.append(self.chi_squared_for(name))
+
+        # Replace the column
+        self["Chi squared"] = new_column
 
 # -----------------------------------------------------------------
 

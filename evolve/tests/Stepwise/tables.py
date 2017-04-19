@@ -14,6 +14,7 @@ import numpy as np
 # Import the relevant PTS classes and modules
 from pts.core.basics.table import SmartTable
 from pts.core.tools import tables
+from pts.core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -53,6 +54,30 @@ class ScoresTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def individual_names(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return list(self["Individual name"])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def scores(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return list(self["Score"])
+
+    # -----------------------------------------------------------------
+
     def score_for(self, individual_name):
 
         """
@@ -63,6 +88,27 @@ class ScoresTable(SmartTable):
 
         index = tables.find_index(self, individual_name, "Individual name")
         return self["Score"][index]
+
+    # -----------------------------------------------------------------
+
+    def sort_as(self, individual_names):
+
+        """
+        This function ...
+        :param individual_names: 
+        :return: 
+        """
+
+        if len(individual_names) != len(self): raise ValueError("Number of individuals does not have the same length as the table")
+        if sequences.contains_duplicates(individual_names): raise ValueError("Invalid list of individual names: multiple occurences of the same name")
+
+        new_column = []
+
+        # Loop over the individual names
+        for name in individual_names: new_column.append(self.score_for(name))
+
+        # Replace the column
+        self["Score"] = new_column
 
     # -----------------------------------------------------------------
 

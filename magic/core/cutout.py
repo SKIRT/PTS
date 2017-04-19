@@ -312,24 +312,48 @@ class Cutout(np.ndarray):
 
     # -----------------------------------------------------------------
 
-    def zoom(self, center, factor):
+    def zoom(self, center, factor, min_xpixels=None, min_ypixels=None, min_pixels=None):
 
         """
         This function ...
         :param center:
         :param factor:
+        :param min_xpixels:
+        :param min_ypixels:
+        :param min_pixels:
         :return:
         """
 
         # Calculate the size of the smaller box
-        new_xsize = int(round(0.5 * self.xsize / factor))
-        new_ysize = int(round(0.5 * self.ysize / factor))
+        new_xsize = int(round(self.xsize / factor))
+        new_ysize = int(round(self.ysize / factor))
+
+        # Check min pixels conditions
+        if min_xpixels is not None:
+            if min_xpixels > self.xsize: raise ValueError("Cannot have a minimum number of x pixels that is larger than the original number of x pixels of the cutout")
+            new_xsize = max(new_xsize, min_xpixels)
+        if min_ypixels is not None:
+            if min_ypixels > self.ysize: raise ValueError("Cannot have a minimum number of y pixels that is larger than the original number of y pixels of the cutout")
+            new_ysize = max(new_ysize, min_ypixels)
+        if min_pixels is not None:
+            original_npixels = self.xsize * self.ysize
+            if min_pixels > original_npixels: raise ValueError("Cannot have a minimum number of pixels that is larger than the original number of pixels of the cutout")
+            factor_2d = min_pixels / original_npixels
+            factor_1d = np.sqrt(factor_2d)
+            new_xsize = int(round(self.xsize / factor_1d))
+            new_ysize = int(round(self.ysize / factor_1d))
+            if new_xsize > self.xsize: raise ValueError("Cannot zoom with a minimum pixels of '" + str(min_pixels))
+            if new_ysize > self.ysize: raise ValueError("Cannot zoom with a minimum pixels of '" + str(min_pixels))
 
         # Calculate the relative coordinate of the center
         rel_center = self.rel_position(center)
 
+        # Calculate radius
+        new_xradius = 0.5 * new_xsize
+        new_yradius = 0.5 * new_ysize
+
         # Create a smaller box
-        data, rel_x_min, rel_x_max, rel_y_min, rel_y_max = cropping.crop(self, rel_center.x, rel_center.y, new_xsize, new_ysize)
+        data, rel_x_min, rel_x_max, rel_y_min, rel_y_max = cropping.crop(self, rel_center.x, rel_center.y, new_xradius, new_yradius)
 
         # Create the new box
         return Cutout(data, rel_x_min+self.x_min, rel_x_max+self.x_min, rel_y_min+self.y_min, rel_y_max+self.y_min)
@@ -454,9 +478,8 @@ class Cutout(np.ndarray):
         from .mask import Mask
         if isinstance(mask, Mask): mask = mask.data
 
-        print(self)
-
-        print(mask)
+        #print(self)
+        #print(mask)
 
         # Do the fitting
         polynomial = fitting.fit_polynomial(self, order, mask=mask)
@@ -583,7 +606,8 @@ class Cutout(np.ndarray):
                 #print("AND HEREEE!!!")
                 mask = mask.eroded_rc(connectivity=2, iterations=1)
                 #plotting.plot_box(np.ma.masked_array(self, mask=mask))
-                return self.fit_polynomial(3, mask=mask)
+                try: return self.fit_polynomial(3, mask=mask)
+                except TypeError: return self.fit_polynomial(3)
 
         # Interpolate using the local mean method
         elif method == "local_mean":

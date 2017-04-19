@@ -999,7 +999,7 @@ class GeneticEngine(object):
         if not silent: log.info("Creating generation " + str(self.currentGeneration) + " ...")
 
         # Clone the current internal population
-        new_population = Population(self.internalPop)
+        new_population = self.internalPop.clone_population()
         log.debug("Population was cloned")
 
         #size_iterate = len(self.internalPop)
