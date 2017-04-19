@@ -561,6 +561,9 @@ class PointSourceFinder(Configurable):
             # Loop over all sources for which a model was found
             for source in self.sources:
 
+                # Skip Nones
+                if source is None: continue
+
                 # Ignore sources without model
                 if not source.has_model: continue
 
@@ -1206,6 +1209,9 @@ class PointSourceFinder(Configurable):
 
         # Loop over all sources
         for source in self.sources:
+
+            # If no source, skip
+            if source is None: continue
 
             # If the source was not fitted, skip it
             if not source.has_model: continue

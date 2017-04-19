@@ -29,7 +29,7 @@ from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.advanced.parallelizationtool import ParallelizationTool
 from ...core.remote.host import Host
 from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
-from .evaluate import get_parameter_values_from_generator, prepare_simulation
+from .evaluate import get_parameter_values_from_generator, prepare_simulation, generate_simulation_name, get_parameter_values_for_named_individual
 from ...core.simulation.input import SimulationInput
 from ...core.tools import introspection
 from ...core.tools import parallelization as par
@@ -62,6 +62,7 @@ class GenerationInfo(object):
         self.transient_heating = kwargs.pop("transient_heating", None)
 
         self.path = kwargs.pop("path", None)
+        self.individuals_table_path = kwargs.pop("individuals_table_path", None)
         self.parameters_table_path = kwargs.pop("parameters_table_path", None)
         self.chi_squared_table_path = kwargs.pop("chi_squared_table_path", None)
 
@@ -98,6 +99,9 @@ class ParameterExplorer(FittingComponent):
 
         # The generation info
         self.generation = GenerationInfo()
+
+        # The individuals table
+        self.individuals_table = None
 
         # The parameters table
         self.parameters_table = None
@@ -167,10 +171,13 @@ class ParameterExplorer(FittingComponent):
         # 11. Estimate the runtimes for the different remote hosts
         if self.uses_schedulers: self.estimate_runtimes()
 
-        # 12. Writing
+        # 12. Fill the tables for the current generation
+        self.fill_tables()
+
+        # 13. Writing
         self.write()
 
-        # 13. Launch the simulations for different parameter values
+        # 14. Launch the simulations for different parameter values
         self.launch()
 
     # -----------------------------------------------------------------
@@ -597,6 +604,9 @@ class ParameterExplorer(FittingComponent):
         # Determine the path to the generation directory
         self.generation.path = fs.create_directory_in(self.fitting_run.generations_path, self.generation_name)
 
+        # Determine the path to the individuals table
+        self.generation.individuals_table_path = fs.join(self.generation.path, "individuals.dat")
+
         # Determine the path to the generation parameters table
         self.generation.parameters_table_path = fs.join(self.generation.path, "parameters.dat")
 
@@ -879,22 +889,23 @@ class ParameterExplorer(FittingComponent):
         # Enable screen output logging for remotes without a scheduling system for jobs
         for host_id in self.launcher.no_scheduler_host_ids: self.launcher.enable_screen_output(host_id)
 
-        # Loop over the different parameter combinations
-        for i in range(self.nmodels):
+        # Loop over the simulations, add them to the queue
+        for simulation_name in self.simulation_names:
 
-            # Get the parameter values as a dictionary
-            parameter_values = get_parameter_values_from_generator(self.generator.parameters, i, self.fitting_run)
+            # Get the parameter values
+            parameter_values = self.parameters_table.parameter_values_for_simulation(simulation_name)
 
             # Prepare simulation directories, ski file, and return the simulation definition
-            definition = prepare_simulation(self.ski, parameter_values, self.object_name, self.simulation_input, self.generation.path)
-            simulation_name = definition.name
+            definition = prepare_simulation(simulation_name, self.ski, parameter_values, self.object_name, self.simulation_input, self.generation.path)
 
             # Debugging
             log.debug("Adding a simulation to the queue with:")
+            log.debug("")
             log.debug(" - name: " + simulation_name)
             log.debug(" - input: " + str(self.simulation_input))
             log.debug(" - ski path: " + definition.ski_path)
             log.debug(" - output path: " + definition.output_path)
+            log.debug("")
 
             # Put the parameters in the queue and get the simulation object
             self.launcher.add_to_queue(definition, simulation_name)
@@ -902,76 +913,95 @@ class ParameterExplorer(FittingComponent):
             # Set scheduling options (for the different remote hosts with a scheduling system)
             for host_id in self.scheduling_options: self.launcher.set_scheduling_options(host_id, simulation_name, self.scheduling_options[host_id])
 
-            # Debugging
-            log.debug("Adding entry to the parameters table with:")
-            log.debug(" - Simulation name: " + simulation_name)
-            for label in parameter_values: log.debug(" - " + label + ": " + stringify_not_list(parameter_values[label])[1])
-
-            # Add an entry to the parameters table
-            self.parameters_table.add_entry(simulation_name, parameter_values)
-
-            # Save the parameters table
-            self.parameters_table.save()
-
         # Run the launcher, launches the simulations and retrieves and analyses finished simulations
         simulations = self.launcher.run()
 
+        # Check the launched simulations
+        self.check_simulations(simulations)
+
+    # -----------------------------------------------------------------
+
+    def check_simulations(self, simulations):
+
+        """
+        This function ...
+        :param simulations: 
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Checking the simulations ...")
+
         # Check the number of simulations that were effectively launched
-        if self.nmodels != len(simulations):
+        if self.nmodels == len(simulations):
+            log.success("All simulations were scheduled succesfully")
+            return
 
-            # No simulations were launched
-            if len(simulations) == 0:
+        # No simulations were launched
+        if len(simulations) == 0:
 
-                # Show error message
-                log.error("No simulations could be launched: removing generation")
-                log.error("Try again later")
-                log.error("Cleaning up generation and quitting ...")
+            # Show error message
+            log.error("No simulations could be launched: removing generation")
+            log.error("Try again later")
+            log.error("Cleaning up generation and quitting ...")
 
-                # Remove this generation from the generations table
-                self.fitting_run.generations_table.remove_entry(self.generation_name)
-                self.fitting_run.generations_table.save()
+            # Remove this generation from the generations table
+            self.fitting_run.generations_table.remove_entry(self.generation_name)
+            self.fitting_run.generations_table.save()
 
-                # Remove the generation directory
-                fs.remove_directory(self.generation.path)
+            # Remove the generation directory
+            fs.remove_directory(self.generation.path)
 
-                # Quit
-                exit()
+            # Quit
+            exit()
 
-            # Less simulations were launched
-            elif len(simulations) < self.nmodels:
+        # Less simulations were launched
+        elif len(simulations) < self.nmodels:
 
-                # Get the names of simulations that were launched
-                launched_simulation_names = [simulation.name for simulation in simulations]
-                if None in launched_simulation_names: raise RuntimeError("Some or all simulation don't have a name defined")
+            # Get the names of simulations that were launched
+            launched_simulation_names = [simulation.name for simulation in simulations]
+            if None in launched_simulation_names: raise RuntimeError("Some or all simulation don't have a name defined")
 
-                # Show error message
-                log.error("Launching a simulation for the following models failed:")
+            # Show error message
+            log.error("Launching a simulation for the following models failed:")
+            log.error("")
+
+            # Loop over all simulations in the parameters table
+            failed_indices = []
+            for index, simulation_name in enumerate(self.parameters_table.simulation_names):
+
+                # This simulation is OK
+                if simulation_name in launched_simulation_names: continue
+
+                log.error("Model #" + str(index + 1))
+                log.error("")
+                parameter_values = self.parameters_table.parameter_values_for_simulation(simulation_name)
+                for label in parameter_values: log.error(" - " + label + ": " + stringify_not_list(parameter_values[label])[1])
                 log.error("")
 
-                # Loop over all simulations in the parameters table
-                failed_indices = []
-                for index, simulation_name in enumerate(self.parameters_table.simulation_names):
+                failed_indices.append(index)
 
-                    # This simulation is OK
-                    if simulation_name in launched_simulation_names: continue
+            # Show error message
+            log.error("Removing corresponding entries from the model parameters table ...")
 
-                    log.error("Model #" + str(index + 1))
-                    log.error("")
-                    parameter_values = self.parameters_table.parameter_values_for_simulation(simulation_name)
-                    for label in parameter_values: log.error(" - " + label + ": " + stringify_not_list(parameter_values[label])[1])
-                    log.error("")
+            # Remove rows and save
+            self.parameters_table.remove_rows(failed_indices)
+            self.parameters_table.save()
 
-                    failed_indices.append(index)
+        # Unexpected
+        else: raise RuntimeError("Unexpected error where nsmulations > nmodels")
 
-                # Show error message
-                log.error("Removing corresponding entries from the model parameters table ...")
+    # -----------------------------------------------------------------
 
-                # Remove rows and save
-                self.parameters_table.remove_rows(failed_indices)
-                self.parameters_table.save()
+    @property
+    def model_names(self):
 
-            # Unexpected
-            else: raise RuntimeError("Unexpected error where nsmulations > nmodels")
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.generator.individual_names
 
     # -----------------------------------------------------------------
 
@@ -988,6 +1018,18 @@ class ParameterExplorer(FittingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def model_parameters(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.generator.parameters
+
+    # -----------------------------------------------------------------
+
+    @property
     def uses_schedulers(self):
 
         """
@@ -996,6 +1038,63 @@ class ParameterExplorer(FittingComponent):
         """
 
         return self.launcher.uses_schedulers
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulation_names(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.individuals_table.simulation_names
+
+    # -----------------------------------------------------------------
+
+    def fill_tables(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Filling the tables for the current generation ...")
+
+        # Loop over the model names
+        counter = 0
+        for name in self.model_names:
+
+            # Generate the simulation name
+            simulation_name = generate_simulation_name()
+
+            # Debugging
+            log.debug("Adding an entry to the individuals table with:")
+            log.debug("")
+            log.debug(" - Simulation name: " + simulation_name)
+            log.debug(" - Individual_name: " + name)
+            log.debug("")
+
+            # Add entry
+            self.individuals_table.add_entry(simulation_name, name)
+
+            # Get the parameter values
+            parameter_values = get_parameter_values_for_named_individual(self.model_parameters, name)
+
+            # Debugging
+            log.debug("Adding entry to the parameters table with:")
+            log.debug("")
+            log.debug(" - Simulation name: " + simulation_name)
+            for label in parameter_values: log.debug(" - " + label + ": " + stringify_not_list(parameter_values[label])[1])
+            log.debug("")
+
+            # Add an entry to the parameters table
+            self.parameters_table.add_entry(simulation_name, parameter_values)
+
+            # Increment counter
+            counter += 1
 
     # -----------------------------------------------------------------
 
@@ -1035,6 +1134,21 @@ class ParameterExplorer(FittingComponent):
 
         # Save the table
         self.fitting_run.generations_table.save()
+
+    # -----------------------------------------------------------------
+
+    def write_individuals(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Writing the individuals table ...")
+
+        # Save the individuals table
+        self.individuals_table.saveto(self.generation.individuals_table_path)
 
     # -----------------------------------------------------------------
 

@@ -52,6 +52,9 @@ class GeneticModelGenerator(ModelGenerator):
         self.evaluator = None
         self.evaluator_kwargs = None
 
+        # The names of the individuals
+        self.individual_names = None
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -206,7 +209,7 @@ class GeneticModelGenerator(ModelGenerator):
         self.optimizer.config.heterogeneous = True
 
         # Set named_individuals flag
-        self.optimizer.config.named_individuals = self.fitting_run.genetic_settings.named_individuals
+        self.optimizer.config.named_individuals = True
 
     # -----------------------------------------------------------------
 
@@ -228,7 +231,8 @@ class GeneticModelGenerator(ModelGenerator):
                            maxima=self.parameter_maxima_scalar, evaluator=self.evaluator, evaluator_kwargs=self.evaluator_kwargs)
 
         # Get the parameter values of the new models
-        self.get_model_parameters()
+        self.get_model_parameters_named_individuals()
+        #self.get_model_parameters_unnamed_individuals()
 
     # -----------------------------------------------------------------
 
@@ -269,7 +273,37 @@ class GeneticModelGenerator(ModelGenerator):
 
     # -----------------------------------------------------------------
 
-    def get_model_parameters(self):
+    def get_model_parameters_named_individuals(self):
+
+        """
+        THis function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Getting the model parameters ...")
+
+        # Set the individual names
+        self.individual_names = self.optimizer.population.names
+
+        # Loop over the individual names
+        for name in self.individual_names:
+
+            # Get the individual
+            individual = self.optimizer.population[name]
+
+            # Loop over all the genes (parameters)
+            for i in range(len(individual)):
+
+                # Get the parameter value
+                value = individual[i]
+
+                # Add the parameter value to the dictionary
+                self.parameters[self.fitting_run.free_parameter_labels[i]][name] = value
+
+    # -----------------------------------------------------------------
+
+    def get_model_parameters_unnamed_individuals(self):
 
         """
         This function ...

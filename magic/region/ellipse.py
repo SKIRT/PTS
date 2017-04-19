@@ -213,6 +213,42 @@ class EllipseRegion(Region):
         self.radius /= value
         return self
 
+    # -----------------------------------------------------------------
+
+    def __truediv__(self, value):
+
+        """
+        This function ...
+        :param value: 
+        :return: 
+        """
+
+        return self.__div__(value)
+
+    # -----------------------------------------------------------------
+
+    def __rtruediv__(self, value):
+
+        """
+        This function ...
+        :param value: 
+        :return: 
+        """
+
+        raise SyntaxError("You cannot divide by a region")
+
+    # -----------------------------------------------------------------
+
+    def __itruediv__(self, value):
+
+        """
+        This function ...
+        :param value: 
+        :return: 
+        """
+
+        return self.__idiv__(value)
+
 # -----------------------------------------------------------------
 
 class PixelEllipseRegion(EllipseRegion, PixelRegion):

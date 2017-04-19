@@ -53,7 +53,8 @@ class ModelGenerator(FittingComponent):
         self.ranges = OrderedDict()
 
         # The dictionary with the list of the model parameters
-        self.parameters = defaultdict(list)
+        #self.parameters = defaultdict(list)
+        self.parameters = defaultdict(dict)
 
         # The parameter value distributions
         self.distributions = dict()

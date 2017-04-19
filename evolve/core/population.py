@@ -754,6 +754,9 @@ class NamedPopulation(PopulationBase):
         pop.statted = False
         pop.stats = Statistics()
 
+        # Set the state of the name iterator
+        pop.name_iterator = population.name_iterator
+
         # Return the population
         return pop
 

@@ -45,7 +45,7 @@ default_elitism = True
 default_nelite_individuals = 1
 default_scaling_method = "linear"
 default_selector_method = "rank"
-default_named_individuals = False
+#default_named_individuals = False
 
 # -----------------------------------------------------------------
 
@@ -63,7 +63,7 @@ genetic_definition.add_optional("selector_method", "string", "selector method", 
 
 # Flags
 genetic_definition.add_flag("elitism", "enable elitism", default_elitism)
-genetic_definition.add_flag("named_individuals", "name individuals", default_named_individuals)
+#genetic_definition.add_flag("named_individuals", "name individuals", default_named_individuals)
 
 # Advanced
 genetic_definition.add_optional("nelite_individuals", "positive_integer", "number of individuals to take as elite", default_nelite_individuals)

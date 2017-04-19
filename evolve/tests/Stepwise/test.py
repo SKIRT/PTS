@@ -1106,12 +1106,6 @@ class StepWiseTest(TestImplementation):
         # Inform the user
         log.info("Filling the individuals and parameters tables ...")
 
-        # Loop over the different parameter values
-        #for i in range(self.config.nindividuals):
-
-            # Get the parameter values as a dictionary
-            #parameter_values = get_parameter_values_for_individual(self.parameters, i)
-
         counter = 0
 
         # Loop over the individual names
@@ -1125,6 +1119,7 @@ class StepWiseTest(TestImplementation):
 
             # Debugging
             log.debug("Adding an entry to the individuals table with:")
+            log.debug("")
             log.debug(" - Simulation name: " + simulation_name)
             log.debug(" - Individual_name: " + name)
             log.debug("")
@@ -1134,6 +1129,7 @@ class StepWiseTest(TestImplementation):
 
             # Debugging
             log.debug("Adding entry to the parameters table with:")
+            log.debug("")
             log.debug(" - Simulation name: " + simulation_name)
             for label in parameter_values: log.debug(" - " + label + ": " + stringify.stringify_not_list(parameter_values[label])[1])
             log.debug("")
@@ -1155,9 +1151,6 @@ class StepWiseTest(TestImplementation):
 
         # Inform the user
         log.info("Evaluating the generation ...")
-
-        # Loop over the different parameter values
-        #for i in range(self.config.nindividuals):
 
         # Loop over the individuals
         for name in self.individual_names:

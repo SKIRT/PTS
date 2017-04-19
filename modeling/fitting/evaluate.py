@@ -102,6 +102,37 @@ def get_scalar_parameter_values(genome, fitting_run):
 
 # -----------------------------------------------------------------
 
+def get_parameter_values_for_named_individual(parameters, name, fitting_run):
+
+    """
+    This function ...
+    :param parameters: 
+    :param name:
+    :param fitting_run:
+    :return: 
+    """
+
+    # Set the parameter values as a dictionary for this individual model
+    parameter_values = dict()
+    for label in fitting_run.free_parameter_labels:
+
+        # Get the value for this model from the generator
+        value = parameters[label][name]
+
+        # Get unit (if any)
+        unit = get_parameter_unit(label, fitting_run)
+
+        # Set value with unit
+        if unit is not None: parameter_values[label] = value * unit
+
+        # Set dimensionless value
+        else: parameter_values[label] = value
+
+    # Return the parameter values
+    return parameter_values
+
+# -----------------------------------------------------------------
+
 def get_parameter_values(genome, fitting_run):
 
     """
@@ -137,10 +168,26 @@ def get_parameter_values(genome, fitting_run):
 
 # -----------------------------------------------------------------
 
-def prepare_simulation(ski, parameter_values, object_name, simulation_input, generation_path):
+def generate_simulation_name():
+
+    """
+    THis function ...
+    :return: 
+    """
+
+    # Create a unique name for this combination of parameter values
+    simulation_name = time.unique_name(precision="micro")
+
+    # Return the name
+    return simulation_name
+
+# -----------------------------------------------------------------
+
+def prepare_simulation(simulation_name, ski, parameter_values, object_name, simulation_input, generation_path):
 
     """
     This function ...
+    :param simulation_name:
     :param ski:
     :param parameter_values:
     :param object_name:
@@ -152,9 +199,6 @@ def prepare_simulation(ski, parameter_values, object_name, simulation_input, gen
     # Debugging
     log.debug("Adjusting ski file for the following model parameters:")
     for label in parameter_values: log.debug(" - " + label + ": " + stringify_not_list(parameter_values[label])[1])
-
-    # Create a unique name for this combination of parameter values
-    simulation_name = time.unique_name()
 
     # Set the parameter values in the ski file template
     ski.set_labeled_values(parameter_values)
@@ -191,9 +235,12 @@ def evaluate(genome, **kwargs):
     # Get the parameter values
     parameter_values = get_parameter_values(genome, fitting_run)
 
+    # Generate simulation name
+    simulation_name = generate_simulation_name()
+
     # Prepare simulation directories, ski file, and return the simulation definition
-    definition = prepare_simulation(ski_template, parameter_values, object_name, input_paths, generation.path)
-    simulation_name = definition.name
+    definition = prepare_simulation(simulation_name, ski_template, parameter_values, object_name, input_paths, generation.path)
+    #simulation_name = definition.name
 
     # Debugging
     log.debug("Launching a simulation to the queue with:")
