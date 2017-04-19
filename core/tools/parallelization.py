@@ -28,7 +28,7 @@ try:
    from multiprocessing import cpu_count, Pool
    CPU_COUNT = cpu_count()
    MULTI_PROCESSING = True if CPU_COUNT > 1 else False
-   log.debug("You have %d CPU cores and multiprocessing support is present")
+   log.debug("You have " + str(CPU_COUNT) + " CPU cores and multiprocessing support is present")
 except ImportError:
     cpu_count = Pool = None
     CPU_COUNT = None

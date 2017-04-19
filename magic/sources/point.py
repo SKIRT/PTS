@@ -571,7 +571,7 @@ class PointSourceFinder(Configurable):
                 if source.fwhm > upper or source.fwhm < lower: source.model = None
 
         # Inform the user
-        log.debug("Found a model for {0} out of {1} stars with a detection ({2:.2f}%)".format(self.have_model, self.have_detection, self.have_model/self.have_detection*100.0))
+        if self.have_detection > 0: log.debug("Found a model for {0} out of {1} stars with a detection ({2:.2f}%)".format(self.have_model, self.have_detection, self.have_model/self.have_detection*100.0))
 
     # -----------------------------------------------------------------
 
@@ -738,16 +738,16 @@ class PointSourceFinder(Configurable):
 
             # If a model was not found for this star, skip it unless the remove_if_not_fitted flag is enabled
             if not source.has_model and not self.config.saturation.remove_if_not_fitted: continue
-            if star.has_model: assert star.has_source
+            if source.has_model: assert source.has_detection
 
             # Note: DustPedia stars will always get a 'source' during removal (with star.source_at_sigma_level) so star.has_source will already pass
 
             # If a source was not found for this star, skip it unless the remove_if_undetected flag is enabled
-            if not star.has_source and not self.config.saturation.remove_if_undetected: continue
+            if not source.has_detection and not self.config.saturation.remove_if_undetected: continue
 
             # Find a saturation source and remove it from the frame
-            star.find_saturation(self.frame, self.config.saturation, default_fwhm, star_mask)
-            success += star.has_saturation
+            source.find_saturation(self.frame, self.config.saturation, default_fwhm, star_mask)
+            success += source.has_saturation
 
         # Inform the user
         log.debug("Found saturation in " + str(success) + " out of " + str(self.have_detection) + " sources with detection ({0:.2f}%)".format(success / self.have_detection * 100.0))

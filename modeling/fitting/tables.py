@@ -693,6 +693,7 @@ class IndividualsTable(SmartTable):
         """
 
         index = tables.find_index(self, individual_name, "Individual name")
+        if index is None: raise ValueError("Individual '" + individual_name + "' not found in this table")
         return self["Simulation name"][index]
 
     # -----------------------------------------------------------------

@@ -280,9 +280,11 @@ class StepWiseOptimizer(Optimizer):
         :return:
         """
 
+        # Inform the user
+        log.info("Finishing ...")
+
         # Set the database adapter again
-        self.database.open(self.engine)
-        self.engine.setDBAdapter(self.database)
+        self.set_engine_database_and_statistics()
 
         # Set the scores from the previous generation
         self.set_scores()

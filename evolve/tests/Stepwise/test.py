@@ -158,6 +158,14 @@ class StepWiseTest(TestImplementation):
         #self.parameters = defaultdict(list)
         self.parameters = defaultdict(dict)
 
+        ## END
+
+        # The final population
+        self.population = None
+
+        # The best individual
+        self.best = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -359,8 +367,45 @@ class StepWiseTest(TestImplementation):
         # Do the SED fitting step
         self.score()
 
+        # Set the scores to the optimizer
+        self.finish_optimizer()
+
         # Success
         if not has_unfinished: log.success("Succesfully evaluated all generations")
+
+    # -----------------------------------------------------------------
+
+    def finish_optimizer(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Finishing the optimizer ...")
+
+        # Load the optimizer
+        self.load_optimizer()
+
+        # Set settings
+        self.set_optimizer_settings()
+
+        # Set finish flag
+        self.optimizer.config.finish = True
+
+        # Run the optimizer
+        self.run_optimizer()
+
+        # Set the population
+        self.population = self.optimizer.population
+
+        # Get the best individual
+        self.best = self.optimizer.best
+
+        # Debugging
+        log.debug("Best individual:")
+        if log.is_debug(): print(self.best)
 
     # -----------------------------------------------------------------
 
@@ -1569,27 +1614,24 @@ class StepWiseTest(TestImplementation):
             # Determine the generation name
             generation_name = self.get_generation_name(index)
 
-            # Load the parameters table
-            #parameters = self.parameters_table_for_generation(generation_name)
-
             # Load the scores table
             scores_table = self.scores_table_for_generation(generation_name)
-
-            # Sort scores
-            #scores_table.sort_as(parameters.simulation_names)
-
-            # Get individual names and scores
-            #individual_names = scores_table.individual_names
-            #scores = scores_table.scores
 
             # Load the individuals table
             individuals_table = self.individuals_table_for_generation(generation_name)
 
             # Get the scores from the database
-            scores_database = get_scores_named_individuals(self.database_path, run_name, index)
+            database_index = index + 1
+            scores_database = get_scores_named_individuals(self.database_path, run_name, database_index)
+
+            # Keep track of the number of mismatches
+            mismatches = 0
 
             # Loop over the indnividual names
             for name in scores_database:
+
+                # Get the score from the database
+                score_database = scores_database[name]
 
                 # Get the simulation name
                 simulation_name = individuals_table.get_simulation_name(name)
@@ -1597,7 +1639,13 @@ class StepWiseTest(TestImplementation):
                 # Get the score
                 score = scores_table.score_for(simulation_name)
 
-                print(scores_database[name], score)
+                # Check if equal
+                equal = np.isclose(score, score_database)
+                if not equal: mismatches += 1
+
+            # Report
+            if mismatches == 0: log.success(generation_name + ": OK")
+            else: log.error(generation_name + ": " + str(mismatches) + " mismatches")
 
     # -----------------------------------------------------------------
 
