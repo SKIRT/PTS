@@ -1028,8 +1028,10 @@ class GeneticEngine(object):
             sister.mutate(**mutator_kwargs)
             brother.mutate(**mutator_kwargs)
 
-            new_population.internalPop.append(sister)
-            new_population.internalPop.append(brother)
+            #new_population.internalPop.append(sister)
+            #new_population.internalPop.append(brother)
+            new_population.append(sister)
+            new_population.append(brother)
 
         if len(self.internalPop) % 2 != 0:
 
@@ -1045,7 +1047,8 @@ class GeneticEngine(object):
                 #sister.mutate(pmut=self.pMutation, ga_engine=self)
                 sister.mutate(**mutator_kwargs)
 
-            new_population.internalPop.append(sister)
+            #new_population.internalPop.append(sister)
+            new_population.append(sister)
 
         # Set the new population
         self.new_population = new_population

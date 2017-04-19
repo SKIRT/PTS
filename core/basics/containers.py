@@ -176,8 +176,9 @@ class KeyList(object):
         else: key_function = lambda x: key(x[1])
 
         # Create cmp function
-        if cmp is None: cmp_function = None
-        else: cmp_function = lambda x,y: cmp_function(x[1], y[1]) # cmp_function(a,b)
+        #if cmp is None: cmp_function = None
+        #else: cmp_function = lambda x,y: cmp_function(x[1], y[1]) # cmp_function(a,b)
+        cmp_function = cmp
 
         # Sort the contents
         self.contents = OrderedDict(sorted(self.contents.iteritems(), cmp=cmp_function, key=key_function, reverse=reverse))

@@ -208,6 +208,62 @@ def iterate_alphabet_strings():
 
 # -----------------------------------------------------------------
 
+class alphabet_strings_iterator(object):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, dimension=3):
+
+        """
+        This function ...
+        """
+
+        self.state = [0,0,-1]
+
+    # -----------------------------------------------------------------
+
+    def increment_state(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if self.state[-1] == 25:
+
+            self.state[-1] = 0
+            for index in reversed(range(len(self.state)-1)):
+
+                if self.state[index] == 25:
+                    self.state[index] = 0
+                    continue
+                else:
+                    self.state[index] += 1
+                    break
+
+            else: raise StopIteration
+
+        else: self.state[-1] += 1
+
+    # -----------------------------------------------------------------
+
+    def next(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Increment state
+        self.increment_state()
+
+        # Return string
+        return "".join([ascii_lowercase[index] for index in self.state])
+
+# -----------------------------------------------------------------
+
 def split_except_within_single_quotes(text):
 
     """

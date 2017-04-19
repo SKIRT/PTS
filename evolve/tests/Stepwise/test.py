@@ -30,7 +30,7 @@ from pts.core.tools import stringify
 from pts.modeling.fitting.tables import ModelProbabilitiesTable
 from pts.modeling.fitting.tables import BestParametersTable
 from pts.core.tools import time, tables
-from pts.evolve.analyse.database import load_database, get_scores
+from pts.evolve.analyse.database import load_database, get_scores, get_scores_named_individuals
 from pts.evolve.analyse.statistics import load_statistics
 from pts.core.tools import sequences
 from pts.modeling.fitting.tables import IndividualsTable
@@ -388,6 +388,9 @@ class StepWiseTest(TestImplementation):
 
         # 5. Add the generation to the table (after generate because ranges have to be set)
         self.add_generation()
+
+        # Fill individuals and parameters tables
+        self.fill_individuals_and_parameters_tables()
 
         # 6. Evaluate
         self.evaluate()
@@ -993,7 +996,7 @@ class StepWiseTest(TestImplementation):
         :return: 
         """
 
-        return IndividualsTable.from_file(self.individuals_table_for_generation(generation_name))
+        return IndividualsTable.from_file(self.individuals_table_path_for_generation(generation_name))
 
     # -----------------------------------------------------------------
 
@@ -1133,15 +1136,10 @@ class StepWiseTest(TestImplementation):
             log.debug("Adding entry to the parameters table with:")
             log.debug(" - Simulation name: " + simulation_name)
             for label in parameter_values: log.debug(" - " + label + ": " + stringify.stringify_not_list(parameter_values[label])[1])
+            log.debug("")
 
             # Add an entry to the parameters table
             self.parameters_table.add_entry(simulation_name, parameter_values)
-
-            # Find the index in the table for this generation
-            index = tables.find_index(self.generations_table, self.generation.name, "Generation name")
-
-            # Get the number of simulations for this generation
-            nsimulations = self.generations_table["Number of simulations"][index]
 
             # Increment counter
             counter += 1
@@ -1571,6 +1569,42 @@ class StepWiseTest(TestImplementation):
 
         # Inform the user
         log.info("Checking the database ...")
+
+        # Loop over the generations
+        for index in range(self.config.ngenerations):
+
+            # Determine the generation name
+            generation_name = self.get_generation_name(index)
+
+            # Load the parameters table
+            #parameters = self.parameters_table_for_generation(generation_name)
+
+            # Load the scores table
+            scores_table = self.scores_table_for_generation(generation_name)
+
+            # Sort scores
+            #scores_table.sort_as(parameters.simulation_names)
+
+            # Get individual names and scores
+            #individual_names = scores_table.individual_names
+            #scores = scores_table.scores
+
+            # Load the individuals table
+            individuals_table = self.individuals_table_for_generation(generation_name)
+
+            # Get the scores from the database
+            scores_database = get_scores_named_individuals(self.database_path, run_name, index)
+
+            # Loop over the indnividual names
+            for name in scores_database:
+
+                # Get the simulation name
+                simulation_name = individuals_table.get_simulation_name(name)
+
+                # Get the score
+                score = scores_table.score_for(simulation_name)
+
+                print(scores_database[name], score)
 
     # -----------------------------------------------------------------
 

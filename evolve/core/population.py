@@ -100,7 +100,7 @@ class PopulationBase(object):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, genome):
+    def __init__(self, genome=None):
 
         """
         The constructor ...:
@@ -108,7 +108,7 @@ class PopulationBase(object):
         """
 
         # Debugging
-        log.debug("New population instance, %s class genomes", genome.__class__.__name__)
+        #log.debug("New population instance, %s class genomes", genome.__class__.__name__)
 
         # Set the genome
         self.oneSelfGenome = genome
@@ -678,6 +678,17 @@ class PopulationBase(object):
     # -----------------------------------------------------------------
 
     @abstractmethod
+    def append(self, genome):
+
+        """
+        This function ...
+        :param genome: 
+        :return: 
+        """
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
     def __repr__(self):
 
         """
@@ -695,7 +706,7 @@ class NamedPopulation(PopulationBase):
     The NamedPopulation class: represents a population where each individual has a name
     """
 
-    def __init__(self, genome):
+    def __init__(self, genome=None):
 
         """
         This function ...
@@ -708,6 +719,9 @@ class NamedPopulation(PopulationBase):
         # The containers of individuals
         self.internalPop = NamedList()
         self.internalPopRaw = NamedList()
+
+        # Create name iterator
+        self.name_iterator = strings.alphabet_strings_iterator()
 
     # -----------------------------------------------------------------
 
@@ -835,23 +849,38 @@ class NamedPopulation(PopulationBase):
         # Set minimax attribute
         self.minimax = args["minimax"]
 
-        # Create string generator
-        generator = strings.iterate_alphabet_strings()
-
         # Generate individuals
         for _ in range(self.popSize):
 
             # Generate name
-            name = generator.next()
+            name = self.name_iterator.next()
 
             # Generate genome
             genome = self.oneSelfGenome.clone()
 
             # Add to the population
-            self.internalPop.append(name, genome)
+            self.append(genome, name=name)
 
         # Clear all flags
         self.clearFlags()
+
+    # -----------------------------------------------------------------
+
+    def append(self, genome, name=None):
+
+        """
+        This function ...
+        :param genome: 
+        :param name:
+        :return: 
+        """
+
+        # Get the unique name for this individual
+        if name is None: name = self.name_iterator.next()
+        elif name in self.names: raise ValueError("Already an individual with this name")
+
+        # Add to the internal population
+        self.internalPop.append(name, genome)
 
     # -----------------------------------------------------------------
 
@@ -923,7 +952,7 @@ class Population(PopulationBase):
 
     """
 
-    def __init__(self, genome):
+    def __init__(self, genome=None):
 
         """
         The constructor ...
@@ -1034,6 +1063,18 @@ class Population(PopulationBase):
         self.minimax = args["minimax"]
         self.internalPop = [self.oneSelfGenome.clone() for i in xrange(self.popSize)]
         self.clearFlags()
+
+    # -----------------------------------------------------------------
+
+    def append(self, genome):
+
+        """
+        This function ...
+        :param genome: 
+        :return: 
+        """
+
+        self.internalPop.append(genome)
 
     # -----------------------------------------------------------------
 

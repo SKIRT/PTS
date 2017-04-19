@@ -795,7 +795,9 @@ class ParametersTable(SmartTable):
 
         values = dict()
 
+        # Find index of row corresponding with the simulation
         index = tables.find_index(self, simulation_name, "Simulation name")
+        if index is None: raise ValueError("Simulation not found in the table")
 
         for name in self.colnames:
             #print(self[name], type(self[name]))

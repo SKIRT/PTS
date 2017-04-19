@@ -94,6 +94,35 @@ def _get_individuals(path, run_id, generation, individual_range=None):
 
 # -----------------------------------------------------------------
 
+def get_scores_named_individuals(path, run_id, generation):
+
+    """
+    This function ...
+    :param path: 
+    :param run_id: 
+    :param generation: 
+    :return: 
+    """
+
+    scores = dict()
+
+    # Loop over the individuals
+    for it in _get_individuals(path, run_id, generation):
+
+        # Get name
+        name = it["individual"]
+
+        # Get score
+        raw = it["raw"]
+
+        # Add the score
+        scores[name] = raw
+
+    # Return the scores dictionary
+    return scores
+
+# -----------------------------------------------------------------
+
 def get_scores(path, run_id, generation):
 
     """
