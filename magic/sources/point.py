@@ -1135,7 +1135,7 @@ class PointSourceFinder(Configurable):
         :return: 
         """
 
-        return [value for value in self.fwhm_pix if value is not None]
+        return [value for value in self.fwhms_pix if value is not None]
 
     # -----------------------------------------------------------------
 

@@ -757,6 +757,30 @@ class NamedPopulation(PopulationBase):
 
     # -----------------------------------------------------------------
 
+    @property
+    def names(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.internalPop.names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def items(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.internalPop.items
+
+    # -----------------------------------------------------------------
+
     def __setitem__(self, name, value):
 
         """

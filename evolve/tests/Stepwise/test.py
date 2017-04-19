@@ -12,8 +12,8 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 from collections import defaultdict
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.mlab as mlab
+#from mpl_toolkits.mplot3d import Axes3D
+#import matplotlib.mlab as mlab
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
@@ -33,6 +33,7 @@ from pts.core.tools import time, tables
 from pts.evolve.analyse.database import load_database, get_scores
 from pts.evolve.analyse.statistics import load_statistics
 from pts.core.tools import sequences
+from pts.modeling.fitting.tables import IndividualsTable
 
 # -----------------------------------------------------------------
 
@@ -130,14 +131,21 @@ class StepWiseTest(TestImplementation):
 
         ## Per generation
 
+        # The individual names
+        self.individual_names = None
+
         # The scores table
         self.scores_table = None
+
+        # The individuals table
+        self.individuals_table = None
 
         # The parameters table
         self.parameters_table = None
 
         # Paths
         self.generation_path = None
+        self.individuals_table_path = None
         self.parameters_table_path = None
         self.scores_table_path = None
 
@@ -147,7 +155,8 @@ class StepWiseTest(TestImplementation):
         self.prob_generations_table_paths = dict()
 
         # The dictionary with the list of the model parameters
-        self.parameters = defaultdict(list)
+        #self.parameters = defaultdict(list)
+        self.parameters = defaultdict(dict)
 
     # -----------------------------------------------------------------
 
@@ -165,13 +174,13 @@ class StepWiseTest(TestImplementation):
         # 2. Optimize
         self.optimize()
 
-        # Writing
+        # 3. Writing
         self.write()
 
-        # Plotting
+        # 4. Plotting
         if self.config.plot: self.plot()
 
-        # Test
+        # 5. Test
         self.test()
 
     # -----------------------------------------------------------------
@@ -219,13 +228,13 @@ class StepWiseTest(TestImplementation):
         # Inform the user
         log.info("Optimizing ...")
 
-        # Start: launch the initial generation
+        # 1. Start: launch the initial generation
         self.start()
 
-        # Advance: launch generations 0 -> (n-1)
+        # 2. Advance: launch generations 0 -> (n-1)
         repeat(self.advance, self.config.ngenerations)
 
-        # Finish
+        # 3. Finish
         self.finish()
 
     # -----------------------------------------------------------------
@@ -307,8 +316,6 @@ class StepWiseTest(TestImplementation):
         # Inform the user
         log.info("Advancing the fitting with a new generation ...")
 
-        #print(self.generations_table)
-
         # Check whether there is a generation preceeding this one
         if self.generations_table.last_generation_name is None: raise RuntimeError("Preceeding generation cannot be found")
 
@@ -379,13 +386,13 @@ class StepWiseTest(TestImplementation):
         # 4. Generate the parameters
         self.generate()
 
-        # Add the generation to the table (after generate because ranges have to be set)
+        # 5. Add the generation to the table (after generate because ranges have to be set)
         self.add_generation()
 
-        # 5. Evaluate
+        # 6. Evaluate
         self.evaluate()
 
-        # 6. Write exploration output
+        # 7. Write exploration output
         self.write_exploration()
 
     # -----------------------------------------------------------------
@@ -415,13 +422,20 @@ class StepWiseTest(TestImplementation):
         # Set the generation info to None
         self.generation = None
 
+        # Set the individual names list to None
+        self.individual_names = None
+
         # Set paths to None
         self.generation_path = None
+        self.individuals_table_path = None
         self.parameters_table_path = None
         self.scores_table_path = None
 
         # Parameters table
         self.parameters_table = None
+
+        # Individuals table
+        self.individuals_table = None
 
         # Scores table
         self.scores_table = None
@@ -433,7 +447,8 @@ class StepWiseTest(TestImplementation):
         self.prob_generations_table_paths = dict()
 
         # The dictionary with the list of the model parameters
-        self.parameters = defaultdict(list)
+        #self.parameters = defaultdict(list)
+        self.parameters = defaultdict(dict)
 
     # -----------------------------------------------------------------
 
@@ -514,6 +529,18 @@ class StepWiseTest(TestImplementation):
 
     # -----------------------------------------------------------------
 
+    def individuals_table_path_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name: 
+        :return: 
+        """
+
+        return fs.join(self.path_for_generation(generation_name), "individuals.dat")
+
+    # -----------------------------------------------------------------
+
     def parameters_table_path_for_generation(self, generation_name):
 
         """
@@ -553,8 +580,13 @@ class StepWiseTest(TestImplementation):
         fs.create_directory(self.generation_path)
 
         # Set paths
+        self.individuals_table_path = self.individuals_table_path_for_generation(self.generation.name)
         self.parameters_table_path = self.parameters_table_path_for_generation(self.generation.name)
         self.scores_table_path = self.scores_table_path_for_generation(self.generation.name)
+
+        # Initialize the individuals table
+        self.individuals_table = IndividualsTable()
+        self.individuals_table.saveto(self.individuals_table_path)
 
         # Initialize the parameters table
         self.parameters_table = ParametersTable(parameters=free_parameter_labels, units=parameter_units)
@@ -576,16 +608,16 @@ class StepWiseTest(TestImplementation):
         # Inform the user
         log.info("Generating the parameter values ...")
 
-        # Reset
+        # 1. Reset
         self.reset_optimizer()
 
-        # Setup
+        # 2. Setup
         self.set_optimizer()
 
-        # Set parameters
+        # 3. Set parameters
         self.set_parameters()
 
-        # Run the optimizer
+        # 4. Run the optimizer
         self.run_optimizer()
 
     # -----------------------------------------------------------------
@@ -953,6 +985,18 @@ class StepWiseTest(TestImplementation):
 
     # -----------------------------------------------------------------
 
+    def individuals_table_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name: 
+        :return: 
+        """
+
+        return IndividualsTable.from_file(self.individuals_table_for_generation(generation_name))
+
+    # -----------------------------------------------------------------
+
     def parameters_table_for_generation(self, generation_name):
 
         """
@@ -1025,7 +1069,16 @@ class StepWiseTest(TestImplementation):
         log.info("Getting the model parameters ...")
 
         # Loop over the individuals of the population
-        for individual in self.optimizer.population:
+        #for individual in self.optimizer.population:
+
+        # Set the individual names
+        self.individual_names = self.optimizer.population.names
+
+        # Loop over the individual names
+        for name in self.individual_names:
+
+            # Get the individual
+            individual = self.optimizer.population[name]
 
             # Loop over all the genes (parameters)
             for i in range(len(individual)):
@@ -1034,7 +1087,64 @@ class StepWiseTest(TestImplementation):
                 value = individual[i]
 
                 # Add the parameter value to the dictionary
-                self.parameters[free_parameter_labels[i]].append(value)
+                #self.parameters[free_parameter_labels[i]].append(value)
+
+                self.parameters[free_parameter_labels[i]][name] = value
+
+    # -----------------------------------------------------------------
+
+    def fill_individuals_and_parameters_tables(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Filling the individuals and parameters tables ...")
+
+        # Loop over the different parameter values
+        #for i in range(self.config.nindividuals):
+
+            # Get the parameter values as a dictionary
+            #parameter_values = get_parameter_values_for_individual(self.parameters, i)
+
+        counter = 0
+
+        # Loop over the individual names
+        for name in self.individual_names:
+
+            # Get the parameter values
+            parameter_values = get_parameter_values_for_named_individual(self.parameters, name)
+
+            # Generate the 'simulation' name
+            simulation_name = "individual" + str(counter)
+
+            # Debugging
+            log.debug("Adding an entry to the individuals table with:")
+            log.debug(" - Simulation name: " + simulation_name)
+            log.debug(" - Individual_name: " + name)
+            log.debug("")
+
+            # Add entry
+            self.individuals_table.add_entry(simulation_name, name)
+
+            # Debugging
+            log.debug("Adding entry to the parameters table with:")
+            log.debug(" - Simulation name: " + simulation_name)
+            for label in parameter_values: log.debug(" - " + label + ": " + stringify.stringify_not_list(parameter_values[label])[1])
+
+            # Add an entry to the parameters table
+            self.parameters_table.add_entry(simulation_name, parameter_values)
+
+            # Find the index in the table for this generation
+            index = tables.find_index(self.generations_table, self.generation.name, "Generation name")
+
+            # Get the number of simulations for this generation
+            nsimulations = self.generations_table["Number of simulations"][index]
+
+            # Increment counter
+            counter += 1
 
     # -----------------------------------------------------------------
 
@@ -1049,25 +1159,13 @@ class StepWiseTest(TestImplementation):
         log.info("Evaluating the generation ...")
 
         # Loop over the different parameter values
-        for i in range(self.config.nindividuals):
+        #for i in range(self.config.nindividuals):
 
-            # Get the parameter values as a dictionary
-            parameter_values = get_parameter_values_for_individual(self.parameters, i)
+        # Loop over the individuals
+        for name in self.individual_names:
 
-            # Generate the individual name
-            #individual_name = "x" + repr(parameter_values["x"]) + "_y" + repr(parameter_values["y"])
-            individual_name = "individual" + str(i)
-
-            # Debugging
-            log.debug("Adding entry to the parameters table with:")
-            log.debug(" - Individual name: " + individual_name)
-            for label in parameter_values: log.debug(" - " + label + ": " + stringify.stringify_not_list(parameter_values[label])[1])
-
-            # Add an entry to the parameters table
-            self.parameters_table.add_entry(individual_name, parameter_values)
-
-            # Save the parameters table
-            #self.parameters_table.save()
+            # Determine the simulation name
+            simulation_name = self.individuals_table.get_simulation_name(name)
 
             # Find the index in the table for this generation
             index = tables.find_index(self.generations_table, self.generation.name, "Generation name")
@@ -1077,6 +1175,9 @@ class StepWiseTest(TestImplementation):
 
             # Inform the user
             log.info("Calculating the value ...")
+
+            # Get the parameter values
+            parameter_values = self.parameters_table.parameter_values_for_simulation(simulation_name)
 
             # Calculate the value
             value = eval_func_xy(parameter_values["x"], parameter_values["y"])
@@ -1088,16 +1189,13 @@ class StepWiseTest(TestImplementation):
             log.debug("The score for this individual is " + str(value))
 
             # Add entry
-            self.scores_table.add_entry(individual_name, value)
+            self.scores_table.add_entry(simulation_name, value)
 
             # Get the number of entries in the chi squared table
             nfinished_simulations = len(self.scores_table)
 
             # If this is the last simulation
             if nsimulations == nfinished_simulations + 1: self.generations_table.set_finishing_time(self.generation.name, time.timestamp())
-
-            # Save the table
-            #self.chi_squared_table.save()
 
     # -----------------------------------------------------------------
 
@@ -1111,32 +1209,29 @@ class StepWiseTest(TestImplementation):
         # Inform the user
         log.info("Writing after exploration step ...")
 
-        # Write generation
-        #self.write_generation()
+        # 1. Write individuals
+        self.write_individuals()
 
-        # Write parameters
+        # 2. Write parameters
         self.write_parameters()
 
-        # Write scores
+        # 3. Write scores
         self.write_scores()
 
     # -----------------------------------------------------------------
 
-    def write_generation(self):
+    def write_individuals(self):
 
         """
-        This function ...
-        :return:
+        THis function ...
+        :return: 
         """
 
         # Inform the user
-        log.info("Writing generation info ...")
+        log.info("Writing the individuals table ...")
 
-        # Add an entry to the generations table
-        #self.generations_table.add_entry(self.generation, self.ranges)
-
-        # Save the table
-        #self.generations_table.save()
+        # Save the individuals table
+        self.individuals_table.saveto(self.individuals_table_path)
 
     # -----------------------------------------------------------------
 
@@ -1209,19 +1304,6 @@ class StepWiseTest(TestImplementation):
 
         # 4. Calculate the probability distributions
         #self.create_distributions()
-
-    # -----------------------------------------------------------------
-
-    #@property
-    #def best_parameters_table(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        # Open the table and return it
-        #return BestParametersTable.from_file(self.best_parameters_table_path)
 
     # -----------------------------------------------------------------
 
@@ -1481,6 +1563,18 @@ class StepWiseTest(TestImplementation):
     # -----------------------------------------------------------------
 
     def check_database(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Checking the database ...")
+
+    # -----------------------------------------------------------------
+
+    def check_database_unnamed(self):
 
         """
         THis function ...
@@ -1801,6 +1895,36 @@ def has_unfinished_generations(generations_table):
     # Open the generations table
     table = generations_table
     return table.has_unfinished
+
+# -----------------------------------------------------------------
+
+def get_parameter_values_for_named_individual(parameters, name):
+
+    """
+    This function ...
+    :param parameters: 
+    :param name: 
+    :return: 
+    """
+
+    # Set the parameter values as a dictionary for this individual model
+    parameter_values = dict()
+    for label in free_parameter_labels:
+
+        # Get the value for this model from the generator
+        value = parameters[label][name]
+
+        # Get unit (if any)
+        unit = get_parameter_unit(label)
+
+        # Set value with unit
+        if unit is not None: parameter_values[label] = value * unit
+
+        # Set dimensionless value
+        else: parameter_values[label] = value
+
+    # Return the parameter values
+    return parameter_values
 
 # -----------------------------------------------------------------
 

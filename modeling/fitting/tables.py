@@ -649,6 +649,73 @@ class GenerationsTable(SmartTable):
 
 # -----------------------------------------------------------------
 
+class IndividualsTable(SmartTable):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        THe constructor ...
+        :param args: 
+        :param kwargs: 
+        """
+
+        # Call the constructor of the base class
+        super(IndividualsTable, self).__init__(*args, **kwargs)
+
+        # Add column info
+        self.add_column_info("Simulation name", str, None, "name of the simulation")
+        self.add_column_info("Individual name", str, None, "name of the individual")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["Simulation name"])
+
+    # -----------------------------------------------------------------
+
+    def get_simulation_name(self, individual_name):
+
+        """
+        This function ...
+        :param individual_name: 
+        :return: 
+        """
+
+        index = tables.find_index(self, individual_name, "Individual name")
+        return self["Simulation name"][index]
+
+    # -----------------------------------------------------------------
+
+    def add_entry(self, simulation_name, individual_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :param individual_name:
+        :return:
+        """
+
+        if len(self.colnames) == 0: self.setup()
+
+        # Set the values
+        values = [simulation_name, individual_name]
+
+        # Add a row to the table
+        self.add_row(values)
+
+# -----------------------------------------------------------------
+
 class ParametersTable(SmartTable):
 
     """

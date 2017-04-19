@@ -408,6 +408,9 @@ class DBSQLite(DataBaseAdapter):
 
       temp_stats = statistics.Statistics()
 
+      # Set named individuals flag
+      self.named_individuals = ga_engine.named_individuals
+
       # NEW
       self.createStructure(temp_stats)
 
@@ -480,7 +483,7 @@ class DBSQLite(DataBaseAdapter):
 
       """
       Create table using the Statistics class structure
-      :param stats: the statistics object
+      :param stats: the statistics object:
       """
 
       c = self.getCursor()
@@ -491,8 +494,12 @@ class DBSQLite(DataBaseAdapter):
       log.debug("Creating table %s: %s.", constants.CDefSQLiteDBTable, pstmt)
       c.execute(pstmt)
 
-      pstmt = """create table if not exists %s (identify text, generation integer, individual integer, fitness real, raw real)""" % (constants.CDefSQLiteDBTablePop)
+      # Create command
+      if self.named_individuals: pstmt = """create table if not exists %s (identify text, generation integer, individual text, fitness real, raw real)""" % (constants.CDefSQLiteDBTablePop)
+      else: pstmt = """create table if not exists %s (identify text, generation integer, individual integer, fitness real, raw real)""" % (constants.CDefSQLiteDBTablePop)
+
       log.debug("Creating table %s: %s.", constants.CDefSQLiteDBTablePop, pstmt)
+
       c.execute(pstmt)
       self.commit()
 
@@ -562,13 +569,21 @@ class DBSQLite(DataBaseAdapter):
 
       pstmt = "insert into %s values(?, ?, ?, ?, ?)" % (constants.CDefSQLiteDBTablePop,)
       tups = []
-      for i in xrange(len(population)):
-         ind = population[i]
-         tups.append((self.getIdentify(), generation, i, ind.fitness, ind.score))
+
+      if self.named_individuals:
+
+         for name in population.names:
+            ind = population[name]
+            tups.append((self.getIdentify(), generation, name, ind.fitness, ind.score))
+
+      else:
+
+         for i in xrange(len(population)):
+            ind = population[i]
+            tups.append((self.getIdentify(), generation, i, ind.fitness, ind.score))
 
       c.executemany(pstmt, tups)
-      if (generation % self.commitFreq == 0):
-         self.commit()
+      if (generation % self.commitFreq == 0): self.commit()
 
 # -----------------------------------------------------------------
 
@@ -622,13 +637,13 @@ class DBXMLRPC(DataBaseAdapter):
       return ret
 
    def open(self, ga_engine):
+
       """ Open the XML RPC Server proxy
-
       :param ga_engine: the GA Engine
-
       .. versionchanged:: 0.6
          The method now receives the *ga_engine* parameter.
       """
+
       if self.xmlrpclibmod is None:
          log.debug("Loding the xmlrpclib module...")
          self.xmlrpclibmod = utils.importSpecial("xmlrpclib")
@@ -637,13 +652,14 @@ class DBXMLRPC(DataBaseAdapter):
       self.proxy = self.xmlrpclibmod.ServerProxy(self.url, allow_none=True)
 
    def insert(self, ga_engine):
-      """ Calls the XML RPC procedure
 
+      """
+      Calls the XML RPC procedure
       :param ga_engine: the GA Engine
-
       .. versionchanged:: 0.6
          The method now receives the *ga_engine* parameter.
       """
+
       stats = ga_engine.getStatistics()
       generation = ga_engine.getCurrentGeneration()
       di = stats.internalDict.copy()
@@ -822,7 +838,8 @@ class DBMySQLAdapter(DataBaseAdapter):
 
    def open(self, ga_engine):
 
-      """ Open the database connection
+      """
+      Open the database connection
       :param ga_engine: the GA Engine
       .. versionchanged:: 0.6
          The method now receives the *ga_engine* parameter.
@@ -831,6 +848,9 @@ class DBMySQLAdapter(DataBaseAdapter):
       if self.mysqldbmod is None:
          log.debug("Loading MySQLdb module...")
          self.mysqldbmod = utils.importSpecial("MySQLdb")
+
+      # Set the named_individuals flag
+      self.named_individuals = ga_engine.named_individuals
 
       log.debug("Opening database, host=%s", self.host)
       self.connection = self.mysqldbmod.connect(host=self.host, user=self.user,
@@ -858,7 +878,9 @@ class DBMySQLAdapter(DataBaseAdapter):
 
    def close(self):
 
-      """ Close the database connection """
+      """
+      Close the database connection
+      """
 
       log.debug("Closing database ...")
 
@@ -882,7 +904,8 @@ class DBMySQLAdapter(DataBaseAdapter):
 
    def getCursor(self):
 
-      """ Return a cursor from the pool
+      """
+      Return a cursor from the pool
       :rtype: the cursor
       """
 
@@ -897,7 +920,8 @@ class DBMySQLAdapter(DataBaseAdapter):
 
    def createStructure(self, stats):
 
-      """ Create table using the Statistics class structure
+      """
+      Create table using the Statistics class structure
       :param stats: the statistics object
       """
 
@@ -909,8 +933,13 @@ class DBMySQLAdapter(DataBaseAdapter):
       log.debug("Creating table %s: %s", constants.CDefSQLiteDBTable, pstmt)
       c.execute(pstmt)
 
-      pstmt = """create table if not exists %s(identify VARCHAR(80), generation INTEGER,
-              individual INTEGER, fitness DOUBLE(14,6), raw DOUBLE(14,6))""" % (constants.CDefMySQLDBTablePop)
+      if self.named_individuals:
+         pstmt = """create table if not exists %s(identify VARCHAR(80), generation INTEGER,
+                           individual VARCHAR(80), fitness DOUBLE(14,6), raw DOUBLE(14,6))""" % (constants.CDefMySQLDBTablePop)
+      else:
+         pstmt = """create table if not exists %s(identify VARCHAR(80), generation INTEGER,
+                 individual INTEGER, fitness DOUBLE(14,6), raw DOUBLE(14,6))""" % (constants.CDefMySQLDBTablePop)
+
       log.debug("Creating table %s: %s", constants.CDefMySQLDBTablePop, pstmt)
       c.execute(pstmt)
       self.commit()
@@ -919,7 +948,9 @@ class DBMySQLAdapter(DataBaseAdapter):
 
    def resetTableIdentify(self):
 
-      """ Delete all records on the table with the same Identify """
+      """
+      Delete all records on the table with the same Identify
+      """
 
       c = self.getCursor()
 
@@ -977,12 +1008,17 @@ class DBMySQLAdapter(DataBaseAdapter):
       pstmt = "insert into " + constants.CDefMySQLDBTablePop + " values(%s, %s, %s, %s, %s)"
 
       tups = []
-      for i in xrange(len(population)):
-         ind = population[i]
-         tups.append((self.getIdentify(), generation, i, ind.fitness, ind.score))
+
+      if self.named_individuals:
+         for name in population.names:
+            ind = population[name]
+            tups.append((self.getIdentify(), generation, name, ind.fitness, ind.score))
+      else:
+         for i in xrange(len(population)):
+            ind = population[i]
+            tups.append((self.getIdentify(), generation, i, ind.fitness, ind.score))
 
       c.executemany(pstmt, tups)
-      if (generation % self.commitFreq == 0):
-         self.commit()
+      if (generation % self.commitFreq == 0): self.commit()
 
 # -----------------------------------------------------------------

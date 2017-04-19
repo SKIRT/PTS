@@ -245,8 +245,10 @@ class GeneticEngine(object):
         self.selector.set(constants.CDefGASelector)
         self.allSlots = (self.selector, self.stepCallback, self.terminationCriteria)
 
+        # The internal parameters
         self.internalParams = {}
 
+        # A counter that keeps track of which generation we are running
         self.currentGeneration = 0
 
         # Kwargs for the different functions
@@ -635,21 +637,6 @@ class GeneticEngine(object):
 
         # Add an adapter
         self.database_adapters.append(adapter)
-
-    # -----------------------------------------------------------------
-
-    #def setDBAdapter(self, dbadapter=None):
-
-     #   """
-     #   Sets the DB Adapter of the GA Engine
-     #   :param dbadapter: one of the :mod:`DBAdapters` classes instance
-     #   .. warning:: the use the of a DB Adapter can reduce the speed performance of the
-     #                Genetic Algorithm.
-     #   """#
-     #
-     #   if (dbadapter is not None) and (not isinstance(dbadapter, DataBaseAdapter)):
-     #       utils.raiseException("The DB Adapter must be a DataBaseAdapter subclass", TypeError)
-     #   self.dbAdapter = dbadapter
 
     # -----------------------------------------------------------------
 
