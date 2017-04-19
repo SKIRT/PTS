@@ -630,7 +630,7 @@ class Optimizer(Configurable):
         log.info("Initializing the genetic engine ...")
 
         # 1. Create the genetic engine
-        self.engine = GeneticEngine(self.initial_genome)
+        self.create_engine()
 
         # 2. Set options
         self.set_engine_options()
@@ -646,6 +646,21 @@ class Optimizer(Configurable):
 
         # 6. Set kwargs
         self.set_engine_kwargs(kwargs)
+
+    # -----------------------------------------------------------------
+
+    def create_engine(self):
+
+        """
+        THis function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Creating the genetic engine ...")
+
+        # Create the engine, passing the initial genome, and the 'named_individuals' flag
+        self.engine = GeneticEngine(self.initial_genome, named_individuals=self.config.named_individuals)
 
     # -----------------------------------------------------------------
 

@@ -205,6 +205,9 @@ class GeneticModelGenerator(ModelGenerator):
         # Set heterogeneous flag
         self.optimizer.config.heterogeneous = True
 
+        # Set named_individuals flag
+        self.optimizer.config.named_individuals = self.fitting_run.genetic_settings.named_individuals
+
     # -----------------------------------------------------------------
 
     def generate(self):

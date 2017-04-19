@@ -7,7 +7,6 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -16,7 +15,6 @@ mutation_methods = ["range", "gaussian", "binary"]
 min_or_max = ["minimize", "maximize"]
 
 scaling_methods = ["linear", "sigma_truncation", "power_law", "boltzmann", "exponential", "saturated"]
-
 selector_methods = ["rank", "uniform", "tournament", "tournament_alternative", "roulette_wheel"]
 
 # -----------------------------------------------------------------
@@ -56,8 +54,8 @@ definition.add_flag("show", "show results", True)
 definition.add_flag("write", "write results", True)
 definition.add_flag("plot", "plot results", False)
 definition.add_flag("finish", "finish the evolution: set the scores of the last generation but don't generate a new population", False)
-
 definition.add_flag("heterogeneous", "genomes use heterogeneous quantities (parameter minima and maxima - or centers and sigmas for gaussian initializers and mutators - must be specified as input to the 'run' function")
+definition.add_flag("named_individuals", "use named individuals", False)
 
 # Writing options
 definition.add_section("writing", "writing options")

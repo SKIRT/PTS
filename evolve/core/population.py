@@ -24,7 +24,7 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta, abstractproperty, abstractmethod
 from math import sqrt as math_sqrt
 from functools import partial
 
@@ -38,12 +38,14 @@ from pts.core.basics.containers import NamedList
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.tools.parallelization import MULTI_PROCESSING, Pool
+from ...core.tools import strings
 
 # -----------------------------------------------------------------
 
 def key_raw_score(individual):
 
-   """ A key function to return raw score
+   """
+   A key function to return raw score
    :param individual: the individual instance
    :rtype: the individual raw score
    .. note:: this function is used by the max()/min() python functions
@@ -55,7 +57,8 @@ def key_raw_score(individual):
 
 def key_fitness_score(individual):
 
-   """ A key function to return fitness score, used by max()/min()
+   """
+   A key function to return fitness score, used by max()/min()
    :param individual: the individual instance
    :rtype: the individual fitness score
    .. note:: this function is used by the max()/min() python functions
@@ -112,6 +115,7 @@ class PopulationBase(object):
 
         # The internal population representation
         self.internalPop = None
+        self.internalPopRaw = None
 
         self.internalParams = {}
         self.multiProcessing = (False, False, None)
@@ -177,6 +181,52 @@ class PopulationBase(object):
 
     # -----------------------------------------------------------------
 
+    @abstractproperty
+    def individuals(self):
+
+        """
+        THis function ...
+        :return: 
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def __iter__(self):
+
+        """
+        Returns the iterator of the population
+        """
+
+        return iter(self.internalPop)
+
+    # -----------------------------------------------------------------
+
+    def __getitem__(self, key):
+
+        """
+        Returns the specified individual from population
+        """
+
+        return self.internalPop[key]
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def __setitem__(self, key, value):
+
+        """
+        This function ...
+        :param key: 
+        :param value: 
+        :return: 
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
     def statistics(self):
 
         """
@@ -191,14 +241,16 @@ class PopulationBase(object):
         for ind in xrange(len_pop): raw_sum += self[ind].score
 
         # Set maximum, minimum and average
-        self.stats["rawMax"] = max(self, key=key_raw_score).score
-        self.stats["rawMin"] = min(self, key=key_raw_score).score
+        self.stats["rawMax"] = max(self.individuals, key=key_raw_score).score
+        self.stats["rawMin"] = min(self.individuals, key=key_raw_score).score
         self.stats["rawAve"] = raw_sum / float(len_pop)
 
         # Calculate the variance
         tmpvar = 0.0
-        for ind in xrange(len_pop):
-            s = self[ind].score - self.stats["rawAve"]
+        #for ind in xrange(len_pop):
+        for ind in self:
+            #s = self[ind].score - self.stats["rawAve"]
+            s = ind.score - self.stats["rawAve"]
             s *= s
             tmpvar += s
         tmpvar /= float((len(self) - 1))
@@ -212,6 +264,428 @@ class PopulationBase(object):
 
         # Set statted flag
         self.statted = True
+
+    # -----------------------------------------------------------------
+
+    def scale(self, **args):
+
+        """
+        Scale the population using the scaling method
+        :param args: this parameter is passed to the scale method
+        """
+
+        for it in self.scaleMethod.applyFunctions(self, **args): pass
+
+        fit_sum = 0
+        #for ind in xrange(len(self)): fit_sum += self[ind].fitness
+        for ind in self: fit_sum += ind.fitness
+
+        # Calculate max, min and average fitness
+        self.stats["fitMax"] = max(self.individuals, key=key_fitness_score).fitness
+        self.stats["fitMin"] = min(self.individuals, key=key_fitness_score).fitness
+        self.stats["fitAve"] = fit_sum / float(len(self))
+
+        # Set sorted flag to False
+        self.sorted = False
+
+    # -----------------------------------------------------------------
+
+    def printStats(self):
+
+        """
+        Print statistics of the current population
+        """
+
+        message = ""
+        if self.sortType == constants.sortType["scaled"]:
+         message = "Max/Min/Avg Fitness(Raw) [%(fitMax).2f(%(rawMax).2f)/%(fitMin).2f(%(rawMin).2f)/%(fitAve).2f(%(rawAve).2f)]" % self.stats
+        else:
+         message = "Max/Min/Avg Raw [%(rawMax).2f/%(rawMin).2f/%(rawAve).2f]" % self.stats
+        log.info(message)
+        print message
+        return message
+
+    # -----------------------------------------------------------------
+
+    def copy(self, pop):
+
+        """
+        Copy current population to 'pop'
+        :param pop: the destination population
+        .. warning:: this method do not copy the individuals, only the population logic
+        """
+
+        pop.popSize = self.popSize
+        pop.sortType = self.sortType
+        pop.minimax = self.minimax
+        pop.scaleMethod = self.scaleMethod
+        pop.internalParams = self.internalParams
+        pop.multiProcessing = self.multiProcessing
+
+    # -----------------------------------------------------------------
+
+    def getParam(self, key, nvl=None):
+
+        """
+        Gets an internal parameter
+        Example:
+         population.getParam("tournamentPool")
+         5
+        :param key: the key of param
+        :param nvl: if the key doesn't exist, the nvl will be returned
+        """
+
+        return self.internalParams.get(key, nvl)
+
+    # -----------------------------------------------------------------
+
+    def get_parameters(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.internalParams.copy()
+
+    # -----------------------------------------------------------------
+
+    def setParams(self, **args):
+
+        """
+        Sets an internal parameter
+        Example:
+         population.setParams(tournamentPool=5)
+        :param args: parameters to set
+        .. versionadded:: 0.6
+         The `setParams` method.
+        """
+
+        self.internalParams.update(args)
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def clear(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def clone(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def clone_population(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def sort(self):
+
+        """
+        Sort the population
+        """
+
+        # Already sorted?
+        if self.sorted: return
+
+        rev = (self.minimax == constants.minimaxType["maximize"])
+
+        if self.sortType == constants.sortType["raw"]: self.internalPop.sort(cmp=utils.cmp_individual_raw, reverse=rev)
+        else:
+
+            self.scale()
+            self.internalPop.sort(cmp=utils.cmp_individual_scaled, reverse=rev)
+            self.set_raw_from_internal()
+            self.internalPopRaw.sort(cmp=utils.cmp_individual_raw, reverse=rev)
+
+        # Set sorted flag
+        self.sorted = True
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def set_raw_from_internal(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def set_ranges(self, minima, maxima):
+
+        """
+        This function ...
+        :param minima:
+        :param maxima:
+        :return:
+        """
+
+        # Create dictionary
+        params = {"minima": minima, "maxima": maxima}
+
+        # Update the parameters 'minima' and 'maxima' for each individual
+        self.set_params_for_all_individuals(**params)
+
+    # -----------------------------------------------------------------
+
+    def setPopulationSize(self, size):
+
+        """
+        This function sets the population size
+        :param size: the population size
+        """
+
+        self.popSize = size
+
+    # -----------------------------------------------------------------
+
+    def setSortType(self, sort_type):
+
+        """ Sets the sort type
+        Example:
+         pop.setSortType(Consts.sortType["scaled"])
+        :param sort_type: the Sort Type
+        """
+
+        self.sortType = sort_type
+
+    # -----------------------------------------------------------------
+
+    def __findIndividual(self, individual, end):
+
+        """
+        This function ...
+        :param individual:
+        :param end:
+        :return:
+        """
+
+        for i in xrange(end):
+         if individual.compare(self.internalPop[i]) == 0:
+            return True
+
+    # -----------------------------------------------------------------
+
+    def set_params_for_all_individuals(self, **params):
+
+        """
+        This function ...
+        :param params
+        :return:
+        """
+
+        # Loop over all individuals in the internal population
+        for i in xrange(len(self.internalPop)):
+
+            # Set the parameters of this individual
+            curr = self.internalPop[i]
+            curr.setParams(**params)
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def create(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def initialize(self, **kwargs):
+
+        """
+        Initialize all individuals of population,
+        this calls the initialize() of individuals
+        :param kwargs: arguemnts passed to the initialize function of the individuals
+        """
+
+        # Inform the user
+        log.info("Initializing the population ...")
+
+        if self.oneSelfGenome.getParam("full_diversity", True) and hasattr(self.oneSelfGenome, "compare"):
+
+         for i in xrange(len(self.internalPop)):
+            curr = self.internalPop[i]
+            curr.initialize(**kwargs)
+            while self.__findIndividual(curr, i):
+               curr.initialize(**kwargs)
+
+        else:
+            for gen in self.internalPop: gen.initialize(**kwargs)
+
+        # Clear
+        self.clearFlags()
+
+    # -----------------------------------------------------------------
+
+    def bestFitness(self, index=0):
+
+        """
+        Return the best scaled fitness individual of population
+        :param index: the *index* best individual
+        :rtype: the individual
+        """
+
+        self.sort()
+        return self.internalPop[index]
+
+    # -----------------------------------------------------------------
+
+    def worstFitness(self):
+
+        """
+        Return the worst scaled fitness individual of the population
+        :rtype: the individual
+        """
+
+        self.sort()
+        return self.internalPop[-1]
+
+    # -----------------------------------------------------------------
+
+    def bestRaw(self, index=0):
+
+        """
+        Return the best raw score individual of population
+        :param index: the *index* best raw individual
+        :rtype: the individual
+        .. versionadded:: 0.6
+         The parameter `index`.
+        """
+
+        if self.sortType == constants.sortType["raw"]: return self.internalPop[index]
+        else:
+
+            self.sort()
+            return self.internalPopRaw[index]
+
+    # -----------------------------------------------------------------
+
+    def worstRaw(self):
+
+        """
+        Return the worst raw score individual of population
+        :rtype: the individual
+        .. versionadded:: 0.6
+         The parameter `index`.
+        """
+
+        if self.sortType == constants.sortType["raw"]: return self.internalPop[-1]
+        else:
+            self.sort()
+            return self.internalPopRaw[-1]
+
+    # -----------------------------------------------------------------
+
+    def evaluate(self, silent, **kwargs):
+
+        """
+        Evaluate all individuals in population, calls the evaluate() method of individuals
+        :param silent:
+        :param kwargs: this params are passed to the evaluation function
+        """
+
+        # Inform the user
+        if not silent: log.info("Evaluating the new population ...")
+
+        # We have multiprocessing
+        if self.multiProcessing[0] and MULTI_PROCESSING:
+
+            log.debug("Evaluating the population using the multiprocessing method")
+            proc_pool = Pool(processes=self.multiProcessing[2])
+
+            # Multiprocessing full_copy parameter
+            if self.multiProcessing[1]:
+
+                #results = proc_pool.map(multiprocessing_eval_full, self.internalPop)
+                results = proc_pool.map(partial(multiprocessing_eval_full, **kwargs), self.individuals)
+                proc_pool.close()
+                proc_pool.join()
+                for i in xrange(len(self)): self.internalPop[i] = results[i]
+
+            else:
+
+                #results = proc_pool.map(multiprocessing_eval, self.internalPop)
+                results = proc_pool.map(partial(multiprocessing_eval, **kwargs), self.individuals)
+                proc_pool.close()
+                proc_pool.join()
+                for individual, score in zip(self.individuals, results): individual.score = score
+
+        else: # No multiprocessing: basically just a loop over evaluate() of the individuals
+
+            # Evaluate each individual
+            for ind in self.individuals: ind.evaluate(**kwargs)
+
+        # Clear flags
+        self.clearFlags()
+
+    # -----------------------------------------------------------------
+
+    def setMultiProcessing(self, flag=True, full_copy=False, max_processes=None):
+
+        """
+        This function sets the flag to enable/disable the use of python multiprocessing module.
+        Use this option when you have more than one core on your CPU and when your
+        evaluation function is very slow.
+        The parameter "full_copy" defines where the individual data should be copied back
+        after the evaluation or not. This parameter is useful when you change the
+        individual in the evaluation function.
+
+        :param flag: True (default) or False
+        :param full_copy: True or False (default)
+        :param max_processes: None (default) or an integer value
+
+        .. warning:: Use this option only when your evaluation function is slow, se you
+                   will get a good tradeoff between the process communication speed and the
+                   parallel evaluation.
+
+        .. versionadded:: 0.6
+         The `setMultiProcessing` method.
+
+        """
+        self.multiProcessing = (flag, full_copy, max_processes)
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def __repr__(self):
+
+        """
+        THis function ...
+        :return: 
+        """
+
+        pass
 
 # -----------------------------------------------------------------
 
@@ -246,41 +720,63 @@ class NamedPopulation(PopulationBase):
         :return: 
         """
 
+        # Create new population
         pop = cls()
 
-        # Return the new population
+        # Set attributes
+        pop.oneSelfGenome = population.oneSelfGenome
+        pop.internalPop = NamedList()
+        pop.internalPopRaw = NamedList()
+        pop.popSize = population.popSize
+        pop.sortType = population.sortType
+        pop.sorted = False
+        pop.minimax = population.minimax
+        pop.scaleMethod = population.scaleMethod
+        pop.allSlots = [pop.scaleMethod]
+
+        pop.internalParams = population.internalParams
+        pop.multiProcessing = population.multiProcessing
+
+        pop.statted = False
+        pop.stats = Statistics()
+
+        # Return the population
         return pop
 
     # -----------------------------------------------------------------
 
-    def __getitem__(self, key):
+    @property
+    def individuals(self):
 
         """
-        Returns the specified individual from population
+        This function ...
+        :return: 
         """
 
-        return self.internalPop[key]
+        return self.internalPop.values
 
     # -----------------------------------------------------------------
 
-    def __iter__(self):
-
-        """
-        Returns the iterator of the population
-        """
-
-        return iter(self.internalPop)
-
-    # -----------------------------------------------------------------
-
-    def __setitem__(self, key, value):
+    def __setitem__(self, name, value):
 
         """
         Set an individual of population
         """
 
-        self.internalPop[key] = value
+        self.internalPop.replace(name, value)
         self.clearFlags()
+
+    # -----------------------------------------------------------------
+
+    def clone(self):
+
+        """
+        Return a brand-new cloned population
+        """
+
+        newpop = NamedPopulation(self.oneSelfGenome)
+        self.copy(newpop)
+        return newpop
 
     # -----------------------------------------------------------------
 
@@ -292,6 +788,77 @@ class NamedPopulation(PopulationBase):
         """
 
         return NamedPopulation.from_population(self)
+
+    # -----------------------------------------------------------------
+
+    def set_raw_from_internal(self):
+
+        """
+        THis function ...
+        :return: 
+        """
+
+        self.internalPopRaw = self.internalPop.copy()
+
+    # -----------------------------------------------------------------
+
+    def create(self, **args):
+
+        """
+        Clone the example genome to fill the population
+        """
+
+        # Set minimax attribute
+        self.minimax = args["minimax"]
+
+        # Create string generator
+        generator = strings.iterate_alphabet_strings()
+
+        # Generate individuals
+        for _ in range(self.popSize):
+
+            # Generate name
+            name = generator.next()
+
+            # Generate genome
+            genome = self.oneSelfGenome.clone()
+
+            # Add to the population
+            self.internalPop.append(name, genome)
+
+        # Clear all flags
+        self.clearFlags()
+
+    # -----------------------------------------------------------------
+
+    def clear(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        self.internalPop = NamedList()
+        self.internalPopRaw = NamedList()
+        self.clearFlags()
+
+    # -----------------------------------------------------------------
+
+    def __repr__(self):
+
+        """
+        Returns the string representation of the population
+        """
+
+        ret = "- NamedPopulation\n"
+        ret += "\tPopulation Size:\t %d\n" % (self.popSize,)
+        ret += "\tSort Type:\t\t %s\n" % (constants.sortType.keys()[constants.sortType.values().index(self.sortType)].capitalize(),)
+        ret += "\tMinimax Type:\t\t %s\n" % (constants.minimaxType.keys()[constants.minimaxType.values().index(self.minimax)].capitalize(),)
+        for slot in self.allSlots:
+         ret += "\t" + slot.__repr__()
+        ret += "\n"
+        ret += self.stats.__repr__()
+        return ret
 
 # -----------------------------------------------------------------
 
@@ -382,32 +949,6 @@ class Population(PopulationBase):
 
     # -----------------------------------------------------------------
 
-    def setMultiProcessing(self, flag=True, full_copy=False, max_processes=None):
-
-        """
-        This function sets the flag to enable/disable the use of python multiprocessing module.
-        Use this option when you have more than one core on your CPU and when your
-        evaluation function is very slow.
-        The parameter "full_copy" defines where the individual data should be copied back
-        after the evaluation or not. This parameter is useful when you change the
-        individual in the evaluation function.
-
-        :param flag: True (default) or False
-        :param full_copy: True or False (default)
-        :param max_processes: None (default) or an integer value
-
-        .. warning:: Use this option only when your evaluation function is slow, se you
-                   will get a good tradeoff between the process communication speed and the
-                   parallel evaluation.
-
-        .. versionadded:: 0.6
-         The `setMultiProcessing` method.
-
-        """
-        self.multiProcessing = (flag, full_copy, max_processes)
-
-    # -----------------------------------------------------------------
-
     def __repr__(self):
 
         """
@@ -426,23 +967,15 @@ class Population(PopulationBase):
 
     # -----------------------------------------------------------------
 
-    def __getitem__(self, key):
+    @property
+    def individuals(self):
 
         """
-        Returns the specified individual from population
+        This function ...
+        :return: 
         """
 
-        return self.internalPop[key]
-
-    # -----------------------------------------------------------------
-
-    def __iter__(self):
-
-        """
-        Returns the iterator of the population
-        """
-
-        return iter(self.internalPop)
+        return self.internalPop
 
     # -----------------------------------------------------------------
 
@@ -457,126 +990,14 @@ class Population(PopulationBase):
 
     # -----------------------------------------------------------------
 
-    def bestFitness(self, index=0):
-
-        """
-        Return the best scaled fitness individual of population
-        :param index: the *index* best individual
-        :rtype: the individual
-        """
-
-        self.sort()
-        return self.internalPop[index]
-
-    # -----------------------------------------------------------------
-
-    def worstFitness(self):
-
-        """
-        Return the worst scaled fitness individual of the population
-        :rtype: the individual
-        """
-
-        self.sort()
-        return self.internalPop[-1]
-
-    # -----------------------------------------------------------------
-
-    def bestRaw(self, index=0):
-
-        """
-        Return the best raw score individual of population
-        :param index: the *index* best raw individual
-        :rtype: the individual
-        .. versionadded:: 0.6
-         The parameter `index`.
-        """
-
-        if self.sortType == constants.sortType["raw"]: return self.internalPop[index]
-        else:
-
-            self.sort()
-            return self.internalPopRaw[index]
-
-    # -----------------------------------------------------------------
-
-    def worstRaw(self):
-
-        """
-        Return the worst raw score individual of population
-        :rtype: the individual
-        .. versionadded:: 0.6
-         The parameter `index`.
-        """
-
-        if self.sortType == constants.sortType["raw"]: return self.internalPop[-1]
-        else:
-            self.sort()
-            return self.internalPopRaw[-1]
-
-    # -----------------------------------------------------------------
-
-    def sort(self):
-
-        """
-        Sort the population
-        """
-
-        # Already sorted?
-        if self.sorted: return
-
-        rev = (self.minimax == constants.minimaxType["maximize"])
-
-        if self.sortType == constants.sortType["raw"]: self.internalPop.sort(cmp=utils.cmp_individual_raw, reverse=rev)
-        else:
-
-            self.scale()
-            self.internalPop.sort(cmp=utils.cmp_individual_scaled, reverse=rev)
-            self.internalPopRaw = self.internalPop[:]
-            self.internalPopRaw.sort(cmp=utils.cmp_individual_raw, reverse=rev)
-
-        # Set sorted flag
-        self.sorted = True
-
-    # -----------------------------------------------------------------
-
-    def set_ranges(self, minima, maxima):
+    def set_raw_from_internal(self):
 
         """
         This function ...
-        :param minima:
-        :param maxima:
-        :return:
+        :return: 
         """
 
-        # Create dictionary
-        params = {"minima": minima, "maxima": maxima}
-
-        # Update the parameters 'minima' and 'maxima' for each individual
-        self.set_params_for_all_individuals(**params)
-
-    # -----------------------------------------------------------------
-
-    def setPopulationSize(self, size):
-
-        """
-        This function sets the population size
-        :param size: the population size
-        """
-
-        self.popSize = size
-
-    # -----------------------------------------------------------------
-
-    def setSortType(self, sort_type):
-
-        """ Sets the sort type
-        Example:
-         pop.setSortType(Consts.sortType["scaled"])
-        :param sort_type: the Sort Type
-        """
-
-        self.sortType = sort_type
+        self.internalPopRaw = self.internalPop[:]
 
     # -----------------------------------------------------------------
 
@@ -589,207 +1010,6 @@ class Population(PopulationBase):
         self.minimax = args["minimax"]
         self.internalPop = [self.oneSelfGenome.clone() for i in xrange(self.popSize)]
         self.clearFlags()
-
-    # -----------------------------------------------------------------
-
-    def __findIndividual(self, individual, end):
-
-        """
-        This function ...
-        :param individual:
-        :param end:
-        :return:
-        """
-
-        for i in xrange(end):
-         if individual.compare(self.internalPop[i]) == 0:
-            return True
-
-    # -----------------------------------------------------------------
-
-    def set_params_for_all_individuals(self, **params):
-
-        """
-        This function ...
-        :param params
-        :return:
-        """
-
-        # Loop over all individuals in the internal population
-        for i in xrange(len(self.internalPop)):
-
-            # Set the parameters of this individual
-            curr = self.internalPop[i]
-            curr.setParams(**params)
-
-    # -----------------------------------------------------------------
-
-    def initialize(self, **kwargs):
-
-        """
-        Initialize all individuals of population,
-        this calls the initialize() of individuals
-        :param kwargs: arguemnts passed to the initialize function of the individuals
-        """
-
-        # Inform the user
-        log.info("Initializing the population ...")
-
-        if self.oneSelfGenome.getParam("full_diversity", True) and hasattr(self.oneSelfGenome, "compare"):
-
-         for i in xrange(len(self.internalPop)):
-            curr = self.internalPop[i]
-            curr.initialize(**kwargs)
-            while self.__findIndividual(curr, i):
-               curr.initialize(**kwargs)
-
-        else:
-
-         for gen in self.internalPop:
-            gen.initialize(**kwargs)
-
-        # Clear
-        self.clearFlags()
-
-    # -----------------------------------------------------------------
-
-    def evaluate(self, silent, **kwargs):
-
-        """
-        Evaluate all individuals in population, calls the evaluate() method of individuals
-        :param silent:
-        :param kwargs: this params are passed to the evaluation function
-        """
-
-        # Inform the user
-        if not silent: log.info("Evaluating the new population ...")
-
-        # We have multiprocessing
-        if self.multiProcessing[0] and MULTI_PROCESSING:
-
-            log.debug("Evaluating the population using the multiprocessing method")
-            proc_pool = Pool(processes=self.multiProcessing[2])
-
-            # Multiprocessing full_copy parameter
-            if self.multiProcessing[1]:
-
-                #results = proc_pool.map(multiprocessing_eval_full, self.internalPop)
-                results = proc_pool.map(partial(multiprocessing_eval_full, **kwargs), self.internalPop)
-                proc_pool.close()
-                proc_pool.join()
-                for i in xrange(len(self.internalPop)): self.internalPop[i] = results[i]
-
-            else:
-
-                #results = proc_pool.map(multiprocessing_eval, self.internalPop)
-                results = proc_pool.map(partial(multiprocessing_eval, **kwargs), self.internalPop)
-                proc_pool.close()
-                proc_pool.join()
-                for individual, score in zip(self.internalPop, results): individual.score = score
-
-        else: # No multiprocessing: basically just a loop over evaluate() of the individuals
-
-            # Evaluate each individual
-            for ind in self.internalPop: ind.evaluate(**kwargs)
-
-        # Clear flags
-        self.clearFlags()
-
-    # -----------------------------------------------------------------
-
-    def scale(self, **args):
-
-        """
-        Scale the population using the scaling method
-        :param args: this parameter is passed to the scale method
-        """
-
-        for it in self.scaleMethod.applyFunctions(self, **args):
-         pass
-
-        fit_sum = 0
-        for ind in xrange(len(self)):
-         fit_sum += self[ind].fitness
-
-        self.stats["fitMax"] = max(self, key=key_fitness_score).fitness
-        self.stats["fitMin"] = min(self, key=key_fitness_score).fitness
-        self.stats["fitAve"] = fit_sum / float(len(self))
-
-        self.sorted = False
-
-    # -----------------------------------------------------------------
-
-    def printStats(self):
-
-        """
-        Print statistics of the current population
-        """
-
-        message = ""
-        if self.sortType == constants.sortType["scaled"]:
-         message = "Max/Min/Avg Fitness(Raw) [%(fitMax).2f(%(rawMax).2f)/%(fitMin).2f(%(rawMin).2f)/%(fitAve).2f(%(rawAve).2f)]" % self.stats
-        else:
-         message = "Max/Min/Avg Raw [%(rawMax).2f/%(rawMin).2f/%(rawAve).2f]" % self.stats
-        log.info(message)
-        print message
-        return message
-
-    # -----------------------------------------------------------------
-
-    def copy(self, pop):
-
-        """ Copy current population to 'pop'
-        :param pop: the destination population
-        .. warning:: this method do not copy the individuals, only the population logic
-        """
-
-        pop.popSize = self.popSize
-        pop.sortType = self.sortType
-        pop.minimax = self.minimax
-        pop.scaleMethod = self.scaleMethod
-        pop.internalParams = self.internalParams
-        pop.multiProcessing = self.multiProcessing
-
-    # -----------------------------------------------------------------
-
-    def getParam(self, key, nvl=None):
-
-        """
-        Gets an internal parameter
-        Example:
-         population.getParam("tournamentPool")
-         5
-        :param key: the key of param
-        :param nvl: if the key doesn't exist, the nvl will be returned
-        """
-
-        return self.internalParams.get(key, nvl)
-
-    # -----------------------------------------------------------------
-
-    def get_parameters(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        return self.internalParams.copy()
-
-    # -----------------------------------------------------------------
-
-    def setParams(self, **args):
-
-        """
-        Sets an internal parameter
-        Example:
-         population.setParams(tournamentPool=5)
-        :param args: parameters to set
-        .. versionadded:: 0.6
-         The `setParams` method.
-        """
-
-        self.internalParams.update(args)
 
     # -----------------------------------------------------------------
 

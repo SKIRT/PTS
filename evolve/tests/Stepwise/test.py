@@ -722,6 +722,9 @@ class StepWiseTest(TestImplementation):
         #self.optimizer.config.heterogeneous = True
         self.optimizer.config.heterogeneous = False
 
+        # Set named individuals
+        self.optimizer.config.named_individuals = True
+
     # -----------------------------------------------------------------
 
     def set_parameters(self):

@@ -159,6 +159,47 @@ class KeyList(object):
 
         return key in self.keys
 
+    # -----------------------------------------------------------------
+
+    def sort(self, cmp=None, key=None, reverse=False):
+
+        """
+        This function ...
+        :param cmp: 
+        :param key: 
+        :param reverse: 
+        :return: 
+        """
+
+        # Create key function
+        if key is None: key_function = lambda x: x[1]
+        else: key_function = lambda x: key(x[1])
+
+        # Create cmp function
+        if cmp is None: cmp_function = None
+        else: cmp_function = lambda x,y: cmp_function(x[1], y[1]) # cmp_function(a,b)
+
+        # Sort the contents
+        self.contents = OrderedDict(sorted(self.contents.iteritems(), cmp=cmp_function, key=key_function, reverse=reverse))
+
+    # -----------------------------------------------------------------
+
+    def copy(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Create new
+        new = self.__class__()
+
+        # Add elements from this into new
+        for key, element in self.items: new.append(key, element)
+
+        # Return the new copy
+        return new
+
 # -----------------------------------------------------------------
 
 class NamedList(KeyList):

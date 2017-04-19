@@ -47,7 +47,7 @@ from types import BooleanType
 from sys import stdout as sys_stdout
 
 # Import other evolve modules
-from pts.evolve.core.population import Population
+from pts.evolve.core.population import Population, NamedPopulation
 from pts.evolve.core.functionslot import FunctionSlot
 from pts.evolve.core.genome import GenomeBase
 from pts.evolve.core.adapters import DataBaseAdapter
@@ -194,7 +194,7 @@ class GeneticEngine(object):
     generation.
     """
 
-    def __init__(self, genome, interactive=True):
+    def __init__(self, genome, interactive=True, named_individuals=False):
 
         """
         Initializator of GSimpleGA
@@ -208,8 +208,14 @@ class GeneticEngine(object):
         if not isinstance(genome, GenomeBase):
             utils.raiseException("The genome must be a GenomeBase subclass", TypeError)
 
+        # Set named flag
+        self.named_individuals = named_individuals
+
+        # Create the internal population
+        if self.named_individuals: self.internalPop = NamedPopulation(genome)
+        else: self.internalPop = Population(genome)
+
         # Initialize things
-        self.internalPop = Population(genome)
         self.nGenerations = constants.CDefGAGenerations
         self.pMutation = constants.CDefGAMutationRate
         self.pCrossover = constants.CDefGACrossoverRate

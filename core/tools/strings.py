@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 import re
 from textwrap import wrap
 from string import ascii_lowercase
+import itertools
 
 # Import the relevant PTS classes and modules
 from .sequences import interleave
@@ -195,11 +196,23 @@ def iterate_alphabet():
 
 # -----------------------------------------------------------------
 
+def iterate_alphabet_strings():
+
+    """
+    This function ...
+    :return: 
+    """
+
+    for repeat in itertools.count():
+        for i in itertools.product(ascii_lowercase, repeat=repeat): yield ''.join(i)
+
+# -----------------------------------------------------------------
+
 def split_except_within_single_quotes(text):
 
     """
     This function strips the whitespace from a string, except when it is within quotes
-    :param text:
+    :param text:f
     :return:
     """
 
