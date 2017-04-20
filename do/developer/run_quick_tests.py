@@ -45,3 +45,8 @@ settings["settings"] = sources_test_settings
 launch_local(pts_command, settings)
 
 # -----------------------------------------------------------------
+
+# Other:
+# pts tests evolve Stepwise --debug --keep --default --settings "'plot':True" --open_output --remove_previous
+# pts tests magic Sources --debug --default --keep --remove_previous
+#

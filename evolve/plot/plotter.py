@@ -114,7 +114,7 @@ class Plotter(Configurable):
         log.info("Writing the data ...")
 
         # Determine the path
-        path = self.output_path_file("data.dat")
+        path = self.output_path_file("data_" + self.class_name + ".dat")
 
         # Write the data
         write_dict(self.data, path)
