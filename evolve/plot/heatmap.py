@@ -16,10 +16,9 @@ from __future__ import absolute_import, division, print_function
 import matplotlib.pyplot as plt
 
 # Import the relevant PTS classes and modules
-from ...core.basics.configurable import Configurable
-from ...core.basics.plot import Plot
-from ...core.tools import filesystem as fs
 from .plotter import Plotter
+from ...core.tools.logging import log
+from ..analyse.database import get_generations, get_scores, get_fitnesses
 
 # -----------------------------------------------------------------
 
@@ -53,230 +52,105 @@ class HeatMapPlotter(Plotter):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        if len(identify_list) == 1 and not popGraph:
+        # Get the data
+        self.get_data()
 
-            if options.compare_raw or options.compare_fitness:
-                parser.error("You can't use this graph type with only one identify !")
+        # Plot
+        self.plot()
 
-            conn = sqlite3.connect(options.dbfile)
-            conn.row_factory = sqlite3.Row
-            c = conn.cursor()
-
-            if options.genrange:
-                genrange = options.genrange.split(":")
-                ret = c.execute("select * from statistics where identify = ? and generation between ? and ?",
-                                (options.identify, genrange[0], genrange[1]))
-            else:
-                ret = c.execute("select * from statistics where identify = ?", (options.identify,))
-
-            pop = ret.fetchall()
-
-            ret.close()
-            conn.close()
-
-            if len(pop) <= 0:
-                print("No statistic data found for the identify '%s' !" % (options.identify,))
-                exit()
-
-            print("%d generations found !" % (len(pop),))
-
-
-        elif len(identify_list) > 1 and not popGraph:
-
-            pop = []
-            if (not options.compare_raw) and (not options.compare_fitness):
-                parser.error("You can't use many ids with this graph type !")
-
-            conn = sqlite3.connect(options.dbfile)
-            conn.row_factory = sqlite3.Row
-            c = conn.cursor()
-            for item in identify_list:
-                if options.genrange:
-                    genrange = options.genrange.split(":")
-                    ret = c.execute("select * from statistics where identify = ? and generation between ? and ?",
-                                    (item, genrange[0], genrange[1]))
-                else:
-                    ret = c.execute("select * from statistics where identify = ?", (item,))
-                fetchall = ret.fetchall()
-                if len(fetchall) > 0:
-                    pop.append(fetchall)
-
-            ret.close()
-            conn.close()
-
-            if len(pop) <= 0:
-                print("No statistic data found for the identify list '%s' !" % (options.identify,))
-                exit()
-
-            print("%d identify found !" % (len(pop),))
-
-
-        if options.pop_heatmap_raw:
-
-            if options.outfile:
-                graph_pop_heatmap_raw(pop, options.minimize, options.colormap,
-                                      options.outfile + "." + options.extension)
-            else:
-                graph_pop_heatmap_raw(pop, options.minimize, options.colormap)
-
-        if options.pop_heatmap_fitness:
-
-            if options.outfile:
-                graph_pop_heatmap_fitness(pop, options.minimize, options.colormap,
-                                          options.outfile + "." + options.extension)
-            else:
-                graph_pop_heatmap_fitness(pop, options.minimize, options.colormap)
+        # Write
+        self.write()
 
     # -----------------------------------------------------------------
 
-    def setup(self, **kwargs):
+    def get_data(self):
 
         """
         This function ...
-        :param kwargs:
-        :return:
+        :return: 
         """
 
-        # Call the setup function of the base class
-        super(HeatMapPlotter, self).setup(**kwargs)
+        # Inform the user
+        log.info("Getting the data ...")
 
-        # Get the database
-        if "database" in kwargs:
+        self.data = dict()
 
-            self.database = kwargs.pop("database")
+        # Loop over the runs
+        for run_id in self.runs:
 
-        elif self.config.database is not None:
+            data = []
 
-            self.database = sqlite3.connect(self.config.database)
+            # Loop over the generations
+            for generation in get_generations(self.database, run_id):
 
-        elif fs.is_file(fs.join(self.config.path, "database.db")):
+                # Get the scores
+                if self.config.fitness: scores = get_fitnesses(self.database, run_id, generation)
+                else: scores = get_scores(self.database, run_id, generation)
 
-            # Load database from file
-            self.database = sqlite3.connect(fs.join(self.config.path, "database.db"))
+                data.append(scores)
 
-        else: raise ValueError("Database not found and not specified")
+            # Set the data for this run
+            self.data[run_id] = data
 
     # -----------------------------------------------------------------
 
-    def initialize(self):
+    def plot(self):
 
         """
         This function ...
-        :return:
+        :return: 
         """
 
-        print("Loading database and creating graph...")
+        # Inform the user
+        log.info("Plotting ...")
 
-        identify_list = options.identify.split(",")
-        identify_list = map(str.strip, identify_list)
-
-        pop = None
-
-        conn = sqlite3.connect(options.dbfile)
-        conn.row_factory = sqlite3.Row
-        c = conn.cursor()
-
-        if options.genrange:
-            genrange = options.genrange.split(":")
-            ret = c.execute(
-                "select distinct generation from population where identify = ? and generation between ? and ?",
-                (options.identify, genrange[0], genrange[1]))
-        else:
-            ret = c.execute("select distinct generation from population where identify = ?", (options.identify,))
-
-        generations = ret.fetchall()
-        if len(generations) <= 0:
-            print("No generation data found for the identify '%s' !" % (options.identify,))
-            exit()
-
-        pop = []
-        for gen in generations:
-            pop_tmp = []
-
-            if options.lindrange:
-                individual_range = options.lindrange.split(":")
-                ret = c.execute("""
-                                 select *  from population
-                                 where identify = ?
-                                 and generation = ?
-                                 and individual between ? and ?
-                                 """, (options.identify, gen[0], individual_range[0], individual_range[1]))
-            else:
-                ret = c.execute("""
-                                 select *  from population
-                                 where identify = ?
-                                 and generation = ?
-                                 """, (options.identify, gen[0]))
-
-            ret_fetch = ret.fetchall()
-            for it in ret_fetch:
-                if options.pop_heatmap_raw:
-                    pop_tmp.append(it["raw"])
-                else:
-                    pop_tmp.append(it["fitness"])
-            pop.append(pop_tmp)
-
-        ret.close()
-        conn.close()
-
-        if len(pop) <= 0:
-            print("No statistic data found for the identify '%s' !" % (options.identify,))
-            exit()
-
-        print("%d generations found !" % (len(pop),))
-
-        popGraph = True
+        # Loop over the runs
+        for run_id in self.data: self.plot_heatmap(run_id)
 
     # -----------------------------------------------------------------
 
-    def graph_pop_heatmap_raw(self, pop, minimize, colormap="jet", filesave=None):
+    def plot_heatmap(self, run_id):
 
         """
         This function ...
-        :param pop:
-        :param minimize:
-        :param colormap:
-        :param filesave:
-        :return:
+        :return: 
         """
 
-        pylab.imshow(pop, aspect="auto", interpolation="gaussian", cmap=matplotlib.cm.__dict__[colormap])
-        pylab.title("Plot of pop. raw scores along the generations")
-        pylab.xlabel('Population')
-        pylab.ylabel('Generations')
-        pylab.grid(True)
-        pylab.colorbar()
+        # Inform the user
+        log.info("Plotting ...")
 
-        if filesave:
-            pylab.savefig(filesave)
-            print("Graph saved to %s file !" % (filesave,))
-        else:
-            pylab.show()
+        plt.figure()
+
+        # Get the data
+        data = self.data[run_id]
+
+        # Create
+        plt.imshow(data, aspect="auto", interpolation="gaussian", cmap="viridis")
+
+        self.set_title("Plot of population scores along the generations for run '" + run_id + "'")
+
+        plt.xlabel('Population')
+        plt.ylabel('Generations')
+
+        plt.grid(True)
+        plt.colorbar()
+
+        # Show
+        self.write_or_show("heatmap")
 
     # -----------------------------------------------------------------
 
-    def graph_pop_heatmap_fitness(self, pop, minimize, colormap="jet", filesave=None):
+    def write(self):
 
         """
         This function ...
-        :param pop:
-        :param minimize:
-        :param colormap:
-        :param filesave:
-        :return:
+        :return: 
         """
 
-        pylab.imshow(pop, aspect="equal", interpolation="gaussian", cmap=matplotlib.cm.__dict__[colormap])
-        pylab.title("Plot of pop. fitness scores along the generations")
-        pylab.xlabel('Population')
-        pylab.ylabel('Generations')
-        pylab.grid(True)
-        pylab.colorbar()
+        # Inform the user
+        log.info("Writing ...")
 
-        if filesave:
-            pylab.savefig(filesave)
-            print("Graph saved to %s file !" % (filesave,))
-        else:
-            pylab.show()
+        # Write the data
+        self.write_data()
 
 # -----------------------------------------------------------------

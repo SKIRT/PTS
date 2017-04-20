@@ -16,11 +16,10 @@ from __future__ import absolute_import, division, print_function
 import matplotlib.pyplot as plt
 
 # Import the relevant PTS classes and modules
-from ...core.basics.configurable import Configurable
-from ...core.tools import filesystem as fs
 from .plotter import Plotter
 from ...core.tools.logging import log
-from ..analyse.database import get_individuals, get_generations, get_runs
+from ..analyse.database import get_generations, get_statistics
+from ...core.basics.map import Map
 
 # -----------------------------------------------------------------
 
@@ -54,25 +53,18 @@ class ScoresPlotter(Plotter):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Plot
-        self.plot_scores()
+        # 2. Get the data
+        self.get_data()
+
+        # 3. Plot
+        self.plot()
+
+        # Write
+        self.write()
 
     # -----------------------------------------------------------------
 
-    @property
-    def runs(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        if self.config.runs is None: get_runs(self.database)
-        else: return self.config.runs
-
-    # -----------------------------------------------------------------
-
-    def plot_scores(self):
+    def get_data(self):
 
         """
         This function ...
@@ -80,150 +72,264 @@ class ScoresPlotter(Plotter):
         """
 
         # Inform the user
-        log.info("Plotting ...")
+        log.info("Getting the data ...")
 
-        x = []
-        y = []
-        yerr_max = []
-        yerr_min = []
+        self.data = dict()
 
         # Loop over the runs
         for run_id in self.runs:
 
+            x = []
+            y = []
+            ymax = []
+            ymin = []
+            yerr_max = []
+            yerr_min = []
+            ystddev = []
+            diff_y = []
+
             # Loop over the generations
             for generation in get_generations(self.database, run_id):
 
-                # Loop over the individuals
-                for ind in get_individuals(self.database, run_id, generation):
+                # Get the statistics
+                statistics = get_statistics(self.database, run_id, generation)
 
-                    # Get the name
-                    #name = ind[""]
+                # GENERATION INDEX
+                x.append(generation)
 
-                    x.append(ind["generation"])
-                    y.append(ind["rawAve"])
-                    ymax = ind["rawMax"] - ind["rawAve"]
-                    ymin = ind["rawAve"] - ind["rawMin"]
+                # AVERAGE SCORE
+                if self.config.fitness: y.append(statistics.fitness.average)
+                else: y.append(statistics.raw.average)
 
-                    yerr_max.append(ymax)
-                    yerr_min.append(ymin)
+                # MIN AND MAX
+                if self.config.fitness:
+                    ymax.append(statistics.fitness.max)
+                    ymin.append(statistics.fitness.min)
+                else:
+                    ymax.append(statistics.raw.max)
+                    ymin.append(statistics.raw.min)
+
+                # SCORE ERROR BAR
+                if self.config.fitness:
+                    y_max = statistics.fitness.max - statistics.fitness.average
+                    y_min = statistics.fitness.average - statistics.fitness.min
+                else:
+                    y_max = statistics.raw.max - statistics.raw.average
+                    y_min = statistics.raw.average - statistics.raw.min
+                yerr_max.append(y_max)
+                yerr_min.append(y_min)
+
+                # SCORE DIFFERENCE
+                if self.config.fitness: diff_y.append(statistics.fitness.max - statistics.fitness.min)
+                else: diff_y.append(statistics.raw.max - statistics.raw.min)
+
+                # SCORE STDDEV
+                if not self.config.fitness: ystddev.append(statistics.raw.stddev)
+
+            if self.config.fitness: ystddev = None
+
+            data = Map()
+            data.x = x
+            data.y = y
+            data.ymax = ymax
+            data.ymin = ymin
+            data.yerr_max = yerr_max
+            data.yerr_min = yerr_min
+            data.ystddev = ystddev
+            data.diff_y = diff_y
+
+            # set the data
+            self.data[run_id] = data
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        THis function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        # Loop over the runs
+        for run_id in self.runs: self.plot_scores(run_id)
+
+        # Plot differences
+        for run_id in self.runs: self.plot_differences(run_id)
+
+        # Plot min/max/stddev
+        for run_id in self.runs: self.plot_min_max(run_id)
+
+    # -----------------------------------------------------------------
+
+    def plot_scores(self, run_id):
+
+        """
+        This function ...
+        :param run_id:
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Plotting the scores for run '" + run_id + "' ...")
 
         plt.figure()
 
-        plt.errorbar(x, y, [yerr_min, yerr_max], ecolor="g")
+        x = self.data[run_id].x
+        y = self.data[run_id].y
+        yerr_min = self.data[run_id].yerr_min
+        yerr_max = self.data[run_id].yerr_max
 
-        plt.xlabel('Generation (#)')
-        plt.ylabel('Raw score Min/Avg/Max')
-        #plt.title("Plot of evolution identified by '%s' (raw scores)" % (options.identify))
+        plt.errorbar(x, y, yerr_min, yerr_max, ecolor="g")
+
+        plt.xlabel("Generation")
+        plt.ylabel("Score Min/Avg/Max")
+
+        # Set title
+        title = "Plot of evolution of run '" + run_id + "'"
+        self.set_title(title)
+
         plt.grid(True)
 
-        plt.show()
+        #plt.show()
+
+        self.write_or_show("scores")
 
     # -----------------------------------------------------------------
 
-    def graph_errorbars_raw(self, pop, minimize, filesave=None):
+    def plot_differences(self, run_id):
 
         """
         This function ...
-        :param pop:
-        :param minimize:
-        :param filesave:
-        :return:
+        :param run_id:
+        :return: 
         """
 
-        x = []
-        y = []
-        yerr_max = []
-        yerr_min = []
+        # Inform the user
+        log.info("Plotting the differences ...")
 
-        for it in pop:
-            x.append(it["generation"])
-            y.append(it["rawAve"])
-            ymax = it["rawMax"] - it["rawAve"]
-            ymin = it["rawAve"] - it["rawMin"]
+        plt.figure()
 
-            yerr_max.append(ymax)
-            yerr_min.append(ymin)
+        x = self.data[run_id].x
+        diff_y = self.data[run_id].diff_y
 
-        pylab.figure()
-        pylab.errorbar(x, y, [yerr_min, yerr_max], ecolor="g")
-        pylab.xlabel('Generation (#)')
-        pylab.ylabel('Raw score Min/Avg/Max')
-        pylab.title("Plot of evolution identified by '%s' (raw scores)" % (options.identify))
-        pylab.grid(True)
+        plt.plot(x, diff_y, "g", label="Raw difference", linewidth=1.2)
+        plt.fill_between(x, diff_y, color="g", alpha=0.1)
 
-        if filesave:
-            pylab.savefig(filesave)
-            print("Graph saved to %s file !" % (filesave,))
-        else:
-            pylab.show()
+        diff_raw_max = max(diff_y)
+        gen_max_raw = x[diff_y.index(diff_raw_max)]
 
-    # -----------------------------------------------------------------
-
-    def graph_diff_raw(self, pop, minimize, filesave=None):
-
-        """
-        This function ...
-        :param pop:
-        :param minimize:
-        :param filesave:
-        :return:
-        """
-
-        x = []
-
-        diff_raw_y = []
-        diff_fit_y = []
-
-        for it in pop:
-
-            x.append(it["generation"])
-            diff_raw_y.append(it["rawMax"] - it["rawMin"])
-            diff_fit_y.append(it["fitMax"] - it["fitMin"])
-
-        pylab.figure()
-        pylab.subplot(211)
-
-        pylab.plot(x, diff_raw_y, "g", label="Raw difference", linewidth=1.2)
-        pylab.fill_between(x, diff_raw_y, color="g", alpha=0.1)
-
-        diff_raw_max = max(diff_raw_y)
-        gen_max_raw = x[diff_raw_y.index(diff_raw_max)]
-
-        pylab.annotate("Maximum (%.2f)" % (diff_raw_max,), xy=(gen_max_raw, diff_raw_max), xycoords='data',
+        plt.annotate("Maximum (%.2f)" % (diff_raw_max,), xy=(gen_max_raw, diff_raw_max), xycoords='data',
                        xytext=(-150, -20), textcoords='offset points',
                        arrowprops=dict(arrowstyle="->",
                                        connectionstyle="arc"),
                        )
 
-        pylab.xlabel("Generation (#)")
-        pylab.ylabel("Raw difference")
-        pylab.title("Plot of evolution identified by '%s'" % (options.identify))
+        plt.xlabel("Generation")
+        plt.ylabel("Raw difference")
+        self.set_title("Plot of score differences across evolution for run '" + run_id + "'")
 
-        pylab.grid(True)
-        pylab.legend(prop=FontProperties(size="smaller"))
+        plt.grid(True)
+        #plt.legend(prop=FontProperties(size="smaller"))
 
-        pylab.subplot(212)
+        #plt.show()
+        self.write_or_show("differences")
 
-        pylab.plot(x, diff_fit_y, "b", label="Fitness difference", linewidth=1.2)
-        pylab.fill_between(x, diff_fit_y, color="b", alpha=0.1)
+    # -----------------------------------------------------------------
 
-        diff_fit_max = max(diff_fit_y)
-        gen_max_fit = x[diff_fit_y.index(diff_fit_max)]
+    def plot_min_max(self, run_id):
 
-        pylab.annotate("Maximum (%.2f)" % (diff_fit_max,), xy=(gen_max_fit, diff_fit_max), xycoords='data',
-                       xytext=(-150, -20), textcoords='offset points',
+        """
+        This function ...
+        :param run_id: 
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Plotting the minimal and maximal scores ...")
+
+        plt.figure()
+
+        x = self.data[run_id].x
+
+        avg_y = self.data[run_id].y
+
+        max_y = self.data[run_id].ymax
+        min_y = self.data[run_id].ymin
+
+        std_dev_y = self.data[run_id].ystddev
+
+        plt.plot(x, max_y, "g", label="Max", linewidth=1.2)
+        plt.plot(x, min_y, "r", label="Min", linewidth=1.2)
+        plt.plot(x, avg_y, "b", label="Avg", linewidth=1.2)
+
+        if std_dev_y is not None: plt.plot(x, std_dev_y, "k", label="Stddev", linewidth=1.2)
+
+        plt.fill_between(x, min_y, max_y, color="g", alpha=0.1, label="Diff max/min")
+
+        if self.config.minmax == "min": raw_max = min(min_y)
+        else: raw_max = max(max_y)
+
+        if self.config.minmax == "min": gen_max = x[min_y.index(raw_max)]
+        else: gen_max = x[max_y.index(raw_max)]
+
+        if std_dev_y is not None:
+            min_std = min(std_dev_y)
+            gen_min_std = x[std_dev_y.index(min_std)]
+
+            max_std = max(std_dev_y)
+            gen_max_std = x[std_dev_y.index(max_std)]
+
+        if self.config.minmax == "min": annot_label = "Minimum (%.2f)" % (raw_max,)
+        else: annot_label = "Maximum (%.2f)" % (raw_max,)
+
+        plt.annotate(annot_label, xy=(gen_max, raw_max), xycoords='data',
+                       xytext=(8, 15), textcoords='offset points',
                        arrowprops=dict(arrowstyle="->",
-                                       connectionstyle="arc"),)
+                                       connectionstyle="arc"),
+                       )
 
-        pylab.xlabel("Generation (#)")
-        pylab.ylabel("Fitness difference")
+        if std_dev_y is not None:
 
-        pylab.grid(True)
-        pylab.legend(prop=FontProperties(size="smaller"))
+            plt.annotate("Min StdDev (%.2f)" % (min_std,), xy=(gen_min_std, min_std), xycoords='data',
+                           xytext=(8, 15), textcoords='offset points',
+                           arrowprops=dict(arrowstyle="->",
+                                           connectionstyle="arc"),
+                           )
 
-        if filesave:
-            pylab.savefig(filesave)
-            print("Graph saved to %s file !" % (filesave,))
-        else: pylab.show()
+            plt.annotate("Max StdDev (%.2f)" % (max_std,), xy=(gen_max_std, max_std), xycoords='data',
+                           xytext=(8, 15), textcoords='offset points',
+                           arrowprops=dict(arrowstyle="->",
+                                           connectionstyle="arc"),
+                           )
+
+        plt.xlabel("Generation")
+        plt.ylabel("Raw score")
+
+        self.set_title("Plot of evolution for run '" + run_id + "'")
+
+        plt.grid(True)
+        #plt.legend(prop=FontProperties(size="smaller"))
+
+        #plt.show()
+
+        self.write_or_show("minmax")
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write the data
+        self.write_data()
 
 # -----------------------------------------------------------------

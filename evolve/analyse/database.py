@@ -17,6 +17,19 @@ import sqlite3
 
 # Import the relevant PTS classes and modules
 from ...core.tools import types
+from ...core.basics.map import Map
+
+# -----------------------------------------------------------------
+
+# STATISTICS:
+# "rawMax": "Maximum raw score",
+# "rawMin": "Minimum raw score",
+# "rawAve": "Average of raw scores",
+# "rawDev": "Standard deviation of raw scores",
+# "rawVar": "Raw scores variance",
+# "fitMax": "Maximum fitness",
+# "fitMin": "Minimum fitness",
+# "fitAve": "Fitness average",
 
 # -----------------------------------------------------------------
 
@@ -73,7 +86,7 @@ def get_generations(database, run_id):
     if types.is_string_type(database): database = load_database(database)
 
     # Select multiple generations
-    ret = database.execute("select distinct generation from population where identify = ?", run_id)
+    ret = database.execute("select distinct generation from population where identify = ?", [run_id])
     generations = ret.fetchall()
 
     # Return the generation numbers
@@ -88,6 +101,7 @@ def get_individuals(database, run_id, generation, individual_range=None):
     :param database: 
     :param run_id: 
     :param generation: 
+    :param individual_range:
     :return: 
     """
 
@@ -194,5 +208,89 @@ def get_fitnesses(database, run_id, generation):
 
     # Return the scores
     return fitnesses
+
+# -----------------------------------------------------------------
+
+def get_populations(database, run_id, generation_range=None):
+
+    """
+    This function ...
+    :param database: 
+    :param run_id: 
+    :param generation_range:
+    :return: 
+    """
+
+    # Get the cursor
+    if types.is_string_type(database): database = load_database(database)
+
+    # Range of generations is given
+    if generation_range is not None: ret = database.execute("select * from statistics where identify = ? and generation between ? and ?", (run_id, generation_range.min, generation_range.max))
+
+    # No range of generations is given
+    else: ret = database.execute("select * from statistics where identify = ?", (run_id,))
+
+    # Get
+    pop = ret.fetchall()
+
+    # Return the populations
+    return pop
+
+# -----------------------------------------------------------------
+
+def get_population(database, run_id, generation):
+
+    """
+    This function ...
+    :param database: 
+    :param run_id: 
+    :param generation: 
+    :return: 
+    """
+
+    # Get the cursor
+    if types.is_string_type(database): database = load_database(database)
+
+    # Get
+    ret = database.execute("select * from statistics where identify = ? and generation = ?", (run_id, generation))
+    pop = ret.fetchall()
+
+    # Return the population
+    return pop[0]
+
+# -----------------------------------------------------------------
+
+def get_statistics(database, run_id, generation):
+
+    """
+    This function ...
+    :param database: 
+    :param run_id: 
+    :param generation: 
+    :return: 
+    """
+
+    # Create mapping
+    statistics = Map()
+
+    # Get the population
+    pop = get_population(database, run_id, generation)
+
+    # Set stats of raw scores
+    statistics.raw = Map()
+    statistics.raw.average = pop["rawAve"]
+    statistics.raw.min = pop["rawMin"]
+    statistics.raw.max = pop["rawMax"]
+    statistics.raw.stddev = pop["rawDev"]
+
+    # Set stats of fitnesses
+    statistics.fitness = Map()
+    statistics.fitness.average = pop["fitAve"]
+    statistics.fitness.min = pop["fitMin"]
+    statistics.fitness.max = pop["fitMax"]
+    #statistics.fitness.stddev = pop["fitDev"]
+
+    # Return the statistics
+    return statistics
 
 # -----------------------------------------------------------------

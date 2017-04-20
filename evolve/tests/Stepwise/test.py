@@ -27,7 +27,6 @@ from pts.evolve.tests.Stepwise.tables import ScoresTable
 from pts.modeling.fitting.tables import GenerationsTable, ParametersTable
 from pts.modeling.fitting.explorer import GenerationInfo
 from pts.core.tools import stringify
-from pts.modeling.fitting.tables import ModelProbabilitiesTable
 from pts.modeling.fitting.tables import BestParametersTable
 from pts.core.tools import time, tables
 from pts.evolve.analyse.database import get_scores, get_scores_named_individuals, load_database
@@ -98,6 +97,7 @@ class StepWiseTest(TestImplementation):
         self.optimizer_config_path = None
         self.generations_path = None
         self.generations_table_path = None
+        self.plot_path = None
 
         # The database path
         self.database_path = None
@@ -124,12 +124,6 @@ class StepWiseTest(TestImplementation):
         # The generations table
         self.generations_table = None
 
-        # The path to the prob directory
-        self.prob_path = None
-
-        # The directory with the probability tables for all finished generations
-        self.prob_generations_path = None
-
         # Set the path to the best parameters table
         self.best_parameters_table_path = None
 
@@ -155,11 +149,6 @@ class StepWiseTest(TestImplementation):
         self.individuals_table_path = None
         self.parameters_table_path = None
         self.scores_table_path = None
-
-        # The model probabilities tables
-        self.model_probabilities = dict()
-
-        self.prob_generations_table_paths = dict()
 
         # The dictionary with the list of the model parameters
         #self.parameters = defaultdict(list)
@@ -217,16 +206,13 @@ class StepWiseTest(TestImplementation):
         self.optimizer_config_path = fs.join(self.path, "optimizer.cfg")
         self.generations_path = fs.create_directory_in(self.path, "generations")
         self.generations_table_path = fs.join(self.path, "generations.dat")
+        self.plot_path = fs.create_directory_in(self.path, "plot")
 
         # Set the path to the database
         self.database_path = fs.join(self.path, "database.db")
 
         # Set the path to the statistics file
         self.statistics_path = fs.join(self.path, "statistics.csv")
-
-        # The directory with the probability tables for all finished generations
-        self.prob_path = fs.create_directory_in(self.path, "prob")
-        self.prob_generations_path = fs.create_directory_in(self.prob_path, "generations")
 
         # Set the path to the best parameters table
         self.best_parameters_table_path = fs.join(self.path, "best_parameters.dat")
@@ -287,7 +273,6 @@ class StepWiseTest(TestImplementation):
 
         # Create the table
         self.generations_table = GenerationsTable(parameters=free_parameter_labels, units=parameter_units)
-        #self.generations_table.saveto(self.generations_table_path)
 
     # -----------------------------------------------------------------
 
@@ -339,10 +324,10 @@ class StepWiseTest(TestImplementation):
 
         # Debugging
         if self.generations_table.has_finished: log.debug("There are finished generations: " + tostr(self.generations_table.finished_generations))
-        if has_unevaluated_generations(self.generations_table, self.model_probabilities, self.individual_names_dict): log.debug("There are unevaluated generations: " + tostr(get_unevaluated_generations(self.generations_table, self.model_probabilities, self.individual_names_dict)))
+        if has_unevaluated_generations(self.generations_table, self.best_parameters_table): log.debug("There are unevaluated generations: " + tostr(get_unevaluated_generations(self.generations_table, self.best_parameters_table)))
 
         # If some generations have finished, fit the SED
-        if self.generations_table.has_finished and has_unevaluated_generations(self.generations_table, self.model_probabilities, self.individual_names_dict): self.score()
+        if self.generations_table.has_finished and has_unevaluated_generations(self.generations_table, self.best_parameters_table): self.score()
 
         # If all generations have finished, explore new generation of models
         if self.generations_table.all_finished: self.explore()
@@ -369,7 +354,7 @@ class StepWiseTest(TestImplementation):
         if has_unfinished: log.warning("There are unfinished generations, but evaluating finished simulations anyway ...")
 
         # Check if there are unevaluated generations
-        if not has_unevaluated_generations(self.generations_table, self.model_probabilities, self.individual_names_dict): log.success("All generations have already been evaluated")
+        if not has_unevaluated_generations(self.generations_table, self.best_parameters_table): log.success("All generations have already been evaluated")
 
         # Do the SED fitting step
         self.score()
@@ -494,12 +479,6 @@ class StepWiseTest(TestImplementation):
 
         # Scores table
         self.scores_table = None
-
-        # The model probabilities tables
-        self.model_probabilities = dict()
-
-        #
-        self.prob_generations_table_paths = dict()
 
         # The dictionary with the list of the model parameters
         #self.parameters = defaultdict(list)
@@ -1333,20 +1312,8 @@ class StepWiseTest(TestImplementation):
         # Check if there are finished generations
         if len(self.finished_generations) == 0: raise RuntimeError("There are no finished generations")
 
-        # For each finished generation, determine the path to the probability table
-        for generation_name in self.finished_generations:
-
-            path = fs.join(self.prob_generations_path, generation_name + ".dat")
-            self.prob_generations_table_paths[generation_name] = path
-
         # 2. Get the parameters of the best models for each generation
         self.get_best_parameters()
-
-        # 3. Calculate the probabilities
-        self.calculate_probabilities()
-
-        # 4. Calculate the probability distributions
-        #self.create_distributions()
 
     # -----------------------------------------------------------------
 
@@ -1410,97 +1377,14 @@ class StepWiseTest(TestImplementation):
             # Check if the generation is already in the best parameters table
             if generation_name in self.best_parameters_table.generation_names: continue
 
+            # Debugging
+            log.info("Getting the best parameter values for generation '" + generation_name + "' ...")
+
             # Otherwise, add the best parameter values
             values, chi_squared = self.best_parameter_values_for_generation(generation_name, return_chi_squared=True)
 
             # Add an entry to the best parameters table file
             self.best_parameters_table.add_entry(generation_name, values, chi_squared)
-
-    # -----------------------------------------------------------------
-
-    def calculate_probabilities(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Calculating the probabilities ...")
-
-        # Calculate the probability tables
-        self.calculate_model_probabilities()
-
-        # Calcualte the combined probability tables (all finished generations)
-        #self.calculate_parameter_probabilities()
-
-    # -----------------------------------------------------------------
-
-    def calculate_model_probabilities(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Calculating the model probabilities for the finished generations (if not already done) ...")
-
-        # Loop over the finished generations
-        for generation_name in self.finished_generations:
-
-            # Check whether the probabilities table is already present for this generation
-            if fs.is_file(self.prob_generations_table_paths[generation_name]):
-
-                # Debugging
-                log.debug("Loading the model probabilities table for generation " + generation_name + " ...")
-
-                # Load the probabilities table
-                probabilities_table = ModelProbabilitiesTable.from_file(self.prob_generations_table_paths[generation_name])
-
-                # Add to the dictionary
-                self.model_probabilities[generation_name] = probabilities_table
-
-            # Otherwise, calculate the probabilities based on the chi squared table
-            else:
-
-                # Load the parameter table
-                parameter_table = self.parameters_table_for_generation(generation_name)
-
-                # Load the chi squared table
-                #chi_squared_table = self.chi_squared_table_for_generation(generation_name)
-                scores_table = self.scores_table_for_generation(generation_name)
-
-                # Sort the table for decreasing chi squared value
-                scores_table.sort("Score")
-                scores_table.reverse()
-
-                # Get the chi squared values
-                scores = scores_table["Score"]
-
-                # Calculate the probability for each model
-                probabilities = np.exp(-0.5 * scores)
-
-                # Create the probabilities table
-                probabilities_table = ModelProbabilitiesTable(parameters=free_parameter_labels, units=parameter_units)
-
-                # Add the entries to the model probabilities table
-                for i in range(len(scores_table)):
-
-                    # Get the simulation name
-                    simulation_name = scores_table["Individual name"][i]
-
-                    # Get a dictionary with the parameter values for this simulation
-                    parameter_values = parameter_table.parameter_values_for_simulation(simulation_name)
-
-                    # Add an entry to the table
-                    probabilities_table.add_entry(simulation_name, parameter_values, probabilities[i])
-
-                # Save the model probabilities table
-                probabilities_table.saveto(self.prob_generations_table_paths[generation_name])
-
-                # Add to the dictionary
-                self.model_probabilities[generation_name] = probabilities_table
 
     # -----------------------------------------------------------------
 
@@ -1549,6 +1433,9 @@ class StepWiseTest(TestImplementation):
 
         # Plot the scores
         self.plot_scores()
+
+        # Plot the heatmap
+        self.plot_heatmap()
 
     # -----------------------------------------------------------------
 
@@ -1626,6 +1513,8 @@ class StepWiseTest(TestImplementation):
 
         # Settings
         settings = dict()
+        settings["fitness"] = False
+        settings["output"] = self.plot_path
 
         # Input
         input_dict = dict()
@@ -1649,6 +1538,8 @@ class StepWiseTest(TestImplementation):
 
         # Settings
         settings = dict()
+        settings["fitness"] = False
+        settings["output"] = self.plot_path
 
         # Input
         input_dict = dict()
@@ -2049,26 +1940,6 @@ def test(temp_path):
 
 # -----------------------------------------------------------------
 
-def is_evaluated(prob_table, individual_names):
-
-    """
-    This function ...
-    :param prob_table:
-    :param individual_names:
-    :return:
-    """
-
-    if prob_table is None: return False
-
-    # Loop over all the simulation names of the generation
-    for individual_name in individual_names:
-        if not prob_table.has_simulation(individual_name): return False
-
-    # No simulation encountered that was not evaluated -> OK
-    return True
-
-# -----------------------------------------------------------------
-
 def get_generation_names(generations_table):
 
     """
@@ -2082,13 +1953,12 @@ def get_generation_names(generations_table):
 
 # -----------------------------------------------------------------
 
-def get_unevaluated_generations(generations_table, prob_tables, individual_names):
+def get_unevaluated_generations(generations_table, best_parameters_table):
 
     """
     This function ...
     :param generations_table: 
-    :param prob_tables:
-    :param individual_names:
+    :param best_parameters_table:
     :return: 
     """
 
@@ -2096,35 +1966,27 @@ def get_unevaluated_generations(generations_table, prob_tables, individual_names
 
     # Loop over the generations
     for generation_name in get_generation_names(generations_table):
-
-        if generation_name not in prob_tables: prob_table = None
-        else: prob_table = prob_tables[generation_name]
-
-        if not is_evaluated(prob_table, individual_names[generation_name]): generation_names.append(generation_name)
+        if not best_parameters_table.has_generation(generation_name): generation_names.append(generation_name)
 
     # Return the generation names
     return generation_names
 
 # -----------------------------------------------------------------
 
-def has_unevaluated_generations(generations_table, prob_tables, individual_names):
+def has_unevaluated_generations(generations_table, best_parameters_table):
 
     """
     This function ...
     :param generations_table:
-    :param prob_tables:
-    :param individual_names:
+    :param best_parameters_table:
     :return:
     """
 
     # Loop over the generations
     for generation_name in get_generation_names(generations_table):
 
-        if generation_name not in prob_tables: prob_table = None
-        else: prob_table = prob_tables[generation_name]
-
-        # If at least one generation is not evaluated, return False
-        if not is_evaluated(prob_table, individual_names[generation_name]): return True
+        # If at least one generation is not evaluated, return True
+        if not best_parameters_table.has_generation(generation_name): return True
 
     # No generation was encountered that was not completely evaluated
     return False

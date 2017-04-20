@@ -9,3 +9,7 @@
 from .plot import definition
 
 # -----------------------------------------------------------------
+
+definition.add_flag("fitness", "use fitness scores instead of raw scores", False)
+
+# -----------------------------------------------------------------

@@ -393,7 +393,8 @@ class DBSQLite(DataBaseAdapter):
 
    def open(self, ga_engine):
 
-      """ Open the database connection
+      """
+      Open the database connection
       :param ga_engine: the GA Engine
       .. versionchanged:: 0.6
          The method now receives the *ga_engine* parameter.
@@ -556,14 +557,15 @@ class DBSQLite(DataBaseAdapter):
       .. versionchanged:: 0.6
          The method now receives the *ga_engine* parameter.
       """
+
       stats = ga_engine.getStatistics()
       population = ga_engine.get_population()
       generation = ga_engine.getCurrentGeneration()
 
       c = self.getCursor()
       pstmt = "insert into %s values (?, ?, " % (constants.CDefSQLiteDBTable)
-      for i in xrange(len(stats)):
-         pstmt += "?, "
+
+      for i in xrange(len(stats)): pstmt += "?, "
       pstmt = pstmt[:-2] + ")"
       c.execute(pstmt, (self.getIdentify(), generation) + stats.asTuple())
 

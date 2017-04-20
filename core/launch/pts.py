@@ -82,17 +82,20 @@ def launch_local(pts_command, config_dict, input_dict=None, analysers=None, anal
     # Exact command name
     exact_command_name = subproject + "/" + command_name
 
-    # Create task
-    task = Task(exact_command_name, config.to_string())
+    # If analysis has to be performed, create task and analyse
+    if analysers is not None:
 
-    # Set analysis info
-    task.analysis_info = analysis_info
+        # Create task
+        task = Task(exact_command_name, config.to_string())
 
-    # Set analysers
-    for analyser_class in analysers: task.add_analyser(analyser_class)
+        # Set analysis info
+        task.analysis_info = analysis_info
 
-    # Do the analysis
-    task.analyse()
+        # Set analysers
+        for analyser_class in analysers: task.add_analyser(analyser_class)
+
+        # Do the analysis
+        task.analyse()
 
     # Reset the log level
     log.setLevel(previous_level)

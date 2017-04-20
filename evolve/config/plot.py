@@ -17,4 +17,12 @@ definition = ConfigurationDefinition()
 definition.add_positional_optional("database", "file_path", "path to the database file")
 definition.add_positional_optional("runs", "string_list", "plot these runs from the database (None = all)")
 
+# Output
+definition.add_optional("output", "directory_path", "output path", letter="o")
+
+# Flags
+definition.add_optional("minmax", "string", "whether the scores should be minimized or maximized", "max")
+
+definition.add_optional("format", "string", "file format", "pdf")
+
 # -----------------------------------------------------------------

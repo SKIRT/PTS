@@ -200,6 +200,18 @@ class BestParametersTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def has_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name: 
+        :return: 
+        """
+
+        return generation_name in self.generation_names
+
+    # -----------------------------------------------------------------
+
     def add_entry(self, generation_name, parameter_values, chi_squared):
 
         """
