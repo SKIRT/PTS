@@ -33,6 +33,7 @@ from ..basics.configurable import Configurable
 from ..simulation.simulation import createsimulations
 from ..tools import parsing
 from ..tools import types
+from ..tools import numbers
 
 # -----------------------------------------------------------------
 
@@ -354,14 +355,13 @@ def calculate_spectral_indices(model_sed):
     log_frequencies = np.log10(frequencies)
     log_fluxdensities = np.log10(fluxdensities)
 
-    print(log_frequencies, log_frequencies.shape)
-    print(log_fluxdensities, log_fluxdensities.shape)
-
     # Calculate the derivative of the log(Flux) to the frequency, make a 'spectral index' function
     #gradients = np.gradient(log_frequencies, log_fluxdensities) # DOESN'T WORK ANYMORE?
-    gradients = np.diff(log_fluxdensities) / np.diff(log_frequencies)
-    print(gradients, gradients.shape)
-    spectral_indices = interp1d(frequencies, gradients)
+    #gradients = np.diff(log_fluxdensities) / np.diff(log_frequencies)
+    new_frequencies, gradients = numbers.derivatives(log_frequencies, log_fluxdensities)
+
+    # Create function
+    spectral_indices = interp1d(new_frequencies, gradients)
 
     # Return the spectral indices
     return spectral_indices

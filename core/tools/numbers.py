@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import math
+import numpy as np
 
 # -----------------------------------------------------------------
 
@@ -60,5 +61,27 @@ def factor_pairs(n):
         pairs.append(pair)
 
     return pairs
+
 # -----------------------------------------------------------------
 
+def derivatives(x, y):
+
+    """
+    This function calculates the derivative values using finite differences
+    :param x: 
+    :param y: 
+    :return: 
+    """
+
+    new_x = []
+    for i in range(len(x)-1):
+        between = 0.5 * (x[i] + x[i+1])
+        new_x.append(between)
+
+    # Calculate derivatives
+    new_y = np.diff(y) / np.diff(x)
+
+    # Return x, y finite differences derivative data
+    return new_x, new_y
+
+# -----------------------------------------------------------------
