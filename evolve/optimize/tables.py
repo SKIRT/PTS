@@ -39,6 +39,45 @@ class ScoresTable(SmartTable):
         self.column_info.append(("Individual name", str, None, "name of the individual"))
         self.column_info.append(("Score", float, None, "individual's score"))
 
+        # Initialize 'min_or_max' meta attribute
+        self.meta["min_or_max"] = kwargs.pop("min_or_max")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_or_max(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.meta["min_or_max"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def minimization(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.min_or_max == "min"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maximization(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.min_or_max == "max"
+
     # -----------------------------------------------------------------
 
     @property
@@ -49,7 +88,11 @@ class ScoresTable(SmartTable):
         :return:
         """
 
-        index = np.argmax(self["Score"])
+        # Get index
+        if self.maximization: index = np.argmax(self["Score"])
+        else: index = np.argmin(self["Score"])
+
+        # Return individual name
         return self["Individual name"][index]
 
     # -----------------------------------------------------------------
@@ -62,7 +105,8 @@ class ScoresTable(SmartTable):
         :return: 
         """
 
-        return np.max(self["Score"])
+        if self.maximization: return np.max(self["Score"])
+        else: return np.min(self["Score"])
 
     # -----------------------------------------------------------------
 

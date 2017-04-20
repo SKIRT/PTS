@@ -11,18 +11,17 @@ from pts.evolve.solve.extremizer import genetic_definition
 
 # -----------------------------------------------------------------
 
-# Create definition
-definition = ConfigurationDefinition(write_config=False)
-
-# Settings
-#definition.add_optional("nruns", "positive_integer", "number of runs", 2)
-definition.add_optional("ngenerations", "positive_integer", "number of generations", 10)
-definition.add_optional("nindividuals", "even_integer", "number of individuals per generation", 100)
+# Create the configuration
+definition = ConfigurationDefinition()
 
 # Genetic settings
 definition.import_section("genetic", "genetic algorithm settings", genetic_definition)
 
-# Flags
-definition.add_flag("plot", "plot", True)
+# Add
+definition.sections["genetic"].add_optional("ngenerations", "positive_integer", "number of generations", 10)
+definition.sections["genetic"].add_optional("nindividuals", "even_integer", "number of individuals per generation", 100)
+
+# Minimize or maximize
+definition.add_required("min_or_max", "string", "minimize or maximize", choices=["min", "max"])
 
 # -----------------------------------------------------------------

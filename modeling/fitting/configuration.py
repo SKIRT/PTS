@@ -28,45 +28,11 @@ from ...core.basics.configuration import prompt_string
 from ..build.component import get_representations_for_model, get_representation_path, get_pixelscale_for_representation
 from ..build.representation import Representation
 from ...core.units.stringify import represent_quantity
-from ...evolve.config.optimize import crossover_methods, mutation_methods, scaling_methods, selector_methods
+from ...evolve.solve.extremizer import genetic_definition
 
 # -----------------------------------------------------------------
 
 template_ski_path = fs.join(introspection.pts_dat_dir("modeling"), "ski", "labeled_template.ski")
-
-# -----------------------------------------------------------------
-
-default_mutation_rate = 0.03
-default_crossover_rate = 0.65
-default_crossover_method = "single_point"
-default_round_decimal = 3
-default_mutation_method = "range"
-default_elitism = True
-default_nelite_individuals = 1
-default_scaling_method = "linear"
-default_selector_method = "rank"
-#default_named_individuals = False
-
-# -----------------------------------------------------------------
-
-# Create the genetic definition
-genetic_definition = ConfigurationDefinition(write_config=False)
-
-# Add settings
-genetic_definition.add_optional("mutation_rate", "real", "mutation rate", default_mutation_rate)
-genetic_definition.add_optional("crossover_rate", "real", "crossover rate", default_crossover_rate)
-genetic_definition.add_optional("crossover_method", "string", "crossover method", default_crossover_method, choices=crossover_methods)
-genetic_definition.add_optional("round_decimal", "integer", "round everything to this decimal place", default_round_decimal)
-genetic_definition.add_optional("mutation_method", "string", "mutation method", default_mutation_method, choices=mutation_methods)
-genetic_definition.add_optional("scaling_method", "string", "scaling method", default_scaling_method, choices=scaling_methods)
-genetic_definition.add_optional("selector_method", "string", "selector method", default_selector_method, choices=selector_methods)
-
-# Flags
-genetic_definition.add_flag("elitism", "enable elitism", default_elitism)
-#genetic_definition.add_flag("named_individuals", "name individuals", default_named_individuals)
-
-# Advanced
-genetic_definition.add_optional("nelite_individuals", "positive_integer", "number of individuals to take as elite", default_nelite_individuals)
 
 # -----------------------------------------------------------------
 

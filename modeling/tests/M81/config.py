@@ -9,7 +9,7 @@
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.remote.host import find_host_ids
 from pts.modeling.tests.base import default_free_parameters, possible_free_parameters
-from pts.modeling.fitting.configuration import genetic_definition
+from pts.evolve.solve.extremizer import genetic_definition
 
 # -----------------------------------------------------------------
 

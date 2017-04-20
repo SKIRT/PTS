@@ -23,7 +23,7 @@ from pts.core.tools.logging import log
 from pts.core.tools.loops import repeat
 from pts.evolve.optimize.stepwise import StepWiseOptimizer
 from pts.core.tools import types
-from pts.evolve.tests.Stepwise.tables import ScoresTable
+from pts.evolve.optimize.tables import ScoresTable
 from pts.modeling.fitting.tables import GenerationsTable, ParametersTable
 from pts.modeling.fitting.explorer import GenerationInfo
 from pts.core.tools import stringify
@@ -627,7 +627,7 @@ class StepWiseTest(TestImplementation):
         self.parameters_table.saveto(self.parameters_table_path)
 
         # Initialize the scores table
-        self.scores_table = ScoresTable()
+        self.scores_table = ScoresTable(min_or_max="max")
         self.scores_table.saveto(self.scores_table_path)
 
     # -----------------------------------------------------------------
