@@ -30,11 +30,12 @@ from pts.core.tools import stringify
 from pts.modeling.fitting.tables import ModelProbabilitiesTable
 from pts.modeling.fitting.tables import BestParametersTable
 from pts.core.tools import time, tables
-from pts.evolve.analyse.database import get_scores, get_scores_named_individuals
-from pts.evolve.analyse.statistics import get_best_score_for_generation
+from pts.evolve.analyse.database import get_scores, get_scores_named_individuals, load_database
+from pts.evolve.analyse.statistics import get_best_score_for_generation, load_statistics
 from pts.core.tools import sequences
 from pts.modeling.fitting.tables import IndividualsTable
 from pts.core.tools.stringify import tostr
+from pts.do.commandline import Command
 
 # -----------------------------------------------------------------
 
@@ -1546,6 +1547,9 @@ class StepWiseTest(TestImplementation):
         # Plot the function
         self.plot_function()
 
+        # Plot the scores
+        self.plot_scores()
+
     # -----------------------------------------------------------------
 
     def plot_function(self):
@@ -1583,6 +1587,76 @@ class StepWiseTest(TestImplementation):
 
         # Show the
         plt.show()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def statistics(self):
+
+        """
+        THis function ...
+        :return: 
+        """
+
+        return load_statistics(self.statistics_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def database(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return load_database(self.database_path)
+
+    # -----------------------------------------------------------------
+
+    def plot_scores(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Plotting the scores ...")
+
+        # Settings
+        settings = dict()
+
+        # Input
+        input_dict = dict()
+        input_dict["database"] = self.database
+
+        # Plot
+        command = Command("plot_scores", "plot the scores", settings, input_dict)
+        plotter = self.run_command(command)
+
+    # -----------------------------------------------------------------
+
+    def plot_heatmap(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Plotting heatmap ...")
+
+        # Settings
+        settings = dict()
+
+        # Input
+        input_dict = dict()
+        input_dict["database"] = self.database
+
+        # Plot
+        command = Command("plot_heat_map", "plot heatmap", settings, input_dict)
+        plotter = self.run_command(command)
 
     # -----------------------------------------------------------------
 
@@ -1816,7 +1890,7 @@ class StepWiseTest(TestImplementation):
 
             # Get the best score from the statistics
             statistics_index = index + 1
-            score_statistics = get_best_score_for_generation(self.statistics_path, run_name, statistics_index)
+            score_statistics = get_best_score_for_generation(self.statistics_path, run_name, statistics_index, minmax="max")
 
             # Get the best score from the scores table
             score_table = self.get_best_score_for_generation(generation_name)
@@ -1824,12 +1898,16 @@ class StepWiseTest(TestImplementation):
             # Get the best score by re-evaluating the best individual
             score_best = eval_func_xy(self.best[0], self.best[1])
 
+            # Rel diff
+            rel_diff = abs(score_table - score_statistics) / score_statistics
+
             print(generation_name + ":")
             print("")
 
-            print(" - Score of best individual: " + tostr(score_best))
+            if index == self.config.ngenerations - 1: print(" - Score of best individual: " + tostr(score_best))
             print(" - Best score from statistics: " + tostr(score_statistics))
             print(" - Best score from scores table: " + tostr(score_table))
+            print(" - Relative difference: " + tostr(rel_diff) + " (" + tostr(rel_diff * 100) + "%)")
 
             print("")
 

@@ -15,6 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import sqlite3
 
+# Import the relevant PTS classes and modules
+from ...core.tools import types
+
 # -----------------------------------------------------------------
 
 def load_database(path):
@@ -39,19 +42,38 @@ def load_database(path):
 
 # -----------------------------------------------------------------
 
-def get_generations(path, run_id):
+def get_runs(database):
 
     """
     This function ...
-    :param path: 
+    :param database: 
+    :return: 
+    """
+
+    if types.is_string_type(database): database = load_database(database)
+
+    # Select
+    ret = database.execute("select distinct identify from population")
+    runs = ret.fetchall()
+
+    # Return the runs
+    return [run[0] for run in runs]
+
+# -----------------------------------------------------------------
+
+def get_generations(database, run_id):
+
+    """
+    This function ...
+    :param database: 
     :param run_id: 
     :return: 
     """
 
-    cursor = load_database(path)
+    if types.is_string_type(database): database = load_database(database)
 
     # Select multiple generations
-    ret = cursor.execute("select distinct generation from population where identify = ?", run_id)
+    ret = database.execute("select distinct generation from population where identify = ?", run_id)
     generations = ret.fetchall()
 
     # Return the generation numbers
@@ -59,28 +81,28 @@ def get_generations(path, run_id):
 
 # -----------------------------------------------------------------
 
-def _get_individuals(path, run_id, generation, individual_range=None):
+def get_individuals(database, run_id, generation, individual_range=None):
 
     """
     This function ...
-    :param path: 
+    :param database: 
     :param run_id: 
     :param generation: 
     :return: 
     """
 
     # Get the cursor
-    cursor = load_database(path)
+    if types.is_string_type(database): database = load_database(database)
 
     if individual_range is not None:
-        ret = cursor.execute("""
+        ret = database.execute("""
                              select *  from population
                              where identify = ?
                              and generation = ?
                              and individual between ? and ?
                              """, (run_id, generation, individual_range.min, individual_range.max))
     else:
-        ret = cursor.execute("""
+        ret = database.execute("""
                            select *  from population
                            where identify = ?
                            and generation = ?
@@ -94,11 +116,11 @@ def _get_individuals(path, run_id, generation, individual_range=None):
 
 # -----------------------------------------------------------------
 
-def get_scores_named_individuals(path, run_id, generation):
+def get_scores_named_individuals(database, run_id, generation):
 
     """
     This function ...
-    :param path: 
+    :param database: 
     :param run_id: 
     :param generation: 
     :return: 
@@ -107,7 +129,7 @@ def get_scores_named_individuals(path, run_id, generation):
     scores = dict()
 
     # Loop over the individuals
-    for it in _get_individuals(path, run_id, generation):
+    for it in get_individuals(database, run_id, generation):
 
         # Get name
         name = it["individual"]
@@ -123,11 +145,11 @@ def get_scores_named_individuals(path, run_id, generation):
 
 # -----------------------------------------------------------------
 
-def get_scores(path, run_id, generation):
+def get_scores(database, run_id, generation):
 
     """
     This function ...
-    :param path: 
+    :param database: 
     :param run_id: 
     :param generation: 
     :return: 
@@ -136,7 +158,7 @@ def get_scores(path, run_id, generation):
     scores = []
 
     # Loop over the individuals
-    for it in _get_individuals(path, run_id, generation):
+    for it in get_individuals(database, run_id, generation):
 
         # Get score
         raw = it["raw"]
@@ -149,11 +171,11 @@ def get_scores(path, run_id, generation):
 
 # -----------------------------------------------------------------
 
-def get_fitnesses(path, run_id, generation):
+def get_fitnesses(database, run_id, generation):
 
     """
     This function ...
-    :param path: 
+    :param database: 
     :param run_id: 
     :param generation: 
     :return: 
@@ -162,7 +184,7 @@ def get_fitnesses(path, run_id, generation):
     fitnesses = []
 
     # Loop over the individuals
-    for it in _get_individuals(path, run_id, generation):
+    for it in get_individuals(database, run_id, generation):
 
         # Get score
         fitness = it["fitness"]

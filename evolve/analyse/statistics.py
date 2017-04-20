@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.tools import tables
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -56,7 +57,7 @@ def load_statistics(path):
 
 # -----------------------------------------------------------------
 
-def get_best_score_for_generation(path, generation, run_id, minmax="max"):
+def get_best_score_for_generation(statistics, run_id, generation, minmax="max"):
 
     """
     This function ...
@@ -68,10 +69,13 @@ def get_best_score_for_generation(path, generation, run_id, minmax="max"):
     """
 
     # Load the table
-    statistics = load_statistics(path)
+    if types.is_string_type(statistics): statistics = load_statistics(statistics)
 
     # Find the index of the row
     index = tables.find_index(statistics, generation, "Generation", where={"Identifier": run_id})
+
+    # If no index is found
+    if index is None: raise ValueError("Could not find the generation '" + str(generation) + "' for run id '" + run_id + "'")
 
     # Return the raw score for the specified generation
     if minmax == "max": return statistics["rawMax"][index]
@@ -80,7 +84,7 @@ def get_best_score_for_generation(path, generation, run_id, minmax="max"):
 
 # -----------------------------------------------------------------
 
-def get_best_fitness_for_generation(path, generation, run_id, minmax="max"):
+def get_best_fitness_for_generation(statistics, run_id, generation, minmax="max"):
 
     """
     This function ...
@@ -92,10 +96,13 @@ def get_best_fitness_for_generation(path, generation, run_id, minmax="max"):
     """
 
     # Load the table
-    statistics = load_statistics(path)
+    if types.is_string_type(statistics): statistics = load_statistics(statistics)
 
     # Find the index of the row
     index = tables.find_index(statistics, generation, "Generation", where={"Identifier": run_id})
+
+    # If no index is found
+    if index is None: raise ValueError("Could not find the generation '" + str(generation) + "' for run id '" + run_id + "'")
 
     # Return the fitness score for the specified generation
     if minmax == "max": return statistics["fitMax"][index]

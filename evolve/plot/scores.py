@@ -19,6 +19,8 @@ import matplotlib.pyplot as plt
 from ...core.basics.configurable import Configurable
 from ...core.tools import filesystem as fs
 from .plotter import Plotter
+from ...core.tools.logging import log
+from ..analyse.database import get_individuals, get_generations, get_runs
 
 # -----------------------------------------------------------------
 
@@ -51,6 +53,109 @@ class ScoresPlotter(Plotter):
 
         # 1. Call the setup function
         self.setup(**kwargs)
+
+        # Plot
+        self.plot_scores()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def runs(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if self.config.runs is None: get_runs(self.database)
+        else: return self.config.runs
+
+    # -----------------------------------------------------------------
+
+    def plot_scores(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        x = []
+        y = []
+        yerr_max = []
+        yerr_min = []
+
+        # Loop over the runs
+        for run_id in self.runs:
+
+            # Loop over the generations
+            for generation in get_generations(self.database, run_id):
+
+                # Loop over the individuals
+                for ind in get_individuals(self.database, run_id, generation):
+
+                    # Get the name
+                    #name = ind[""]
+
+                    x.append(ind["generation"])
+                    y.append(ind["rawAve"])
+                    ymax = ind["rawMax"] - ind["rawAve"]
+                    ymin = ind["rawAve"] - ind["rawMin"]
+
+                    yerr_max.append(ymax)
+                    yerr_min.append(ymin)
+
+        plt.figure()
+
+        plt.errorbar(x, y, [yerr_min, yerr_max], ecolor="g")
+
+        plt.xlabel('Generation (#)')
+        plt.ylabel('Raw score Min/Avg/Max')
+        #plt.title("Plot of evolution identified by '%s' (raw scores)" % (options.identify))
+        plt.grid(True)
+
+        plt.show()
+
+    # -----------------------------------------------------------------
+
+    def graph_errorbars_raw(self, pop, minimize, filesave=None):
+
+        """
+        This function ...
+        :param pop:
+        :param minimize:
+        :param filesave:
+        :return:
+        """
+
+        x = []
+        y = []
+        yerr_max = []
+        yerr_min = []
+
+        for it in pop:
+            x.append(it["generation"])
+            y.append(it["rawAve"])
+            ymax = it["rawMax"] - it["rawAve"]
+            ymin = it["rawAve"] - it["rawMin"]
+
+            yerr_max.append(ymax)
+            yerr_min.append(ymin)
+
+        pylab.figure()
+        pylab.errorbar(x, y, [yerr_min, yerr_max], ecolor="g")
+        pylab.xlabel('Generation (#)')
+        pylab.ylabel('Raw score Min/Avg/Max')
+        pylab.title("Plot of evolution identified by '%s' (raw scores)" % (options.identify))
+        pylab.grid(True)
+
+        if filesave:
+            pylab.savefig(filesave)
+            print("Graph saved to %s file !" % (filesave,))
+        else:
+            pylab.show()
 
     # -----------------------------------------------------------------
 
@@ -108,8 +213,7 @@ class ScoresPlotter(Plotter):
         pylab.annotate("Maximum (%.2f)" % (diff_fit_max,), xy=(gen_max_fit, diff_fit_max), xycoords='data',
                        xytext=(-150, -20), textcoords='offset points',
                        arrowprops=dict(arrowstyle="->",
-                                       connectionstyle="arc"),
-                       )
+                                       connectionstyle="arc"),)
 
         pylab.xlabel("Generation (#)")
         pylab.ylabel("Fitness difference")

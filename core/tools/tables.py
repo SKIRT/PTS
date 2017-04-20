@@ -89,6 +89,7 @@ def skip_entry_based_on_where(table, index, where):
 
     skip_entry = False
     for cname in where:
+        #print(table[cname][index], where[cname])
         if table[cname][index] != where[cname]:
             skip_entry = True
             break

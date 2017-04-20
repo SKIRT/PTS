@@ -28,6 +28,14 @@ from ..basics.configuration import create_configuration_passive
 
 # -----------------------------------------------------------------
 
+class RemoteInstance(object):
+
+    """
+    This class ...
+    """
+
+# -----------------------------------------------------------------
+
 def launch_local(pts_command, config_dict, input_dict=None, analysers=None, analysis_info=None, description=None, cwd=None):
 
     """

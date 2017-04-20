@@ -12,14 +12,11 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import matplotlib.pyplot as plt
-import sqlite3
-
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
 from ...core.basics.plot import Plot
 from ...core.tools import filesystem as fs
+from ..analyse.database import load_database
 
 # -----------------------------------------------------------------
 
@@ -48,15 +45,20 @@ class Plotter(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self, **kwargs):
+    def setup(self, **kwargs):
 
         """
         This function ...
-        :param kwargs:
-        :return:
+        :param kwargs: 
+        :return: 
         """
 
-        # 1. Call the setup function
-        self.setup(**kwargs)
+        # Call the setup function of the base class
+        super(Plotter, self).setup(**kwargs)
+
+        # Load the database
+        if "database" in kwargs: self.database = kwargs.pop("database")
+        elif self.config.database is not None: self.database = load_database(self.config.database)
+        else: raise ValueError("Database not specified")
 
 # -----------------------------------------------------------------
