@@ -147,7 +147,7 @@ class PhotometricUnit(CompositeUnit):
             self.density = density
 
             # Analyse the unit
-            self.scale_factor, self.base_unit, self.wavelength_unit, self.frequency_unit, length_unit, self.solid_angle_unit = analyse_unit(unit)
+            self.scale_factor, self.base_unit, self.wavelength_unit, self.frequency_unit, length_unit, self.solid_angle_unit, cannot_be_intrinsic_brightness = analyse_unit(unit)
 
             # If the wavelength unit is not None or the frequency unit is not None, we have a spectral density
             if self.wavelength_unit is not None and self.wavelength_unit != "":
@@ -211,6 +211,13 @@ class PhotometricUnit(CompositeUnit):
                 else:
 
                     # Whether we have flux or instrinsic surface brigthness is completely dependent on the brigthness flag
+
+                    # Check whether we can say that the unit cannot be an intrinsic surface brightness due to its original string specification (e.g. Jansky)
+                    if cannot_be_intrinsic_brightness:
+                        if brightness and brightness_strict: raise ValueError("The passed unit cannot be a surface brightness")
+                        brightness = False
+
+                    # INTRINSIC SURFACE BRIGHTNESS
                     if brightness:
 
                         self.distance_unit = ""
@@ -1492,8 +1499,6 @@ def divide_units(unit_a, unit_b):
     :param unit_b:
     :return:
     """
-
-    #print("Divide units:", unit_a, unit_b)
 
     # If the other unit is dimensionless
     if unit_b == "": return unit_a.copy()

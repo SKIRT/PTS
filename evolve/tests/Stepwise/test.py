@@ -1473,7 +1473,12 @@ class StepWiseTest(TestImplementation):
         ax.set_zlim3d(0, max_z)
 
         # Show the
-        plt.show()
+        #plt.show()
+
+        path = fs.join(self.plot_path, "charbonneau.pdf")
+
+        plt.savefig(path)
+        plt.close()
 
     # -----------------------------------------------------------------
 

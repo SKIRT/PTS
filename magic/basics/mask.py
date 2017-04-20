@@ -546,10 +546,29 @@ class MaskBase(object):
         """
 
         # Calculate x and y of the pixel corresponding to the object's position
-        x_pixel = int(round(position.x))
-        y_pixel = int(round(position.y))
+        pixel = Pixel.for_coordinate(position, round_first=True)
 
-        return self.data[y_pixel, x_pixel]  # Return the value of the mask in this pixel
+        # Check whether pixel exists in this mask
+        if not pixel.exists_in(self): return False
+
+        # Return whether the corresponding pixel is masked
+        return self.data[pixel.y, pixel.x]  # Return the value of the mask in this pixel
+
+    # -----------------------------------------------------------------
+
+    def covers(self, other_mask):
+
+        """
+        This function ...
+        :param other_mask:
+        :return:
+        """
+
+        if isinstance(other_mask, MaskBase): other = other_mask.data
+        else: other = other_mask
+
+        not_covered = other_mask & self.inverse().data
+        return not np.any(not_covered)
 
     # -----------------------------------------------------------------
 

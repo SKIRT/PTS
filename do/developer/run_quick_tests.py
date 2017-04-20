@@ -49,4 +49,6 @@ launch_local(pts_command, settings)
 # Other:
 # pts tests evolve Stepwise --debug --keep --default --settings "'plot':True" --open_output --remove_previous
 # pts tests magic Sources --debug --default --keep --remove_previous
-#
+# pts tests modeling M81_sed --settings "'free_parameters':['dust_mass']" --debug --keep
+
+# -----------------------------------------------------------------

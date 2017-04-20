@@ -13,7 +13,11 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import numpy as np
 from scipy import interpolate
+
+# Import astronomical modules
+from astropy.units import spectral
 
 # Import the relevant PTS classes and modules
 from .table import SmartTable
@@ -236,22 +240,72 @@ class WavelengthCurve(Curve):
 
     # -----------------------------------------------------------------
 
-    def wavelengths(self, unit=None, asarray=False, add_unit=True):
+    def wavelengths_mask(self, min_wavelength=None, max_wavelength=None):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Initialize mask
+        mask = np.zeros(len(self), dtype=bool)
+
+        # Loop over the wavelengths, check them
+        for index, wavelength in enumerate(self.wavelengths()):
+
+            if min_wavelength is not None and wavelength < min_wavelength: mask[index] = True
+            if max_wavelength is not None and wavelength > max_wavelength: mask[index] = True
+
+        # Return the mask
+        return mask
+
+    # -----------------------------------------------------------------
+
+    def wavelengths(self, unit=None, asarray=False, add_unit=True, min_wavelength=None, max_wavelength=None):
 
         """
         This function ...
         :param unit:
         :param asarray:
         :param add_unit:
+        :param min_wavelength:
+        :param max_wavelength:
         :return:
         """
 
-        if asarray: return arrays.plain_array(self["Wavelength"], unit=unit, array_unit=self.column_unit("Wavelength"))
-        else: return arrays.array_as_list(self["Wavelength"], unit=unit, add_unit=add_unit, array_unit=self.column_unit("Wavelength"))
+        # Create mask
+        if min_wavelength is not None or max_wavelength is not None: mask = self.wavelengths_mask(min_wavelength=min_wavelength, max_wavelength=max_wavelength)
+        else: mask = None
+
+        # Create and return
+        if asarray: return arrays.plain_array(self["Wavelength"], unit=unit, array_unit=self.column_unit("Wavelength"), mask=mask)
+        else: return arrays.array_as_list(self["Wavelength"], unit=unit, add_unit=add_unit, array_unit=self.column_unit("Wavelength"), mask=mask)
 
     # -----------------------------------------------------------------
 
-    def values(self, unit=None, asarray=False, add_unit=True, conversion_info=None, density=False, brightness=False):
+    def frequencies(self, unit="Hz", asarray=False, add_unit=True, min_wavelength=None, max_wavelength=None):
+
+        """
+        This function ...
+        :param unit:
+        :param asarray: 
+        :param add_unit: 
+        :param min_wavelength:
+        :param max_wavelength:
+        :return: 
+        """
+
+        # Create mask
+        if min_wavelength is not None or max_wavelength is not None: mask = self.wavelengths_mask(min_wavelength=min_wavelength, max_wavelength=max_wavelength)
+        else: mask = None
+
+        # Create and return
+        if asarray: return arrays.plain_array(self["Wavelength"], unit=unit, array_unit=self.column_unit("Wavelength"), equivalencies=spectral(), mask=mask)
+        else: return arrays.array_as_list(self["Wavelength"], unit=unit, add_unit=add_unit, array_unit=self.column_unit("Wavelength"), equivalencies=spectral(), mask=mask)
+
+    # -----------------------------------------------------------------
+
+    def values(self, unit=None, asarray=False, add_unit=True, conversion_info=None, density=False, brightness=False, min_wavelength=None, max_wavelength=None):
 
         """
         This function ...
@@ -261,14 +315,26 @@ class WavelengthCurve(Curve):
         :param conversion_info:
         :param density:
         :param brightness:
+        :param min_wavelength:
+        :param max_wavelength:
         :return:
         """
 
+        # Create mask
+        if min_wavelength is not None or max_wavelength is not None: mask = self.wavelengths_mask(min_wavelength=min_wavelength, max_wavelength=max_wavelength)
+        else: mask = None
+
+        # Create conversion info
         if conversion_info is None: conversion_info = dict()
         conversion_info["wavelengths"] = self.wavelengths()
 
-        if asarray: return arrays.plain_array(self[self.value_name], unit=unit, array_unit=self.column_unit(self.value_name), conversion_info=conversion_info, density=density, brightness=brightness)
-        else: return arrays.array_as_list(self[self.value_name], unit=unit, add_unit=add_unit, array_unit=self.column_unit(self.value_name), conversion_info=conversion_info, density=density, brightness=brightness)
+        # Create and return
+        if asarray: return arrays.plain_array(self[self.value_name], unit=unit, array_unit=self.column_unit(self.value_name),
+                                              conversion_info=conversion_info, density=density, brightness=brightness,
+                                              mask=mask)
+        else: return arrays.array_as_list(self[self.value_name], unit=unit, add_unit=add_unit,
+                                          array_unit=self.column_unit(self.value_name), conversion_info=conversion_info,
+                                          density=density, brightness=brightness, mask=mask)
 
 # -----------------------------------------------------------------
 

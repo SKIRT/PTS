@@ -241,15 +241,31 @@ class Pixel(Vector):
 
     # -----------------------------------------------------------------
 
+    def exists_in(self, frame):
+
+        """
+        This function ...
+        :param frame: 
+        :return: 
+        """
+
+        # Check whether the position can be within the mask considering its dimensions
+        if self.x < 0 or self.y < 0 or self.x >= frame.xsize or self.y >= frame.ysize: return False
+        else: return True
+
+    # -----------------------------------------------------------------
+
     @classmethod
-    def for_coordinate(cls, coordinate):
+    def for_coordinate(cls, coordinate, round_first=False):
 
         """
         This function ...
         :param coordinate:
+        :param round_first:
         :return:
         """
 
-        return cls(int(coordinate.x), int(coordinate.y))
+        if round_first: return cls(int(round(coordinate.x)), int(round(coordinate.y)))
+        else: return cls(int(coordinate.x), int(coordinate.y))
 
 # -----------------------------------------------------------------

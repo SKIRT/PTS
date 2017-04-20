@@ -72,10 +72,10 @@ class PhotometricQuantity(Quantity):
 
         #return Quantity, True
 
-        from .parsing import parse_unit as u
+        from .parsing import parse_unit
         from .unit import PhotometricUnit
 
-        unit = u(unit)
+        unit = parse_unit(unit)
         if isinstance(unit, PhotometricUnit): return PhotometricQuantity, True
         else: return Quantity, True
 
@@ -105,7 +105,6 @@ class PhotometricQuantity(Quantity):
         :return:
         """
 
-        #return copy.deepcopy(self)
         return PhotometricQuantity(self.value, self.unit.copy())
 
     # -----------------------------------------------------------------
@@ -140,6 +139,8 @@ class PhotometricQuantity(Quantity):
         solid_angle = kwargs.pop("solid_angle", None)
         fltr = kwargs.pop("fltr", None)
         pixelscale = kwargs.pop("pixelscale", None)
+
+        # Equivalencies
         equivalencies = kwargs.pop("equivalencies", None)
 
         # If equivalencies are specified, use the implementation of the base class

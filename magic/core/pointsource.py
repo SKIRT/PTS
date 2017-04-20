@@ -57,9 +57,6 @@ class PointSource(Source):
         # PSF model
         self.psf_model = None
 
-        # FWHM
-        #self.fwhm = None
-
         # Saturation detection
         self.saturation = None
 
@@ -382,7 +379,7 @@ class PointSource(Source):
         for level in range(len(config.model_names)):
 
             # Do the fitting
-            if detection is None: source, model = sources.fit_model_to_source(self.detection, config, track_record, level=level, special=debug)
+            if detection is None: detection, model = sources.fit_model_to_source(self.detection, config, track_record, level=level, special=debug)
             else: detection, model = sources.fit_model_to_source(detection, config, track_record, level=level)
 
             # If a model was found, set the attributes of the star object and exit the loop

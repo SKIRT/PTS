@@ -51,7 +51,8 @@ class SED(WavelengthCurve):
             # Call the initialize function of the base class
             unit = kwargs.pop("photometry_unit")
             density = kwargs.pop("density", False)
-            unit = PhotometricUnit(unit, density=density)
+            brightness = kwargs.pop("brightness", False)
+            unit = PhotometricUnit(unit, density=density, brightness=brightness)
 
             kwargs["y_name"] = "Photometry"
             kwargs["y_description"] = "Photometric points"
@@ -83,7 +84,7 @@ class SED(WavelengthCurve):
 
     # -----------------------------------------------------------------
 
-    def photometry(self, unit=None, asarray=False, add_unit=True, conversion_info=None, density=False):
+    def photometry(self, unit=None, asarray=False, add_unit=True, conversion_info=None, density=False, brightness=False, min_wavelength=None, max_wavelength=None):
 
         """
         This function ...
@@ -92,10 +93,14 @@ class SED(WavelengthCurve):
         :param add_unit:
         :param conversion_info:
         :param density:
+        :param brightness:
+        :param min_wavelength:
+        :param max_wavelength:
         :return:
         """
 
-        return self.values(unit, asarray, add_unit, conversion_info=conversion_info, density=density)
+        return self.values(unit, asarray, add_unit, conversion_info=conversion_info, density=density, brightness=brightness,
+                           min_wavelength=min_wavelength, max_wavelength=max_wavelength)
 
     # -----------------------------------------------------------------
 
@@ -112,7 +117,7 @@ class SED(WavelengthCurve):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_arrays(cls, wavelengths, photometry, wavelength_unit, photometry_unit, density=False):
+    def from_arrays(cls, wavelengths, photometry, wavelength_unit, photometry_unit, density=False, brightness=False):
 
         """
         This function ...
@@ -121,14 +126,15 @@ class SED(WavelengthCurve):
         :param wavelength_unit:
         :param photometry_unit:
         :param density:
+        :param brightness:
         :return:
         """
 
         # Set unit
-        photometry_unit = PhotometricUnit(photometry_unit, density=density)
+        photometry_unit = PhotometricUnit(photometry_unit, density=density, brightness=brightness)
 
         # Create new SED
-        sed = cls(photometry_unit=photometry_unit, density=density)
+        sed = cls(photometry_unit=photometry_unit, density=density, brightness=brightness)
 
         # Parse units
         wavelength_unit = u(wavelength_unit)

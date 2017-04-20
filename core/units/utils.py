@@ -337,6 +337,68 @@ def occurences_for_type(unit, physical_type):
 
 # -----------------------------------------------------------------
 
+def reduce_unit(unit):
+
+    """
+    This function ...
+    :param unit: 
+    :return: 
+    """
+
+    base_types = physical_base_types_units_and_powers_as_dict(unit, power=1)
+
+    # Flag that is set to True when things as Jy are encountered, which allows us to say that we are not dealing with intrinsic surface brightnesses, but with fluxes
+    cannot_be_intrinsic_brightness = False
+
+    # If we have a combination of a flux density and a frequency
+    if "spectral flux density" in base_types and "frequency" in base_types:
+
+        # If they occur more than once, we have something weird
+        if len(base_types["spectral flux density"]) == 1 and len(base_types["frequency"]) == 1:
+
+            # Assert power is one
+            assert base_types["spectral flux density"][0][1] == 1
+
+            # We have a flux, so no intrinsic brightness
+            cannot_be_intrinsic_brightness = True
+
+            # Replace the flux density unit with the decomposed version
+            represents = base_types["spectral flux density"][0][0].represents
+
+            # Replace
+            unit /= base_types["spectral flux density"][0][0]
+            unit *= represents
+
+        # Invalid
+        elif len(base_types["spectral flux density"]) > 1: raise ValueError("Invalid photometric unit: multiple occurences of spectral flux base unit")
+        elif len(base_types["frequency"]) > 1: raise ValueError("Invalid photometric unit: multiple occurences of frequency base unit")
+
+    # If we have a combination of a flux density and a length to the power of 2
+    if "spectral flux density" in base_types and "length" in physical_base_types(unit, power=2):
+
+        # if they occur more than once, we have something weird
+        if len(base_types["spectral flux density"]) == 1:
+
+            # Assert power is one
+            assert base_types["spectral flux density"][0][1] == 1
+
+            # Can stilll be intrinsic brightness if distance dependence is done away with and another is added (e.g. * m2 / pc2)
+
+            # Replace the flux density unit with the decomposed version
+            represents = base_types["spectral flux density"][0][0].represents
+
+            # Replace
+            unit /= base_types["spectral flux density"][0][0]
+            unit *= represents
+
+        # Invalid
+        else: raise ValueError("Invalid photometric unit: multiple occurences of spectral flux base unit")
+
+    # Return the unit
+    return unit, cannot_be_intrinsic_brightness
+
+# -----------------------------------------------------------------
+
 def analyse_unit(unit):
 
     """
@@ -353,40 +415,11 @@ def analyse_unit(unit):
 
     solid_angle_unit = Unit("")
 
-    base_types = physical_base_types_units_and_powers_as_dict(unit, power=1)
-
-    if "spectral flux density" in base_types and "frequency" in base_types:
-
-        # if they occur more than once, we have something weird
-        if len(base_types["spectral flux density"]) == 1 and len(base_types["frequency"]) == 1:
-
-            # Assert power is one
-            assert base_types["spectral flux density"][0][1] == 1
-
-            # Replace the flux density unit with the decomposed version
-            represents = base_types["spectral flux density"][0][0].represents
-
-            unit /= base_types["spectral flux density"][0][0]
-            unit *= represents
-
-    if "spectral flux density" in base_types and "length" in physical_base_types(unit, power=2):
-
-        # if they occur more than once, we have something weird
-        if len(base_types["spectral flux density"]) == 1:
-
-            # Assert power is one
-            assert base_types["spectral flux density"][0][1] == 1
-
-            # Replace the flux density unit with the decomposed version
-            represents = base_types["spectral flux density"][0][0].represents
-
-            unit /= base_types["spectral flux density"][0][0]
-            unit *= represents
+    # Reduce (for example, convert 'Jy * Hz' to '1e-26 W / m2')
+    unit, cannot_be_intrinsic_brightness = reduce_unit(unit)
 
     # Look in the bases whether different physical types occur twice
     for physical_type in ["frequency", "time", "length", "solid angle"]:
-
-        #print(type(unit))
 
         occurences = occurences_for_type(unit, physical_type)
 
@@ -421,21 +454,23 @@ def analyse_unit(unit):
 
         if power > 0:
 
+            # We have spectral flux density (e.g. Jy) as a base unit
             if base.physical_type == "spectral flux density":
 
                 # Decompose the unit
-                sf, bu, wu, fu, du, su = analyse_unit(base.represents)
+                sf, bu, wu, fu, du, su, _ = analyse_unit(base.represents)
 
                 scale_factor *= sf
                 base_unit *= bu
 
+                # Wavelength unit
                 if wu != "":
 
                     if fu != "": raise ValueError("Wavelength unit and frequency unit cannot both be defined")
                     if wavelength_unit != "": raise ValueError("Encountered two wavelength units: " + str(wavelength_unit) + " and " + str(wu))
-
                     wavelength_unit = wu
 
+                # Frequency unit
                 if fu != "":
 
                     if wu != "": raise ValueError("Wavelength unit and frequency unit cannot both be defined")
@@ -443,12 +478,16 @@ def analyse_unit(unit):
 
                     frequency_unit = fu
 
+                # Distance unit
                 if du != "":
 
                     if length_unit != "": raise ValueError("Encountered two length units: " + str(length_unit) + " and " + str(du))
-                    #if distance_unit != "": raise ValueError("Encountered two distance units: " + str(distance_unit) + " and " + str(du))
-                    distance_unit = du
+                    length_unit = du
 
+                    # We cannot have an intrinsic brightness (in other words, the length unit IS A DISTANCE LENGTH UNIT, NOT AN INTRINSIC LENGTH SCALE)
+                    cannot_be_intrinsic_brightness = True
+
+                # Solid angle unit
                 if su != "":
 
                     if solid_angle_unit != "": raise ValueError("Encountered two solid angle units: " + str(solid_angle_unit) + " and " + str(su))
@@ -477,18 +516,18 @@ def analyse_unit(unit):
         # Time unit
         elif base.physical_type == "time":
 
+            # Check the power
             if power != -1: raise ValueError("Found a unit of time but not as inversely proportional to the base unit (instead the power is " + str(power) + ")")
             base_unit *= base ** power
 
         # Length unit
         elif base.physical_type == "length":
 
+            # Check the power
             if power == -1: wavelength_unit = base
-            #elif power == -2: distance_unit = base ** 2
             elif power == -2: length_unit = base ** 2
             elif power == -3:
                 wavelength_unit = base
-                #distance_unit = base ** 2
                 length_unit = base ** 2
             else: raise ValueError("Not a photometric unit: found length^" + str(power) + " dimension")
 
@@ -514,11 +553,11 @@ def analyse_unit(unit):
     # Check if wavelength and frequency unit are not both defined
     if wavelength_unit != "" and frequency_unit != "": raise ValueError("Not a photometric unit: found wavelength^-1 and frequency^-1 dimensions")
 
+    # Check whether a base unit is found
     if base_unit is None or base_unit == "": raise ValueError("Not a photometric unit: found no unit of energy or luminosity")
 
     # Return
-    #return scale_factor, base_unit, wavelength_unit, frequency_unit, distance_unit, solid_angle_unit
-    return scale_factor, base_unit, wavelength_unit, frequency_unit, length_unit, solid_angle_unit
+    return scale_factor, base_unit, wavelength_unit, frequency_unit, length_unit, solid_angle_unit, cannot_be_intrinsic_brightness
 
 # -----------------------------------------------------------------
 

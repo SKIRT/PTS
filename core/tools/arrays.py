@@ -119,7 +119,8 @@ def find_closest_below_index(array, value, array_unit=None):
 
 # -----------------------------------------------------------------
 
-def array_as_list(array, add_unit=True, unit=None, masked_value=None, array_unit=None, conversion_info=None, density=False, brightness=False):
+def array_as_list(array, add_unit=True, unit=None, masked_value=None, array_unit=None, conversion_info=None,
+                  density=False, brightness=False, equivalencies=None, mask=None):
 
     """
     This function ...
@@ -131,6 +132,8 @@ def array_as_list(array, add_unit=True, unit=None, masked_value=None, array_unit
     :param conversion_info:
     :param density:
     :param brightness:
+    :param equivalencies:
+    :param mask:
     :return:
     """
 
@@ -170,7 +173,10 @@ def array_as_list(array, add_unit=True, unit=None, masked_value=None, array_unit
     # Loop over the entries in the column
     for i in range(len(array)):
 
-        # Masked value
+        # Masked value: skip
+        if mask is not None and mask[i]: continue
+
+        # Masked array value
         if has_mask and array.mask[i]: result.append(masked_value)
 
         # Not masked value
@@ -194,7 +200,8 @@ def array_as_list(array, add_unit=True, unit=None, masked_value=None, array_unit
                         # Not a photometric quantity
                         else: conversion_info = dict()
 
-                        #print(conversion_info)
+                        # Add equivalencies
+                        if equivalencies is not None: conversion_info["equivalencies"] = equivalencies
 
                         # If a target unit is specified, convert
                         value = value.to(unit, **conversion_info).value * unit  # If converted, do not add any unit
@@ -219,7 +226,7 @@ def array_as_list(array, add_unit=True, unit=None, masked_value=None, array_unit
 
 # -----------------------------------------------------------------
 
-def plain_array(column, unit=None, array_unit=None, conversion_info=None, density=False, brightness=False):
+def plain_array(column, unit=None, array_unit=None, conversion_info=None, density=False, brightness=False, equivalencies=None, mask=None):
 
     """
     This function ...
@@ -229,9 +236,13 @@ def plain_array(column, unit=None, array_unit=None, conversion_info=None, densit
     :param conversion_info:
     :param density:
     :param brightness:
+    :param equivalencies:
+    :param mask:
     :return:
     """
 
-    return np.array(array_as_list(column, unit=unit, add_unit=False, masked_value=float('nan'), array_unit=array_unit, conversion_info=conversion_info, density=density, brightness=brightness))
+    return np.array(array_as_list(column, unit=unit, add_unit=False, masked_value=float('nan'), array_unit=array_unit,
+                                  conversion_info=conversion_info, density=density, brightness=brightness,
+                                  equivalencies=equivalencies, mask=mask))
 
 # -----------------------------------------------------------------

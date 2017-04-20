@@ -18,7 +18,6 @@ from scipy.interpolate import interp1d
 
 # Import astronomical modules
 from astropy.units import spectral_density, spectral
-from astropy import constants
 
 # Import the relevant PTS classes and modules
 from ..tools import filesystem as fs
@@ -33,6 +32,7 @@ from ..tools import sequences
 from ..basics.configurable import Configurable
 from ..simulation.simulation import createsimulations
 from ..tools import parsing
+from ..tools import types
 
 # -----------------------------------------------------------------
 
@@ -152,7 +152,7 @@ class ObservedFluxCalculator(Configurable):
             # Set the error bars from strings
             for filter_name in errors:
                 error = errors[filter_name]
-                if isinstance(error, basestring): error = parsing.errorbar(error)
+                if types.is_string_type(error): error = parsing.errorbar(error)
                 self.errors[filter_name] = error
 
         # Set output path
@@ -210,101 +210,20 @@ class ObservedFluxCalculator(Configurable):
             conversion_info = dict()
             conversion_info["distance"] = self.ski.get_instrument_distance(instr_name)
 
-            #print(conversion_info)
+            # Debugging
+            log.debug("Loading the modelled SED ...")
 
             # Get the name of the SED
             sed_name = fs.name(sed_path).split("_sed")[0]
 
-            # Debugging
-            log.debug("Calculating the observed fluxes for the " + sed_name + " SED ...")
-
-            # Create an observed SED for the mock fluxes
-            mock_sed = ObservedSED(photometry_unit="Jy")
-
             # Load the modelled SED
             model_sed = SED.from_skirt(sed_path)
 
-            # Initialize lists
-            bb_frequencies = []
-            bb_fluxdensities = []
+            # Debugging
+            log.debug("Calculating the observed fluxes for the " + sed_name + " SED ...")
 
-            # Get the wavelengths and flux densities
-            wavelengths = model_sed.wavelengths("micron", asarray=True)
-            fluxdensities = []
-            for wavelength, fluxdensity_jy in zip(model_sed.wavelengths("micron"), model_sed.photometry("Jy", conversion_info=conversion_info)):
-
-                # 2 different ways should be the same:
-                #fluxdensity_ = fluxdensity_jy.to("W / (m2 * micron)", equivalencies=spectral_density(wavelength))
-                #fluxdensity = fluxdensity_jy.to("W / (m2 * Hz)").value * spectral_factor_hz_to_micron(wavelength) * u("W / (m2 * micron)")
-                #print(fluxdensity_, fluxdensity) # IS OK!
-
-                fluxdensity = fluxdensity_jy.to("W / (m2 * micron)", wavelength=wavelength)
-                #fluxdensities.append(fluxdensity.to("W / (m2 * micron)").value)
-                fluxdensities.append(fluxdensity.value)
-
-                if wavelength > 50. * u("micron"):
-                    bb_frequencies.append(wavelength.to("Hz", equivalencies=spectral()).value)
-                    bb_fluxdensities.append(fluxdensity_jy.to("W / (m2 * Hz)").value) # must be frequency-fluxdensity
-
-            # Convert to array
-            fluxdensities = np.array(fluxdensities)  # in W / (m2 * micron)
-
-            # Calculate the derivative of the log(Flux) to the frequency, make a 'spectral index' function
-            bb_frequencies = np.array(bb_frequencies)
-            bb_fluxdensities = np.array(bb_fluxdensities)
-            gradients = np.gradient(np.log10(bb_frequencies), np.log10(bb_fluxdensities))
-            spectral_index = interp1d(bb_frequencies, gradients)
-
-            # Loop over the different filters
-            for fltr in self.filters:
-
-                # Determine filter name
-                filter_name = str(fltr)
-
-                # Broad band filter, with spectral convolution
-                if isinstance(fltr, BroadBandFilter) and self.config.spectral_convolution:
-
-                    # Debugging
-                    log.debug("Calculating the observed flux for the " + str(fltr) + " filter by convolving spectrally ...")
-
-                    # Calculate the flux: flux densities must be per wavelength instead of per frequency!
-                    fluxdensity = float(fltr.convolve(wavelengths, fluxdensities)) * u("W / (m2 * micron)")
-                    fluxdensity_value = fluxdensity.to("Jy", equivalencies=spectral_density(fltr.pivot)).value # convert back to Jy
-
-                    # For SPIRE, also multiply with Kbeam correction factor
-                    if fltr.instrument == "SPIRE":
-
-                        # Calculate the spectral index for the simulated SED at this filter
-                        # Use the central wavelength (frequency)
-                        central_frequency = fltr.center.to("Hz", equivalencies=spectral()).value
-                        spectral_index_filter = spectral_index(central_frequency)
-
-                        # Get the Kbeam factor
-                        kbeam = self.spire.get_kbeam_spectral(fltr, spectral_index_filter)
-
-                        # Multiply the flux density
-                        fluxdensity_value *= kbeam
-
-                    # Add a point to the mock SED
-                    error = self.errors[filter_name] if self.errors is not None and filter_name in self.errors else None
-                    mock_sed.add_point(fltr, fluxdensity_value * u("Jy"), error)
-
-                # Broad band filter without spectral convolution or narrow band filter
-                else:
-
-                    # Debugging
-                    log.debug("Getting the observed flux for the " + str(fltr) + " filter ...")
-
-                    # Get the index of the wavelength closest to that of the filter
-                    index = sequences.find_closest_index(wavelengths, fltr.pivot.to("micron").value)  # wavelengths are in micron
-
-                    # Get the flux density
-                    fluxdensity = fluxdensities[index] * u("W / (m2 * micron)")  # flux densities are in W/(m2 * micron)
-                    fluxdensity = fluxdensity.to("Jy", equivalencies=spectral_density(fltr.pivot))  # now in Jy
-
-                    # Add a point to the mock SED
-                    error = self.errors[filter_name] if self.errors is not None and filter_name in self.errors else None
-                    mock_sed.add_point(fltr, fluxdensity, error)
+            # Convert model sed into observed SED
+            mock_sed = create_mock_sed(model_sed, self.filters, self.spire, spectral_convolution=self.config.spectral_convolution, errors=self.errors)
 
             # Add the complete SED to the dictionary (with the SKIRT SED name as key)
             self.mock_seds[sed_name] = mock_sed
@@ -363,5 +282,212 @@ def instrument_name(sed_path, prefix):
     """
 
     return fs.name(sed_path).split("_sed.dat")[0].split(prefix + "_")[1]
+
+# -----------------------------------------------------------------
+
+def get_wavelength_and_fluxdensity_arrays(model_sed, conversion_info=None):
+
+    """
+    This function ...
+    :param model_sed: 
+    :param conversion_info:
+    :return: 
+    """
+
+    # Get arrays
+    wavelengths = model_sed.wavelengths("micron", asarray=True)
+    fluxdensities = model_sed.photometry("W / (m2 * micron)", asarray=True, conversion_info=conversion_info)
+
+    # Return the wavelengths and fluxdensities
+    return wavelengths, fluxdensities
+
+# -----------------------------------------------------------------
+
+def get_wavelength_and_fluxdensity_arrays_old(model_sed):
+
+    """
+    This function ...
+    :param model_sed: 
+    :return: 
+    """
+
+    # Get the wavelengths and flux densities
+    wavelengths = model_sed.wavelengths("micron", asarray=True)
+    fluxdensities = []
+    for wavelength, fluxdensity_jy in zip(model_sed.wavelengths("micron"), model_sed.photometry("Jy", conversion_info=conversion_info)):
+
+        # 2 different ways should be the same:
+        # fluxdensity_ = fluxdensity_jy.to("W / (m2 * micron)", equivalencies=spectral_density(wavelength))
+        # fluxdensity = fluxdensity_jy.to("W / (m2 * Hz)").value * spectral_factor_hz_to_micron(wavelength) * u("W / (m2 * micron)")
+        # print(fluxdensity_, fluxdensity) # IS OK!
+
+        fluxdensity = fluxdensity_jy.to("W / (m2 * micron)", wavelength=wavelength)
+        fluxdensities.append(fluxdensity.value)
+
+        # Add to data points for black body (to get spectral index)
+        if wavelength > 50. * u("micron"):
+
+            bb_frequencies.append(wavelength.to("Hz", equivalencies=spectral()).value)
+            bb_fluxdensities.append(fluxdensity_jy.to("W / (m2 * Hz)").value)  # must be frequency-fluxdensity
+
+    # Convert to array
+    fluxdensities = np.array(fluxdensities)  # in W / (m2 * micron)
+
+# -----------------------------------------------------------------
+
+def calculate_spectral_indices(model_sed):
+
+    """
+    This function ...
+    :param model_sed: 
+    :return: 
+    """
+
+    # Define minimum wavelength
+    min_wavelength = 50. * u("micron")
+
+    # Get frequencies and flux densities
+    frequencies = model_sed.frequencies("Hz", min_wavelength=min_wavelength, asarray=True)
+    fluxdensities = model_sed.photometry("W / (m2 * Hz)", min_wavelength=min_wavelength, asarray=True)
+
+    # Take logarithm
+    log_frequencies = np.log10(frequencies)
+    log_fluxdensities = np.log10(fluxdensities)
+
+    print(log_frequencies, log_frequencies.shape)
+    print(log_fluxdensities, log_fluxdensities.shape)
+
+    # Calculate the derivative of the log(Flux) to the frequency, make a 'spectral index' function
+    #gradients = np.gradient(log_frequencies, log_fluxdensities) # DOESN'T WORK ANYMORE?
+    gradients = np.diff(log_fluxdensities) / np.diff(log_frequencies)
+    print(gradients, gradients.shape)
+    spectral_indices = interp1d(frequencies, gradients)
+
+    # Return the spectral indices
+    return spectral_indices
+
+# -----------------------------------------------------------------
+
+def calculate_fluxdensity_convolution(fltr, wavelengths, fluxdensities, spectral_indices, spire, errors=None):
+
+    """
+    This function ...
+    :param fltr:
+    :param wavelengths:
+    :param fluxdensities:
+    :param spectral_indices:
+    :param spire:
+    :param errors:
+    :return: 
+    """
+
+    # Debugging
+    log.debug("Calculating the observed flux for the " + str(fltr) + " filter by convolving spectrally ...")
+
+    # Calculate the flux: flux densities must be per wavelength instead of per frequency!
+    fluxdensity = float(fltr.convolve(wavelengths, fluxdensities)) * u("W / (m2 * micron)")
+    fluxdensity_value = fluxdensity.to("Jy", equivalencies=spectral_density(fltr.pivot)).value  # convert back to Jy
+
+    # For SPIRE, also multiply with Kbeam correction factor
+    if fltr.instrument == "SPIRE":
+
+        # Calculate the spectral index for the simulated SED at this filter
+        # Use the central wavelength (frequency)
+        central_frequency = fltr.center.to("Hz", equivalencies=spectral()).value
+        spectral_index_filter = spectral_indices(central_frequency)
+
+        # Get the Kbeam factor
+        kbeam = spire.get_kbeam_spectral(fltr, spectral_index_filter)
+
+        # Multiply the flux density
+        fluxdensity_value *= kbeam
+
+    # Determine filter name
+    filter_name = str(fltr)
+
+    # Add a point to the mock SED
+    error = errors[filter_name] if errors is not None and filter_name in errors else None
+
+    # Return the fluxdensity and error
+    return fluxdensity_value * u("Jy"), error
+
+# -----------------------------------------------------------------
+
+def calculate_fluxdensity_closest(fltr, wavelengths, fluxdensities, errors=None):
+
+    """
+    This function ...
+    :param fltr: 
+    :param wavelengths: 
+    :param fluxdensities: 
+    :param errors:
+    :return: 
+    """
+
+    # Debugging
+    log.debug("Getting the observed flux for the " + str(fltr) + " filter ...")
+
+    # Get the index of the wavelength closest to that of the filter
+    index = sequences.find_closest_index(wavelengths, fltr.pivot.to("micron").value)  # wavelengths are in micron
+
+    # Get the flux density
+    fluxdensity = fluxdensities[index] * u("W / (m2 * micron)")  # flux densities are in W/(m2 * micron)
+    fluxdensity = fluxdensity.to("Jy", equivalencies=spectral_density(fltr.pivot))  # now in Jy
+
+    # Determine filter name
+    filter_name = str(fltr)
+
+    # Add a point to the mock SED
+    error = errors[filter_name] if errors is not None and filter_name in errors else None
+
+    # Return the fluxdensity and error
+    return fluxdensity, error
+
+# -----------------------------------------------------------------
+
+def create_mock_sed(model_sed, filters, spire, spectral_convolution=True, errors=None):
+
+    """
+    This function ...
+    :param model_sed: 
+    :param filters:
+    :param spire:
+    :param spectral_convolution:
+    :param errors:
+    :return: 
+    """
+
+    # Get the wavelengths and flux densities as arrays
+    wavelengths, fluxdensities = get_wavelength_and_fluxdensity_arrays(model_sed)
+
+    # Calculate the spectral indices for wavelengths in the dust regime
+    spectral_indices = calculate_spectral_indices(model_sed)
+
+    # Create an observed SED for the mock fluxes
+    mock_sed = ObservedSED(photometry_unit="Jy")
+
+    # Loop over the different filters
+    for fltr in filters:
+
+        # Broad band filter, with spectral convolution
+        if isinstance(fltr, BroadBandFilter) and spectral_convolution:
+
+            # Calculate
+            fluxdensity, error = calculate_fluxdensity_convolution(fltr, wavelengths, fluxdensities, spectral_indices, spire, errors=errors)
+
+            # Add a data point to the mock SED
+            mock_sed.add_point(fltr, fluxdensity, error)
+
+        # Broad band filter without spectral convolution or narrow band filter
+        else:
+
+            # Calculate
+            fluxdensity, error = calculate_fluxdensity_closest(fltr, wavelengths, fluxdensities, errors=errors)
+
+            # Add a data point to the mock SED
+            mock_sed.add_point(fltr, fluxdensity, error)
+
+    # Return the mock observed SED
+    return mock_sed
 
 # -----------------------------------------------------------------

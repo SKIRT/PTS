@@ -22,8 +22,8 @@ from ..basics.vector import Position, Extent
 from ..region.rectangle import PixelRectangleRegion
 from ..tools import cropping, fitting, interpolation, plotting
 from ...core.tools.logging import log
-from ...core.basics.distribution import Distribution
 from ..basics.coordinate import PixelCoordinate
+from .mask import MaskBase
 
 # -----------------------------------------------------------------
 
@@ -45,6 +45,8 @@ class CutoutMask(np.ndarray):
         :param y_max:
         :return:
         """
+
+        if isinstance(data, MaskBase): data = data.data
 
         obj = np.asarray(data, dtype=bool).view(cls)
         obj.x_min = x_min

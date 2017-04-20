@@ -1704,7 +1704,8 @@ class SkiFile:
         # Get parent
         parent = self.remove_dust_component_normalization(component_id)
 
-        from ..units.helper import is_mass, parse_quantity, represent_quantity
+        from ..units.helper import is_mass, parse_quantity
+        from ..units.stringify import represent_quantity
 
         # If mass is given: dust mass normalization
         if is_mass(value):

@@ -623,7 +623,13 @@ class ExtendedSourceFinder(Configurable):
         log.info("Creating the table of extended sources ...")
 
         # Loop over the sources
-        for source in self.sources: self.table.add_source(source)
+        for source in self.sources:
+
+            # No source?
+            if source is None: continue
+
+            # Add source
+            self.table.add_source(source)
 
     # -----------------------------------------------------------------
 
