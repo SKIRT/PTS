@@ -23,16 +23,18 @@ from . import arrays
 
 # -----------------------------------------------------------------
 
-def find_index(table, key, column_name=None):
+def find_index(table, key, column_name=None, where=None):
 
     """
     This function ...
     :param table:
     :param key:
     :param column_name:
+    :param where:
     :return:
     """
 
+    # If multiple keys are passed
     if isinstance(key, list):
 
         if column_name is None: raise ValueError("Column names must be specified when specifying multiple keys")
@@ -40,6 +42,9 @@ def find_index(table, key, column_name=None):
 
         # Loop over all entries in the table
         for i in range(len(table)):
+
+            if where is not None:
+                if skip_entry_based_on_where(table, i, where): continue
 
             found_mismatch = False
 
@@ -53,7 +58,7 @@ def find_index(table, key, column_name=None):
 
         return None
 
-    #elif isinstance(key, basestring):
+    # Just a single key is passed
     else:
 
         # Get first column name if none is given
@@ -62,11 +67,33 @@ def find_index(table, key, column_name=None):
         # Loop over all entries in the column
         for i in range(len(table)):
 
+            # Skip
+            if where is not None:
+                if skip_entry_based_on_where(table, i, where): continue
+
             if table[column_name][i] == key: return i
 
         return None
 
-    #else: raise ValueError("Invalid key: must be a list (of strings) or a string")
+# -----------------------------------------------------------------
+
+def skip_entry_based_on_where(table, index, where):
+
+    """
+    This function ...
+    :param table: 
+    :param index: 
+    :param where: 
+    :return: 
+    """
+
+    skip_entry = False
+    for cname in where:
+        if table[cname][index] != where[cname]:
+            skip_entry = True
+            break
+
+    return skip_entry
 
 # -----------------------------------------------------------------
 

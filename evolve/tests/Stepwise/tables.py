@@ -49,8 +49,20 @@ class ScoresTable(SmartTable):
         :return:
         """
 
-        index = np.argmin(self["Score"])
+        index = np.argmax(self["Score"])
         return self["Individual name"][index]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def best_score(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return np.max(self["Score"])
 
     # -----------------------------------------------------------------
 

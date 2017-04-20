@@ -22,6 +22,20 @@ from . import sequences
 
 # -----------------------------------------------------------------
 
+def tostr(value, scientific=True, decimal_places=2):
+
+    """
+    This function ...
+    :param value: 
+    :param scientific:
+    :param decimal_places:
+    :return: 
+    """
+
+    return stringify(value, scientific=scientific, decimal_places=decimal_places)[1]
+
+# -----------------------------------------------------------------
+
 def stringify(value, scientific=False, decimal_places=2):
 
     """

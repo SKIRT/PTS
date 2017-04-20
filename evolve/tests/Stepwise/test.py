@@ -30,10 +30,11 @@ from pts.core.tools import stringify
 from pts.modeling.fitting.tables import ModelProbabilitiesTable
 from pts.modeling.fitting.tables import BestParametersTable
 from pts.core.tools import time, tables
-from pts.evolve.analyse.database import load_database, get_scores, get_scores_named_individuals
-from pts.evolve.analyse.statistics import load_statistics
+from pts.evolve.analyse.database import get_scores, get_scores_named_individuals
+from pts.evolve.analyse.statistics import get_best_score_for_generation
 from pts.core.tools import sequences
 from pts.modeling.fitting.tables import IndividualsTable
+from pts.core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -65,6 +66,11 @@ free_parameter_ranges = {"x": parameter_range, "y": parameter_range}
 
 # Parameter units
 parameter_units = dict()
+
+# -----------------------------------------------------------------
+
+# Real best values
+real_best_values = {"x": 0.5, "y": 0.5}
 
 # -----------------------------------------------------------------
 
@@ -331,8 +337,8 @@ class StepWiseTest(TestImplementation):
         log.debug("Previous generation: " + self.generations_table.last_generation_name)
 
         # Debugging
-        if self.generations_table.has_finished: log.debug("There are finished generations: " + stringify.stringify(self.generations_table.finished_generations)[1])
-        if has_unevaluated_generations(self.generations_table, self.model_probabilities, self.individual_names_dict): log.debug("There are unevaluated generations: " + stringify.stringify(get_unevaluated_generations(self.generations_table, self.model_probabilities, self.individual_names_dict))[1])
+        if self.generations_table.has_finished: log.debug("There are finished generations: " + tostr(self.generations_table.finished_generations))
+        if has_unevaluated_generations(self.generations_table, self.model_probabilities, self.individual_names_dict): log.debug("There are unevaluated generations: " + tostr(get_unevaluated_generations(self.generations_table, self.model_probabilities, self.individual_names_dict)))
 
         # If some generations have finished, fit the SED
         if self.generations_table.has_finished and has_unevaluated_generations(self.generations_table, self.model_probabilities, self.individual_names_dict): self.score()
@@ -1590,11 +1596,78 @@ class StepWiseTest(TestImplementation):
         # Inform the user
         log.info("Testing ...")
 
+        # Check the best value
+        self.check_best()
+
         # Check the database
         self.check_database()
 
         # Check the statistics
         self.check_statistics()
+
+    # -----------------------------------------------------------------
+
+    def check_best(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Checking the best individual ...")
+
+        # Get the dictionary of the best parameter values from the optimizer
+        best_parameters = get_parameter_values_from_individual(self.best)
+
+        # Get the dictionary of the best parameter values from the tables
+        best_parameters_table = self.get_best_parameters_from_tables()
+
+        # Loop over the free parameter labels
+        print("")
+        for label in free_parameter_labels:
+
+            print(label + ":")
+            print("")
+
+            real = real_best_values[label]
+            best = best_parameters[label]
+            abs_diff = abs(best_parameters[label] - real_best_values[label])
+            rel_diff = abs_diff / real
+            best_tables = best_parameters_table[label]
+
+            # Show
+            print(" - real value: " + tostr(real))
+            print(" - best individual value: " + tostr(best))
+            print(" - absolute difference: " + tostr(abs_diff))
+            print(" - relative difference: " + tostr(rel_diff) + " (" + tostr(rel_diff*100) + "%)")
+            print(" - best value from tables: " + tostr(best_tables))
+
+            print("")
+
+    # -----------------------------------------------------------------
+
+    def get_best_parameters_from_tables(self):
+
+        """
+        Check whether we find the same best individual from the scores table
+        :return: 
+        """
+
+        # Get the scores table of the last generation
+        scores_table = self.scores_table_for_generation(self.last_genetic_generation_name)
+
+        # Get the name of the 'simulation' with the best score
+        simulation_name = scores_table.best_individual_name
+
+        # Get the corresponding parameters from the parameters table of the last generation
+        parameters_table = self.parameters_table_for_generation(self.last_genetic_generation_name)
+
+        # Get the parameters
+        best_parameters = parameters_table.parameter_values_for_simulation(simulation_name)
+
+        # Return the parameters
+        return best_parameters
 
     # -----------------------------------------------------------------
 
@@ -1659,9 +1732,6 @@ class StepWiseTest(TestImplementation):
         # Inform the user
         log.info("Checking the database ...")
 
-        # Load
-        #database = load_database(self.database_path)
-
         # Loop over the generations
         for index in range(self.config.ngenerations):
 
@@ -1684,9 +1754,7 @@ class StepWiseTest(TestImplementation):
             # Get the scores from the database
             scores_database = get_scores(self.database_path, run_name, index)
 
-            # Compare
-            #for j in range(len(scores)): print(scores["Score"][j], scores_database[j])
-
+            # Check if the lists of scores contain the same elements
             if sequences.contains_same_elements(scores, scores_database):
 
                 # Success
@@ -1696,6 +1764,7 @@ class StepWiseTest(TestImplementation):
                 if scores == scores_database: log.success(generation_name + ": order OK")
                 else: log.error(generation_name + ": order not OK")
 
+            # The scores in both lists are not the same
             else:
 
                 log.error(generation_name + ":")
@@ -1712,6 +1781,22 @@ class StepWiseTest(TestImplementation):
 
     # -----------------------------------------------------------------
 
+    def get_best_score_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name: 
+        :return: 
+        """
+
+        # Get the scores table
+        scores_table = self.scores_table_for_generation(generation_name)
+
+        # Return the best score
+        return scores_table.best_score
+
+    # -----------------------------------------------------------------
+
     def check_statistics(self):
 
         """
@@ -1722,14 +1807,31 @@ class StepWiseTest(TestImplementation):
         # Inform the user
         log.info("Checking the statistics file ...")
 
-        # Load
-        statistics = load_statistics(self.statistics_path)
-
         # Loop over the generations
+        print("")
         for index in range(self.config.ngenerations):
 
             # Determine the generation name
             generation_name = self.get_generation_name(index)
+
+            # Get the best score from the statistics
+            statistics_index = index + 1
+            score_statistics = get_best_score_for_generation(self.statistics_path, run_name, statistics_index)
+
+            # Get the best score from the scores table
+            score_table = self.get_best_score_for_generation(generation_name)
+
+            # Get the best score by re-evaluating the best individual
+            score_best = eval_func_xy(self.best[0], self.best[1])
+
+            print(generation_name + ":")
+            print("")
+
+            print(" - Score of best individual: " + tostr(score_best))
+            print(" - Best score from statistics: " + tostr(score_statistics))
+            print(" - Best score from scores table: " + tostr(score_table))
+
+            print("")
 
 # -----------------------------------------------------------------
 
@@ -1878,15 +1980,10 @@ def is_evaluated(prob_table, individual_names):
     :return:
     """
 
-    # Get the probabilities table
-    #prob_table = get_model_probabilities_table(modeling_path, fitting_run, generation_name)
-
     if prob_table is None: return False
 
     # Loop over all the simulation names of the generation
-    #for simulation_name in get_simulation_names(modeling_path, fitting_run, generation_name):
     for individual_name in individual_names:
-
         if not prob_table.has_simulation(individual_name): return False
 
     # No simulation encountered that was not evaluated -> OK
@@ -1901,9 +1998,6 @@ def get_generation_names(generations_table):
     :param generations_table:
     :return:
     """
-
-    # Get the generations table
-    #generations_table = get_generations_table(modeling_path, fitting_run)
 
     # Return the generation names
     return generations_table.generation_names
@@ -2026,6 +2120,40 @@ def get_parameter_values_for_individual(parameters, index):
         if unit is not None: parameter_values[label] = value * unit
 
         # Set dimensionless value
+        else: parameter_values[label] = value
+
+    # Return the parameter values
+    return parameter_values
+
+# -----------------------------------------------------------------
+
+def get_parameter_values_from_individual(genome):
+
+    """
+    This function ...
+    :param genome: 
+    :return: 
+    """
+
+    # Create a dictionary for the parameter values
+    parameter_values = dict()
+
+    # Loop over all the genes (parameters)
+    for index in range(len(genome)):
+
+        # Get the parameter value
+        value = genome[index]
+
+        # Get the label of the parameter
+        label = free_parameter_labels[index]
+
+        # Get the unit for the parameter
+        unit = get_parameter_unit(label)
+
+        # Get the unit for the parameter
+        if unit is not None: parameter_values[label] = value * unit
+
+        # Scalar parameter
         else: parameter_values[label] = value
 
     # Return the parameter values

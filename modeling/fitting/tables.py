@@ -870,6 +870,18 @@ class ChiSquaredTable(SmartTable):
     # -----------------------------------------------------------------
 
     @property
+    def best_chi_squared(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return np.min(self["Chi squared"])
+
+    # -----------------------------------------------------------------
+
+    @property
     def best_simulation_name_and_chi_squared(self):
 
         """

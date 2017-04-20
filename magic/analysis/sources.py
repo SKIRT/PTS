@@ -156,7 +156,7 @@ def find_source_iraf(frame, ellipse, config, track_record, special=False):
 
 # -----------------------------------------------------------------
 
-def fit_model_to_source(source, config, track_record=None, level=0, special=False):
+def fit_model_to_source(source, config, track_record=None, level=0, special=False, stop_if_fail=False):
 
     """
     This function searches for sources ...
@@ -165,6 +165,7 @@ def fit_model_to_source(source, config, track_record=None, level=0, special=Fals
     :param track_record:
     :param level:
     :param special:
+    :param stop_if_fail:
     :return:
     """
 
@@ -203,8 +204,11 @@ def fit_model_to_source(source, config, track_record=None, level=0, special=Fals
     # Calculate the difference between the mean position of the model and the position of the center / peak
     difference = fitting.center(model) - position
 
-    # If ...
+    # Failed fit
     if difference.norm > config.max_model_offset:
+
+        # If stop if fail
+        if stop_if_fail: return None, None
 
         # Show a plot for debugging
         if config.debug.model_offset or special:
@@ -213,8 +217,16 @@ def fit_model_to_source(source, config, track_record=None, level=0, special=Fals
             rel_model = fitting.shifted_model(model, -source.cutout.x_min, -source.cutout.y_min)
             plotting.plot_peak_model(source.cutout, rel_peak.x, rel_peak.y, rel_model, title="Center of source and peak do not match")
 
+        # Set min pixels
+        min_pixels = 4
+
         # Create a new zoomed-in source
-        source = source.zoom(config.zoom_factor, min_xpixels=4, min_ypixels=4)
+        source = source.zoom(config.zoom_factor, min_xpixels=min_pixels, min_ypixels=min_pixels)
+
+        # Check if we cannot zoom further
+        if source.cutout.xsize <= min_pixels: stop_if_fail = True
+        elif source.cutout.ysize <= min_pixels: stop_if_fail = True
+        else: stop_if_fail = False
 
         # Estimate and subtract the background
         source.estimate_background(config.background_est_method, config.sigma_clip_background)
@@ -223,7 +235,7 @@ def fit_model_to_source(source, config, track_record=None, level=0, special=Fals
         if track_record is not None: track_record.append(copy.deepcopy(source))
 
         # Try again (iterative procedure of zooming in, stops if the size of the cutout becomes too small)
-        return fit_model_to_source(source, config, track_record, level, special=special)
+        return fit_model_to_source(source, config, track_record, level, special=special, stop_if_fail=stop_if_fail)
 
     # The fit succeeded
     else:

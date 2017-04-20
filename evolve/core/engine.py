@@ -1357,8 +1357,10 @@ class GeneticEngine(object):
         #    #self.dbAdapter.commit_and_close()
 
         # Finish the database adapters
-        for adapter in self.database_adapters:
-            if not (self.currentGeneration % adapter.getStatsGenFreq() == 0): adapter.insert(self)
+        #for adapter in self.database_adapters:
+        #    if not (self.currentGeneration % adapter.getStatsGenFreq() == 0): adapter.insert(self)
+
+        self.dump_statistics_adapters()
 
         # Stop the migration adapter ==> NO, NOW THIS IS THE RESPONSIBILITY OF THE MODULE THAT CREATES IT
         #if self.migrationAdapter:

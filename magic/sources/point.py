@@ -591,6 +591,9 @@ class PointSourceFinder(Configurable):
         # Loop over all sources
         for source in self.sources:
 
+            # If no source
+            if source is None: continue
+
             # If this source should be ignored, skip it
             if source.ignore: continue
 
@@ -620,6 +623,9 @@ class PointSourceFinder(Configurable):
 
         # Loop over all sources
         for source in self.sources:
+
+            # No source
+            if source is None: continue
 
             # Get the center in pixel coordinates
             center = source.pixel_position(self.frame.wcs)
@@ -770,6 +776,9 @@ class PointSourceFinder(Configurable):
         # Loop over all sources
         for source in self.sources:
 
+            # No source
+            if source is None: continue
+
             # Skip stars without saturation
             if not source.has_saturation: continue
 
@@ -805,6 +814,9 @@ class PointSourceFinder(Configurable):
 
         # Loop over all sources
         for source in self.sources:
+
+            # No source
+            if source is None: continue
 
             # Stars with saturation
             if source.has_saturation:
