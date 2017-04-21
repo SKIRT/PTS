@@ -1139,6 +1139,7 @@ class GeneticEngine(object):
 
         log.debug("Doing elitism ...")
 
+        # The best individual is the one with the highest score
         if self.getMinimax() == constants.minimaxType["maximize"]:
 
             for i in xrange(self.nElitismReplacement):
@@ -1149,6 +1150,7 @@ class GeneticEngine(object):
                 if self.internalPop.bestRaw(i).score > new_population.bestRaw(i).score:
                     new_population[len(new_population) - 1 - i] = self.internalPop.bestRaw(i)
 
+        # The best individual is the one with the highest score
         elif self.getMinimax() == constants.minimaxType["minimize"]:
 
             for i in xrange(self.nElitismReplacement):
@@ -1158,6 +1160,9 @@ class GeneticEngine(object):
 
                 if self.internalPop.bestRaw(i).score < new_population.bestRaw(i).score:
                     new_population[len(new_population) - 1 - i] = self.internalPop.bestRaw(i)
+
+        # Invalid
+        else: raise ValueError("Invalid state of 'minimax': must be '" + constants.minimaxType["maximize"] + "' or '" + constants.minimaxType["minimize"] + "'")
 
     # -----------------------------------------------------------------
 

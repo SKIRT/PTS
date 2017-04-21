@@ -95,7 +95,7 @@ class SkiFiller(Configurable):
         else: raise ValueError("Invalid option for 'ski_path': must be ski file or ski file path")
 
         # Create temporary directory and set the path
-        self.temp_path = fs.create_directories_in(introspection.pts_temp_dir, time.unique_name("fill"))
+        self.temp_path = introspection.create_temp_dir(time.unique_name("fill")
 
     # -----------------------------------------------------------------
 

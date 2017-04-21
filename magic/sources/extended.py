@@ -65,10 +65,10 @@ class ExtendedSourceTable(SmartTable):
         :return:
         """
 
-        # Inform the user
-        log.info("Adding source " + str(source.index) + " to the table of extended sources ...")
-
         if source is not None:
+
+            # Inform the user
+            log.info("Adding source " + str(source.index) + " to the table of extended sources ...")
 
             # Get extended source properties
             ra = source.position.ra

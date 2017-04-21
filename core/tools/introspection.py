@@ -97,6 +97,47 @@ pts_user_config_dir = fs.create_directory_in(pts_user_dir, "config")
 
 # -----------------------------------------------------------------
 
+temp_dirs = []
+
+# -----------------------------------------------------------------
+
+def create_temp_dir(name):
+
+    """
+    This function ...
+    :param name: 
+    :return: 
+    """
+
+    path = fs.join(pts_temp_dir, name)
+    if fs.is_directory(path): raise ValueError("Temporary directory with name '" + name + "' already exists")
+
+    # Create
+    fs.create_directory(path)
+
+    # Add the path to the list
+    temp_dirs.append(path)
+
+    # Return the path
+    return path
+
+# -----------------------------------------------------------------
+
+def remove_temp_dirs():
+
+    """
+    This function ...
+    :return: 
+    """
+
+    # Loop over the temporary directories created in this PTS runtime
+    for path in temp_dirs:
+
+        # Remove the directory
+        fs.remove_directory(path)
+
+# -----------------------------------------------------------------
+
 # Path to the user paths file (create if necessary)
 paths_file_path = fs.join(pts_user_dir, "paths.txt")
 

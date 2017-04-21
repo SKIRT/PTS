@@ -28,7 +28,7 @@ from ...core.tools import terminal
 
 # -----------------------------------------------------------------
 
-temp_montage_path = fs.create_directory_in(introspection.pts_temp_dir, "montage")
+temp_montage_path = introspection.create_temp_dir("montage")
 
 # -----------------------------------------------------------------
 

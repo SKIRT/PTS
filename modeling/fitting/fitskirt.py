@@ -96,7 +96,7 @@ class FitSKIRTArguments(object):
         if fs.directory_of(definition.ski_path) != definition.input_path:
 
             # Create new temporary input directory
-            temp_path = fs.create_directory_in(introspection.pts_temp_dir, time.unique_name("FitSKIRT"))
+            temp_path = introspection.create_temp_dir(time.unique_name("FitSKIRT"))
 
             # Copy the input and the ski file
             fs.copy_files(fs.files_in_path(definition.input_path), temp_path)

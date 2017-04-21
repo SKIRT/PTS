@@ -66,7 +66,7 @@ class DustPediaDatabase(object):
         """
 
         # Determine the path to a temporary directory
-        self.temp_path = fs.create_directory_in(introspection.pts_temp_dir, time.unique_name("database"))
+        self.temp_path = introspection.create_temp_dir(time.unique_name("database"))
 
         # Create the session
         self.session = requests.session()

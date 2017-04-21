@@ -108,7 +108,7 @@ class MemoryEstimator(Configurable):
 
         # Path to temporary directory
         if not fs.is_directory(introspection.pts_temp_dir): fs.create_directory(introspection.pts_temp_dir)
-        self.temp_path = fs.create_directory_in(introspection.pts_temp_dir, time.unique_name("memory_estimator"))
+        self.temp_path = introspection.create_temp_dir(time.unique_name("memory_estimator"))
 
     # -----------------------------------------------------------------
 

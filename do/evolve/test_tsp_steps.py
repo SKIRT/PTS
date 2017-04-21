@@ -42,7 +42,7 @@ evaluator_kwargs = input_optimize["evaluator_kwargs"]
 # -----------------------------------------------------------------
 
 # Determine temporary directory
-path = fs.create_directory_in(introspection.pts_temp_dir, time.unique_name("optimize"))
+path = introspection.create_temp_dir(time.unique_name("optimize"))
 
 # Change working directory
 fs.change_cwd(path)

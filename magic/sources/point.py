@@ -75,10 +75,10 @@ class PointSourceTable(SmartTable):
         :return:
         """
 
-        # Inform the user
-        log.info("Adding source " + str(source.index) + " to the table of point sources ...")
-
         if source is not None:
+
+            # Inform the user
+            log.info("Adding source " + str(source.index) + " to the table of point sources ...")
 
             # Get point source properties
             ra = source.position.ra

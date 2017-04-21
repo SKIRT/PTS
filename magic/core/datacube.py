@@ -504,8 +504,7 @@ class DataCube(Image):
         if nprocesses > 1:
 
             # Save the datacube to a temporary directory
-            temp_dir_path = fs.join(introspection.pts_temp_dir, time.unique_name("datacube-parallel-filter-convolution"))
-            fs.create_directory(temp_dir_path)
+            temp_dir_path = introspection.create_temp_dir(time.unique_name("datacube-parallel-filter-convolution"))
 
             # Save the datacube
             temp_datacube_path = fs.join(temp_dir_path, "datacube.fits")

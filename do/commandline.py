@@ -79,7 +79,7 @@ def start_target(command_name, target, **kwargs):
 
     # Clear temporary data
     print("Clearing temporary data ...")
-    fs.clear_directory(introspection.pts_temp_dir)
+    introspection.remove_temp_dirs()
 
 # -----------------------------------------------------------------
 

@@ -2251,7 +2251,7 @@ def get_installation_commands(dependencies, packages, already_installed, availab
             # Determine download path
             from ..tools import time
             if remote is not None: path = remote.create_directory_in(remote.pts_temp_path, time.unique_name(module_name))
-            else: path = fs.create_directory_in(introspection.pts_temp_dir, time.unique_name(module_name))
+            else: path = introspection.create_temp_dir(time.unique_name(module_name))
 
             # Download
             if remote is not None: filepath = remote.download_from_url_to(via, path)

@@ -241,7 +241,7 @@ class SimulationInput(object):
         else:
 
             # Create temporary directory
-            temp_path = fs.create_directory_in(introspection.pts_temp_dir, time.unique_name("SKIRT_input"))
+            temp_path = introspection.create_temp_dir(time.unique_name("SKIRT_input"))
 
             for name in self.paths:
 

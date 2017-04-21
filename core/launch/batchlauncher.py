@@ -108,7 +108,7 @@ class BatchLauncher(Configurable):
         self.logging_options = None
 
         # Create temporary local directory
-        self.temp_path = fs.create_directory_in(introspection.pts_temp_dir, time.unique_name("BatchLauncher"))
+        self.temp_path = introspection.create_temp_dir(time.unique_name("BatchLauncher"))
 
         # Original definitions of local simulations (when definitions are changed because of shared input)
         self.original_local_definitions = dict()
