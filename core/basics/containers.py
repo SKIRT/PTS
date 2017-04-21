@@ -111,6 +111,23 @@ class KeyList(object):
 
     # -----------------------------------------------------------------
 
+    def __setitem__(self, index_or_key, value):
+
+        """
+        Set an element
+        :param index_or_key:
+        :param value:
+        """
+
+        # Get the name
+        if types.is_integer_type(index_or_key): key = self.keys[index_or_key]
+        else: key = index_or_key
+
+        # Replace
+        self.replace(key, value)
+
+    # -----------------------------------------------------------------
+
     def append(self, key, element):
 
         """
@@ -229,13 +246,31 @@ class NamedList(KeyList):
         :return: 
         """
 
-        # Get the filter
+        # Get the name
         if types.is_string_type(index_or_name): name = index_or_name
         elif types.is_integer_type(index_or_name): name = self.names[index_or_name]
         else: raise ValueError("Invalid index or name: must be integer or string")
 
         # Return the element
         return self.contents[name]
+
+    # -----------------------------------------------------------------
+
+    def __setitem__(self, index_or_name, value):
+
+        """
+        Set an element
+        :param index_or_name:
+        :param value:
+        """
+
+        # Get the name
+        if types.is_string_type(index_or_name): name = index_or_name
+        elif types.is_integer_type(index_or_name): name = self.names[index_or_name]
+        else: raise ValueError("Invalid index or name: must be integer or string")
+
+        # Replace
+        self.replace(name, value)
 
     # -----------------------------------------------------------------
 

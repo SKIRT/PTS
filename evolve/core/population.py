@@ -213,17 +213,14 @@ class PopulationBase(object):
 
     # -----------------------------------------------------------------
 
-    @abstractmethod
     def __setitem__(self, key, value):
 
         """
-        This function ...
-        :param key: 
-        :param value: 
-        :return: 
+        Set an individual of population
         """
 
-        pass
+        self.internalPop[key] = value
+        self.clearFlags()
 
     # -----------------------------------------------------------------
 
@@ -798,17 +795,6 @@ class NamedPopulation(PopulationBase):
 
     # -----------------------------------------------------------------
 
-    def __setitem__(self, name, value):
-
-        """
-        Set an individual of population
-        """
-
-        self.internalPop.replace(name, value)
-        self.clearFlags()
-
-    # -----------------------------------------------------------------
-
     def clone(self):
 
         """
@@ -1032,17 +1018,6 @@ class Population(PopulationBase):
         """
 
         return self.internalPop
-
-    # -----------------------------------------------------------------
-
-    def __setitem__(self, key, value):
-
-        """
-        Set an individual of population
-        """
-
-        self.internalPop[key] = value
-        self.clearFlags()
 
     # -----------------------------------------------------------------
 
