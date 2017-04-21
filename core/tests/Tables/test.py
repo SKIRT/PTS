@@ -8,6 +8,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import the relevant PTS classes and modules
 from pts.core.test.implementation import TestImplementation
 from pts.core.tools.logging import log
@@ -15,6 +18,7 @@ from pts.modeling.fitting.tables import GenerationsTable
 from pts.modeling.fitting.explorer import GenerationInfo
 from pts.core.basics.map import Map
 from pts.core.tools import filesystem as fs
+from pts.core.tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -143,6 +147,8 @@ class TablesTest(TestImplementation):
         :return: 
         """
 
+        print("")
+
         # Loop over the tables
         for name in self.tables:
 
@@ -153,6 +159,27 @@ class TablesTest(TestImplementation):
             table = GenerationsTable.from_file(path)
 
             print(name)
-            print(table)
+            print("")
+
+            # Loop over the columns
+            for colname in table.colnames:
+
+                #test = table[colname] == self.tables[name][colname]
+
+                column = np.array(table[colname])
+                original_column = np.array(self.tables[name][colname])
+
+                mask = table[colname].mask
+                original_mask = self.tables[name][colname].mask
+
+                test_column = np.all(column == original_column)
+                test_mask = np.all(mask == original_mask)
+
+                print(colname + ":")
+                if test_column: print(fmt.green + " - data: OK" + fmt.reset)
+                else: print(fmt.red + " - data: fail" + fmt.reset)
+                if test_mask: print(fmt.green + " - mask: OK" + fmt.reset)
+                else: print(fmt.red + " - mask: fail" + fmt.reset)
+                print("")
 
 # -----------------------------------------------------------------
