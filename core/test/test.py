@@ -146,7 +146,7 @@ class PTSTest(object):
         log.info("Checking the test output ...")
 
         # Execute test function
-        self.test_function(self.output_path)
+        if self.test_function is not None: self.test_function(self.output_path)
 
     # -----------------------------------------------------------------
 

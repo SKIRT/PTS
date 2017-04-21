@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
-from astropy.units import dimensionless_angles
 from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
@@ -28,6 +27,8 @@ from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...core.basics.configuration import prompt_string
 from ...core.units.stringify import represent_quantity
 from ...core.simulation.grids import load_grid
+from ..component.galaxy import GalaxyModelingComponent
+from ..basics.models import DeprojectionModel3D
 
 # -----------------------------------------------------------------
 
@@ -167,7 +168,7 @@ class Representation(object):
 
 # -----------------------------------------------------------------
 
-class RepresentationBuilder(BuildComponent):
+class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
     
     """
     This class...
@@ -183,7 +184,9 @@ class RepresentationBuilder(BuildComponent):
         """
 
         # Call the constructor of the base class
-        super(RepresentationBuilder, self).__init__(config, interactive)
+        #super(RepresentationBuilder, self).__init__(config, interactive)
+        BuildComponent.__init__(self, config=config, interactive=interactive)
+        GalaxyModelingComponent.__init__(self, config=config, interactive=interactive)
 
         # The model definition
         self.definition = None
@@ -245,7 +248,9 @@ class RepresentationBuilder(BuildComponent):
         """
 
         # Call the setup function of the base class
-        super(RepresentationBuilder, self).setup(**kwargs)
+        #super(RepresentationBuilder, self).setup(**kwargs)
+        BuildComponent.setup(self, **kwargs)
+        GalaxyModelingComponent.setup(self, **kwargs)
 
         # Create the model definition
         self.definition = self.get_model_definition(self.config.model_name)
@@ -622,5 +627,50 @@ class RepresentationBuilder(BuildComponent):
         table = self.representations_table
         table.add_entry(self.representation_name, self.model_name)
         table.save()
+
+    # -----------------------------------------------------------------
+
+    def create_deprojection_for_wcs(self, wcs, filename, scaleheight):
+
+        """
+        This function ...
+        :param wcs:
+        :param filename:
+        :param scaleheight:
+        :return:
+        """
+
+        # Get the galaxy distance, the inclination and position angle
+        distance = self.galaxy_properties.distance
+        inclination = self.galaxy_properties.inclination
+        position_angle = self.disk_position_angle
+
+        # Get center coordinate of galaxy
+        galaxy_center = self.galaxy_properties.center
+
+        # Create deprojection
+        # wcs, galaxy_center, distance, pa, inclination, filepath, scale_height
+        deprojection = DeprojectionModel3D.from_wcs(wcs, galaxy_center, distance, position_angle, inclination, filename, scaleheight)
+
+        # Return the deprojection
+        return deprojection
+
+    # -----------------------------------------------------------------
+
+    def create_deprojection_for_map(self, map, filename, scaleheight):
+
+        """
+        This function ...
+        :param map:
+        :param filename:
+        :param scaleheight
+        :return:
+        """
+
+        # Get the WCS
+        reference_wcs = map.wcs
+
+        # Create the deprojection
+        return self.create_deprojection_for_wcs(reference_wcs, filename, scaleheight)
 
 # -----------------------------------------------------------------

@@ -23,6 +23,7 @@ from astropy.table import Table, MaskedColumn
 from ..units.unit import PhotometricUnit
 from ..units.parsing import parse_unit as u
 from ..tools import filesystem as fs
+from ..tools import types
 
 # -----------------------------------------------------------------
 
@@ -59,6 +60,7 @@ class SmartTable(Table):
 
         # Initialize 'density' meta object
         if "density" not in self.meta: self.meta["density"] = []
+        if "brightness" not in self.meta: self.meta["brightness"] = []
 
     # -----------------------------------------------------------------
 
@@ -73,7 +75,7 @@ class SmartTable(Table):
         :return:
         """
 
-        if isinstance(unit, basestring): unit = u(unit)
+        if types.is_string_type(unit): unit = u(unit)
         self.column_info.append((name, dtype, unit, description))
 
     # -----------------------------------------------------------------
@@ -91,7 +93,9 @@ class SmartTable(Table):
         # Construct unit
         if column_name in self.meta["density"]: density = True
         else: density = False
-        return u(self[column_name].unit, density=density)
+        if column_name in self.meta["brightness"]: brightness = True
+        else: brightness = False
+        return u(self[column_name].unit, density=density, brightness=brightness)
 
     # -----------------------------------------------------------------
 
@@ -101,6 +105,8 @@ class SmartTable(Table):
         This function ...
         :return:
         """
+
+        #print("Performing setup of the table ...")
 
         # Setup has already been called
         if len(self.colnames) != 0: return
@@ -122,6 +128,11 @@ class SmartTable(Table):
             if isinstance(unit, PhotometricUnit) and unit.density:
                 if "density" not in self.meta: self.meta["density"] = []
                 self.meta["density"].append(name)
+
+            # Set whether this column is a surface brightness
+            if isinstance(unit, PhotometricUnit) and unit.brightness:
+                if "brightness" not in self.meta: self.meta["brightness"] = []
+                self.meta["brightness"].append(name)
 
     # -----------------------------------------------------------------
 
@@ -150,6 +161,8 @@ class SmartTable(Table):
         """
 
         fill_values = [('--', '0')]
+        #fill_values = [("", '0')]
+        #fill_values = None
 
         # Check the path
         if not fs.is_file(path): raise IOError("The file '" + path + "' does not exist")
@@ -183,6 +196,9 @@ class SmartTable(Table):
 
             # Initialize "density" meta
             if "density" not in table.meta: table.meta["density"] = []
+
+            # Initialize "brightness" meta
+            if "brightness" not in table.meta: table.meta["brightness"] = []
 
         # Return the table
         return table
@@ -378,6 +394,9 @@ class SmartTable(Table):
         # Setup if necessary
         if len(self.colnames) == 0: self.setup()
 
+        #print(len(self.colnames))
+        #print(len(values))
+
         # Resize string columns for the new values
         self._resize_string_columns(values)
 
@@ -405,6 +424,24 @@ class SmartTable(Table):
 
         # Add the row
         super(SmartTable, self).add_row(new_values, mask=mask)
+
+    # -----------------------------------------------------------------
+
+    def column_type(self, column_name):
+
+        """
+        This function ...
+        :param column_name: 
+        :return: 
+        """
+
+        coltype = self[column_name].dtype.name
+
+        if coltype.startswith("string"): return "string"
+        elif coltype.startswith("float"): return "real"
+        elif coltype.startswith("int"): return "integer"
+        elif coltype.startswith("bool"): return "boolean"
+        else: raise ValueError("Unknown column type: " + coltype)
 
     # -----------------------------------------------------------------
 
@@ -450,13 +487,45 @@ class SmartTable(Table):
         :return:
         """
 
+        #print(self.colnames)
+
         # Setup if necessary
         if len(self.colnames) == 0: self.setup()
+
+        # Set masked values to masked constants
+        self.set_masked_constants()
 
         # Write the table in ECSV format
         self.write(path, format="ascii.ecsv")
 
         # Set the path
         self.path = path
+
+    # -----------------------------------------------------------------
+
+    def set_masked_constants(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Loop over the columns
+        for colname in self.colnames:
+
+            # Loop over the rows
+            for index in range(len(self)):
+
+                # If not masked, skip
+                if not self[colname].mask[index]: continue
+
+                # Else, set masked value
+                #if self.column_type(colname) == "string": self[colname][index] = "--"
+                #elif self.column_type(colname) == "integer": self[colname][index] = 0
+                #elif self.column_type(colname) == "real": self[colname][index] = 0
+                #elif self.column_type(colname) == "boolean": self[colname][index] = False
+
+                self[colname][index] = np.ma.masked
+                self[colname].mask[index] = True
 
 # -----------------------------------------------------------------

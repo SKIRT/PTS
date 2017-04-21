@@ -664,7 +664,7 @@ class M81SEDTest(M81TestBase):
         input_model["initialize_config"] = initialize_config
 
         # Construct the command
-        command = Command("model", "perform the modelling", settings_model, input_model, "./" + self.galaxy_name)
+        command = Command("model", "perform the modelling", settings_model, input_model, cwd="./" + self.galaxy_name)
 
         # Run the command
         self.modeler = self.run_command(command)

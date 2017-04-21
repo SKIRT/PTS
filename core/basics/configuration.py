@@ -52,7 +52,7 @@ related_types.append(["broad_band_filter_list", "lazy_filter_list", "narrow_band
 
 # -----------------------------------------------------------------
 
-def create_configuration_passive(command_name, class_name, configuration_module_path, config_dict, description=None):
+def create_configuration_passive(command_name, class_name, configuration_module_path, config_dict, description=None, cwd=None):
 
     """
     This function ...
@@ -61,6 +61,7 @@ def create_configuration_passive(command_name, class_name, configuration_module_
     :param configuration_module_path:
     :param config_dict:
     :param description:
+    :param cwd:
     :return:
     """
 
@@ -80,6 +81,9 @@ def create_configuration_passive(command_name, class_name, configuration_module_
 
     # Create the configuration from the definition and from the provided configuration dictionary
     config = setter.run(definition)
+
+    # Set the working directory
+    if cwd is not None: config.path = cwd
 
     # Return the configuration
     return config

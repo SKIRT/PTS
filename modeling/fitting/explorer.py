@@ -21,7 +21,7 @@ from .modelgenerators.grid import GridModelGenerator
 from .modelgenerators.genetic import GeneticModelGenerator
 from .modelgenerators.instinctive import InstinctiveModelGenerator
 from ...core.tools import time
-from .tables import ParametersTable, ChiSquaredTable
+from .tables import ParametersTable, ChiSquaredTable, IndividualsTable
 from ...core.launch.options import SchedulingOptions
 from ...core.advanced.runtimeestimator import RuntimeEstimator
 from ...core.tools.stringify import stringify_not_list, stringify
@@ -613,6 +613,9 @@ class ParameterExplorer(FittingComponent):
         # Determine the path to the chi squared table
         self.generation.chi_squared_table_path = fs.join(self.generation.path, "chi_squared.dat")
 
+        # Initialize the individuals table
+        self.individuals_table = IndividualsTable()
+
         # Initialize the parameters table
         self.parameters_table = ParametersTable(parameters=self.fitting_run.free_parameter_labels, units=self.fitting_run.parameter_units)
 
@@ -1081,7 +1084,7 @@ class ParameterExplorer(FittingComponent):
             self.individuals_table.add_entry(simulation_name, name)
 
             # Get the parameter values
-            parameter_values = get_parameter_values_for_named_individual(self.model_parameters, name)
+            parameter_values = get_parameter_values_for_named_individual(self.model_parameters, name, self.fitting_run)
 
             # Debugging
             log.debug("Adding entry to the parameters table with:")

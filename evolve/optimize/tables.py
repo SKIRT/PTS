@@ -32,15 +32,24 @@ class ScoresTable(SmartTable):
         :param kwargs:
         """
 
+        if "min_or_max" in kwargs:
+            min_or_max = kwargs.pop("min_or_max")
+            from_astropy = False
+        else:
+            min_or_max = None
+            from_astropy = True
+
         # Call the constructor of the base class
         super(ScoresTable, self).__init__(*args, **kwargs)
 
-        # Add column info
-        self.column_info.append(("Individual name", str, None, "name of the individual"))
-        self.column_info.append(("Score", float, None, "individual's score"))
+        if not from_astropy:
 
-        # Initialize 'min_or_max' meta attribute
-        self.meta["min_or_max"] = kwargs.pop("min_or_max")
+            # Add column info
+            self.column_info.append(("Individual name", str, None, "name of the individual"))
+            self.column_info.append(("Score", float, None, "individual's score"))
+
+            # Initialize 'min_or_max' meta attribute
+            self.meta["min_or_max"] = min_or_max
 
     # -----------------------------------------------------------------
 

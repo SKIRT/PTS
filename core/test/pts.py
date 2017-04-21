@@ -505,7 +505,8 @@ class PTSTestSuite(Configurable):
                 except AttributeError: raise RuntimeError("Description not specified for the '" + name + "' test")
 
                 # Get the test function
-                test_function = test_module.test
+                #test_function = test_module.test
+                test_function = None
 
                 # Get the implementation class
                 implementation_cls = introspection.classes_in_module(test_module)[0]

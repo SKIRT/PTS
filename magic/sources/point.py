@@ -78,16 +78,20 @@ class PointSourceTable(SmartTable):
         # Inform the user
         log.info("Adding source " + str(source.index) + " to the table of point sources ...")
 
-        # Get point source properties
-        ra = source.position.ra
-        dec = source.position.dec
-        detected = source.has_detection
-        flux = None
-        flux_error = None
-        fwhm = source.fwhm
+        if source is not None:
 
-        # Construct the row
-        values = [ra, dec, detected, flux, flux_error, fwhm]
+            # Get point source properties
+            ra = source.position.ra
+            dec = source.position.dec
+            detected = source.has_detection
+            flux = None
+            flux_error = None
+            fwhm = source.fwhm
+
+            # Construct the row
+            values = [ra, dec, detected, flux, flux_error, fwhm]
+
+        else: values = [None, None, None, None, None, None]
 
         # Add a row
         self.add_row(values)
@@ -849,7 +853,7 @@ class PointSourceFinder(Configurable):
         for source in self.sources:
 
             # No source?
-            if source is None: continue
+            #if source is None: continue
 
             # Add source
             self.table.add_source(source)

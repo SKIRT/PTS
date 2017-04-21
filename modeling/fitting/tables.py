@@ -312,6 +312,8 @@ class GenerationsTable(SmartTable):
         :return:
         """
 
+        if len(self.colnames) == 0: self.setup()
+
         labels = []
 
         for name in self.colnames:

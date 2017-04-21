@@ -57,7 +57,7 @@ def launch_local(pts_command, config_dict, input_dict=None, analysers=None, anal
     if description is None: description = command_description
 
     # Create the configuration
-    config = create_configuration_passive(command_name, class_name, configuration_module_path, config_dict, description)
+    config = create_configuration_passive(command_name, class_name, configuration_module_path, config_dict, description, cwd=cwd)
 
     # Set the log level temporarily
     previous_level = log.level

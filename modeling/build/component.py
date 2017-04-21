@@ -13,7 +13,8 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..component.galaxy import GalaxyModelingComponent
+#from ..component.galaxy import GalaxyModelingComponent
+from ..component.component import ModelingComponent
 from ...core.tools import filesystem as fs
 from .tables import ModelsTable, RepresentationsTable
 from ...core.basics.map import Map
@@ -29,7 +30,7 @@ model_map_filename = "map.fits"
 
 # -----------------------------------------------------------------
 
-class BuildComponent(GalaxyModelingComponent):
+class BuildComponent(ModelingComponent):
     
     """
     This class...
@@ -93,51 +94,6 @@ class BuildComponent(GalaxyModelingComponent):
         if not fs.is_file(self.representations_table_path):
             table = RepresentationsTable()
             table.saveto(self.representations_table_path)
-
-    # -----------------------------------------------------------------
-
-    def create_deprojection_for_wcs(self, wcs, filename, scaleheight):
-
-        """
-        This function ...
-        :param wcs:
-        :param filename:
-        :param scaleheight:
-        :return:
-        """
-
-        # Get the galaxy distance, the inclination and position angle
-        distance = self.galaxy_properties.distance
-        inclination = self.galaxy_properties.inclination
-        position_angle = self.disk_position_angle
-
-        # Get center coordinate of galaxy
-        galaxy_center = self.galaxy_properties.center
-
-        # Create deprojection
-        # wcs, galaxy_center, distance, pa, inclination, filepath, scale_height
-        deprojection = DeprojectionModel3D.from_wcs(wcs, galaxy_center, distance, position_angle, inclination, filename, scaleheight)
-
-        # Return the deprojection
-        return deprojection
-
-    # -----------------------------------------------------------------
-
-    def create_deprojection_for_map(self, map, filename, scaleheight):
-
-        """
-        This function ...
-        :param map:
-        :param filename:
-        :param scaleheight
-        :return:
-        """
-
-        # Get the WCS
-        reference_wcs = map.wcs
-
-        # Create the deprojection
-        return self.create_deprojection_for_wcs(reference_wcs, filename, scaleheight)
 
     # -----------------------------------------------------------------
 

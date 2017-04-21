@@ -424,9 +424,9 @@ class SourceFinder(Configurable):
         self.star_table = None
 
         # The regions
-        self.galaxy_regions = None
-        self.star_regions = None
-        self.saturation_regions = None
+        #self.galaxy_regions = None
+        #self.star_regions = None
+        #self.saturation_regions = None
 
         # The segmentation maps
         self.galaxy_segments = None
@@ -1121,6 +1121,9 @@ class SourceFinder(Configurable):
 
             # Loop over the frames
             for name in self.frames:
+
+                # If point sources not searched in this frame
+                if name not in self.point_tables: continue
 
                 # Get the FWHM
                 fwhm = self.point_tables[name].get_fwhm(index)
