@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.maps.dust.cortese Contains the CorteseDustMapMaker class.
+## \package pts.modeling.maps.attenuation.attenuation Contains the AttenuationMapMaker class.
 
 # -----------------------------------------------------------------
 
@@ -13,9 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ....magic.core.frame import Frame
-from ....core.tools import introspection, tables
-from ....core.tools import filesystem as fs
 from ....core.tools.logging import log
 from ..component import MapsComponent
 from .cortese import CorteseAttenuationMapMaker
@@ -49,13 +46,13 @@ class AttenuationMapMaker(MapsComponent):
         :return:
         """
 
-        # Setup
+        # 1. Setup
         self.setup(**kwargs)
 
-        # Cortese
+        # 2. Cortese
         self.make_cortese_attenuation_maps()
 
-        # Write
+        # 3. Write
         self.write()
 
     # -----------------------------------------------------------------

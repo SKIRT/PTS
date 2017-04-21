@@ -9,6 +9,8 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+from abc import ABCMeta, abstractproperty
+import numpy as np
 from collections import defaultdict
 
 # Import astronomical modules
@@ -43,6 +45,10 @@ from pts.core.tools import sequences, parsing, stringify
 from pts.modeling.config.parameters import parsing_types_for_parameter_types
 from pts.modeling.config.parameters import default_units
 from pts.core.remote.moderator import PlatformModerator
+from pts.core.tools.stringify import tostr
+from pts.evolve.analyse.database import get_scores_named_individuals, load_database
+from pts.evolve.analyse.statistics import get_best_score_for_generation, load_statistics
+from pts.do.commandline import Command
 
 # -----------------------------------------------------------------
 
@@ -217,6 +223,10 @@ class M81TestBase(TestImplementation):
     and fitting to a mock observed SED
     """
 
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
     def __init__(self, config=None, interactive=False):
 
         """
@@ -258,6 +268,9 @@ class M81TestBase(TestImplementation):
         self.simulation_misc_path = None
         self.wavelength_grid_path = None
 
+        # The plot path
+        self.plot_path = None
+
         # The reference ski file
         self.ski = None
 
@@ -281,6 +294,9 @@ class M81TestBase(TestImplementation):
 
         # The real parameter values
         self.real_parameter_values = dict()
+
+        # The best parameter values
+        self.best_parameter_values = dict()
 
     # -----------------------------------------------------------------
 
@@ -397,6 +413,9 @@ class M81TestBase(TestImplementation):
 
         # Determine the path to the wavelength grid file
         self.wavelength_grid_path = fs.join(self.simulation_input_path, reference_wavelength_grid_filename)
+
+        # Create the plot path
+        self.plot_path = fs.create_directory_in(self.path, "plot")
 
         # Set the execution platforms
         self.set_platforms()
@@ -910,8 +929,7 @@ class M81TestBase(TestImplementation):
         # Create the plotter
         plotter = TransmissionPlotter()
 
-        # Add the filters
-        #for filter_name in fitting_filter_names: plotter.add_filter(filter_name)
+        # Set the filters
         plotter.config.filters = fitting_filter_names
 
         # Add the wavelengths of the wavelength grid
@@ -1070,5 +1088,538 @@ class M81TestBase(TestImplementation):
         log.debug("")
         for parameter_name in self.real_parameter_values: log.debug(" - " + parameter_name + ": " + stringify.stringify(self.real_parameter_values[parameter_name])[1])
         log.debug("")
+
+    # -----------------------------------------------------------------
+
+    def get_best_parameter_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the best parameter values ...")
+
+        # Get the best parameter values
+        self.best_parameter_values = self.modeler.modeler.fitter.fitting_run.best_parameter_values
+
+    # -----------------------------------------------------------------
+
+    def get_initial_generation_name(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.modeler.modeler.explorer.get_initial_generation_name()
+
+    # -----------------------------------------------------------------
+
+    def get_generation_name(self, generation_index):
+
+        """
+        This function ...
+        :param generation_index: 
+        :return: 
+        """
+
+        return self.modeler.modeler.explorer.get_genetic_generation_name(generation_index)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def generation_names(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        names = [self.get_initial_generation_name()]
+        for index in range(self.config.ngenerations):
+            names.append(self.get_generation_name(index))
+        return names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_run_name(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.modeler.modeler.fitting_run_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def modeling_name(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.galaxy_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def modeling_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return fs.join(self.path, self.modeling_name)
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def modeling_environment(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_run(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.modeler.modeler.fitter.fitting_run
+
+    # -----------------------------------------------------------------
+
+    @property
+    def generations_table(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.fitting_run.generations_table
+
+    # -----------------------------------------------------------------
+
+    def individuals_table_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name: 
+        :return: 
+        """
+
+        return self.fitting_run.individuals_table_for_generation(generation_name)
+
+    # -----------------------------------------------------------------
+
+    def parameters_table_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name: 
+        :return: 
+        """
+
+        return self.fitting_run.parameters_table_for_generation(generation_name)
+
+    # -----------------------------------------------------------------
+
+    def chi_squared_table_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name: 
+        :return: 
+        """
+
+        return self.fitting_run.chi_squared_table_for_generation(generation_name)
+
+    # -----------------------------------------------------------------
+
+    def get_parameter_values_for_simulation(self, generation_name, simulation_name):
+
+        """
+        This function ...
+        :param generation_name: 
+        :param simulation_name: 
+        :return: 
+        """
+
+        # Get the parameters table
+        parameters_table = self.parameters_table_for_generation(generation_name)
+
+        # Return the parameters
+        return parameters_table.parameter_values_for_simulation(simulation_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def database_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.modeler.modeler.explorer.database_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def database(self):
+
+        """
+        THis function ...
+        :return: 
+        """
+
+        return load_database(self.database_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def statistics_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.modeler.modeler.explorer.statistics_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def statistics(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return load_statistics(self.statistics_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def last_genetic_generation_index(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.fitting_run.last_genetic_generation_index
+
+    # -----------------------------------------------------------------
+
+    @property
+    def last_genetic_generation_name(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.fitting_run.last_genetic_generation_name
+
+    # -----------------------------------------------------------------
+
+    def get_best_score_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name: 
+        :return: 
+        """
+
+        # Get the scores table
+        scores_table = self.chi_squared_table_for_generation(generation_name)
+
+        # Return the best (lowest) chi squared
+        return scores_table.best_chi_squared
+
+    # -----------------------------------------------------------------
+
+    def get_best_parameter_values_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name: 
+        :return: 
+        """
+
+        # Get the scores table
+        scores_table = self.chi_squared_table_for_generation(generation_name)
+
+        # Get the best simulation name
+        simulation_name = scores_table.best_simulation_name
+
+        # Get the parameter values for this simulation
+        return self.get_parameter_values_for_simulation(generation_name, simulation_name)
+
+    # -----------------------------------------------------------------
+
+    def get_best_parameter_values_last_generation(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.get_best_parameter_values_for_generation(self.last_genetic_generation_name)
+
+    # -----------------------------------------------------------------
+
+    def get_best_parameter_values_all_generations(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        best_chi_squared = None
+        best_parameters = None
+
+        # Loop over the generation names
+        for generation_name in self.generation_names:
+
+            # Load the chi squared table
+            scores_table = self.chi_squared_table_for_generation(generation_name)
+
+            # Get the name of the simulation with the lowest chi squared value
+            simulation_name, chi_squared = scores_table.best_simulation_name_and_chi_squared
+
+            # If chi squared is better or first
+            if best_chi_squared is None or chi_squared < best_chi_squared:
+
+                # Get parameters values
+                values = self.get_parameter_values_for_simulation(generation_name, simulation_name)
+
+                # Set best chi squared
+                best_chi_squared = chi_squared
+                best_parameters = values
+
+        # Return the best parameter values
+        return best_parameters
+
+    # -----------------------------------------------------------------
+
+    def check_best(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Checking the best individual ...")
+
+        # Get the values from the tables
+        values_last_generation = self.get_best_parameter_values_last_generation()
+        values_all_generations = self.get_best_parameter_values_all_generations()
+
+        print("")
+        for label in self.real_parameter_values:
+
+            # Get the values form the tables
+            value_last_generation = values_last_generation[label]
+            value_all_generations = values_all_generations[label]
+
+            # Get the values and calculate the difference
+            value = self.best_parameter_values[label]
+            real_value = self.real_parameter_values[label]
+            absolute_difference = abs(value - real_value)
+            relative_difference = absolute_difference / real_value
+
+            # Get the
+
+            print(label + ":")
+            print(" - Best value in last generation: " + tostr(value_last_generation))
+            print(" - Best value across all generations: " + tostr(values_all_generations))
+            print(" - Real value: " + tostr(real_value))
+            print(" - Best fitted value: " + tostr(value))
+            print(" - Absolute difference: " + tostr(absolute_difference))
+            print(" - Relative difference: " + tostr(relative_difference) + " (" + tostr(relative_difference * 100) + "%)")
+            print("")
+
+    # -----------------------------------------------------------------
+
+    def check_database(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Checking the database ...")
+
+        # Loop over the generations
+        for index in range(self.config.ngenerations):
+
+            # Determine the generation name
+            generation_name = self.get_generation_name(index)
+
+            # Debugging
+            log.debug("Checking generation '" + generation_name + "' ...")
+
+            # Load the scores table
+            scores_table = self.chi_squared_table_for_generation(generation_name)
+
+            # Load the individuals table
+            individuals_table = self.individuals_table_for_generation(generation_name)
+
+            # Get the scores from the database
+            database_index = index + 1
+            scores_database = get_scores_named_individuals(self.database_path, self.fitting_run_name, database_index)
+
+            # Keep track of the number of mismatches
+            mismatches = 0
+
+            # Loop over the indnividual names
+            for name in scores_database:
+
+                # Get the score from the database
+                score_database = scores_database[name]
+
+                # Get the simulation name
+                simulation_name = individuals_table.get_simulation_name(name)
+
+                # Get the score
+                score = scores_table.score_for(simulation_name)
+
+                # Check if equal
+                equal = np.isclose(score, score_database)
+                if not equal: mismatches += 1
+
+            # Report
+            if mismatches == 0: log.success(generation_name + ": OK")
+            else: log.error(generation_name + ": " + str(mismatches) + " mismatches")
+
+    # -----------------------------------------------------------------
+
+    def check_statistics(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Checking the statistics table ...")
+
+        # Loop over the generations
+        print("")
+        for index in range(self.config.ngenerations):
+
+            # Determine the generation name
+            generation_name = self.get_generation_name(index)
+
+            # Debugging
+            log.debug("Checking generation '" + generation_name + "' ...")
+
+            # Get the best score from the statistics
+            statistics_index = index + 1
+            score_statistics = get_best_score_for_generation(self.statistics_path, self.fitting_run_name, statistics_index, minmax="min")
+
+            # Get the best score from the scores table
+            score_table = self.get_best_score_for_generation(generation_name)
+
+            # Rel diff
+            rel_diff = abs(score_table - score_statistics) / score_statistics
+
+            print(generation_name + ":")
+            print("")
+
+            print(" - Best score from statistics: " + tostr(score_statistics))
+            print(" - Best score from scores table: " + tostr(score_table))
+            print(" - Relative difference: " + tostr(rel_diff) + " (" + tostr(rel_diff * 100) + "%)")
+
+            print("")
+
+    # -----------------------------------------------------------------
+
+    def plot_genetic(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        # Plot the scores
+        self.plot_scores()
+
+        # Plot the heatmap
+        self.plot_heatmap()
+
+    # -----------------------------------------------------------------
+
+    def plot_scores(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Plotting the scores ...")
+
+        # Settings
+        settings = dict()
+        settings["fitness"] = False
+        settings["output"] = self.plot_path
+
+        # Input
+        input_dict = dict()
+        input_dict["database"] = self.database
+
+        # Plot
+        command = Command("plot_scores", "plot the scores", settings, input_dict)
+        plotter = self.run_command(command)
+
+    # -----------------------------------------------------------------
+
+    def plot_heatmap(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Plotting heatmap ...")
+
+        # Settings
+        settings = dict()
+        settings["fitness"] = False
+        settings["output"] = self.plot_path
+
+        # Input
+        input_dict = dict()
+        input_dict["database"] = self.database
+
+        # Plot
+        command = Command("plot_heat_map", "plot heatmap", settings, input_dict)
+        plotter = self.run_command(command)
 
 # -----------------------------------------------------------------

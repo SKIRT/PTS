@@ -344,6 +344,29 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_initial_generation_name(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return "initial"
+
+    # -----------------------------------------------------------------
+
+    def get_genetic_generation_name(self, index):
+
+        """
+        This function ...
+        :param index: 
+        :return: 
+        """
+
+        return str("Generation" + str(index))
+
+    # -----------------------------------------------------------------
+
     def set_generator(self):
 
         """
@@ -358,7 +381,7 @@ class ParameterExplorer(FittingComponent):
         if self.config.generation_method == "grid":
 
             # Set a name for the generation
-            self.generation_name = time.unique_name()
+            self.generation_name = time.unique_name("grid")
 
             # Create the model generator
             self.generator = GridModelGenerator()
@@ -367,7 +390,7 @@ class ParameterExplorer(FittingComponent):
         elif self.config.generation_method == "instinctive":
 
             # Set a name for the generation
-            self.generation_name = time.unique_name()
+            self.generation_name = time.unique_name("instinctive")
 
             # Create the model generator
             self.generator = InstinctiveModelGenerator()
@@ -376,20 +399,25 @@ class ParameterExplorer(FittingComponent):
         elif self.config.generation_method == "genetic":
 
             # Not the initial generation
-            if "initial" in self.fitting_run.generation_names:
+            if self.get_initial_generation_name() in self.fitting_run.generation_names:
+
+                print(self.fitting_run.last_genetic_generation_index)
 
                 # Set index and name
                 self.generation_index = self.fitting_run.last_genetic_generation_index + 1
-                self.generation_name = str("Generation " + str(self.generation_index))
+                self.generation_name = self.get_genetic_generation_name(self.generation_index)
 
             # Initial generation
-            else: self.generation_name = "initial"
+            else: self.generation_name = self.get_initial_generation_name()
 
             # Create the generator
             self.generator = GeneticModelGenerator()
 
         # Invalid generation method
         else: raise ValueError("Invalid generation method: " + str(self.config.generation_method))
+
+        # Debugging
+        log.debug("The name of the new generation of parameter exploration is '" + self.generation_name + "'")
 
     # -----------------------------------------------------------------
 

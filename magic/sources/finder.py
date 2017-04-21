@@ -233,17 +233,25 @@ class StarTable(SmartTable):
         values.append(catalog)
         values.append(id)
 
+        #print(star)
+
         # Loop over the filters for which we need a FWHM
         for name in self.colnames:
 
             # FWHM
             if name.endswith("FWHM"):
 
+                filter_name = name.split(" FWHM")[0]
+
                 # Filter
-                fltr = BroadBandFilter(name.split(" FWHM")[0])
+                fltr = BroadBandFilter(filter_name)
+                filter_name = str(fltr)
 
-                fwhm = star.fwhms[name]
+                #print(star.fwhms)
+                if filter_name in star.fwhms: fwhm = star.fwhms[filter_name]
+                else: fwhm = None
 
+                values.append(fwhm)
 
             # Flux
             elif name.endswith("flux"):

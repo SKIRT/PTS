@@ -31,6 +31,7 @@ from ...core.filter.filter import parse_filter
 from ..build.representation import Representation
 from ..build.component import get_representation_path
 from ...core.tools.serialization import load_dict
+from .tables import IndividualsTable
 
 # -----------------------------------------------------------------
 
@@ -508,6 +509,30 @@ class FittingRun(object):
         """
 
         return fs.join(self.generations_path, generation_name, "prng.pickle")
+
+    # -----------------------------------------------------------------
+
+    def individuals_table_path_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name: 
+        :return: 
+        """
+
+        return fs.join(self.generations_path, generation_name, "individuals.dat")
+
+    # -----------------------------------------------------------------
+
+    def individuals_table_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name: 
+        :return: 
+        """
+
+        return IndividualsTable.from_file(self.individuals_table_path_for_generation(generation_name))
 
     # -----------------------------------------------------------------
 
@@ -1353,6 +1378,27 @@ def get_ngenerations(modeling_path, fitting_run):
     # Get the table
     generations_table = get_generations_table(modeling_path, fitting_run)
     return generations_table.ngenerations
+
+# -----------------------------------------------------------------
+
+def get_individuals_table(modeling_path, fitting_run, generation_name):
+
+    """
+    This function ...
+    :param modeling_path: 
+    :param fitting_run: 
+    :param generation_name: 
+    :return: 
+    """
+
+    # Determine the path
+    path = fs.join(modeling_path, "fit", fitting_run, "generations", generation_name, "individuals.dat")
+
+    # Load the table
+    table = IndividualsTable.from_file(path)
+
+    # Return the table
+    return table
 
 # -----------------------------------------------------------------
 

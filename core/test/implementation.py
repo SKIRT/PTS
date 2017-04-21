@@ -21,6 +21,7 @@ from ..tools import filesystem as fs
 from ..tools import introspection
 from ..basics.configurable import Configurable
 from ..launch.pts import launch_local, launch_remote, RemoteInstance
+from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -107,6 +108,6 @@ class TestImplementation(Configurable):
         if remote is not None:
             output = launch_remote(remote, the_command, settings_dict, input_dict)
             return RemoteInstance()
-        else: return launch_local(the_command, settings_dict, input_dict, description=description, cwd=output_path)
+        else: return launch_local(the_command, settings_dict, input_dict, description=description, cwd=output_path, debug=log.is_debug())
 
 # -----------------------------------------------------------------

@@ -36,7 +36,8 @@ class RemoteInstance(object):
 
 # -----------------------------------------------------------------
 
-def launch_local(pts_command, config_dict, input_dict=None, analysers=None, analysis_info=None, description=None, cwd=None):
+def launch_local(pts_command, config_dict, input_dict=None, analysers=None, analysis_info=None, description=None,
+                 cwd=None, debug=False, brief=False):
 
     """
     This function ...
@@ -47,6 +48,8 @@ def launch_local(pts_command, config_dict, input_dict=None, analysers=None, anal
     :param analysis_info:
     :param description:
     :param cwd:
+    :param debug:
+    :param brief:
     :return:
     """
 
@@ -58,6 +61,10 @@ def launch_local(pts_command, config_dict, input_dict=None, analysers=None, anal
 
     # Create the configuration
     config = create_configuration_passive(command_name, class_name, configuration_module_path, config_dict, description, cwd=cwd)
+
+    # Set logging options
+    if debug: config["debug"] = True
+    if brief: config["brief"] = True
 
     # Set the log level temporarily
     previous_level = log.level

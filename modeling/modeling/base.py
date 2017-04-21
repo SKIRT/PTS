@@ -77,10 +77,10 @@ class ModelerBase(Configurable):
         # Parameter ranges
         self.parameter_ranges = None
 
-        # rlkrmglrgr
+        # The parameter explorer instance
         self.explorer = None
 
-        # egeg
+        # The SED fitter instance
         self.fitter = None
 
     # -----------------------------------------------------------------

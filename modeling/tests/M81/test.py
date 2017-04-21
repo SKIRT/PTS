@@ -28,6 +28,7 @@ from pts.modeling.tests.base import M81TestBase, m81_data_path, fitting_filter_n
 from pts.modeling.tests.base import seds_path, dustpedia_sed_path
 from pts.core.data.sed import ObservedSED
 from pts.core.tools import sequences
+from pts.modeling.core.environment import GalaxyModelingEnvironment
 
 # -----------------------------------------------------------------
 
@@ -125,6 +126,12 @@ class M81Test(M81TestBase):
 
         # 11. Model
         self.model()
+
+        # 19. Get best parameter values
+        self.get_best_parameter_values()
+
+        # Test
+        self.test()
 
     # -----------------------------------------------------------------
 
@@ -302,10 +309,6 @@ class M81Test(M81TestBase):
 
     # -----------------------------------------------------------------
 
-
-
-    # -----------------------------------------------------------------
-
     def write(self):
 
         """
@@ -446,7 +449,7 @@ class M81Test(M81TestBase):
         # Settings
         settings_setup = dict()
         settings_setup["type"] = "galaxy"
-        settings_setup["name"] = "Galaxy"
+        settings_setup["name"] = self.modeling_name
         settings_setup["fitting_host_ids"] = None
 
         # Create input dict for setup
@@ -494,21 +497,57 @@ class M81Test(M81TestBase):
         input_model["images"] = images
 
         # Construct the command
-        command = Command("model", "perform the modelling", settings_model, input_model, "./Galaxy")
+        command = Command("model", "perform the modelling", settings_model, input_model, self.modeling_path)
 
         # Run the command
         self.modeler = self.run_command(command)
 
-# -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
-def test(temp_path):
+    @property
+    def modeling_environment(self):
 
-    """
-    This function ...
-    :param temp_path:
-    :return:
-    """
+        """
+        This function ...
+        :return: 
+        """
 
-    pass
+        return GalaxyModelingEnvironment(self.modeling_path)
+
+    # -----------------------------------------------------------------
+
+    def test(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Testing ...")
+
+        # Check best
+        self.check_best()
+
+        # Check database
+        self.check_database()
+
+        # Check statistics
+        self.check_statistics()
+
+        # Check images
+        self.check_images()
+
+    # -----------------------------------------------------------------
+
+    def check_images(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Checking the images ...")
 
 # -----------------------------------------------------------------

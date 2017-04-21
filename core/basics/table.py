@@ -170,14 +170,23 @@ class SmartTable(Table):
         # Open the table
         table = super(SmartTable, cls).read(path, format="ascii.ecsv", fill_values=fill_values)
 
-        # Set masks
-        if "masks" in table.meta:
-            for name in table.meta["masks"]:
-                for index in range(len(table)):
-                    table[name].mask[index] = table.meta["masks"][name][index]
+        #print(table.meta)
 
-            # Remove masks from meta
-            del table.meta["masks"]
+        # Set masks
+        #if "masks" in table.meta:
+        #    for name in table.meta["masks"]:
+        #        for index in range(len(table)):
+        #            table[name].mask[index] = table.meta["masks"][name][index]
+        #    # Remove masks from meta
+        #    del table.meta["masks"]
+
+        # Look for masks
+        for colname in table.colnames:
+            key = colname + " mask"
+            if key not in table.meta: continue
+            for index in range(len(table)):
+                table[colname].mask[index] = table.meta[key][index]
+            del table.meta[key]
 
         # Set the path
         table.path = path
@@ -556,10 +565,10 @@ class SmartTable(Table):
         self.replace_masked_values()
 
         # Set masks in meta
-        self.meta["masks"] = masks
+        for name in masks: self.meta[name + " mask"] = masks[name]
 
         # Write the table in ECSV format
-        self.write(path, format="ascii.ecsv")
+        self.write(path, format="ascii.ecsv", overwrite=True)
 
         # Set the path
         self.path = path
@@ -579,7 +588,7 @@ class SmartTable(Table):
 
         masks = dict()
         for name in self.colnames:
-            masks[name] = self[name].mask
+            masks[name] = [int(boolean) for boolean in self[name].mask] #list(self[name].mask)
         return masks
 
     # -----------------------------------------------------------------

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.evolve.solve.extremizer Contains the Extremizer class.
+## \package pts.evolve.solve.fitter Contains the Fitter class.
 
 # -----------------------------------------------------------------
 
@@ -14,32 +14,40 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
+from ...core.tools import filesystem as fs
+from ...core.tools.logging import log
+from .extremizer import Extremizer
 
 # -----------------------------------------------------------------
 
-def find_minimum(function, initial_values, ranges):
+def fit_function(function):
 
     """
     This function ...
-    :param function:
-    :param initial_values:
-    :param ranges:
+    :param function: 
     :return: 
     """
 
+    pass
+
 # -----------------------------------------------------------------
 
-def find_maximum(function, initial_values, ranges):
+def chi_squared(function, x, y, parameters):
 
     """
     This function ...
-    :param function:
+    :param function: 
+    :param x: 
+    :param y:
+    :param parameters:
     :return: 
     """
 
+    pass
+
 # -----------------------------------------------------------------
 
-class Extremizer(Configurable):
+class Fitter(Configurable):
 
     """
     This class ...
@@ -54,7 +62,20 @@ class Extremizer(Configurable):
         """
 
         # Call the constructor of the base class
-        super(Extremizer, self).__init__(config, interactive)
+        super(Fitter, self).__init__(config, interactive)
+
+        # The function to be minimized or maximized
+        self.function = None
+
+        # The initial values and ranges
+        self.initial_values = None
+        self.ranges = None
+
+        # The data
+        self.data = None
+
+        # The minimizer
+        self.minimizer = None
 
     # -----------------------------------------------------------------
 
@@ -66,16 +87,16 @@ class Extremizer(Configurable):
         :return: 
         """
 
-        # Call the setup function
+        # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Optimize
-        self.optimize()
+        # 2. Find minimum chi squared
+        self.minimize()
 
-        # Plot
+        # 3. Plot
         self.plot()
 
-        # Write
+        # 4. Write
         self.write()
 
     # -----------------------------------------------------------------
@@ -89,35 +110,38 @@ class Extremizer(Configurable):
         """
 
         # Call the setup function of the base class
-        super(Extremizer, self).setup(**kwargs)
+        super(Fitter, self).setup(**kwargs)
+
+        # Get input
+        self.function = kwargs.pop("function")
+        self.initial_values = kwargs.pop("initial_values")
+        self.ranges = kwargs.pop("ranges")
+        self.data = kwargs.pop("data")
 
     # -----------------------------------------------------------------
 
-    def optimize(self):
+    def minimize(self):
 
         """
         This function ...
         :return: 
         """
 
+        # Inform the user
+        log.info("Minimizing the chi-squared ...")
+
         # Settings
-        settings_optimize = dict()
-        settings_optimize["output"] = None
-        settings_optimize["nparameters"] = nparameters
-        settings_optimize["nindividuals"] = nindividuals
-        settings_optimize["parameter_range"] = parameter_range
-        settings_optimize["best_raw_score"] = best_raw_score
-        settings_optimize["round_decimal"] = round_decimal
-        settings_optimize["ngenerations"] = ngenerations
-        settings_optimize["mutation_rate"] = mutation_rate
-        settings_optimize["crossover_rate"] = crossover_rate
-        settings_optimize["stats_freq"] = stats_freq
-        settings_optimize["mutation_method"] = mutation_method
-        settings_optimize["min_or_max"] = min_or_max
+        settings = dict()
+        settings["min_or_max"] = "min"
 
         # Input
-        input_optimize = dict()
-        input_optimize["evaluator"] = rastringin
+        input_dict = dict()
+
+        # Create the extremizer
+        self.minimizer = Extremizer(settings)
+
+        # Run the extremizer
+        self.minimizer.run(**input_dict)
 
     # -----------------------------------------------------------------
 
@@ -139,5 +163,8 @@ class Extremizer(Configurable):
         This function ...
         :return: 
         """
+
+        # Inform the user
+        log.info("Writing ...")
 
 # -----------------------------------------------------------------

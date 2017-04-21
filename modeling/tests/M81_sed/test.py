@@ -23,12 +23,13 @@ from pts.modeling.tests.base import instrument_name, free_parameters_absolute_pa
 from pts.modeling.tests.base import free_parameters_relative_stellar_component_paths, free_parameters_relative_dust_component_paths
 from pts.modeling.tests.base import free_parameters_relative_instruments_paths, free_parameter_types
 from pts.core.data.sed import ObservedSED
-from pts.core.tools import stringify
+from pts.core.tools.stringify import tostr
 from pts.core.units.parsing import parse_angle
 from pts.modeling.tests.base import seds_path, dustpedia_sed_path
 from pts.core.tools import sequences
 from pts.core.basics.map import Map
 from pts.modeling.tests.base import free_parameter_descriptions, free_parameter_units
+from pts.modeling.core.environment import SEDModelingEnvironment
 
 # -----------------------------------------------------------------
 
@@ -75,9 +76,6 @@ class M81SEDTest(M81TestBase):
 
         # The initial parameter values for the fitting
         self.initial_parameter_values = dict()
-
-        # The best parameter values from the fitting
-        self.best_parameter_values = dict()
 
     # -----------------------------------------------------------------
 
@@ -148,6 +146,9 @@ class M81SEDTest(M81TestBase):
 
         # Test
         self.test()
+
+        # Plot
+        self.plot_genetic()
 
     # -----------------------------------------------------------------
 
@@ -320,7 +321,7 @@ class M81SEDTest(M81TestBase):
         # Debugging
         log.debug("The initial parameter values are:")
         log.debug("")
-        for parameter_name in self.real_parameter_values: log.debug(" - " + parameter_name + ": " + stringify.stringify(self.initial_parameter_values[parameter_name])[1])
+        for parameter_name in self.real_parameter_values: log.debug(" - " + parameter_name + ": " + tostr(self.initial_parameter_values[parameter_name])[1])
         log.debug("")
 
     # -----------------------------------------------------------------
@@ -576,7 +577,7 @@ class M81SEDTest(M81TestBase):
         # Settings
         settings_setup = dict()
         settings_setup["type"] = "sed"
-        settings_setup["name"] = self.galaxy_name
+        settings_setup["name"] = self.modeling_name
         settings_setup["fitting_host_ids"] = self.moderator.host_ids_for_ensemble("fitting", none_if_none=True)
 
         # Create input dict for setup
@@ -664,25 +665,22 @@ class M81SEDTest(M81TestBase):
         input_model["initialize_config"] = initialize_config
 
         # Construct the command
-        command = Command("model", "perform the modelling", settings_model, input_model, cwd="./" + self.galaxy_name)
+        command = Command("model", "perform the modelling", settings_model, input_model, cwd=self.modeling_path)
 
         # Run the command
         self.modeler = self.run_command(command)
 
     # -----------------------------------------------------------------
 
-    def get_best_parameter_values(self):
+    @property
+    def modeling_environment(self):
 
         """
-		This function ...
-		:return:
-		"""
+        This function ...
+        :return: 
+        """
 
-        # Inform the user
-        log.info("Getting the best parameter values ...")
-
-        # Get the best parameter values
-        self.best_parameter_values = self.modeler.modeler.fitter.fitting_run.best_parameter_values
+        return SEDModelingEnvironment(self.modeling_path)
 
     # -----------------------------------------------------------------
 
@@ -694,26 +692,16 @@ class M81SEDTest(M81TestBase):
         :return:
         """
 
-        print("")
-        print("Test:")
+        # Inform the user
+        log.info("Testing ...")
 
-        for label in self.real_parameter_values:
+        # Check the best value
+        self.check_best()
 
-            print(label + ":")
-            print(" - Real value: " + stringify.stringify(self.real_parameter_values[label])[1])
-            print(" - Best fitted value: " + stringify.stringify(self.best_parameter_values[label])[1])
-            print("")
+        # Check the database
+        self.check_database()
 
-# -----------------------------------------------------------------
-
-def test(temp_path):
-
-    """
-    This function ...
-    :param temp_path:
-    :return:
-    """
-
-    pass
+        # Check the statistics
+        self.check_statistics()
 
 # -----------------------------------------------------------------
