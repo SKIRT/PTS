@@ -170,6 +170,15 @@ class SmartTable(Table):
         # Open the table
         table = super(SmartTable, cls).read(path, format="ascii.ecsv", fill_values=fill_values)
 
+        # Set masks
+        if "masks" in table.meta:
+            for name in table.meta["masks"]:
+                for index in range(len(table)):
+                    table[name].mask[index] = table.meta["masks"][name][index]
+
+            # Remove masks from meta
+            del table.meta["masks"]
+
         # Set the path
         table.path = path
 
@@ -415,12 +424,12 @@ class SmartTable(Table):
 
             if values[i] is not None: new_values.append(values[i])
             else:
-                coltype = self[self.colnames[i]].dtype.name
-                if coltype.startswith("string"): new_values.append("")
-                elif coltype.startswith("float"): new_values.append(0.)
-                elif coltype.startswith("int"): new_values.append(0)
-                elif coltype.startswith("bool"): new_values.append(False)
-                else: raise ValueError("Unknown column type: " + coltype)
+                colname = self.colnames[i]
+                if self.is_string_type(colname): new_values.append("")
+                elif self.is_real_type(colname): new_values.append(0.)
+                elif self.is_integer_type(colname): new_values.append(0)
+                elif self.is_boolean_type(colname): new_values.append(False)
+                else: raise ValueError("Unknown column type for '" + colname + "'")
 
         # Add the row
         super(SmartTable, self).add_row(new_values, mask=mask)
@@ -442,6 +451,54 @@ class SmartTable(Table):
         elif coltype.startswith("int"): return "integer"
         elif coltype.startswith("bool"): return "boolean"
         else: raise ValueError("Unknown column type: " + coltype)
+
+    # -----------------------------------------------------------------
+
+    def is_string_type(self, column_name):
+
+        """
+        This function ...
+        :param column_name: 
+        :return: 
+        """
+
+        return self.column_type(column_name) == "string"
+
+    # -----------------------------------------------------------------
+
+    def is_real_type(self, column_name):
+
+        """
+        This function ...
+        :param column_name: 
+        :return: 
+        """
+
+        return self.column_type(column_name) == "real"
+
+    # -----------------------------------------------------------------
+
+    def is_integer_type(self, column_name):
+
+        """
+        This function ...
+        :param column_name: 
+        :return: 
+        """
+
+        return self.column_type(column_name) == "integer"
+
+    # -----------------------------------------------------------------
+
+    def is_boolean_type(self, column_name):
+
+        """
+        This function ...
+        :param column_name: 
+        :return: 
+        """
+
+        return self.column_type(column_name) == "boolean"
 
     # -----------------------------------------------------------------
 
@@ -492,14 +549,82 @@ class SmartTable(Table):
         # Setup if necessary
         if len(self.colnames) == 0: self.setup()
 
-        # Set masked values to masked constants
-        self.set_masked_constants()
+        # Get masks
+        masks = self.get_masks()
+
+        # Replace masked values (not masked anymore)
+        self.replace_masked_values()
+
+        # Set masks in meta
+        self.meta["masks"] = masks
 
         # Write the table in ECSV format
         self.write(path, format="ascii.ecsv")
 
         # Set the path
         self.path = path
+
+        # Set the masks back (because they were set to False by replace_masked_values, necessary to avoid writing out
+        # '""' (empty string) for each masked value, which is unreadable by Astropy afterwards)
+        self.set_masks(masks)
+
+    # -----------------------------------------------------------------
+
+    def get_masks(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        masks = dict()
+        for name in self.colnames:
+            masks[name] = self[name].mask
+        return masks
+
+    # -----------------------------------------------------------------
+
+    def set_masks(self, masks):
+
+        """
+        This function ...
+        :param masks:
+        :return: 
+        """
+
+        # Loop over the columns for which there is a mask in the 'masks' dictionary
+        for colname in masks:
+
+            # Loop over the rows, set mask elements
+            for index in range(len(self)): self[colname].mask[index] = masks[colname][index]
+
+    # -----------------------------------------------------------------
+
+    def replace_masked_values(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Loop over the columns
+        for colname in self.colnames:
+
+            # Loop over the rows
+            for index in range(len(self)):
+
+                # If not masked, skip
+                if not self[colname].mask[index]: continue
+
+                # Set value
+                if self.is_string_type(colname): value = ""
+                elif self.is_real_type(colname): value = 0.
+                elif self.is_integer_type(colname): value = 0
+                elif self.is_boolean_type(colname): value = False
+                else: raise ValueError("Unknown column type for '" + colname + "'")
+
+                # Set value
+                self[colname][index] = value
 
     # -----------------------------------------------------------------
 
