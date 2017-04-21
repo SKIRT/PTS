@@ -534,8 +534,13 @@ class FilterCurve(WavelengthCurve):
         :return:
         """
 
+        # Loop over the rows, check instrument and band
         for index in range(len(self)):
-            if self["Instrument"] == fltr.instrument and self["Band"] == fltr.band: return True
+
+            # Match found
+            if self["Instrument"][index] == fltr.instrument and self["Band"][index] == fltr.band: return True
+
+        # No match found
         return False
 
     # -----------------------------------------------------------------
