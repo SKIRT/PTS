@@ -18,7 +18,7 @@ import importlib
 # Import the relevant PTS classes and modules
 from pts.core.tools import introspection
 from pts.core.tools import filesystem as fs
-from .commandline import start_target
+from .commandline import start_and_clear
 
 # -----------------------------------------------------------------
 
@@ -68,7 +68,7 @@ def run_locally(command_name, module_path, class_name, config, input_files, outp
             input_dict[name] = input_object
 
     # Start
-    start_target(command_name, inst.run, **input_dict)
+    start_and_clear(command_name, inst.run, **input_dict)
 
     # Write output files
     if output_files is not None:

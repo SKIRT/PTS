@@ -101,6 +101,19 @@ temp_dirs = []
 
 # -----------------------------------------------------------------
 
+def create_unique_temp_dir(name):
+
+    """
+    This function ...
+    :param name: 
+    :return: 
+    """
+
+    from . import time
+    create_temp_dir(time.unique_name(name))
+
+# -----------------------------------------------------------------
+
 def create_temp_dir(name):
 
     """

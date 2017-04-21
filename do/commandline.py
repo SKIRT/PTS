@@ -56,6 +56,25 @@ class Command(object):
 
 # -----------------------------------------------------------------
 
+def start_and_clear(command_name, target, **kwargs):
+
+    """
+    This function ...
+    :param command_name: 
+    :param target: 
+    :param kwargs: 
+    :return: 
+    """
+
+    # Start
+    start_target(command_name, target, **kwargs)
+
+    # Remove temp
+    print("Clearing temporary data ...")
+    introspection.remove_temp_dirs()
+
+# -----------------------------------------------------------------
+
 def start_target(command_name, target, **kwargs):
 
     """
@@ -74,12 +93,7 @@ def start_target(command_name, target, **kwargs):
     seconds = end - start
 
     # Succesfully finished
-    #log.success("Finished " + command_name + " in " + str(seconds) + " seconds")
     print("Finished " + command_name + " in " + str(seconds) + " seconds")
-
-    # Clear temporary data
-    print("Clearing temporary data ...")
-    introspection.remove_temp_dirs()
 
 # -----------------------------------------------------------------
 

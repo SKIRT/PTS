@@ -28,7 +28,7 @@ from ...core.tools import terminal
 
 # -----------------------------------------------------------------
 
-temp_montage_path = introspection.create_temp_dir("montage")
+temp_montage_path = introspection.create_unique_temp_dir("montage")
 
 # -----------------------------------------------------------------
 

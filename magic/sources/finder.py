@@ -223,6 +223,8 @@ class StarTable(SmartTable):
         :return:
         """
 
+        if len(self.colnames) == 0: self.setup()
+
         values = []
 
         catalog = star.catalog
