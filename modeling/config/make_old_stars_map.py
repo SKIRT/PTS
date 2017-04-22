@@ -19,4 +19,7 @@ definition.add_optional("i1_significance", "real", "the significance level of th
 # Remove holes from the cutoff mask
 definition.add_flag("remove_holes", "remove holes from the total cutoff mask")
 
+# Flags
+definition.add_flag("write", "write out the maps", True)
+
 # -----------------------------------------------------------------

@@ -20,7 +20,7 @@ from .tirtofuv import TIRtoFUVMapMaker
 
 # -----------------------------------------------------------------
 
-class BuatDustMapMaker(MapsComponent):
+class BuatAttenuationMapMaker(MapsComponent):
 
     """
     This class...
@@ -36,7 +36,7 @@ class BuatDustMapMaker(MapsComponent):
         """
 
         # Call the constructor of the base class
-        super(BuatDustMapMaker, self).__init__(config, interactive)
+        super(BuatAttenuationMapMaker, self).__init__(config, interactive)
 
         # -- Attributes --
 
@@ -54,29 +54,16 @@ class BuatDustMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def requirements(cls, config=None):
+    def run(self, **kwargs):
 
         """
         This function ...
-        :param config:
-        :return:
-        """
-
-        config = cls.get_config(config)
-        return TIRtoFUVMapMaker.requirements()
-
-    # -----------------------------------------------------------------
-
-    def run(self, log_tir_to_fuv):
-
-        """
-        This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(log_tir_to_fuv)
+        self.setup(**kwargs)
 
         # 2. Make the dust map
         self.make_map()
@@ -100,7 +87,7 @@ class BuatDustMapMaker(MapsComponent):
         """
 
         # Call the setup function of the base class
-        super(BuatDustMapMaker, self).setup()
+        super(BuatAttenuationMapMaker, self).setup()
 
         # Set the buat parameters
         self.buat["NUV"] = (-0.0495, 0.4718, 0.8998, 0.2269)

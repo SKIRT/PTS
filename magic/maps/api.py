@@ -13,6 +13,8 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
+from .colour.colour import ColourMapMaker
+from .ssfr.colours import ColoursSSFRMapMaker
 from .dust.attenuation import AttenuationDustMapMaker
 from .attenuation.cortese import CorteseAttenuationMapMaker
 from .oldstars.disk import DiskOldStellarMapMaker
@@ -21,55 +23,30 @@ from .ionizingstars.ionizing import IonizingStellarMapMaker
 
 # -----------------------------------------------------------------
 
-def make_fuv_attenuation_map():
 
-    """
-    This function ...
-    :return: 
-    """
 
 # -----------------------------------------------------------------
 
-def make_dust_map():
 
-    """
-    This function ...
-    :return: 
-    """
 
 # -----------------------------------------------------------------
 
-def make_old_stellar_map():
 
-    """
-    This function ...
-    :return: 
-    """
 
 # -----------------------------------------------------------------
 
-def make_young_stellar_map():
 
-    """
-    This function ...
-    :return: 
-    """
-
-    maker = YoungStellarMapMaker()
-
-    maker.run()
 
 # -----------------------------------------------------------------
 
-def make_ionizing_stellar_map():
 
-    """
-    This function ...
-    :return: 
-    """
 
-    maker = IonizingStellarMapMaker()
+# -----------------------------------------------------------------
 
-    maker.run()
+
+
+# -----------------------------------------------------------------
+
+
 
 # -----------------------------------------------------------------

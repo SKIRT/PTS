@@ -27,12 +27,15 @@ from ..component import MapsComponent
 from ....magic.tools.colours import make_colour_map
 from ....core.units.parsing import parse_unit as u
 from ....core.tools.sequences import combine_unique
-#from .tirtofuv import TIRtoFUVMapMaker
+from .tirtofuv import TIRtoFUVMapMaker
 
 # -----------------------------------------------------------------
 
 # The path to the table containing the parameters from Cortese et. al 2008
 cortese_table_path = fs.join(introspection.pts_dat_dir("modeling"), "cortese.dat")
+
+# The path to the table containing the Galametz calibration parameters
+galametz_table_path = fs.join(introspection.pts_dat_dir("modeling"), "galametz.dat")
 
 # -----------------------------------------------------------------
 
@@ -51,7 +54,20 @@ colour_combinations = {"FUV-H": ("GALEX FUV", "2MASS H"),
 
 # -----------------------------------------------------------------
 
-class CorteseAttenuationMapMaker(MapsComponent):
+def make_map():
+
+    """
+    This function ...
+    :return: 
+    """
+
+    maker = AttenuationDustMapMaker()
+
+    maker.run()
+
+# -----------------------------------------------------------------
+
+class AttenuationDustMapMaker(MapsComponent):
 
     """
     This class...
@@ -66,7 +82,7 @@ class CorteseAttenuationMapMaker(MapsComponent):
         """
 
         # Call the constructor of the base class
-        super(CorteseAttenuationMapMaker, self).__init__(config, interactive)
+        super(AttenuationDustMapMaker, self).__init__(config, interactive)
 
         # -- Attributes --
 
@@ -93,6 +109,29 @@ class CorteseAttenuationMapMaker(MapsComponent):
 
         # The dust map
         self.map = None
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def requirements(cls, config=None):
+
+        """
+        This function ...
+        :param config:
+        :return:
+        """
+
+        config = cls.get_config(config)
+
+        if config.ssfr_colour == "FUV-H": colour_bands = ["FUV", "2MASS H"]
+        elif config.ssfr_colour == "FUV-i": colour_bands = ["FUV", "SDSS i"]
+        elif config.ssfr_colour == "FUV-r": colour_bands = ["FUV", "SDSS r"]
+        elif config.ssfr_colour == "FUV-g": colour_bands = ["FUV", "SDSS g"]
+        elif config.ssfr_colour == "FUV-B": colour_bands = ["FUV", "B"]
+        else: raise ValueError("Invalid SSFR colour option")
+
+        # Combine
+        return combine_unique(TIRtoFUVMapMaker.requirements(), colour_bands)
 
     # -----------------------------------------------------------------
 
@@ -134,7 +173,7 @@ class CorteseAttenuationMapMaker(MapsComponent):
         """
 
         # Call the setup function of the base class
-        super(CorteseAttenuationMapMaker, self).setup()
+        super(AttenuationDustMapMaker, self).setup()
 
         # Load the Cortese et al. 2008 table
         self.cortese = tables.from_file(cortese_table_path, format="ascii.commented_header")

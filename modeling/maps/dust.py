@@ -13,14 +13,12 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..component import MapsComponent
-from ....core.tools.logging import log
-from .blackbody import BlackBodyDustMapMaker
-from .emission import EmissionDustMapMaker
-from .buat import BuatDustMapMaker
-from .attenuation import AttenuationDustMapMaker
-from ....core.tools import filesystem as fs
-from ....magic.core.image import Image
+from .component import MapsComponent
+from ...core.tools.logging import log
+from ...magic.maps.dust.blackbody import BlackBodyDustMapMaker
+from ...magic.maps.dust.emission import EmissionDustMapMaker
+from ...magic.maps.dust.attenuation import AttenuationDustMapMaker
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -45,20 +43,17 @@ class DustMapMaker(MapsComponent):
         # -- Attributes --
 
         # The TIR to FUV ratio (in log)
-        self.log_tir_to_fuv = None
+        #self.log_tir_to_fuv = None
 
         # The dust maps (and error maps)
         self.maps = dict()
         self.error_maps = dict()
 
-        # The best dust map
-        self.map = None
-
         # The image of significance masks
-        self.significance = Image()
+        #self.significance = Image()
 
         # The cutoff mask
-        self.cutoff_mask = None
+        #self.cutoff_mask = None
 
     # -----------------------------------------------------------------
 
@@ -74,7 +69,7 @@ class DustMapMaker(MapsComponent):
         self.setup(**kwargs)
 
         # 2. Calculate the significance masks
-        self.calculate_significance()
+        #self.calculate_significance()
 
         # 3.. Make a dust map based on black body pixel fitting
         if self.config.make_black_body: self.make_black_body()
@@ -82,14 +77,11 @@ class DustMapMaker(MapsComponent):
         # 4. Make a dust map simply based on FIR / submm emission in a certain band
         if self.config.make_emission: self.make_emission()
 
-        # 5. Make a dust map based on Buat
-        if self.config.make_buat: self.make_buat()
-
         # 6. Make a dust map based on UV attenuation
         if self.config.make_attenuation: self.make_attenuation()
 
         # Make the cutoff mask
-        self.make_cutoff_mask()
+        #self.make_cutoff_mask()
 
         # 7. Writing
         self.write()
@@ -145,8 +137,8 @@ class DustMapMaker(MapsComponent):
         maker.run()
 
         # Add the dust map to the dictionary
-        self.maps["black-body"] = maker.map
-        self.error_maps["black-body"] = maker.error_map
+        self.maps["black-body"] = maker.maps
+        self.error_maps["black-body"] = maker.error_maps
 
     # -----------------------------------------------------------------
 
@@ -167,28 +159,7 @@ class DustMapMaker(MapsComponent):
         maker.run()
 
         # Add the dust map to the dictionary
-        self.maps["emission"] = maker.map
-
-    # -----------------------------------------------------------------
-
-    def make_buat(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making a dust map based on Buat et al. ...")
-
-        # Create the Buat dust map maker
-        maker = BuatDustMapMaker(self.config.buat)
-
-        # Run the maker
-        maker.run(self.log_tir_to_fuv)
-
-        # Add the dust map to the dictionary
-        self.maps["buat"] = maker.map
+        self.maps["emission"] = maker.maps
 
     # -----------------------------------------------------------------
 
@@ -206,25 +177,10 @@ class DustMapMaker(MapsComponent):
         maker = AttenuationDustMapMaker(self.config.cortese)
 
         # Run the maker
-        maker.run(self.log_tir_to_fuv)
+        maker.run()
 
         # Add the dust map to the dictionary
-        self.maps["cortese"] = maker.map
-
-    # -----------------------------------------------------------------
-
-    def make_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Selecting the best dust map ...")
-
-        # Set the best dust map
-        self.map = self.maps[self.config.best_method].copy()
+        self.maps["attenuation"] = maker.maps
 
     # -----------------------------------------------------------------
 
@@ -281,10 +237,10 @@ class DustMapMaker(MapsComponent):
         self.write_error_maps()
 
         # Write the significance mask
-        self.write_significance_masks()
+        #self.write_significance_masks()
 
         # Write the cutoff mask
-        self.write_cutoff_mask()
+        #self.write_cutoff_mask()
 
     # -----------------------------------------------------------------
 
@@ -296,16 +252,22 @@ class DustMapMaker(MapsComponent):
         """
 
         # Inform the user
-        log.info("Writing the dust maps (with different methods) ...")
+        log.info("Writing the dust maps ...")
 
-        # Loop over the maps
-        for label in self.maps:
+        # Loop over the methods
+        for method in self.maps:
 
-            # Determine the path
-            path = fs.join(self.maps_dust_path, label + ".fits")
+            # Create a directory
+            path = fs.create_directory_in(self.maps_dust_path, method)
 
-            # Save the dust map
-            self.maps[label].saveto(path)
+            # Loop over the maps
+            for name in self.maps[method]:
+
+                # Determine path
+                map_path = fs.join(path, name + ".fits")
+
+                # Save the map
+                self.maps[method][name].saveto(map_path)
 
     # -----------------------------------------------------------------
 
@@ -319,14 +281,20 @@ class DustMapMaker(MapsComponent):
         # Inform the user
         log.info("Writing the error maps (with different methods) ...")
 
-        # Loop over the maps
-        for label in self.maps:
+        # Loop over the methods
+        for method in self.maps:
 
-            # Determine the path
-            path = fs.join(self.maps_dust_path, label + "_error.fits")
+            # Create a directory
+            path = fs.create_directory_in(self.maps_dust_path, method)
 
-            # Save the error map
-            self.error_maps[label].saveto(path)
+            # Loop over the maps
+            for name in self.error_maps[method]:
+
+                # Determine path
+                map_path = fs.join(path, name + "_error.fits")
+
+                # Save the map
+                self.maps[method][name].saveto(map_path)
 
     # -----------------------------------------------------------------
 

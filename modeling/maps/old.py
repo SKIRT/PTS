@@ -16,6 +16,8 @@ from __future__ import absolute_import, division, print_function
 from ....core.tools.logging import log
 from ..component import MapsComponent
 from .disk import DiskOldStellarMapMaker
+from .bulge import BulgeOldStellarMapMaker
+from .total import TotalOldStellarMapMaker
 
 # -----------------------------------------------------------------
 
@@ -36,7 +38,8 @@ class OldStellarMapMaker(MapsComponent):
         # Call the constructor of the base class
         super(OldStellarMapMaker, self).__init__(config, interactive)
 
-        # -- Attributes --
+        # The maps
+        self.maps =
 
     # -----------------------------------------------------------------
 
@@ -86,7 +89,11 @@ class OldStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Making the old stellar disk map ...")
 
+        # Create the maker
+        maker = DiskOldStellarMapMaker()
 
+        # Run
+        maker.run()
 
     # -----------------------------------------------------------------
 
@@ -100,6 +107,12 @@ class OldStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Making the total map of the old stars ...")
 
+        # Create the maker
+        maker = TotalOldStellarMapMaker()
+
+        # Run
+        maker.run()
+
     # -----------------------------------------------------------------
 
     def make_bulge_map(self):
@@ -112,6 +125,12 @@ class OldStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Making the map of the old stellar bulge ...")
 
+        # Create the maker
+        maker = BulgeOldStellarMapMaker()
+
+        # Run
+        maker.run()
+
     # -----------------------------------------------------------------
 
     def write(self):
@@ -120,5 +139,8 @@ class OldStellarMapMaker(MapsComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing ...")
 
 # -----------------------------------------------------------------

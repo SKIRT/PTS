@@ -5,21 +5,18 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.maps.colour.colour Contains the ColourMapMaker class.
+## \package pts.magic.maps.colour.colour Contains the ColourMapsMaker class.
 
 # -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import standard modules
-from ..component import MapsComponent
+from ....core.basics.configurable import Configurable
 from ....core.tools.logging import log
-from ....core.tools import filesystem as fs
-from ....magic.tools.colours import make_colour_map, get_filters_for_colour
+from ...tools.colours import make_colour_map, get_filters_for_colour
+from ...core.dataset import DataSet
 
 # -----------------------------------------------------------------
 
@@ -29,7 +26,32 @@ colour_strings = ["FUV-NUV", "FUV-H", "FUV-u", "FUV-g", "FUV-r", "FUV-i", "FUV-z
 
 # -----------------------------------------------------------------
 
-class ColourMapMaker(MapsComponent):
+def make_map(modeling_path):
+
+    """
+    This function ...
+    :return: 
+    """
+
+    # Create the colour map maker
+    maker = ColourMapsMaker()
+
+    maker.config.check_database = False
+    maker.config.colours = [""]
+    maker.config.write = False
+
+    maker.config.path = modeling_path
+
+    frames = dict() # indexed on filter
+
+    maker.run(frames=frames)
+
+    # Get the maps
+    maps = maker.maps
+
+# -----------------------------------------------------------------
+
+class ColourMapsMaker(Configurable):
 
     """
     This class ...
@@ -44,7 +66,7 @@ class ColourMapMaker(MapsComponent):
         """
 
         # Call the constructor of the base class
-        super(ColourMapMaker, self).__init__(config, interactive)
+        super(ColourMapsMaker, self).__init__(config, interactive)
 
         # The frames
         self.frames = dict()
@@ -62,17 +84,11 @@ class ColourMapMaker(MapsComponent):
         :return:
         """
 
-        # Setup
+        # 1. Call the setup function
         self.setup(**kwargs)
-
-        # Load the data
-        self.load_data()
 
         # Make the maps
         self.make_maps()
-
-        # Write
-        self.write()
 
     # -----------------------------------------------------------------
 
@@ -85,41 +101,19 @@ class ColourMapMaker(MapsComponent):
         """
 
         # Call the setup fucntion of the base class
-        super(ColourMapMaker, self).setup(**kwargs)
+        super(ColourMapsMaker, self).setup(**kwargs)
+
+        if "frames" in kwargs: self.frames = kwargs.pop("frames")
+        elif "dataset" in kwargs: self.load_data(kwargs.pop("dataset"))
+        elif self.config.dataset is not None: self.load_data(DataSet.from_file(self.config.dataset))
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def available_colours(self):
+    def load_data(self, dataset):
 
         """
         This function ...
-        :return: 
-        """
-
-        colours = []
-
-        # Loop over the colours
-        for colour in self.config.colours:
-
-            # Get the two filters
-            for fltr in get_filters_for_colour(colour):
-
-                # If either one of the two images is not available, we can not calculate the colour
-                if not self.dataset.has_frame_for_filter(fltr): break
-
-            # Break not encountered
-            else: colours.append(colour)
-
-        # Return colours
-        return colours
-
-    # -----------------------------------------------------------------
-
-    def load_data(self):
-
-        """
-        This function ...
+        :param dataset:
         :return:
         """
 
@@ -127,7 +121,7 @@ class ColourMapMaker(MapsComponent):
         log.info("Loading the data ...")
 
         # Loop over the colours
-        for colour in self.available_colours:
+        for colour in self.config.colours:
 
             # Debugging
             log.debug("Loading frames for the '" + colour + "' colour ...")
@@ -142,7 +136,7 @@ class ColourMapMaker(MapsComponent):
                 log.debug("Loading the '" + str(fltr) + "' frame ...")
 
                 # Load
-                frame = self.dataset.get_frame_for_filter(fltr)
+                frame = dataset.get_frame_for_filter(fltr)
                 self.frames[fltr] = frame
 
     # -----------------------------------------------------------------
@@ -158,7 +152,7 @@ class ColourMapMaker(MapsComponent):
         log.info("Making the colour maps ...")
 
         # Loop over the colours
-        for colour in self.available_colours:
+        for colour in self.config.colours:
 
             # Get the two filters
             fltr_a, fltr_b = get_filters_for_colour(colour)
@@ -175,41 +169,4 @@ class ColourMapMaker(MapsComponent):
             # Add the map
             self.maps[colour] = colour_map
 
-    # -----------------------------------------------------------------
-
-    def write(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        # Inform the user
-        log.info("Writing ...")
-
-        # Write the colour maps
-        self.write_maps()
-
-    # -----------------------------------------------------------------
-
-    def write_maps(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        # Inform the user
-        log.info("Writing the colour maps ...")
-
-        # Loop over the colours
-        for colour in self.available_colours:
-
-            # Determine the path
-            path = fs.join(self.maps_colours_path, colour + ".fits")
-
-            # Save the map
-            self.maps[colour].saveto(path)
-
 # -----------------------------------------------------------------
-

@@ -36,6 +36,19 @@ solar_luminosity = 3.846e26 * u("W")
 
 # -----------------------------------------------------------------
 
+def make_map():
+
+    """
+    This function ...
+    :return: 
+    """
+
+    maker = IonizingStellarMapMaker()
+
+    maker.run()
+
+# -----------------------------------------------------------------
+
 class IonizingStellarMapMaker(MapsComponent):
 
     """

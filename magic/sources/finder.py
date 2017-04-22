@@ -1219,8 +1219,8 @@ class SourceFinder(Configurable):
                 #galaxies = self.galaxies[name]
                 #stars = self.stars[name]
                 stars = self.stars
-                galaxy_segments = self.segments[name].frames["galaxies"]
-                star_segments = self.segments[name].frames["stars"]
+                galaxy_segments = self.segments[name].frames["extended"]
+                star_segments = self.segments[name].frames["point"]
                 kernel = self.psfs[name]
 
                 # Call the target function

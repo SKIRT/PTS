@@ -36,8 +36,6 @@ class SSFRMapMaker(MapsComponent):
         # Call the constructor of the base class
         super(SSFRMapMaker, self).__init__(config, interactive)
 
-        # -- Attributes --
-
     # -----------------------------------------------------------------
 
     def run(self):
@@ -50,11 +48,11 @@ class SSFRMapMaker(MapsComponent):
         # 1. Call the setup function
         self.setup()
 
-        # Make SSFR maps based on colours
+        # 2. Make SSFR maps based on colours
         self.make_ssfr_colours()
 
-        # 5. Writing
-        self.write()
+        # 3. Writing
+        if self.config.write: self.write()
 
     # -----------------------------------------------------------------
 
@@ -82,6 +80,9 @@ class SSFRMapMaker(MapsComponent):
 
         # Create the map maker
         maker = ColoursSSFRMapMaker()
+
+        # Set the path
+        maker.config.path = self.config.path
 
         # Run the maker
         maker.run()

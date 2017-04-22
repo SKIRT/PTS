@@ -93,7 +93,7 @@ class BlackBodyDustMapMaker(MapsComponent):
         self.seds = []
 
         # The dust map
-        self.map = None
+        self.maps = None
 
         # The dust mass error map
         self.error_map = None

@@ -27,6 +27,32 @@ ssfr_colours = ["FUV-H", "FUV-i", "FUV-r", "FUV-g", "FUV-B"]
 
 # -----------------------------------------------------------------
 
+def make_map():
+
+    """
+    This function ...
+    :param:
+    :return: 
+    """
+
+    # Create the sSFR map maker
+    maker = ColoursSSFRMapMaker()
+
+    maker.config.check_database = False
+    maker.config.colours = [""]
+    maker.config.write = False
+
+    maker.config.path = modeling_path
+
+    colours = dict()
+
+    maker.run(colours=colours)
+
+    # Get the maps
+    maps = maker.maps
+
+# -----------------------------------------------------------------
+
 class ColoursSSFRMapMaker(MapsComponent):
 
     """
@@ -43,8 +69,6 @@ class ColoursSSFRMapMaker(MapsComponent):
 
         # Call the constructor of the base class
         super(ColoursSSFRMapMaker, self).__init__(config, interactive)
-
-        # -- Attributes --
 
         # The colour maps
         self.colours = dict()
@@ -66,13 +90,13 @@ class ColoursSSFRMapMaker(MapsComponent):
         self.setup(**kwargs)
 
         # 2. Load the colour maps
-        self.load_colours()
+        if not self.has_colours: self.load_colours()
 
         # 3. Make maps
         self.make_maps()
 
         # 4. Writing
-        self.write()
+        if self.config.write: self.write()
 
     # -----------------------------------------------------------------
 
@@ -97,6 +121,8 @@ class ColoursSSFRMapMaker(MapsComponent):
         :return: 
         """
 
+        if not self.config.check_database: return self.config.colours
+
         colours = []
 
         # Loop over the colours
@@ -113,6 +139,18 @@ class ColoursSSFRMapMaker(MapsComponent):
 
         # Return colours
         return colours
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_colours(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return len(self.colours) > 0
 
     # -----------------------------------------------------------------
 
@@ -174,7 +212,7 @@ class ColoursSSFRMapMaker(MapsComponent):
         # Inform the user
         log.info("Writing ...")
 
-        # Write the colour maps
+        # Write the sSFR maps
         self.write_maps()
 
     # -----------------------------------------------------------------

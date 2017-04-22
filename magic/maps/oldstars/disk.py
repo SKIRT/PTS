@@ -20,6 +20,19 @@ from ....magic.core.image import Image
 
 # -----------------------------------------------------------------
 
+def make_map():
+
+    """
+    This function ...
+    :return: 
+    """
+
+    maker = DiskOldStellarMapMaker()
+
+    maker.run()
+
+# -----------------------------------------------------------------
+
 class DiskOldStellarMapMaker(MapsComponent):
 
     """
@@ -85,7 +98,7 @@ class DiskOldStellarMapMaker(MapsComponent):
         self.cutoff_map()
 
         # 7. Writing
-        self.write()
+        if self.config.write: self.write()
 
     # -----------------------------------------------------------------
 
