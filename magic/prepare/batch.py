@@ -836,8 +836,8 @@ class BatchImagePreparer(Configurable):
                 # -----------------------------------------------------------------
 
                 # Convert the frame into AB magnitudes
-                invalid = Mask.is_zero_or_less(image.frames.primary)
-                ab_frame = unitconversion.jansky_to_ab(image.frames.primary)
+                invalid = Mask.is_zero_or_less(image.primary)
+                ab_frame = unitconversion.jansky_to_ab(image.primary)
                 # Set infinites to zero
                 ab_frame[invalid] = 0.0
 
@@ -858,11 +858,11 @@ class BatchImagePreparer(Configurable):
 
                 # c = a[Jy] - image[Jy]
                 # c = a - jansky_frame
-                c = a - image.frames.primary
+                c = a - image.primary
 
                 # d = image[Jy] - b[Jy]
                 # d = jansky_frame - b
-                d = image.frames.primary - b
+                d = image.primary - b
 
                 # ----------------------------------------------------------------- BELOW: if frame was not already in Jy
 
@@ -900,7 +900,7 @@ class BatchImagePreparer(Configurable):
 
                 # Calculate calibration errors with percentage
                 fraction = calibration_error.value * 0.01
-                calibration_frame = image.frames.primary * fraction
+                calibration_frame = image.primary * fraction
 
             # Unrecognized calibration error (not a magnitude, not a percentage)
             else: raise ValueError("Unrecognized calibration error")
@@ -933,7 +933,7 @@ class BatchImagePreparer(Configurable):
             error_maps = []
 
             # Add the Poisson errors
-            if "poisson_errors" in image.frames: error_maps.append(image.frames.poisson_errors)
+            if "poisson_errors" in image.frames: error_maps.append(image.frames["poisson_errors"])
 
             # Get the noise frame
             noise_frame = self.noise_maps[label]
@@ -942,7 +942,7 @@ class BatchImagePreparer(Configurable):
             error_maps.append(noise_frame)
 
             # Add the calibration errors
-            error_maps.append(image.frames.calibration_errors)
+            error_maps.append(image.frames["calibration_errors"])
 
             # Add additional error frames indicated by the user
             if self.config.error_frame_names is not None:
@@ -1080,10 +1080,10 @@ def _extract_sources(image, config, sources_path, visualisation_path=None):
 
         # Create an animation
         animation = ImageBlinkAnimation()
-        animation.add_image(image.frames.primary)
+        animation.add_image(image.primary)
 
         # Create an animation to show the progress of the SourceExtractor
-        source_extractor_animation = SourceExtractionAnimation(image.frames.primary)
+        source_extractor_animation = SourceExtractionAnimation(image.primary)
 
     else:
 
@@ -1103,7 +1103,7 @@ def _extract_sources(image, config, sources_path, visualisation_path=None):
 
     # Run the extraction
     special_region = None
-    extractor.run(frame=image.frames.primary, animation=source_extractor_animation, special_region=special_region)
+    extractor.run(frame=image.primary, animation=source_extractor_animation, special_region=special_region)
 
     # Get the saturation region
     saturation_region = extractor.saturation_region
@@ -1118,7 +1118,7 @@ def _extract_sources(image, config, sources_path, visualisation_path=None):
         source_extractor_animation.saveto(path)
 
         # ...
-        animation.add_image(image.frames.primary)
+        animation.add_image(image.primary)
 
         # Determine the path to the animation
         path = fs.join(visualisation_path, time.unique_name(image.name + "_imagepreparation_extractsources") + ".gif")
@@ -1158,7 +1158,7 @@ def _convolve(image, kernel_path, kernel_fwhm, visualisation_path=None, host_id=
 
         # Create an animation
         animation = ImageBlinkAnimation()
-        animation.add_image(image.frames.primary)
+        animation.add_image(image.primary)
 
     else: animation = None
 
@@ -1189,7 +1189,7 @@ def _convolve(image, kernel_path, kernel_fwhm, visualisation_path=None, host_id=
     # Write the animation
     if visualisation_path is not None:
 
-        animation.add_image(image.frames.primary)
+        animation.add_image(image.primary)
 
         # Determine the path to the animation
         path = fs.join(visualisation_path, time.unique_name(image.name + "_imagepreparation_convolve") + ".gif")
@@ -1252,7 +1252,7 @@ def _subtract_sky(image, config, principal_sky_region, saturation_sky_region=Non
 
         # Create an animation to show the result of the sky subtraction step
         animation = ImageBlinkAnimation()
-        animation.add_image(image.frames.primary)
+        animation.add_image(image.primary)
 
         # Create an animation to show the progress of the SkySubtractor
         skysubtractor_animation = Animation()
@@ -1282,7 +1282,7 @@ def _subtract_sky(image, config, principal_sky_region, saturation_sky_region=Non
     sky_subtractor = SkySubtractor(config)
 
     # Run the sky subtractor
-    sky_subtractor.run(frame=image.frames.primary, principal_shape=principal_shape, sources_mask=image.masks.sources,
+    sky_subtractor.run(frame=image.primary, principal_shape=principal_shape, sources_mask=image.masks.sources,
                        extra_mask=extra_mask, saturation_region=saturation_region, animation=skysubtractor_animation)
 
     # Set the subtracted frame as the primary frame
@@ -1326,7 +1326,7 @@ def _subtract_sky(image, config, principal_sky_region, saturation_sky_region=Non
         skysubtractor_animation.saveto(path)
 
         # ...
-        animation.add_image(image.frames.primary)
+        animation.add_image(image.primary)
 
         # Determine the path to the animation
         path = fs.join(visualisation_path, time.unique_name(image.name + "_imagepreparation_subtractsky") + ".gif")

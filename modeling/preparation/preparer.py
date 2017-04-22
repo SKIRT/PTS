@@ -635,7 +635,7 @@ class DataPreparer(PreparationComponent):
         else: self.image_preparer.config.convolution.remote = None
 
         # Check whether the image has to be sky subtracted
-        if image.frames.primary.sky_subtracted:
+        if image.primary.sky_subtracted:
             log.debug("The " + image.name + " image has already been sky subtracted")
             self.image_preparer.config.subtract_sky = False
         else: self.image_preparer.config.subtract_sky = True # Has yet to be sky subtracted
@@ -683,9 +683,9 @@ def load_sources(path):
     segments = Image.from_file(segments_path, no_filter=True)
 
     # Get the different segmentation frames
-    galaxy_segments = segments.frames.galaxies
-    star_segments = segments.frames.stars if "stars" in segments.frames else None
-    other_segments = segments.frames.other_sources if "other_sources" in segments.frames else None
+    galaxy_segments = segments.frames["galaxies"]
+    star_segments = segments.frames["stars"] if "stars" in segments.frames else None
+    other_segments = segments.frames["other_sources"] if "other_sources" in segments.frames else None
 
     # Return the regions and segmentation maps
     return galaxy_region, star_region, saturation_region, other_region, galaxy_segments, star_segments, other_segments

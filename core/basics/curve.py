@@ -182,6 +182,9 @@ class WavelengthCurve(Curve):
         :return:
         """
 
+        # Check if setup has been performed
+        if len(self.colnames) == 0: self.setup()
+
         for index in reversed(range(len(self.colnames))):
             name = self.colnames[index]
             if name == "Error+" or name == "Error-": continue

@@ -30,6 +30,7 @@ from ...core.remote.moderator import PlatformModerator
 from ...core.tools import stringify
 from ...core.tools.loops import repeat
 from ...core.remote.remote import Remote
+from ..fitting.finisher import ExplorationFinisher
 
 # -----------------------------------------------------------------
 
@@ -82,6 +83,9 @@ class ModelerBase(Configurable):
 
         # The SED fitter instance
         self.fitter = None
+
+        # The exploration finisher
+        self.finisher = None
 
     # -----------------------------------------------------------------
 
@@ -470,25 +474,27 @@ class ModelerBase(Configurable):
         """
 
         # Inform the user
-        log.info("Evaluating last generation ...")
+        log.info("Finishing the parameter exploration ...")
 
-        # Check the current number of generations
-        current_ngenerations = get_ngenerations(self.modeling_path, self.fitting_run_name)
-        #if current_ngenerations <= 1: raise RuntimeError("Need at least one generation after the initial generation to finish the fitting")
-        if current_ngenerations == 0: raise RuntimeError("There are no generations")
+        # Configuration settings
+        settings = dict()
+        settings["name"] = self.fitting_run_name
 
-        # Check if there are unfinished generations
-        has_unfinished = has_unfinished_generations(self.modeling_path, self.fitting_run_name)
-        if has_unfinished: log.warning("There are unfinished generations, but evaluating finished simulations anyway ...")
+        # Set the input
+        input_dict = dict()
 
-        # Check if there are unevaluated generations
-        if not has_unevaluated_generations(self.modeling_path, self.fitting_run_name): log.success("All generations have already been evaluated")
+        # Create the exploration finisher
+        self.finisher = ExplorationFinisher(settings)
 
-        # Do the SED fitting step
-        self.fit_sed()
+        # Add an entry to the history
+        self.history.add_entry(ExplorationFinisher.command_name())
 
-        # Success
-        if not has_unfinished: log.success("Succesfully evaluated all generations")
+        # Run the finisher
+        self.finisher.run(**input_dict)
+
+        # Mark the end and save the history file
+        self.history.mark_end()
+        self.history.save()
 
     # -----------------------------------------------------------------
 

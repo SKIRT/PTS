@@ -263,16 +263,16 @@ class ImagePreparer(Configurable):
 
             # Create an animation
             animation = ImageBlinkAnimation()
-            animation.add_image(self.image.frames.primary)
+            animation.add_image(self.image.primary)
 
             # Create an animation to show the progress of the SourceExtractor
-            source_extractor_animation = SourceExtractionAnimation(self.image.frames.primary)
+            source_extractor_animation = SourceExtractionAnimation(self.image.primary)
         else:
             animation = None
             source_extractor_animation = None
 
         # Run the extractor
-        self.extractor.run(self.image.frames.primary, self.galaxy_region, self.star_region, self.saturation_region,
+        self.extractor.run(self.image.primary, self.galaxy_region, self.star_region, self.saturation_region,
                            self.other_region, self.galaxy_segments, self.star_segments, self.other_segments, source_extractor_animation)
 
         # Write the animation
@@ -285,7 +285,7 @@ class ImagePreparer(Configurable):
             source_extractor_animation.saveto(path)
 
             # ...
-            animation.add_image(self.image.frames.primary)
+            animation.add_image(self.image.primary)
 
             # Determine the path to the animation
             path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_imagepreparation_extractsources") + ".gif")
@@ -384,7 +384,7 @@ class ImagePreparer(Configurable):
 
             # Create an animation
             animation = ImageBlinkAnimation()
-            animation.add_image(self.image.frames.primary)
+            animation.add_image(self.image.primary)
 
         else: animation = None
 
@@ -420,7 +420,7 @@ class ImagePreparer(Configurable):
         # Write the animation
         if self.visualisation_path is not None:
 
-            animation.add_image(self.image.frames.primary)
+            animation.add_image(self.image.primary)
 
             # Determine the path to the animation
             path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_imagepreparation_convolve") + ".gif")
@@ -484,7 +484,7 @@ class ImagePreparer(Configurable):
 
             # Create an animation to show the result of the sky subtraction step
             animation = ImageBlinkAnimation()
-            animation.add_image(self.image.frames.primary)
+            animation.add_image(self.image.primary)
 
             # Create an animation to show the progress of the SkySubtractor
             skysubtractor_animation = Animation()
@@ -509,7 +509,7 @@ class ImagePreparer(Configurable):
         elif "padded" in self.image.masks: extra_mask = self.image.masks.padded # just use padded mask
 
         # Run the sky subtractor
-        self.sky_subtractor.run(self.image.frames.primary, principal_shape, self.image.masks.sources, extra_mask, saturation_region, skysubtractor_animation)
+        self.sky_subtractor.run(self.image.primary, principal_shape, self.image.masks.sources, extra_mask, saturation_region, skysubtractor_animation)
 
         # Add the sky frame to the image
         self.image.add_frame(self.sky_subtractor.sky_frame, "sky")
@@ -552,7 +552,7 @@ class ImagePreparer(Configurable):
             skysubtractor_animation.saveto(path)
 
             # ...
-            animation.add_image(self.image.frames.primary)
+            animation.add_image(self.image.primary)
 
             # Determine the path to the animation
             path = fs.join(self.visualisation_path, time.unique_name(self.image.name + "_imagepreparation_subtractsky") + ".gif")
@@ -581,8 +581,8 @@ class ImagePreparer(Configurable):
             # -----------------------------------------------------------------
 
             # Convert the frame into AB magnitudes
-            invalid = Mask.is_zero_or_less(self.image.frames.primary)
-            ab_frame = unitconversion.jansky_to_ab(self.image.frames.primary)
+            invalid = Mask.is_zero_or_less(self.image.primary)
+            ab_frame = unitconversion.jansky_to_ab(self.image.primary)
             # Set infinites to zero
             ab_frame[invalid] = 0.0
 
@@ -603,11 +603,11 @@ class ImagePreparer(Configurable):
 
             # c = a[Jy] - image[Jy]
             # c = a - jansky_frame
-            c = a - self.image.frames.primary
+            c = a - self.image.primary
 
             # d = image[Jy] - b[Jy]
             # d = jansky_frame - b
-            d = self.image.frames.primary - b
+            d = self.image.primary - b
 
             # ----------------------------------------------------------------- BELOW: if frame was not already in Jy
 
@@ -645,7 +645,7 @@ class ImagePreparer(Configurable):
 
             # Calculate calibration errors with percentage
             fraction = self.config.uncertainties.calibration_error.value * 0.01
-            calibration_frame = self.image.frames.primary * fraction
+            calibration_frame = self.image.primary * fraction
 
         # Unrecognized calibration error (not a magnitude, not a percentage)
         else: raise ValueError("Unrecognized calibration error")
@@ -672,13 +672,13 @@ class ImagePreparer(Configurable):
         error_maps = []
 
         # Add the Poisson errors
-        if "poisson_errors" in self.image.frames: error_maps.append(self.image.frames.poisson_errors)
+        if "poisson_errors" in self.image.frames: error_maps.append(self.image.frames["poisson_errors"])
 
         # Add the sky errors
         error_maps.append(self.sky_subtractor.noise_frame)
 
         # Add the calibration errors
-        error_maps.append(self.image.frames.calibration_errors)
+        error_maps.append(self.image.frames["calibration_errors"])
 
         # Add additional error frames indicated by the user
         if self.config.error_frame_names is not None:

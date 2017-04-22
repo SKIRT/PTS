@@ -128,7 +128,7 @@ log.info("Importing the galactic and stellar catalogs ...")
 catalog_importer = CatalogImporter()
 
 # Run the catalog importer
-catalog_importer.run(image.frames.primary)
+catalog_importer.run(image.primary.coordinate_box)
 
 # -----------------------------------------------------------------
 
@@ -173,7 +173,7 @@ log.info("Running the source finder ...")
 finder = SourceFinder.from_arguments(arguments)
 
 # Run the extractor
-finder.run(image.frames.primary, catalog_importer.galactic_catalog, catalog_importer.stellar_catalog, special_region, ignore_region, bad_mask)
+finder.run(image.primary, catalog_importer.galactic_catalog, catalog_importer.stellar_catalog, special_region, ignore_region, bad_mask)
 
 # -----------------------------------------------------------------
 
@@ -242,7 +242,7 @@ log.info("Running the source extractor ...")
 extractor = SourceExtractor.from_arguments(arguments)
 
 # Run the source extractor
-extractor.run(image.frames.primary, star_region, saturation_region, galaxy_segments, star_segments, other_segments)
+extractor.run(image.primary, star_region, saturation_region, galaxy_segments, star_segments, other_segments)
 
 # -----------------------------------------------------------------
 

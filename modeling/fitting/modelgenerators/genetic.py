@@ -19,6 +19,7 @@ from ....core.tools import filesystem as fs
 from ....evolve.optimize.stepwise import StepWiseOptimizer
 from ....evolve.optimize.continuous import ContinuousOptimizer
 from ..evaluate import evaluate
+from ....core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -54,6 +55,9 @@ class GeneticModelGenerator(ModelGenerator):
 
         # The names of the individuals
         self.individual_names = None
+
+        # The parameter ranges
+        self.parameter_ranges = None
 
     # -----------------------------------------------------------------
 
@@ -125,6 +129,9 @@ class GeneticModelGenerator(ModelGenerator):
                 # Set initial flag
                 self.initial = True
 
+        # Get the parameter ranges
+        if "parameter_ranges" in kwargs: self.parameter_ranges = kwargs.pop("parameter_ranges")
+
         # Set parameters
         self.set_parameters()
 
@@ -146,10 +153,26 @@ class GeneticModelGenerator(ModelGenerator):
         # Loop over the free parameters
         for label in self.fitting_run.free_parameter_labels:
 
-            # Use: self.parameter_ranges_for_generation(self, generation_name) ????
+            # Get range (=default range)
+            default_parameter_range = self.fitting_run.free_parameter_ranges[label]
 
-            # Get range
-            parameter_range = self.fitting_run.free_parameter_ranges[label]
+            # Get the name of the last generation
+            # DOESN'T WORK: SEE BELOW WHY
+            #generation_name = get_last_generation_name(self.fitting_run)
+
+            # DOESN'T WORK: the generations table has not been updated at this point: only when write() is called from the ParameterExplorer (parent to this class)
+            # parameter_range = self.fitting_run.parameter_ranges_for_generation(generation_name, label)
+
+            # Set the parameter range
+            if self.parameter_ranges is not None and label in self.parameter_ranges: parameter_range = self.parameter_ranges[label]
+            else: parameter_range = default_parameter_range
+
+            # Debugging
+            log.debug("Parameter '" + label + "':")
+            log.debug("")
+            log.debug(" - default range: " + tostr(default_parameter_range))
+            log.debug(" - range for this generation: " + tostr(parameter_range))
+            log.debug("")
 
             # Add the parameter
             self.add_parameter(label, parameter_range)
@@ -163,53 +186,11 @@ class GeneticModelGenerator(ModelGenerator):
         :return:
         """
 
-        ## In order of optimizer configuration
+        # Inform the user
+        log.info("Setting the settings for the optimizer ...")
 
-        # Parameters
-        self.optimizer.config.nparameters = self.fitting_run.nfree_parameters
-
-        # Number of generations and the number of individuals per generation
-        self.optimizer.config.ngenerations = self.config.ngenerations
-        self.optimizer.config.nindividuals = self.config.nmodels
-
-        # User
-        self.optimizer.config.mutation_rate = self.fitting_run.genetic_settings.mutation_rate
-        self.optimizer.config.crossover_rate = self.fitting_run.genetic_settings.crossover_rate
-
-        # Fixed
-        self.optimizer.config.stats_freq = 1
-        self.optimizer.config.best_raw_score = 0.
-
-        # User
-        self.optimizer.config.round_decimal = self.fitting_run.genetic_settings.round_decimal
-        self.optimizer.config.mutation_method = self.fitting_run.genetic_settings.mutation_method
-
-        # User, scaling
-        self.optimizer.config.scaling_method = self.fitting_run.genetic_settings.scaling_method
-
-        # User, selector
-        self.optimizer.config.selector_method = self.fitting_run.genetic_settings.selector_method
-
-        # Fixed
-        self.optimizer.config.min_or_max = "minimize"
-        #self.optimizer.config.run_id = self.fitting_run.name # THIS IS NOW DONE IN THE SETUP
-        self.optimizer.config.database_frequency = 1
-        self.optimizer.config.statistics_frequency = 1
-
-        # Fixed
-        #self.optimizer.config.output = self.fitting_run.path
-
-        # Fixed
-        self.optimizer.config.elitism = True
-
-        # Fixed
-        self.optimizer.config.nelite_individuals = self.fitting_run.genetic_settings.nelite_individuals
-
-        # Set heterogeneous flag
-        self.optimizer.config.heterogeneous = True
-
-        # Set named_individuals flag
-        self.optimizer.config.named_individuals = True
+        # Set the settings
+        set_optimizer_settings(self.optimizer, self.fitting_run, self.config.ngenerations, self.config.nmodels)
 
     # -----------------------------------------------------------------
 
@@ -246,30 +227,8 @@ class GeneticModelGenerator(ModelGenerator):
         # Inform the user
         log.info("Setting scores from previous generation ...")
 
-        # Load the parameters table from the previous generation
-        parameters_table = self.fitting_run.parameters_table_for_generation(self.fitting_run.last_genetic_or_initial_generation_name)
-
-        # Load the chi squared table from the previous generation
-        chi_squared_table = self.fitting_run.chi_squared_table_for_generation(self.fitting_run.last_genetic_or_initial_generation_name)
-
-        # List of chi squared values in the same order as the parameters table
-        chi_squared_values = []
-
-        # Check whether the chi-squared and parameter tables match
-        for i in range(len(parameters_table)):
-            simulation_name = parameters_table["Simulation name"][i]
-            chi_squared = chi_squared_table.chi_squared_for(simulation_name)
-            chi_squared_values.append(chi_squared)
-
-        # Check individual values with parameter table of the last generation
-        check = []
-        for label in self.fitting_run.free_parameter_labels:
-            values = parameters_table[label]
-            check.append(values)
-
-        # Set the scores
-        self.scores = chi_squared_values
-        self.scores_check = check
+        # Get the scores (and check)
+        self.scores, self.scores_check = get_last_generation_scores(self.fitting_run)
 
     # -----------------------------------------------------------------
 
@@ -339,5 +298,125 @@ class GeneticModelGenerator(ModelGenerator):
 
         # Write the state of the optimizer
         #self.write_optimizer()
+
+# -----------------------------------------------------------------
+
+def set_optimizer_settings(optimizer, fitting_run, ngenerations=None, nmodels=None):
+
+    """
+    This function ...
+    :param optimizer: 
+    :param fitting_run: 
+    :param ngenerations:
+    :param nmodels:
+    :return: 
+    """
+
+    ## In order of optimizer configuration
+
+    # Parameters
+    optimizer.config.nparameters = fitting_run.nfree_parameters
+
+    # Number of generations and the number of individuals per generation
+    optimizer.config.ngenerations = ngenerations
+    optimizer.config.nindividuals = nmodels
+
+    # User
+    optimizer.config.mutation_rate = fitting_run.genetic_settings.mutation_rate
+    optimizer.config.crossover_rate = fitting_run.genetic_settings.crossover_rate
+
+    # Fixed
+    optimizer.config.stats_freq = 1
+    optimizer.config.best_raw_score = 0.
+
+    # User
+    optimizer.config.round_decimal = fitting_run.genetic_settings.round_decimal
+    optimizer.config.mutation_method = fitting_run.genetic_settings.mutation_method
+
+    # User, scaling
+    optimizer.config.scaling_method = fitting_run.genetic_settings.scaling_method
+
+    # User, selector
+    optimizer.config.selector_method = fitting_run.genetic_settings.selector_method
+
+    # Fixed
+    optimizer.config.min_or_max = "minimize"
+    # self.optimizer.config.run_id = self.fitting_run.name # THIS IS NOW DONE IN THE SETUP
+    optimizer.config.database_frequency = 1
+    optimizer.config.statistics_frequency = 1
+
+    # Fixed
+    # self.optimizer.config.output = self.fitting_run.path
+
+    # Fixed
+    optimizer.config.elitism = True
+
+    # Fixed
+    optimizer.config.nelite_individuals = fitting_run.genetic_settings.nelite_individuals
+
+    # Set heterogeneous flag
+    optimizer.config.heterogeneous = True
+
+    # Set named_individuals flag
+    optimizer.config.named_individuals = True
+
+# -----------------------------------------------------------------
+
+def get_last_generation_name(fitting_run, or_initial=True):
+
+    """
+    This function ...
+    :param fitting_run: 
+    :param or_initial: 
+    :return: 
+    """
+
+    # Get the corresponding generation name
+    if or_initial: generation_name = fitting_run.last_genetic_or_initial_generation_name
+    else: generation_name = fitting_run.last_genetic_generation_name
+
+    # Return the name
+    return generation_name
+
+# -----------------------------------------------------------------
+
+def get_last_generation_scores(fitting_run, or_initial=True):
+
+    """
+    This function ...
+    :param fitting_run:
+    :param or_initial:
+    :return: 
+    """
+
+    # Get the generation name
+    generation_name = get_last_generation_name(fitting_run, or_initial=or_initial)
+
+    # Load the parameters table from the previous generation
+    parameters_table = fitting_run.parameters_table_for_generation(generation_name)
+
+    # Load the chi squared table from the previous generation
+    chi_squared_table = fitting_run.chi_squared_table_for_generation(generation_name)
+
+    # List of chi squared values in the same order as the parameters table
+    chi_squared_values = []
+
+    # Check whether the chi-squared and parameter tables match
+    for i in range(len(parameters_table)):
+        simulation_name = parameters_table["Simulation name"][i]
+        chi_squared = chi_squared_table.chi_squared_for(simulation_name)
+        chi_squared_values.append(chi_squared)
+
+    # Check individual values with parameter table of the last generation
+    check = []
+    for label in fitting_run.free_parameter_labels:
+        values = parameters_table[label]
+        check.append(values)
+
+    # Set the scores
+    scores = chi_squared_values
+
+    # Return
+    return scores, check
 
 # -----------------------------------------------------------------

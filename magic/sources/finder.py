@@ -145,6 +145,7 @@ class GalaxyTable(SmartTable):
         index = galaxy.index
         name = galaxy.name
 
+        # Add index and name
         values.append(index)
         values.append(name)
 
@@ -230,13 +231,17 @@ class StarTable(SmartTable):
         catalog = star.catalog
         id = star.id
 
+        # Add index, catalog and ID
+        values.append(star.index)
         values.append(catalog)
         values.append(id)
 
-        #print(star)
-
         # Loop over the filters for which we need a FWHM
         for name in self.colnames:
+
+            if name == "Index": continue
+            if name == "Catalog": continue
+            if name == "ID": continue
 
             # FWHM
             if name.endswith("FWHM"):
@@ -245,10 +250,11 @@ class StarTable(SmartTable):
 
                 # Filter
                 fltr = BroadBandFilter(filter_name)
-                filter_name = str(fltr)
+                #filter_name = str(fltr)
 
                 #print(star.fwhms)
-                if filter_name in star.fwhms: fwhm = star.fwhms[filter_name]
+                if star.fwhms.has_filter(fltr): fwhm = star.fwhms.fwhm_for_filter(fltr)
+                #if filter_name in star.fwhms: fwhm = star.fwhms[filter_name]
                 else: fwhm = None
 
                 values.append(fwhm)
@@ -259,14 +265,19 @@ class StarTable(SmartTable):
                 # Filter
                 fltr = BroadBandFilter(name.split(" flux")[0])
 
+                #print(star.sed)
+                #print(fltr)
+
                 # Get flux
                 flux = star.sed.photometry_for_filter(fltr)
 
                 # Add the flux to the values
                 values.append(flux)
 
-            else: continue
+            # Unknown
+            else: raise ValueError("Don't know what value to fill in for column '" + name + "'")
 
+        # Add the row
         self.add_row(values)
 
 # -----------------------------------------------------------------
@@ -1200,15 +1211,16 @@ class SourceFinder(Configurable):
                 bad_mask = None
 
                 # Create the configuration
-                config = self.config.other_sources.copy()
+                config = self.config.other.copy()
 
                 galaxies = self.galaxies
 
                 # Get other input
                 #galaxies = self.galaxies[name]
-                stars = self.stars[name]
-                galaxy_segments = self.segments[name].frames.galaxies
-                star_segments = self.segments[name].frames.stars
+                #stars = self.stars[name]
+                stars = self.stars
+                galaxy_segments = self.segments[name].frames["galaxies"]
+                star_segments = self.segments[name].frames["stars"]
                 kernel = self.psfs[name]
 
                 # Call the target function

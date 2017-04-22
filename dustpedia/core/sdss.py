@@ -691,8 +691,8 @@ class SDSSMosaicMaker(Configurable):
             image = Image.from_file(self.result_paths[band])
 
             # Get mosaic and error map
-            mosaic_frame = image.frames.primary
-            mosaic_errors = image.frames.errors
+            mosaic_frame = image.frames["primary"]
+            mosaic_errors = image.frames["errors"]
 
             # Calculate the relative error map
             relerrors = mosaic_errors / mosaic_frame
@@ -1115,11 +1115,11 @@ def create_mosaic(band, rebinned_path, rebin_wcs, mosaics_path):
         image = Image.from_file(path)
 
         # Get the footprint
-        footprint = image.frames.footprint
+        footprint = image.frames["footprint"]
 
         # Get the a and b frame
-        a = image.frames.primary  # IN NANOMAGGIES PER PIXEL
-        b = image.frames.noise  # IN NANOMAGGIES PER PIXEL
+        a = image.frames["primary"]  # IN NANOMAGGIES PER PIXEL
+        b = image.frames["noise"]  # IN NANOMAGGIES PER PIXEL
 
         # SET NANS TO ZERO
         a.replace_nans(0.0)

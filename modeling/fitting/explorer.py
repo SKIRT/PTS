@@ -29,7 +29,7 @@ from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.advanced.parallelizationtool import ParallelizationTool
 from ...core.remote.host import Host
 from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
-from .evaluate import get_parameter_values_from_generator, prepare_simulation, generate_simulation_name, get_parameter_values_for_named_individual
+from .evaluate import prepare_simulation, generate_simulation_name, get_parameter_values_for_named_individual
 from ...core.simulation.input import SimulationInput
 from ...core.tools import introspection
 from ...core.tools import parallelization as par
@@ -255,7 +255,7 @@ class ParameterExplorer(FittingComponent):
         # Check whether initialize_fit has been called
         if self.modeling_type == "galaxy":
             if not fs.is_file(self.fitting_run.wavelength_grids_table_path): raise RuntimeError("Call initialize_fit_galaxy before starting the parameter exploration")
-            if not fs.is_file(self.fitting_run.dust_grids_table_path): raise RuntimeError("Call initialize_fit_galaxy before starting the parameter exploration")
+            #if not fs.is_file(self.fitting_run.dust_grids_table_path): raise RuntimeError("Call initialize_fit_galaxy before starting the parameter exploration") # doesn't exist anymore: incorporated in the representations
 
     # -----------------------------------------------------------------
 
@@ -481,7 +481,7 @@ class ParameterExplorer(FittingComponent):
             for label in parameter_values:
                 extra_info[label] = "initial parameter value = " + stringify(parameter_values[label])[1]
 
-        # Loop over the free parameters
+        # Loop over the free parameters, add a setting slot for each parameter range
         for label in self.fitting_run.free_parameter_labels:
 
             # Skip if range is already defined for this label
@@ -533,7 +533,7 @@ class ParameterExplorer(FittingComponent):
         self.generator.config.nmodels = self.config.nsimulations
 
         # Run the model generator
-        self.generator.run(fitting_run=self.fitting_run)
+        self.generator.run(fitting_run=self.fitting_run, parameter_ranges=self.ranges)
 
     # -----------------------------------------------------------------
 
@@ -1142,10 +1142,13 @@ class ParameterExplorer(FittingComponent):
         # 1. Write the generation info
         self.write_generation()
 
-        # 2. Write the parameters table
+        # 2. Write the individuals table
+        self.write_individuals()
+
+        # 3. Write the parameters table
         self.write_parameters()
 
-        # 3. Write the (empty) chi squared table
+        # 4. Write the (empty) chi squared table
         self.write_chi_squared()
 
     # -----------------------------------------------------------------

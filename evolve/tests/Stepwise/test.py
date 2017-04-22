@@ -377,22 +377,22 @@ class StepWiseTest(TestImplementation):
         # Inform the user
         log.info("Finishing the optimizer ...")
 
-        # Load the optimizer
+        # 1. Load the optimizer
         self.load_optimizer()
 
-        # Set settings
+        # 2. Set settings
         self.set_optimizer_settings()
 
-        # Set finish flag
+        # 3. Set finish flag
         self.optimizer.config.finish = True
 
-        # Run the optimizer
-        self.run_optimizer()
+        # 4. Run the optimizer
+        self.run_optimizer(get_parameters=False)
 
-        # Set the population
+        # 5. Set the population
         self.population = self.optimizer.population
 
-        # Get the best individual
+        # 6. Get the best individual
         self.best = self.optimizer.best
 
         # Debugging
@@ -931,10 +931,11 @@ class StepWiseTest(TestImplementation):
 
     # -----------------------------------------------------------------
 
-    def run_optimizer(self):
+    def run_optimizer(self, get_parameters=True):
 
         """
         This function ...
+        :param get_parameters:
         :return: 
         """
 
@@ -952,7 +953,7 @@ class StepWiseTest(TestImplementation):
                            maxima=self.parameter_maxima_scalar, evaluator=evaluator, evaluator_kwargs=evaluator_kwargs)
 
         # Get the parameter values of the new models
-        self.get_model_parameters()
+        if get_parameters: self.get_model_parameters()
 
     # -----------------------------------------------------------------
 

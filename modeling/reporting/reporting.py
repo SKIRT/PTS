@@ -326,8 +326,8 @@ class Reporter(ReportingComponent):
                 unit = str(result.unit)
                 pixelscale = result.average_pixelscale.to("arcsec").value
                 fwhm = result.fwhm.to("arcsec").value if result.fwhm is not None else None
-                has_errors = "errors" in result.frames.keys() and not result.frames.errors.all_zero
-                has_sky = "sky" in result.frames.keys() and not result.frames.sky.all_zero
+                has_errors = "errors" in result.frames.keys() and not result.frames["errors"].all_zero
+                has_sky = "sky" in result.frames.keys() and not result.frames["sky"].all_zero
                 has_sources = "sources" in result.masks.keys()
 
             else:

@@ -32,7 +32,7 @@ def tostr(value, scientific=True, decimal_places=2):
     :return: 
     """
 
-    return stringify(value, scientific=scientific, decimal_places=decimal_places)[1]
+    return stringify(value, scientific=scientific, decimal_places=decimal_places)[1].strip()
 
 # -----------------------------------------------------------------
 

@@ -1452,7 +1452,7 @@ class M81TestBase(TestImplementation):
 
             print(label + ":")
             print(" - Best value in last generation: " + tostr(value_last_generation))
-            print(" - Best value across all generations: " + tostr(values_all_generations))
+            print(" - Best value across all generations: " + tostr(value_all_generations))
             print(" - Real value: " + tostr(real_value))
             print(" - Best fitted value: " + tostr(value))
             print(" - Absolute difference: " + tostr(absolute_difference))
@@ -1502,8 +1502,8 @@ class M81TestBase(TestImplementation):
                 # Get the simulation name
                 simulation_name = individuals_table.get_simulation_name(name)
 
-                # Get the score
-                score = scores_table.score_for(simulation_name)
+                # Get the chi squared value
+                score = scores_table.chi_squared_for(simulation_name)
 
                 # Check if equal
                 equal = np.isclose(score, score_database)

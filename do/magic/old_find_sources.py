@@ -152,7 +152,7 @@ if arguments.filecatalog:
     catalog_importer.config.stars.catalog_path = fs.join(input_path, "stars.cat")
 
 # Run the catalog importer
-catalog_importer.run(image.frames.primary) # work with coordinate box instead ? image.coordinate_box ?
+catalog_importer.run(image.primary) # work with coordinate box instead ? image.coordinate_box ?
 
 # Save the catalogs if requested
 if arguments.catalogs:
@@ -213,7 +213,7 @@ if arguments.principal_region is not None: arguments.principal_region = fs.join(
 finder = SourceFinder.from_arguments(arguments)
 
 # Run the source finder
-finder.run(image.frames.primary, catalog_importer.galactic_catalog, catalog_importer.stellar_catalog, special_region, ignore_region, bad_mask)
+finder.run(image.primary, catalog_importer.galactic_catalog, catalog_importer.stellar_catalog, special_region, ignore_region, bad_mask)
 
 # -----------------------------------------------------------------
 

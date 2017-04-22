@@ -208,7 +208,7 @@ class BasicAnalyser(Configurable):
         log.info("Performing miscellaneous analysis ...")
 
         # Debugging
-        log.debug("Misccellaneous options:")
+        log.debug("Miscellaneous options:")
         if log.is_debug(): print(str(self.misc_options))
 
         # If requested, make RGB images of the output FITS files

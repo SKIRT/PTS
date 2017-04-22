@@ -482,7 +482,7 @@ class UnitConverter(Configurable):
         self.conversion_factor *= 1e-6
 
         # Conversion from MJy (per pixel2) to MJy / sr
-        self.conversion_factor *= self.pixel_factor(self.image.frames.primary.average_pixelscale)
+        self.conversion_factor *= self.pixel_factor(self.image.primary.average_pixelscale)
 
     # -----------------------------------------------------------------
 
@@ -574,7 +574,7 @@ class UnitConverter(Configurable):
         #    - m_0: the F_0 values found on the webpage above are for a magnitude of zero, so m_0 = 0
         # The two equations combine to:
         #  F(X) = F_0 * 10^(-m_0/2.5) * X
-        m_0 = self.image.frames.primary.zero_point
+        m_0 = self.image.primary.zero_point
         f_0 = f_0_2mass[self.image.filter.name]
         self.conversion_factor *= f_0 * np.power(10.0, -m_0/2.5)
 
@@ -603,7 +603,7 @@ class UnitConverter(Configurable):
         """
 
         # Conversion from dimensionless unit (DN, or count) to flux (in W / [cm2 * micron]) (per pixel)
-        m_0 = self.image.frames.primary.zero_point # rounded values in the header ??
+        m_0 = self.image.primary.zero_point # rounded values in the header ??
         #m_0 = m_0_wise[self.image.filter.name] + absolute_calibration_wise[self.image.filter.name]
         if self.image.filter.name == "WISE.W4": m_0 += calibration_discrepancy_wise_w4
         f_0 = f_0_wise[self.image.filter.name]

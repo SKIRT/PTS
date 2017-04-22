@@ -233,15 +233,15 @@ class Detection(object):
         else: peak = None
 
         # Get the cutout and mask
-        cutout = Cutout(image.frames.cutout, x_min, x_max, y_min, y_max)
-        mask = Mask(image.frames.mask)
+        cutout = Cutout(image.frames["cutout"], x_min, x_max, y_min, y_max)
+        mask = Mask(image.frames["mask"])
 
         # Check whether a background frame is present
-        if "background" in image.frames: background = Cutout(image.frames.background, x_min, x_max, y_min, y_max)
+        if "background" in image.frames: background = Cutout(image.frames["background"], x_min, x_max, y_min, y_max)
         else: background = None
 
         # Check whether a frame is present that represents the removed source
-        if "removed"in image.frames: removed = Cutout(image.frames.removed, x_min, x_max, y_min, y_max)
+        if "removed" in image.frames: removed = Cutout(image.frames["removed"], x_min, x_max, y_min, y_max)
         else: removed = None
 
         # Create and return a new Source instance

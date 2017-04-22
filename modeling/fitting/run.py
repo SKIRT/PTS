@@ -32,6 +32,7 @@ from ..build.representation import Representation
 from ..build.component import get_representation_path
 from ...core.tools.serialization import load_dict
 from .tables import IndividualsTable
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -280,6 +281,110 @@ class FittingRun(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def parameter_minima(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a list
+        minima = []
+
+        # Set the list values
+        for label in self.free_parameter_labels: minima.append(self.free_parameter_ranges[label].min)
+
+        # Return the minimal parameter values
+        return minima
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def parameter_maxima(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a list
+        maxima = []
+
+        # Set the list values
+        for label in self.free_parameter_labels: maxima.append(self.free_parameter_ranges[label].max)
+
+        # Return the maximal parameter values
+        return maxima
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_minima_scalar(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a list
+        minima = []
+
+        # Set the list values
+        for label in self.free_parameter_labels:
+
+            min_value = self.free_parameter_ranges[label].min
+
+            # Convert if necessary
+            if label in self.parameter_units and self.parameter_units[label] is not None:
+                unit = self.parameter_units[label]
+                min_value = min_value.to(unit).value
+
+            # Assert that is real type
+            assert types.is_real_type(min_value)
+            min_value = float(min_value)
+
+            # Add to list
+            minima.append(min_value)
+
+        # Return the minimal parameter values
+        return minima
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_maxima_scalar(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a list
+        maxima = []
+
+        # Set the list values
+        for label in self.free_parameter_labels:
+
+            max_value = self.free_parameter_ranges[label].max
+
+            # Convert if necessary
+            if label in self.parameter_units and self.parameter_units[label] is not None:
+                unit = self.parameter_units[label]
+                max_value = max_value.to(unit).value
+
+            # Assert that is real type
+            assert types.is_real_type(max_value)
+            max_value = float(max_value)
+
+            # Add to list
+            maxima.append(max_value)
+
+        # Return the maximal parameter values
+        return maxima
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def parameter_descriptions(self):
 
         """
@@ -485,6 +590,124 @@ class FittingRun(object):
         """
 
         return self.generations_table.parameter_ranges_for_generation(generation_name)
+
+    # -----------------------------------------------------------------
+
+    def parameter_range_for_generation(self, generation_name, parameter_label):
+
+        """
+        This function ...
+        :param generation_name: 
+        :param parameter_label: 
+        :return: 
+        """
+
+        return self.generations_table.parameter_range_for_generation(generation_name, parameter_label)
+
+    # -----------------------------------------------------------------
+
+    def parameter_minima_for_generation(self, generation_name):
+
+        """
+        THis function ...
+        :param generation_name: 
+        :return: 
+        """
+
+        # Initialize a list
+        minima = []
+
+        # Set the list values
+        for label in self.free_parameter_labels: minima.append(self.parameter_range_for_generation(generation_name, label).min)
+
+        # Return the minimal parameter values
+        return minima
+
+    # -----------------------------------------------------------------
+
+    def parameter_maxima_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name: 
+        :return: 
+        """
+
+        # Initialize a list
+        maxima = []
+
+        # Set the list values
+        for label in self.free_parameter_labels: maxima.append(self.parameter_range_for_generation(generation_name, label).max)
+
+        # Return the maximal parameter values
+        return maxima
+
+    # -----------------------------------------------------------------
+
+    def parameter_minima_for_generation_scalar(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name: 
+        :return: 
+        """
+
+        # Initialize a list
+        minima = []
+
+        # Set the list values
+        for label in self.free_parameter_labels:
+
+            # Get minimum value
+            min_value = self.parameter_range_for_generation(generation_name, label).min
+
+            # Convert if necessary
+            if label in self.parameter_units and self.parameter_units[label] is not None:
+                unit = self.parameter_units[label]
+                min_value = min_value.to(unit).value
+
+            # Assert that is real type
+            assert types.is_real_type(min_value)
+            min_value = float(min_value)
+
+            # Add to list
+            minima.append(min_value)
+
+        # Return the minimal parameter values
+        return minima
+
+    # -----------------------------------------------------------------
+
+    def parameter_maxima_for_generation_scalar(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name: 
+        :return: 
+        """
+
+        # Initialize a list
+        maxima = []
+
+        # Set the list values
+        for label in self.free_parameter_labels:
+
+            max_value = self.parameter_range_for_generation(generation_name, label).max
+
+            # Convert if necessary
+            if label in self.parameter_units and self.parameter_units[label] is not None:
+                unit = self.parameter_units[label]
+                max_value = max_value.to(unit).value
+
+            # Assert that is real type
+            assert types.is_real_type(max_value)
+            max_value = float(max_value)
+
+            # Add to list
+            maxima.append(max_value)
+
+        # Return the maximal parameter values
+        return maxima
 
     # -----------------------------------------------------------------
 

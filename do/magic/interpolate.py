@@ -108,7 +108,7 @@ importer = ImageImporter()
 importer.run(image_path)
 
 # Get the primary image frame
-frame = importer.image.frames.primary
+frame = importer.image.primary
 
 # Get the original header
 header = importer.image.original_header

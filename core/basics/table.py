@@ -567,8 +567,12 @@ class SmartTable(Table):
         # Set masks in meta
         for name in masks: self.meta[name + " mask"] = masks[name]
 
+        # If the file already exists, remove
+        if fs.is_file(path): fs.remove_file(path)
+
         # Write the table in ECSV format
-        self.write(path, format="ascii.ecsv", overwrite=True)
+        #self.write(path, format="ascii.ecsv", overwrite=True)
+        self.write(path, format="ascii.ecsv")
 
         # Set the path
         self.path = path

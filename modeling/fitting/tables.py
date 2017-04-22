@@ -19,7 +19,7 @@ import numpy as np
 # Import the relevant PTS classes and modules
 from ...core.basics.table import SmartTable
 from ...core.tools import tables
-from ...core.basics.range import RealRange
+from ...core.basics.range import RealRange, QuantityRange
 from ...core.basics.curve import FilterCurve
 from ...core.units.parsing import parse_unit as u
 from ...core.tools import time
@@ -509,27 +509,46 @@ class GenerationsTable(SmartTable):
         :return:
         """
 
-        # Find the row index of the specified generation
-        index = tables.find_index(self, generation_name, "Generation name")
-
         # Create a dictionary to contain the ranges
         ranges = dict()
 
         # Loop over the parameter labels
         for label in self.parameter_labels:
 
-            # Get the minimum and maximum value
-            min_value = self["Minimum value for " + label][index]
-            max_value = self["Maximum value for " + label][index]
-
-            # Create the range
-            range = RealRange(min_value, max_value)
+            # Get the range
+            range = self.parameter_range_for_generation(generation_name, label)
 
             # Add the range to the dictionary
             ranges[label] = range
 
         # Return the ranges dictionary
         return ranges
+
+    # -----------------------------------------------------------------
+
+    def parameter_range_for_generation(self, generation_name, label):
+
+        """
+        This function ...
+        :param generation_name: 
+        :param label: 
+        :return: 
+        """
+
+        # Find the row index of the specified generation
+        index = tables.find_index(self, generation_name, "Generation name")
+
+        # Get the minimum and maximum value
+        min_value = self["Minimum value for " + label][index]
+        max_value = self["Maximum value for " + label][index]
+
+        # Create the range
+        column_unit = self.column_unit("Minimum value for " + label)
+        if column_unit is None: range = RealRange(min_value, max_value)
+        else: range = QuantityRange(min_value, max_value, unit=column_unit)
+
+        # Return the range
+        return range
 
     # -----------------------------------------------------------------
 

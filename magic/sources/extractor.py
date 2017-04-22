@@ -228,9 +228,9 @@ class SourceExtractor(Configurable):
         segments = Image.from_file(self.input_path_file("segments.fits"), no_filter=True)
 
         # Get the segmentation maps
-        self.galaxy_segments = segments.frames.galaxies if "galaxies" in segments.frames else None
-        self.star_segments = segments.frames.stars if "stars" in segments.frames else None
-        self.other_segments = segments.frames.other_sources if "other_sources" in segments.frames else None
+        self.galaxy_segments = segments.frames["galaxies"] if "galaxies" in segments.frames else None
+        self.star_segments = segments.frames["stars"] if "stars" in segments.frames else None
+        self.other_segments = segments.frames["other_sources"] if "other_sources" in segments.frames else None
 
     # -----------------------------------------------------------------
 

@@ -130,7 +130,7 @@ class Truncator(TruncationComponent):
                 image = self.dataset.get_image(name)
 
                 # Add the frame
-                frame = image.frames.primary
+                frame = image.primary
                 self.images[name] = frame
 
                 # Add bad mask
