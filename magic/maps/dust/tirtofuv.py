@@ -22,9 +22,9 @@ from astropy import constants
 from ....core.tools import introspection, tables
 from ....core.tools import filesystem as fs
 from ....core.tools.logging import log
-from ..component import MapsComponent
 from ....magic.core.frame import Frame
 from ....core.units.parsing import parse_unit as u
+from ....core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
@@ -41,7 +41,7 @@ solar_luminosity = 3.846e26 * u("W")
 
 # -----------------------------------------------------------------
 
-class TIRtoFUVMapMaker(MapsComponent):
+class TIRtoFUVMapMaker(Configurable):
 
     """
     This class...

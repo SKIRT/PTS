@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.maps.dust.cortese Contains the CorteseDustMapMaker class.
+## \package pts.magic.maps.dust.attenuation Contains the AttenuationDustMapMaker class.
 
 # -----------------------------------------------------------------
 
@@ -20,19 +20,11 @@ from astropy import constants
 
 # Import the relevant PTS classes and modules
 from ....magic.core.frame import Frame
-from ....core.tools import introspection, tables
 from ....core.tools import filesystem as fs
 from ....core.tools.logging import log
-from ..component import MapsComponent
 from ....magic.tools.colours import make_colour_map
 from ....core.units.parsing import parse_unit as u
-from ....core.tools.sequences import combine_unique
-#from .tirtofuv import TIRtoFUVMapMaker
-
-# -----------------------------------------------------------------
-
-# The path to the table containing the parameters from Cortese et. al 2008
-cortese_table_path = fs.join(introspection.pts_dat_dir("modeling"), "cortese.dat")
+from ....core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
@@ -51,18 +43,15 @@ colour_combinations = {"FUV-H": ("GALEX FUV", "2MASS H"),
 
 # -----------------------------------------------------------------
 
-def make_fuv_attenuation_map(modeling_path):
+def make_fuv_attenuation_map():
 
     """
     This function ...
-    :param modeling_path:
     :return: 
     """
 
     # Create the attenuation map maker
     maker = CorteseAttenuationMapMaker()
-
-    maker.config.path = modeling_path
 
     # Run
     maker.run()
@@ -72,7 +61,7 @@ def make_fuv_attenuation_map(modeling_path):
 
 # -----------------------------------------------------------------
 
-class CorteseAttenuationMapMaker(MapsComponent):
+class CorteseAttenuationMapMaker(Configurable):
 
     """
     This class...
@@ -110,10 +99,7 @@ class CorteseAttenuationMapMaker(MapsComponent):
         self.ssfr_maps = dict()
 
         # The attenuation maps (for different FUV/optical-NIR colours)
-        self.attenuation_maps = dict()
-
-        # The dust map
-        self.map = None
+        self.maps = dict()
 
     # -----------------------------------------------------------------
 
@@ -129,22 +115,22 @@ class CorteseAttenuationMapMaker(MapsComponent):
         self.setup(**kwargs)
 
         # 2. Load the image frames and errors
-        self.load_frames()
+        #self.load_frames()
 
         # 3. Make the SSFR maps
-        self.make_ssfr_maps()
+        #self.make_ssfr_maps()
 
         # 4. Make the dust map
-        self.make_map()
+        self.make_maps()
 
         # 5. Make everything positive
-        self.make_positive()
+        #self.make_positive()
 
         # 6. Normalize the dust map
-        self.normalize()
+        #self.normalize()
 
         # 7. Writing
-        self.write()
+        #self.write()
 
     # -----------------------------------------------------------------
 
@@ -160,13 +146,15 @@ class CorteseAttenuationMapMaker(MapsComponent):
         super(CorteseAttenuationMapMaker, self).setup()
 
         # Load the Cortese et al. 2008 table
-        self.cortese = tables.from_file(cortese_table_path, format="ascii.commented_header")
+        #self.cortese = tables.from_file(cortese_table_path, format="ascii.commented_header")
 
         # Create a maps/dust/cortese directory
-        self.maps_dust_cortese_path = fs.create_directory_in(self.maps_dust_path, "cortese")
+        #self.maps_dust_cortese_path = fs.create_directory_in(self.maps_dust_path, "cortese")
 
         # Set the log TIR to FUV map
-        self.log_tir_to_fuv = log_tir_to_fuv
+        #self.log_tir_to_fuv = log_tir_to_fuv
+
+
 
     # -----------------------------------------------------------------
 
@@ -239,7 +227,7 @@ class CorteseAttenuationMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def make_map(self):
+    def make_maps(self):
 
         """
         This function ...
@@ -261,10 +249,10 @@ class CorteseAttenuationMapMaker(MapsComponent):
             fuv_attenuation[self.frames["GALEX FUV"] < 0.0] = 0.0
 
             # Add the attenuation map to the dictionary
-            self.attenuation_maps[ssfr_colour] = fuv_attenuation
+            self.maps[ssfr_colour] = fuv_attenuation
 
         # Choose a specific result as the actual dust map
-        self.map = self.attenuation_maps[self.config.ssfr_colour]
+        #self.map = self.attenuation_maps[self.config.ssfr_colour]
 
     # -----------------------------------------------------------------
 

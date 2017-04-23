@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.maps.youngstars Contains the YoungStellarMapMaker class.
+## \package pts.magic.maps.youngstars.young Contains the YoungStellarMapMaker class.
 
 # -----------------------------------------------------------------
 
@@ -14,13 +14,13 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
-from ..component import MapsComponent
 from ....core.tools import filesystem as fs
 from ....core.basics.distribution import Distribution
 from ....core.plot.distribution import DistributionPlotter
 from ....magic.region.composite import PixelCompositeRegion
 from ....magic.region.list import PixelRegionList
 from ....magic.core.image import Image
+from ....core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
@@ -37,7 +37,7 @@ def make_map():
 
 # -----------------------------------------------------------------
 
-class YoungStellarMapMaker(MapsComponent):
+class YoungStellarMapsMaker(Configurable):
 
     """
     This class...
@@ -52,7 +52,7 @@ class YoungStellarMapMaker(MapsComponent):
         """
 
         # Call the constructor of the base class
-        super(YoungStellarMapMaker, self).__init__(config, interactive)
+        super(YoungStellarMapsMaker, self).__init__(config, interactive)
 
         # -- Attributes --
 
@@ -103,10 +103,10 @@ class YoungStellarMapMaker(MapsComponent):
         self.load_maps()
 
         # 3. Calculate the significance masks
-        self.calculate_significance()
+        #self.calculate_significance()
 
         # 3. Make the map of young stars
-        self.make_map()
+        self.make_maps()
 
         # ...
         self.create_distribution_region()
@@ -121,23 +121,18 @@ class YoungStellarMapMaker(MapsComponent):
         # 5. Cut-off map
         #self.cutoff_map()
 
-        # 5. Writing
-        self.write()
-
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(YoungStellarMapMaker, self).setup()
-
-        # Create
-        self.maps_young_fuv_path = fs.create_directory_in(self.maps_young_path, "fuv")
+        super(YoungStellarMapsMaker, self).setup(**kwargs)
 
     # -----------------------------------------------------------------
 
@@ -424,36 +419,6 @@ class YoungStellarMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def write(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing ...")
-
-        # Write the corrected FUV maps
-        self.write_fuv_maps()
-
-        # Write distribution region
-        self.write_distribution_region()
-
-        # Write histograms of corrected 24 micron pixels
-        self.write_24mu_histograms()
-
-        # Write the final young stellar map
-        #self.write_map()
-
-        # Write the significance mask
-        self.write_significance_masks()
-
-        # Write the cutoff mask
-        self.write_cutoff_mask()
-
-    # -----------------------------------------------------------------
-
     def write_fuv_maps(self):
 
         """
@@ -515,50 +480,5 @@ class YoungStellarMapMaker(MapsComponent):
 
             # Clear the distribution plotter
             plotter.clear()
-
-    # -----------------------------------------------------------------
-
-    def write_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the map of young stars ...")
-
-        # Write
-        self.map.saveto(self.young_stellar_map_path)
-
-    # -----------------------------------------------------------------
-
-    def write_significance_masks(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the significance masks ...")
-
-        # Write
-        self.significance.saveto(self.young_stellar_significance_path)
-
-    # -----------------------------------------------------------------
-
-    def write_cutoff_mask(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the cutoff mask ...")
-
-        # Write
-        self.cutoff_mask.saveto(self.young_stellar_cutoff_path)
 
 # -----------------------------------------------------------------

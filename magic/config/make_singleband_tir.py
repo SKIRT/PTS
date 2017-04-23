@@ -12,7 +12,7 @@ from pts.modeling.maps.tir.single import possible_filters
 # -----------------------------------------------------------------
 
 # Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = ConfigurationDefinition()
 
 # The filters
 definition.add_positional_optional("filters", "filter_list", "filters to make TIR maps from", default=possible_filters, choices=possible_filters, convert_default=True)

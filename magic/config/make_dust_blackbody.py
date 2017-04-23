@@ -12,7 +12,7 @@ from pts.core.remote.host import find_host_ids
 # -----------------------------------------------------------------
 
 # Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = ConfigurationDefinition()
 
 # Remote
 definition.add_optional("remote", "string", "remote host on which to execute the calculations", choices=find_host_ids())

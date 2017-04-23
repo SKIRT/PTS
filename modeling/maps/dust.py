@@ -18,6 +18,7 @@ from ...core.tools.logging import log
 from ...magic.maps.dust.blackbody import BlackBodyDustMapMaker
 from ...magic.maps.dust.emission import EmissionDustMapMaker
 from ...magic.maps.dust.attenuation import AttenuationDustMapMaker
+from ...magic.maps.dust.hot import HotDustMapMaker
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
@@ -79,6 +80,9 @@ class DustMapMaker(MapsComponent):
 
         # 6. Make a dust map based on UV attenuation
         if self.config.make_attenuation: self.make_attenuation()
+
+        # Make a map of the hot dust
+        self.make_hot()
 
         # Make the cutoff mask
         #self.make_cutoff_mask()
@@ -174,13 +178,34 @@ class DustMapMaker(MapsComponent):
         log.info("Making a dust map based on the UV attenuation ...")
 
         # Create the Attenuation dust map maker
-        maker = AttenuationDustMapMaker(self.config.cortese)
+        maker = AttenuationDustMapMaker()
 
         # Run the maker
         maker.run()
 
-        # Add the dust map to the dictionary
+        # Add the dust maps to the dictionary
         self.maps["attenuation"] = maker.maps
+
+    # -----------------------------------------------------------------
+
+    def make_hot(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Making a map of the hot dust ...")
+
+        # Create the hot dust map maker
+        maker = HotDustMapMaker()
+
+        # Run the maker
+        maker.run()
+
+        # Add the dust maps
+        self.maps["hot"] = maker.maps
 
     # -----------------------------------------------------------------
 
@@ -241,33 +266,6 @@ class DustMapMaker(MapsComponent):
 
         # Write the cutoff mask
         #self.write_cutoff_mask()
-
-    # -----------------------------------------------------------------
-
-    def write_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the dust maps ...")
-
-        # Loop over the methods
-        for method in self.maps:
-
-            # Create a directory
-            path = fs.create_directory_in(self.maps_dust_path, method)
-
-            # Loop over the maps
-            for name in self.maps[method]:
-
-                # Determine path
-                map_path = fs.join(path, name + ".fits")
-
-                # Save the map
-                self.maps[method][name].saveto(map_path)
 
     # -----------------------------------------------------------------
 

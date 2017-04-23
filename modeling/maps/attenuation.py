@@ -17,7 +17,6 @@ from ...core.tools.logging import log
 from .component import MapsComponent
 from ...magic.maps.attenuation.cortese import CorteseAttenuationMapMaker
 from ...magic.maps.attenuation.buat import BuatAttenuationMapMaker
-from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -115,21 +114,9 @@ class AttenuationMapMaker(MapsComponent):
         """
 
         # Inform the user
-        log.info("Writing the maps ...")
+        log.info("Writing ...")
 
-        # Loop over the maps
-        for method in self.maps:
-
-            # Create directory
-            path = fs.create_directory_in(self.maps_attenuation_path, method)
-
-            # Loop over the maps
-            for name in self.maps[method]:
-
-                # Determine path
-                map_path = fs.join(path, name + ".fits")
-
-                # Save the map
-                self.maps[method][name].saveto(map_path)
+        # Write the maps
+        self.write_maps()
 
 # -----------------------------------------------------------------

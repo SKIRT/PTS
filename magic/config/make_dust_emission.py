@@ -11,7 +11,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 # -----------------------------------------------------------------
 
 # Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+definition = ConfigurationDefinition()
 
 # Add optional
 definition.add_optional("filter", "filter", "band to use")

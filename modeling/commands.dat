@@ -60,10 +60,4 @@ fit_blackbody_grid | -- | maps.dust.fitter.GridBlackBodyFitter | arguments | Fit
 fit_blackbody_genetic | -- | maps.dust.fitter.GeneticBlackBodyFitter | arguments | Fit black body curve to dust SEDs for different galaxies or different pixels of a galaxy
 make_movie | -- | show.movie.MovieMaker | arguments | Make a movie from the galaxy model
 make_rgb | -- | show.rgb.RGBImageMaker | arguments | Make RGB images from the galaxy model
-make_singleband_tir | -- | maps.tir.single.SingleBandTIRMapMaker | arguments | Make TIR map based on single bands
-make_multiband_tir | -- | maps.tir.multi.MultiBandTIRMapMaker | arguments | Make TIR map based on multiple bands
-make_dust_buat | -- | maps.dust.buat.BuatDustMapMaker | arguments | Make dust map based on Buat prescriptions
-make_dust_attenuation | -- | maps.dust.cortese.CorteseDustMapMaker | arguments | Make dust map based on Cortese calibrations
-make_dust_emission | -- | maps.dust.emission.EmissionDustMapMaker | arguments | Make dust map based on emission in a certain band
-make_dust_blackbody | -- | maps.dust.blackbody.BlackBodyDustMapMaker | arguments | Make dust map based on black-body fitting
 fitskirt | -- | fitting.fitskirt.FitSKIRTLauncher | arguments | Launch FitSKIRT

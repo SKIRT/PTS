@@ -14,12 +14,12 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
-from ..component import MapsComponent
 from .colours import ColoursSSFRMapMaker
+from ....core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
-class SSFRMapMaker(MapsComponent):
+class SSFRMapMaker(Configurable):
 
     """
     This class...

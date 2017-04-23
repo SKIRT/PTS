@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.maps.stars.ionizing Contains the IonizingStellarMapMaker class.
+## \package pts.magic.maps.ionizingstars.ionizing Contains the IonizingStellarMapsMaker class.
 
 # -----------------------------------------------------------------
 
@@ -20,7 +20,6 @@ from astropy import constants
 
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
-from ..component import MapsComponent
 from ....core.tools import filesystem as fs
 from ....core.basics.distribution import Distribution
 from ....core.plot.distribution import DistributionPlotter
@@ -28,6 +27,7 @@ from ....magic.region.composite import PixelCompositeRegion
 from ....magic.region.list import PixelRegionList
 from ....magic.core.image import Image
 from ....core.units.parsing import parse_unit as u
+from ....core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
@@ -43,13 +43,13 @@ def make_map():
     :return: 
     """
 
-    maker = IonizingStellarMapMaker()
+    maker = IonizingStellarMapsMaker()
 
     maker.run()
 
 # -----------------------------------------------------------------
 
-class IonizingStellarMapMaker(MapsComponent):
+class IonizingStellarMapsMaker(Configurable):
 
     """
     This class...
@@ -65,7 +65,7 @@ class IonizingStellarMapMaker(MapsComponent):
         """
 
         # Call the constructor of the base class
-        super(IonizingStellarMapMaker, self).__init__(config, interactive)
+        super(IonizingStellarMapsMaker, self).__init__(config, interactive)
 
         # -- Attributes --
 
@@ -108,28 +108,16 @@ class IonizingStellarMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    @staticmethod
-    def requirements(config):
+    def run(self, **kwargs):
 
         """
         This function ...
-        :param config:
-        :return:
-        """
-
-        return ["MIPS 24mu", "Halpha"]
-
-    # -----------------------------------------------------------------
-
-    def run(self):
-
-        """
-        This function ...
+        :param kwargs
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the necessary frames
         self.load_frames()
@@ -138,39 +126,37 @@ class IonizingStellarMapMaker(MapsComponent):
         self.calculate_significance()
 
         # 3. Make the map
-        self.make_map()
+        self.make_maps()
 
         # ...
-        self.create_distribution_region()
-        self.make_distributions()
+        #self.create_distribution_region()
+        #self.make_distributions()
 
         # 4. Normalize the map
         #self.normalize_map()
 
         # Make the cutoff mask
-        self.make_cutoff_mask()
+        #self.make_cutoff_mask()
 
         # 5. Cut-off map
         #self.cutoff_map()
 
-        # 5. Writing
-        self.write()
-
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(IonizingStellarMapMaker, self).setup()
+        super(IonizingStellarMapsMaker, self).setup()
 
         # Set paths
-        self.maps_ionizing_24mu_path = fs.create_directory_in(self.maps_ionizing_path, "24mu")
-        self.maps_ionizing_solar_path = fs.create_directory_in(self.maps_ionizing_path, "solar")
+        #self.maps_ionizing_24mu_path = fs.create_directory_in(self.maps_ionizing_path, "24mu")
+        #self.maps_ionizing_solar_path = fs.create_directory_in(self.maps_ionizing_path, "solar")
 
     # -----------------------------------------------------------------
 
@@ -299,7 +285,7 @@ class IonizingStellarMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def make_map(self):
+    def make_maps(self):
 
         """
         This function ...
@@ -310,17 +296,6 @@ class IonizingStellarMapMaker(MapsComponent):
 
         # Inform the user
         log.info("Making the map of ionizing stars ...")
-
-        # Loop over the different colour options
-        #for factor in (self.config.factor_range.linear(self.config.factor_nvalues, as_list=True) + [self.config.best_factor]):
-        for factor in self.config.factor_range.linear(self.config.factor_nvalues, as_list=True):
-
-            # Calculate the corrected 24 micron image
-            corrected = self.make_corrected_24mu_map(factor)
-
-            # Add the attenuation map to the dictionary
-            self.corrected_24mu_maps[factor] = corrected
-
 
         # NEW: MAKE MAP OF IONIZING STARS FOR VARIOUS DIFFERENT FACTORS
         for factor in self.corrected_24mu_maps:
@@ -362,44 +337,6 @@ class IonizingStellarMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def make_corrected_24mu_map(self, factor):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Subtracting the old stellar contribution from the 24 micron emission map with a factor of " + str(factor) + " ...")
-
-        ## Subtract old stellar contribution from FUV and MIPS 24 emission
-
-        #     From the FUV and 24 micron maps we must subtract the diffuse radiation (old stellar contribution),
-        #     for this we typically use an exponential disk
-        #     (scale length detemermined by GALFIT)
-
-        ## MIPS HAS BEEN CONVERTED TO LSUN (ABOVE)
-
-        # typisch 20% en 35% respectievelijk
-        # 48% voor MIPS 24 komt van Lu et al. 2014
-
-        # Total contribution in solar units
-        total_contribution = factor * self.mips24.sum()
-
-        # Subtract the disk contribution to the 24 micron image
-        new_mips = self.mips24 - total_contribution * self.disk # disk image is normalized
-
-        # Make sure all pixels of the disk-subtracted maps are larger than or equal to zero
-        #new_mips[new_mips < 0.0] = 0.0
-
-        # Set zero where low signal-to-noise ratio
-        # new_mips[self.mips < self.config.ionizing_stars.mips_young_stars.mips_snr_level*self.mips_errors] = 0.0
-
-        # Return the new 24 micron frame
-        return new_mips
-
-    # -----------------------------------------------------------------
-
     def create_distribution_region(self):
 
         """
@@ -414,35 +351,6 @@ class IonizingStellarMapMaker(MapsComponent):
         region = PixelRegionList()
         region.append(composite)
         self.distribution_region = region
-
-    # -----------------------------------------------------------------
-
-    def make_distributions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making distributions of the pixel values of the corrected 24 micron maps ...")
-
-        # Create mask
-        #mask = self.distribution_region.to_mask(self.map.xsize, self.map.ysize)
-
-        # NEW: TODO
-
-        # Loop over the different maps
-        for factor in self.corrected_24mu_maps:
-
-            # Get the values
-            values = self.corrected_24mu_maps[factor][mask]
-
-            # Make a distribution of the pixel values indicated by the mask
-            distribution = Distribution.from_values(values, bins=self.config.histograms_nbins)
-
-            # Add the distribution to the dictionary
-            self.corrected_24mu_distributions[factor] = distribution
 
     # -----------------------------------------------------------------
 
@@ -495,192 +403,5 @@ class IonizingStellarMapMaker(MapsComponent):
 
         # Set zero outside of significant pixels
         self.map[self.cutoff_mask] = 0.0
-
-    # -----------------------------------------------------------------
-
-    def write(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing ...")
-
-        # Write the maps that are converted to solar units
-        self.write_solar()
-
-        # Write the maps
-        self.write_24mu_maps()
-
-        # Write distribution region
-        self.write_distribution_region()
-
-        # Write histograms of corrected 24 micron pixels
-        self.write_24mu_histograms()
-
-        # Write the terms in the equation to make the map, normalized
-        #self.write_terms()
-
-        # Write the ionizing stars map
-        #self.write_map()
-
-        # Write the significance masks
-        self.write_significance_masks()
-
-    # -----------------------------------------------------------------
-
-    def write_solar(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the maps that have been converted to solar units ...")
-
-        # Save
-        path = fs.join(self.maps_ionizing_solar_path, "MIPS 24mu.fits")
-        self.mips24.saveto(path)
-
-        # Save H alpha in solar units
-        path = fs.join(self.maps_ionizing_solar_path, "Halpha.fits")
-        self.halpha.saveto(path)
-
-    # -----------------------------------------------------------------
-
-    def write_24mu_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the corrected 24 micron images ...")
-
-        # Loop over the corrected 24 micron maps
-        for factor in self.corrected_24mu_maps:
-
-            # Determine path
-            path = fs.join(self.maps_ionizing_24mu_path, str(factor) + ".fits")
-
-            # Write
-            self.corrected_24mu_maps[factor].saveto(path)
-
-    # -----------------------------------------------------------------
-
-    def write_distribution_region(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the distribution region ...")
-
-        path = fs.join(self.maps_ionizing_24mu_path, "histogram.reg")
-        self.distribution_region.saveto(path)
-
-    # -----------------------------------------------------------------
-
-    def write_24mu_histograms(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the histograms of the corrected 24 micron pixels in the specified region ...")
-
-        # Create a distribution plotter
-        plotter = DistributionPlotter()
-
-        # Loop over the distributions
-        for factor in self.corrected_24mu_distributions:
-
-            # Determine path
-            path = fs.join(self.maps_ionizing_24mu_path, str(factor) + " histogram.pdf")
-
-            # Plot the distribution as a histogram
-            plotter.add_distribution(self.corrected_24mu_distributions[factor], "Correction factor of " + str(factor))
-            plotter.run(path)
-
-            # Clear the distribution plotter
-            plotter.clear()
-
-    # -----------------------------------------------------------------
-
-    def write_terms(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # BOTH TERMS ARE JUST SUMMMED WITH EQUAL WEIGHT (AFTER 0.031 FACTOR), SO IT MAKES SENSE TO COMPARE THE HISTOGRAMS
-
-        # Calculate the terms
-
-        # H alpha
-        term_halpha = self.halpha
-
-        # 24 micron
-        term_24mu = 0.031 * self.corrected_24mu_maps[self.config.best_factor]
-
-        # Determine paths
-        halpha_path = fs.join(self.maps_ionizing_path, "halpha_term.fits")
-        mips_24_path = fs.join(self.maps_ionizing_path, "MIPS24_term.fits")
-
-        # Save the terms
-        term_halpha.saveto(halpha_path)
-        term_24mu.saveto(mips_24_path)
-
-        # Distributions
-        halpha_distribution = Distribution.from_values(term_halpha.data.flatten())
-        mips24_distribution = Distribution.from_values(term_24mu.data.flatten())
-
-        plotter = DistributionPlotter()
-
-        plotter.add_distribution(halpha_distribution, "H alpha contribution")
-        plotter.add_distribution(mips24_distribution, "corrected MIPS 24 contribution")
-
-        # Run the plotter
-        path = fs.join(self.maps_ionizing_path, "histograms.pdf")
-        plotter.run(path)
-
-    # -----------------------------------------------------------------
-
-    def write_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Write the ionizing stars map ...")
-
-        # Write
-        self.map.saveto(self.ionizing_stellar_map_path)
-
-    # -----------------------------------------------------------------
-
-    def write_significance_masks(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the significance masks ...")
-
-        # Write
-        self.significance.saveto(self.ionizing_stellar_significance_path)
 
 # -----------------------------------------------------------------

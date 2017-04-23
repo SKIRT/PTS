@@ -5,21 +5,17 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.maps.ssfr.ssfr Contains the SSFRMapMaker class.
+## \package pts.magic.maps.ssfr.colours Contains the ColoursSSFRMapMaker class.
 
 # -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
-from ..component import MapsComponent
-from ....magic.tools.colours import get_filters_for_colour
 from ....core.tools import filesystem as fs
+from ....core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
@@ -38,12 +34,6 @@ def make_map():
     # Create the sSFR map maker
     maker = ColoursSSFRMapMaker()
 
-    maker.config.check_database = False
-    maker.config.colours = [""]
-    maker.config.write = False
-
-    maker.config.path = modeling_path
-
     colours = dict()
 
     maker.run(colours=colours)
@@ -53,7 +43,7 @@ def make_map():
 
 # -----------------------------------------------------------------
 
-class ColoursSSFRMapMaker(MapsComponent):
+class ColoursSSFRMapMaker(Configurable):
 
     """
     This class...
@@ -89,14 +79,8 @@ class ColoursSSFRMapMaker(MapsComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 2. Load the colour maps
-        if not self.has_colours: self.load_colours()
-
         # 3. Make maps
         self.make_maps()
-
-        # 4. Writing
-        if self.config.write: self.write()
 
     # -----------------------------------------------------------------
 
@@ -111,73 +95,8 @@ class ColoursSSFRMapMaker(MapsComponent):
         # Call the setup function of the base class
         super(ColoursSSFRMapMaker, self).setup(**kwargs)
 
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def available_colours(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        if not self.config.check_database: return self.config.colours
-
-        colours = []
-
-        # Loop over the colours
-        for colour in self.config.colours:
-
-            # Get the two filters
-            fltr_a, fltr_b = get_filters_for_colour(colour)
-
-            # has_colour_map_for_filters
-            if not self.has_colour_map_for_filters(fltr_a, fltr_b): continue
-
-            # Add
-            colours.append(colour)
-
-        # Return colours
-        return colours
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_colours(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        return len(self.colours) > 0
-
-    # -----------------------------------------------------------------
-
-    def load_colours(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        # Inform the user
-        log.info("Loading the colour maps ...")
-
-        # Loop over the available colours
-        for colour in self.available_colours:
-
-            # Debugging
-            log.debug("Loading the '" + colour + "' colour map ...")
-
-            # Get the two filters
-            fltr_a, fltr_b = get_filters_for_colour(colour)
-
-            # Get the colour map
-            colour_map = self.get_colour_map_for_filters(fltr_a, fltr_b)
-
-            # Add the colour map
-            self.colours[colour] = colour_map
+        # Get the colours
+        self.colours = kwargs.pop("colours")
 
     # -----------------------------------------------------------------
 
@@ -199,41 +118,5 @@ class ColoursSSFRMapMaker(MapsComponent):
 
             # Set as sSFR map
             self.maps[colour] = colour_map
-
-    # -----------------------------------------------------------------
-
-    def write(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        # Inform the user
-        log.info("Writing ...")
-
-        # Write the sSFR maps
-        self.write_maps()
-
-    # -----------------------------------------------------------------
-
-    def write_maps(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        # Inform the user
-        log.info("Writing the sSFR maps ...")
-
-        # Loop over the maps
-        for colour in self.maps:
-
-            # Determine path
-            path = fs.join(self.maps_ssfr_path, colour + ".fits")
-
-            # Save
-            self.maps[colour].saveto(path)
 
 # -----------------------------------------------------------------

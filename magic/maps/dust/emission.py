@@ -14,11 +14,11 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
-from ..component import MapsComponent
+from ....core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
-class EmissionDustMapMaker(MapsComponent):
+class EmissionDustMapMaker(Configurable):
 
     """
     This class...

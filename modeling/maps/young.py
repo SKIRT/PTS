@@ -13,14 +13,12 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ....core.tools.logging import log
-from ..component import MapsComponent
-from ....core.tools import filesystem as fs
-from ....core.basics.distribution import Distribution
-from ....core.plot.distribution import DistributionPlotter
-from ....magic.region.composite import PixelCompositeRegion
-from ....magic.region.list import PixelRegionList
-from ....magic.core.image import Image
+from ...core.tools.logging import log
+from .component import MapsComponent
+from ...core.tools import filesystem as fs
+from ...core.plot.distribution import DistributionPlotter
+from ...magic.core.image import Image
+from ...magic.maps.youngstars.young import YoungStellarMapsMaker
 
 # -----------------------------------------------------------------
 
@@ -73,15 +71,16 @@ class YoungStellarMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the necessary frames
         self.load_frames()
@@ -90,30 +89,17 @@ class YoungStellarMapMaker(MapsComponent):
         self.load_maps()
 
         # 3. Calculate the significance masks
-        self.calculate_significance()
+        #self.calculate_significance()
 
         # 3. Make the map of young stars
-        self.make_map()
-
-        # ...
-        self.create_distribution_region()
-        self.make_distributions()
-
-        # 4. Normalize the map
-        #self.normalize_map()
-
-        # Create the cutoff mask
-        self.make_cutoff_mask()
-
-        # 5. Cut-off map
-        #self.cutoff_map()
+        self.make_maps()
 
         # 5. Writing
         self.write()
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
@@ -121,10 +107,7 @@ class YoungStellarMapMaker(MapsComponent):
         """
 
         # Call the setup function of the base class
-        super(YoungStellarMapMaker, self).setup()
-
-        # Create
-        self.maps_young_fuv_path = fs.create_directory_in(self.maps_young_path, "fuv")
+        super(YoungStellarMapMaker, self).setup(**kwargs)
 
     # -----------------------------------------------------------------
 
@@ -198,7 +181,7 @@ class YoungStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Loading the map of old stars ...")
 
-# -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
     def calculate_significance(self):
 
@@ -215,199 +198,21 @@ class YoungStellarMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def make_map(self):
+    def make_maps(self):
 
         """
         This function ...
-        :return:
+        :return: 
         """
 
         # Inform the user
-        log.info("Making the map of young non-ionizing stars ...")
+        log.info("Making the maps ...")
 
-        # Correct for internal attenuation
-        self.correct_for_attenuation()
+        maker = YoungStellarMapsMaker()
 
-        # Subtract the contribution of old stars
-        self.subtract_old_contribution()
+        maker.run()
 
-    # -----------------------------------------------------------------
-
-    def correct_for_attenuation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Correcting for attenuation ...")
-
-        # attenuation = -2.5 log (total / transparent)
-
-        exponent = attenuation / 2.5
-        transparent = total * 10**exponent
-
-    # -----------------------------------------------------------------
-
-    def subtract_old_contribution(self):
-
-        """
-        Thisnfunction ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Subtracting the old contribution ...")
-
-        # Loop over the different fraction
-        for factor in self.config.factor_range.linear(self.config.factor_nvalues, as_list=True):
-
-            # Calculate the non ionizing young stars map from the FUV data
-            non_ionizing_stars = self.make_corrected_fuv_map(factor)
-
-            # Add the attenuation map to the dictionary
-            self.corrected_fuv_maps[factor] = non_ionizing_stars
-
-        #best_corrected_fuv_map = self.corrected_fuv_maps[self.config.best_factor].copy()
-        # Make sure all pixels of the disk-subtracted maps are larger than or equal to zero
-        #best_corrected_fuv_map[best_corrected_fuv_map < 0.0] = 0.0
-
-        # Set the best estimate of the young stars map
-        #self.map = best_corrected_fuv_map
-
-    # -----------------------------------------------------------------
-
-    def make_corrected_fuv_map(self, factor):
-
-        """
-        This function ...
-        :param factor:
-        :return:
-        """
-
-        # Inform the user
-        log.info("Subtracting the old stellar contribution from the map of the FUV emission with a factor of " + str(factor) + "...")
-
-        ## Subtract old stellar contribution from FUV and MIPS 24 emission
-
-        # From the FUV and 24 micron maps we must subtract the diffuse radiation (old stellar contribution),
-        # for this we typically use an exponential disk
-        # (scale length determined by GALFIT)
-
-        flux_fuv = self.fuv.sum()
-
-        # typisch 20% en 35% respectievelijk
-
-        total_contribution = factor * flux_fuv
-
-        # Subtract the disk contribution to the FUV image
-        new_fuv = self.fuv - total_contribution * self.masked_disk_frame
-
-        # Make sure all pixels of the disk-subtracted maps are larger than or equal to zero
-        #new_fuv[new_fuv < 0.0] = 0.0
-
-        # Set zero where low signal-to-noise ratio
-        # new_fuv[self.fuv < self.config.non_ionizing_stars.fuv_snr_level*self.fuv_errors] = 0.0
-
-        # Return the new FUV frame
-        return new_fuv
-
-    # -----------------------------------------------------------------
-
-    def create_distribution_region(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        disk_ellipse = self.disk_ellipse.to_pixel(self.fuv.wcs)
-        inner_ellipse = disk_ellipse * self.config.histograms_annulus_range.min
-        outer_ellipse = disk_ellipse * self.config.histograms_annulus_range.max
-        composite = PixelCompositeRegion(outer_ellipse, inner_ellipse)
-        region = PixelRegionList()
-        region.append(composite)
-        self.distribution_region = region
-
-    # -----------------------------------------------------------------
-
-    def make_distributions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making distributions of the pixel values of the corrected FUV maps ...")
-
-        # Create mask
-        mask = self.distribution_region.to_mask(self.map.xsize, self.map.ysize)
-
-        # Loop over the different maps
-        for factor in self.corrected_fuv_maps:
-
-            # Get the values
-            values = self.corrected_fuv_maps[factor][mask]
-
-            # Make a distribution of the pixel values indicated by the mask
-            distribution = Distribution.from_values(values, bins=self.config.histograms_nbins)
-
-            # Add the distribution to the dictionary
-            self.corrected_fuv_distributions[factor] = distribution
-
-    # -----------------------------------------------------------------
-
-    def normalize_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Normalizing the young stellar map ...")
-
-        # Normalize the dust map
-        self.map.normalize()
-        self.map.unit = None
-
-    # -----------------------------------------------------------------
-
-    def make_cutoff_mask(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making the cutoff mask ...")
-
-        # Combine the significance masks
-        high_significance = self.significance.intersect_masks()
-
-        # Fill holes
-        if self.config.remove_holes: high_significance.fill_holes()
-
-        # Set
-        self.cutoff_mask = high_significance.inverse()
-
-    # -----------------------------------------------------------------
-
-    def cutoff_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Cutting-off the map at low significance of the data ...")
-
-        # Set zero outside of significant pixels
-        self.map[self.cutoff_mask] = 0.0
+        self.maps = maker.maps
 
     # -----------------------------------------------------------------
 
@@ -420,6 +225,9 @@ class YoungStellarMapMaker(MapsComponent):
 
         # Inform the user
         log.info("Writing ...")
+
+        # Write the maps
+        self.write_maps()
 
         # Write the corrected FUV maps
         self.write_fuv_maps()

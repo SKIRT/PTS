@@ -14,9 +14,9 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
-from ..component import MapsComponent
 from ....core.tools import filesystem as fs
 from ....magic.core.image import Image
+from ....core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
@@ -33,7 +33,7 @@ def make_map():
 
 # -----------------------------------------------------------------
 
-class DiskOldStellarMapMaker(MapsComponent):
+class DiskOldStellarMapMaker(Configurable):
 
     """
     This class...
@@ -67,17 +67,21 @@ class DiskOldStellarMapMaker(MapsComponent):
         # The cutoff mask
         self.cutoff_mask = None
 
+        # The maps
+        self.maps = dict()
+
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the necessary frames
         self.load_frames()
@@ -102,7 +106,7 @@ class DiskOldStellarMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
@@ -110,7 +114,7 @@ class DiskOldStellarMapMaker(MapsComponent):
         """
 
         # Call the setup function of the base class
-        super(DiskOldStellarMapMaker, self).setup()
+        super(DiskOldStellarMapMaker, self).setup(**kwargs)
 
     # -----------------------------------------------------------------
 

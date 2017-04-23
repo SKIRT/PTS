@@ -13,4 +13,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 # Create the configuration
 definition = ConfigurationDefinition()
 
+# Add optional
+definition.add_positional_optional("colours", "string_list", "colour maps to make", default=colour_strings, suggestions=colour_strings)
+
 # -----------------------------------------------------------------

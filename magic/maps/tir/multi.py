@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.maps.dust.tir.multi Contains the MultiBandTIRMapMaker class.
+## \package pts.magic.maps.dust.tir.multi Contains the MultiBandTIRMapMaker class.
 
 # -----------------------------------------------------------------
 
@@ -18,11 +18,11 @@ from astropy.utils import lazyproperty
 # Import the relevant PTS classes and modules
 from ....core.tools import filesystem as fs
 from ....core.tools.logging import log
-from ..component import MapsComponent
 from ....magic.core.frame import linear_combination
 from ....core.units.parsing import parse_unit as u
 from ....magic.calibrations.galametz import GalametzTIRCalibration
 from ....core.tools import sequences
+from ....core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
@@ -30,16 +30,18 @@ possible_filters = ["MIPS 24mu", "Pacs blue", "Pacs green", "Pacs red", "SPIRE 2
 
 # -----------------------------------------------------------------
 
-class MultiBandTIRMapMaker(MapsComponent):
+class MultiBandTIRMapMaker(Configurable):
 
     """
     This class...
     """
 
-    def __init__(self):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
+        :param config:
+        :param interactive:
         :return:
         """
 
@@ -63,15 +65,16 @@ class MultiBandTIRMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the data
         self.load_data()
@@ -79,20 +82,21 @@ class MultiBandTIRMapMaker(MapsComponent):
         # 4. Make the TIR maps
         self.make_maps()
 
-        # 6. Writing
-        self.write()
-
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(MultiBandTIRMapMaker, self).setup()
+        super(MultiBandTIRMapMaker, self).setup(**kwargs)
+
+        # Get distance
+        self.distance = kwargs.pop("distance")
 
     # -----------------------------------------------------------------
 
@@ -156,9 +160,6 @@ class MultiBandTIRMapMaker(MapsComponent):
 
         # Inform the user
         log.info("Making the TIR maps ...")
-
-        # Get the galaxy distance
-        distance = self.galaxy_properties.distance
 
         # Loop over each combination of 2 or 3 filters
         for filters in sequences.combinations(self.available_filters, lengths=[2,3]):

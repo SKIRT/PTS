@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.maps.dust.tir.single Contains the SingleBandTIRMapMaker class.
+## \package pts.magic.maps.tir.single Contains the SingleBandTIRMapMaker class.
 
 # -----------------------------------------------------------------
 
@@ -19,12 +19,11 @@ import numpy as np
 from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
-from ....core.tools import filesystem as fs
 from ....core.tools.logging import log
-from ..component import MapsComponent
 from ....core.units.parsing import parse_unit as u
 from ....magic.calibrations.galametz import GalametzTIRCalibration
 from ....magic.core.frame import Frame
+from ....core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
@@ -32,13 +31,13 @@ possible_filters = ["IRAC I4", "MIPS 24mu", "Pacs 70", "Pacs 100", "Pacs 160", "
 
 # -----------------------------------------------------------------
 
-class SingleBandTIRMapMaker(MapsComponent):
+class SingleBandTIRMapMaker(Configurable):
 
     """
     This class...
     """
 
-    def __init__(self):
+    def __init__(self, config=None, ):
 
         """
         The constructor ...
@@ -64,15 +63,16 @@ class SingleBandTIRMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the data
         self.load_data()
@@ -80,12 +80,9 @@ class SingleBandTIRMapMaker(MapsComponent):
         # 4. Make the maps
         self.make_maps()
 
-        # 6. Writing
-        self.write()
-
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
@@ -94,6 +91,9 @@ class SingleBandTIRMapMaker(MapsComponent):
 
         # Call the setup function of the base class
         super(SingleBandTIRMapMaker, self).setup()
+
+        # Get the distance
+        self.distance = kwargs.pop("distance")
 
     # -----------------------------------------------------------------
 
@@ -181,41 +181,5 @@ class SingleBandTIRMapMaker(MapsComponent):
 
             # Set the TIR map
             self.maps[fltr] = tir
-
-    # -----------------------------------------------------------------
-
-    def write(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing ...")
-
-        # Write the maps
-        self.write_maps()
-
-    # -----------------------------------------------------------------
-
-    def write_maps(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        # Inform the user
-        log.info("Writing the maps ...")
-
-        # Loop over the maps
-        for fltr in self.maps:
-
-            # Determine the path
-            path = fs.join(self.maps_tir_path, str(fltr) + ".fits")
-
-            # Save
-            self.maps[fltr].saveto(path)
 
 # -----------------------------------------------------------------

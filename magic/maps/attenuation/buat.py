@@ -14,13 +14,12 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
-from ..component import MapsComponent
 from ....core.tools import filesystem as fs
-from .tirtofuv import TIRtoFUVMapMaker
+from ....core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
-class BuatAttenuationMapMaker(MapsComponent):
+class BuatAttenuationMapMaker(Configurable):
 
     """
     This class...

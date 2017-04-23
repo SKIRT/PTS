@@ -23,13 +23,13 @@ from ..preparation.preparer import DataPreparer
 from ..decomposition.decomposition import GalaxyDecomposer
 from ..truncation.truncation import Truncator
 from ..photometry.photometry import PhotoMeter
-from ..maps.oldstars.old import OldStellarMapMaker
-from ..maps.youngstars.young import YoungStellarMapMaker
-from ..maps.ionizingstars.ionizing import IonizingStellarMapMaker
-from ..maps.dust.dust import DustMapMaker
-from ..maps.colour.colour import ColourMapMaker
-from ..maps.attenuation.attenuation import AttenuationMapMaker
-from ..maps.tir.tir import TIRMapMaker
+from ..maps.old import OldStellarMapMaker
+from ..maps.young import YoungStellarMapMaker
+from ..maps.ionizing import IonizingStellarMapMaker
+from ..maps.dust import DustMapMaker
+from ..maps.colour import ColourMapMaker
+from ..maps.attenuation import AttenuationMapMaker
+from ..maps.tir import TIRMapMaker
 from ..fitting.configuration import FittingConfigurer
 from ..fitting.initialization.galaxy import GalaxyFittingInitializer
 from ...core.basics.range import QuantityRange
@@ -46,7 +46,7 @@ from ...magic.core.image import Image
 from ..core.environment import GalaxyModelingEnvironment
 from ...core.remote.utils import DetachedCalculation
 from ...core.tools.utils import UserIntervention
-from ..maps.ssfr.ssfr import SSFRMapMaker
+from ..maps.ssfr import SSFRMapMaker
 from ...core.tools import types
 
 # -----------------------------------------------------------------
@@ -633,6 +633,9 @@ class GalaxyModeler(ModelerBase):
         # Create the attenuation map(s)
         if "make_attenuation_maps" not in self.history: self.make_attenuation_maps()
 
+        # Create the dust map
+        if "make_dust_map" not in self.history: self.make_dust_map()
+
         # Create the map of the old stellar disk
         if "make_old_stars_map" not in self.history: self.make_old_stellar_map()
 
@@ -641,9 +644,6 @@ class GalaxyModeler(ModelerBase):
 
         # Create the map of the ionizing stellar population
         if "make_ionizing_stars_map" not in self.history: self.make_ionizing_stellar_map()
-
-        # Create the dust map
-        if "make_dust_map" not in self.history: self.make_dust_map()
 
     # -----------------------------------------------------------------
 

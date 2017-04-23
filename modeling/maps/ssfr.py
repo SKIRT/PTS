@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.maps.ssfr.ssfr Contains the SSFRMapMaker class.
+## \package pts.modeling.maps.ssfr Contains the SSFRMapMaker class.
 
 # -----------------------------------------------------------------
 
@@ -13,9 +13,10 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ....core.tools.logging import log
-from ..component import MapsComponent
-from .colours import ColoursSSFRMapMaker
+from ...core.tools.logging import log
+from .component import MapsComponent
+from ...magic.maps.ssfr.colours import ColoursSSFRMapMaker
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -36,6 +37,9 @@ class SSFRMapMaker(MapsComponent):
         # Call the constructor of the base class
         super(SSFRMapMaker, self).__init__(config, interactive)
 
+        # THe maps
+        self.maps = dict()
+
     # -----------------------------------------------------------------
 
     def run(self):
@@ -52,7 +56,7 @@ class SSFRMapMaker(MapsComponent):
         self.make_ssfr_colours()
 
         # 3. Writing
-        if self.config.write: self.write()
+        self.write()
 
     # -----------------------------------------------------------------
 
@@ -81,11 +85,11 @@ class SSFRMapMaker(MapsComponent):
         # Create the map maker
         maker = ColoursSSFRMapMaker()
 
-        # Set the path
-        maker.config.path = self.config.path
-
         # Run the maker
         maker.run()
+
+        # Get the maps
+        self.maps = maker.maps
 
     # -----------------------------------------------------------------
 
@@ -98,5 +102,29 @@ class SSFRMapMaker(MapsComponent):
 
         # Inform the user
         log.info("Writing ...")
+
+        # Write the maps
+        self.write_maps()
+
+    # -----------------------------------------------------------------
+
+    def write_maps(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Writing the maps ...")
+
+        # Loop over the maps
+        for name in self.maps:
+
+            # Determine path
+            path = fs.join(self.maps_ssfr_path, name + ".fits")
+
+            # Save
+            self.maps[name].saveto(path)
 
 # -----------------------------------------------------------------

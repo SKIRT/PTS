@@ -63,11 +63,11 @@ class ColourMapMaker(MapsComponent):
         # 2. Load the data
         self.load_data()
 
-        # Make the maps
+        # 3. Make the maps
         self.make_maps()
 
         # Write
-        if self.config.write: self.write()
+        self.write()
 
     # -----------------------------------------------------------------
 
@@ -178,27 +178,6 @@ class ColourMapMaker(MapsComponent):
 
         # Write the colour maps
         self.write_maps()
-
-    # -----------------------------------------------------------------
-
-    def write_maps(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        # Inform the user
-        log.info("Writing the colour maps ...")
-
-        # Loop over the colours
-        for colour in self.maps:
-
-            # Determine the path
-            path = fs.join(self.maps_colours_path, colour + ".fits")
-
-            # Save the map
-            self.maps[colour].saveto(path)
 
 # -----------------------------------------------------------------
 

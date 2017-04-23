@@ -52,6 +52,9 @@ class MapsComponent(GalaxyModelingComponent):
 
         # -- Attributes --
 
+        # The maps
+        self.maps = dict()
+
         # The path to the maps/colours directory
         self.maps_colours_path = None
 
@@ -327,6 +330,45 @@ class MapsComponent(GalaxyModelingComponent):
 
         # No colour map encountered
         return None
+
+    # -----------------------------------------------------------------
+
+    def write_maps(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Writing the maps ...")
+
+        # Loop over the methods
+        for method in self.maps:
+
+            # Depending on whether subdictionaries
+            if isinstance(self.maps[method], dict):
+
+                # Create directory
+                path = fs.create_directory_in(self.maps_tir_path, method)
+
+                # Loop over the maps
+                for name in self.maps[method]:
+
+                    # Determine path
+                    map_path = fs.join(path, name + ".fits")
+
+                    # Save
+                    self.maps[method][name].saveto(map_path)
+
+            # No different methods
+            else:
+
+                # Determine path
+                map_path = fs.join(self.maps_tir_path, method + ".fits")
+
+                # Save
+                self.maps[method].saveto(map_path)
 
 # -----------------------------------------------------------------
 

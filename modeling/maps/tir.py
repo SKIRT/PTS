@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.maps.tir.tir Contains the TIRMapMaker class.
+## \package pts.modeling.maps.tir Contains the TIRMapMaker class.
 
 # -----------------------------------------------------------------
 
@@ -13,10 +13,10 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..component import MapsComponent
-from ....core.tools.logging import log
-from .single import SingleBandTIRMapMaker
-from .multi import MultiBandTIRMapMaker
+from .component import MapsComponent
+from ...core.tools.logging import log
+from ...magic.maps.tir.single import SingleBandTIRMapMaker
+from ...magic.maps.tir.multi import MultiBandTIRMapMaker
 
 # -----------------------------------------------------------------
 
@@ -38,7 +38,8 @@ class TIRMapMaker(MapsComponent):
         # Call the constructor of the base class
         super(TIRMapMaker, self).__init__(config, interactive)
 
-        # -- Attributes --
+        # The TIR maps
+        self.maps = dict()
 
     # -----------------------------------------------------------------
 
@@ -91,7 +92,10 @@ class TIRMapMaker(MapsComponent):
         maker = SingleBandTIRMapMaker()
 
         # Run
-        maker.run()
+        maker.run(distance=self.galaxy_distance)
+
+        # Set the maps
+        self.maps["single"] = maker.maps
 
     # -----------------------------------------------------------------
 
@@ -109,7 +113,10 @@ class TIRMapMaker(MapsComponent):
         maker = MultiBandTIRMapMaker()
 
         # Run
-        maker.run()
+        maker.run(distance=self.galaxy_distance)
+
+        # Set the maps
+        self.maps["multi"] = maker.maps
 
     # -----------------------------------------------------------------
 
@@ -122,5 +129,8 @@ class TIRMapMaker(MapsComponent):
 
         # Inform the user
         log.info("Writing ...")
+
+        # Write the maps
+        self.write_maps()
 
 # -----------------------------------------------------------------

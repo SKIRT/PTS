@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.oldstars.bulge Contains the BulgeOldStellarMapMaker class.
+## \package pts.magic.maps.oldstars.bulge Contains the BulgeOldStellarMapMaker class.
 
 # -----------------------------------------------------------------
 
@@ -14,12 +14,12 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
-from ..component import MapsComponent
 from ....magic.core.image import Image
+from ....core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
-class BulgeOldStellarMapMaker(MapsComponent):
+class BulgeOldStellarMapMaker(Configurable):
 
     """
     This class...
@@ -47,17 +47,21 @@ class BulgeOldStellarMapMaker(MapsComponent):
         # The cutoff mask
         self.cutoff_mask = None
 
+        # THe maps
+        self.maps = dict()
+
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 4. Make the map of old stars
         self.make_map()
@@ -66,25 +70,23 @@ class BulgeOldStellarMapMaker(MapsComponent):
         self.normalize_map()
 
         # Make the cutoff mask
-        self.make_cutoff_mask()
+        #self.make_cutoff_mask()
 
         # 6. Cut-off the map
-        self.cutoff_map()
-
-        # 7. Writing
-        self.write()
+        #self.cutoff_map()
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(OldStellarMapMaker, self).setup()
+        super(BulgeOldStellarMapMaker, self).setup(**kwargs)
 
     # -----------------------------------------------------------------
 

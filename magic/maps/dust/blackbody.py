@@ -18,7 +18,6 @@ import matplotlib.pyplot as plt
 from scipy.optimize import minimize
 
 # Import the relevant PTS classes and modules
-from ..component import MapsComponent
 from ....core.tools.logging import log
 from ....magic.core.frame import Frame
 from ....core.launch.pts import PTSRemoteLauncher
@@ -26,6 +25,7 @@ from .fitter import GridBlackBodyFitter, GeneticBlackBodyFitter
 from ....magic.tools import wavelengths
 from ....magic.basics.vector import Pixel
 from ....core.units.parsing import parse_unit as u
+from ....core.basics.configurable import Configurable
 
 # PTS evolution classes and modules
 from ....evolve.core.engine import GeneticEngine, RawScoreCriteria
@@ -57,7 +57,7 @@ k850 = 0.077  # Maarten (and SKIRT) use different value you so you might want to
 
 # -----------------------------------------------------------------
 
-class BlackBodyDustMapMaker(MapsComponent):
+class BlackBodyDustMapMaker(Configurable):
 
     """
     This class ...

@@ -13,11 +13,11 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ....core.tools.logging import log
-from ..component import MapsComponent
-from .disk import DiskOldStellarMapMaker
-from .bulge import BulgeOldStellarMapMaker
-from .total import TotalOldStellarMapMaker
+from ...core.tools.logging import log
+from .component import MapsComponent
+from ...magic.maps.oldstars.disk import DiskOldStellarMapMaker
+from ...magic.maps.oldstars.bulge import BulgeOldStellarMapMaker
+from ...magic.maps.oldstars.total import TotalOldStellarMapMaker
 
 # -----------------------------------------------------------------
 
@@ -37,9 +37,6 @@ class OldStellarMapMaker(MapsComponent):
 
         # Call the constructor of the base class
         super(OldStellarMapMaker, self).__init__(config, interactive)
-
-        # The maps
-        self.maps =
 
     # -----------------------------------------------------------------
 
@@ -95,6 +92,9 @@ class OldStellarMapMaker(MapsComponent):
         # Run
         maker.run()
 
+        # Set the maps
+        self.maps["disk"] = maker.maps
+
     # -----------------------------------------------------------------
 
     def make_total_map(self):
@@ -112,6 +112,9 @@ class OldStellarMapMaker(MapsComponent):
 
         # Run
         maker.run()
+
+        # Set the maps
+        self.maps["total"] = maker.maps
 
     # -----------------------------------------------------------------
 
@@ -131,6 +134,9 @@ class OldStellarMapMaker(MapsComponent):
         # Run
         maker.run()
 
+        # Set the maps
+        self.maps["bulge"] = maker.maps
+
     # -----------------------------------------------------------------
 
     def write(self):
@@ -142,5 +148,8 @@ class OldStellarMapMaker(MapsComponent):
 
         # Inform the user
         log.info("Writing ...")
+
+        # Write the maps
+        self.write_maps()
 
 # -----------------------------------------------------------------
