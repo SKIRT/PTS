@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import copy
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
@@ -55,6 +56,17 @@ class KeyList(object):
         """
 
         for name in self.contents: yield self.contents[name]
+
+    # -----------------------------------------------------------------
+
+    def to_dictionary(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return copy.copy(self.contents)
 
     # -----------------------------------------------------------------
 

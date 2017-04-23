@@ -15,10 +15,10 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from .component import MapsComponent
 from ...core.tools.logging import log
-from ...magic.maps.dust.blackbody import BlackBodyDustMapMaker
-from ...magic.maps.dust.emission import EmissionDustMapMaker
-from ...magic.maps.dust.attenuation import AttenuationDustMapMaker
-from ...magic.maps.dust.hot import HotDustMapMaker
+from ...magic.maps.dust.blackbody import BlackBodyDustMapsMaker
+from ...magic.maps.dust.emission import EmissionDustMapsMaker
+from ...magic.maps.dust.attenuation import AttenuationDustMapsMaker
+from ...magic.maps.dust.hot import HotDustMapsMaker
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
@@ -82,7 +82,7 @@ class DustMapMaker(MapsComponent):
         if self.config.make_attenuation: self.make_attenuation()
 
         # Make a map of the hot dust
-        self.make_hot()
+        if self.config.make_hot: self.make_hot()
 
         # Make the cutoff mask
         #self.make_cutoff_mask()
@@ -135,7 +135,7 @@ class DustMapMaker(MapsComponent):
         log.info("Making a dust map based on black-body fitting to the FIR/submm SED ...")
 
         # Create the black body dust map maker
-        maker = BlackBodyDustMapMaker(self.config.black_body)
+        maker = BlackBodyDustMapsMaker(self.config.black_body)
 
         # Run the maker
         maker.run()
@@ -157,7 +157,7 @@ class DustMapMaker(MapsComponent):
         log.info("Making a dust map based on the emission in a certain FIR/submm band ...")
 
         # Create the emission dust map maker
-        maker = EmissionDustMapMaker()
+        maker = EmissionDustMapsMaker()
 
         # Run the maker
         maker.run()
@@ -178,7 +178,7 @@ class DustMapMaker(MapsComponent):
         log.info("Making a dust map based on the UV attenuation ...")
 
         # Create the Attenuation dust map maker
-        maker = AttenuationDustMapMaker()
+        maker = AttenuationDustMapsMaker()
 
         # Run the maker
         maker.run()
@@ -198,8 +198,15 @@ class DustMapMaker(MapsComponent):
         # Inform the user
         log.info("Making a map of the hot dust ...")
 
+        # Get MIPS 24 micron frame and error map
+        mips24 = self.dataset.get_frame("MIPS 24mu")  # in original MJy/sr units
+        mips24_errors = self.dataset.get_errormap("MIPS 24mu")  # in original MJy/sr units
+
+        # Get the map of old stars
+
+
         # Create the hot dust map maker
-        maker = HotDustMapMaker()
+        maker = HotDustMapsMaker()
 
         # Run the maker
         maker.run()

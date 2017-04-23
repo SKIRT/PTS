@@ -563,12 +563,13 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def get_frame_for_filter(self, fltr, masked=True):
+    def get_frame_for_filter(self, fltr, masked=True, mask_value=0.0):
 
         """
         This function ...
         :param fltr:
         :param masked:
+        :param mask_value:
         :return:
         """
 
@@ -579,7 +580,7 @@ class DataSet(object):
         if name is None: return None
 
         # Return the frame
-        return self.get_frame(name, masked=masked)
+        return self.get_frame(name, masked=masked, mask_value=mask_value)
 
     # -----------------------------------------------------------------
 
@@ -602,12 +603,13 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def get_errormap_for_filter(self, fltr, masked=True):
+    def get_errormap_for_filter(self, fltr, masked=True, mask_value=0.0):
 
         """
         THis function ...
         :param fltr: 
         :param masked: 
+        :param mask_value:
         :return: 
         """
 
@@ -618,7 +620,7 @@ class DataSet(object):
         if name is None: return None
 
         # Return the error map
-        return self.get_errormap(name, masked=masked)
+        return self.get_errormap(name, masked=masked, mask_value=mask_value)
 
     # -----------------------------------------------------------------
 

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.maps.dust.attenuation Contains the AttenuationDustMapMaker class.
+## \package pts.magic.maps.dust.attenuation Contains the AttenuationDustMapsMaker class.
 
 # -----------------------------------------------------------------
 
@@ -43,25 +43,33 @@ colour_combinations = {"FUV-H": ("GALEX FUV", "2MASS H"),
 
 # -----------------------------------------------------------------
 
-def make_fuv_attenuation_map():
+def make_map(fuv, tir, ssfr, ssfr_colour):
 
     """
     This function ...
+    :param fuv:
+    :param tir:
+    :param ssfr:
+    :param ssfr_colour:
     :return: 
     """
 
     # Create the attenuation map maker
-    maker = CorteseAttenuationMapMaker()
+    maker = CorteseAttenuationMapsMaker()
+
+    # Set input
+    tirs = {"standard": tir}
+    ssfrs = {ssfr_colour: ssfr}
 
     # Run
-    maker.run()
+    maker.run(fuv=fuv, tirs=tirs, ssfrs=ssfrs)
 
-    # Get the maps
-    maps = maker.maps
+    # Get the map
+    return maker.single_map
 
 # -----------------------------------------------------------------
 
-class CorteseAttenuationMapMaker(Configurable):
+class CorteseAttenuationMapsMaker(Configurable):
 
     """
     This class...
@@ -76,19 +84,28 @@ class CorteseAttenuationMapMaker(Configurable):
         """
 
         # Call the constructor of the base class
-        super(CorteseAttenuationMapMaker, self).__init__(config, interactive)
+        super(CorteseAttenuationMapsMaker, self).__init__(config, interactive)
 
         # -- Attributes --
 
+        # The FUV map
+        self.fuv = None
+
+        # The TIR maps
+        self.tirs = None
+
+        # The ssfr maps
+        self.ssfrs = None
+
         # Frames and error maps
-        self.frames = dict()
-        self.errors = dict()
+        #self.frames = dict()
+        #self.errors = dict()
 
         # The TIR to FUV map
-        self.log_tir_to_fuv = None
+        #self.log_tir_to_fuv = None
 
         # Maps/dust/cortese path
-        self.maps_dust_cortese_path = None
+        #self.maps_dust_cortese_path = None
 
         # The table describing the calibration parameters from Cortese et. al 2008
         # Title of table: Relations to convert the TIR/FUV ratio in A(FUV) for different values of tau and
@@ -96,7 +113,7 @@ class CorteseAttenuationMapMaker(Configurable):
         self.cortese = None
 
         # The SSFR maps (the FUV/optical-NIR colour maps)
-        self.ssfr_maps = dict()
+        self.ssfrs = dict()
 
         # The attenuation maps (for different FUV/optical-NIR colours)
         self.maps = dict()
@@ -143,7 +160,7 @@ class CorteseAttenuationMapMaker(Configurable):
         """
 
         # Call the setup function of the base class
-        super(CorteseAttenuationMapMaker, self).setup()
+        super(CorteseAttenuationMapsMaker, self).setup(**kwargs)
 
         # Load the Cortese et al. 2008 table
         #self.cortese = tables.from_file(cortese_table_path, format="ascii.commented_header")
@@ -154,76 +171,10 @@ class CorteseAttenuationMapMaker(Configurable):
         # Set the log TIR to FUV map
         #self.log_tir_to_fuv = log_tir_to_fuv
 
-
-
-    # -----------------------------------------------------------------
-
-    def load_frames(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the necessary data ...")
-
-        data_names = ["GALEX FUV", "2MASS H", "SDSS i", "SDSS r", "SDSS g"]
-        #if self.config.ssfr_colour == "FUV-H": data_names.append("2MASS H")
-        #elif self.config.ssfr_colour == "FUV-i": data_names.append("SDSS i")
-        #elif self.config.ssfr_colour == "FUV-r": data_names.append("SDSS r")
-        #elif self.config.ssfr_colour == "FUV-g": data_names.append("SDSS g")
-        #elif self.config.ssfr_colour == "FUV-B": data_names.append("")
-        #else: raise ValueError("Invalid SSFR colour option")
-
-        # Load all the frames and error maps
-        for name in data_names:
-
-            frame = self.dataset.get_frame(name)
-            errors = self.dataset.get_errormap(name)
-
-            #from pts.magic.tools import plotting
-            #plotting.plot_box(frame)
-            #plotting.plot_box(errors)
-
-            # Add the frame and error map to the appropriate dictionary
-            self.frames[name] = frame # in original MJy/sr units
-            self.errors[name] = errors # in original MJy/sr units
-
-    # -----------------------------------------------------------------
-
-    def make_ssfr_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the sSFR map ...")
-
-        # Loop over the different colour options
-        for ssfr_colour in ssfr_colours:
-
-            # Calculate the colour map
-            first_band = colour_combinations[ssfr_colour][0]
-            second_band = colour_combinations[ssfr_colour][1]
-            colour = make_colour_map(self.frames[first_band], self.frames[second_band])
-
-            # Replace NaNs by zeros
-            colour.replace_nans(0.0)
-
-            # Mask pixels outside of the low signal-to-noise contour
-            #colour[self.mask] = 0.0
-
-            # Set negative pixels to zero
-            colour[colour < 0.0] = 0.0
-
-            # Mask low sigal-to-noise pixels in the fuv map, if requested
-            #if self.config.ssfr.mask_low_fuv_snr: fuv_h[self.fuv < self.config.ssfr.fuv_snr_level*self.fuv_errors] = 0.0
-
-            # Add the colour map to the dictionary
-            self.ssfr_maps[ssfr_colour] = colour
+        # Get input
+        self.fuv = kwargs.pop("fuv")
+        self.tirs = kwargs.pop("tirs")
+        self.ssfrs = kwargs.pop("ssfrs")
 
     # -----------------------------------------------------------------
 
@@ -239,111 +190,46 @@ class CorteseAttenuationMapMaker(Configurable):
 
         # Dust = FUV attenuation = function of (ratio of TIR and FUV luminosity)
 
-        # Loop over the different colour options
-        for ssfr_colour in ssfr_colours:
+        # Loop over the different TIR maps
+        for name in self.tirs:
 
-            # Create the FUV attenuation map according to the calibration in Cortese et. al 2008
-            fuv_attenuation = self.make_fuv_attenuation_map(ssfr_colour)
+            # Make the TIR to FUV map
+            tir_to_fuv = make_tir_to_fuv_map(self.tirs[name], self.fuv)
+            log_tir_to_fuv = Frame(np.log10(tir_to_fuv))
 
-            # Set attenuation to zero where the original FUV map is smaller than zero
-            fuv_attenuation[self.frames["GALEX FUV"] < 0.0] = 0.0
+            # Loop over the different colour options
+            for ssfr_colour in self.ssfrs:
 
-            # Add the attenuation map to the dictionary
-            self.maps[ssfr_colour] = fuv_attenuation
+                # Get the ssfr map
+                ssfr = self.ssfrs[ssfr_colour]
+
+                # Create the FUV attenuation map according to the calibration in Cortese et. al 2008
+                fuv_attenuation = make_fuv_attenuation_map(self.cortese, ssfr_colour, log_tir_to_fuv, ssfr)
+
+                # Set attenuation to zero where the original FUV map is smaller than zero
+                fuv_attenuation[self.fuv < 0.0] = 0.0
+
+                # Determine name
+                key = name + "_" + ssfr_colour
+
+                # Add the attenuation map to the dictionary
+                self.maps[key] = fuv_attenuation
 
         # Choose a specific result as the actual dust map
         #self.map = self.attenuation_maps[self.config.ssfr_colour]
 
     # -----------------------------------------------------------------
 
-    def make_fuv_attenuation_map(self, ssfr_colour):
+    @property
+    def single_map(self):
 
         """
         This function ...
-        :param ssfr_colour
-        :return:
+        :return: 
         """
 
-        # Inform the user
-        log.info("Creating the A(FUV) map according to the relation to the TIR/FUV ratio as described in Cortese et. al 2008 ...")
-
-        ssfr_map = self.ssfr_maps[ssfr_colour]
-
-        # Calculate powers of log(tir_to_fuv)
-        tir_to_fuv2 = np.power(self.log_tir_to_fuv, 2.0)
-        tir_to_fuv3 = np.power(self.log_tir_to_fuv, 3.0)
-        tir_to_fuv4 = np.power(self.log_tir_to_fuv, 4.0)
-
-        # Create an empty image
-        a_fuv_cortese = Frame.zeros_like(self.log_tir_to_fuv)
-
-        limits = []
-        a1_list = []
-        a2_list = []
-        a3_list = []
-        a4_list = []
-        a5_list = []
-
-        # Loop over all entries in the Cortese et. al
-        for i in range(len(self.cortese)):
-
-            upper = self.cortese[ssfr_colour][i]
-            if i == len(self.cortese) - 1:
-                lower = None
-            else:
-                lower = self.cortese[ssfr_colour][i + 1]
-
-            limits.append((lower, upper))
-
-            a1 = self.cortese["a1"][i]
-            a2 = self.cortese["a2"][i]
-            a3 = self.cortese["a3"][i]
-            a4 = self.cortese["a4"][i]
-            a5 = self.cortese["a5"][i]
-
-            a1_list.append(a1)
-            a2_list.append(a2)
-            a3_list.append(a3)
-            a4_list.append(a4)
-            a5_list.append(a5)
-
-        # Debugging
-        log.debug("a1 values: " + " ".join([str(a) for a in a1_list]))
-        log.debug("a2 values: " + " ".join([str(a) for a in a2_list]))
-        log.debug("a3 values: " + " ".join([str(a) for a in a3_list]))
-        log.debug("a4 values: " + " ".join([str(a) for a in a4_list]))
-        log.debug("a5 values: " + " ".join([str(a) for a in a5_list]))
-
-        # Create the FUV attenuation map
-        for i in range(len(limits)):
-
-            upper_limit = limits[i][1]
-            lower_limit = limits[i][0]
-
-            if lower_limit is None:
-                where = ssfr_map < upper_limit
-            elif upper_limit is None:
-                where = ssfr_map > lower_limit
-            else: where = (ssfr_map >= lower_limit) * (ssfr_map < upper_limit)
-
-            # Set the appropriate pixels
-            a_fuv_cortese[where] = a1_list[i] + a2_list[i] * self.log_tir_to_fuv[where] + a3_list[i] * tir_to_fuv2[where] + \
-                                   a4_list[i] * tir_to_fuv3[where] + a5_list[i] * tir_to_fuv4[where]
-
-        # The absolute upper limit (so 10.5 for FUV-H, 7.5 for FUV-i, 7.3 for FUV-r, 6.7 for FUV-g, and 6.3 for FUV-B
-        absolute_upper_limit = limits[0][1]
-
-        # Set attenuation to zero where tir_to_fuv is NaN
-        a_fuv_cortese[np.isnan(self.log_tir_to_fuv)] = 0.0
-
-        # Set attenuation to zero where sSFR is smaller than zero
-        a_fuv_cortese[ssfr_map < 0.0] = 0.0
-
-        # Set attenuation to zero where sSFR is greater than the absolute upper limit for the FUV-IR/optical colour
-        a_fuv_cortese[ssfr_map >= absolute_upper_limit] = 0.0
-
-        # Return the A(FUV) map
-        return a_fuv_cortese
+        if len(self.maps) != 1: raise ValueError("Not a single map")
+        return self.maps[self.maps.keys()[0]]
 
     # -----------------------------------------------------------------
 
@@ -377,64 +263,147 @@ class CorteseAttenuationMapMaker(Configurable):
         self.map.normalize()
         self.map.unit = None
 
-    # -----------------------------------------------------------------
+# -----------------------------------------------------------------
 
-    def write(self):
+def make_tir_to_fuv_map(tir, fuv):
 
-        """
-        This function ...
-        :return:
-        """
+    """
+    This function ...
+    :param tir: 
+    :param fuv: 
+    :return: 
+    """
 
-        # Inform the user
-        log.info("Writing ...")
+    # Conversions necessary? -> YES!
 
-        # 1. Write the SSFR maps
-        self.write_ssfr_maps()
+    ## Convert the FUV map from Lsun to W/m2
+    #assert self.frames["GALEX FUV"].unit == "Lsun"
+    ## Convert the TIR map from Lsun to W / m2
+    #conversion_factor = 1.0
+    # Conversion from Lsun to W
+    #conversion_factor *= solar_luminosity.to("W").value
+    # Conversion from W [LUMINOSITY] to W / m2 [FLUX]
+    #distance = self.galaxy_properties.distance
+    #conversion_factor /= (4. * np.pi * distance ** 2).to("m2").value
+    # FUV in W/M2
+    #self.fuv_si = self.frames["GALEX FUV"] * conversion_factor
+    #self.fuv_si.unit = "W/m2"
 
-        # 2. Write the attenuation maps
-        self.write_attenuation_maps()
+    ## Convert the TIR map from Lsun to W / m2
+    #conversion_factor = 1.0
+    # Conversion from Lsun to W
+    #conversion_factor *= solar_luminosity.to("W").value
+    # Conversion from W [LUMINOSITY] to W / m2 [FLUX]
+    #distance = self.galaxy_properties.distance
+    #conversion_factor /= (4. * np.pi * distance ** 2).to("m2").value
+    ## CONVERT AND SET NEW UNIT
+    #self.tir_si = Frame(tir_map * conversion_factor)
+    #self.tir_si.unit = "W/m2"
 
-    # -----------------------------------------------------------------
+    # CALCULATE FUV AND TIR MAP IN W/M2 UNIT
 
-    def write_ssfr_maps(self):
+    ## FUV IN W/M2
 
-        """
-        This function ...
-        :return:
-        """
+    ## TIR IN W/M2
 
-        # Inform the user
-        log.info("Writing the SSFR maps ...")
+    # CALCULATE TIR TO FUV RATIO
 
-        # Loop
-        for name in self.ssfr_maps:
+    # The ratio of TIR and FUV
+    tir_to_fuv = tir_si / fuv_si
+    #log_tir_to_fuv = Frame(np.log10(self.tir_to_fuv)
 
-            # Determine path
-            path = fs.join(self.maps_dust_cortese_path, "ssfr_" + name + ".fits")
+    return tir_to_fuv
 
-            # Write
-            self.ssfr_maps[name].saveto(path)
+# -----------------------------------------------------------------
 
-    # -----------------------------------------------------------------
+def make_fuv_attenuation_map(cortese, ssfr_colour, log_tir_to_fuv, ssfr):
 
-    def write_attenuation_maps(self):
+    """
+    This function ...
+    :param cortese:
+    :param ssfr_colour:
+    :param log_tir_to_fuv:
+    :param ssfr:
+    :return:
+    """
 
-        """
-        This function ...
-        :return:
-        """
+    # Inform the user
+    log.info("Creating the A(FUV) map according to the relation to the TIR/FUV ratio as described in Cortese et. al 2008 ...")
 
-        # Inform the user
-        log.info("Writing the attenuation maps ...")
+    #ssfr_map = self.ssfr_maps[ssfr_colour]
 
-        # Loop
-        for name in self.attenuation_maps:
+    # Calculate powers of log(tir_to_fuv)
+    tir_to_fuv2 = np.power(log_tir_to_fuv, 2.0)
+    tir_to_fuv3 = np.power(log_tir_to_fuv, 3.0)
+    tir_to_fuv4 = np.power(log_tir_to_fuv, 4.0)
 
-            # Determine path
-            path = fs.join(self.maps_dust_cortese_path, "fuv_attenuation_" + name + ".fits")
+    # Create an empty image
+    a_fuv_cortese = Frame.zeros_like(log_tir_to_fuv)
 
-            # Write
-            self.attenuation_maps[name].saveto(path)
+    limits = []
+    a1_list = []
+    a2_list = []
+    a3_list = []
+    a4_list = []
+    a5_list = []
+
+    # Loop over all entries in the Cortese et. al
+    for i in range(len(cortese)):
+
+        upper = cortese[ssfr_colour][i]
+        if i == len(cortese) - 1: lower = None
+        else: lower = cortese[ssfr_colour][i + 1]
+
+        limits.append((lower, upper))
+
+        a1 = cortese["a1"][i]
+        a2 = cortese["a2"][i]
+        a3 = cortese["a3"][i]
+        a4 = cortese["a4"][i]
+        a5 = cortese["a5"][i]
+
+        a1_list.append(a1)
+        a2_list.append(a2)
+        a3_list.append(a3)
+        a4_list.append(a4)
+        a5_list.append(a5)
+
+    # Debugging
+    log.debug("a1 values: " + " ".join([str(a) for a in a1_list]))
+    log.debug("a2 values: " + " ".join([str(a) for a in a2_list]))
+    log.debug("a3 values: " + " ".join([str(a) for a in a3_list]))
+    log.debug("a4 values: " + " ".join([str(a) for a in a4_list]))
+    log.debug("a5 values: " + " ".join([str(a) for a in a5_list]))
+
+    # Create the FUV attenuation map
+    for i in range(len(limits)):
+
+        upper_limit = limits[i][1]
+        lower_limit = limits[i][0]
+
+        if lower_limit is None:
+            where = ssfr_map < upper_limit
+        elif upper_limit is None:
+            where = ssfr_map > lower_limit
+        else: where = (ssfr_map >= lower_limit) * (ssfr_map < upper_limit)
+
+        # Set the appropriate pixels
+        a_fuv_cortese[where] = a1_list[i] + a2_list[i] * self.log_tir_to_fuv[where] + a3_list[i] * tir_to_fuv2[where] + \
+                               a4_list[i] * tir_to_fuv3[where] + a5_list[i] * tir_to_fuv4[where]
+
+    # The absolute upper limit (so 10.5 for FUV-H, 7.5 for FUV-i, 7.3 for FUV-r, 6.7 for FUV-g, and 6.3 for FUV-B
+    absolute_upper_limit = limits[0][1]
+
+    # Set attenuation to zero where tir_to_fuv is NaN
+    a_fuv_cortese[np.isnan(self.log_tir_to_fuv)] = 0.0
+
+    # Set attenuation to zero where sSFR is smaller than zero
+    a_fuv_cortese[ssfr_map < 0.0] = 0.0
+
+    # Set attenuation to zero where sSFR is greater than the absolute upper limit for the FUV-IR/optical colour
+    a_fuv_cortese[ssfr_map >= absolute_upper_limit] = 0.0
+
+    # Return the A(FUV) map
+    return a_fuv_cortese
 
 # -----------------------------------------------------------------

@@ -15,8 +15,8 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from .component import MapsComponent
-from ...magic.maps.attenuation.cortese import CorteseAttenuationMapMaker
-from ...magic.maps.attenuation.buat import BuatAttenuationMapMaker
+from ...magic.maps.attenuation.cortese import CorteseAttenuationMapsMaker
+from ...magic.maps.attenuation.buat import BuatAttenuationMapsMaker
 
 # -----------------------------------------------------------------
 
@@ -75,7 +75,7 @@ class AttenuationMapMaker(MapsComponent):
         log.info("Making Cortese attenuation maps ...")
 
         # Create the map maker
-        maker = CorteseAttenuationMapMaker()
+        maker = CorteseAttenuationMapsMaker()
 
         # Run the map maker
         maker.run()
@@ -96,7 +96,7 @@ class AttenuationMapMaker(MapsComponent):
         log.info("Making Buat attenuation maps ...")
 
         # Create the map maker
-        maker = BuatAttenuationMapMaker()
+        maker = BuatAttenuationMapsMaker()
 
         # Run the map maker
         maker.run()

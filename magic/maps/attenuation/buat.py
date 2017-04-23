@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.maps.dust.buat Contains the BuatDustMapMaker class.
+## \package pts.modeling.maps.dust.buat Contains the BuatDustMapsMaker class.
 
 # -----------------------------------------------------------------
 
@@ -14,12 +14,11 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
-from ....core.tools import filesystem as fs
 from ....core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
-class BuatAttenuationMapMaker(Configurable):
+class BuatAttenuationMapsMaker(Configurable):
 
     """
     This class...
@@ -35,7 +34,7 @@ class BuatAttenuationMapMaker(Configurable):
         """
 
         # Call the constructor of the base class
-        super(BuatAttenuationMapMaker, self).__init__(config, interactive)
+        super(BuatAttenuationMapsMaker, self).__init__(config, interactive)
 
         # -- Attributes --
 
@@ -46,7 +45,10 @@ class BuatAttenuationMapMaker(Configurable):
         self.log_tir_to_fuv = None
 
         # The dust map
-        self.map = None
+        #self.map = None
+
+        # The maps
+        self.maps = dict()
 
         # Maps/dust/buat path
         self.maps_dust_buat_path = None
@@ -65,28 +67,29 @@ class BuatAttenuationMapMaker(Configurable):
         self.setup(**kwargs)
 
         # 2. Make the dust map
-        self.make_map()
+        self.make_maps()
 
         # 3. Make everything positive
-        self.make_positive()
+        #self.make_positive()
 
         # 4. Normalize the dust map
-        self.normalize()
+        #self.normalize()
 
         # 5. Writing
-        self.write()
+        #self.write()
 
     # -----------------------------------------------------------------
 
-    def setup(self, log_tir_to_fuv):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(BuatAttenuationMapMaker, self).setup()
+        super(BuatAttenuationMapsMaker, self).setup()
 
         # Set the buat parameters
         self.buat["NUV"] = (-0.0495, 0.4718, 0.8998, 0.2269)
@@ -96,11 +99,11 @@ class BuatAttenuationMapMaker(Configurable):
         self.log_tir_to_fuv = log_tir_to_fuv
 
         # Set the path to the maps/dust/buat directory
-        self.maps_dust_buat_path = fs.create_directory_in(self.maps_dust_path, "buat")
+        #self.maps_dust_buat_path = fs.create_directory_in(self.maps_dust_path, "buat")
 
     # -----------------------------------------------------------------
 
-    def make_map(self):
+    def make_maps(self):
 
         """
         This function ...

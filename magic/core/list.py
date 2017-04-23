@@ -12,15 +12,13 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-from collections import OrderedDict
-
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.filter.filter import parse_filter, Filter
 from ..region.list import SkyRegionList
 from ...core.units.parsing import parse_unit as u
 from .frame import Frame
+from .image import Image
 from ..basics.coordinatesystem import CoordinateSystem
 from ..tools import coordinates
 from ..basics.coordinate import SkyCoordinate
@@ -28,6 +26,7 @@ from ..basics.stretch import SkyStretch
 from ..region.rectangle import SkyRectangleRegion
 from ...core.basics.containers import KeyList, NamedList
 from ...core.tools import types
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -45,6 +44,21 @@ class CoordinateSystemList(KeyList):
 
         # Call the constructor of the base class
         super(CoordinateSystemList, self).__init__()
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_directory(cls, path):
+
+        """
+        This function ...
+        :param path: 
+        :return: 
+        """
+
+        new = cls()
+        for path in fs.files_in_path(path): new.append(Frame.from_file(path))
+        return new
 
     # -----------------------------------------------------------------
 
@@ -486,6 +500,21 @@ class FrameList(KeyList):
 
         # Call the constructor of the base class
         super(FrameList, self).__init__()
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_directory(cls, path):
+
+        """
+        This function ...
+        :param path: 
+        :return: 
+        """
+
+        new = cls()
+        for path in fs.files_in_path(path, extension="fits"): new.append(Frame.from_file(path))
+        return new
 
     # -----------------------------------------------------------------
 
@@ -1021,6 +1050,21 @@ class NamedFrameList(NamedList):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_directory(cls, path):
+
+        """
+        This function ...
+        :param path: 
+        :return: 
+        """
+
+        new = cls()
+        for path, name in fs.files_in_path(path, returns=["path", "name"], extension="fits"): new.append(name, Frame.from_file(path))
+        return new
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_dictionary(cls, dictionary):
 
         """
@@ -1069,6 +1113,37 @@ class ImageList(KeyList):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_directory(cls, path):
+
+        """
+        This function ...
+        :param path: 
+        :return: 
+        """
+
+        new = cls()
+        for path in fs.files_in_path(path): new.append(Image.from_file(path))
+        return new
+
+    # -----------------------------------------------------------------
+
+    def append(self, image):
+
+        """
+        This function ...
+        :param image: 
+        :return: 
+        """
+
+        # Check keys
+        if image.fltr in self.images: raise ValueError("Already an image for the '" + str(image.filter) + "' filter")
+
+        # Call the function of the base class
+        super(ImageList, self).append(image.filter, image)
+
+    # -----------------------------------------------------------------
+
     @property
     def images(self): # an alias for the contents for this subclass
 
@@ -1095,6 +1170,21 @@ class NamedImageList(NamedList):
 
         # Call the constructor of the base class
         super(NamedImageList, self).__init__()
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_directory(cls, path):
+
+        """
+        This function ...
+        :param path: 
+        :return: 
+        """
+
+        new = cls()
+        for path, name in fs.files_in_path(path, returns=["path", "name"], extension="fits"): new.append(Image.from_file(path), name)
+        return new
 
     # -----------------------------------------------------------------
 

@@ -8,9 +8,7 @@
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.modeling.config.make_dust_cortese import definition as cortese_definition
-from pts.modeling.config.make_dust_buat import definition as buat_definition
-from pts.modeling.config.make_dust_blackbody import definition as bb_definition
-from pts.modeling.config.make_dust_emission import definition as emission_definition
+
 
 # -----------------------------------------------------------------
 
@@ -30,8 +28,8 @@ definition.add_flag("remove_holes", "remove holes from the total cutoff mask", T
 # Flags for enabling/disabling different methods
 definition.add_flag("make_black_body", "make dust map based on black-body fitting", True)
 definition.add_flag("make_emission", "make dust map based on emission", True)
-definition.add_flag("make_buat", "make dust map based on Buat", True)
-definition.add_flag("make_cortese", "make dust map based on Cortese", True)
+definition.add_flag("make_attenuation", "make dust map based on attenuation", True)
+definition.add_flag("make_hot", "make map of hot dust", True)
 
 # Best method
 #definition.add_optional("best_method", "string", "the method of which to use the resul as the final dust map", "cortese")

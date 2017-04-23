@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.maps.dust.cortese Contains the CorteseDustMapMaker class.
+## \package pts.modeling.maps.dust.cortese Contains the AttenuationDustMapsMaker class.
 
 # -----------------------------------------------------------------
 
@@ -23,14 +23,6 @@ from ....core.tools.logging import log
 from ....magic.tools.colours import make_colour_map
 from ....core.units.parsing import parse_unit as u
 from ....core.basics.configurable import Configurable
-
-# -----------------------------------------------------------------
-
-# The path to the table containing the parameters from Cortese et. al 2008
-cortese_table_path = fs.join(introspection.pts_dat_dir("modeling"), "cortese.dat")
-
-# The path to the table containing the Galametz calibration parameters
-galametz_table_path = fs.join(introspection.pts_dat_dir("modeling"), "galametz.dat")
 
 # -----------------------------------------------------------------
 
@@ -56,13 +48,13 @@ def make_map():
     :return: 
     """
 
-    maker = AttenuationDustMapMaker()
+    maker = AttenuationDustMapsMaker()
 
     maker.run()
 
 # -----------------------------------------------------------------
 
-class AttenuationDustMapMaker(Configurable):
+class AttenuationDustMapsMaker(Configurable):
 
     """
     This class...
@@ -77,7 +69,7 @@ class AttenuationDustMapMaker(Configurable):
         """
 
         # Call the constructor of the base class
-        super(AttenuationDustMapMaker, self).__init__(config, interactive)
+        super(AttenuationDustMapsMaker, self).__init__(config, interactive)
 
         # -- Attributes --
 
@@ -103,6 +95,19 @@ class AttenuationDustMapMaker(Configurable):
 
         # Make the maps
         self.make_maps()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs: 
+        :return: 
+        """
+
+        # Call the setup function of the base class
+        super(AttenuationDustMapsMaker, self).setup(**kwargs)
 
     # -----------------------------------------------------------------
 

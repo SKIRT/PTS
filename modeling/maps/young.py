@@ -45,29 +45,32 @@ class YoungStellarMapMaker(MapsComponent):
         self.fuv = None
         self.fuv_errors = None
 
-        # The NORMALIZED (to unity) DISK IMAGE
-        self.disk = None
+        # The map of the old stellar disk
+        self.old = None
+
+        # The maps of FUV attenuation
+        self.fuv_attenuations = None
 
         # The maps of the corrected FUV emission
-        self.corrected_fuv_maps = dict()
+        #self.corrected_fuv_maps = dict()
 
         # The distributions of corrected FUV pixel values
-        self.corrected_fuv_distributions = dict()
+        #self.corrected_fuv_distributions = dict()
 
         # The map of young stars
-        self.map = None
+        #self.map = None
 
         # The path to the maps/young/fuv directory
-        self.maps_young_fuv_path = None
+        #self.maps_young_fuv_path = None
 
         # Region of area taken for calculating distribution of pixel values
-        self.distribution_region = None
+        #self.distribution_region = None
 
         # The image of significance masks
-        self.significance = Image()
+        #self.significance = Image()
 
         # The cutoff mask
-        self.cutoff_mask = None
+        #self.cutoff_mask = None
 
     # -----------------------------------------------------------------
 
@@ -124,9 +127,6 @@ class YoungStellarMapMaker(MapsComponent):
         # Load the GALEX FUV image and error map
         self.load_fuv()
 
-        # Load the disk image and normalize to unity
-        #self.load_disk()
-
     # -----------------------------------------------------------------
 
     def load_fuv(self):
@@ -153,14 +153,14 @@ class YoungStellarMapMaker(MapsComponent):
         log.info("Loading maps ...")
 
         # Load FUV attenuation map
-        self.load_fuv_attenuation_map()
+        self.load_fuv_attenuation_maps()
 
         # Load old stellar map
         self.load_old_stellar_map()
 
     # -----------------------------------------------------------------
 
-    def load_fuv_attenuation_map(self):
+    def load_fuv_attenuation_maps(self):
 
         """
         THis function ...
@@ -168,7 +168,10 @@ class YoungStellarMapMaker(MapsComponent):
         """
 
         # Inform the user
-        log.info("Loading the map of the FUV attenuation ...")
+        log.info("Loading the maps of the FUV attenuation ...")
+
+        # Get the FUV attenuation maps
+        self.fuv_attenuations = self.get_fuv_attenuation_maps()
 
     # -----------------------------------------------------------------
 
@@ -180,6 +183,9 @@ class YoungStellarMapMaker(MapsComponent):
 
         # Inform the user
         log.info("Loading the map of old stars ...")
+
+        # Get the map
+        self.old = self.get_old_stellar_disk_map(self.i1_filter)
 
     # -----------------------------------------------------------------
 
@@ -208,10 +214,16 @@ class YoungStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Making the maps ...")
 
+        # Create the map maker
         maker = YoungStellarMapsMaker()
 
-        maker.run()
+        # Set the factors
+        factors = self.config.factor_range.linear(self.config.factor_nvalues, as_list=True)
 
+        # Run the map maker
+        maker.run(fuv=self.fuv, fuv_errors=self.fuv_errors, old=self.old, fuv_attenuations=self.fuv_attenuations, factors=factors)
+
+        # Set the maps
         self.maps = maker.maps
 
     # -----------------------------------------------------------------

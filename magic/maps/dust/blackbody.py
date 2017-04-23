@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.maps.dust.blackbody Contains the BlackBodyDustMapMaker class.
+## \package pts.modeling.maps.dust.blackbody Contains the BlackBodyDustMapsMaker class.
 
 # -----------------------------------------------------------------
 
@@ -57,7 +57,7 @@ k850 = 0.077  # Maarten (and SKIRT) use different value you so you might want to
 
 # -----------------------------------------------------------------
 
-class BlackBodyDustMapMaker(Configurable):
+class BlackBodyDustMapsMaker(Configurable):
 
     """
     This class ...
@@ -73,7 +73,7 @@ class BlackBodyDustMapMaker(Configurable):
         """
 
         # Call the constructor of the base class
-        super(BlackBodyDustMapMaker, self).__init__(config, interactive)
+        super(BlackBodyDustMapsMaker, self).__init__(config, interactive)
 
         # -- Attributes --
 
@@ -109,20 +109,6 @@ class BlackBodyDustMapMaker(Configurable):
 
         # The error on the dust mas for each pixel
         self.dust_mass_errors = None
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def requirements(cls, config=None):
-
-        """
-        This function ...
-        :param config:
-        :return:
-        """
-
-        config = cls.get_config(config)
-        return ["MIPS 24mu", "Pacs 70mu", "Pacs 100mu", "Pacs 160mu", "SPIRE PSW", "SPIRE PMW", "SPIRE PLW"]
 
     # -----------------------------------------------------------------
 
@@ -172,7 +158,7 @@ class BlackBodyDustMapMaker(Configurable):
         """
 
         # Call the setup function of the base class
-        super(BlackBodyDustMapMaker, self).setup()
+        super(BlackBodyDustMapsMaker, self).setup()
 
         # Setup the remote PTS launcher
         if self.config.remote is not None: self.launcher.setup(self.config.remote)

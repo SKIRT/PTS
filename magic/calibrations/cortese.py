@@ -23,8 +23,8 @@ from ...core.filter.filter import parse_filter, Filter
 
 # -----------------------------------------------------------------
 
-# The path to the Galametz data directory
-galametz_path = fs.join(introspection.pts_dat_dir("magic"), "Galametz")
+# The path to the Cortese data directory
+galametz_path = fs.join(introspection.pts_dat_dir("magic"), "Cortese")
 
 # The patsh to the tables containing the single band data
 single_band_luminosity_table_path = fs.join(galametz_path, "single_luminosity.dat")
@@ -282,8 +282,5 @@ class CorteseAttenuationCalibration(object):
 
         # Return the parameters
         return parameters
-
-# -----------------------------------------------------------------
-
 
 # -----------------------------------------------------------------

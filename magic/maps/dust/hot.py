@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.maps.dust.hot Contains the HotDustMapMaker class.
+## \package pts.modeling.maps.dust.hot Contains the HotDustMapsMaker class.
 
 # -----------------------------------------------------------------
 
@@ -18,23 +18,29 @@ from ....core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
-class HotDustMapMaker(Configurable):
+class HotDustMapsMaker(Configurable):
 
     """
     This class...
     """
 
-    def __init__(self):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
+        :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(HotDustMapMaker, self).__init__()
+        super(HotDustMapsMaker, self).__init__(config, interactive)
 
         # -- Attributes --
+
+        # THe mips 24 frame and error map
+        self.mips24 = None
+        self.mips24_errors = None
 
         # The maps
         self.maps = dict()
@@ -49,8 +55,10 @@ class HotDustMapMaker(Configurable):
         :return: 
         """
 
+        # Call the setup function
         self.setup(**kwargs)
 
+        # Make the maps
         self.make_maps()
 
     # -----------------------------------------------------------------
@@ -62,6 +70,9 @@ class HotDustMapMaker(Configurable):
         :param kwargs: 
         :return: 
         """
+
+        # Call the setup function of the base class
+        super(HotDustMapsMaker, self).setup(**kwargs)
 
     # -----------------------------------------------------------------
 
@@ -76,8 +87,8 @@ class HotDustMapMaker(Configurable):
         log.info("Loading the MIPS 24 micron image and converting to solar units ...")
 
         # Get MIPS 24 micron frame and error map
-        self.mips24 = self.dataset.get_frame("MIPS 24mu")  # in original MJy/sr units
-        self.mips24_errors = self.dataset.get_errormap("MIPS 24mu")  # in original MJy/sr units
+        #self.mips24 = self.dataset.get_frame("MIPS 24mu")  # in original MJy/sr units
+        #self.mips24_errors = self.dataset.get_errormap("MIPS 24mu")  # in original MJy/sr units
 
         ## CONVERT TO LSUN
 
@@ -147,8 +158,7 @@ class HotDustMapMaker(Configurable):
         # Inform the user
         log.info("Making the maps of hot dust ...")
 
-        # Loop over the different colour options
-        #for factor in (self.config.factor_range.linear(self.config.factor_nvalues, as_list=True) + [self.config.best_factor]):
+        # Loop over the different factors
         for factor in self.config.factor_range.linear(self.config.factor_nvalues, as_list=True):
 
             # Calculate the corrected 24 micron image
@@ -194,6 +204,8 @@ class HotDustMapMaker(Configurable):
 
         # Return the new 24 micron frame
         return new_mips
+
+    # -----------------------------------------------------------------
 
     def make_distributions(self):
 

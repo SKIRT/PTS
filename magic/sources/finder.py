@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import astronomical modules
+from astropy.convolution.kernels import Gaussian2DKernel
+
 # Import the relevant PTS classes and modules
 from .extended import ExtendedSourceFinder
 from .point import PointSourceFinder
@@ -36,8 +39,9 @@ from ...core.basics.curve import FilterCurve
 from ...core.units.parsing import parse_unit as u
 from ...core.tools.parallelization import ParallelTarget
 from ..core.frame import Frame
-from ...core.tools import filesystem as fs
-from ...core.tools import introspection, time
+from ..tools import statistics
+from ...core.tools.stringify import tostr
+from ..convolution.kernels import get_fwhm
 
 # -----------------------------------------------------------------
 
@@ -1072,7 +1076,7 @@ class SourceFinder(Configurable):
             # Get result
             # stars, star_region_list, saturation_region_list, star_segments, kernel, statistics
             #stars, star_region_list, saturation_region_list, star_segments, kernel, statistics = results[name].get()
-            table, regions, saturation_regions, segments = results[name].output
+            table, regions, saturation_regions, segments, fwhm = results[name].output
 
             # Set table
             self.point_tables[name] = table
@@ -1086,13 +1090,45 @@ class SourceFinder(Configurable):
             self.segments[name].add_frame(segments, "point")
 
             # Set the PSF
-            #self.psfs[name] = kernel
+            if fwhm is None: fwhm = self.frames[name].fwhm
+
+            # Create a Gaussian convolution kernel and return it
+            if fwhm is not None:
+
+                # Debugging
+                log.debug("The FWHM of the '" + name + "' image is " + tostr(fwhm))
+
+                fwhm_pix = (fwhm / self.frames[name].average_pixelscale.to("arcsec")).value if fwhm is not None else None
+
+                sigma = fwhm_pix * statistics.fwhm_to_sigma
+                kernel = Gaussian2DKernel(sigma)
+
+                # Set the PSF
+                self.psfs[name] = kernel
 
             # Get the statistics
             #self.statistics[name] = statistics
 
             # Show the FWHM
             #log.info("The FWHM that could be fitted to the point sources in the " + name + " image is " + str(self.statistics[name].fwhm))
+
+        # Set the kernels of the frames for which point sources were not found
+        for name in self.frames:
+
+            if name in self.psfs: continue
+            fwhm = self.frames[name].fwhm
+
+            # Get the FWHM if not defined
+            if fwhm is None: fwhm = get_fwhm(self.frames[name].filter)
+
+            # Debugging
+            log.debug("The FWHM of the '" + name + "' image is " + tostr(fwhm))
+
+            # Create kernel
+            fwhm_pix = (fwhm / self.frames[name].average_pixelscale.to("arcsec")).value
+            sigma = fwhm_pix * statistics.fwhm_to_sigma
+            kernel = Gaussian2DKernel(sigma)
+            self.psfs[name] = kernel
 
     # -----------------------------------------------------------------
 
@@ -1220,7 +1256,7 @@ class SourceFinder(Configurable):
                 #stars = self.stars[name]
                 stars = self.stars
                 galaxy_segments = self.segments[name].frames["extended"]
-                star_segments = self.segments[name].frames["point"]
+                star_segments = self.segments[name].frames["point"] if "point" in self.segments[name].frames else None
                 kernel = self.psfs[name]
 
                 # Call the target function
@@ -1621,7 +1657,7 @@ def detect_point_sources_wrapper(frame_path, galaxies, catalog, config, special_
     frame = Frame.from_file(frame_path)
 
     # Call the implementation
-    table, regions, saturation_regions, segments = detect_point_sources(frame, galaxies, catalog, config, special_mask, ignore_mask, bad_mask)
+    table, regions, saturation_regions, segments, fwhm = detect_point_sources(frame, galaxies, catalog, config, special_mask, ignore_mask, bad_mask)
 
     return
 
@@ -1706,6 +1742,9 @@ def detect_point_sources(frame, galaxies, catalog, config, special_mask, ignore_
     #    kernel = Gaussian2DKernel(sigma)
     #else: kernel = finder.kernel
 
+    # Get the FWHM
+    fwhm = finder.fwhm
+
     # Inform the user
     log.success("Finished finding the point sources for '" + frame.name + "' ...")
 
@@ -1713,7 +1752,7 @@ def detect_point_sources(frame, galaxies, catalog, config, special_mask, ignore_
     #return stars, star_region_list, saturation_region_list, star_segments, kernel, statistics
 
     # Return the source table, regions, saturation regions, and segments
-    return table, regions, saturation_regions, segments
+    return table, regions, saturation_regions, segments, fwhm
 
 # -----------------------------------------------------------------
 

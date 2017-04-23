@@ -25,6 +25,9 @@ from ...magic.convolution.aniano import AnianoKernels
 from ...core.tools.logging import log
 from ...magic.tools.colours import get_filters_for_colour
 from ...magic.core.frame import Frame
+from ...core.tools import types
+from ...core.filter.filter import parse_filter
+from ...magic.core.list import NamedFrameList
 
 # -----------------------------------------------------------------
 
@@ -330,6 +333,44 @@ class MapsComponent(GalaxyModelingComponent):
 
         # No colour map encountered
         return None
+
+    # -----------------------------------------------------------------
+
+    def get_fuv_attenuation_maps(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.get_cortese_fuv_attenuation_maps()
+
+    # -----------------------------------------------------------------
+
+    def get_cortese_fuv_attenuation_maps(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        cortese_path = fs.join(self.maps_attenuation_path, "cortese")
+        return NamedFrameList.from_directory(cortese_path).to_dictionary()
+
+    # -----------------------------------------------------------------
+
+    def get_old_stellar_disk_map(self, fltr):
+
+        """
+        This fucntion ...
+        :param fltr:
+        :return: 
+        """
+
+        if types.is_string_type(fltr): fltr = parse_filter(fltr)
+
+        path = fs.join(self.maps_old_path, "disk", str(fltr) + ".fits")
+        return Frame.from_file(path)
 
     # -----------------------------------------------------------------
 

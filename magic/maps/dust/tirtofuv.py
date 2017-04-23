@@ -79,20 +79,6 @@ class TIRtoFUVMapMaker(Configurable):
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def requirements(cls, config=None):
-
-        """
-        This function ...
-        :param config:
-        :return:
-        """
-
-        config = cls.get_config(config)
-        return ["GALEX FUV", "MIPS 24mu", "Pacs blue", "Pacs red"]
-
-    # -----------------------------------------------------------------
-
     def run(self):
 
         """
