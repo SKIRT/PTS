@@ -374,7 +374,7 @@ class FilterCurve(WavelengthCurve):
         :return:
         """
 
-        values = [fltr.observatory, fltr.instrument, fltr.band, fltr.pivot, value]
+        values = [fltr.observatory, fltr.instrument, fltr.band, fltr.wavelength, value]
         self.add_row(values)
 
     # -----------------------------------------------------------------

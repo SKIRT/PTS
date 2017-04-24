@@ -91,46 +91,46 @@ class M81Test(M81TestBase):
         # 4. Load the wcs
         self.create_wcs()
 
-        # Load the input maps
+        # 5. Load the input maps
         self.load_maps()
 
-        # Create the instrument
+        # 6. Create the instrument
         self.create_instrument()
 
-        # Create deprojections
+        # 7. Create deprojections
         self.create_deprojections()
 
-        # 5. Create wavelength grid
+        # 8. Create wavelength grid
         self.create_wavelength_grid()
 
-        # Create dust grid
+        # 9. Create dust grid
         self.create_dust_grid()
 
-        # 6. Create the ski file
+        # 10. Create the ski file
         self.create_ski()
 
-        # Write
+        # 11. Write
         self.write()
 
-        # Plot
+        # 12. Plot
         self.plot()
 
-        # 7. Launch reference simulation
+        # 13. Launch reference simulation
         self.launch_reference()
 
-        # Get the real parameter values
+        # 14. Get the real parameter values
         self.get_real_parameter_values()
 
-        # 10. Setup modelling
+        # 15. Setup modelling
         self.setup_modelling()
 
-        # 11. Model
+        # 16. Model
         self.model()
 
-        # 19. Get best parameter values
+        # 17. Get best parameter values
         self.get_best_parameter_values()
 
-        # Test
+        # 18. Test
         self.test()
 
     # -----------------------------------------------------------------

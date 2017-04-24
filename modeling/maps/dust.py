@@ -43,18 +43,9 @@ class DustMapMaker(MapsComponent):
 
         # -- Attributes --
 
-        # The TIR to FUV ratio (in log)
-        #self.log_tir_to_fuv = None
-
         # The dust maps (and error maps)
         self.maps = dict()
         self.error_maps = dict()
-
-        # The image of significance masks
-        #self.significance = Image()
-
-        # The cutoff mask
-        #self.cutoff_mask = None
 
     # -----------------------------------------------------------------
 
@@ -203,13 +194,17 @@ class DustMapMaker(MapsComponent):
         mips24_errors = self.dataset.get_errormap("MIPS 24mu")  # in original MJy/sr units
 
         # Get the map of old stars
-
+        old = self.get_old_stellar_disk_map(self.i1_filter)
 
         # Create the hot dust map maker
         maker = HotDustMapsMaker()
 
+        # Set the factors
+        # from 0.2 to 0.7
+        factors = self.config.factor_range.linear(self.config.factor_nvalues, as_list=True)
+
         # Run the maker
-        maker.run()
+        maker.run(mips24=mips24, mips24_errors=mips24_errors, old=old, factors=factors)
 
         # Add the dust maps
         self.maps["hot"] = maker.maps

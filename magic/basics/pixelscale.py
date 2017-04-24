@@ -17,6 +17,7 @@ import numpy as np
 
 # Import astronomical modules
 from astropy.units import Unit, dimensionless_angles
+from astropy.coordinates import Angle
 
 # Import standard modules
 from .vector import Extent
@@ -29,7 +30,7 @@ class Pixelscale(Extent):
     This class ...
     """
 
-    def __init__(self, x, y=None):
+    def __init__(self, x, y=None, unit=None):
 
         """
         The constructor ...
@@ -39,8 +40,8 @@ class Pixelscale(Extent):
         if y is None: y = x
 
         # Convert to just arcsec or just
-        x = only_angle(x)
-        y = only_angle(y)
+        x = only_angle(x, unit=unit)
+        y = only_angle(y, unit=unit)
 
         # Call the constructor of the base class
         super(Pixelscale, self).__init__(x, y)
@@ -163,12 +164,16 @@ class Pixelscale(Extent):
 
 # -----------------------------------------------------------------
 
-def only_angle(quantity):
+def only_angle(quantity, unit=None):
 
     """
     This function ...
+    :param quantity:
+    :param unit:
     :return:
     """
+
+    if not hasattr(quantity, "unit"): return Angle(quantity, unit=unit)
 
     if "pix" in quantity.unit.bases: return quantity * Unit("pix")
     elif len(quantity.unit.bases) == 1: return quantity

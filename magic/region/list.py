@@ -38,6 +38,7 @@ from .text import TextRegion, PixelTextRegion, SkyTextRegion, PhysicalTextRegion
 from .composite import CompositeRegion, PixelCompositeRegion, SkyCompositeRegion, PhysicalCompositeRegion
 from ...core.tools.strings import stripwhite_around
 from ...core.units.parsing import parse_unit as u
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -554,7 +555,7 @@ def add_info(string, reg):
 
     if reg.has_info: string += start_chars
     if reg.has_label: string += " text={" + reg.label + "}"
-    if reg.has_meta: string += " " + " ".join(key + "=" + value for key, value in reg.meta.items())
+    if reg.has_meta: string += " " + " ".join(key + "=" + value for key, value in reg.meta.items() if types.is_string_type(value))
     if reg.has_appearance: string += " " + " ".join(key + "=" + value for key, value in reg.appearance.items())
     return string
 

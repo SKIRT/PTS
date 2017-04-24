@@ -19,28 +19,24 @@ from astropy.utils import lazyproperty
 from ...core.tools import filesystem as fs
 from ...core.tools import introspection
 from ...core.tools import tables
-from ...core.filter.filter import parse_filter, Filter
+from ...core.filter.filter import parse_filter
+from ...core.basics.range import RealRange
 
 # -----------------------------------------------------------------
 
 # The path to the Cortese data directory
-galametz_path = fs.join(introspection.pts_dat_dir("magic"), "Cortese")
+cortese_path = fs.join(introspection.pts_dat_dir("magic"), "Cortese")
 
 # The patsh to the tables containing the single band data
-single_band_luminosity_table_path = fs.join(galametz_path, "single_luminosity.dat")
-single_band_brightness_table_path = fs.join(galametz_path, "single_brightness.dat")
-
-# The path to the table containing the Galametz calibration parameters
-multi_band_luminosity_table_path = fs.join(galametz_path, "multi_luminosity.dat")
-multi_band_brightness_table_path = fs.join(galametz_path, "multi_brightness.dat")
+cortese_table_path = fs.join(cortese_path, "cortese.dat")
 
 # -----------------------------------------------------------------
 
-multi_band_column_names = {"MIPS 24mu": "c24",
-                         "Pacs blue": "c70",
-                         "Pacs green": "c100",
-                         "Pacs red": "c160",
-                         "SPIRE PSW": "c250"}
+colour_combinations = {"FUV-H": ("GALEX FUV", "2MASS H"),
+                       "FUV-i": ("GALEX FUV", "SDSS i"),
+                       "FUV-r": ("GALEX FUV", "SDSS r"),
+                       "FUV-g": ("GALEX FUV", "SDSS g"),
+                       "FUV-B": ("GALEX FUV", "B")}
 
 # -----------------------------------------------------------------
 
@@ -57,230 +53,182 @@ class CorteseAttenuationCalibration(object):
         """
 
         # Load the table with the single band data
-        self.single_luminosity = tables.from_file(single_band_luminosity_table_path, format="ascii.commented_header")
-
-        # Load the table with the single band data for surface brightness
-        self.single_brightness = tables.from_file(single_band_brightness_table_path, format="ascii.commented_header")
-
-        # Load the table with the multi band data
-        self.multi_luminosity = tables.from_file(multi_band_luminosity_table_path, format="ascii.commented_header")
-
-        # Load the table with the multi band data for surface brightness
-        self.multi_brightness = tables.from_file(multi_band_brightness_table_path, format="ascii.commented_header")
+        self.table = tables.from_file(cortese_table_path, format="ascii.commented_header")
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def single_band_filters(self):
+    def ssfr_colours(self):
 
         """
         This function ...
         :return: 
         """
 
-        return [parse_filter(filter_name) for filter_name in self.single_luminosity["Band"]]
-
-    # -----------------------------------------------------------------
-
-    def index_for_filter_single(self, fltr):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        return self.single_band_filters.index(fltr)
-
-    # -----------------------------------------------------------------
-
-    def get_parameters_single_luminosity(self, fltr):
-
-        """
-        This function ...
-        :parma fltr:
-        :return: 
-        """
-
-        index = self.index_for_filter_single(fltr)
-        return [self.single_luminosity["ai"][index], self.single_luminosity["bi"][index]]
-
-    # -----------------------------------------------------------------
-
-    def get_parameters_single_brightness(self, fltr):
-
-        """
-        This function ...
-        :param fltr: 
-        :return: 
-        """
-
-        index = self.index_for_filter_single(fltr)
-        return [self.single_brightness["ai"][index], self.single_brightness["bi"][index]]
-
-    # -----------------------------------------------------------------
-
-    def get_scatter_single_luminosity(self, fltr):
-
-        """
-        This function ...
-        :param fltr: 
-        :return: 
-        """
-
-        index = self.index_for_filter_single(fltr)
-        return self.single_luminosity["scatter"][index]
-
-    # -----------------------------------------------------------------
-
-    def get_scatter_single_brightness(self, fltr):
-
-        """
-        This function ...
-        :param fltr: 
-        :return: 
-        """
-
-        index = self.index_for_filter_single(fltr)
-        return self.single_brightness["scatter"][index]
+        colours = []
+        for name in self.table.colnames:
+            if name in ["Tau", "a1", "a2", "a3", "a4", "a5"]: continue
+            colours.append(name)
+        return colours
 
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def multi_band_filters(self):
+    def filters(self):
 
         """
         This function ...
         :return: 
         """
 
-        return [parse_filter(filter_name) for filter_name in multi_band_column_names]
+        filter_names = set()
+        for colour in self.ssfr_colours:
+            filter_names.add(colour.split("-")[0])
+            filter_names.add(colour.split("-")[1])
+        return [parse_filter(name) for name in filter_names]
 
     # -----------------------------------------------------------------
 
-    def has_combination_multi_luminosity(self, *args):
+    @lazyproperty
+    def taus(self):
 
         """
         This function ...
-        :param args: 
         :return: 
         """
 
-        # Get column names
-        needed_column_names, not_needed_column_names = self.get_column_names_multi(*args)
-
-        # Loop over the entries in the galametz table
-        for i in range(len(self.multi_luminosity)):
-            if is_appropriate_galametz_entry(self.multi_luminosity, i, needed_column_names, not_needed_column_names): return True
-
-        # No row is found
-        return False
+        return list(self.table["Tau"])
 
     # -----------------------------------------------------------------
 
-    def has_combination_multi_brightness(self, *args):
+    def __len__(self):
 
         """
-        This function ...
-        :param args: 
+        THis function ...
         :return: 
         """
 
-        # Get column names
-        needed_column_names, not_needed_column_names = self.get_column_names_multi(*args)
-
-        # Loop over the entries in the table
-        for i in range(len(self.multi_brightness)):
-            if is_appropriate_galametz_entry(self.multi_brightness, i, needed_column_names, not_needed_column_names): return True
-
-        # No row is found
-        return False
+        return len(self.table)
 
     # -----------------------------------------------------------------
 
-    def get_column_names_multi(self, *args):
+    def get_range_for_tau(self, ssfr_colour, tau):
 
         """
         This function ...
-        :param args: 
+        :param ssfr_colour:
+        :param tau: 
         :return: 
         """
 
-        # Needed column names
-        needed_column_names = [] #[multi_band_column_names[filter_name] for filter_name in args]
-
-        for filter_name in args:
-            if isinstance(filter_name, Filter): filter_name = str(filter_name)
-            name = multi_band_column_names[filter_name]
-            needed_column_names.append(name)
-
-        # List of not needed column names
-        colnames = self.multi_luminosity.colnames
-        not_needed_column_names = [name for name in colnames if name not in needed_column_names]
-
-        not_needed_column_names.remove("R2")
-        not_needed_column_names.remove("CV(RMSE)")
-
-        # Return
-        return needed_column_names, not_needed_column_names
+        index = tables.find_index(self.table, tau)
+        return self.get_range_for_index(ssfr_colour, index)
 
     # -----------------------------------------------------------------
 
-    def get_parameters_multi_luminosity(self, *args):
+    def get_range_for_index(self, ssfr_colour, index):
 
         """
         This function ...
-        :param args:
-        :return:
-        """
-
-        # Column names
-        needed_column_names, not_needed_column_names = self.get_column_names_multi(*args)
-
-        # The parameters
-        parameters = None
-
-        # Loop over the entries in the galametz table
-        for i in range(len(self.multi_luminosity)):
-
-            if is_appropriate_galametz_entry(self.multi_luminosity, i, needed_column_names, not_needed_column_names):
-
-                parameters = []
-                for name in needed_column_names: parameters.append(self.multi_luminosity[name][i])
-                break
-
-            else: continue
-
-        # Return the parameters
-        return parameters
-
-    # -----------------------------------------------------------------
-
-    def get_parameters_multi_brightness(self, *args):
-
-        """
-        This function ...
-        :param args: 
+        :param ssfr_colour: 
+        :param index: 
         :return: 
         """
 
-        # Column names
-        needed_column_names, not_needed_column_names = self.get_column_names_multi(*args)
+        # Get the upper and lower limit
+        upper = self.table[ssfr_colour][index]
+        if index == len(self.table) - 1: lower = None
+        else: lower = self.table[ssfr_colour][index + 1]
 
-        # The parameters
-        parameters = None
+        # Return the range
+        return RealRange(lower, upper)
 
-        # Loop over the entries in the table
-        for i in range(len(self.multi_brightness)):
+    # -----------------------------------------------------------------
 
-            if is_appropriate_galametz_entry(self.multi_brightness, i, needed_column_names, not_needed_column_names):
+    def get_upper_limit(self, ssfr_colour):
 
-                parameters = []
-                for name in needed_column_names: parameters.append(self.multi_brightness[name][i])
-                break
+        """
+        This function ...
+        :param ssfr_colour: 
+        :return: 
+        """
 
-            else: continue
+        # The absolute upper limit (so 10.5 for FUV-H, 7.5 for FUV-i, 7.3 for FUV-r, 6.7 for FUV-g, and 6.3 for FUV-B
+        #absolute_upper_limit = limits[0][1]
 
-        # Return the parameters
-        return parameters
+        # Return the maximum of the range for the first tau (the first row), and for the corresponding colour column
+        return self.get_range_for_index(ssfr_colour, 0).max
+
+    # -----------------------------------------------------------------
+
+    def get_parameters_for_tau(self, tau):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        index = tables.find_index(self.table, tau)
+        return self.get_parameters_for_index(index)
+
+    # -----------------------------------------------------------------
+
+    def get_parameters_for_index(self, index):
+
+        """
+        This function ...
+        :param index: 
+        :return: 
+        """
+
+        a1 = self.table["a1"][index]
+        a2 = self.table["a2"][index]
+        a3 = self.table["a3"][index]
+        a4 = self.table["a4"][index]
+        a5 = self.table["a5"][index]
+
+        return [a1, a2, a3, a4, a5]
+
+    # -----------------------------------------------------------------
+
+    def get_data(self, ssfr_colour):
+
+        """
+        This function ...
+        :param ssfr_colour:
+        :return: 
+        """
+
+        taus = []
+        ranges = []
+        parameters = []
+
+        # Loop over all entries in the Cortese et. al
+        for index in range(len(self.table)):
+
+            # Get the range
+            ranges.append(self.get_range_for_index(ssfr_colour, index))
+
+            # Get the parameters
+            parameter_list = self.get_parameters_for_index(index)
+            parameters.append(parameter_list)
+
+        # Return the ranges and the parameters
+        return taus, ranges, parameters
+
+    # -----------------------------------------------------------------
+
+    def taus_ranges_and_parameters(self, ssfr_colour):
+
+        """
+        This function ...
+        :param ssfr_colour: 
+        :return: 
+        """
+
+        # Get the data and iterate over the entries
+        taus, ranges, parameters = self.get_data(ssfr_colour)
+        for index in range(len(self)):
+            yield taus[index], ranges[index], parameters[index]
 
 # -----------------------------------------------------------------

@@ -12,9 +12,16 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
 from ....core.basics.configurable import Configurable
+from ...calibrations.buat import BuatAttenuationCalibration
+from .tir_to_uv import make_tir_to_uv
+from ...core.frame import Frame
+from ....core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
@@ -38,20 +45,22 @@ class BuatAttenuationMapsMaker(Configurable):
 
         # -- Attributes --
 
+        # Input
+        self.fuv = None
+        self.nuv = None
+        self.tirs = None
+
+        # Tirs origins
+        self.tirs_origins = None
+
         # Buat parameters
-        self.buat = dict()
-
-        # The TIR to FUV ratio map
-        self.log_tir_to_fuv = None
-
-        # The dust map
-        #self.map = None
+        self.buat = None
 
         # The maps
         self.maps = dict()
 
-        # Maps/dust/buat path
-        self.maps_dust_buat_path = None
+        # The origins
+        self.origins = dict()
 
     # -----------------------------------------------------------------
 
@@ -69,15 +78,6 @@ class BuatAttenuationMapsMaker(Configurable):
         # 2. Make the dust map
         self.make_maps()
 
-        # 3. Make everything positive
-        #self.make_positive()
-
-        # 4. Normalize the dust map
-        #self.normalize()
-
-        # 5. Writing
-        #self.write()
-
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -89,17 +89,30 @@ class BuatAttenuationMapsMaker(Configurable):
         """
 
         # Call the setup function of the base class
-        super(BuatAttenuationMapsMaker, self).setup()
+        super(BuatAttenuationMapsMaker, self).setup(**kwargs)
 
-        # Set the buat parameters
-        self.buat["NUV"] = (-0.0495, 0.4718, 0.8998, 0.2269)
-        self.buat["FUV"] = (-0.0333, 0.3522, 1.1960, 0.4967)
+        # Get input
+        self.fuv = kwargs.pop("fuv", None)
+        self.nuv = kwargs.pop("nuv", None)
+        self.tirs = kwargs.pop("tirs")
 
-        # Set the TIR to FUV map
-        self.log_tir_to_fuv = log_tir_to_fuv
+        # Origins
+        self.tirs_origins = kwargs.pop("tirs_origins", None)
 
-        # Set the path to the maps/dust/buat directory
-        #self.maps_dust_buat_path = fs.create_directory_in(self.maps_dust_path, "buat")
+        # Create the Cortese instance
+        self.buat = BuatAttenuationCalibration()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_origins(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.tirs_origins is not None
 
     # -----------------------------------------------------------------
 
@@ -111,56 +124,111 @@ class BuatAttenuationMapsMaker(Configurable):
         """
 
         # Inform the user
-        log.info("Creating the dust map ...")
+        log.info("Creating the attenuation maps ...")
 
-        # Calculate FUV attenuation map
-        a_fuv = -0.0333 * self.log_tir_to_fuv**3 + 0.3522 * self.log_tir_to_fuv**2 + 1.1960 * self.log_tir_to_fuv + 0.4967
+        # Make FUV attenuation maps
+        if self.fuv is not None: self.make_fuv_maps()
 
-        # Set map
-        self.map = a_fuv
-
-    # -----------------------------------------------------------------
-
-    def make_positive(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Replacing NaNs and negative pixels by zeros ...")
-
-        # Set negatives and NaNs to zero
-        self.map.replace_nans(0.0)
-        self.map.replace_negatives(0.0)
+        # Make NUV attenuation maps
+        if self.nuv is not None: self.make_nuv_maps()
 
     # -----------------------------------------------------------------
 
-    def normalize(self):
+    def make_fuv_maps(self):
 
         """
         This function ...
-        :return:
+        :return: 
         """
 
         # Inform the user
-        log.info("Normalizing the dust map ...")
+        log.info("Creating the FUV attenuation maps ...")
 
-        # Normalize the dust map
-        self.map.normalize()
-        self.map.unit = None
+        # Get parameters
+        parameters = self.buat.get_fuv_parameters()
+
+        # Loop over the different TIR maps
+        for name in self.tirs:
+
+            # Make the TIR to FUV map
+            tir_to_fuv = make_tir_to_uv(self.tirs[name], self.fuv)
+            log_tir_to_fuv = Frame(np.log10(tir_to_fuv), wcs=tir_to_fuv.wcs)
+
+            # Calculate FUV attenuation map
+            attenuation = parameters[0] * log_tir_to_fuv**3 + parameters[1] * log_tir_to_fuv**2 + parameters[2] * log_tir_to_fuv + parameters[3]
+
+            # Determine name
+            key = name + "_FUV"
+
+            # Make positive: replace NaNs and negative pixels by zeros
+            # Set negatives and NaNs to zero
+            attenuation.replace_nans(0.0)
+            attenuation.replace_negatives(0.0)
+
+            # Set
+            self.maps[key] = attenuation
+
+            # Set origin
+            if self.has_origins:
+
+                origins = self.tirs_origins[name]
+                origins.add(parse_filter("FUV"))
+                self.origins[key] = origins
 
     # -----------------------------------------------------------------
 
-    def write(self):
+    def make_nuv_maps(self):
 
         """
         This function ...
-        :return:
+        :return: 
         """
 
         # Inform the user
-        log.info("Writing ...")
+        log.info("Creating the NUV attenuation maps ...")
+
+        # Get parameters
+        parameters = self.buat.get_nuv_parameters()
+
+        # Loop over thed ifferent TIR maps
+        for name in self.tirs:
+
+            # Calculate map
+            tir_to_nuv = make_tir_to_uv(self.tirs[name], self.nuv)
+            log_tir_to_nuv = Frame(np.log10(tir_to_nuv), wcs=tir_to_nuv.wcs)
+
+            # Calculate attenuation map
+            attenuation = parameters[0] * log_tir_to_nuv**3 + parameters[1] * log_tir_to_nuv**2 + parameters[2] * log_tir_to_nuv + parameters[3]
+
+            # Determine name
+            key = name + "_NUV"
+
+            # Make positive: replace NaNs and negative pixels by zeros
+            # Set negatives and NaNs to zero
+            attenuation.replace_nans(0.0)
+            attenuation.replace_negatives(0.0)
+
+            # Set
+            self.maps[key] = attenuation
+
+            # Set origin
+            if self.has_origins:
+
+                origins = self.tirs_origins[name]
+                origins.add(parse_filter("NUV"))
+                self.origins[key] = origins
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_map(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if len(self.maps) != 1: raise ValueError("Not a single map")
+        return self.maps[self.maps.keys()[0]]
 
 # -----------------------------------------------------------------

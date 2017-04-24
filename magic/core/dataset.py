@@ -34,6 +34,8 @@ from ...core.tools import tables
 from ..region.list import SkyRegionList
 from ..tools import headers
 from .list import NamedImageList, NamedFrameList
+from ...core.tools import types
+from ...core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
@@ -322,7 +324,7 @@ class DataSet(object):
         """
 
         # Make sure exclude is a list
-        if isinstance(exclude, basestring): exclude = [exclude]
+        if types.is_string_type(exclude): exclude = [exclude]
         elif exclude is None: exclude = []
 
         # Initialize a dictionary
@@ -369,7 +371,7 @@ class DataSet(object):
         """
 
         # Make sure exclude is a list
-        if isinstance(exclude, basestring): exclude = [exclude]
+        if types.is_string_type(exclude): exclude = [exclude]
         elif exclude is None: exclude = []
 
         # Initialize a dictionary for the frames
@@ -409,7 +411,7 @@ class DataSet(object):
         """
 
         # Make sure exclude is a list
-        if isinstance(exclude, basestring): exclude = [exclude]
+        if types.is_string_type(exclude): exclude = [exclude]
         elif exclude is None: exclude = []
 
         # Initialize a dictionary for the error maps
@@ -447,7 +449,7 @@ class DataSet(object):
         """
 
         # Make sure exclude is a list
-        if isinstance(exclude, basestring): exclude = [exclude]
+        if types.is_string_type(exclude): exclude = [exclude]
         elif exclude is None: exclude = []
 
         # Initialize a dictionary for the images
@@ -527,6 +529,8 @@ class DataSet(object):
         :param fltr:
         :return:
         """
+
+        if types.is_string_type(fltr): fltr = parse_filter(fltr)
 
         filter_string = str(fltr)
 

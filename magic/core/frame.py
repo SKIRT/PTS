@@ -81,7 +81,7 @@ class Frame(NDDataArray):
         self.fwhm = kwargs.pop("fwhm", None)
         self._pixelscale = kwargs.pop("pixelscale", None)
         self._wavelength = kwargs.pop("wavelength", None)
-        self.meta = kwargs.pop("meta", dict())
+        #self.meta = kwargs.pop("meta", dict())
 
         # The path
         self.path = kwargs.pop("path", None)
@@ -666,16 +666,17 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @classmethod
-    def zeros(cls, shape):
+    def zeros(cls, shape, wcs=None):
 
         """
         This function ...
         :param shape:
+        :param wcs:
         :return:
         """
 
         # Create a new frame
-        new = cls(np.zeros(shape))
+        new = cls(np.zeros(shape), wcs=wcs)
         return new
 
     # -----------------------------------------------------------------
@@ -689,9 +690,12 @@ class Frame(NDDataArray):
         :return:
         """
 
+        if hasattr(frame, "wcs"): wcs = frame.wcs
+        else: wcs = None
+
         # Create a new frame
-        if hasattr(frame, "_data"): new = cls(np.zeros_like(frame._data))
-        else: new = cls(np.zeros_like(frame))
+        if hasattr(frame, "_data"): new = cls(np.zeros_like(frame._data), wcs=wcs)
+        else: new = cls(np.zeros_like(frame), wcs=wcs)
         return new
 
     # -----------------------------------------------------------------
@@ -968,6 +972,23 @@ class Frame(NDDataArray):
 
         # Multiply the frame with the conversion factor
         self.__imul__(factor)
+
+        # Set the unit to None
+        self.unit = None
+
+    # -----------------------------------------------------------------
+
+    def normalized(self, to=1.):
+        
+        """
+        This function ...
+        :param to: 
+        :return: 
+        """
+
+        new = self.copy()
+        new.normalize(to=to)
+        return new
 
     # -----------------------------------------------------------------
 

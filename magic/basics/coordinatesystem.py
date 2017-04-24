@@ -71,12 +71,14 @@ class CoordinateSystem(wcs.WCS):
             if not hasattr(self, "naxis1"):
 
                 try: self.naxis1 = header["NAXIS1"]
-                except TypeError: self.naxis1 = self._naxis1
+                except KeyError: self.naxis1 = self._naxis1
+                #except TypeError: self.naxis1 = self._naxis1
 
             if not hasattr(self, "naxis2"):
 
                 try: self.naxis2 = header["NAXIS2"]
-                except TypeError: self.naxis2 = self._naxis2
+                except KeyError: self.naxis2 = self._naxis2
+                #except TypeError: self.naxis2 = self._naxis2
 
         # If naxis1 is specified
         if naxis1 is not None: self.naxis1 = naxis1
@@ -150,6 +152,41 @@ class CoordinateSystem(wcs.WCS):
     def from_properties(cls, size, center_pixel, center_sky, pixelscale):
 
         """
+        This fucntion ...
+        :param size: 
+        :param center_pixel: 
+        :param center_sky: 
+        :param pixelscale: 
+        :return: 
+        """
+
+        # TODO: doesn't work
+        # see try below
+
+        # Construct header
+        header = Header()
+
+        header["CRPIX1"] = center_pixel.x
+        header["CRVAL1"] = center_sky.ra.to("deg").value
+        header["CDELT1"] = pixelscale.x.to("deg").value
+        header["CRPIX2"] = center_pixel.y
+        header["CRVAL2"] = center_sky.dec.to("deg").value
+        header["CDELT2"] = pixelscale.y.to("deg").value
+        header["NAXIS1"] = size.x
+        header["NAXIS2"] = size.y
+        header["RADESYS"] = "ICRS"
+        header["CTYPE1"] = "RA--TAN"
+        header["CTYPE2"] = "DEC--TAN"
+
+        # Create and return
+        return cls(header=header)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_properties_try(cls, size, center_pixel, center_sky, pixelscale):
+
+        """
         This function ...
         :param size:
         :param center_pixel:
@@ -174,40 +211,71 @@ class CoordinateSystem(wcs.WCS):
         #system.wcs.ctype = ["RA--TAN", "DEC--TAN"]
         #system.wcs.set_pv([(2, 1, 45.0)])
 
-        # Return the coordinate system
-        #return system
-
         center_x = center_pixel.x
         center_y = center_pixel.y
 
+        # Create a new WCS object.  The number of axes must be set
+        # from the start
+        w = wcs.WCS(naxis=2)
+
+        # Set up an "Airy's zenithal" projection
+        # Vector properties may be set with Python lists, or Numpy arrays
+        #w.wcs.crpix = [-center_x, center_y]
+        #w.wcs.cdelt = np.array([-pixelscale.x.to("deg").value, pixelscale.y.to("deg").value])
+        #w.wcs.crval = [center_sky.ra.to("deg").value, center_sky.dec.to("deg").value]
+        #w.wcs.ctype = ["RA--TAN", "DEC--TAN"]
+        #w.wcs.set_pv([(2, 1, 45.0)])
+
+        # TODO: make this work with not only this example !!!
+
+        # Set up an "Airy's zenithal" projection
+        # Vector properties may be set with Python lists, or Numpy arrays
+        w.wcs.crpix = [-234.75, 8.3393]
+        w.wcs.cdelt = np.array([-0.066667, 0.066667])
+        w.wcs.crval = [0, -90]
+        w.wcs.ctype = ["RA---AIR", "DEC--AIR"]
+        w.wcs.set_pv([(2, 1, 45.0)])
+
+        # Return the coordinate system
+        #return system
+
+        header = w.to_header()
+
         # Construct header
-        header = Header()
+        #header = Header()
+        #header["SIMPLE"] = True
+        #header["BITPIX"] = -32
+        #header["NAXIS"] = 2
+        #header["NAXIS1"] = size.x
+        #header["NAXIS2"] = size.y
+        #header["CRVAL1"] = center_sky.ra.to("deg").value
+        #header["CRVAL2"] = center_sky.dec.to("deg").value
+        #header["RADESYS"] = "ICRS"
+        #header["CTYPE1"] = "RA--TAN"
+        #header["CTYPE2"] = "DEC--TAN"
+        #header["CRPIX1"] = center_x
+        #header["CRPIX2"] = center_y
+        #header["CDELT1"] = pixelscale.x.to("deg").value
+        #header["CDELT2"] = pixelscale.y.to("deg").value
 
-        header["SIMPLE"] = True
-        header["BITPIX"] = -32
+        #print(header)
 
-        header["NAXIS"] = 2
-        header["NAXIS1"] = size.x
-        header["NAXIS2"] = size.y
+        #from ...core.tools import filesystem as fs
+        #from ...core.tools import introspection
+        #path = fs.join(introspection.pts_temp_dir, "wcs_from_properties.fits")
+        #if fs.is_file(path): fs.remove_file(path)
 
-        header["CRVAL1"] = center_sky.ra.to("deg").value
-        header["CRVAL2"] = center_sky.dec.to("deg").value
-
-        header["RADESYS"] = "ICRS"
-
-        header["CTYPE1"] = "RA--TAN"
-        header["CTYPE2"] = "DEC--TAN"
-
-        header["CRPIX1"] = center_x
-        header["CRPIX2"] = center_y
-
-        header["CDELT1"] = pixelscale.x.to("deg").value
-        header["CDELT2"] = pixelscale.y.to("deg").value
-
-        print(header)
+        #data = np.zeros((size.y, size.x))
+        #hdu = fits.PrimaryHDU(data, header)
+        #hdulist = fits.HDUList([hdu])
+        #hdulist.writeto(path)
 
         # Convert into wcs
-        return cls(header=header)
+        #return cls(header=header, naxis=2)
+
+        #return cls.from_fits(path)
+
+        return cls(header, naxis=2, naxis1=size.x, naxis2=size.y)
 
     # -----------------------------------------------------------------
 

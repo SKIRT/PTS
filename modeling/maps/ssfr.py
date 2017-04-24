@@ -15,8 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from .component import MapsComponent
-from ...magic.maps.ssfr.colours import ColoursSSFRMapMaker
-from ...core.tools import filesystem as fs
+from ...magic.maps.ssfr.colours import ColoursSSFRMapsMaker
 
 # -----------------------------------------------------------------
 
@@ -83,7 +82,7 @@ class SSFRMapMaker(MapsComponent):
         log.info("Making sSFR maps based on colours ...")
 
         # Create the map maker
-        maker = ColoursSSFRMapMaker()
+        maker = ColoursSSFRMapsMaker()
 
         # Run the maker
         maker.run()
@@ -106,25 +105,7 @@ class SSFRMapMaker(MapsComponent):
         # Write the maps
         self.write_maps()
 
-    # -----------------------------------------------------------------
-
-    def write_maps(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        # Inform the user
-        log.info("Writing the maps ...")
-
-        # Loop over the maps
-        for name in self.maps:
-
-            # Determine path
-            path = fs.join(self.maps_ssfr_path, name + ".fits")
-
-            # Save
-            self.maps[name].saveto(path)
+        # Write the origins
+        self.write_origins()
 
 # -----------------------------------------------------------------

@@ -39,7 +39,7 @@ class EmissionDustMapsMaker(Configurable):
         # -- Attributes --
 
         # The dust map
-        self.map = None
+        self.maps = dict()
 
     # -----------------------------------------------------------------
 

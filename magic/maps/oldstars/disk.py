@@ -14,9 +14,8 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
-from ....core.tools import filesystem as fs
-from ....magic.core.image import Image
 from ....core.basics.configurable import Configurable
+from ...core.list import FrameList
 
 # -----------------------------------------------------------------
 
@@ -32,8 +31,9 @@ def make_map(frame, bulge):
     # Create the maker
     maker = DiskOldStellarMapMaker()
 
-    frames = {"standard": frame}
-    bulges = {"standard": bulge}
+    # Set input
+    frames = FrameList(frame)
+    bulges = FrameList(bulge)
 
     # Run the maker
     maker.run(frames=frames, bulges=bulges)
@@ -62,23 +62,15 @@ class DiskOldStellarMapMaker(Configurable):
 
         # -- Attributes --
 
-        # The IRAC I1 frame in Jy
-        #self.i1_jy = None
-
-        # The IRAC I1 frame with the bulge subtracted
-        #self.i1_jy_minus_bulge = None
-
-        # The image of significance masks
-        #self.significance = Image()
-
-        # The cutoff mask
-        #self.cutoff_mask = None
-
-        self.frames = dict()
-        self.bulges = dict()
+        # The input
+        self.frames = None
+        self.bulges = None
 
         # The maps
         self.maps = dict()
+
+        # The origins
+        self.origins = dict()
 
     # -----------------------------------------------------------------
 
@@ -93,23 +85,8 @@ class DiskOldStellarMapMaker(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 2. Load the necessary frames
-        #self.load_frames()
-
-        # 3. Calculate the significance masks
-        #self.calculate_significance()
-
         # 4. Make the map of old stars
         self.make_maps()
-
-        # 5. Normalize the map
-        self.normalize_map()
-
-        # Make the cutoff mask
-        #self.make_cutoff_mask()
-
-        # 6. Cut-off the map
-        #self.cutoff_map()
 
     # -----------------------------------------------------------------
 
@@ -123,8 +100,21 @@ class DiskOldStellarMapMaker(Configurable):
         # Call the setup function of the base class
         super(DiskOldStellarMapMaker, self).setup(**kwargs)
 
+        # Get input
         self.frames = kwargs.pop("frames")
         self.bulges = kwargs.pop("bulges")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def filters(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.frames.filters
 
     # -----------------------------------------------------------------
 
@@ -139,7 +129,8 @@ class DiskOldStellarMapMaker(Configurable):
         log.info("Making the maps of old stars ...")
 
         # Loop over the frames
-        for name in self.frames:
+        #for name in self.frames:
+        for fltr in self.filters:
 
             # Old stars = IRAC3.6 - bulge
             # From the IRAC 3.6 micron map, we must subtract the bulge component to only retain the disk emission
@@ -158,8 +149,8 @@ class DiskOldStellarMapMaker(Configurable):
 
             #assert str(self.masked_bulge_frame.unit) == "Jy"
 
-            frame = self.frames[name]
-            bulge = self.bulges[name]
+            frame = self.frames[fltr]
+            bulge = self.bulges[fltr]
 
             # Subtract bulge from the IRAC I1 image
             minus_bulge = frame - bulge
@@ -177,8 +168,17 @@ class DiskOldStellarMapMaker(Configurable):
             # Make sure all pixel values are larger than or equal to zero
             minus_bulge[minus_bulge < 0.0] = 0.0
 
+            # Normalize the old stellar map
+            minus_bulge.normalize()
+
+            # Set name
+            name = str(fltr)
+
             # Add
             self.maps[name] = minus_bulge
+
+            # Set origin
+            self.origins[name] = [fltr]
 
             # Mask pixels outside of the low signal-to-noise contour
             #old_stars[self.mask] = 0.0
@@ -195,57 +195,5 @@ class DiskOldStellarMapMaker(Configurable):
 
         if len(self.maps) != 1: raise ValueError("Not a single map")
         return self.maps[self.maps.keys()[0]]
-
-    # -----------------------------------------------------------------
-
-    def normalize_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Normalizing the map of old stars ...")
-
-        # Normalize the old stellar map
-        self.map.normalize()
-        self.map.unit = None
-
-    # -----------------------------------------------------------------
-
-    def make_cutoff_mask(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making the cutoff mask ...")
-
-        # Combine the significance masks
-        high_significance = self.significance.intersect_masks()
-
-        # Fill holes
-        if self.config.remove_holes: high_significance.fill_holes()
-
-        # Set
-        self.cutoff_mask = high_significance.inverse()
-
-    # -----------------------------------------------------------------
-
-    def cutoff_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Cutting-off the map at low significance of the data ...")
-
-        # Set zero outside of significant pixels
-        self.map[self.cutoff_mask] = 0.0
 
 # -----------------------------------------------------------------

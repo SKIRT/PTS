@@ -241,3 +241,29 @@ def common_elements(sequence_a, sequence_b):
     return list(elements)
 
 # -----------------------------------------------------------------
+
+def append_unique(lst, element):
+
+    """
+    This function ...
+    :param lst: 
+    :param element: 
+    :return: 
+    """
+
+    if element not in lst: lst.append(element)
+
+# -----------------------------------------------------------------
+
+def extend_unique(lst, elements):
+
+    """
+    This function ...
+    :param lst: 
+    :param elements: 
+    :return: 
+    """
+
+    for element in elements: append_unique(lst, element)
+
+# -----------------------------------------------------------------

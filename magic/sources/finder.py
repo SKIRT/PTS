@@ -42,6 +42,8 @@ from ..core.frame import Frame
 from ..tools import statistics
 from ...core.tools.stringify import tostr
 from ..convolution.kernels import get_fwhm
+from ...core.tools import filesystem as fs
+from ..region.list import PixelRegionList
 
 # -----------------------------------------------------------------
 
@@ -466,8 +468,9 @@ class SourceFinder(Configurable):
         self.extended_sources = dict()
         self.point_sources = dict()
 
-        # Principal masks
+        # Principal masks and companion masks
         self.principal_masks = dict()
+        self.companion_masks = dict()
 
         # Galaxy and star lists
         self.galaxies = GalaxyList()
@@ -482,9 +485,12 @@ class SourceFinder(Configurable):
         # The photometry table
         self.photometry = None
 
+        # Output paths for image names
+        self.output_paths = None
+
     # -----------------------------------------------------------------
 
-    def add_frame(self, name, frame, star_finder_settings=None, error_map=None):
+    def add_frame(self, name, frame, star_finder_settings=None, error_map=None, output_path=None):
 
         """
         This function ...
@@ -492,6 +498,7 @@ class SourceFinder(Configurable):
         :param frame:
         :param star_finder_settings:
         :param error_map:
+        :param output_path:
         :return:
         """
 
@@ -506,6 +513,11 @@ class SourceFinder(Configurable):
 
         # Set the settings
         if star_finder_settings is not None: self.star_finder_settings[name] = star_finder_settings
+
+        # If output path is given
+        if output_path is not None:
+            if self.output_paths is None: self.output_paths = dict()
+            self.output_paths[name] = output_path
 
     # -----------------------------------------------------------------
 
@@ -624,6 +636,9 @@ class SourceFinder(Configurable):
             self.frames = dataset.get_frames()
             self.error_maps = dataset.get_errormaps()
         else: self.load_frames()
+
+        # Get the output path
+        if "output_paths" in kwargs: self.output_paths = kwargs.pop("output_paths")
 
         # Get the settings
         if "star_finder_settings" in kwargs: self.star_finder_settings = kwargs.pop("star_finder_settings")
@@ -890,7 +905,7 @@ class SourceFinder(Configurable):
             results[name].request()
 
             # Get result
-            table, regions, segments, principal_mask = results[name].output
+            table, regions, segments, principal_mask, companion_mask = results[name].output
 
             # Set galaxies
             self.extended_tables[name] = table
@@ -904,6 +919,9 @@ class SourceFinder(Configurable):
 
             # Set mask of principal galaxy
             self.principal_masks[name] = principal_mask
+
+            # Set mask of companion galaxies
+            self.companion_masks[name] = companion_mask
 
     # -----------------------------------------------------------------
 
@@ -1249,18 +1267,20 @@ class SourceFinder(Configurable):
                 # Create the configuration
                 config = self.config.other.copy()
 
-                galaxies = self.galaxies
-
                 # Get other input
                 #galaxies = self.galaxies[name]
                 #stars = self.stars[name]
-                stars = self.stars
+
+                # Get the segmentation maps
                 galaxy_segments = self.segments[name].frames["extended"]
                 star_segments = self.segments[name].frames["point"] if "point" in self.segments[name].frames else None
+
+                # Get the PSF kernel
                 kernel = self.psfs[name]
 
                 # Call the target function
-                result = target(frame, config, galaxies, stars, galaxy_segments, star_segments, kernel, special_mask, ignore_mask, bad_mask)
+                result = target(frame, config, self.galaxies, self.stars, galaxy_segments, star_segments, kernel,
+                                special_mask, ignore_mask, bad_mask, self.principal_masks[name], self.companion_masks[name])
 
                 # Add the result
                 results[name] = result
@@ -1422,6 +1442,30 @@ class SourceFinder(Configurable):
         # Write star regions
         self.write_star_regions()
 
+        # Write saturation regions
+        self.write_saturation_regions()
+
+        # Write other regions
+        self.write_other_regions()
+
+    # -----------------------------------------------------------------
+
+    def find_extended_region(self, name, index):
+
+        """
+        This function ...
+        :param name: 
+        :param index: 
+        :return: 
+        """
+
+        for region in self.extended_regions[name]:
+            #if int(region.meta["text"]) == index: return region
+            #print(region.meta)
+            if "index" not in region.meta: continue
+            if region.meta["index"] == index: return region
+        return None
+
     # -----------------------------------------------------------------
 
     def write_galaxy_regions(self):
@@ -1434,11 +1478,57 @@ class SourceFinder(Configurable):
         # Inform the user
         log.info("Writing the galaxy regions ...")
 
-        # Determine the path
-        path = self.output_path_file("galaxies.reg")
+        # Loop over the extended regions
+        #for name in self.extended_regions:
 
-        # Save
-        self.galaxy_regions.saveto(path)
+        # Loop over the images
+        for name in self.extended_regions:
+
+            # Initialize region list
+            #galaxy_regions = PixelRegionList()
+            galaxy_regions = SkyRegionList()
+
+            # Loop over the galaxies
+            for galaxy in self.galaxies:
+
+                # Get the index
+                index = galaxy.index
+
+                #print("index", index)
+
+                # Get the corresponding region
+                #region = self.extended_regions[name][index]
+                region = self.find_extended_region(name, index)
+
+                #print("region", region)
+
+                # Add the region
+                galaxy_regions.append(region)
+
+            # Determine path
+            if self.output_paths is not None and name in self.output_paths: path = fs.join(self.output_paths[name], "galaxies.reg")
+            else: path = self.output_path_file("galaxies_" + name + ".reg")
+
+            # Save
+            galaxy_regions.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def find_star_region(self, name, index):
+
+        """
+        This function ...
+        :param name: 
+        :param index: 
+        :return: 
+        """
+
+        for region in self.point_regions[name]:
+            #print(region.meta)
+            #if int(region.meta["text"]) == index: return region
+            if "index" not in region.meta: continue
+            if region.meta["index"] == index: return region
+        return None
 
     # -----------------------------------------------------------------
 
@@ -1452,29 +1542,76 @@ class SourceFinder(Configurable):
         # Inform the user
         log.info("Writing the star regions ...")
 
-        # Determine the path
-        path = self.output_path_file("stars.reg")
+        # Loop over the images
+        for name in self.point_regions:
 
-        # Save
-        self.star_regions.saveto(path)
+            # Initialize region list
+            #star_regions = PixelRegionList()
+            star_regions = SkyRegionList()
+
+            # Loop over the stars
+            for star in self.stars:
+
+                # Get the index
+                index = star.index
+
+                # Get the corresponding region
+                #region = self.point_regions[name][index]
+                region = self.find_star_region(name, index)
+
+                # Add the region
+                star_regions.append(region)
+
+            # Determine path
+            if self.output_paths is not None and name in self.output_paths: path = fs.join(self.output_paths[name], "stars.reg")
+            else: path = self.output_path_file("stars_" + name + ".reg")
+
+            # Save
+            star_regions.saveto(path)
 
     # -----------------------------------------------------------------
 
-    #def write_saturation_regions(self):
+    def write_saturation_regions(self):
 
-        #"""
-        #This function ...
-        #:return:
-        #"""
+        """
+        This function ...
+        :return:
+        """
 
         # Inform the user
-        #log.info("Writing the saturation regions ...")
+        log.info("Writing the saturation regions ...")
 
-        # Determine the path
-        #path = self.output_path_file("saturation_" + name + ".reg") if len(self.frames) > 1 else self.output_path_file("saturation.reg")
+        # Loop over the images
+        for name in self.saturation_regions:
 
-        # Save
-        #self.saturation_regions[name].to_pixel(self.frames[name].wcs).saveto(path)
+            # Determine path
+            if self.output_paths is not None and name in self.output_paths: path = fs.join(self.output_paths[name], "saturation.reg")
+            else: path = self.output_path_file("saturation_" + name + ".reg")
+
+            # Save
+            self.saturation_regions[name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_other_regions(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Writing the regions of other sources ...")
+
+        # Loop over the images
+        for name in self.other_regions:
+            
+            # Determine path
+            if self.output_paths is not None and name in self.output_paths: path = fs.join(self.output_paths[name], "other_sources.reg")
+            else: path = self.output_path_file("other_sources_" + name + ".reg")
+
+            # Save
+            self.other_regions[name].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -1488,35 +1625,15 @@ class SourceFinder(Configurable):
         # Inform the user
         log.info("Writing the segmentation maps ...")
 
-        # Galaxy segments
-        self.write_galaxy_segments()
+        # Loop over the images
+        for name in self.segments:
 
-        # Star segments
-        self.write_star_segments()
+            # Determine path
+            if self.output_paths is not None and name in self.output_paths: path = fs.join(self.output_paths[name], "segments.fits")
+            else: path = self.output_path_file("segments_" + name + ".reg")
 
-    # -----------------------------------------------------------------
-
-    def write_galaxy_segments(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the galaxy segments ...")
-
-    # -----------------------------------------------------------------
-
-    def write_star_segments(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the star segments ...")
+            # Save
+            self.segments[name].saveto(path)
 
 # -----------------------------------------------------------------
 
@@ -1554,10 +1671,10 @@ def detect_extended_sources_wrapper(frame_path, catalog, config, special_mask_pa
     bad_mask = Mask.from_file(bad_mask_path) if bad_mask_path is not None else None
 
     # Implementation
-    table, regions, segments, principal_mask = detect_extended_sources(frame, catalog, config, special_mask, ignore_mask, bad_mask)
+    table, regions, segments, principal_mask, companion_mask = detect_extended_sources(frame, catalog, config, special_mask, ignore_mask, bad_mask)
 
     # Return
-    return table, regions, segments, principal_mask
+    return table, regions, segments, principal_mask, companion_mask
 
 # -----------------------------------------------------------------
 
@@ -1634,8 +1751,11 @@ def detect_extended_sources(frame, catalog, config, special_mask, ignore_mask, b
     # Get mask of principal galaxy
     principal_mask = finder.principal_mask
 
+    # Get mask of companion galaxies
+    companion_mask = finder.companion_mask
+
     # Return the source table, regions and segments
-    return table, regions, segments, principal_mask
+    return table, regions, segments, principal_mask, companion_mask
 
 # -----------------------------------------------------------------
 
@@ -1783,7 +1903,8 @@ def detect_other_wrapper(frame_path, config, galaxies, stars, galaxy_segments, s
 
 # -----------------------------------------------------------------
 
-def detect_other(frame, config, galaxies, stars, galaxy_segments, star_segments, kernel, special_mask, ignore_mask, bad_mask):
+def detect_other(frame, config, galaxies, stars, galaxy_segments, star_segments, kernel, special_mask, ignore_mask,
+                 bad_mask, principal_mask, companion_mask):
 
     """
     This function ...
@@ -1797,6 +1918,8 @@ def detect_other(frame, config, galaxies, stars, galaxy_segments, star_segments,
     :param special_mask:
     :param ignore_mask:
     :param bad_mask:
+    :param principal_mask:
+    :param companion_mask:
     :return:
     """
 
@@ -1808,9 +1931,9 @@ def detect_other(frame, config, galaxies, stars, galaxy_segments, star_segments,
 
     # Run the finder just to find sources
     finder.run(frame=frame, galaxies=galaxies, stars=stars, special_mask=special_mask,
-                            ignore_mask=ignore_mask, bad_mask=bad_mask,
-                            galaxy_segments=galaxy_segments,
-                            star_segments=star_segments, kernel=kernel)
+                ignore_mask=ignore_mask, bad_mask=bad_mask,
+                galaxy_segments=galaxy_segments,
+                star_segments=star_segments, kernel=kernel, principal_mask=principal_mask, companion_mask=companion_mask)
 
     if finder.region is not None:
 

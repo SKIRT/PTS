@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from abc import ABCMeta
+from abc import ABCMeta, abstractproperty
 
 # Import astronomical modules
 from astropy.utils import lazyproperty
@@ -28,6 +28,7 @@ from ...magic.core.frame import Frame
 from ...core.tools import types
 from ...core.filter.filter import parse_filter
 from ...magic.core.list import NamedFrameList
+from ...core.tools.serialization import load_dict, write_dict
 
 # -----------------------------------------------------------------
 
@@ -57,6 +58,9 @@ class MapsComponent(GalaxyModelingComponent):
 
         # The maps
         self.maps = dict()
+
+        # The origins
+        self.origins = dict()
 
         # The path to the maps/colours directory
         self.maps_colours_path = None
@@ -121,6 +125,18 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @abstractproperty
+    def maps_sub_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def aniano(self):
 
@@ -130,116 +146,6 @@ class MapsComponent(GalaxyModelingComponent):
         """
 
         return AnianoKernels()
-
-    # -----------------------------------------------------------------
-
-    @staticmethod
-    def convert_to_same_unit(*frames, **kwargs):
-
-        """
-        This function ...
-        :param frames:
-        :param kwargs:
-        :return: 
-        """
-
-        # Inform the user
-        log.info("Converting frames to the same unit ...")
-
-        # Check if the unit is defined
-        if "unit" in kwargs: unit = kwargs.pop("unit")
-        else: unit = frames[0].unit
-
-        # Debugging
-        log.debug("Converting to unit '" + str(unit) + "' ...")
-
-        # Initialize list for converted frames
-        new_frames = []
-
-        # Convert all
-        for frame in frames: new_frames.append(frame.converted_to(unit, **kwargs))
-
-        # Return the new set of frames
-        return new_frames
-
-    # -----------------------------------------------------------------
-
-    @staticmethod
-    def rebin_to_highest_pixelscale(*frames):
-
-        """
-        This function ...
-        :param frames: 
-        :return: 
-        """
-
-        # Inform the user
-        log.info("Rebinning frames to the coordinate system with the highest pixelscale ...")
-
-        highest_pixelscale = None
-        highest_pixelscale_wcs = None
-
-        # Loop over the frames
-        for frame in frames:
-
-            wcs = frame.wcs
-            if highest_pixelscale is None or wcs.average_pixelscale > highest_pixelscale:
-
-                highest_pixelscale = wcs.average_pixelscale
-                highest_pixelscale_wcs = wcs
-
-        # Initialize list for rebinned frames
-        new_frames = []
-
-        # Rebin
-        for frame in frames:
-
-            if frame.wcs == highest_pixelscale_wcs: new_frames.append(frame.copy())
-            else:
-                if frame.unit.is_per_angular_area: rebinned = frame.rebinned(highest_pixelscale_wcs)
-                else:
-                    rebinned = frame.converted_to_corresponding_angular_area_unit()
-                    rebinned.rebin(highest_pixelscale_wcs)
-                new_frames.append(rebinned)
-
-        # Return the rebinned frames
-        return new_frames
-
-    # -----------------------------------------------------------------
-
-    def convolve_to_highest_fwhm(self, *frames):
-
-        """
-        This function ...
-        :param frames: 
-        :return: 
-        """
-
-        # Inform the user
-        log.info("Convolving frames to the resolution of the frame with the highest FWHM ...")
-
-        highest_fwhm = None
-        highest_fwhm_filter = None
-
-        # Loop over the frames
-        for frame in frames:
-
-            if highest_fwhm is None or frame.fwhm > highest_fwhm:
-
-                highest_fwhm = frame.fwhm
-                highest_fwhm_filter = frame.filter
-
-        # Initialize list for convolved frames
-        new_frames = []
-
-        # Convolve
-        for frame in frames:
-
-            if frame.filter == highest_fwhm_filter: new_frames.append(frame.copy())
-            else: new_frames.append(frame.convolved(self.aniano.get_kernel(frame.filter, highest_fwhm_filter)))
-
-        # Return the convolved frames
-        return new_frames
 
     # -----------------------------------------------------------------
 
@@ -336,6 +242,159 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def has_frame_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr: 
+        :return: 
+        """
+
+        return self.dataset.has_frame_for_filter(fltr)
+
+    # -----------------------------------------------------------------
+
+    def get_frame_for_filter(self, fltr):
+
+        """
+        THis function ...
+        :param fltr: 
+        :return: 
+        """
+
+        return self.dataset.get_frame_for_filter(fltr)
+
+    # -----------------------------------------------------------------
+
+    def has_errormap_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr: 
+        :return: 
+        """
+
+        return self.dataset.has_errormap_for_filter(fltr)
+
+    # -----------------------------------------------------------------
+
+    def get_errormap_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr: 
+        :return: 
+        """
+
+        return self.dataset.get_errormap_for_filter(fltr)
+
+    # -----------------------------------------------------------------
+
+    def get_ssfr_maps(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return NamedFrameList.from_directory(self.maps_ssfr_path).to_dictionary()
+
+    # -----------------------------------------------------------------
+
+    def get_ssfr_origins(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        origins_path = fs.join(self.maps_ssfr_path, "origins.txt")
+        return load_dict(origins_path)
+
+    # -----------------------------------------------------------------
+
+    def get_tir_maps(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        single = self.get_tir_single_maps()
+        multi = self.get_tir_multi_maps()
+
+        maps = dict()
+        for name in single: maps["single_" + name] = single[name]
+        for name in multi: maps["multi_" + name] = multi[name]
+        return maps
+
+    # -----------------------------------------------------------------
+
+    def get_tir_single_maps(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        path = fs.join(self.maps_tir_path, "single")
+        return NamedFrameList.from_directory(path).to_dictionary()
+
+    # -----------------------------------------------------------------
+
+    def get_tir_multi_maps(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        path = fs.join(self.maps_tir_path, "multi")
+        return NamedFrameList.from_directory(path).to_dictionary()
+
+    # -----------------------------------------------------------------
+
+    def get_tir_origins(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        single = self.get_tir_single_origins()
+        multi = self.get_tir_multi_origins()
+
+        origins = dict()
+        for name in single: origins["single_" + name] = single[name]
+        for name in multi: origins["multi_" + name] = multi[name]
+        return origins
+
+    # -----------------------------------------------------------------
+
+    def get_tir_single_origins(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        path = fs.join(self.maps_tir_path, "single", "origins.txt")
+        return load_dict(path)
+
+    # -----------------------------------------------------------------
+
+    def get_tir_multi_origins(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        path = fs.join(self.maps_tir_path, "multi", "origins.txt")
+        return load_dict(path)
+
+    # -----------------------------------------------------------------
+
     def get_fuv_attenuation_maps(self):
 
         """
@@ -343,7 +402,42 @@ class MapsComponent(GalaxyModelingComponent):
         :return: 
         """
 
-        return self.get_cortese_fuv_attenuation_maps()
+        cortese = self.get_cortese_fuv_attenuation_maps()
+        buat = self.get_buat_fuv_attenuation_maps()
+
+        maps = dict()
+        for name in cortese: maps["cortese_" + name] = cortese[name]
+        for name in buat: maps["buat_" + name] = buat[name]
+        return maps
+
+    # -----------------------------------------------------------------
+
+    def get_fuv_attenuation_origins(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        cortese = self.get_cortese_fuv_attenuation_origins()
+        buat = self.get_buat_fuv_attenuation_origins()
+
+        origins = dict()
+        for name in cortese: origins["cortese_" + name] = cortese[name]
+        for name in buat: origins["cortese_" + name] = buat[name]
+        return origins
+
+    # -----------------------------------------------------------------
+
+    def get_buat_fuv_attenuation_maps(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        buat_path = fs.join(self.maps_attenuation_path, "buat")
+        return NamedFrameList.from_directory(buat_path, contains="FUV").to_dictionary()
 
     # -----------------------------------------------------------------
 
@@ -359,6 +453,32 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_buat_fuv_attenuation_origins(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        buat_path = fs.join(self.maps_attenuation_path, "buat")
+        table_path = fs.join(buat_path, "origins.txt")
+        return load_dict(table_path)
+
+    # -----------------------------------------------------------------
+
+    def get_cortese_fuv_attenuation_origins(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        cortese_path = fs.join(self.maps_attenuation_path, "cortese")
+        table_path = fs.join(cortese_path, "origins.txt")
+        return load_dict(table_path)
+
+    # -----------------------------------------------------------------
+
     def get_old_stellar_disk_map(self, fltr):
 
         """
@@ -371,6 +491,18 @@ class MapsComponent(GalaxyModelingComponent):
 
         path = fs.join(self.maps_old_path, "disk", str(fltr) + ".fits")
         return Frame.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    def get_hot_dust_maps(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        hot_dust_path = fs.join(self.maps_dust_path, "hot")
+        return NamedFrameList.from_directory(hot_dust_path).to_dictionary()
 
     # -----------------------------------------------------------------
 
@@ -391,7 +523,7 @@ class MapsComponent(GalaxyModelingComponent):
             if isinstance(self.maps[method], dict):
 
                 # Create directory
-                path = fs.create_directory_in(self.maps_tir_path, method)
+                path = fs.create_directory_in(self.maps_sub_path, method)
 
                 # Loop over the maps
                 for name in self.maps[method]:
@@ -406,10 +538,37 @@ class MapsComponent(GalaxyModelingComponent):
             else:
 
                 # Determine path
-                map_path = fs.join(self.maps_tir_path, method + ".fits")
+                map_path = fs.join(self.maps_sub_path, method + ".fits")
 
                 # Save
                 self.maps[method].saveto(map_path)
+
+    # -----------------------------------------------------------------
+
+    def write_origins(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Writing the maps ...")
+
+        # Loop over the methods
+        for method in self.origins:
+
+            # Depending on whether subdictionaries
+            if isinstance(self.maps[method], dict):
+
+                # Directory path
+                path = fs.join(self.maps_sub_path, method)
+
+                # Write
+                write_dict(self.origins[method], path)
+
+            # No different methods
+            else: write_dict(self.origins, self.maps_sub_path)
 
 # -----------------------------------------------------------------
 

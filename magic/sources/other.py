@@ -25,14 +25,13 @@ from astropy.coordinates import SkyCoord
 from ..core.frame import Frame
 from ..core.source import Source
 from ..basics.mask import Mask
-from ..region.list import PixelRegionList
-from ..region.ellipse import PixelEllipseRegion
 from ..tools import statistics, masks, plotting, general
 from ..analysis import sources
 from ..object.star import Star
 from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
-from ..basics.coordinate import PixelCoordinate
+from ..core.detection import Detection
+from ..region.list import PixelRegionList
 
 # -----------------------------------------------------------------
 
@@ -87,6 +86,10 @@ class OtherSourceFinder(Configurable):
         # The galaxy and star segments
         self.galaxy_segments = None
         self.star_segments = None
+
+        # The principal mask and companion mask
+        self.principal_mask = None
+        self.companion_mask = None
 
         # The region
         self.region = None
@@ -150,6 +153,10 @@ class OtherSourceFinder(Configurable):
         # The galaxy and star segments
         self.galaxy_segments = kwargs.pop("galaxy_segments", None)
         self.star_segments = kwargs.pop("star_segments", None)
+
+        # Set the principal mask
+        self.principal_mask = kwargs.pop("principal_mask", None)
+        self.companion_mask = kwargs.pop("companion_mask", None)
 
     # -----------------------------------------------------------------
 
@@ -220,7 +227,7 @@ class OtherSourceFinder(Configurable):
         log.info("Constructing elliptical contours to encompass sources ...")
 
         # Initialize the region
-        self.region = Region()
+        self.region = PixelRegionList()
 
         # Return the list of apertures
         contours = sources.find_contours(self.segments._data, self.segments._data, self.config.detection.apertures.sigma_level)
@@ -373,7 +380,7 @@ class OtherSourceFinder(Configurable):
 
             # Create a source
             ellipse = Ellipse(contour.center, contour.radius * expansion_factor, contour.angle)
-            source = Source.from_ellipse(self.frame, ellipse, self.config.aperture_removal.background_outer_factor)
+            source = Detection.from_ellipse(self.frame, ellipse, self.config.aperture_removal.background_outer_factor)
 
             # Estimate the background for the source
             source.estimate_background("local_mean", True)
@@ -390,7 +397,8 @@ class OtherSourceFinder(Configurable):
         :return:
         """
 
-        pass
+        # Inform the user
+        log.info("Finding sources based on local peak detection ...")
 
     # -----------------------------------------------------------------
 
@@ -401,7 +409,14 @@ class OtherSourceFinder(Configurable):
         :return:
         """
 
-        mask = Mask(self.galaxy_segments._data) + Mask(self.star_segments._data)
+        # Inform the user
+        log.info("Finding sources based on image segmentation ...")
+
+        # Create mask
+        if self.star_segments is not None: mask = Mask(self.galaxy_segments._data) + Mask(self.star_segments._data)
+        else: mask = Mask(self.galaxy_segments._data)
+
+        # Mask the data?
         data = self.frame.copy()
         data[mask] = 0.0
 
@@ -454,11 +469,19 @@ class OtherSourceFinder(Configurable):
         # Eliminate the principal galaxy and companion galaxies from the segments
         if self.galaxies is not None:
 
-            principal_mask = self.galaxies.get_principal_mask(self.frame)
-            companion_mask = self.galaxies.get_companion_mask(self.frame)
+            #principal_mask = self.galaxies.get_principal_mask(self.frame)
+            #companion_mask = self.galaxies.get_companion_mask(self.frame)
+
+            # Add mask of principal galaxy
+            if self.principal_mask is None: log.warning("Principal mask is not defined")
+            else: eliminate_mask += self.principal_mask
+
+            # Add mask of companion galaxy
+            if self.companion_mask is None: log.warning("Companion mask is not defined")
+            else: eliminate_mask += self.companion_mask
 
             # Determine the mask that covers the principal and companion galaxies
-            eliminate_mask += principal_mask + companion_mask
+            #eliminate_mask += principal_mask + companion_mask
 
         # NEW: PLUS: Eliminate the segments covered by the 'ignore mask'
         if self.ignore_mask is not None: eliminate_mask += self.ignore_mask
@@ -508,7 +531,7 @@ class OtherSourceFinder(Configurable):
             # No: use the FWHM ! Hmm.. or not: saturation ?
 
             # Create a source from the aperture
-            source = Source.from_ellipse(self.frame, contour, background_factor)
+            source = Detection.from_ellipse(self.frame, contour, background_factor)
 
             if special: source.plot(title="Source created from contour around segment")
 
@@ -571,6 +594,9 @@ class OtherSourceFinder(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Finding sources using SExtractor ...")
+
         # Create a SExtractor instance
         sextractor = SExtractor()
 
@@ -585,6 +611,9 @@ class OtherSourceFinder(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Finding sources based on template matching ...")
 
         kernel = self.kernel._array
 
@@ -618,7 +647,7 @@ class OtherSourceFinder(Configurable):
             y = peak['y_peak']
             coordinate = Coordinate(x,y)
 
-            source = Source.around_coordinate(self.frame, coordinate, radius=5, factor=1.3)
+            source = Detection.around_coordinate(self.frame, coordinate, radius=5, factor=1.3)
 
             self.segments[source.y_slice, source.x_slice][source.mask] = index
 

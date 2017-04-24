@@ -509,6 +509,18 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def nuv_filter(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return BroadBandFilter("GALEX NUV")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def fuv_filter(self):
 
         """

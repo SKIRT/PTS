@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.maps.stars.old Contains the OldStellarMapMaker class.
+## \package pts.magic.maps.oldstars.total Contains the TotalOldStellarMapMaker class.
 
 # -----------------------------------------------------------------
 
@@ -14,8 +14,20 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
-from ....magic.core.image import Image
 from ....core.basics.configurable import Configurable
+from ...core.list import FrameList
+
+# -----------------------------------------------------------------
+
+def make_map(frame):
+
+    """
+    This function ...
+    :param frame: 
+    :return: 
+    """
+
+    pass
 
 # -----------------------------------------------------------------
 
@@ -38,20 +50,14 @@ class TotalOldStellarMapMaker(Configurable):
 
         # -- Attributes --
 
-        # The IRAC I1 frame in Jy
-        self.i1_jy = None
-
-        # The map of the old stars
-        self.map = None
-
-        # The image of significance masks
-        self.significance = Image()
-
-        # The cutoff mask
-        self.cutoff_mask = None
+        # The frames
+        self.frames = None
 
         # THe maps
         self.maps = dict()
+
+        # The origins
+        self.origins = dict()
 
     # -----------------------------------------------------------------
 
@@ -66,26 +72,8 @@ class TotalOldStellarMapMaker(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 2. Load the necessary frames
-        self.load_frames()
-
-        # 3. Calculate the significance masks
-        self.calculate_significance()
-
         # 4. Make the map of old stars
-        self.make_map()
-
-        # 5. Normalize the map
-        self.normalize_map()
-
-        # Make the cutoff mask
-        self.make_cutoff_mask()
-
-        # 6. Cut-off the map
-        self.cutoff_map()
-
-        # 7. Writing
-        self.write()
+        self.make_maps()
 
     # -----------------------------------------------------------------
 
@@ -100,56 +88,24 @@ class TotalOldStellarMapMaker(Configurable):
         # Call the setup function of the base class
         super(TotalOldStellarMapMaker, self).setup(**kwargs)
 
-    # -----------------------------------------------------------------
-
-    def load_frames(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the necessary data ...")
-
-        # Load the IRAC I1 frame and convert to Jansky
-
-        frame = self.dataset.get_frame("IRAC I1")
-
-        # Convert the 3.6 micron image from MJy/sr to Jy/sr
-        #conversion_factor = 1.0
-        #conversion_factor *= 1e6
-
-        # Convert the 3.6 micron image from Jy / sr to Jy / pixel
-        #pixelscale = frame.average_pixelscale
-        #pixel_factor = (1.0 / pixelscale ** 2).to("pix2/sr").value
-        #conversion_factor /= pixel_factor
-
-        # DO THE CONVERSION
-        #frame *= conversion_factor
-        #frame.unit = "Jy"
-
-        # Set the frame
-        self.i1_jy = frame.convert_to("Jy")
+        # Get the frames
+        self.frames = kwargs.pop("frames")
 
     # -----------------------------------------------------------------
 
-    def calculate_significance(self):
+    @property
+    def filters(self):
 
         """
-        This function ...
-        :return:
+        This fucntion ...
+        :return: 
         """
 
-        # Inform the user
-        log.info("Calculating the significance masks ...")
-
-        # Get the significance mask
-        if self.config.i1_significance > 0: self.significance.add_mask(self.dataset.get_significance_mask("IRAC I1", self.config.i1_significance), "IRAC_I1")
+        return self.frames.filters
 
     # -----------------------------------------------------------------
 
-    def make_map(self):
+    def make_maps(self):
 
         """
         This function ...
@@ -159,106 +115,22 @@ class TotalOldStellarMapMaker(Configurable):
         # Inform the user
         log.info("Making the map of old stars ...")
 
-        self.map = self.i1_jy
+        # Loop over the filters
+        for fltr in self.filters:
 
-    # -----------------------------------------------------------------
+            # Set name
+            name = str(fltr)
 
-    def normalize_map(self):
+            # Set map
+            total = self.frames[fltr]
 
-        """
-        This function ...
-        :return:
-        """
+            # Normalize
+            total.normalize()
 
-        # Inform the user
-        log.info("Normalizing the map of old stars ...")
+            # Add
+            self.maps[name] = total
 
-        # Normalize the old stellar map
-        self.map.normalize()
-        self.map.unit = None
-
-    # -----------------------------------------------------------------
-
-    def make_cutoff_mask(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making the cutoff mask ...")
-
-        # Combine the significance masks
-        high_significance = self.significance.intersect_masks()
-
-        # Fill holes
-        if self.config.remove_holes: high_significance.fill_holes()
-
-        # Set
-        self.cutoff_mask = high_significance.inverse()
-
-    # -----------------------------------------------------------------
-
-    def cutoff_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Cutting-off the map at low significance of the data ...")
-
-        # Set zero outside of significant pixels
-        self.map[self.cutoff_mask] = 0.0
-
-    # -----------------------------------------------------------------
-
-    def write(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing ...")
-
-        # Write the map of old stars
-        self.write_map()
-
-        # Write the significance mask
-        self.write_significance_masks()
-
-    # -----------------------------------------------------------------
-
-    def write_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the map of old stars ...")
-
-        # Write
-        #self.map.saveto(self.old_stellar_map_path)
-
-    # -----------------------------------------------------------------
-
-    def write_significance_masks(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the significance masks ...")
-
-        # Write
-        self.significance.saveto(self.old_stellar_significance_path)
+            # Set origin
+            self.origins[name] = [fltr]
 
 # -----------------------------------------------------------------

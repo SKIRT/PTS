@@ -70,6 +70,17 @@ class KeyList(object):
 
     # -----------------------------------------------------------------
 
+    def remove_all(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        self.contents = OrderedDict()
+
+    # -----------------------------------------------------------------
+
     @property
     def keys(self):
 

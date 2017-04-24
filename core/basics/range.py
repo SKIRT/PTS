@@ -488,6 +488,9 @@ class RealRange(Range):
         :param rearrange:
         """
 
+        if min_value is None: min_value = float("-inf")
+        if max_value is None: max_value = float("+inf")
+
         if isinstance(min_value, int): min_value = float(min_value)
         if isinstance(max_value, int): max_value = float(max_value)
 

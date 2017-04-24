@@ -15,19 +15,38 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
 from ....core.units.parsing import parse_unit as u
 from ....magic.calibrations.galametz import GalametzTIRCalibration
 from ....magic.core.frame import Frame
 from ....core.basics.configurable import Configurable
+from ....magic.core.list import FrameList
 
 # -----------------------------------------------------------------
 
-possible_filters = ["IRAC I4", "MIPS 24mu", "Pacs 70", "Pacs 100", "Pacs 160", "SPIRE 250"]
+def make_map(frame, errors=None):
+
+    """
+    This function ...
+    :param frame: 
+    :param errors:
+    :return: 
+    """
+
+    # Create list of frames and error maps
+    frames = FrameList(frame)
+    if errors is not None: error_maps = FrameList(errors)
+    else: error_maps = None
+
+    # Create the maker
+    maker = SingleBandTIRMapMaker()
+
+    # Run the map maker
+    maker.run(frames=frames, errors=error_maps)
+
+    # Return the map
+    return maker.single_map
 
 # -----------------------------------------------------------------
 
@@ -37,29 +56,37 @@ class SingleBandTIRMapMaker(Configurable):
     This class...
     """
 
-    def __init__(self, config=None, ):
+    def __init__(self, config=None, interactive=False):
 
         """
         The constructor ...
+        :param config:
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(SingleBandTIRMapMaker, self).__init__()
+        super(SingleBandTIRMapMaker, self).__init__(config, interactive)
 
         # -- Attributes --
 
         # The frames
-        self.frames = dict()
+        self.frames = None
 
         # The error maps
-        self.errors = dict()
+        self.errors = None
 
         # The maps
         self.maps = dict()
 
+        # The origins
+        self.origins = dict()
+
         # The Galametz TIR calibration object
         self.galametz = GalametzTIRCalibration()
+
+        # The distance
+        self.distance = None
 
     # -----------------------------------------------------------------
 
@@ -73,9 +100,6 @@ class SingleBandTIRMapMaker(Configurable):
 
         # 1. Call the setup function
         self.setup(**kwargs)
-
-        # 2. Load the data
-        self.load_data()
 
         # 4. Make the maps
         self.make_maps()
@@ -92,58 +116,22 @@ class SingleBandTIRMapMaker(Configurable):
         # Call the setup function of the base class
         super(SingleBandTIRMapMaker, self).setup()
 
-        # Get the distance
+        # Get the input
+        self.frames = kwargs.pop("frames")
+        self.errors = kwargs.pop("errors", None)
         self.distance = kwargs.pop("distance")
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def available_filters(self):
+    @property
+    def filters(self):
 
         """
         This function ...
         :return: 
         """
 
-        filters = []
-
-        # Loop over the colours
-        for fltr in self.config.filters:
-
-            # If no image is avilalbe for this filters, skip
-            if not self.dataset.has_frame_for_filter(fltr): continue
-
-            # otherwise, add to the list of filters
-            filters.append(fltr)
-
-        # Return the available filters
-        return filters
-
-    # -----------------------------------------------------------------
-
-    def load_data(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the data ...")
-
-        # Loop over the filters
-        for fltr in self.available_filters:
-
-            # Debugging
-            log.debug("Loading the '" + str(fltr) + "' frame ...")
-
-            # Load the frame
-            frame = self.dataset.get_frame_for_filter(fltr)
-            self.frames[fltr] = frame
-
-            # Load the error map
-            errors = self.dataset.load_errormap_for_filter(fltr)
-            self.errors[fltr] = errors
+        return self.frames.filters
 
     # -----------------------------------------------------------------
 
@@ -157,11 +145,8 @@ class SingleBandTIRMapMaker(Configurable):
         # Inform the user
         log.info("Making the TIR maps ...")
 
-        # Get the galaxy distance
-        distance = self.galaxy_properties.distance
-
         # Loop over the frames
-        for fltr in self.frames:
+        for fltr in self.filters:
 
             # Debugging
             log.debug("Making TIR map from the '" + str(fltr) + "' frame ...")
@@ -170,7 +155,7 @@ class SingleBandTIRMapMaker(Configurable):
             a, b = self.galametz.get_parameters_single_brightness(fltr)
 
             # Convert to neutral intrinsic surface brightness
-            frame = self.frames[fltr].convert_to("W/kpc2", density=True, distance=distance, brightness=True,
+            frame = self.frames[fltr].convert_to("W/kpc2", density=True, distance=self.distance, brightness=True,
                                                  density_strict=True, brightness_strict=True)
 
             # Calculate the TIR map in W/kpc2 (intrinsic surface brightness)
@@ -179,7 +164,26 @@ class SingleBandTIRMapMaker(Configurable):
             tir.unit = u("W/kpc2", density=False, brightness=True, density_strict=True, brightness_strict=True)
             tir.wcs = frame.wcs
 
+            # Set the name
+            name = str(fltr)
+
             # Set the TIR map
-            self.maps[fltr] = tir
+            self.maps[name] = tir
+
+            # Set the origins
+            self.origins[name] = [fltr]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_map(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if len(self.maps) != 1: raise ValueError("Not a single map")
+        return self.maps[self.maps.keys()[0]]
 
 # -----------------------------------------------------------------

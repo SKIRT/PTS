@@ -37,9 +37,6 @@ class AttenuationMapMaker(MapsComponent):
         # Call the constructor of the base class
         super(AttenuationMapMaker, self).__init__(config, interactive)
 
-        # The maps
-        self.maps = dict()
-
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -77,11 +74,21 @@ class AttenuationMapMaker(MapsComponent):
         # Create the map maker
         maker = CorteseAttenuationMapsMaker()
 
+        # Get the input
+        fuv = self.get_frame_for_filter(self.fuv_filter)
+        tirs = self.get_tir_maps()
+        ssfrs = self.get_ssfr_maps()
+        tirs_origins = self.get_tir_origins()
+        ssfrs_origins = self.get_ssfr_origins()
+
         # Run the map maker
-        maker.run()
+        maker.run(fuv=fuv, tirs=tirs, ssfrs=ssfrs, tirs_origins=tirs_origins, ssfrs_origins=ssfrs_origins)
 
         # Set the maps
         self.maps["cortese"] = maker.maps
+
+        # Set the origins
+        self.maps["cortese"] = maker.origins
 
     # -----------------------------------------------------------------
 
@@ -98,11 +105,20 @@ class AttenuationMapMaker(MapsComponent):
         # Create the map maker
         maker = BuatAttenuationMapsMaker()
 
+        # Get the input
+        fuv = self.get_frame_for_filter(self.fuv_filter)
+        nuv = self.get_frame_for_filter(self.nuv_filter)
+        tirs = self.get_tir_maps()
+        tirs_origins = self.get_tir_origins()
+
         # Run the map maker
-        maker.run()
+        maker.run(fuv=fuv, nuv=nuv, tirs=tirs, tirs_origins=tirs_origins)
 
         # Set the maps
         self.maps["buat"] = maker.maps
+
+        # Set the origins
+        self.maps["origins"] = maker.origins
 
     # -----------------------------------------------------------------
 
@@ -118,5 +134,8 @@ class AttenuationMapMaker(MapsComponent):
 
         # Write the maps
         self.write_maps()
+
+        # Write the origins
+        self.write_origins()
 
 # -----------------------------------------------------------------

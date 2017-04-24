@@ -32,7 +32,7 @@ def make_map():
     """
 
     # Create the sSFR map maker
-    maker = ColoursSSFRMapMaker()
+    maker = ColoursSSFRMapsMaker()
 
     colours = dict()
 
@@ -43,7 +43,7 @@ def make_map():
 
 # -----------------------------------------------------------------
 
-class ColoursSSFRMapMaker(Configurable):
+class ColoursSSFRMapsMaker(Configurable):
 
     """
     This class...
@@ -58,7 +58,7 @@ class ColoursSSFRMapMaker(Configurable):
         """
 
         # Call the constructor of the base class
-        super(ColoursSSFRMapMaker, self).__init__(config, interactive)
+        super(ColoursSSFRMapsMaker, self).__init__(config, interactive)
 
         # The colour maps
         self.colours = dict()
@@ -93,7 +93,7 @@ class ColoursSSFRMapMaker(Configurable):
         """
 
         # Call the setup function of the base class
-        super(ColoursSSFRMapMaker, self).setup(**kwargs)
+        super(ColoursSSFRMapsMaker, self).setup(**kwargs)
 
         # Get the colours
         self.colours = kwargs.pop("colours")

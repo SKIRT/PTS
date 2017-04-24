@@ -16,38 +16,28 @@ from __future__ import absolute_import, division, print_function
 from ....core.basics.configurable import Configurable
 from ....core.tools.logging import log
 from ...tools.colours import make_colour_map, get_filters_for_colour
-from ...core.dataset import DataSet
+from ...core.list import FrameList
 
 # -----------------------------------------------------------------
 
-# This list is not exclusive
-colour_strings = ["FUV-NUV", "FUV-H", "FUV-u", "FUV-g", "FUV-r", "FUV-i", "FUV-z", "Pacs 70-Pacs 100", "Pacs 100-Pacs 160",
-                  "Pacs 160-SPIRE 250", "SPIRE 250-SPIRE 350", "SPIRE 350-SPIRE 500"]
-
-# -----------------------------------------------------------------
-
-def make_map(modeling_path):
+def make_map(*args, **kwargs):
 
     """
     This function ...
+    :param args:
+    :param kwargs:
     :return: 
     """
 
     # Create the colour map maker
     maker = ColourMapsMaker()
 
-    maker.config.check_database = False
-    maker.config.colours = [""]
-    maker.config.write = False
-
-    maker.config.path = modeling_path
-
-    frames = dict() # indexed on filter
+    frames = FrameList(*args) # indexed on filter
 
     maker.run(frames=frames)
 
     # Get the maps
-    maps = maker.maps
+    return maker.single_map
 
 # -----------------------------------------------------------------
 
@@ -69,10 +59,16 @@ class ColourMapsMaker(Configurable):
         super(ColourMapsMaker, self).__init__(config, interactive)
 
         # The frames
-        self.frames = dict()
+        self.frames = None
 
         # The maps
         self.maps = dict()
+
+        # The origins
+        self.origins = dict()
+
+        # The colours
+        self.colours = None
 
     # -----------------------------------------------------------------
 
@@ -103,41 +99,9 @@ class ColourMapsMaker(Configurable):
         # Call the setup fucntion of the base class
         super(ColourMapsMaker, self).setup(**kwargs)
 
-        if "frames" in kwargs: self.frames = kwargs.pop("frames")
-        elif "dataset" in kwargs: self.load_data(kwargs.pop("dataset"))
-        elif self.config.dataset is not None: self.load_data(DataSet.from_file(self.config.dataset))
-
-    # -----------------------------------------------------------------
-
-    def load_data(self, dataset):
-
-        """
-        This function ...
-        :param dataset:
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the data ...")
-
-        # Loop over the colours
-        for colour in self.config.colours:
-
-            # Debugging
-            log.debug("Loading frames for the '" + colour + "' colour ...")
-
-            # Get the two filters, load frames
-            for fltr in get_filters_for_colour(colour):
-
-                # Already loaded
-                if fltr in self.frames: continue
-
-                # Debugging
-                log.debug("Loading the '" + str(fltr) + "' frame ...")
-
-                # Load
-                frame = dataset.get_frame_for_filter(fltr)
-                self.frames[fltr] = frame
+        # Get input
+        self.frames = kwargs.pop("frames")
+        self.colours = kwargs.pop("colours")
 
     # -----------------------------------------------------------------
 
@@ -152,21 +116,45 @@ class ColourMapsMaker(Configurable):
         log.info("Making the colour maps ...")
 
         # Loop over the colours
-        for colour in self.config.colours:
+        for colour in self.colours:
 
             # Get the two filters
             fltr_a, fltr_b = get_filters_for_colour(colour)
 
+            # Create frame list
+            frames = FrameList(self.frames[fltr_a], self.frames[fltr_b])
+
+            # Convolve
+            frames.convolve_to_highest_fwhm()
+
             # Rebin the frames to the same pixelgrid
-            frame_a, frame_b = self.rebin_to_highest_pixelscale(self.frames[fltr_a], self.frames[fltr_b])
+            frames.rebin_to_highest_pixelscale()
 
             # Convert the frames to the same unit
-            frame_a, frame_b = self.convert_to_same_unit(frame_a, frame_b, unit="Jy")
+            frames.convert_to_same_unit(unit="Jy")
+
+            # Get the frames
+            frame_a, frame_b = frames[0], frames[1]
 
             # Create the map
             colour_map = make_colour_map(frame_a, frame_b)
 
             # Add the map
             self.maps[colour] = colour_map
+
+            # Add the origins
+            self.origins[colour] = [fltr_a, fltr_b]
+
+    # -----------------------------------------------------------------
+
+    def single_map(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if len(self.maps) != 1: raise ValueError("Not a single map")
+        return self.maps[self.maps.keys()[0]]
 
 # -----------------------------------------------------------------

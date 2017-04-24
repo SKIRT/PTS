@@ -23,7 +23,7 @@ from astropy.utils import lazyproperty
 from ..basics.mask import Mask
 from ..region.ellipse import PixelEllipseRegion
 from ..basics.coordinate import PixelCoordinate
-from ..core.source import Source
+from ..core.detection import Detection
 from ...core.tools.logging import log
 from ...core.basics.configurable import Configurable
 from ..tools import masks
@@ -134,8 +134,7 @@ class SourceExtractor(Configurable):
         super(SourceExtractor, self).setup(**kwargs)
 
         # Set the image frame
-        if "frame" in kwargs:
-            self.frame = kwargs.pop("frame")
+        if "frame" in kwargs: self.frame = kwargs.pop("frame")
         else: self.load_frame()
 
         # Regions
@@ -199,6 +198,9 @@ class SourceExtractor(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Loading the regions ...")
+
         # Load the galaxy region
         galaxy_region_path = self.input_path_file("galaxies.reg")
         self.galaxy_region = PixelRegionList.from_file(galaxy_region_path) if fs.is_file(galaxy_region_path) else None
@@ -223,6 +225,9 @@ class SourceExtractor(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Loading the segmentation maps ...")
 
         # Load the image with segmentation maps
         segments = Image.from_file(self.input_path_file("segments.fits"), no_filter=True)
@@ -282,7 +287,7 @@ class SourceExtractor(Configurable):
             if label == 3 or (label == 2 and self.config.remove_companions):
 
                 # Create a source
-                source = Source.from_shape(self.frame, shape, self.config.source_outer_factor)
+                source = Detection.from_shape(self.frame, shape, self.config.source_outer_factor)
 
                 # Check whether it is a 'special' source
                 source.special = self.special_mask.masks(center) if self.special_mask is not None else False
@@ -340,7 +345,7 @@ class SourceExtractor(Configurable):
                         saturation_shape = self.saturation_region.pop(j)
 
                         # Create saturation source
-                        saturation_source = Source.from_shape(self.frame, saturation_shape, self.config.source_outer_factor)
+                        saturation_source = Detection.from_shape(self.frame, saturation_shape, self.config.source_outer_factor)
 
                         # Replace the saturation mask
                         segments_cutout = self.star_segments[saturation_source.y_slice, saturation_source.x_slice]
@@ -392,7 +397,7 @@ class SourceExtractor(Configurable):
             else:
 
                 # Create a new source from the shape
-                source = Source.from_shape(self.frame, shape, self.config.source_outer_factor)
+                source = Detection.from_shape(self.frame, shape, self.config.source_outer_factor)
 
                 # Set special
                 source.special = special
@@ -421,7 +426,7 @@ class SourceExtractor(Configurable):
                 label = int(shape.label)
 
                 # Create a source
-                source = Source.from_shape(self.frame, shape, self.config.source_outer_factor)
+                source = Detection.from_shape(self.frame, shape, self.config.source_outer_factor)
 
                 # Replace the source mask
                 segments_cutout = self.other_segments[source.y_slice, source.x_slice]
@@ -463,7 +468,7 @@ class SourceExtractor(Configurable):
             else:
 
                 # Create a source
-                source = Source.from_shape(self.frame, shape, self.config.source_outer_factor)
+                source = Detection.from_shape(self.frame, shape, self.config.source_outer_factor)
 
             # Check whether source is 'special'
             source.special = self.special_mask.masks(shape.center) if self.special_mask is not None else False
@@ -657,7 +662,7 @@ class SourceExtractor(Configurable):
         log.info("Writing the animation ...")
 
         # Save the animation
-        path = fs.join(output_path, "animation.gif")
+        path = self.output_path_file("animation.gif")
         self.animation.saveto(path)
 
     # -----------------------------------------------------------------

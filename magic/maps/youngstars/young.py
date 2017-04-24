@@ -14,11 +14,8 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
-from ....core.tools import filesystem as fs
-from ....core.basics.distribution import Distribution
-from ....magic.region.composite import PixelCompositeRegion
-from ....magic.region.list import PixelRegionList
 from ....core.basics.configurable import Configurable
+from ....core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
@@ -92,38 +89,23 @@ class YoungStellarMapsMaker(Configurable):
         self.fuv = None
         self.fuv_errors = None
 
+        # Other input
         self.old = None
-
         self.fuv_attenuations = None
-
         self.factors = None
 
-        # The maps of the corrected FUV emission
-        #self.corrected_fuv_maps = dict()
-
-        # The distributions of corrected FUV pixel values
-        #self.corrected_fuv_distributions = dict()
-
-        # The map of young stars
-        #self.map = None
-
-        # The path to the maps/young/fuv directory
-        #self.maps_young_fuv_path = None
-
-        # Region of area taken for calculating distribution of pixel values
-        #self.distribution_region = None
-
-        # The image of significance masks
-        #self.significance = Image()
-
-        # The cutoff mask
-        #self.cutoff_mask = None
+        # Origins
+        self.old_origin = None
+        self.fuv_attenuations_origins = None
 
         # The transparent FUV maps
         self.transparent = dict()
 
         # The maps
         self.maps = dict()
+
+        # The origins
+        self.origins = dict()
 
     # -----------------------------------------------------------------
 
@@ -138,24 +120,8 @@ class YoungStellarMapsMaker(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 3. Calculate the significance masks
-        #self.calculate_significance()
-
-        # 3. Make the map of young stars
+        # 2. Make the map of young stars
         self.make_maps()
-
-        # ...
-        #self.create_distribution_region()
-        #self.make_distributions()
-
-        # 4. Normalize the map
-        #self.normalize_map()
-
-        # Create the cutoff mask
-        #self.make_cutoff_mask()
-
-        # 5. Cut-off map
-        #self.cutoff_map()
 
     # -----------------------------------------------------------------
 
@@ -176,8 +142,24 @@ class YoungStellarMapsMaker(Configurable):
         self.old = kwargs.pop("old")
         self.fuv_attenuations = kwargs.pop("fuv_attenuations")
 
+        # Get origins
+        self.old_origin = kwargs.pop("old_origin", None)
+        self.fuv_attenuations_origins = kwargs.pop("fuv_attenuations_origins", None)
+
         # Set factors
         self.factors = kwargs.pop("factors")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_origins(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.old_origin is not None and self.fuv_attenuations_origins is not None
 
     # -----------------------------------------------------------------
 
@@ -236,6 +218,9 @@ class YoungStellarMapsMaker(Configurable):
         # Inform the user
         log.info("Subtracting the old contribution ...")
 
+        # Normalize the old stellar map
+        normalized_old = self.old.normalized()
+
         # Loop over the transparent maps
         for name in self.transparent:
 
@@ -246,13 +231,26 @@ class YoungStellarMapsMaker(Configurable):
             for factor in self.factors:
 
                 # Calculate the non ionizing young stars map from the FUV data
-                young_stars = make_corrected_fuv_map(transparent, self.old, factor)
+                young_stars = make_corrected_fuv_map(transparent, normalized_old, factor)
 
                 # Determine name
                 key = name + "_" + repr(factor)
 
+                # Normalize
+                young_stars.normalize()
+                young_stars.unit = None
+
                 # Add the attenuation map to the dictionary
                 self.maps[key] = young_stars
+
+                # Set the origins
+                if self.has_origins:
+
+                    # Set the origins
+                    origins = self.fuv_attenuations_origins[name]
+                    origins.add(parse_filter("FUV"))
+                    origins.add(self.old_origin)
+                    self.origins[key] = origins
 
     # -----------------------------------------------------------------
 
@@ -266,138 +264,6 @@ class YoungStellarMapsMaker(Configurable):
 
         if len(self.maps) != 1: raise ValueError("Not a single map")
         return self.maps[self.maps.keys()[0]]
-
-    # -----------------------------------------------------------------
-
-    def create_distribution_region(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        disk_ellipse = self.disk_ellipse.to_pixel(self.fuv.wcs)
-        inner_ellipse = disk_ellipse * self.config.histograms_annulus_range.min
-        outer_ellipse = disk_ellipse * self.config.histograms_annulus_range.max
-        composite = PixelCompositeRegion(outer_ellipse, inner_ellipse)
-        region = PixelRegionList()
-        region.append(composite)
-        self.distribution_region = region
-
-    # -----------------------------------------------------------------
-
-    def make_distributions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making distributions of the pixel values of the corrected FUV maps ...")
-
-        # Create mask
-        mask = self.distribution_region.to_mask(self.map.xsize, self.map.ysize)
-
-        # Loop over the different maps
-        for factor in self.corrected_fuv_maps:
-
-            # Get the values
-            values = self.corrected_fuv_maps[factor][mask]
-
-            # Make a distribution of the pixel values indicated by the mask
-            distribution = Distribution.from_values(values, bins=self.config.histograms_nbins)
-
-            # Add the distribution to the dictionary
-            self.corrected_fuv_distributions[factor] = distribution
-
-    # -----------------------------------------------------------------
-
-    def normalize_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Normalizing the young stellar map ...")
-
-        # Normalize the dust map
-        self.map.normalize()
-        self.map.unit = None
-
-    # -----------------------------------------------------------------
-
-    def make_cutoff_mask(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making the cutoff mask ...")
-
-        # Combine the significance masks
-        high_significance = self.significance.intersect_masks()
-
-        # Fill holes
-        if self.config.remove_holes: high_significance.fill_holes()
-
-        # Set
-        self.cutoff_mask = high_significance.inverse()
-
-    # -----------------------------------------------------------------
-
-    def cutoff_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Cutting-off the map at low significance of the data ...")
-
-        # Set zero outside of significant pixels
-        self.map[self.cutoff_mask] = 0.0
-
-    # -----------------------------------------------------------------
-
-    def write_fuv_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the corrected FUV maps ...")
-
-        # Loop over the corrected FUV maps
-        for factor in self.corrected_fuv_maps:
-
-            # Determine the path
-            path = fs.join(self.maps_young_fuv_path, str(factor) + ".fits")
-
-            # Write
-            self.corrected_fuv_maps[factor].saveto(path)
-
-    # -----------------------------------------------------------------
-
-    def write_distribution_region(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the distribution region ...")
-
-        path = fs.join(self.maps_young_fuv_path, "histogram.reg")
-        self.distribution_region.saveto(path)
 
 # -----------------------------------------------------------------
 

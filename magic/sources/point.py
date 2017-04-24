@@ -649,7 +649,7 @@ class PointSourceFinder(Configurable):
             text = str(source.index)
 
             # Create meta information
-            meta = {"color": color, "text": text}
+            meta = {"color": color, "text": text, "index": source.index}
 
             # Create the shape and add it to the region
             shape = PixelCircleRegion(center, radius, meta=meta)

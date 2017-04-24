@@ -18,9 +18,14 @@ from astropy.utils import lazyproperty
 # Import standard modules
 from .component import MapsComponent
 from ...core.tools.logging import log
-from ...core.tools import filesystem as fs
-from ...magic.maps.colour.colour import ColourMapsMaker, colour_strings
+from ...magic.maps.colour.colour import ColourMapsMaker
 from ...magic.tools.colours import get_filters_for_colour
+from ...magic.core.list import FrameList
+
+# -----------------------------------------------------------------
+
+colour_strings = ["FUV-NUV", "FUV-H", "FUV-u", "FUV-g", "FUV-r", "FUV-i", "FUV-z", "Pacs 70-Pacs 100", "Pacs 100-Pacs 160",
+                  "Pacs 160-SPIRE 250", "SPIRE 250-SPIRE 350", "SPIRE 350-SPIRE 500"]
 
 # -----------------------------------------------------------------
 
@@ -42,10 +47,19 @@ class ColourMapMaker(MapsComponent):
         super(ColourMapMaker, self).__init__(config, interactive)
 
         # The frames
-        self.frames = dict()
+        self.frames = None
 
-        # The maps
-        self.maps = None
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_sub_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.maps_colours_path
 
     # -----------------------------------------------------------------
 
@@ -66,7 +80,7 @@ class ColourMapMaker(MapsComponent):
         # 3. Make the maps
         self.make_maps()
 
-        # Write
+        # 4. Write
         self.write()
 
     # -----------------------------------------------------------------
@@ -121,6 +135,9 @@ class ColourMapMaker(MapsComponent):
         # Inform the user
         log.info("Loading the data ...")
 
+        # Create frame list
+        self.frames = FrameList()
+
         # Loop over the colours
         for colour in self.available_colours:
 
@@ -137,8 +154,8 @@ class ColourMapMaker(MapsComponent):
                 log.debug("Loading the '" + str(fltr) + "' frame ...")
 
                 # Load
-                frame = self.dataset.get_frame_for_filter(fltr)
-                self.frames[fltr] = frame
+                frame = self.get_frame_for_filter(fltr)
+                self.frames.append(frame, fltr)
 
     # -----------------------------------------------------------------
 
@@ -155,14 +172,14 @@ class ColourMapMaker(MapsComponent):
         # Create the map maker
         maker = ColourMapsMaker()
 
-        # Set the colours
-        maker.config.colours = self.available_colours
-
         # Run the map maker
-        maker.run()
+        maker.run(colours=self.available_colours, frames=self.frames)
 
         # Set the maps
         self.maps = maker.maps
+
+        # Set the origins
+        self.origins = maker.origins
 
     # -----------------------------------------------------------------
 
@@ -179,5 +196,7 @@ class ColourMapMaker(MapsComponent):
         # Write the colour maps
         self.write_maps()
 
-# -----------------------------------------------------------------
+        # Write origins
+        self.write_origins()
 
+# -----------------------------------------------------------------

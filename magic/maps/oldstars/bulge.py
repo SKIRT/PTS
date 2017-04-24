@@ -14,8 +14,52 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
-from ....magic.core.image import Image
 from ....core.basics.configurable import Configurable
+from ....magic.core.list import FrameList
+
+# -----------------------------------------------------------------
+
+def make_map(bulge):
+
+    """
+    This function ...
+    :param bulge: 
+    :return: 
+    """
+
+    # Create maker
+    maker = BulgeOldStellarMapMaker()
+
+    # Set input
+    bulges = FrameList(bulge)
+
+    # Make
+    maker.run(bulges=bulges)
+
+    # Return the bulge frame
+    return maker.single_map
+
+# -----------------------------------------------------------------
+
+def make_maps(**args):
+
+    """
+    This function ...
+    :param args: 
+    :return: 
+    """
+
+    # Create maker
+    maker = BulgeOldStellarMapMaker()
+
+    # Set input
+    bulges = FrameList(**args)
+
+    # Run
+    maker.run(bulges=bulges)
+
+    # Return
+    return maker.maps
 
 # -----------------------------------------------------------------
 
@@ -29,6 +73,7 @@ class BulgeOldStellarMapMaker(Configurable):
 
         """
         The constructor ...
+        :param config:
         :param interactive:
         :return:
         """
@@ -38,17 +83,14 @@ class BulgeOldStellarMapMaker(Configurable):
 
         # -- Attributes --
 
-        # The map of the old stars
-        self.map = None
-
-        # The image of significance masks
-        self.significance = Image()
-
-        # The cutoff mask
-        self.cutoff_mask = None
+        # The bulge frames
+        self.bulges = None
 
         # THe maps
         self.maps = dict()
+
+        # The origins
+        self.origins = dict()
 
     # -----------------------------------------------------------------
 
@@ -66,15 +108,6 @@ class BulgeOldStellarMapMaker(Configurable):
         # 4. Make the map of old stars
         self.make_map()
 
-        # 5. Normalize the map
-        self.normalize_map()
-
-        # Make the cutoff mask
-        #self.make_cutoff_mask()
-
-        # 6. Cut-off the map
-        #self.cutoff_map()
-
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -88,52 +121,20 @@ class BulgeOldStellarMapMaker(Configurable):
         # Call the setup function of the base class
         super(BulgeOldStellarMapMaker, self).setup(**kwargs)
 
-    # -----------------------------------------------------------------
-
-    def load_frames(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the necessary data ...")
-
-        # Load the IRAC I1 frame and convert to Jansky
-
-        frame = self.dataset.get_frame("IRAC I1")
-
-        # Convert the 3.6 micron image from MJy/sr to Jy/sr
-        conversion_factor = 1.0
-        conversion_factor *= 1e6
-
-        # Convert the 3.6 micron image from Jy / sr to Jy / pixel
-        pixelscale = frame.average_pixelscale
-        pixel_factor = (1.0 / pixelscale ** 2).to("pix2/sr").value
-        conversion_factor /= pixel_factor
-
-        # DO THE CONVERSION
-        frame *= conversion_factor
-        frame.unit = "Jy"
-
-        # Set the frame
-        self.i1_jy = frame
+        # Get the input
+        self.bulges = kwargs.pop("bulges")
 
     # -----------------------------------------------------------------
 
-    def calculate_significance(self):
+    @property
+    def filters(self):
 
         """
         This function ...
-        :return:
+        :return: 
         """
 
-        # Inform the user
-        log.info("Calculating the significance masks ...")
-
-        # Get the significance mask
-        if self.config.i1_significance > 0: self.significance.add_mask(self.dataset.get_significance_mask("IRAC I1", self.config.i1_significance), "IRAC_I1")
+        return self.bulges.filters
 
     # -----------------------------------------------------------------
 
@@ -147,53 +148,35 @@ class BulgeOldStellarMapMaker(Configurable):
         # Inform the user
         log.info("Making the map of old stars ...")
 
-        # Create copy
-        self.map = self.masked_bulge_frame
+        # Loop over the filters
+        for fltr in self.filters:
+
+            # Create copy
+            bulge = self.bulges[fltr]
+
+            # Normalize
+            bulge.normalize()
+
+            # Set name
+            name = str(fltr)
+
+            # Add
+            self.maps[name] = bulge
+
+            # Set the origin
+            self.origins[name] = [fltr]
 
     # -----------------------------------------------------------------
 
-    def normalize_map(self):
+    @property
+    def single_map(self):
 
         """
         This function ...
-        :return:
+        :return: 
         """
 
-        # Inform the user
-        log.info("Normalizing the map of old stars ...")
-
-        # Normalize the old stellar map
-        self.map.normalize()
-        self.map.unit = None
-
-    # -----------------------------------------------------------------
-
-    def write(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing ...")
-
-        # Write the map of old stars
-        self.write_map()
-
-    # -----------------------------------------------------------------
-
-    def write_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the map of old stars ...")
-
-        # Write
-        #self.map.saveto(self.old_stellar_map_path)
+        if len(self.maps) != 1: raise ValueError("Not a single map")
+        return self.maps[self.maps.keys()[0]]
 
 # -----------------------------------------------------------------

@@ -582,7 +582,7 @@ class ExtendedSourceFinder(Configurable):
             else: shape = PixelEllipseRegion(center, radius, angle, meta=meta)
 
             # Set meta information
-            meta = {"text": text, "color": color}
+            meta = {"text": text, "color": color, "index": source.index}
             shape.meta = meta
 
             # Add the shape to the region list
