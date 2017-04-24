@@ -41,6 +41,18 @@ class SSFRMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def maps_sub_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.maps_ssfr_path
+
+    # -----------------------------------------------------------------
+
     def run(self):
 
         """
@@ -59,15 +71,16 @@ class SSFRMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(SSFRMapMaker, self).setup()
+        super(SSFRMapMaker, self).setup(**kwargs)
 
     # -----------------------------------------------------------------
 

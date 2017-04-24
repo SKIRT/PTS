@@ -19,6 +19,8 @@ from astropy import constants
 from ....core.tools.logging import log
 from ....core.units.parsing import parse_unit as u
 from ....core.basics.configurable import Configurable
+from ....core.filter.filter import parse_filter
+from ....core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -75,9 +77,13 @@ class IonizingStellarMapsMaker(Configurable):
         # Input
         self.halpha = None
         self.hots = None
+        self.hots_origins = None
 
         # THE MAPS OF IONIZING STARS
         self.maps = dict()
+
+        # The origins
+        self.origins = dict()
 
     # -----------------------------------------------------------------
 
@@ -111,6 +117,19 @@ class IonizingStellarMapsMaker(Configurable):
         # Get the input
         self.halpha = kwargs.pop("halpha")
         self.hots = kwargs.pop("hots", None)
+        self.hots_origins = kwargs.pop("hots_origins", None)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_origins(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.hots_origins is not None
 
     # -----------------------------------------------------------------
 
@@ -141,6 +160,9 @@ class IonizingStellarMapsMaker(Configurable):
         :return: 
         """
 
+        # Inform the user
+        log.info("Making maps of ionizing stars based on H-alpha emission and hot dust maps ...")
+
         # NEW: MAKE MAP OF IONIZING STARS FOR VARIOUS DIFFERENT maps of hot dust
         for name in self.hots:
 
@@ -161,6 +183,12 @@ class IonizingStellarMapsMaker(Configurable):
 
             # Add the map of ionizing stars
             self.maps[name] = ionizing
+
+            # Set the origin
+            if self.has_origins:
+                origins = self.hots_origins[name]
+                sequences.append_unique(origins, parse_filter("Halpha"))
+                self.origins[name] = origins
 
         # ionizing_ratio = self.ha / (0.031*mips_young_stars)
 
@@ -204,6 +232,9 @@ class IonizingStellarMapsMaker(Configurable):
 
         # Add the map of ionizing stars
         self.maps["halpha"] = ionizing
+
+        # Set origins
+        if self.has_origins: self.origins["halpha"] = [parse_filter("Halpha")]
 
     # -----------------------------------------------------------------
 

@@ -58,6 +58,7 @@ class MapsComponent(GalaxyModelingComponent):
 
         # The maps
         self.maps = dict()
+        self.error_maps = dict()
 
         # The origins
         self.origins = dict()
@@ -506,6 +507,19 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_hot_dust_origins(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        hot_dust_path = fs.join(self.maps_dust_path, "hot")
+        origins_path = fs.join(hot_dust_path, "origins.txt")
+        return load_dict(origins_path)
+
+    # -----------------------------------------------------------------
+
     def write_maps(self):
 
         """
@@ -542,6 +556,33 @@ class MapsComponent(GalaxyModelingComponent):
 
                 # Save
                 self.maps[method].saveto(map_path)
+
+    # -----------------------------------------------------------------
+
+    #def write_error_maps(self):
+
+        #"""
+        #This function ...
+        #:return:
+        #"""
+
+        # Inform the user
+        #log.info("Writing the error maps (with different methods) ...")
+
+        # Loop over the methods
+        #for method in self.maps:
+
+            # Create a directory
+            #path = fs.create_directory_in(self.maps_dust_path, method)
+
+            # Loop over the maps
+            #for name in self.error_maps[method]:
+
+                # Determine path
+                #map_path = fs.join(path, name + "_error.fits")
+
+                # Save the map
+                #self.maps[method][name].saveto(map_path)
 
     # -----------------------------------------------------------------
 

@@ -57,6 +57,18 @@ class YoungStellarMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def maps_sub_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.maps_young_path
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """

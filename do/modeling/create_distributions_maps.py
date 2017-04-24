@@ -174,3 +174,23 @@ from __future__ import absolute_import, division, print_function
 
         # Write
         self.cutoff_mask.saveto(self.young_stellar_cutoff_path)
+
+# -----------------------------------------------------------------
+
+    def calculate_significance(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Calculating the significance masks ...")
+
+        # Get the significance masks
+        if self.config.fuv_significance > 0: self.significance.add_mask(self.dataset.get_significance_mask("GALEX FUV", self.config.fuv_significance), "GALEX_FUV")
+        if self.config.mips24_significance > 0: self.significance.add_mask(self.dataset.get_significance_mask("MIPS 24mu", self.config.mips24_significance), "MIPS_24mu")
+        if self.config.pacs70_significance > 0: self.significance.add_mask(self.dataset.get_significance_mask("Pacs blue", self.config.pacs70_significance), "Pacs_blue")
+        if self.config.pacs160_significance > 0: self.significance.add_mask(self.dataset.get_significance_mask("Pacs red", self.config.pacs160_significance), "Pacs_red")
+        if self.config.h_significance > 0: self.significance.add_mask(self.dataset.get_significance_mask("2MASS H", self.config.h_significance), "2MASS_H")
+

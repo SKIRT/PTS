@@ -39,6 +39,18 @@ class AttenuationMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def maps_sub_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.maps_attenuation_path
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """

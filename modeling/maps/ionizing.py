@@ -61,6 +61,21 @@ class IonizingStellarMapMaker(MapsComponent):
         # The maps of hot dust
         self.hots = None
 
+        #
+        self.hots_origins = None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_sub_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.maps_ionizing_path
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -77,24 +92,8 @@ class IonizingStellarMapMaker(MapsComponent):
         # 2. Load the necessary frames
         self.load_frames()
 
-        # Calculate the significance masks
-        #self.calculate_significance()
-
         # 3. Make the map
         self.make_maps()
-
-        # ...
-        #self.create_distribution_region()
-        #self.make_distributions()
-
-        # 4. Normalize the map
-        #self.normalize_map()
-
-        # Make the cutoff mask
-        #self.make_cutoff_mask()
-
-        # 5. Cut-off map
-        #self.cutoff_map()
 
         # 5. Writing
         self.write()
@@ -132,22 +131,6 @@ class IonizingStellarMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def calculate_significance(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Calculating the significance masks ...")
-
-        # Get the significance mask
-        if self.config.mips24_significance > 0: self.significance.add_mask(self.dataset.get_significance_mask("MIPS 24mu", self.config.mips24_significance), "MIPS_24mu")
-        if self.config.halpha_significance > 0: self.significance.add_mask(self.get_halpha_significance_mask(self.config.halpha_significance), "Halpha")
-
-    # -----------------------------------------------------------------
-
     def load_hot(self):
 
         """
@@ -160,6 +143,9 @@ class IonizingStellarMapMaker(MapsComponent):
 
         # Get
         self.hots = self.get_hot_dust_maps()
+
+        # Get
+        self.hots_origins = self.get_hot_dust_origins()
 
     # -----------------------------------------------------------------
 
@@ -192,10 +178,13 @@ class IonizingStellarMapMaker(MapsComponent):
         maker = IonizingStellarMapsMaker()
 
         # Run
-        maker.run(halpha=self.halpha, hots=self.hots)
+        maker.run(halpha=self.halpha, hots=self.hots, hots_origins=self.hots_origins)
 
         # Set the maps
         self.maps = maker.maps
+
+        # Set the origins
+        self.origins = maker.origins
 
     # -----------------------------------------------------------------
 
@@ -209,6 +198,10 @@ class IonizingStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Writing ...")
 
+        # Write
         self.write_maps()
+
+        # Write origins
+        self.write_origins()
 
 # -----------------------------------------------------------------

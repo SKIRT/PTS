@@ -19,7 +19,6 @@ from ...magic.maps.dust.blackbody import BlackBodyDustMapsMaker
 from ...magic.maps.dust.emission import EmissionDustMapsMaker
 from ...magic.maps.dust.attenuation import AttenuationDustMapsMaker
 from ...magic.maps.dust.hot import HotDustMapsMaker
-from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -41,11 +40,17 @@ class DustMapMaker(MapsComponent):
         # Call the constructor of the base class
         super(DustMapMaker, self).__init__(config, interactive)
 
-        # -- Attributes --
+    # -----------------------------------------------------------------
 
-        # The dust maps (and error maps)
-        self.maps = dict()
-        self.error_maps = dict()
+    @property
+    def maps_sub_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.maps_dust_path
 
     # -----------------------------------------------------------------
 
@@ -60,9 +65,6 @@ class DustMapMaker(MapsComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 2. Calculate the significance masks
-        #self.calculate_significance()
-
         # 3.. Make a dust map based on black body pixel fitting
         if self.config.make_black_body: self.make_black_body()
 
@@ -74,9 +76,6 @@ class DustMapMaker(MapsComponent):
 
         # Make a map of the hot dust
         if self.config.make_hot: self.make_hot()
-
-        # Make the cutoff mask
-        #self.make_cutoff_mask()
 
         # 7. Writing
         self.write()
@@ -93,25 +92,6 @@ class DustMapMaker(MapsComponent):
 
         # Call the setup function of the base class
         super(DustMapMaker, self).setup(**kwargs)
-
-    # -----------------------------------------------------------------
-
-    def calculate_significance(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Calculating the significance masks ...")
-
-        # Get the significance masks
-        if self.config.fuv_significance > 0: self.significance.add_mask(self.dataset.get_significance_mask("GALEX FUV", self.config.fuv_significance), "GALEX_FUV")
-        if self.config.mips24_significance > 0: self.significance.add_mask(self.dataset.get_significance_mask("MIPS 24mu", self.config.mips24_significance), "MIPS_24mu")
-        if self.config.pacs70_significance > 0: self.significance.add_mask(self.dataset.get_significance_mask("Pacs blue", self.config.pacs70_significance), "Pacs_blue")
-        if self.config.pacs160_significance > 0: self.significance.add_mask(self.dataset.get_significance_mask("Pacs red", self.config.pacs160_significance), "Pacs_red")
-        if self.config.h_significance > 0: self.significance.add_mask(self.dataset.get_significance_mask("2MASS H", self.config.h_significance), "2MASS_H")
 
     # -----------------------------------------------------------------
 
@@ -133,7 +113,7 @@ class DustMapMaker(MapsComponent):
 
         # Add the dust map to the dictionary
         self.maps["black-body"] = maker.maps
-        self.error_maps["black-body"] = maker.error_maps
+        #self.error_maps["black-body"] = maker.error_maps
 
     # -----------------------------------------------------------------
 
@@ -211,42 +191,6 @@ class DustMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def make_cutoff_mask(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making the cutoff mask ...")
-
-        # Combine the significance masks
-        high_significance = self.significance.intersect_masks()
-
-        # Fill holes
-        if self.config.remove_holes: high_significance.fill_holes()
-
-        # Set
-        self.cutoff_mask = high_significance.inverse()
-
-    # -----------------------------------------------------------------
-
-    def cutoff_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Cutting-off the map at low significance of the data ...")
-
-        # Set zero outside of significant pixels
-        self.map[self.cutoff_mask] = 0.0
-
-    # -----------------------------------------------------------------
-
     def write(self):
 
         """
@@ -260,70 +204,10 @@ class DustMapMaker(MapsComponent):
         # Write the maps
         self.write_maps()
 
+        # Write origins
+        self.write_origins()
+
         # Write the error maps
-        self.write_error_maps()
-
-        # Write the significance mask
-        #self.write_significance_masks()
-
-        # Write the cutoff mask
-        #self.write_cutoff_mask()
-
-    # -----------------------------------------------------------------
-
-    def write_error_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the error maps (with different methods) ...")
-
-        # Loop over the methods
-        for method in self.maps:
-
-            # Create a directory
-            path = fs.create_directory_in(self.maps_dust_path, method)
-
-            # Loop over the maps
-            for name in self.error_maps[method]:
-
-                # Determine path
-                map_path = fs.join(path, name + "_error.fits")
-
-                # Save the map
-                self.maps[method][name].saveto(map_path)
-
-    # -----------------------------------------------------------------
-
-    def write_significance_masks(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the significance masks ...")
-
-        # Write
-        self.significance.saveto(self.dust_significance_path)
-
-    # -----------------------------------------------------------------
-
-    def write_cutoff_mask(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the cutoff mask ...")
-
-        # Write
-        self.cutoff_mask.saveto(self.dust_cutoff_path)
+        #self.write_error_maps()
 
 # -----------------------------------------------------------------
