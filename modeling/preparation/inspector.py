@@ -14,20 +14,8 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from .component import PreparationComponent
-from ...magic.sources.finder import SourceFinder
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
-from ...magic.misc.imageimporter import ImageImporter
-from ...magic.catalog.importer import CatalogImporter
-from ...magic.core.image import Image
-from ...magic.core.frame import Frame
-from ...core.basics.animation import Animation
-from ...core.tools import time
-from ...core.tools import parsing
-
-# -----------------------------------------------------------------
-
-levels = [1.0, 3.0, 5.0, 10., 20.]
 
 # -----------------------------------------------------------------
 
@@ -49,10 +37,6 @@ class PreparationInspector(PreparationComponent):
         # Call the constructor of the base class
         super(PreparationInspector, self).__init__(config, interactive)
 
-        # -- Attributes --
-
-        self.inspect_path = None
-
         # Maps of the significance levels
         self.significance_maps = dict()
 
@@ -69,10 +53,10 @@ class PreparationInspector(PreparationComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Inspect errors
+        # 2. Inspect errors
         self.inspect_significance()
 
-        # Writing
+        # 3. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -87,9 +71,6 @@ class PreparationInspector(PreparationComponent):
 
         # Call the setup function of the base class
         super(PreparationInspector, self).setup(**kwargs)
-
-        self.inspect_path = fs.join(self.config.path, "inspect")
-        if not fs.is_directory(self.inspect_path): fs.create_directory(self.inspect_path)
 
     # -----------------------------------------------------------------
 
@@ -107,10 +88,7 @@ class PreparationInspector(PreparationComponent):
             log.debug("Calculating significance map for the " + name + " image ...")
 
             # Add the level map to the dictionary
-            self.significance_maps[name] = self.dataset.get_significance(name, levels)
-
-        # Add the H-alpha significance map
-        self.significance_maps["Halpha"] = self.get_halpha_significance_levels(levels)
+            self.significance_maps[name] = self.dataset.get_significance(name, self.config.levels)
 
     # -----------------------------------------------------------------
 
@@ -120,6 +98,9 @@ class PreparationInspector(PreparationComponent):
         This function ...
         :return:
         """
+
+        # Inform the uer
+        log.info("Writing ...")
 
         # Write significance maps
         self.write_significance_maps()

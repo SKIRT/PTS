@@ -37,90 +37,30 @@ class SourceInspector(Configurable):
         # Call the constructor of the base class
         super(SourceInspector, self).__init__(config, interactive)
 
-        # -- Attributes --
-
     # -----------------------------------------------------------------
 
-    @classmethod
-    def from_arguments(cls, arguments):
+    def run(self, **kwargs):
 
         """
         This function ...
-        :param arguments:
-        """
-
-        # Create a new SourceFinder instance
-        if arguments.config is not None: inspector = cls(arguments.config)
-        elif arguments.settings is not None: inspector = cls(arguments.settings)
-        else: inspector = cls()
-
-        # Return the new instance
-        return inspector
-
-    # -----------------------------------------------------------------
-
-    def run(self, frame, galactic_catalog, stellar_catalog, special_region=None, ignore_region=None, bad_mask=None, animation=None):
-
-        """
-        This function ...
-        :param frame:
-        :param galactic_catalog:
-        :param stellar_catalog:
-        :param special_region:
-        :param ignore_region:
-        :param bad_mask:
-        :param animation:
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(frame, galactic_catalog, stellar_catalog, special_region, ignore_region, bad_mask, animation)
-
-        # 2. Find the galaxies
-        self.find_galaxies()
-        
-        # 3. Find the stars
-        if self.config.find_stars: self.find_stars()
-
-        # 4. Look for other sources
-        if self.config.find_other_sources: self.find_other_sources()
-
-        # 5. Build and update catalog
-        self.build_and_synchronize_catalog()
+        self.setup(**kwargs)
 
     # -----------------------------------------------------------------
 
-    def clear(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
-
-        # Base class implementation removes the children
-        super(SourceInspector, self).clear()
-
-        # Set default values for all attributes
-
-    # -----------------------------------------------------------------
-
-    def setup(self, frame, galactic_catalog, stellar_catalog, special_region, ignore_region, bad_mask=None, animation=None):
-
-        """
-        This function ...
-        :param frame:
-        :param galactic_catalog:
-        :param stellar_catalog:
-        :param special_region:
-        :param ignore_region:
-        :param bad_mask:
-        :param animation:
-        :return:
-        """
-
-        # -- Setup of the base class --
 
         # Call the setup function of the base class
-        super(SourceInspector, self).setup()
+        super(SourceInspector, self).setup(**kwargs)
 
 # -----------------------------------------------------------------

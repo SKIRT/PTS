@@ -118,6 +118,7 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         # Get the full paths to the necessary subdirectories and CREATE THEM
         self.data_path = fs.create_directory_in(self.path, "data")
         self.prep_path = fs.create_directory_in(self.path, "prep")
+        self.inspect_path = fs.create_directory_in(self.path, "inspect")
         self.truncation_path = fs.create_directory_in(self.path, "truncated")
         self.phot_path = fs.create_directory_in(self.path, "phot")
         self.maps_path = fs.create_directory_in(self.path, "maps")

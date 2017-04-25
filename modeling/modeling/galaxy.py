@@ -49,6 +49,7 @@ from ...core.tools.utils import UserIntervention
 from ..maps.ssfr import SSFRMapMaker
 from ...core.tools import types
 from ..maps.significance import SignificanceMaskCreator
+from ..preparation.inspector import PreparationInspector
 
 # -----------------------------------------------------------------
 
@@ -443,6 +444,9 @@ class GalaxyModeler(ModelerBase):
         # Run the preparation
         if "prepare_data" not in self.history: self.prepare()
 
+        # Inspect the preparation
+        if "inspect_preparation" not in self.history: self.inspect_preparation()
+
     # -----------------------------------------------------------------
 
     def initialize_preparation_and_exit(self):
@@ -521,6 +525,37 @@ class GalaxyModeler(ModelerBase):
 
         # Run the preparer
         preparer.run()
+
+        # Mark the end and save the history file
+        self.history.mark_end()
+        self.history.save()
+
+    # -----------------------------------------------------------------
+
+    def inspect_preparation(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Inspecting the preparation ...")
+
+        # Create the configuration
+        config = dict()
+
+        # Create the prepration inspector
+        inspector = PreparationInspector(config)
+
+        # Add an entry to the history
+        self.history.add_entry(PreparationInspector.command_name())
+
+        # Set the working directory
+        inspector.config.path = self.modeling_path
+
+        # Run the inspector
+        inspector.run()
 
         # Mark the end and save the history file
         self.history.mark_end()

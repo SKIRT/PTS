@@ -84,7 +84,7 @@ class GalaxyModelingComponent(ModelingComponent):
         self.model_image_path = None
 
         # The path to the truncation/masks directory
-        self.truncation_masks_path = None
+        #self.truncation_masks_path = None
 
         # The path to the data/seds directory
         self.data_seds_path = None
@@ -149,7 +149,7 @@ class GalaxyModelingComponent(ModelingComponent):
         self.model_image_path = fs.join(self.components_images_path, "model.fits")
 
         # Set the path to the truncation/masks directory
-        self.truncation_masks_path = fs.create_directory_in(self.truncation_path, "masks")
+        #self.truncation_masks_path = fs.create_directory_in(self.truncation_path, "masks")
 
         # Set ...
         self.data_seds_path = fs.create_directory_in(self.data_path, "SEDs")
@@ -195,6 +195,18 @@ class GalaxyModelingComponent(ModelingComponent):
         """
 
         return self.environment.prep_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def inspect_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.environment.inspect_path
 
     # -----------------------------------------------------------------
 

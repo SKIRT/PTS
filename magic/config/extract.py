@@ -14,7 +14,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 definition = ConfigurationDefinition()
 
 # Required
-definition.add_required("image", "file_path", "name/path of the input image")
+definition.add_positional_optional("image", "file_path", "name/path of the input image")
 
 # Input and output
 definition.add_optional("input", "directory_path", "input directory path", letter="i")

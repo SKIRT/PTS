@@ -36,6 +36,7 @@ from ..tools import headers
 from .list import NamedImageList, NamedFrameList
 from ...core.tools import types
 from ...core.filter.filter import parse_filter
+from .mask import intersection, union
 
 # -----------------------------------------------------------------
 
@@ -762,6 +763,30 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    def get_coordinate_system(self, name):
+
+        """
+        This function ...
+        :param name: 
+        :return: 
+        """
+
+        return self.get_wcs(name)
+
+    # -----------------------------------------------------------------
+
+    def get_coordinate_system_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param filter: 
+        :return: 
+        """
+
+        return self.get_wcs_for_filter(fltr)
+
+    # -----------------------------------------------------------------
+
     def get_wcs(self, name):
 
         """
@@ -1182,6 +1207,93 @@ class DataSet(object):
 
         # Return the frame
         return frame
+
+    # -----------------------------------------------------------------
+
+    def get_image_mask(self, name, mask_name):
+
+        """
+        This function ...
+        :param name: 
+        :param mask_name
+        :return: 
+        """
+
+        image = self.get_image(name)
+        return image.masks[mask_name]
+
+    # -----------------------------------------------------------------
+
+    def get_image_masks(self, name, mask_names, strict=False):
+
+        """
+        This function ...
+        :param name: 
+        :param mask_names: 
+        :param strict: 
+        :return: 
+        """
+
+        present_mask_names = self.masks_in_image(name)
+
+        masks = []
+        for mask_name in mask_names:
+            if mask_name not in present_mask_names:
+                if strict:
+                    raise ValueError("Mask '" + mask_name + "' not present in image '" + name + "'")
+                else:
+                    continue
+
+            # Get the mask
+            mask = self.get_image_mask(name, mask_name)
+
+            # Add the mask
+            masks.append(mask)
+
+        # Return the list of masks
+        return masks
+
+    # -----------------------------------------------------------------
+
+    def get_image_masks_union(self, name, mask_names, strict=False):
+
+        """
+        This function ...
+        :param name: 
+        :param mask_names: 
+        :param strict: 
+        :return: 
+        """
+
+        # Get the masks
+        masks = self.get_image_masks(name, mask_names, strict=strict)
+
+        # No masks
+        if len(masks) == 0: return None
+
+        # Create the intersection
+        return union(*masks)
+
+    # -----------------------------------------------------------------
+
+    def get_image_masks_intersection(self, name, mask_names, strict=False):
+
+        """
+        This function ...
+        :param name: 
+        :param mask_names: 
+        :param strict:
+        :return: 
+        """
+
+        # Get the masks
+        masks = self.get_image_masks(name, mask_names, strict=strict)
+
+        # No masks
+        if len(masks) == 0: return None
+
+        # Create the intersection
+        return intersection(*masks)
 
     # -----------------------------------------------------------------
 

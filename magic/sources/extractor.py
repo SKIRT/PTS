@@ -187,6 +187,10 @@ class SourceExtractor(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Loading the image frame ...")
+
+        # load
         self.frame = Frame.from_file(self.config.image)
 
     # -----------------------------------------------------------------

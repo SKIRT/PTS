@@ -14,15 +14,20 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+from collections import defaultdict
+import matplotlib.pyplot as plt
+
+# Import astronomical modules
+from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
-from ...magic.region.list import SkyRegionList
-from ...magic.basics.mask import Mask as oldMask
-from ...magic.core.mask import Mask as newMask
+from ...magic.region.list import SkyRegionList, PixelRegionList
 from .component import TruncationComponent
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...magic.dist_ellipse import distance_ellipse
+from ...core.basics.range import RealRange
+from ...core.basics.map import Map
 
 # -----------------------------------------------------------------
 
@@ -46,105 +51,121 @@ class Truncator(TruncationComponent):
 
         # --- Attributes ---
 
-        #self.images = dict()
-        self.bad_masks = dict()
-        self.padded_masks = dict()
+        # The statistics for each image
+        self.statistics = dict()
 
         # The frames and error maps
-        self.frames = dict()
-        self.error_maps = dict()
+        self.frames = None
+        self.errormaps = None
+        self.masks = None
 
-        # The truncated images (keys are the different scale factors)
-        self.truncated_images = dict()
+        # The sky ellipses
+        self.sky_ellipses = dict()
 
         # Truncation ellipse
-        self.ellipse = None
+        self.ellipses = defaultdict(dict)
 
-        # The truncation masks
-        self.masks = dict()
+        # Paths
+        self.paths = dict()
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
-        # 2. Load the images
-        self.load_images()
+        # 2. Load the data
+        self.load_data()
 
-        # 3. Find the best radius for the truncation
-        self.find_radius()
+        # 3. Create directories
+        self.create_directories()
 
-        # 3. Truncate the images
-        self.truncate()
+        # 4. Find the best radius for the truncation
+        self.calculate_statistics()
 
-        # Create the truncation ellipse
-        #self.create_ellipse()
+        # 5. Create the ellipses
+        self.create_ellipses()
 
-        # 4. Create the masks
-        #self.create_masks()
-
-        # 5. Writing
+        # 6. Writing
         self.write()
+
+        # 7. Plotting
+        self.plot()
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(Truncator, self).setup()
+        super(Truncator, self).setup(**kwargs)
 
     # -----------------------------------------------------------------
 
-    def load_images(self):
+    def load_data(self):
 
         """
         This function ...
-        :return:
+        :return: 
         """
 
         # Inform the user
-        log.info(" ... ")
+        log.info("Loading the data ...")
 
-        # Loop over the test images
+        # Get the frames
+        self.frames = self.dataset.get_framelist()
+
+        # Get the error maps
+        self.errormaps = self.dataset.get_errormaplist()
+
+        # Loop over all prepared images, get the images
+        self.masks = dict()
         for name in self.dataset.names:
 
-            # Get mask names
-            mask_names = self.dataset.masks_in_image(name)
+            # Get the mask
+            mask_names = ["padded", "bad"]
+            mask = self.dataset.get_image_masks_union(name, mask_names, strict=False)
 
-            # Check if 'bad' or 'padded' mask is present
-            if "bad" in mask_names or "padded" in mask_names:
-
-                # Load the image
-                image = self.dataset.get_image(name)
-
-                # Add the frame
-                frame = image.primary
-                self.images[name] = frame
-
-                # Add bad mask
-                if "bad" in image.masks: self.bad_masks[name] = image.masks.bad
-
-                # Add padded mask
-                if "padded" in image.masks: self.padded_masks[name] = image.masks.padded
-
-            # No 'bad' or 'padded' mask
-            else: self.images[name] = self.dataset.get_frame(name, masked=False)
+            # Set the mask
+            if mask is None: continue
+            self.masks[name] = mask
 
     # -----------------------------------------------------------------
 
-    def find_radius(self):
+    def create_directories(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Creating a directory for each image ...")
+
+        # Loop over the image
+        for name in self.frames.names:
+
+            # Create directory
+            path = fs.create_directory_in(self.truncation_path, name)
+
+            # Set path
+            self.paths[name] = path
+
+    # -----------------------------------------------------------------
+
+    def calculate_statistics(self):
 
         """
         This function ...
@@ -152,7 +173,7 @@ class Truncator(TruncationComponent):
         """
 
         # Inform the user
-        log.info("Finding the best truncation radius ...")
+        log.info("Getting the statistics as a function of radius ...")
 
         # Get the angle
         center = self.disk_ellipse.center  # in sky coordinates
@@ -160,142 +181,119 @@ class Truncator(TruncationComponent):
         semiminor = self.disk_ellipse.semiminor
         angle = self.disk_ellipse.angle
 
-        # Detemrine the ratio of semimajor and semiminor
+        # Determine the ratio of semimajor and semiminor
         ratio = semiminor / semimajor
 
-        # Loop over all images
-        for name in self.config.image_names:
+        # Loop over all prepared images
+        for name in self.frames.names:
+
+            # Get the image
+            frame = self.dataset.get_frame(name)
+
+            # Get the mask
+            mask_names = ["padded", "bad"]
+            mask = self.dataset.get_image_masks_union(name, mask_names, strict=False)
 
             # Convert center to pixel coordinates
-            center_pix = center.to_pixel(self.images[name].wcs)
+            center_pix = center.to_pixel(frame.wcs)
 
-            # Create distance-ellipse
-            distance_frame = distance_ellipse(self.images[name].shape, center_pix, ratio, angle)
+            # Create distance ellipse frame
+            distance_frame = distance_ellipse(frame.shape, center_pix, ratio, angle)
 
             radius_list = []
             signal_to_noise_list = []
-            nbad_list = []
+            nmasked_list = []
 
             # Loop over the radii
             min_distance = np.min(distance_frame)
             max_distance = np.max(distance_frame)
-            for radius in np.linspace(min_distance,max_distance,num=int(max_distance-min_distance+1),dtype=int,endpoint=True):
+            step = (max_distance - min_distance) / float(self.config.nbins)
 
-                # Make a mask of the pixels corresponding to the current radius
-                mask = distance_frame == radius
+            # Set the first range
+            radius_range = RealRange(min_distance, min_distance + step)
+
+            # Loop, shifting ranges of radius
+            while True:
+
+                # Check the range
+                if radius_range.min > max_distance: break
+
+                # Get the average radius
+                radius_center = radius_range.center
+
+                # Make a mask of the pixels corresponding to the current radius range
+                range_mask = radius_range.min <= distance_frame < radius_range.max
 
                 # Calculate the mean signal to noise in the pixels
-                signal_to_noises = self.frames[name][mask] / self.error_maps[name][mask]
+                signal_to_noises = self.frames[name][range_mask] / self.errormaps[name][mask]
 
                 # Calcalute the mean signal to noise
                 signal_to_noise = np.mean(signal_to_noises)
 
+                # Make a mask of all the pixels below the center radius
+                below_mask = distance_frame < radius_center
+
+                # Calculate the number of masked pixels
+                nmasked = np.sum(mask[below_mask])
+                ntotal = np.sum(below_mask)
+                rel_nmasked = nmasked / ntotal
+
                 # Add point
-                radius_list.append(radius)
-                signal_to_noise_list.append(radius)
-                nbad_list.append(radius)
+                radius_list.append(radius_center)
+                signal_to_noise_list.append(signal_to_noise)
+                nmasked_list.append(rel_nmasked)
+
+                # Shift the range
+                radius_range += step
+
+            # Set the statistics for this image
+            statistics = Map()
+            statistics.radii = radius_list
+            statistics.snr = signal_to_noise_list
+            statistics.nmasked = nmasked_list
+            self.statistics[name] = statistics
 
     # -----------------------------------------------------------------
 
-    def truncate(self):
+    @lazyproperty
+    def factors(self):
 
         """
-        This function ...
-        :return:
+        This function ..
+        :return: 
+        """
+
+        return self.config.factor_range.linear(self.config.factor_nvalues, as_list=True)
+
+    # -----------------------------------------------------------------
+
+    def create_ellipses(self):
+
+        """
+        This function ....
+        :return: 
         """
 
         # Inform the user
-        log.info("Making truncated images ...")
+        log.info("Creating ellipses ...")
 
         # Loop over the different scale factors
-        #for factor in (self.config.factor_range.linear(self.config.factor_nvalues, as_list=True) + [self.config.best_factor]):
-        for factor in self.config.factor_range.linear(self.config.factor_nvalues, as_list=True):
+        for factor in self.factors:
 
-            # Truncate the images with this factor
-            truncated = self.make_truncated_images(factor)
+            # Get the scaled ellipse
+            sky_ellipse = self.disk_ellipse * factor
 
-            # Add the truncated frame to the dictionary
-            self.truncated_images[factor] = truncated
+            # Add the sky ellipse
+            self.sky_ellipses[factor] = sky_ellipse
 
-    # -----------------------------------------------------------------
+            # Loop over the frames
+            for name in self.frames.names:
 
-    def make_truncated_images(self, factor):
+                # Convert to pixel ellipse
+                pixel_ellipse = sky_ellipse.to_pixel(self.frames[name].wcs)
 
-        """
-        This function ...
-        :param factor:
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making truncated image for a scale factor of " + str(factor) + " ...")
-
-        # Truncated images
-        truncated_images = dict()
-
-        # Loop over the test images
-        for name in self.config.image_names:
-
-            # Create ellipse in image coordinates from ellipse in sky coordinates for this image
-            ellipse = self.disk_ellipse.to_pixel(self.images[name].wcs) * factor
-
-            # Create mask from ellipse
-            mask = oldMask.from_shape(ellipse, self.images[name].xsize, self.images[name].ysize, invert=True)
-
-            # Add masks of padded and bad pixels
-            # for example for WISE, this mask even covers pixels within the elliptical region
-            if name in self.bad_masks: mask += self.bad_masks[name]
-            if name in self.padded_masks: mask += self.padded_masks[name]
-
-            # Truncate the image
-            truncated = self.images[name].copy()
-            truncated[mask] = 0.0
-
-            # Add the image
-            truncated_images[name] = truncated
-
-        # Return the dictionary of truncated images
-        return truncated_images
-
-    # -----------------------------------------------------------------
-
-    def create_ellipse(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        self.ellipse = self.disk_ellipse * self.config.best_factor
-
-    # -----------------------------------------------------------------
-
-    def create_masks(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info(" ... ")
-
-        # Loop over all images
-        for name in self.images:
-
-            # Create ellipse in image coordinates from ellipse in sky coordinates for this image
-            ellipse = self.disk_ellipse.to_pixel(self.images[name].wcs) * self.config.best_factor
-
-            # Create mask from ellipse
-            mask = newMask(oldMask.from_shape(ellipse, self.images[name].xsize, self.images[name].ysize, invert=True))
-
-            # Add masks of padded and bad pixels
-            # for example for WISE, this mask even covers pixels within the elliptical region
-            if name in self.bad_masks: mask += newMask(self.bad_masks[name])
-            if name in self.padded_masks: mask += newMask(self.padded_masks[name])
-
-            # Add the mask
-            self.masks[name] = mask
+                # Add the ellipse
+                self.ellipses[name][factor] = pixel_ellipse
 
     # -----------------------------------------------------------------
 
@@ -309,24 +307,15 @@ class Truncator(TruncationComponent):
         # Inform the user
         log.info("Writing ...")
 
-        # Write curves of the signal-to-noise and the number of bad pixels
-        self.write_curves()
+        # Write the truncation ellipse
+        self.write_ellipses()
 
         # Write the truncated images
         self.write_images()
 
-        # Write the truncation ellipse
-        self.write_ellipse()
-
-        # Write the truncation masks
-        self.write_masks()
-
-        # Write the reference truncation mask
-        self.write_reference_mask()
-
     # -----------------------------------------------------------------
 
-    def write_curves(self):
+    def write_ellipses(self):
 
         """
         This function ...
@@ -334,37 +323,74 @@ class Truncator(TruncationComponent):
         """
 
         # Inform the user
-        log.info("Writing curves ...")
+        log.info("Writing the ellipses ...")
 
-        # Write signal to noise curves
-        self.write_signal_to_noise_curves()
+        # Write sky ellipses
+        self.write_sky_ellipses()
 
-        # Write bad pixel curves
-        self.write_bad_pixel_curves()
-
-    # -----------------------------------------------------------------
-
-    def write_signal_to_noise_curves(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing curves of the signal-to-noise ...")
+        # Write image ellipses
+        self.write_image_ellipses()
 
     # -----------------------------------------------------------------
 
-    def write_bad_pixel_curves(self):
+    def write_sky_ellipses(self):
 
         """
-        This function ...
-        :return:
+        Thisf ucntion ...
+        :return: 
         """
 
         # Inform the user
-        log.info("Writing curves of the number of bad pixels ...")
+        log.info("Writing the truncation ellipse region ...")
+
+        # Determine the path to the region file
+        path = fs.join(self.truncation_path, "ellipses.reg")
+
+        # Create the region list
+        regions = SkyRegionList()
+
+        # Loop over the ellipses
+        for factor in self.sky_ellipses:
+
+            # Add ellipse
+            ellipse = self.sky_ellipses[factor]
+            ellipse.meta["text"] = str(factor)
+            regions.append(ellipse)
+
+        # Write
+        regions.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_image_ellipses(self):
+
+        """
+        Thisf ucntion ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Writing the image ellipses ...")
+
+        # Loop over the images
+        for name in self.ellipses:
+
+            # Get the path
+            path = fs.join(self.paths[name], "ellipses.reg")
+
+            # Create region list
+            regions = PixelRegionList()
+
+            # Loop over the ellipses
+            for factor in self.ellipses[name]:
+
+                # Add ellipse
+                ellipse = self.ellipses[name][factor]
+                ellipse.meta["text"] = str(factor)
+                regions.append(ellipse)
+
+            # Write
+            regions.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -378,68 +404,114 @@ class Truncator(TruncationComponent):
         # Inform the user
         log.info("Writing the truncated images ...")
 
-        for factor in self.truncated_images:
+        # Loop over the the images
+        for name in self.frames.names:
 
-            path = fs.create_directory_in(self.truncation_images_path, str(factor))
+            # Loop over the factors
+            for factor in self.factors:
 
-            # Save the images
-            for name in self.truncated_images[factor]:
+                # Get the pixel ellipse
+                ellipse = self.ellipses[name][factor]
 
-                image_path = fs.join(path, name + ".fits")
-                self.truncated_images[factor][name].saveto(image_path)
+                # Convert into mask
+                mask = ellipse.to_mask(self.frames[name].xsize, self.frames[name].ysize)
 
-    # -----------------------------------------------------------------
+                # Truncate the frame
+                frame = self.frames[name]
+                frame[mask] = 0.0
 
-    def write_ellipse(self):
+                # Determine the path
+                path = fs.join(self.paths[name], str(factor) + ".fits")
 
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the truncation ellipse region ...")
-
-        # Determine the path to the region file
-        path = fs.join(self.truncation_path, "ellipse.reg")
-
-        # Write the ellipse region
-        region = SkyRegionList()
-        region.append(self.ellipse)
-        region.saveto(path)
+                # Save
+                frame.saveto(path)
 
     # -----------------------------------------------------------------
 
-    def write_masks(self):
+    def plot(self):
 
         """
         This function ...
-        :return:
+        :return: 
         """
 
         # Inform the user
-        log.info("Writing the masks ...")
+        log.info("Plotting ...")
 
-        # Loop over the masks
-        for name in self.masks:
+        # Plot the curves
+        self.plot_snr()
 
-            # Save the mask
-            path = fs.join(self.truncation_masks_path, name + ".fits")
-            self.masks[name].saveto(path)
+        # Plot nmasked pixels
+        self.plot_nmasked()
 
     # -----------------------------------------------------------------
 
-    def write_reference_mask(self):
+    def plot_snr(self):
 
         """
         This function ...
-        :return:
+        :return: 
         """
 
         # Inform the user
-        log.info("Writing the reference truncation mask ...")
+        log.info("Plotting the snr curves ...")
 
-        # Save the mask created for the reference image as a seperate file ("reference.fits")
-        self.masks[self.reference_image].saveto(self.reference_mask_path)
+        # Loop over the frame names
+        for name in self.statistics:
+
+            # Get x and y
+            radii = self.statistics[name].radii
+            snr = self.statistics[name].snr
+
+            # Create plot
+            plt.figure()
+            plt.plot(radii, snr)
+
+            # Add vertical lines
+            for factor in self.ellipses[name]:
+                radius = self.ellipses[name][factor].major
+                plt.axvline(x=radius)
+
+            # Determine the path
+            path = fs.join(self.paths[name], "snr.pdf")
+
+            # Save the figure
+            plt.savefig(path)
+            plt.close()
+
+    # -----------------------------------------------------------------
+
+    def plot_nmasked(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Plotting the nmasked pixels curves ...")
+
+        # Loop over the frame nems
+        for name in self.statistics:
+
+            # Get x and y
+            radii = self.statistics[name].radii
+            nmasked = self.statistics[name].nmasked
+
+            # Create plot
+            plt.figure()
+            plt.plot(radii, nmasked)
+
+            # Add vertical lines
+            for factor in self.ellipses[name]:
+                radius = self.ellipses[name][factor].major
+                plt.axvline(x=radius)
+
+            # Determine the path
+            path = fs.join(self.paths[name], "nmasked.pdf")
+
+            # Save the figure
+            plt.savefig(path)
+            plt.close()
 
 # -----------------------------------------------------------------

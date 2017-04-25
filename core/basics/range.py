@@ -360,6 +360,58 @@ class Range(object):
 
     # -----------------------------------------------------------------
 
+    def __add__(self, value):
+
+        """
+        This fucntion ...
+        :param value: 
+        :return: 
+        """
+
+        return self.__class__(self.min + value, self.max + value)
+
+    # -----------------------------------------------------------------
+
+    def __iadd__(self, value):
+
+        """
+        This function ...
+        :param value: 
+        :return: 
+        """
+
+        self._min += value
+        self._max += value
+        return self
+
+    # -----------------------------------------------------------------
+
+    def __sub__(self, value):
+
+        """
+        This function ...
+        :param value: 
+        :return: 
+        """
+
+        return self.__class__(self.min - value, self.max - value)
+
+    # -----------------------------------------------------------------
+
+    def __isub__(self, value):
+
+        """
+        This fucntion ...
+        :param value: 
+        :return: 
+        """
+
+        self._min -= value
+        self._max -= value
+        return self
+
+    # -----------------------------------------------------------------
+
     def adjust(self, value_or_range):
 
         """
