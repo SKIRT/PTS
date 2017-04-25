@@ -89,7 +89,6 @@ else:
     jobscript.write("#SBATCH -o {}/{}_log_%j.txt\n".format(config.jobs_path, stage))
     jobscript.write("#SBATCH -e {}/{}_log_%j.txt\n".format(config.jobs_path, stage))
 jobscript.write("#SBATCH --ntasks={}\n".format(tasks))
-jobscript.write("#SBATCH --exclude=g6001,g6002,g6003,g6004,g6005,g6006,g6007,g6008,g6009,g6010,g6011,g6012,g6013,g6014,g6015,g6016\n")
 jobscript.write("#SBATCH --cpus-per-task={}\n".format(cpuspertask))
 jobscript.write("#SBATCH --time={}:00:00\n".format(wallhours))
 jobscript.write("#SBATCH -J ES{}\n".format(stage))
