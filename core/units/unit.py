@@ -19,6 +19,7 @@ import warnings
 
 # Import astronomical modules
 from astropy.units import Unit, UnitBase, CompositeUnit, spectral, Quantity
+from astropy import constants
 
 # Import the relevant PTS classes and modules
 from ...magic.basics.pixelscale import Pixelscale
@@ -82,6 +83,11 @@ from ..tools import types
 #'Jy/arcsec2': 'frequencysurfacebrightness',
 #'MJy/sr': 'frequencysurfacebrightness',
 #'MJy/arcsec2': 'frequencysurfacebrightness'
+
+# -----------------------------------------------------------------
+
+#speed_of_light = constants.c
+#solar_luminosity = 3.846e26 * parse_unit("W")
 
 # -----------------------------------------------------------------
 

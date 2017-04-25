@@ -12,26 +12,11 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import numpy as np
-
-# Import astronomical modules
-from astropy import constants
-
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from .component import MapsComponent
-from ...core.tools import filesystem as fs
-from ...core.basics.distribution import Distribution
-from ...core.plot.distribution import DistributionPlotter
-from ...magic.core.image import Image
-from ...core.units.parsing import parse_unit as u
 from ...magic.maps.ionizingstars.ionizing import IonizingStellarMapsMaker
-
-# -----------------------------------------------------------------
-
-speed_of_light = constants.c
-solar_luminosity = 3.846e26 * u("W")
+from ...core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
@@ -61,7 +46,7 @@ class IonizingStellarMapMaker(MapsComponent):
         # The maps of hot dust
         self.hots = None
 
-        #
+        # Origins
         self.hots_origins = None
 
     # -----------------------------------------------------------------
@@ -160,7 +145,7 @@ class IonizingStellarMapMaker(MapsComponent):
         log.info("Loading the H-alpha image and converting to solar units ...")
 
         # Get the H-alpha image
-        self.halpha = self.masked_halpha_frame
+        self.halpha = self.get_frame_for_filter(parse_filter("Halpha"))
 
         # Convert from erg/s to Lsun
         self.halpha.convert_to("Lsun")

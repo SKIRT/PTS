@@ -1528,6 +1528,8 @@ class SourceFinder(Configurable):
             #if int(region.meta["text"]) == index: return region
             if "index" not in region.meta: continue
             if region.meta["index"] == index: return region
+        #print(name, index)
+        #print([region.meta["index"] for region in self.point_regions[name] if "index" in region.meta])
         return None
 
     # -----------------------------------------------------------------
@@ -1560,7 +1562,7 @@ class SourceFinder(Configurable):
                 region = self.find_star_region(name, index)
 
                 # Add the region
-                star_regions.append(region)
+                if region is not None: star_regions.append(region)
 
             # Determine path
             if self.output_paths is not None and name in self.output_paths: path = fs.join(self.output_paths[name], "stars.reg")

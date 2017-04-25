@@ -278,6 +278,8 @@ class StarsBuilder(GeneralBuilder):
         name = prompt_string("old_map", "old stellar disk map to use for this model", choices=names)
         path = fs.join(directory_path, name + ".fits")
 
+        # TODO: ask for significance mask
+
         # Set the map
         self.maps["old"] = Frame.from_file(path)
 
@@ -393,6 +395,8 @@ class StarsBuilder(GeneralBuilder):
         # Ask for the young stellar map
         name = prompt_string("young_map", "young stellar disk map to use for this model", choices=names)
         path = fs.join(directory_path, name + ".fits")
+
+        # TODO: ask for significance map
 
         # Set the map
         self.maps["young"] = Frame.from_file(path)
@@ -516,6 +520,8 @@ class StarsBuilder(GeneralBuilder):
         # Ask for the ionizing stellar map
         name = prompt_string("ionizing_map", "ionizing stellar disk map to use for this model", choices=names)
         path = fs.join(directory_path, name + ".fits")
+
+        # TODO: ask for the significance map
 
         # Set the map
         self.maps["ionizing"] = Frame.from_file(path)

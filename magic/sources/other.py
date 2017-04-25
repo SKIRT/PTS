@@ -438,12 +438,16 @@ class OtherSourceFinder(Configurable):
         # Calculate the detection threshold
         threshold = median + (self.config.detection.segmentation.sigma_level * stddev)
 
-        try:
-            # Create a segmentation map from the frame
-            self.segments = Frame(detect_sources(data, threshold, npixels=5, filter_kernel=self.kernel).data)
-        except RuntimeError:
+        #try:
+        # Create a segmentation map from the frame
+        self.segments = Frame(detect_sources(data, threshold, npixels=5, filter_kernel=self.kernel).data)
+        #except RuntimeError as e:
 
-            log.debug("Runtime error during detect_sources ...")
+            #log.error("Runtime error during detect_sources ...")
+
+            #print(e)
+            #traceback.print_exc()
+
             #log.debug("kernel = " + str(kernel))
 
             #conv_mode = 'constant'

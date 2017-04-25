@@ -283,6 +283,18 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    def get_frame_path(self, name):
+
+        """
+        This function ...
+        :param name: 
+        :return: 
+        """
+
+        return self.paths[name]
+
+    # -----------------------------------------------------------------
+
     def get_frame(self, name, masked=True, mask_value=0.0):
 
         """
@@ -548,6 +560,128 @@ class DataSet(object):
 
         # No frame found for this filter
         return None
+
+    # -----------------------------------------------------------------
+
+    def get_frame_path_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr: 
+        :return: 
+        """
+
+        name = self.get_name_for_filter(fltr)
+        return self.get_frame_path(name)
+
+    # -----------------------------------------------------------------
+
+    def get_errormap_path_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr: 
+        :return: 
+        """
+
+        name = self.get_name_for_filter(fltr)
+        return self.get_errormap_path(name)
+
+    # -----------------------------------------------------------------
+
+    def get_names_for_filters(self, filters):
+
+        """
+        This function ...
+        :param filters: 
+        :return: 
+        """
+
+        names = []
+        for fltr in filters: names.append(self.get_name_for_filter(fltr))
+        return names
+
+    # -----------------------------------------------------------------
+
+    def get_frame_paths_for_filters(self, filters):
+
+        """
+        This function ...
+        :param filters: 
+        :return: 
+        """
+
+        paths = []
+        for fltr in filters: paths.append(self.get_frame_path_for_filter(fltr))
+        return paths
+
+    # -----------------------------------------------------------------
+
+    def get_frame_names_and_paths_for_filters(self, filters):
+
+        """
+        This function ...
+        :param filters: 
+        :return: 
+        """
+
+        result = OrderedDict()
+        for fltr in filters:
+            result[self.get_name_for_filter(fltr)] = self.get_frame_path_for_filter(fltr)
+        return result
+
+    # -----------------------------------------------------------------
+
+    def get_framelist_for_filters(self, filters):
+
+        """
+        This function ...
+        :param filters: 
+        :return: 
+        """
+
+        return NamedFrameList.from_paths(**self.get_frame_names_and_paths_for_filters(filters))
+
+    # -----------------------------------------------------------------
+
+    def get_errormap_paths_for_filters(self, filters):
+
+        """
+        This function ...
+        :param filters: 
+        :return: 
+        """
+
+        paths = []
+        for fltr in filters: paths.append(self.get_errormap_path_for_filter(fltr))
+        return paths
+
+    # -----------------------------------------------------------------
+
+    def get_errormap_names_and_paths_for_filters(self, filters):
+
+        """
+        This funtion ...
+        :param filters: 
+        :return: 
+        """
+
+        result = OrderedDict()
+        for fltr in filters:
+            result[self.get_name_for_filter(fltr)] = self.get_errormap_path_for_filter(fltr)
+        return result
+
+    # -----------------------------------------------------------------
+
+    def get_errormaplist_for_filters(self, filters):
+
+        """
+        This function ...
+        :param filters: 
+        :return: 
+        """
+
+        return NamedFrameList.from_paths(**self.get_errormap_names_and_paths_for_filters(filters))
 
     # -----------------------------------------------------------------
 
@@ -876,6 +1010,18 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    def get_errormap_path(self, name):
+
+        """
+        This function ...
+        :param name: 
+        :return: 
+        """
+
+        return self.error_paths[name]
+
+    # -----------------------------------------------------------------
+
     def get_errormap(self, name, masked=True, mask_value=0.0):
 
         """
@@ -1072,6 +1218,18 @@ class DataSet(object):
         """
 
         return get_mask_names(self.paths[name])
+
+    # -----------------------------------------------------------------
+
+    def get_mask_path(self, name):
+
+        """
+        This function ...
+        :param name: 
+        :return: 
+        """
+
+        return self.mask_paths[name]
 
     # -----------------------------------------------------------------
 

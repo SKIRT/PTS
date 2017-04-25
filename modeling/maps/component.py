@@ -15,13 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 from abc import ABCMeta, abstractproperty
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import filesystem as fs
-from ...magic.convolution.aniano import AnianoKernels
 from ...core.tools.logging import log
 from ...magic.tools.colours import get_filters_for_colour
 from ...magic.core.frame import Frame
@@ -126,6 +122,79 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def maps_sub_paths(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return [self.maps_colours_path, self.maps_ssfr_path, self.maps_tir_path, self.maps_attenuation_path, self.maps_old_path, self.maps_young_path, self.maps_ionizing_path, self.maps_dust_path]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_sub_names(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return [fs.name(path) for path in self.maps_sub_paths]
+
+    # -----------------------------------------------------------------
+
+    def get_origins_sub_name(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return: 
+        """
+
+        # Determine path
+        sub_path = fs.join(self.maps_path, name)
+        if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
+        direct_origins_path = fs.join(sub_path, "origins.txt")
+
+        # No subdirectories
+        if fs.is_file(direct_origins_path): origins = load_dict(direct_origins_path)
+
+        # Subdirectories
+        else:
+
+            # Initialize
+            origins = dict()
+
+            # Loop over subdirectories
+            for method_path, method_path in fs.directories_in_path(sub_path):
+
+                origins_path = fs.join(method_path, "origins.txt")
+                if not fs.is_file(origins_path): raise ValueError("File '" + origins_path + "' is missing")
+
+                # Load the origins
+                origins[method_path] = load_dict(origins_path)
+
+        # Return the origins
+        return origins
+
+    # -----------------------------------------------------------------
+
+    def get_origins_sub_names(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        origins = dict()
+        for name in self.maps_sub_names: origins[name] = self.get_origins_sub_name(name)
+        return origins
+
+    # -----------------------------------------------------------------
+
     @abstractproperty
     def maps_sub_path(self):
 
@@ -135,18 +204,6 @@ class MapsComponent(GalaxyModelingComponent):
         """
 
         pass
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def aniano(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        return AnianoKernels()
 
     # -----------------------------------------------------------------
 

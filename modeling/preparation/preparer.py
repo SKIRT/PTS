@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.preparation.datapreparation Contains the DataPreparer class.
+## \package pts.modeling.preparation.preparer Contains the DataPreparer class.
 
 # -----------------------------------------------------------------
 
@@ -46,8 +46,6 @@ class DataPreparer(PreparationComponent):
 
         # Call the constructor of the base class
         super(DataPreparer, self).__init__(config, interactive)
-
-        # -- Attributes --
 
         # The directory paths
         self.output_paths = dict()

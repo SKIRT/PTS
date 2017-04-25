@@ -48,6 +48,7 @@ from ...core.remote.utils import DetachedCalculation
 from ...core.tools.utils import UserIntervention
 from ..maps.ssfr import SSFRMapMaker
 from ...core.tools import types
+from ..maps.significance import SignificanceMaskCreator
 
 # -----------------------------------------------------------------
 
@@ -645,6 +646,9 @@ class GalaxyModeler(ModelerBase):
         # Create the map of the ionizing stellar population
         if "make_ionizing_stars_map" not in self.history: self.make_ionizing_stellar_map()
 
+        # Calculate the significance masks
+        if "create_significance_masks" not in self.history: self.create_significance_masks()
+
     # -----------------------------------------------------------------
 
     def make_colour_maps(self):
@@ -853,6 +857,37 @@ class GalaxyModeler(ModelerBase):
 
         # Run the dust map maker
         maker.run()
+
+        # Mark the end and save the history file
+        self.history.mark_end()
+        self.history.save()
+
+    # -----------------------------------------------------------------
+
+    def create_significance_masks(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Creating significance masks ...")
+
+        # Create the configuration
+        config = dict()
+
+        # Create the significance mask creator
+        creator = SignificanceMaskCreator(config)
+
+        # Add an entry to the history
+        self.history.add_entry(SignificanceMaskCreator.command_name())
+
+        # Set the working directory
+        creator.config.path = self.modeling_path
+
+        # Run the creator
+        creator.run()
 
         # Mark the end and save the history file
         self.history.mark_end()

@@ -372,31 +372,43 @@ class GalaxyModelingComponent(ModelingComponent):
     def dataset(self):
 
         """
-        This function ...
-        :return:
+        This funtion ...
+        :return: 
         """
 
+        return DataSet.from_file(self.prepared_dataset_path)
+
+    # -----------------------------------------------------------------
+
+    #@lazyproperty
+    #def dataset(self):
+
+        #"""
+        #This function ...
+        #:return:
+        #"""
+
         # Initialize the dataset
-        dataset = DataSet()
+        #dataset = DataSet()
 
         # Loop over all directories in the preparation directory
-        for path, name in fs.directories_in_path(self.prep_path, not_contains="Halpha", returns=["path", "name"]):
+        #for path, name in fs.directories_in_path(self.prep_path, not_contains="Halpha", returns=["path", "name"]):
 
             # Check whether the 'result' file exists
-            result_path = fs.join(path, "result.fits")
-            if not fs.is_file(result_path): raise RuntimeError("The " + name + " result image does not exist")
+            #result_path = fs.join(path, "result.fits")
+            #if not fs.is_file(result_path): raise RuntimeError("The " + name + " result image does not exist")
 
             # Add the image path to the dataset
-            dataset.add_path(name, result_path)
+            #dataset.add_path(name, result_path)
 
             # Check whether a truncation mask is available
-            #mask_path = self.truncation_mask_path(name)
+            ##mask_path = self.truncation_mask_path(name)
 
             # Add the mask path
-            #if mask_path is not None: dataset.add_mask_path(name, mask_path)
+            ##if mask_path is not None: dataset.add_mask_path(name, mask_path)
 
         # Return the dataset
-        return dataset
+        #return dataset
 
     # -----------------------------------------------------------------
 
@@ -423,114 +435,114 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def halpha_frame(self):
+    #@lazyproperty
+    #def halpha_frame(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
         # Determine the path to the image
-        path = fs.join(self.prep_path, "Mosaic Halpha", "result.fits")
+        #path = fs.join(self.prep_path, "Mosaic Halpha", "result.fits")
 
         # Check whether the Halpha image is present
-        if not fs.is_file(path): raise IOError("The prepared H-alpha image is missing")
+        #if not fs.is_file(path): raise IOError("The prepared H-alpha image is missing")
 
         # Load and return the frame
-        frame = Frame.from_file(path)
+        #frame = Frame.from_file(path)
 
         # Return the frame
-        return frame
+        #return frame
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def halpha_errors(self):
+    #@lazyproperty
+    #def halpha_errors(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
         # Determine the path to the image
-        path = fs.join(self.prep_path, "Mosaic Halpha", "result.fits")
+        #path = fs.join(self.prep_path, "Mosaic Halpha", "result.fits")
 
         # Check whether the Halpha image is present
-        if not fs.is_file(path): raise IOError("The prepared H-alpha image is missing")
+        #if not fs.is_file(path): raise IOError("The prepared H-alpha image is missing")
 
         # Load the errors frame
-        errors = Frame.from_file(path, plane="errors")
+        #errors = Frame.from_file(path, plane="errors")
 
         # Return the errors frame
-        return errors
+        #return errors
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def halpha_relative_errors(self):
+    #@lazyproperty
+    #def halpha_relative_errors(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
-        frame = self.halpha_frame
-        errors = self.halpha_errors
+        #frame = self.halpha_frame
+        #errors = self.halpha_errors
 
         # Calculate the relative errors frame and return it
-        return errors / frame
+        #return errors / frame
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def halpha_significance(self):
+    #@lazyproperty
+    #def halpha_significance(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
-        frame = self.halpha_frame
-        errors = self.halpha_errors
+        #frame = self.halpha_frame
+        #errors = self.halpha_errors
 
         # Calculate the significance map and return it
-        return frame / errors
+        #return frame / errors
 
     # -----------------------------------------------------------------
 
-    def get_halpha_significance_levels(self, levels, below_levels_value=float("nan")):
+    #def get_halpha_significance_levels(self, levels, below_levels_value=float("nan")):
 
-        """
-        This function ...
-        :param levels:
-        :param below_levels_value:
-        :return:
-        """
+        #"""
+        #This function ...
+        #:param levels:
+        #:param below_levels_value:
+        #:return:
+        #"""
 
         # Get the significance map
-        significance = self.halpha_significance
+        #significance = self.halpha_significance
 
         # Create a frame full of nans
-        significance_levels = Frame.filled_like(significance, below_levels_value)
+        #significance_levels = Frame.filled_like(significance, below_levels_value)
 
         # Loop over the levels
-        for level in levels: significance_levels[significance > level] = level
+        #for level in levels: significance_levels[significance > level] = level
 
         # Return the significance levels map
-        return significance_levels
+        #return significance_levels
 
     # -----------------------------------------------------------------
 
-    def get_halpha_significance_mask(self, level):
+    #def get_halpha_significance_mask(self, level):
 
-        """
-        This function ...
-        :param level:
-        :return:
-        """
+        #"""
+        #This function ...
+        #:param level:
+        #:return:
+        #"""
 
-        return self.halpha_significance > level
+        #return self.halpha_significance > level
 
     # -----------------------------------------------------------------
 

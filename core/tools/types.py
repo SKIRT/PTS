@@ -365,3 +365,33 @@ def is_string_type(value):
     return False
 
 # -----------------------------------------------------------------
+
+def is_dictionary(value):
+
+    """
+    This function ...
+    :param value: 
+    :return: 
+    """
+
+    return isinstance(value, dict)
+
+# -----------------------------------------------------------------
+
+def is_dictionary_of_dictionaries(value):
+
+    """
+    This function ...
+    :param value: 
+    :return: 
+    """
+
+    if not is_dictionary(value): raise ValueError("Not a dictionary")
+    if len(value) == 0: raise ValueError("Empty dictionary")
+
+    # Loop over the keys
+    for key in value:
+        if not is_dictionary(value[key]): return False
+    return True
+
+# -----------------------------------------------------------------

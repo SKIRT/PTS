@@ -18,15 +18,11 @@ import numpy as np
 # Import the relevant PTS classes and modules
 from ....magic.core.frame import Frame
 from ....core.tools.logging import log
-from ....core.units.parsing import parse_unit as u
 from ....core.basics.configurable import Configurable
 from ...calibrations.cortese import CorteseAttenuationCalibration
 from .tir_to_uv import make_tir_to_uv
 from ....core.filter.filter import parse_filter
-
-# -----------------------------------------------------------------
-
-solar_luminosity = 3.846e26 * u("W")
+from ....core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -201,9 +197,10 @@ class CorteseAttenuationMapsMaker(Configurable):
 
                 # Set origins
                 if self.has_origins:
+
                     origins = self.tirs_origins[name]
-                    origins.update(self.ssfrs_origins[ssfr_colour])
-                    origins.add(parse_filter("FUV"))
+                    sequences.extend_unique(origins, self.ssfrs_origins[ssfr_colour])
+                    sequences.append_unique(origins, parse_filter("FUV"))
                     self.origins[key] = origins
 
     # -----------------------------------------------------------------

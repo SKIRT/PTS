@@ -276,7 +276,7 @@ class SkyCircleRegion(CircleRegion, SkyRegion):
         center = SkyCoordinate.from_pixel(region.center, wcs)
 
         # Convert the radius
-        radius = region.radius * Unit("pix") * wcs.average_pixelscale
+        radius = region.radius * wcs.average_pixelscale
 
         # Create a new SkyCircleRegion
         return cls(center, radius, meta=region.meta)

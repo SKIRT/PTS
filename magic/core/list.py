@@ -1116,6 +1116,21 @@ class NamedFrameList(NamedList):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_paths(cls, **paths):
+
+        """
+        This function ...
+        :param paths: 
+        :return: 
+        """
+
+        new = cls()
+        for name in paths: new.append(Frame.from_file(paths[name]), name)
+        return new
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_dictionary(cls, dictionary):
 
         """

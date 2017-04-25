@@ -11,14 +11,15 @@ inspect_preparation | -- | preparation.inspector.PreparationInspector | argument
 decompose | -- | decomposition.decomposition.GalaxyDecomposer | arguments | Run the bulge-disk decomposition for the galaxy as part of the radiative transfer modeling
 decomposition_residuals | -- | decomposition.residuals.DecompositionResidualsCalculator | arguments | Calculate the residuals between the 3.6 micron image and the simulated bulge and disk images
 truncate | -- | truncation.truncation.Truncator | interactive | Determine the truncation region
-make_colour_maps | -- | maps.colour.colour.ColourMapMaker | arguments | Make colour maps
-make_ssfr_maps | -- | maps.ssfr.ssfr.SSFRMapMaker | arguments | Make sSFR maps
-make_tir_maps | -- | maps.tir.tir.TIRMapMaker | arguments | Make TIR map
-make_attenuation_maps | -- | maps.attenuation.attenuation.AttenuationMapMaker | arguments | Make attenuation maps
-make_old_stars_map | -- | maps.oldstars.old.OldStellarMapMaker | arguments | Make map of old stars
-make_young_stars_map | -- | maps.youngstars.young.YoungStellarMapMaker | arguments | Make map of young stars
-make_ionizing_stars_map | -- | maps.ionizingstars.ionizing.IonizingStellarMapMaker | arguments | Make map of ionizing stars
+make_colour_maps | -- | maps.colour.ColourMapMaker | arguments | Make colour maps
+make_ssfr_maps | -- | maps.ssfr.SSFRMapMaker | arguments | Make sSFR maps
+make_tir_maps | -- | maps.tir.TIRMapMaker | arguments | Make TIR map
+make_attenuation_maps | -- | maps.attenuation.AttenuationMapMaker | arguments | Make attenuation maps
+make_old_stars_map | -- | maps.old.OldStellarMapMaker | arguments | Make map of old stars
+make_young_stars_map | -- | maps.young.YoungStellarMapMaker | arguments | Make map of young stars
+make_ionizing_stars_map | -- | maps.ionizing.IonizingStellarMapMaker | arguments | Make map of ionizing stars
 make_dust_map | -- | maps.dust.dust.DustMapMaker | arguments | Make dust map
+create_significance_masks | -- | maps.significance.SignificanceMaskCreator | arguments | Make significance masks
 photometry | -- | photometry.photometry.PhotoMeter | interactive | Calculate the photometry of the different input images
 deproject | -- | deprojection.deprojector.Deprojector | arguments | Deproject the maps
 build_sed | -- | build.sed.SEDModelBuilder | arguments | Build the model for SED modeling

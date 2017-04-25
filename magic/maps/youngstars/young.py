@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ....core.tools.logging import log
 from ....core.basics.configurable import Configurable
 from ....core.filter.filter import parse_filter
+from ....core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -248,8 +249,8 @@ class YoungStellarMapsMaker(Configurable):
 
                     # Set the origins
                     origins = self.fuv_attenuations_origins[name]
-                    origins.add(parse_filter("FUV"))
-                    origins.add(self.old_origin)
+                    sequences.append_unique(origins, parse_filter("FUV"))
+                    sequences.append_unique(origins, self.old_origin)
                     self.origins[key] = origins
 
     # -----------------------------------------------------------------
