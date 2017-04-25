@@ -153,7 +153,7 @@ def makeinfofile(skirtrun, redshift=0):
             addfluxinfo(info, simulation, name, filterspec, fluxdensity)
             if redshift>0.01:
                 fluxdensity = regularfluxdensity(simulation, name, [1], shifted_wavelengths, None, filterobject)
-                fluxdensity = distantflux(regularfluxdensity, simulation.instrumentdistance(unit='m'), redshift)
+                fluxdensity = distantflux(fluxdensity, simulation.instrumentdistance(unit='m'), redshift)
             addfluxinfo(info, simulation, name, filterspec, fluxdensity, "observer")
 
         # for the Herschel filters, calculate flux and magnitude excluding the carbon line emission peaks
@@ -162,7 +162,7 @@ def makeinfofile(skirtrun, redshift=0):
             addfluxinfo(info, simulation, name, filterspec, fluxdensity, "continuum")
             if redshift>0.01:
                 fluxdensity = regularfluxdensity(simulation, name, [1], shifted_wavelengths, cmask, _filters[filterspec])
-                fluxdensity = distantflux(regularfluxdensity, simulation.instrumentdistance(unit='m'), redshift)
+                fluxdensity = distantflux(fluxdensity, simulation.instrumentdistance(unit='m'), redshift)
             addfluxinfo(info, simulation, name, filterspec, fluxdensity, "continuum_observer")
             fluxdensity = regularfluxdensity(simulation, name, [2,3], wavelengths, cmask, _filters[filterspec])
             addfluxinfo(info, simulation, name, filterspec, fluxdensity, "hii_continuum")
