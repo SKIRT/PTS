@@ -110,7 +110,7 @@ def create_unique_temp_dir(name):
     """
 
     from . import time
-    create_temp_dir(time.unique_name(name))
+    return create_temp_dir(time.unique_name(name))
 
 # -----------------------------------------------------------------
 

@@ -2727,6 +2727,7 @@ def has_valid_conda_environment_remote(remote, environment_name, conda_path="con
     :return:
     """
 
+    # Is conda environment
     if remote.is_conda_environment(environment_name, conda_path):
 
         # Check if the bin dir is present
@@ -2753,6 +2754,7 @@ def has_valid_conda_environment_remote(remote, environment_name, conda_path="con
 
         else: return True
 
+    # Not a conda environment
     else: return False
 
 # -----------------------------------------------------------------

@@ -46,12 +46,18 @@ class EllipseRegion(Region):
         :param kwargs:
         """
 
-        # Check whether axis1 > axis2
-        if radius.axis1 < radius.axis2: raise ValueError("Semimajor axis length (axis1) must be larger than semiminor axis length (axis2). Consider rotation.")
 
         # Check the angle
         if angle is None: angle = Angle(0., "deg")
         elif not isinstance(angle, Angle): raise ValueError("Angle must be an Astropy Angle object")
+
+        # Check whether axis1 > axis2
+        if radius.axis1 < radius.axis2:
+            #raise ValueError("Semimajor axis length (axis1) must be larger than semiminor axis length (axis2). Consider rotation.")
+            axis2 = radius.axis2
+            radius.axis2 = radius.axis1
+            radius.axis1 = axis2
+            angle += Angle(90, "deg")
 
         # Set attributes
         self.center = center

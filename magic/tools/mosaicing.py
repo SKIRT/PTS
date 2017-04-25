@@ -142,6 +142,7 @@ def make_header(ra, dec, width, pix_size, returns="header"):
     This function ...
     :param ra:
     :param dec:
+    :param width:
     :param pix_size:
     :param returns:
     :return:

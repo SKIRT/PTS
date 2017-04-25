@@ -2325,13 +2325,16 @@ class Remote(object):
         # Create a bash script
         temp_script_path = fs.join(temp_path, unique_session_name + ".sh")
 
+        # Determine python path
+        python_path = self.conda_pts_environment_python_path
+
         # Write the lines to the script file
         with open(temp_script_path, 'w') as script_file:
 
             #script_file.write("#!/usr/bin/env python\n")
             #script_file.write("# -*- coding: utf8 -*-\n")
             #script_file.write("\n")
-            script_file.write("python " + remote_main_path + " --configfile " + remote_conf_path + " " + command + "\n")
+            script_file.write(python_path + " " + remote_main_path + " --configfile " + remote_conf_path + " " + command + "\n")
 
         # Execute the script
         # name, local_script_path, script_destination, screen_output_path=None, keep_remote_script=False
@@ -3881,6 +3884,47 @@ class Remote(object):
         env_path = fs.directory_of(fs.directory_of(pts_python_path))
         environment_name = fs.name(env_path)
         return environment_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def conda_pts_environment_bin_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Find conda
+        conda_installation_path, conda_main_executable_path = self.find_conda()
+
+        # Get env name
+        env_name = self.conda_environment_for_pts
+
+        # Set environment bin path
+        environment_bin_path = fs.join(conda_installation_path, "envs", env_name, "bin")
+
+        # Return the bin path
+        return environment_bin_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def conda_pts_environment_python_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Get env bin path
+        bin_path = self.conda_pts_environment_bin_path
+
+        # Set python path
+        conda_python_path = fs.join(bin_path, "python")
+
+        # Return the path
+        return conda_python_path
 
     # -----------------------------------------------------------------
 
