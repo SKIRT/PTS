@@ -39,6 +39,56 @@ from .composite import CompositeRegion, PixelCompositeRegion, SkyCompositeRegion
 from ...core.tools.strings import stripwhite_around
 from ...core.units.parsing import parse_unit as u
 from ...core.tools import types
+from ...core.tools import filesystem as fs
+
+# -----------------------------------------------------------------
+
+def load_region_list(path):
+
+    """
+    Thisf unction ...
+    :param path: 
+    :return: 
+    """
+
+    # Get the second line of the region
+    second_line = fs.get_line(path, 1)
+
+    # Image coordinates or sky coordinates
+    if "image" in second_line: return PixelRegionList.from_file(path)
+    else: return SkyRegionList.from_file(path)
+
+# -----------------------------------------------------------------
+
+def load_as_pixel_region_list(path, wcs):
+
+    """
+    This function ...
+    :param path: 
+    :param wcs:
+    :return: 
+    """
+
+    region_list = load_region_list(path)
+    if isinstance(region_list, PixelRegionList): return region_list
+    elif isinstance(region_list, SkyRegionList): return region_list.to_pixel(wcs)
+    else: raise RuntimeError("An error occured")
+
+# -----------------------------------------------------------------
+
+def load_as_sky_region_list(path, wcs):
+
+    """
+    This fucntion ...
+    :param path: 
+    :param wcs:
+    :return: 
+    """
+
+    region_list = load_region_list(path)
+    if isinstance(region_list, PixelRegionList): return region_list.to_sky(wcs)
+    elif isinstance(region_list, SkyRegionList): return region_list
+    else: raise RuntimeError("An error occured")
 
 # -----------------------------------------------------------------
 
@@ -1549,11 +1599,31 @@ class PixelRegionList(RegionList):
     """
 
     @classmethod
+    def from_sky(cls, regions, wcs):
+
+        """
+        This function ...
+        :param regions: 
+        :param wcs: 
+        :return: 
+        """
+
+        new = cls()
+        for region in regions: new.append(region.to_pixel(wcs))
+        return new
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_string(cls, path, only=None, ignore=None, color=None, ignore_color=None):
 
         """
         This function ...
         :param path:
+        :param only:
+        :param ignore:
+        :param color:
+        :param ignore_color:
         :return:
         """
 
@@ -1574,6 +1644,10 @@ class PixelRegionList(RegionList):
         """
         This function ...
         :param path:
+        :param only:
+        :param ignore:
+        :param color:
+        :param ignore_color:
         :return:
         """
 
@@ -1616,7 +1690,7 @@ class PixelRegionList(RegionList):
         """
 
         # Create a new region
-        region = Region()
+        region = PixelRegionList()
 
         # Loop over all shapes
         for shape in self:
@@ -1767,19 +1841,21 @@ class PixelRegionList(RegionList):
 
         import copy
 
-        new = Region()
+        new = RegionList()
 
         for shape in self:
 
             if isinstance(shape, CompositeRegion):
 
-                copy_base = copy.deepcopy(shape.base)
-                copy_exclude = copy.deepcopy(shape.exclude)
-                copy_base.meta = shape.meta
-                copy_exclude.meta = shape.meta
+                #copy_base = copy.deepcopy(shape.base)
+                #copy_exclude = copy.deepcopy(shape.exclude)
+                #copy_base.meta = shape.meta
+                #copy_exclude.meta = shape.meta
 
-                new.append(copy_base)
-                new.append(copy_exclude)
+                #new.append(copy_base)
+                #new.append(copy_exclude)
+
+                for element in shape.elements: new.append(element)
 
             else: new.append(copy.deepcopy(shape))
 
@@ -1823,6 +1899,20 @@ class SkyRegionList(RegionList):
     """
     This class ...
     """
+
+    @classmethod
+    def from_pixel(cls, regions, wcs):
+
+        """
+        THis function ...
+        :param regions: 
+        :param wcs: 
+        :return: 
+        """
+
+        return regions.to_sky(wcs)
+
+    # -----------------------------------------------------------------
 
     @classmethod
     def from_string(cls, path, only=None, ignore=None, color=None, ignore_color=None):
@@ -1967,6 +2057,18 @@ class SkyRegionList(RegionList):
         for shape in self: shape -= value
         return self
 
+    # -----------------------------------------------------------------
+
+    def to_pixel(self, wcs):
+
+        """
+        This function ...
+        :param wcs: 
+        :return: 
+        """
+
+        return PixelRegionList.from_sky(self, wcs)
+
 # -----------------------------------------------------------------
 
 class PhysicalRegionList(RegionList):
@@ -1981,6 +2083,10 @@ class PhysicalRegionList(RegionList):
         """
         This function ...
         :param path:
+        :param only:
+        :param ignore:
+        :param color:
+        :param ignore_color:
         :return:
         """
 
@@ -2001,6 +2107,10 @@ class PhysicalRegionList(RegionList):
         """
         This function ...
         :param path:
+        :param only:
+        :param ignore:
+        :param color:
+        :param ignore_color:
         :return:
         """
 

@@ -32,6 +32,7 @@ from ..region.list import PixelRegionList
 from ..core.image import Image
 from ..core.frame import Frame
 from ...core.tools import filesystem as fs
+from ..region.list import load_as_pixel_region_list
 
 # -----------------------------------------------------------------
 
@@ -137,22 +138,11 @@ class SourceExtractor(Configurable):
         if "frame" in kwargs: self.frame = kwargs.pop("frame")
         else: self.load_frame()
 
-        # Regions
-        #self.galaxy_region = kwargs.pop("galaxy_region")
-        #self.star_region = kwargs.pop("star_region")
-        #self.saturation_region = kwargs.pop("saturation_region")
-        #self.other_region = kwargs.pop("other_region")
-
-        # Segmentation maps
-        #self.galaxy_segments = kwargs.pop("galaxy_segments")
-        #self.star_segments = kwargs.pop("star_segments")
-        #self.other_segments = kwargs.pop("other_segments")
-
         # Load the region lists
-        self.load_regions()
+        self.load_regions(**kwargs)
 
         # Load the segmentation maps
-        self.load_segments()
+        self.load_segments(**kwargs)
 
         # Initialize the mask
         self.mask = Mask.empty_like(self.frame)
@@ -195,10 +185,11 @@ class SourceExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
-    def load_regions(self):
+    def load_regions(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
@@ -206,27 +197,36 @@ class SourceExtractor(Configurable):
         log.info("Loading the regions ...")
 
         # Load the galaxy region
-        galaxy_region_path = self.input_path_file("galaxies.reg")
-        self.galaxy_region = PixelRegionList.from_file(galaxy_region_path) if fs.is_file(galaxy_region_path) else None
+        if "galaxy_region" in kwargs: self.galaxy_region = kwargs.pop("galaxy_region")
+        else:
+            galaxy_region_path = self.input_path_file("galaxies.reg")
+            self.galaxy_region = load_as_pixel_region_list(galaxy_region_path, self.frame.wcs) if fs.is_file(galaxy_region_path) else None
 
         # Load the star region
-        star_region_path = self.input_path_file("stars.reg")
-        self.star_region = PixelRegionList.from_file(star_region_path) if fs.is_file(star_region_path) else None
+        if "star_region" in kwargs: self.star_region = kwargs.pop("star_region")
+        else:
+            star_region_path = self.input_path_file("stars.reg")
+            self.star_region = load_as_pixel_region_list(star_region_path, self.frame.wcs) if fs.is_file(star_region_path) else None
 
         # Load the saturation region
-        saturation_region_path = self.input_path_file("saturation.reg")
-        self.saturation_region = PixelRegionList.from_file(saturation_region_path) if fs.is_file(saturation_region_path) else None
+        if "saturation_region" in kwargs: self.saturation_region = kwargs.pop("saturation_region")
+        else:
+            saturation_region_path = self.input_path_file("saturation.reg")
+            self.saturation_region = load_as_pixel_region_list(saturation_region_path, self.frame.wcs) if fs.is_file(saturation_region_path) else None
 
         # Load the region of other sources
-        other_region_path = self.input_path_file("other_sources.reg")
-        self.other_region = PixelRegionList.from_file(other_region_path) if fs.is_file(other_region_path) else None
+        if "other_region" in kwargs: self.other_region = kwargs.pop("other_region")
+        else:
+            other_region_path = self.input_path_file("other_sources.reg")
+            self.other_region = load_as_pixel_region_list(other_region_path, self.frame.wcs) if fs.is_file(other_region_path) else None
 
     # -----------------------------------------------------------------
 
-    def load_segments(self):
+    def load_segments(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
@@ -234,7 +234,8 @@ class SourceExtractor(Configurable):
         log.info("Loading the segmentation maps ...")
 
         # Load the image with segmentation maps
-        segments = Image.from_file(self.input_path_file("segments.fits"), no_filter=True)
+        if "segments" in kwargs: segments = kwargs.pop("segments")
+        else: segments = Image.from_file(self.input_path_file("segments.fits"), no_filter=True)
 
         # Get the segmentation maps
         self.galaxy_segments = segments.frames["galaxies"] if "galaxies" in segments.frames else None
@@ -283,7 +284,7 @@ class SourceExtractor(Configurable):
             # Get the coordinate of the center for this galaxy
             center = shape.center
 
-            print("here")
+            #print("here")
 
             # Check the label of the corresponding segment
             label = self.galaxy_segments[int(center.y), int(center.x)]

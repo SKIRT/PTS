@@ -942,6 +942,23 @@ def read_lines(path):
 
 # -----------------------------------------------------------------
 
+def get_line(path, row):
+
+    """
+    This function ...
+    :param path: 
+    :param row: 
+    :return: 
+    """
+
+    index = 0
+    for line in read_lines(path):
+        if index == row: return line
+        index += 1
+    return None
+
+# -----------------------------------------------------------------
+
 def read_last_lines(path, nlines):
 
     """
