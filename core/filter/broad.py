@@ -119,7 +119,7 @@ identifiers["NICS.K"] = Map(observatories=["TNG"], instruments=["Nics"], bands=[
 # Planck_6810   44 GHz    044   LFI
 # Planck_10600  28 GHz    030   LFI
 
-planck_info = dict()
+planck_info = OrderedDict()
 planck_info["Planck_350"] = ("857", "HFI")
 planck_info["Planck_550"] = ("545", "HFI")
 planck_info["Planck_850"] = ("353", "HFI")
@@ -129,6 +129,23 @@ planck_info["Planck_3000"] = ("100", "HFI")
 planck_info["Planck_4260"] = ("070", "LFI")
 planck_info["Planck_6810"] = ("044", "LFI")
 planck_info["Planck_10600"] = ("030", "LFI")
+
+number_of_hfi_bands = 6
+
+# -----------------------------------------------------------------
+
+# Find index
+def find_planck_index(instrument, frequency_string):
+    for index in range(len(planck_info)):
+        key = planck_info.keys()[index]
+        if planck_info[key][1] == instrument and planck_info[key][0] == frequency_string: break
+    else: raise RuntimeError("Something went wrong")
+    return index
+
+# Relative index for a Planck instrument
+def find_planck_index_instrument(instrument, frequency_string):
+    if instrument == "HFI": return find_planck_index(instrument, frequency_string)
+    else: return find_planck_index(instrument, frequency_string) - number_of_hfi_bands
 
 # -----------------------------------------------------------------
 
@@ -465,6 +482,21 @@ class BroadBandFilter(Filter):
             # Initialize
             self._initialize2(wavelengths, transmissions)
 
+            # Set central wavelength
+            # HFI: 3, 2, 1.5, 0.9, 0.5, 0.3 mm
+            # LFI: 10, 7, 4 mm
+            if instrument == "HFI":
+
+                central_wavelengths = [0.3, 0.5, 0.9, 1.5, 2., 3.]
+                index = find_planck_index_instrument(instrument, frequency_string)
+                self._WavelengthCen = central_wavelengths[index] * 1000.
+
+            elif instrument == "LFI":
+
+                central_wavelengths = [4., 7., 10.]
+                index = find_planck_index_instrument(instrument, frequency_string)
+                self._WavelengthCen = central_wavelengths[index] * 1000.
+
         # ALMA filters have to be handled seperately
         elif isinstance(filterspec, types.StringTypes) and "alma" in filterspec.lower():
 
@@ -619,15 +651,7 @@ class BroadBandFilter(Filter):
 
     # ---------- Special functions --------------------------------------
 
-    def __eq__(self, other):
 
-        """
-        This function compares two filter instances
-        :param other:
-        :return:
-        """
-
-        return str(other) == str(self)
 
     # ---------- Retrieving information -------------------------------
 

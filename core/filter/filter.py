@@ -215,4 +215,27 @@ class Filter(object):
         from ..basics.range import QuantityRange
         return QuantityRange(self.min, self.max)
 
+    # -----------------------------------------------------------------
+
+    def __eq__(self, other):
+
+        """
+        This function compares two filter instances
+        :param other:
+        :return:
+        """
+
+        return str(other) == str(self)
+
+    # -----------------------------------------------------------------
+
+    def __hash__(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return hash(str(self))
+
 # -----------------------------------------------------------------
