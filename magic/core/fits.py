@@ -324,10 +324,12 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
 
 # -----------------------------------------------------------------
 
-def load_frame(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False, fwhm=None, add_meta=True):
+def load_frame(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
+               fwhm=None, add_meta=True, extra_meta=None):
 
     """
     This function ...
+    :param cls:
     :param path:
     :param index:
     :param name:
@@ -337,6 +339,7 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     :param no_filter:
     :param fwhm:
     :param add_meta:
+    :param extra_meta:
     :return:
     """
 
@@ -372,6 +375,12 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     # Add meta information
     if add_meta:
         for key in header: metadata[key.lower()] = header[key]
+
+    # Add extra meta data
+    if extra_meta is not None:
+        for key in extra_meta: metadata[key] = extra_meta[key]
+
+    #print("METADATA", metadata)
 
     # Check whether multiple planes are present in the FITS image
     nframes = headers.get_number_of_frames(header)
@@ -414,6 +423,9 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
 
     # Obtain the FWHM of this image
     if fwhm is None: fwhm = headers.get_fwhm(header)
+
+    # Obtain the PSF filter of this image
+    psf_filter = headers.get_psf_filter(header)
 
     # Get the magnitude zero-point
     zero_point = headers.get_zero_point(header)
@@ -512,7 +524,8 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
                    pixelscale=pixelscale,
                    meta=metadata,
                    path=path,
-                   from_multiplane=True)
+                   from_multiplane=True,
+                   psf_filter=psf_filter)
 
     else:
 
@@ -537,7 +550,8 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
                    pixelscale=pixelscale,
                    meta=metadata,
                    path=path,
-                   from_multiplane=False)
+                   from_multiplane=False,
+                   psf_filter=psf_filter)
 
 # -----------------------------------------------------------------
 

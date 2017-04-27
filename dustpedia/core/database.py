@@ -14,7 +14,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import tempfile
 import requests
 from lxml import html
 
@@ -29,9 +28,11 @@ from ...core.tools import filesystem as fs
 from ...core.tools import introspection
 from ...core.filter.filter import parse_filter
 from ...core.tools import network
-from ...core.tools import progress
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...core.tools import time
+from ...core.tools import types
+from ...magic.core.list import FrameList, NamedFrameList
+from ...magic.core.list import CoordinateSystemList, NamedCoordinateSystemList
 
 # -----------------------------------------------------------------
 
@@ -414,6 +415,37 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    def get_image_name_for_filter(self, galaxy_name, fltr):
+
+        """
+        Thisf ucntion ...
+        :param galaxy_name: 
+        :param fltr: 
+        :return: 
+        """
+
+        # Convert into fltr
+        if types.is_string_type(fltr): fltr = parse_filter(fltr)
+
+        # Loop over all the images
+        names = self.get_image_names(galaxy_name, error_maps=False)
+        for name in names:
+
+            # Skip DSS
+            if "DSS" in name and "SDSS" not in name: continue
+
+            # Get the filter
+            fltr_string = name.split(galaxy_name + "_")[1].split(".fits")[0]
+            name_fltr = parse_filter(fltr_string)
+
+            # Match
+            if fltr == name_fltr: return name
+
+        # No match found
+        return None
+
+    # -----------------------------------------------------------------
+
     def get_image_names_and_filters(self, galaxy_name):
 
         """
@@ -502,6 +534,113 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    def get_frame(self, galaxy_name, image_name):
+
+        """
+        This function ...
+        :param galaxy_name: 
+        :param image_name: 
+        :return: 
+        """
+
+        return self.get_image(galaxy_name, image_name)
+
+    # -----------------------------------------------------------------
+
+    def get_image_for_filter(self, galaxy_name, fltr):
+
+        """
+        THis function ...
+        :param galaxy_name: 
+        :param fltr: 
+        :return: 
+        """
+
+        # Get the name
+        name = self.get_image_name_for_filter(galaxy_name, fltr)
+
+        # Return the image
+        return self.get_image(galaxy_name, name)
+
+    # -----------------------------------------------------------------
+
+    def get_frame_for_filter(self, galaxy_name, fltr):
+
+        """
+        This function ...
+        :param galaxy_name: 
+        :param fltr: 
+        :return: 
+        """
+
+        return self.get_image_for_filter(galaxy_name, fltr)
+
+    # -----------------------------------------------------------------
+
+    def get_images_for_filters(self, galaxy_name, filters):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :param filters: 
+        :return: 
+        """
+
+        images = []
+
+        # Loop over the filters
+        for fltr in filters: images.append(self.get_image_for_filter(galaxy_name, fltr))
+
+        # Return the images
+        return images
+
+    # -----------------------------------------------------------------
+
+    def get_frames_for_filters(self, galaxy_name, filters):
+
+        """
+        This function ...
+        :param galaxy_name: 
+        :param filters: 
+        :return: 
+        """
+
+        return self.get_images_for_filters(galaxy_name, filters)
+
+    # -----------------------------------------------------------------
+
+    def get_framelist_for_filters(self, galaxy_name, filters, named=False):
+
+        """
+        This function ...
+        :param galaxy_name: 
+        :param filters: 
+        :param named:
+        :return: 
+        """
+
+        # Initialize list
+        if named: frames = NamedFrameList()
+        else: frames = FrameList()
+
+        # Loop over the filters
+        for fltr in filters:
+
+            # Get image name
+            name = self.get_image_name_for_filter(galaxy_name, fltr)
+
+            # Get the frame
+            frame = self.get_frame(galaxy_name, name)
+
+            # Add the frame
+            if named: frames.append(frame, name)
+            else: frames.append(frame, fltr)
+
+        # Return the frame list
+        return frames
+
+    # -----------------------------------------------------------------
+
     def get_header(self, galaxy_name, image_name):
 
         """
@@ -528,6 +667,38 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    def get_header_for_filter(self, galaxy_name, fltr):
+
+        """
+        This function ...
+        :param galaxy_name: 
+        :param fltr:
+        :return: 
+        """
+
+        # Get name
+        name = self.get_image_name_for_filter(galaxy_name, fltr)
+
+        # Return the header
+        return self.get_header(galaxy_name, name)
+
+    # -----------------------------------------------------------------
+
+    def get_headers_for_filters(self, galaxy_name, filters):
+
+        """
+        This function ...
+        :param galaxy_name: 
+        :param filters: 
+        :return: 
+        """
+
+        headers = []
+        for fltr in filters: headers.append(self.get_header_for_filter(galaxy_name, fltr))
+        return headers
+
+    # -----------------------------------------------------------------
+
     def get_wcs(self, galaxy_name, image_name):
 
         """
@@ -545,6 +716,82 @@ class DustPediaDatabase(object):
 
         # Create and return the coordinate system
         return CoordinateSystem(header=header)
+
+    # -----------------------------------------------------------------
+
+    def get_coordinate_system(self, galaxy_name, image_name):
+
+        """
+        This function ...
+        :param galaxy_name: 
+        :param image_name: 
+        :return: 
+        """
+
+        return self.get_wcs(galaxy_name, image_name)
+
+    # -----------------------------------------------------------------
+
+    def get_coordinate_system_for_filter(self, galaxy_name, fltr):
+
+        """
+        This function ...
+        :param galaxy_name: 
+        :param fltr: 
+        :return: 
+        """
+
+        # Get name
+        name = self.get_image_name_for_filter(galaxy_name, fltr)
+
+        # Return the coordinate system
+        return self.get_coordinate_system(galaxy_name, name)
+
+    # -----------------------------------------------------------------
+
+    def get_coordinate_systems_for_filters(self, galaxy_name, filters):
+
+        """
+        This function ...
+        :param galaxy_name: 
+        :param filters: 
+        :return: 
+        """
+
+        coordinate_systems = []
+        for fltr in filters: coordinate_systems.append(self.get_coordinate_system_for_filter(galaxy_name, fltr))
+        return coordinate_systems
+
+    # -----------------------------------------------------------------
+
+    def get_coordinate_system_list_for_filter(self, galaxy_name, filters, named=False):
+
+        """
+        This function ...
+        :param galaxy_name: 
+        :param filters: 
+        :param named:
+        :return: 
+        """
+
+        if named: coordinate_systems = NamedCoordinateSystemList()
+        else: coordinate_systems = CoordinateSystemList()
+
+        # Loop over the filters
+        for fltr in filters:
+
+            # Get name
+            name = self.get_image_name_for_filter(galaxy_name, fltr)
+
+            # Get coordinate system
+            wcs = self.get_coordinate_system(galaxy_name, name)
+
+            # Add
+            if named: coordinate_systems.append(name, wcs)
+            else: coordinate_systems.append(wcs, fltr=fltr)
+
+        # Return
+        return coordinate_systems
 
     # -----------------------------------------------------------------
 

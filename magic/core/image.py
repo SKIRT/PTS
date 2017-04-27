@@ -1037,7 +1037,7 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def convolve(self, kernel, allow_huge=False, fft=True):
+    def convolve(self, kernel, allow_huge=True, fft=True):
 
         """
         This function ...

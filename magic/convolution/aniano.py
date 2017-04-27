@@ -202,7 +202,7 @@ class AnianoKernels(Kernels):
         kernel_path, to_psf_name = self.get_kernel_path(from_filter, to_filter, high_res=high_res, from_fwhm=from_fwhm, to_fwhm=to_fwhm, return_name=True)
 
         # Load the kernel frame
-        kernel = ConvolutionKernel.from_file(kernel_path)
+        kernel = ConvolutionKernel.from_file(kernel_path, from_filter=from_filter, to_filter=to_filter)
 
         # Get the FWHM of the kernel (should have been done already!)
         if kernel.fwhm is None:
@@ -282,7 +282,7 @@ class AnianoKernels(Kernels):
             fwhm = get_fwhm_for_aniano_name(to_psf_name)
 
             # Set the FWHM of the kernel
-            kernel = ConvolutionKernel.from_file(kernel_file_path, fwhm=fwhm)
+            kernel = ConvolutionKernel.from_file(kernel_file_path, fwhm=fwhm, from_filter=from_filter, to_filter=to_filter)
             kernel.saveto(kernel_file_path)
 
         # Return
@@ -303,7 +303,7 @@ class AnianoKernels(Kernels):
         psf_path, psf_name = self.get_psf_path(fltr, return_name=True)
 
         # Load the PSF frame
-        psf = ConvolutionKernel.from_file(psf_path)
+        psf = ConvolutionKernel.from_file(psf_path, to_filter=fltr)
 
         # Get the FWHM of the PSF
         fwhm = get_fwhm_for_aniano_name(psf_name)
@@ -342,7 +342,7 @@ class AnianoKernels(Kernels):
             fwhm = get_fwhm_for_aniano_name(psf_name)
 
             # Set the FWHM of the PSF
-            psf = ConvolutionKernel.from_file(psf_file_path, fwhm=fwhm)
+            psf = ConvolutionKernel.from_file(psf_file_path, fwhm=fwhm, to_filter=fltr)
             psf.saveto(psf_file_path)
 
         if return_name: return psf_file_path, psf_name

@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 
 # Import astronomical modules
 from astropy.table import Table
@@ -221,7 +221,7 @@ nanomaggy_string = "(3.613e-6 Jy)"
 # -----------------------------------------------------------------
 
 # Input string->unit replacements
-input_replacements = dict()
+input_replacements = OrderedDict()
 input_replacements["DN"] = "count"
 input_replacements["SEC"] = "second"
 input_replacements["nanomaggy"] = nanomaggy_string
@@ -230,6 +230,7 @@ input_replacements["nmaggy"] = nanomaggy_string
 input_replacements["nmgy"] = nanomaggy_string
 input_replacements["nMgy"] = nanomaggy_string
 input_replacements["nanomaggies"] = nanomaggy_string
+input_replacements["solLum"] = "Lsun" # first convert solLum to Lsun so that UM IS NOT REPLACED BY MICRON, GIVEN RISE TO SOLLMICRON !!! (THIS IS ALSO WHY THE INPUT_REPLACEMENTS IS AN ORDERED DICT)
 input_replacements["um"] = "micron"
 input_replacements["kiB"] = "kB"
 input_replacements["GiB"] = "GB"
@@ -407,21 +408,27 @@ def analyse_unit(unit):
     :return:
     """
 
+    # Initialize different parts of the unit
     scale_factor = unit.scale
     base_unit = Unit("")
     wavelength_unit = Unit("")
     frequency_unit = Unit("")
     length_unit = Unit("")
-
     solid_angle_unit = Unit("")
+
+    #print("BEFORE", unit)
 
     # Reduce (for example, convert 'Jy * Hz' to '1e-26 W / m2')
     unit, cannot_be_intrinsic_brightness = reduce_unit(unit)
+
+    #print("AFTER", unit)
 
     # Look in the bases whether different physical types occur twice
     for physical_type in ["frequency", "time", "length", "solid angle"]:
 
         occurences = occurences_for_type(unit, physical_type)
+
+        #print(occurences)
 
         # Powers are
         if len(occurences) == 2:

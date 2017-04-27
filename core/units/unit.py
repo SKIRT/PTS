@@ -16,10 +16,10 @@ from __future__ import absolute_import, division, print_function
 import math
 import copy
 import warnings
+import traceback
 
 # Import astronomical modules
 from astropy.units import Unit, UnitBase, CompositeUnit, spectral, Quantity
-from astropy import constants
 
 # Import the relevant PTS classes and modules
 from ...magic.basics.pixelscale import Pixelscale
@@ -27,6 +27,7 @@ from .quantity import PhotometricQuantity
 from .utils import analyse_unit, divide_units_reverse, clean_unit_string
 from .parsing import parse_unit, parse_quantity
 from ..tools import types
+from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -115,6 +116,12 @@ class PhotometricUnit(CompositeUnit):
         :param brightness_strict: similar to density_strict
         """
 
+        #print(unit)
+        #print(density)
+        #print(density_strict)
+        #print(brightness)
+        #print(brightness_strict)
+
         # Unit attributes
         self._base_unit = Unit("")
         self._wavelength_unit = Unit("")
@@ -144,7 +151,11 @@ class PhotometricUnit(CompositeUnit):
 
             # Parse the unit
             try: unit = Unit(unit)
-            except ValueError: raise ValueError("Unit is not recognized")
+            except ValueError as e:
+                traceback.print_exc()
+                print(str(e))
+                raise ValueError("Unit is not recognized")
+            #unit = Unit(unit)
 
             # Remove 'per pixel' from the unit
             if "pix" in str(unit): unit *= "pix"
@@ -163,6 +174,8 @@ class PhotometricUnit(CompositeUnit):
                 if density_strict and not self.density: raise ValueError("The passed unit string does not correspond to a spectral density")
                 self.density = True
 
+            #print(self.base_unit, cannot_be_intrinsic_brightness)
+
             # Set the distance or intrinsic scale (extent) unit
             if self.solid_angle_unit != "":
 
@@ -173,7 +186,7 @@ class PhotometricUnit(CompositeUnit):
                 if length_unit != "":
 
                     # Check if brightness flag is OK
-                    if not brightness and brightness_strict: raise ValueError("The passed unit correspond to a surface brightness")
+                    if not brightness and brightness_strict: raise ValueError("The passed unit corresponds to a surface brightness")
 
                     # Set the distance unit
                     self.distance_unit = length_unit
@@ -642,6 +655,44 @@ class PhotometricUnit(CompositeUnit):
     # -----------------------------------------------------------------
 
     @property
+    def is_per_intrinsic_area(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.is_intrinsic_surface_brightness
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_per_angular_or_intrinsic_area(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.is_per_angular_area or self.is_per_intrinsic_area
+        # same as: return self.is_intensity or self.is_brightness
+        # same as: return self.is_intensity or self.is_surface_brightness or self.is_intrinsic_surface_brightness
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_per_pixelsize(self):
+
+        """
+        This function returns the same as the is_per_angular_or_intrinsic_area() function
+        :return: 
+        """
+
+        return self.is_per_angular_or_intrinsic_area
+
+    # -----------------------------------------------------------------
+
+    @property
     def corresponding_angular_area_unit(self):
 
         """
@@ -649,9 +700,107 @@ class PhotometricUnit(CompositeUnit):
         :return: 
         """
 
+        # Intensity and surface brightness
         if self.is_per_angular_area: return self.copy()
-        elif self.is_flux or self.is_luminosity: return PhotometricUnit(str(self) + " / sr", density=self.density)
-        else: raise RuntimeError("Unknown unit")
+
+        # Luminosity
+        elif self.is_luminosity:
+
+            #new_unit_string = str(self) + " / sr"
+            new_unit = self / "sr"
+            new_unit_string = str(new_unit)
+            brightness = False # is intensity now
+            #return PhotometricUnit(str(self) + " / sr", density=self.density, density_strict=True, brightness=False, brightness_strict=True) # is luminosity, not a brightness!!
+
+        # Flux
+        elif self.is_flux:
+
+            #new_unit_string = str(self) + " / sr"
+            new_unit = self / "sr"
+            new_unit_string = str(new_unit)
+            brightness = True
+            #return PhotometricUnit(str(self) + " / sr", density=self.density, density_strict=True, brightness=True, brightness_strict=True)
+
+        # Intrinsic surface brightness
+        elif self.is_intrinsic_surface_brightness:
+
+            #new_unit_string = str(self * self._extent_unit) + "/sr"
+            new_unit = self * self._extent_unit / "sr"
+            new_unit_string = str(new_unit)
+            brightness = False # is intensity now
+            #return PhotometricUnit(str(self * self._extent_unit) + "/sr", density=self.density, brightness=True, density_strict=True, brightness_strict=True)
+
+        # Invalid unit
+        else: raise RuntimeError("Invalid unit")
+
+        # Debugging
+        log.debug("New unit string: '" + new_unit_string + "'")
+
+        # Create and return the new unit
+        return PhotometricUnit(new_unit_string, density=self.density, density_strict=True, brightness=brightness, brightness_strict=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_intrinsic_area_unit(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Intrinsic surface brightness
+        if self.is_per_intrinsic_area: return self.copy()
+
+        # Luminosity
+        elif self.is_luminosity:
+
+            brightness = True
+            #new_unit_string = str(self) + " / pc2"
+            new_unit = self / "pc2"
+            new_unit_string = str(new_unit)
+
+            #print("new unit string", new_unit_string)
+            #return PhotometricUnit(new_unit_string, density=self.density, brightness=True, density_strict=True, brightness_strict=True)
+
+        # Flux
+        elif self.is_flux:
+
+            brightness = True
+            #new_unit_string = str(self * self.distance_unit) + " / pc2"
+            new_unit = self * self.distance_unit / "pc2"
+            new_unit_string = str(new_unit)
+
+            #return PhotometricUnit(str(self * self.distance_unit) + " / pc2", density=self.density, brightness=True, density_strict=True, brightness_strict=True)
+
+        # Intensity
+        elif self.is_intensity:
+
+            brightness = True
+            #new_unit_string = str(self * self.solid_angle_unit) + " / pc2"
+            new_unit = self * self.solid_angle_unit / "pc2"
+            new_unit_string = str(new_unit)
+
+            #return PhotometricUnit(str(self * self.solid_angle_unit) + " / pc2", density=self.density, brightness=True, density_strict=True, brightness_strict=True)
+
+        # Surface brightness
+        elif self.is_surface_brightness:
+
+            brightness = True
+            #new_unit_string = str(self * self.distance_unit * self.solid_angle_unit) + "/ pc2"
+            new_unit = self * self.distance_unit * self.solid_angle_unit / "pc2"
+            new_unit_string = str(new_unit)
+
+            #return PhotometricUnit(str(self * self.distance_unit * self.solid_angle_unit) + "/ pc2", density=self.density, brightness=True, density_strict=True, brightness_strict=True)
+
+        # Invalid
+        else: raise RuntimeError("Invalid unit")
+
+        # Debugging
+        log.debug("New unit string: '" + new_unit_string + "'")
+
+        # Create and return the new unit
+        return PhotometricUnit(new_unit_string, density=self.density, density_strict=True, brightness=brightness, brightness_strict=True)
 
     # -----------------------------------------------------------------
 
@@ -788,7 +937,7 @@ class PhotometricUnit(CompositeUnit):
     # -----------------------------------------------------------------
 
     def conversion_factor(self, to_unit, density=False, wavelength=None, frequency=None, distance=None, solid_angle=None,
-                          fltr=None, pixelscale=None, brightness=False):
+                          fltr=None, pixelscale=None, brightness=False, brightness_strict=False, density_strict=False):
 
         """
         This function ...
@@ -805,7 +954,7 @@ class PhotometricUnit(CompositeUnit):
         """
 
         # Parse "to unit"
-        to_unit = PhotometricUnit(to_unit, density=density, brightness=brightness)
+        to_unit = PhotometricUnit(to_unit, density=density, brightness=brightness, brightness_strict=brightness_strict, density_strict=density_strict)
 
         # Determine wavelength and frequency
         if wavelength is not None:

@@ -85,7 +85,7 @@ class UnitsTest(TestImplementation):
         self.test_sed()
 
         # Test with solar units
-        self.test_solar()
+        #self.test_solar()
 
         # Test with surface brightness
         self.test_brightness()
@@ -115,6 +115,9 @@ class UnitsTest(TestImplementation):
         :return:
         """
 
+        # Inform the user
+        log.info("Loading the SEDs ...")
+
         observed_sed_path = fs.join(this_dir_path, "DustPedia.dat")
         sim_sed_path_1 = fs.join(this_dir_path, "M81_earth_sed1.dat")
         sim_sed_path_2 = fs.join(this_dir_path, "M81_earth_sed2.dat")
@@ -137,8 +140,10 @@ class UnitsTest(TestImplementation):
         # Inform the user
         log.info("Simple test ...")
 
+        # Test interpretation of names such as Jansky
         self.test_names()
 
+        # Test flux conversions
         self.test_fluxes()
 
     # -----------------------------------------------------------------
@@ -223,6 +228,9 @@ class UnitsTest(TestImplementation):
         # Convert automatic
         self.convert_sed_automatic()
 
+        # Compare
+        self.compare_seds()
+
     # -----------------------------------------------------------------
 
     def convert_sed_manual(self):
@@ -270,7 +278,21 @@ class UnitsTest(TestImplementation):
 
         self.model_sed_1.convert_to(photometry_unit="Jy")
 
-        print(self.model_sed_1)
+        #print(self.model_sed_1)
+
+    # -----------------------------------------------------------------
+
+    def compare_seds(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        for index in range(len(self.model_sed_3)):
+            ratio = self.model_sed_1["Photometry"][index] / self.model_sed_3["Photometry"][index]
+            #print(self.model_sed_3["Wavelength"][index], self.model_sed_1["Wavelength"][index], self.model_sed_3["Photometry"][index], self.model_sed_1["Photometry"][index], ratio)
+            if not np.isclose(ratio, 1.0): print("FAIL")
 
     # -----------------------------------------------------------------
 
@@ -345,6 +367,30 @@ class UnitsTest(TestImplementation):
         This function ...
         :return: 
         """
+
+        # Inform the user
+        log.info("Testing surface brightness units ...")
+
+        units = [u("Jy"), u("W/micron"), u("Lsun"), u("erg/s/Hz"), u("W/sr"), u("Lsun/pc2", brightness=True), u("W/m2/micron")]
+
+        print("")
+        for unit in units:
+
+            print(str(unit))
+            print("")
+            print(" - physical type: " + unit.physical_type)
+            print(" - base physical type: " + unit.base_physical_type)
+            print(" - base unit: " + str(unit.base_unit))
+            print(" - density: " + str(unit.density))
+            print(" - brightness: " + str(unit.brightness))
+
+            angular_area_unit = unit.corresponding_angular_area_unit
+            #print(angular_area_unit)
+            intrinsic_area_unit = unit.corresponding_intrinsic_area_unit
+
+            print(" - corresponding angular area unit: " + str(angular_area_unit))
+            print(" - corresponding intrinsic area unit: " + str(intrinsic_area_unit))
+            print("")
 
     # -----------------------------------------------------------------
 

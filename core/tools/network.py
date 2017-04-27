@@ -157,7 +157,7 @@ def download_file(url, path, new_name=None, overwrite=False, progress_bar=False,
 
         # Request
         if session is None: session = requests.session()
-        r = session.get(url, stream=True)
+        r = session.get(url, stream=True, timeout=(60,600)) # (connect timeout, read timeout)
 
         # Open the local file
         with open(filepath, 'wb') as f:
@@ -173,7 +173,7 @@ def download_file(url, path, new_name=None, overwrite=False, progress_bar=False,
 
         # Request
         if session is None: session = requests.session()
-        r = session.get(url, stream=True)
+        r = session.get(url, stream=True, timeout=(60,600)) # (connect timeout, read timeout)
 
         # Open the local file, and load the content in it
         with open(filepath, 'wb') as f:
@@ -188,7 +188,7 @@ def download_file(url, path, new_name=None, overwrite=False, progress_bar=False,
 
         # Request
         if session is None: session = requests.session()
-        r = session.get(url)
+        r = session.get(url, timeout=(60,600)) # (connect timeout, read timeout)
 
         # Open the local file, and load the content in it
         with open(filepath, 'wb') as f:

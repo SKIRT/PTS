@@ -33,6 +33,7 @@ from ..core.image import Image
 from ..core.frame import Frame
 from ...core.tools import filesystem as fs
 from ..region.list import load_as_pixel_region_list
+from ..region.point import PixelPointRegion
 
 # -----------------------------------------------------------------
 
@@ -683,7 +684,7 @@ class SourceExtractor(Configurable):
         log.info("Writing the result ...")
 
         # Determine the path to the resulting FITS file
-        path = self.output_path_file(self.frame.name + ".fits")
+        path = self.output_path_file("extracted.fits")
 
         # Save the resulting image as a FITS file
         self.frame.saveto(path)
@@ -726,9 +727,10 @@ class SourceExtractor(Configurable):
             # Skip single coordinates
             if isinstance(shape, PixelCoordinate): continue
 
-            if "principal" in shape.label: return shape
+            if shape.label is not None and "principal" in shape.label: return shape
+            if "text" in shape.meta and "principal" in shape.meta["text"]: return shape
 
-            if not isinstance(shape, PixelEllipseRegion): return shape
+            if not isinstance(shape, PixelEllipseRegion) and not isinstance(shape, PixelPointRegion): return shape
 
             semimajor_axis_length = shape.semimajor
             if largest_shape is None or semimajor_axis_length > largest_shape.semimajor: largest_shape = shape

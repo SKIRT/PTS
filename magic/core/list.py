@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
-from ...core.filter.filter import parse_filter, Filter
+from ...core.filter.filter import parse_filter
 from ..region.list import SkyRegionList
 from ...core.units.parsing import parse_unit as u
 from .frame import Frame
@@ -24,14 +24,13 @@ from ..tools import coordinates
 from ..basics.coordinate import SkyCoordinate
 from ..basics.stretch import SkyStretch
 from ..region.rectangle import SkyRectangleRegion
-from ...core.basics.containers import KeyList, NamedList
-from ...core.tools import types
+from ...core.basics.containers import NamedList, FilterBasedList
 from ...core.tools import filesystem as fs
 from ..convolution.aniano import AnianoKernels
 
 # -----------------------------------------------------------------
 
-class CoordinateSystemList(KeyList):
+class CoordinateSystemList(FilterBasedList):
 
     """
     This class ...
@@ -75,31 +74,6 @@ class CoordinateSystemList(KeyList):
 
     # -----------------------------------------------------------------
 
-    @property
-    def filters(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        return self.keys
-
-    # -----------------------------------------------------------------
-
-    def __contains__(self, fltr):
-
-        """
-        This function ...
-        :param fltr: 
-        :return: 
-        """
-
-        if types.is_string_type(fltr): fltr = parse_filter(fltr)
-        return fltr in self.keys
-
-    # -----------------------------------------------------------------
-
     def append(self, frame_or_wcs, fltr=None):
 
         """
@@ -118,26 +92,10 @@ class CoordinateSystemList(KeyList):
         else: raise ValueError("Invalid input")
 
         # Check the key
-        if fltr in self.keys: raise ValueError("Already a coordinate system for the '" + str(fltr) + "' filter")
+        if fltr in self.filters: raise ValueError("Already a coordinate system for the '" + str(fltr) + "' filter")
 
         # Call the append function of the base class
         super(CoordinateSystemList, self).append(fltr, wcs)
-
-    # -----------------------------------------------------------------
-
-    def __getitem__(self, index_or_filter):
-
-        """
-        This function ...
-        :param index_or_filter:
-        :return: 
-        """
-
-        # Get the filter
-        if types.is_string_type(index_or_filter): index_or_filter = parse_filter(index_or_filter)
-
-        # Call the function of the base class
-        return super(CoordinateSystemList, self).__getitem__(index_or_filter)
 
     # -----------------------------------------------------------------
 
@@ -487,7 +445,28 @@ class CoordinateSystemList(KeyList):
 
 # -----------------------------------------------------------------
 
-class FrameList(KeyList):
+class NamedCoordinateSystemList(NamedList):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, **kwargs):
+
+        """
+        The constructor ...
+        :param kwargs: 
+        """
+
+        # Call the constructor of the base class
+        super(NamedCoordinateSystemList, self).__init__()
+
+        # Add coordinate systems
+        for name in kwargs: self.append(name, kwargs[name])
+
+# -----------------------------------------------------------------
+
+class FrameList(FilterBasedList):
 
     """
     This class ...
@@ -537,18 +516,6 @@ class FrameList(KeyList):
 
     # -----------------------------------------------------------------
 
-    @property
-    def filters(self):
-
-        """
-        THis function ...
-        :return: 
-        """
-
-        return self.keys
-
-    # -----------------------------------------------------------------
-
     def append(self, frame, fltr=None):
 
         """
@@ -565,22 +532,6 @@ class FrameList(KeyList):
 
         # Call the function of the base class
         super(FrameList, self).append(fltr, frame)
-
-    # -----------------------------------------------------------------
-
-    def __getitem__(self, index_or_filter):
-
-        """
-        This function ...
-        :param index_or_filter:
-        :return: 
-        """
-
-        # Get the filter
-        if types.is_string_type(index_or_filter): index_or_filter = parse_filter(index_or_filter)
-
-        # Call the function of the base class
-        return super(FrameList, self).__getitem__(index_or_filter)
 
     # -----------------------------------------------------------------
 
@@ -1037,7 +988,7 @@ class FrameList(KeyList):
         :return: 
         """
 
-        new_frames = convolve_to_highest_fwhm(*self.values)
+        new_frames = convolve_to_highest_fwhm(*self.values, names=self.filter_names)
         self.remove_all()
         for frame in new_frames: self.append(frame)
 
@@ -1050,7 +1001,7 @@ class FrameList(KeyList):
         :return: 
         """
 
-        new_frames = rebin_to_highest_pixelscale(*self.values)
+        new_frames = rebin_to_highest_pixelscale(*self.values, names=self.filter_names)
         self.remove_all()
         for frame in new_frames: self.append(frame)
 
@@ -1064,7 +1015,7 @@ class FrameList(KeyList):
         :return: 
         """
         
-        new_frames = convert_to_same_unit(*self.values, unit=unit)
+        new_frames = convert_to_same_unit(*self.values, unit=unit, names=self.filter_names)
         self.remove_all()
         for frame in new_frames: self.append(frame)
 
@@ -1076,14 +1027,18 @@ class NamedFrameList(NamedList):
     This class ...
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         """
 
         # Call the constructor of the base class
         super(NamedFrameList, self).__init__()
+
+        # Add
+        for name in kwargs: self.append(kwargs[name], name)
 
     # -----------------------------------------------------------------
 
@@ -1162,7 +1117,7 @@ class NamedFrameList(NamedList):
 
 # -----------------------------------------------------------------
 
-class ImageList(KeyList):
+class ImageList(FilterBasedList):
         
     """
     This class ...
@@ -1228,14 +1183,18 @@ class NamedImageList(NamedList):
     This class ...
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
 
         """
         The constructor ...
+        :param kwargs:
         """
 
         # Call the constructor of the base class
         super(NamedImageList, self).__init__()
+
+        # Add
+        for name in kwargs: self.append(kwargs[name], name)
 
     # -----------------------------------------------------------------
 
@@ -1424,6 +1383,29 @@ class NamedImageList(NamedList):
 
 # -----------------------------------------------------------------
 
+def convolve_rebin_and_convert(*frames, **kwargs):
+
+    """
+    This function ...
+    :param frames: 
+    :param kwargs: 
+    :return: 
+    """
+
+    # First rebin
+    frames = rebin_to_highest_pixelscale(*frames, **kwargs)
+
+    # Then convolve
+    frames = convolve_to_highest_fwhm(*frames, **kwargs)
+
+    # Then convert
+    frames = convert_to_same_unit(*frames, **kwargs)
+
+    # Return the frames
+    return frames
+
+# -----------------------------------------------------------------
+
 def convert_to_same_unit(*frames, **kwargs):
 
     """
@@ -1433,6 +1415,9 @@ def convert_to_same_unit(*frames, **kwargs):
     :return: 
     """
 
+    # Get frame names
+    names = kwargs.pop("names", None)
+
     # Inform the user
     log.info("Converting frames to the same unit ...")
 
@@ -1441,26 +1426,35 @@ def convert_to_same_unit(*frames, **kwargs):
     else: unit = frames[0].unit
 
     # Debugging
-    log.debug("Converting to unit '" + str(unit) + "' ...")
+    log.debug("Converting frames to unit '" + str(unit) + "' ...")
 
     # Initialize list for converted frames
     new_frames = []
 
     # Convert all
-    for frame in frames: new_frames.append(frame.converted_to(unit, **kwargs))
+    for frame in frames:
+
+        # Debugging
+        log.debug("Converting frame with unit '" + str(frame.unit) + "' to '" + str(unit) + "' ...")
+        converted = frame.converted_to(unit, **kwargs)
+        new_frames.append(converted)
 
     # Return the new set of frames
     return new_frames
 
 # -----------------------------------------------------------------
 
-def rebin_to_highest_pixelscale(*frames):
+def rebin_to_highest_pixelscale(*frames, **kwargs):
 
     """
     This function ...
     :param frames: 
+    :param kwargs:
     :return: 
     """
+
+    # Get frame names
+    names = kwargs.pop("names", None)
 
     # Inform the user
     log.info("Rebinning frames to the coordinate system with the highest pixelscale ...")
@@ -1481,28 +1475,81 @@ def rebin_to_highest_pixelscale(*frames):
     new_frames = []
 
     # Rebin
+    index = 0
     for frame in frames:
 
-        if frame.wcs == highest_pixelscale_wcs: new_frames.append(frame.copy())
+        # Determine frame name
+        name = "'" + names[index] + "' " if names is not None else ""
+
+        # If the current frame is the frame with the highest pixelscale
+        if frame.wcs == highest_pixelscale_wcs:
+
+            if names is not None: log.debug("Frame " + name + "has highest pixelscale of '" + str(highest_pixelscale) + "' and is not rebinned")
+            new_frames.append(frame.copy())
+
+        # The frame has a lower pixelscale, has to be rebinned
         else:
-            if frame.unit.is_per_angular_area: rebinned = frame.rebinned(highest_pixelscale_wcs)
+
+            # Is per pixelsize
+            if frame.unit.is_per_pixelsize:
+
+                # Debugging
+                log.debug("Frame " + name + "is expressed in units per angular or intrinsic area (pixelsize squared)")
+
+                # Debugging
+                log.debug("Rebinning frame " + name + "with unit '" + str(frame.unit) + "' ...")
+                rebinned = frame.rebinned(highest_pixelscale_wcs)
+
+            # Not per pixelsize
             else:
-                rebinned = frame.converted_to_corresponding_angular_area_unit()
-                rebinned.rebin(highest_pixelscale_wcs)
+
+                # Debugging
+                log.debug("Frame " + name + "is not expressed in units per angular or intrinsic area (pixelsize squared)")
+
+                # Debugging
+                #log.debug("Converting frame " + name + "with unit '" + str(frame.unit) + "' to '" + str(frame.corresponding_angular_area_unit) + "' prior to rebinning ...")
+                #old_unit = frame.unit
+                #rebinned = frame.converted_to_corresponding_angular_area_unit(**kwargs)
+                #rebinned.rebin(highest_pixelscale_wcs)
+                # Convert back to old unit
+                #rebinned.convert_to(old_unit)
+
+                #print(rebinned)
+
+                # NEW WAY:
+
+                # Converting unit is not necessary if we calculate the ratio of both pixel areas
+                ratio = highest_pixelscale_wcs.pixelarea / frame.wcs.pixelarea
+
+                # Debugging
+                log.debug("Rebinning frame " + name + " and multiplying with a factor of " + str(ratio) + " to correct for the changing pixelscale ...")
+
+                # Rebin and multiply
+                rebinned = frame.rebinned(highest_pixelscale_wcs)
+                rebinned *= ratio
+
+                #print(rebinned)
+
+            # Add the rebinned frame
             new_frames.append(rebinned)
+
+        index += 1
 
     # Return the rebinned frames
     return new_frames
 
 # -----------------------------------------------------------------
 
-def convolve_to_highest_fwhm(*frames):
+def convolve_to_highest_fwhm(*frames, **kwargs):
 
     """
     This function ...
     :param frames: 
     :return: 
     """
+
+    # Get frame names
+    names = kwargs.pop("names", None)
 
     aniano = AnianoKernels()
 
@@ -1518,16 +1565,23 @@ def convolve_to_highest_fwhm(*frames):
         if highest_fwhm is None or frame.fwhm > highest_fwhm:
 
             highest_fwhm = frame.fwhm
-            highest_fwhm_filter = frame.filter
+            highest_fwhm_filter = frame.psf_filter
 
     # Initialize list for convolved frames
     new_frames = []
 
     # Convolve
+    index = 0
     for frame in frames:
 
-        if frame.filter == highest_fwhm_filter: new_frames.append(frame.copy())
-        else: new_frames.append(frame.convolved(aniano.get_kernel(frame.filter, highest_fwhm_filter)))
+        if frame.psf_filter == highest_fwhm_filter:
+
+            if names is not None: log.debug("Frame '" + names[index] + "' has highest FWHM of " + str(highest_fwhm) + " and is not convolved")
+            new_frames.append(frame.copy())
+
+        else: new_frames.append(frame.convolved(aniano.get_kernel(frame.psf_filter, highest_fwhm_filter)))
+
+        index += 1
 
     # Return the convolved frames
     return new_frames

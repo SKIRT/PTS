@@ -56,17 +56,27 @@ def make_tir_to_uv(tir, fuv):
 
     ## FUV IN W/M2
 
+    # Create frame list
+    frames = NamedFrameList()
 
+
+    fuv = fuv.copy()
+    fuv.convert_to("W/m2")
+
+    tir = tir.copy()
+    tir.convert_to("W/m2")
 
     ## TIR IN W/M2
 
     # CALCULATE TIR TO FUV RATIO
 
     # The ratio of TIR and FUV
-    tir_to_fuv = tir_si / fuv_si
-    #log_tir_to_fuv = Frame(np.log10(self.tir_to_fuv)
+    tir_to_fuv = tir / fuv
+
+    tir_to_fuv.unit = None
+    assert tir_to_fuv.wcs is not None
 
     # Return a frame
-    return Frame(tir_to_fuv, wcs=uv_si.wcs)
+    return tir_to_fuv
 
 # -----------------------------------------------------------------

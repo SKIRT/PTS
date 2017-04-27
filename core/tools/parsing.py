@@ -1195,7 +1195,7 @@ def lazy_broad_band_filter_list(argument):
 
                 identifier = broad_band_identifiers[spec]
 
-                print(spec)
+                #print(spec)
 
                 if "instruments" in identifier:
                     if arg in identifier.instruments:

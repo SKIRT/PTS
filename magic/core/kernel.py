@@ -26,6 +26,7 @@ from photutils.centroids import centroid_com, centroid_1dg, centroid_2dg
 from .frame import Frame
 from ...core.tools.logging import log
 from ..tools import statistics
+from ...core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
@@ -41,6 +42,9 @@ class ConvolutionKernel(Frame):
 
         """
         This function ...
+        :param data:
+        :param args:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
@@ -61,11 +65,38 @@ class ConvolutionKernel(Frame):
 
         # Prepared
         self._prepared = False
+        if "prepared" in self.metadata: self._prepared = self.metadata["prepared"]
 
-        if "prepared" in self.meta: self._prepared = self.meta["prepared"]
+        # Get from and to filter, set PSF filter
+        #print(self._meta)
+        self.from_filter = parse_filter(self.metadata["frmfltr"]) if "frmfltr" in self.metadata else None
+        self.to_filter = parse_filter(self.metadata["tofltr"])
+        self._psf_filter = self.to_filter
 
         # Make sure that the data is in 64 bit floating-point precision (the reason is the precision of Astropy's normalization criterion)
         self._data = self._data.astype("float64")
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path, fwhm=None, from_filter=None, to_filter=None):
+
+        """
+        This function ...
+        :param path: 
+        :param fwhm: 
+        :param from_filter: 
+        :param to_filter: 
+        :return: 
+        """
+
+        # Set extra meta
+        extra_meta = dict()
+        if from_filter is not None: extra_meta["frmfltr"] = str(from_filter)
+        if to_filter is not None: extra_meta["tofltr"] = str(to_filter)
+
+        # Call the from_file function of the base class
+        return super(ConvolutionKernel, cls).from_file(path, fwhm=fwhm, add_meta=True, extra_meta=extra_meta)
 
     # -----------------------------------------------------------------
 
@@ -460,15 +491,35 @@ class ConvolutionKernel(Frame):
 
     # -----------------------------------------------------------------
 
-    def save(self, path):
+    def save(self, path=None):
 
         """
         This function ...
         :param path:
+        :param path:
         :return:
         """
 
+        if path is None: path = self.path
+        self.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
+
+        """
+        This function ...
+        :param path: 
+        :return: 
+        """
+
+        # Set extra header info
+        extra_header_info = dict()
+        extra_header_info["PREPARED"] = self.prepared
+        extra_header_info["FRMFLTR"] = str(self.from_filter)
+        extra_header_info["TOFLTR"] = str(self.to_filter)
+
         # Call the save function of the base class
-        super(ConvolutionKernel, self).saveto(path, extra_header_info={"PREPARED": self.prepared})
+        super(ConvolutionKernel, self).saveto(path, extra_header_info=extra_header_info)
 
 # -----------------------------------------------------------------

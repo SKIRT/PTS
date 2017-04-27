@@ -144,6 +144,19 @@ def get_pixelscale(header):
 
 # -----------------------------------------------------------------
 
+def get_psf_filter(header):
+
+    """
+    This function ...
+    :param header: 
+    :return: 
+    """
+
+    if "PSFFLTR" not in header: return None
+    else: return parse_filter(header["PSFFLTR"])
+
+# -----------------------------------------------------------------
+
 def get_filter(name, header=None):
 
     """
