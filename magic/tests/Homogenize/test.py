@@ -10,6 +10,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import the relevant PTS classes and modules
 from pts.core.tools.logging import log
 from pts.core.tools import filesystem as fs
@@ -21,6 +24,7 @@ from pts.core.filter.filter import parse_filter
 from pts.magic.basics.coordinatesystem import CoordinateSystem
 from pts.magic.core.frame import Frame
 from pts.magic.core.list import FrameList
+from pts.core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -82,6 +86,9 @@ class HomogenizeTest(TestImplementation):
         self.first = None
         self.second = None
 
+        # The distance
+        self.distance = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -125,6 +132,9 @@ class HomogenizeTest(TestImplementation):
         #self.database = DustPediaDatabase()
         #username, password = get_account()
         #self.database.login(username, password)
+
+        # Set distance
+        self.distance = 10. * u("Mpc")
 
         #print(self.database.get_image_urls(self.galaxy_name))
 
@@ -216,6 +226,9 @@ class HomogenizeTest(TestImplementation):
         # Combine the second pair
         self.combine_second()
 
+        # Combine last
+        self.combine_last()
+
     # -----------------------------------------------------------------
 
     def combine_first(self):
@@ -233,7 +246,17 @@ class HomogenizeTest(TestImplementation):
 
         frames.convolve_to_highest_fwhm()
         frames.rebin_to_highest_pixelscale()
-        frames.convert_to_same_unit(unit="W/micron/m2")
+        frames.convert_to_same_unit(unit="W/micron/m2") # here conversion related to frequency/wavelength is necessary
+        frames.convert_to_same_unit(unit="W/m2", density=True) # here conversion from spectral flux density to flux is necessary
+
+        # Set the frames
+        #self.first = frames
+
+        # Now do something, like adding them
+        self.first = np.random.random() * frames[fltr_a].get_log10() + np.random.random() * frames[fltr_b].get_log10()
+
+        # Set the unit
+        self.first.unit = "W/m2"
 
     # -----------------------------------------------------------------
 
@@ -247,12 +270,35 @@ class HomogenizeTest(TestImplementation):
         # Inform the user
         log.info("Doing second combination ...")
 
-        fltr_a, fltr_b = self.highest_resolution_filters
+        fltr_a, fltr_b = self.lowest_resolution_filters
         frames = self.frames[fltr_a, fltr_b]
 
         frames.convolve_to_highest_fwhm()
         frames.rebin_to_highest_pixelscale()
+        frames.convert_to_same_unit(unit="MJy/sr") # here conversion to surface brightness, related to the pixelscale is necessary
 
+        # Set the frames
+        #self.second = frames
+
+        frames.convert_to_same_unit(unit="Lsun", density=True, distance=self.distance) # convert to solar luminosity
+
+        # Now do something
+        self.second = np.random.random() * frames[fltr_a] + np.random.random() * frames[fltr_b]
+
+        # Set unit
+        self.second.unit = "Lsun"
+
+    # -----------------------------------------------------------------
+
+    def combine_last(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Doing last combination")
 
     # -----------------------------------------------------------------
 

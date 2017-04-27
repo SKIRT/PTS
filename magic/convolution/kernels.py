@@ -30,7 +30,23 @@ if not fs.is_directory(kernels_path): fs.create_directory(kernels_path)
 
 # -----------------------------------------------------------------
 
-# Reference: Common-Resolution Convolution Kernels for Space- and Ground-Based Telescopes (G. Aniano et. al)
+# GALEX - SPIRE:
+# Common-Resolution Convolution Kernels for Space- and Ground-Based Telescopes (G. Aniano et. al)
+
+# Planck:
+# DustPedia: Multiwavelength Photometry and Imagery of 875 Nearby Galaxies in 42 Ultraviolet–Microwave Bands (Clark et al.)
+# - wavelength (micron)
+# Planck 350 278
+# Planck 550 290
+# Planck 850 296
+# Planck 1380 301
+# Planck 2100 438
+# Planck 3000 581
+# Planck 4260 799
+# Planck 6810 1630
+# Planck 10600 1940
+
+# FWHMS for different bands
 fwhms = {"GALEX FUV": 4.48 * u("arcsec"),
          "GALEX NUV": 5.05 * u("arcsec"),
          "Halpha": 2.0 * u("arcsec"),
@@ -50,7 +66,16 @@ fwhms = {"GALEX FUV": 4.48 * u("arcsec"),
          "Pacs red": 11.18 * u("arcsec"),
          "SPIRE PSW": 18.15 * u("arcsec"),
          "SPIRE PMW": 24.88 * u("arcsec"),
-         "SPIRE PLW": 36.09 * u("arcsec")}
+         "SPIRE PLW": 36.09 * u("arcsec"),
+         "Planck 350": 278. * u("arcsec"),
+         "Planck 550": 290. * u("arcsec"),
+         "Planck 850": 296. * u("arcsec"),
+         "Planck 1380": 301. * u("arcsec"),
+         "Planck 2100": 438. * u("arcsec"),
+         "Planck 3000": 581. * u("arcsec"),
+         "Planck 4260": 799. * u("arcsec"),
+         "Planck 6810": 1630. * u("arcsec"),
+         "Planck 10600": 1940. * u("arcsec")}
 
 # -----------------------------------------------------------------
 
@@ -120,6 +145,8 @@ def get_fwhm(fltr):
     filters, fwhm_list = get_filters_and_fwhms_lists()
     #print([str(filt) for filt in filters])
     #print(str(fltr))
+    #print([str(filter) for filter in filters])
+    #print(fltr)
     index = filters.index(fltr)
     return fwhm_list[index]
 

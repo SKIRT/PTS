@@ -173,8 +173,6 @@ class IRACPSFs(object):
         # Download and decompress file
         network.download_and_decompress_file(core_psfs_url, self.path)
 
-
-
     # -----------------------------------------------------------------
 
     def download_extended_psfs(self):
@@ -198,8 +196,6 @@ class IRACPSFs(object):
 
         # Download and decompress file
         network.download_and_decompress_file(extended_psfs_warm_url, self.path)
-
-
 
     # -----------------------------------------------------------------
 

@@ -20,6 +20,7 @@ import traceback
 
 # Import astronomical modules
 from astropy.units import Unit, UnitBase, CompositeUnit, spectral, Quantity
+from astropy import constants
 
 # Import the relevant PTS classes and modules
 from ...magic.basics.pixelscale import Pixelscale
@@ -28,6 +29,12 @@ from .utils import analyse_unit, divide_units_reverse, clean_unit_string
 from .parsing import parse_unit, parse_quantity
 from ..tools import types
 from ..tools.logging import log
+
+# -----------------------------------------------------------------
+
+# Symbols
+lambda_symbol = "λ"
+nu_symbol = "ν"
 
 # -----------------------------------------------------------------
 
@@ -87,8 +94,12 @@ from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
-#speed_of_light = constants.c
+speed_of_light = constants.c
 #solar_luminosity = 3.846e26 * parse_unit("W")
+
+# -----------------------------------------------------------------
+
+wavelength_times_frequency = speed_of_light
 
 # -----------------------------------------------------------------
 
@@ -936,6 +947,59 @@ class PhotometricUnit(CompositeUnit):
 
     # -----------------------------------------------------------------
 
+    @property
+    def base_symbol(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if self.is_luminosity: return "L"
+        elif self.is_flux: return "F"
+        elif self.is_intensity: return "I"
+        elif self.is_surface_brightness: return "S"
+        elif self.is_intrinsic_surface_brightness: return "S'"
+        else: raise ValueError("No symbol for this unit")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def symbol(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Spectral density
+        if self.is_spectral_density:
+
+            if self.is_neutral_density:
+
+                prefix = lambda_symbol
+                suffix = "_" + lambda_symbol
+
+            elif self.is_frequency_density:
+
+                prefix = ""
+                suffix = "_" + nu_symbol
+
+            elif self.is_wavelength_density:
+
+                prefix = ""
+                suffix = "_" + lambda_symbol
+
+            else: raise RuntimeError("Something went wrong")
+
+        # Not a spectral density
+        else: prefix = suffix = ""
+
+        # Return the symbol
+        return prefix + self.base_symbol + suffix
+
+    # -----------------------------------------------------------------
+
     def conversion_factor(self, to_unit, density=False, wavelength=None, frequency=None, distance=None, solid_angle=None,
                           fltr=None, pixelscale=None, brightness=False, brightness_strict=False, density_strict=False):
 
@@ -1040,6 +1104,8 @@ class PhotometricUnit(CompositeUnit):
             elif to_unit.is_frequency_density: raise ValueError("Cannot convert from integrated quantity to spectral density")
             elif to_unit.is_wavelength_density: raise ValueError("Cannot convert from integrated quantity to spectral density")
             else: new_unit = self
+
+        #print(self, self.physical_type, self.base_physical_type)
 
         # Same base type
         if self.base_physical_type == to_unit.base_physical_type:
@@ -1234,6 +1300,8 @@ class PhotometricUnit(CompositeUnit):
 
                 # Multiply by 4 pi distance**2 and solid angle
                 new_unit *= (4.0 * math.pi * distance ** 2 * solid_angle)
+
+                #print("NEW UNIT", new_unit)
 
                 # Determine factor
                 factor = new_unit.to(to_unit).value

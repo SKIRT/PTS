@@ -348,6 +348,8 @@ def reduce_unit(unit):
 
     base_types = physical_base_types_units_and_powers_as_dict(unit, power=1)
 
+    #print("BASE TYPES", base_types)
+
     # Flag that is set to True when things as Jy are encountered, which allows us to say that we are not dealing with intrinsic surface brightnesses, but with fluxes
     cannot_be_intrinsic_brightness = False
 
@@ -366,6 +368,47 @@ def reduce_unit(unit):
             # Replace the flux density unit with the decomposed version
             represents = base_types["spectral flux density"][0][0].represents
 
+            #print("REPRESENTS", represents, type(represents), represents.physical_type)
+            #print("REPRESENTS x2", represents.represents)
+
+            #flux_density_base_types = physical_base_types_units_and_powers_as_dict(represents)
+            #print("REPRESENTS x2", flux_density_base_types)
+
+            # ACCOMODATING THE FACT THAT FOR FOR EXAMPLE MJy, .REPRESENTS RESULTS IN 1e6 Jy, INSTEAD OF IMMEDIATELY
+            # 1e6 W / Hz / m2 !!!!
+            if represents.physical_type == "spectral flux density":
+
+                factor = represents.scale
+                bases = represents.bases
+                powers = represents.powers
+                #represents = represents.represents
+
+                #print(factor)
+                #print(bases)
+                #print(powers)
+
+                # If the number of bases is NOT one, we have the 'normal' case, where Jy is decomposed into W, Hz and m
+                # and factor, bases and powers will be 1e-26, [Unit("W"), Unit("Hz"), Unit("m")], and [1, -1, -2]
+                if len(bases) == 1:
+
+                    # This is almost impossible, but check anyway
+                    if powers[0] != 1: raise RuntimeError("Something went wrong")
+
+                    # Decompose again
+                    base = bases[0]
+                    base_represents = base.represents
+
+                    # Set represents
+                    #represents = base_represents
+                    #represents._scale *= factor
+
+                    represents = CompositeUnit(base_represents.scale * factor, base_represents.bases, base_represents.powers)
+
+                # Not one: do nothing
+                else: pass
+
+            #print("REPRESENTS", represents)
+
             # Replace
             unit /= base_types["spectral flux density"][0][0]
             unit *= represents
@@ -383,7 +426,7 @@ def reduce_unit(unit):
             # Assert power is one
             assert base_types["spectral flux density"][0][1] == 1
 
-            # Can stilll be intrinsic brightness if distance dependence is done away with and another is added (e.g. * m2 / pc2)
+            # Can still be intrinsic brightness if distance dependence is done away with and another is added (e.g. * m2 / pc2)
 
             # Replace the flux density unit with the decomposed version
             represents = base_types["spectral flux density"][0][0].represents
@@ -417,10 +460,12 @@ def analyse_unit(unit):
     solid_angle_unit = Unit("")
 
     #print("BEFORE", unit)
+    #print(unit)
 
     # Reduce (for example, convert 'Jy * Hz' to '1e-26 W / m2')
     unit, cannot_be_intrinsic_brightness = reduce_unit(unit)
 
+    #print(unit)
     #print("AFTER", unit)
 
     # Look in the bases whether different physical types occur twice
@@ -455,6 +500,9 @@ def analyse_unit(unit):
 
                 # Correct with factor
                 unit = CompositeUnit(factor * unit.scale, unit.bases, unit.powers)
+
+    #print(unit)
+    #print(unit.bases)
 
     # Loop over the bases
     for base, power in zip(unit.bases, unit.powers):

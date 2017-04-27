@@ -42,7 +42,7 @@ from ...core.units.parsing import parse_unit as u
 from ...core.filter.filter import parse_filter
 #from ...core.tools import types
 from .mask import Mask as newMask
-from ..convolution.kernels import get_fwhm
+from ..convolution.kernels import get_fwhm, has_variable_fwhm
 
 # -----------------------------------------------------------------
 
@@ -127,8 +127,22 @@ class Frame(NDDataArray):
         """
 
         # Find the FWHM for the filter
-        if self.psf_filter is not None: return get_fwhm(self.psf_filter)
-        else: return self._fwhm
+        if self._fwhm is not None: return self._fwhm
+        elif self.psf_filter is not None and not has_variable_fwhm(self.psf_filter): return get_fwhm(self.psf_filter)
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @fwhm.setter
+    def fwhm(self, value):
+
+        """
+        This function ...
+        :param value: 
+        :return: 
+        """
+
+        self._fwhm = value
 
     # -----------------------------------------------------------------
 
@@ -532,6 +546,62 @@ class Frame(NDDataArray):
 
         new = self.copy()
         new._data = abs(self._data)
+        return new
+
+    # -----------------------------------------------------------------
+
+    def log10(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Replace the data
+        self._data = np.log10(self.data)
+
+        # Set the unit to None
+        self.unit = None
+
+    # -----------------------------------------------------------------
+
+    def get_log10(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        new = self.copy()
+        new.log10()
+        return new
+
+    # -----------------------------------------------------------------
+
+    def log(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Replace the data
+        self._data = np.log(self.data)
+
+        # Set the unit to None
+        self.unit = None
+
+    # -----------------------------------------------------------------
+
+    def get_log(self):
+
+        """
+        THis function ...
+        :return: 
+        """
+
+        new = self.copy()
+        new.log10()
         return new
 
     # -----------------------------------------------------------------
@@ -973,8 +1043,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def converted_to(self, to_unit, distance=None, density=False,
-                     brightness=False, density_strict=False, brightness_strict=False):
+    def converted_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False, brightness_strict=False):
 
         """
         This function ...
@@ -988,8 +1057,7 @@ class Frame(NDDataArray):
         """
 
         new = self.copy()
-        new.convert_to(to_unit, distance=distance,
-                       density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
+        new.convert_to(to_unit, distance=distance, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
         return new
 
     # -----------------------------------------------------------------
@@ -1936,5 +2004,17 @@ def linear_combination(frames, coefficients):
     """
 
     return sum_frames([coefficients * frame for frame in frames])
+
+# -----------------------------------------------------------------
+
+def log10(frame):
+
+    """
+    This function ...
+    :param frame: 
+    :return: 
+    """
+
+    return frame.get_log10()
 
 # -----------------------------------------------------------------

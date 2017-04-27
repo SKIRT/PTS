@@ -27,6 +27,9 @@ from ..region.rectangle import SkyRectangleRegion
 from ...core.basics.containers import NamedList, FilterBasedList
 from ...core.tools import filesystem as fs
 from ..convolution.aniano import AnianoKernels
+from ..convolution.matching import MatchingKernels
+from ..convolution.kernels import get_fwhm
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -1007,17 +1010,46 @@ class FrameList(FilterBasedList):
 
     # -----------------------------------------------------------------
 
-    def convert_to_same_unit(self, unit):
+    def convert_to_same_unit(self, unit=None, **kwargs):
 
         """
         This function ...
         :param unit:
+        :param kwargs:
         :return: 
         """
         
-        new_frames = convert_to_same_unit(*self.values, unit=unit, names=self.filter_names)
+        new_frames = convert_to_same_unit(*self.values, unit=unit, names=self.filter_names, **kwargs)
         self.remove_all()
         for frame in new_frames: self.append(frame)
+
+    # -----------------------------------------------------------------
+
+    def convolve_rebin_and_convert(self, unit=None, **kwargs):
+
+        """
+        This function ...
+        :param unit: 
+        :param kwargs: 
+        :return: 
+        """
+
+        new_frames = convolve_rebin_and_convert(*self.values, unit=unit, names=self.filter_names, **kwargs)
+        self.remove_all()
+        for frame in new_frames: self.append(frame)
+
+    # -----------------------------------------------------------------
+
+    def uniformize(self, unit=None, **kwargs):
+
+        """
+        This function is an alias for convolve_rebin_and_convert
+        :param unit:
+        :param kwargs:
+        :return: 
+        """
+
+        return self.convolve_rebin_and_convert(unit=unit, **kwargs)
 
 # -----------------------------------------------------------------
 
@@ -1422,7 +1454,9 @@ def convert_to_same_unit(*frames, **kwargs):
     log.info("Converting frames to the same unit ...")
 
     # Check if the unit is defined
-    if "unit" in kwargs: unit = kwargs.pop("unit")
+    if "unit" in kwargs:
+        unit = kwargs.pop("unit")
+        #if types.is_string_type(unit): unit = u(unit, **kwargs) # not necessary: converted_to() of frame takes **kwargs
     else: unit = frames[0].unit
 
     # Debugging
@@ -1432,12 +1466,19 @@ def convert_to_same_unit(*frames, **kwargs):
     new_frames = []
 
     # Convert all
+    index = 0
     for frame in frames:
 
+        # Get frame name
+        name = "'" + names[index] + "' " if names is not None else ""
+
         # Debugging
-        log.debug("Converting frame with unit '" + str(frame.unit) + "' to '" + str(unit) + "' ...")
+        log.debug("Converting frame " + name + "with unit '" + str(frame.unit) + "' to '" + str(unit) + "' ...")
         converted = frame.converted_to(unit, **kwargs)
         new_frames.append(converted)
+
+        # Increment index
+        index += 1
 
     # Return the new set of frames
     return new_frames
@@ -1551,7 +1592,9 @@ def convolve_to_highest_fwhm(*frames, **kwargs):
     # Get frame names
     names = kwargs.pop("names", None)
 
+    # Get kernel services
     aniano = AnianoKernels()
+    matching = MatchingKernels()
 
     # Inform the user
     log.info("Convolving frames to the resolution of the frame with the highest FWHM ...")
@@ -1561,6 +1604,11 @@ def convolve_to_highest_fwhm(*frames, **kwargs):
 
     # Loop over the frames
     for frame in frames:
+
+        # Search and set frame FWHM
+        frame_fwhm = frame.fwhm
+        if frame_fwhm is None: frame_fwhm = get_fwhm(frame.filter)
+        frame.fwhm = frame_fwhm
 
         if highest_fwhm is None or frame.fwhm > highest_fwhm:
 
@@ -1574,13 +1622,44 @@ def convolve_to_highest_fwhm(*frames, **kwargs):
     index = 0
     for frame in frames:
 
+        # Get frame name
+        name = "'" + names[index] + "' " if names is not None else ""
+
         if frame.psf_filter == highest_fwhm_filter:
 
-            if names is not None: log.debug("Frame '" + names[index] + "' has highest FWHM of " + str(highest_fwhm) + " and is not convolved")
+            # Debugging
+            log.debug("Frame '" + names[index] + "' has highest FWHM of " + str(highest_fwhm) + " and is not convolved")
+
+            # Add a copy of the frame
             new_frames.append(frame.copy())
 
-        else: new_frames.append(frame.convolved(aniano.get_kernel(frame.psf_filter, highest_fwhm_filter)))
+        # Convolve
+        else:
 
+            # Debugging
+            log.debug("Frame " + name + " is convolved to a PSF with FWHM = " + str(highest_fwhm) + " ...")
+
+            # Get the kernel, either from aniano or from matching kernels
+            if aniano.has_kernel_for_filters(frame.psf_filter, highest_fwhm_filter): kernel = aniano.get_kernel(frame.psf_filter, highest_fwhm_filter)
+            else:
+
+                # Get from and to filter
+                from_filter = frame.psf_filter
+                to_filter = highest_fwhm_filter
+
+                # Get from and to FWHM
+                if frame.fwhm is not None: from_fwhm = frame.fwhm
+                else: from_fwhm = get_fwhm(from_filter)
+                to_fwhm = highest_fwhm
+
+                # Generate the kernel
+                kernel = matching.get_kernel(from_filter, to_filter, frame.pixelscale, from_fwhm=from_fwhm, to_fwhm=to_fwhm)
+
+            # Convolve with the kernel
+            convolved = frame.convolved(kernel)
+            new_frames.append(convolved)
+
+        # Increment the index
         index += 1
 
     # Return the convolved frames

@@ -47,6 +47,12 @@ class ConvolutionKernel(Frame):
         :param kwargs:
         """
 
+        # Set kwargs into meta so that they can be read more below in this constructor
+        if "meta" not in kwargs: kwargs["meta"] = dict()
+        if "from_filter" in kwargs: kwargs["meta"]["frmfltr"] = str(kwargs.pop("from_filter"))
+        if "to_filter" in kwargs: kwargs["meta"]["tofltr"] = str(kwargs.pop("to_filter"))
+        if "prepared" in kwargs: kwargs["meta"]["prepared"] = str(kwargs.pop("prepared"))
+
         # Call the constructor of the base class
         super(ConvolutionKernel, self).__init__(data, *args, **kwargs)
 
@@ -68,7 +74,6 @@ class ConvolutionKernel(Frame):
         if "prepared" in self.metadata: self._prepared = self.metadata["prepared"]
 
         # Get from and to filter, set PSF filter
-        #print(self._meta)
         self.from_filter = parse_filter(self.metadata["frmfltr"]) if "frmfltr" in self.metadata else None
         self.to_filter = parse_filter(self.metadata["tofltr"])
         self._psf_filter = self.to_filter

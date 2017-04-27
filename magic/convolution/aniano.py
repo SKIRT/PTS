@@ -26,6 +26,7 @@ from ...core.tools import archive
 from ...core.filter.filter import parse_filter
 from ...core.units.parsing import parse_unit
 from .kernels import Kernels, kernels_path, get_fwhm, has_variable_fwhm
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -56,9 +57,9 @@ aniano_names = {"UVOT UVM2": "Gauss_02.5",
                 "Halpha": "Gauss_03.0",
                 "SDSS i": "BiGauss_02.0",  # FWHM is actually variable
                 "SDSS z": "BiGauss_02.0",  # FWHM is actually variable
-                "2MASS J": "Gauss_03.5",
-                "2MASS H": "Gauss_03.0",
-                "2MASS Ks": "Gauss_03.5",
+                "2MASS J": "Gauss_03.5",   # FWHM is actually variable
+                "2MASS H": "Gauss_03.0",   # FWHM is actually variable
+                "2MASS Ks": "Gauss_03.5",  # FWHM is actually variable
                 "WISE W1": "WISE_FRAME_3.4",
                 "IRAC I1": "IRAC_3.6",
                 "IRAC I2": "IRAC_4.5",
@@ -186,6 +187,56 @@ class AnianoKernels(Kernels):
 
     # -----------------------------------------------------------------
 
+    @property
+    def filters(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return [parse_filter(key) for key in aniano_names.keys()]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def filter_names(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return [str(fltr) for fltr in self.filters]
+
+    # -----------------------------------------------------------------
+
+    def has_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr: 
+        :return: 
+        """
+
+        if types.is_string_type(fltr): fltr = parse_filter(fltr)
+        return fltr in self.filters
+
+    # -----------------------------------------------------------------
+
+    def has_kernel_for_filters(self, from_filter, to_filter):
+
+        """
+        This function ...
+        :param from_filter: 
+        :param to_filter: 
+        :return: 
+        """
+
+        return self.has_filter(from_filter) and self.has_filter(to_filter)
+
+    # -----------------------------------------------------------------
+
     def get_kernel(self, from_filter, to_filter, high_res=True, from_fwhm=None, to_fwhm=None):
 
         """
@@ -234,8 +285,9 @@ class AnianoKernels(Kernels):
         :return:
         """
 
-        if isinstance(from_filter, basestring): from_filter = parse_filter(from_filter)
-        if isinstance(to_filter, basestring): to_filter = parse_filter(to_filter)
+        # Convert filter strings into filters
+        if types.is_string_type(from_filter): from_filter = parse_filter(from_filter)
+        if types.is_string_type(to_filter): to_filter = parse_filter(to_filter)
 
         # For variable FWHM of input image
         if has_variable_fwhm(from_filter): # Is SDSS
@@ -253,7 +305,7 @@ class AnianoKernels(Kernels):
         else: from_psf_name = aniano_names[str(from_filter)]
 
         # For variable FWHM of image with target resolution
-        if has_variable_fwhm(to_filter): # Is SDSS
+        if has_variable_fwhm(to_filter): # Is SDSS or 2MASS
 
             # Check whether FWHM is specified
             if to_fwhm is None: raise ValueError("When convolving to the resolution of a SDSS image, the FWHM of that image must be specified")

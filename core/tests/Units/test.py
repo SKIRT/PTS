@@ -26,6 +26,8 @@ from pts.core.tools import filesystem as fs
 from pts.core.data.sed import SED, ObservedSED
 from pts.core.plot.sed import SEDPlotter
 from pts.modeling.preparation.unitconversion import neutral_fluxdensity_to_jansky, si_to_jansky
+from pts.core.data.sun import Sun
+from pts.core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
@@ -35,6 +37,11 @@ this_dir_path = fs.directory_of(this_path)
 # -----------------------------------------------------------------
 
 description = "testing the unit conversions"
+
+# -----------------------------------------------------------------
+
+speed_of_light = constants.c
+solar_luminosity = 3.846e26 * u("W") # 3.828×10^26 W
 
 # -----------------------------------------------------------------
 
@@ -85,7 +92,7 @@ class UnitsTest(TestImplementation):
         self.test_sed()
 
         # Test with solar units
-        #self.test_solar()
+        self.test_solar()
 
         # Test with surface brightness
         self.test_brightness()
@@ -303,34 +310,50 @@ class UnitsTest(TestImplementation):
         :return: 
         """
 
+        # Bolometric
+        self.test_solar_bolometric()
+
+        # Spectral
+        self.test_solar_spectral()
+
+    # -----------------------------------------------------------------
+
+    def test_solar_bolometric(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
         # Inform the user
         #log.info("Loading the frames ...")
 
-        #speed_of_light = constants.c
-        #solar_luminosity = 3.846e26 * u("W")
-
         # Get the galaxy distance
         #distance = self.galaxy_properties.distance
+        distance = 10. * u("Mpc")
 
         # Load all the frames and error maps
         #for name in names:
 
-        frame = self.dataset.get_frame(name)
-        errors = self.dataset.get_errormap(name)
+        #frame = self.dataset.get_frame(name)
+        #errors = self.dataset.get_errormap(name)
 
         ## CONVERT TO LSUN
 
         # Get pixelscale and wavelength
-        pixelscale = frame.average_pixelscale
-        wavelength = frame.filter.pivot
+        pixelscale = 1.5 * u("arcsec")
+        wavelength = 70. * u("micron")
 
         ##
+
+        # Get a quantity
+        quantity = 1 * u("MJy/sr")
 
         # Conversion from MJy / sr to Jy / sr
         conversion_factor = 1e6
 
         # Conversion from Jy / sr to Jy / pix(2)
-        conversion_factor *= (pixelscale ** 2).to("sr/pix2").value
+        conversion_factor *= (pixelscale ** 2).to("sr").value
 
         # Conversion from Jy / pix to W / (m2 * Hz) (per pixel)
         conversion_factor *= 1e-26
@@ -341,7 +364,7 @@ class UnitsTest(TestImplementation):
         # Conversion from W / (m2 * m) (per pixel) [SPECTRAL FLUX] to W / m [SPECTRAL LUMINOSITY]
         conversion_factor *= (4. * np.pi * distance ** 2).to("m2").value
 
-        # Conversion from W / m [SPECTRAL LUMINOSITY] to W [LUMINOSITY]
+        # Conversion from W / m [SPECTRAL LUMINOSITY] to W [NEUTRAL SPECTRAL LUMINOSITY]
         conversion_factor *= wavelength.to("m").value
 
         # Conversion from W to Lsun
@@ -349,15 +372,54 @@ class UnitsTest(TestImplementation):
 
         ## CONVERT
 
-        frame *= conversion_factor
-        frame.unit = "Lsun"
+        #frame *= conversion_factor
+        #frame.unit = "Lsun"
+        quantity_manual = quantity * conversion_factor
+        quantity_manual.unit = "Lsun"
 
-        errors *= conversion_factor
-        errors.unit = "Lsun"
+        print(quantity_manual)
 
-        # Add the frame and error map to the appropriate dictionary
-        self.frames[name] = frame
-        self.errors[name] = errors
+        quantity_automatic = quantity.to("Lsun", density=True, distance=distance, wavelength=wavelength, pixelscale=pixelscale)
+
+        print(quantity_automatic)
+
+        if np.isclose(quantity_manual.value, quantity_automatic.value) and quantity_manual.unit == quantity_automatic.unit: print("SOLAR: OK")
+        else: print("SOLAR: FAIL!")
+
+    # -----------------------------------------------------------------
+
+    def test_solar_spectral(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        fuv_filter = parse_filter("FUV")
+        i1_filter = parse_filter("I1")
+
+        # Solar properties
+        sun = Sun()
+        #sun_fuv = sun.luminosity_for_filter_as_unit(fuv_filter)  # Get the luminosity of the Sun in the FUV band
+        #sun_i1 = sun.luminosity_for_filter_as_unit(i1_filter)  # Get the luminosity of the Sun in the IRAC I1 band
+
+        #print(sun_fuv)
+        #print(sun_i1)
+
+        fuv = sun.luminosity_for_filter(fuv_filter, unit="W/Hz")
+        i1 = sun.luminosity_for_filter(i1_filter, unit="W/Hz")
+
+        fuv_wav = sun.luminosity_for_wavelength(fuv_filter.wavelength, unit="W/Hz")
+        i1_wav = sun.luminosity_for_wavelength(i1_filter.wavelength, unit="W/Hz")
+
+        #print(fuv, fuv_wav)
+        #print(i1, i1_wav)
+
+        if np.isclose(fuv.value, fuv_wav.value, rtol=1e-2): print("OK")
+        else: print("not OK: " + str(fuv) + " vs " + str(fuv_wav))
+
+        if np.isclose(i1.value, i1_wav.value, rtol=1e-2): print("OK")
+        else: print("not OK: " + str(i1) + " vs " + str(i1_wav))
 
     # -----------------------------------------------------------------
 
@@ -378,6 +440,7 @@ class UnitsTest(TestImplementation):
 
             print(str(unit))
             print("")
+            print(" - symbol: " + unit.symbol)
             print(" - physical type: " + unit.physical_type)
             print(" - base physical type: " + unit.base_physical_type)
             print(" - base unit: " + str(unit.base_unit))

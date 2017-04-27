@@ -121,6 +121,42 @@ class PhotometricQuantity(Quantity):
 
     # -----------------------------------------------------------------
 
+    @property
+    def base_physical_type(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.unit.base_physical_type
+
+    # -----------------------------------------------------------------
+
+    @property
+    def base_symbol(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.unit.base_symbol
+
+    # -----------------------------------------------------------------
+
+    @property
+    def symbol(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.unit.symbol
+
+    # -----------------------------------------------------------------
+
     def to(self, *args, **kwargs):
 
         """
@@ -152,8 +188,12 @@ class PhotometricQuantity(Quantity):
         # Import
         from .unit import PhotometricUnit
 
+        #print(unit)
+
         # Parse the new photometric unit
         unit = PhotometricUnit(unit, density=density)
+
+        #print(unit)
 
         # Determine conversion factor
         factor = self.unit.conversion_factor(unit, density=density, wavelength=wavelength, frequency=frequency, distance=distance, solid_angle=solid_angle, fltr=fltr, pixelscale=pixelscale)
