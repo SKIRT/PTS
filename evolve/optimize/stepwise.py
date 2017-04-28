@@ -20,6 +20,7 @@ from ...core.tools.random import save_state, load_state
 from ...core.basics.configuration import Configuration
 from ..core.adapters import DBFileCSV, DBSQLite
 from .optimizer import Optimizer
+from ..core.population import NamedPopulation
 
 # -----------------------------------------------------------------
 
@@ -463,6 +464,43 @@ class StepWiseOptimizer(Optimizer):
 
     # -----------------------------------------------------------------
 
+    @property
+    def is_named_population(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return isinstance(self.population, NamedPopulation)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def individual_names(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if not self.is_named_population: raise ValueError("The population is not a named population")
+        return self.population.names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def individual_keys(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.population.keys
+
+    # -----------------------------------------------------------------
+
     def write_population(self):
 
         """
@@ -473,10 +511,25 @@ class StepWiseOptimizer(Optimizer):
         # Inform the user
         log.info("Writing the population genomes ...")
 
-        # Loop over the individuals
-        for individual in self.population:
+        # Determine the path
+        if self.config.writing.population_path is not None: path = fs.absolute_or_in(self.config.writing.population_path, self.output_path)
+        else: path = self.output_path_file("population.dat")
 
-            pass
+        # Loop over the individuals
+        entries = []
+        for key in self.individual_keys:
+
+            # Get the individual
+            individual = self.population[key]
+
+            # Add entry to the list
+            entries.append((key, individual.genomeList)) # .genomeList works for all G1D genomes (list, binary string, ...)
+
+        # Loop over the entries, write to file
+        with open(path, 'w') as population_file:
+
+            # Loop over the entries
+            for key, genes in entries: print(key + " " + str(genes), file=population_file)
 
     # -----------------------------------------------------------------
 

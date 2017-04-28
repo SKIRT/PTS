@@ -232,7 +232,8 @@ class GenomeBase(object):
 
 class G1DBase(GenomeBase):
 
-    """ G1DBase Class - The base class for 1D chromosomes
+    """
+    G1DBase Class - The base class for 1D chromosomes
     This chromosome class extends the :class:`GenomeBase` classes.
     :param size: the 1D list size
     .. versionadded:: 0.6

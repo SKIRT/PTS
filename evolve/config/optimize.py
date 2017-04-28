@@ -64,6 +64,7 @@ definition.sections["writing"].add_optional("prng_path", "string", "path for the
 definition.sections["writing"].add_optional("config_path", "string", "path for the configuration file")
 definition.sections["writing"].add_optional("statistics_path", "string", "path for the statistics file")
 definition.sections["writing"].add_optional("database_path", "string", "path for the database")
+definition.sections["writing"].add_optional("individuals_path", "string", "path for the individuals")
 
 # Advanced
 definition.add_optional("nelite_individuals", "positive_integer", "number of individuals to take as elite", 1)

@@ -337,10 +337,19 @@ class Optimizer(Configurable):
         # Binary string genome
         elif self.config.genome_type == "binary_string":
 
+            return NotImplementedError("Not implemented!")
+
+            # THINGS TODO:
+
+            # - conversions from real numbers or integer numbers into binary must be done in this class
+            # - number of binary digits has to be defined, depending on what the resolution is of the 'grid' of parameters to allow
+            # - look in the database for whether a certain binary string has ever occured before, so to avoid having to evaluate again!!
+            # - ...
+
             # 1D or 2D
-            if self.config.genome_dimension == 1: genome = G1DBinaryString(self.config.nparameters)
-            elif self.config.genome_dimension == 2: genome = G2DBinaryString(self.config.nparameters, self.config.nparameters2)
-            else: raise ValueError("Dimensions > 2 are not supported")
+            #if self.config.genome_dimension == 1: genome = G1DBinaryString(self.config.nparameters)
+            #elif self.config.genome_dimension == 2: genome = G2DBinaryString(self.config.nparameters, self.config.nparameters2)
+            #else: raise ValueError("Dimensions > 2 are not supported")
 
         # Invalid option
         else: raise ValueError("Genome type must be 'list' or 'binary_string")

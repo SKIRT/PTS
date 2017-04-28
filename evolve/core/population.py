@@ -107,9 +107,6 @@ class PopulationBase(object):
         :param genome:
         """
 
-        # Debugging
-        #log.debug("New population instance, %s class genomes", genome.__class__.__name__)
-
         # Set the genome
         self.oneSelfGenome = genome
 
@@ -132,6 +129,18 @@ class PopulationBase(object):
         self.scaleMethod = FunctionSlot("Scale Method")
         self.scaleMethod.set(constants.CDefPopScale)
         self.allSlots = [self.scaleMethod]
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def keys(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 
@@ -886,6 +895,18 @@ class NamedPopulation(PopulationBase):
 
     # -----------------------------------------------------------------
 
+    @property
+    def keys(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.names
+
+    # -----------------------------------------------------------------
+
     def __repr__(self):
 
         """
@@ -988,6 +1009,18 @@ class Population(PopulationBase):
 
         # Return the population
         return pop
+
+    # -----------------------------------------------------------------
+
+    @property
+    def keys(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return range(len(self))
 
     # -----------------------------------------------------------------
 
