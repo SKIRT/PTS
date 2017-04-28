@@ -421,6 +421,7 @@ def HeterogeneousListMutatorIntegerGaussian(genome, **args):
 
             genome[which_gene] = final_value
 
+    # Return the number of mutations
     return int(mutations)
 
 # -----------------------------------------------------------------

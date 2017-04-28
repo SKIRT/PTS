@@ -286,7 +286,7 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.timing_table_path = self.fitting_run.timing_table_path        # The path to the timing table file
         self.launcher.config.memory_table_path = self.fitting_run.memory_table_path        # The path to the memory table file
         self.launcher.config.cores_per_process = self.config.cores_per_process # The number of cores per process, for non-schedulers
-        self.launcher.config.dry = self.config.dry                             # Dry run (don't actually launch simulations)
+        self.launcher.config.dry = self.config.dry                             # Dry run (don't actually launch simulations, but allow them to be launched manually)
         self.launcher.config.progress_bar = True  # show progress bars for local execution
 
         # Simulation analysis options
@@ -314,7 +314,7 @@ class ParameterExplorer(FittingComponent):
 
         ## Miscellaneous
         self.launcher.config.analysis.misc.path = "misc"       # name of the misc output directory
-        if self.is_images_modeling:
+        if self.is_images_modeling: # images modeling
 
             self.launcher.config.analysis.misc.fluxes = False
             self.launcher.config.analysis.misc.images = True
@@ -323,6 +323,7 @@ class ParameterExplorer(FittingComponent):
             self.launcher.config.analysis.misc.images_kernels = None
             self.launcher.config.analysis.misc.rebin_wcs = None
 
+        # Galaxy and SED modeling
         else:
 
             self.launcher.config.analysis.misc.fluxes = True       # calculate observed fluxes

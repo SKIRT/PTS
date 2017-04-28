@@ -93,15 +93,15 @@ class Optimizer(Configurable):
         # The plot path
         self.plot_path = None
 
-        # The parameter minima and maxima (for heterogeneous genomes)
+        # The parameter minima and maxima (for heterogeneous 1D genomes)
         self.parameter_minima = None
         self.parameter_maxima = None
 
-        # The parameter centers and sigmas (for heterogeneous genomes with Gaussian mutator and/or initializer)
+        # The parameter centers and sigmas (for heterogeneous 1D genomes with Gaussian mutator and/or initializer)
         self.parameter_centers = None
         self.parameter_sigmas = None
 
-        # The parameter range
+        # The parameter range (for homogeneous 1D list genomes)
         self.parameter_range = None
 
     # -----------------------------------------------------------------
@@ -114,7 +114,7 @@ class Optimizer(Configurable):
         :return:
         """
 
-        # Parameter range is defined, not hetereogeneous
+        # Parameter range is defined, homogeneous
         if self.parameter_range is not None:
 
             if isinstance(self.parameter_range, IntegerRange): return "integer"
@@ -135,8 +135,17 @@ class Optimizer(Configurable):
             elif types.is_real_type(self.parameter_maxima[0]): return "real"
             else: raise ValueError("Invalid parameter maxima")
 
+        # Parameter centers and sigmas are defined:
+        # NO: DOESN'T SAY ANYTHING: CENTER AND SIGMA CAN BE REAL BUT WE STILL WANT TO GENERATE INTEGER GENES !!
+        # (e.g. HeterogeneousListMutatorIntegerGaussian)
+        #elif self.parameter_centers is not None and self.parameter_sigmas is not None: pass
+
         # Parameter type is defined in the configuration
-        elif self.config.parameter_type is not None: return self.config.parameter_type
+        elif self.config.parameter_type is not None:
+
+            # Check that the parameter type is set
+            if self.config.parameter_type is None: raise ValueError("Parameter type (real, integer) must be set when parameter_centers and parameter_sigmas are defined")
+            return self.config.parameter_type
 
         # No clue
         else: raise ValueError("Parameter type cannot be determined or is invalid")
