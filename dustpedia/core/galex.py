@@ -1757,6 +1757,8 @@ def rebin_batch_with_montage(in_path, out_path, metatable_path, header_path, pro
     :return:
     """
 
+    import montage_wrapper as montage
+
     # Inform the user
     log.info("Rebinning a batch of images in " + in_path + " to " + out_path + " ...")
 

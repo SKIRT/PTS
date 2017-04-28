@@ -74,8 +74,12 @@ def generate_overlap_file(path, ra, dec, meta_path, mode='box', width=None, radi
     # Path of the overlap file
     overlap_path = fs.join(path, "overlap.dat")
 
+    # Convert RA and DEC into degrees
+    ra_deg = ra.to("deg").value
+    dec_deg = dec.to("deg").value
+
     # Check the coverage for our galaxy
-    montage.commands_extra.mCoverageCheck(meta_path, overlap_path, mode=mode, ra=ra, dec=dec, width=width, radius=radius)
+    montage.commands_extra.mCoverageCheck(meta_path, overlap_path, mode=mode, ra=ra_deg, dec=dec_deg, width=width, radius=radius)
 
     # Check if there is any coverage for this galaxy and band
     if sum(1 for line in open(overlap_path)) <= 3: log.warning("No coverage")
@@ -118,15 +122,15 @@ def get_field_table(cutout_center, cutout_width, band):
     """
 
     # Get the coordinate range for this galaxy
-    ra = cutout_center.ra.to("deg").value
-    dec = cutout_center.dec.to("deg").value
-    width = cutout_width.to("deg").value
+    ra_deg = cutout_center.ra.to("deg").value
+    dec_deg = cutout_center.dec.to("deg").value
+    width_deg = cutout_width.to("deg").value
 
     # Determine path for the table
     path = fs.join(temp_montage_path, "fields.tbl")
 
     # Get the info
-    montage.mArchiveList("SDSS", band, str(ra) + " " + str(dec), width, width, path)
+    montage.mArchiveList("SDSS", band, str(ra_deg) + " " + str(dec_deg), width_deg, width_deg, path)
 
     # Load the table
     table = Table.read(path, format="ascii")
@@ -153,16 +157,16 @@ def make_header(ra, dec, width, pix_size, returns="header"):
     # pix_size is 3.2 for GALEX, and 0.45 for SDSS.
 
     # Convert to degrees and the pixelsize in arcseconds
-    ra = ra.to("deg").value
-    dec = dec.to("deg").value
-    width = width.to("deg").value
-    pix_size = pix_size.to("arcsec").value
+    ra_deg = ra.to("deg").value
+    dec_deg = dec.to("deg").value
+    width_deg = width.to("deg").value
+    pix_size_arcsec = pix_size.to("arcsec").value
 
     # Determine the path to the temporary header file
     header_path = fs.join(temp_montage_path, "header.hdr")
 
     # Create the header
-    montage.commands.mHdr(str(ra) + ' ' + str(dec), width, header_path, pix_size=pix_size)
+    montage.commands.mHdr(str(ra_deg) + ' ' + str(dec_deg), width_deg, header_path, pix_size=pix_size_arcsec)
 
     # Load the header
     if returns == "header": return Header.fromtextfile(header_path)

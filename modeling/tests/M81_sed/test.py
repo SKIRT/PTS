@@ -129,6 +129,9 @@ class M81SEDTest(M81TestBase):
         # 14. Generate the initial parameter values
         self.generate_initial_parameter_values()
 
+        # Generate the initial population of individuals
+        self.generate_initial_population()
+
         # 15. Create the ski file template
         self.create_template()
 
@@ -323,6 +326,21 @@ class M81SEDTest(M81TestBase):
         log.debug("")
         for parameter_name in self.real_parameter_values: log.debug(" - " + parameter_name + ": " + tostr(self.initial_parameter_values[parameter_name])[1])
         log.debug("")
+
+    # -----------------------------------------------------------------
+
+    def generate_initial_population(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Generating the initial population ...")
+
+        # Loop
+        for label in self.parameter_labels: pass
 
     # -----------------------------------------------------------------
 

@@ -943,6 +943,18 @@ class M81TestBase(TestImplementation):
 
     # -----------------------------------------------------------------
 
+    @property
+    def parameter_labels(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.config.free_parameters
+
+    # -----------------------------------------------------------------
+
     def get_real_parameter_values(self):
 
         """

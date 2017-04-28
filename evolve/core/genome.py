@@ -266,7 +266,9 @@ class G1DBase(GenomeBase):
 
     def __iadd__(self, item):
 
-      """ To add more items using the += operator """
+      """
+      To add more items using the += operator
+      """
 
       self.genomeList.append(item)
       return self
@@ -275,7 +277,9 @@ class G1DBase(GenomeBase):
 
     def __eq__(self, other):
 
-      """ Compares one chromosome with another """
+      """
+      Compares one chromosome with another
+      """
 
       cond1 = (self.genomeList == other.genomeList)
       cond2 = (self.genomeSize == other.genomeSize)
@@ -285,7 +289,9 @@ class G1DBase(GenomeBase):
 
     def __contains__(self, value):
 
-      """ Used on: *value in genome* """
+      """
+      Used on: *value in genome*
+      """
 
       return value in self.genomeList
 
@@ -293,7 +299,9 @@ class G1DBase(GenomeBase):
 
     def __getslice__(self, a, b):
 
-      """ Return the sliced part of chromosome """
+      """
+      Return the sliced part of chromosome
+      """
 
       return self.genomeList[a:b]
 
@@ -301,7 +309,9 @@ class G1DBase(GenomeBase):
 
     def __setslice__(self, a, b, val):
 
-      """ Sets the slice part of chromosome """
+      """
+      Sets the slice part of chromosome
+      """
 
       self.genomeList[a:b] = val
 
