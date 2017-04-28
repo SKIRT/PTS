@@ -253,32 +253,52 @@ class ModelerBase(Configurable):
         # Initialize the fitting
         if not self.history.has_initialized_fit: self.initialize_fit()
 
+        # If we do multiple generations at once
+        if self.multiple_generations: self.fit_multiple()
+
+        # We just do one generation now, or finish
+        else: self.fit_single()
+
+    # -----------------------------------------------------------------
+
+    def fit_multiple(self):
+
+        """
+        This function ...
+        :param self: 
+        :return: 
+        """
+
+        # Start: launch the initial generation
+        self.start()
+
+        # Advance: launch generations 0 -> (n-1)
+        repeat(self.advance, self.config.ngenerations)
+
+        # Finish
+        self.finish()
+
+    # -----------------------------------------------------------------
+
+    def fit_single(self):
+
+        """
+        This function ...
+        :param self: 
+        :return: 
+        """
+
         # Load the generations table
         generations = get_generations_table(self.modeling_path, self.fitting_run_name)
 
-        # If we do multiple generations at once
-        if self.multiple_generations:
+        # If finishing the generation is requested
+        if self.config.finish: self.finish()
 
-            # Start: launch the initial generation
-            self.start()
+        # If this is the initial generation
+        elif generations.last_generation_name is None: self.start()
 
-            # Advance: launch generations 0 -> (n-1)
-            repeat(self.advance, self.config.ngenerations)
-
-            # Finish
-            self.finish()
-
-        # We just do one generation now, or finish
-        else:
-
-            # If finishing the generation is requested
-            if self.config.finish: self.finish()
-
-            # If this is the initial generation
-            elif generations.last_generation_name is None: self.start()
-
-            # Advance the fitting with a new generation
-            else: self.advance()
+        # Advance the fitting with a new generation
+        else: self.advance()
 
     # -----------------------------------------------------------------
 

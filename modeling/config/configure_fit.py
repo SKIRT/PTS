@@ -17,6 +17,12 @@ modeling_path = fs.cwd()
 
 # -----------------------------------------------------------------
 
+# Fitting methods
+default_fitting_method = "genetic"
+fitting_methods = ["genetic", "grid"]
+
+# -----------------------------------------------------------------
+
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
@@ -30,6 +36,9 @@ model_names = get_model_names(modeling_path)
 if len(model_names) == 1: definition.add_fixed("model_name", "name of the model to use for the fitting", model_names[0])
 else: definition.add_optional("model_name", "string", "name of the model to use for the fitting", choices=model_names)
 
+# NEW: FITTING METHOD
+definition.add_optional("fitting_method", "string", "fitting method", default_fitting_method, fitting_methods)
+
 # Add optional
 definition.add_optional("parameters", "string_list", "parameters to be used as free parameters during the fitting")
 definition.add_optional("descriptions", "string_string_dictionary", "parameter descriptions")
@@ -37,6 +46,7 @@ definition.add_optional("types", "string_string_dictionary", "parameter types")
 definition.add_optional("units", "string_unit_dictionary", "parameter units")
 definition.add_optional("filters", "string_list", "fit to the observed data of these filters")
 definition.add_optional("genetic", "dictionary", "options for the genetic algorithm")
+definition.add_optional("grid", "dictionary", "options for the grid fitting")
 
 # Sections
 definition.add_section("ranges", "parameter ranges")

@@ -54,6 +54,7 @@ class SEDModeler(ModelerBase):
         self.ranges_config = None
         self.filters_config = None
         self.genetic_config = None
+        self.grid_config = None
 
         # Configuration for the fitting initializer
         self.initialize_config = None
@@ -109,6 +110,7 @@ class SEDModeler(ModelerBase):
         if "ranges_config" in kwargs: self.ranges_config = kwargs.pop("ranges_config")
         if "filters_config" in kwargs: self.filters_config = kwargs.pop("filters_config")
         if "genetic_config" in kwargs: self.genetic_config = kwargs.pop("genetic_config")
+        if "grid_config" in kwargs: self.grid_config = kwargs.pop("grid_config")
 
         # Config for the fitting initializer
         if "initialize_config" in kwargs: self.initialize_config = kwargs.pop("initialize_config")
@@ -240,7 +242,7 @@ class SEDModeler(ModelerBase):
         # Run the fitting configurer
         configurer.run(descriptions_config=self.descriptions_config, types_config=self.types_config,
                        units_config=self.units_config, ranges_config=self.ranges_config, filters_config=self.filters_config,
-                       genetic_config=self.genetic_config, settings=self.config.fitting_settings)
+                       genetic_config=self.genetic_config, grid_config=self.grid_config, settings=self.config.fitting_settings)
 
         # Set the parameter ranges
         if self.ranges_config is not None:

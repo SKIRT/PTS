@@ -327,6 +327,7 @@ class ParameterExplorer(FittingComponent):
 
             self.launcher.config.analysis.misc.fluxes = True       # calculate observed fluxes
             self.launcher.config.analysis.misc.images = False
+
         # observation_filters
         self.launcher.config.analysis.misc.observation_filters = self.observed_filter_names
         # observation_instruments
@@ -378,46 +379,85 @@ class ParameterExplorer(FittingComponent):
         log.info("Setting the model generator ...")
 
         # Generate new models based on a simple grid (linear or logarithmic) of parameter values
-        if self.config.generation_method == "grid":
-
-            # Set a name for the generation
-            self.generation_name = time.unique_name("grid")
-
-            # Create the model generator
-            self.generator = GridModelGenerator()
-
-        # Generate new models instinctively based on the current probability distribution of the parameters
-        elif self.config.generation_method == "instinctive":
-
-            # Set a name for the generation
-            self.generation_name = time.unique_name("instinctive")
-
-            # Create the model generator
-            self.generator = InstinctiveModelGenerator()
+        if self.config.generation_method == "grid": self.set_grid_generator()
 
         # Generate new models using genetic algorithms
-        elif self.config.generation_method == "genetic":
-
-            # Not the initial generation
-            if self.get_initial_generation_name() in self.fitting_run.generation_names:
-
-                print(self.fitting_run.last_genetic_generation_index)
-
-                # Set index and name
-                self.generation_index = self.fitting_run.last_genetic_generation_index + 1
-                self.generation_name = self.get_genetic_generation_name(self.generation_index)
-
-            # Initial generation
-            else: self.generation_name = self.get_initial_generation_name()
-
-            # Create the generator
-            self.generator = GeneticModelGenerator()
+        elif self.config.generation_method == "genetic": self.set_genetic_generator()
 
         # Invalid generation method
         else: raise ValueError("Invalid generation method: " + str(self.config.generation_method))
 
+        # Set general options for the model generator
+        self.set_generator_options()
+
         # Debugging
         log.debug("The name of the new generation of parameter exploration is '" + self.generation_name + "'")
+
+    # -----------------------------------------------------------------
+
+    def set_grid_generator(self):
+
+        """
+        This function ...
+        :param self: 
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Setting grid model generator ...")
+
+        # Set a name for the generation
+        self.generation_name = time.unique_name("grid")
+
+        # Create the model generator
+        self.generator = GridModelGenerator()
+
+    # -----------------------------------------------------------------
+
+    def set_genetic_generator(self):
+
+        """
+        This function ...
+        :param self: 
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Setting genetic model generator ...")
+
+        # Not the initial generation
+        if self.get_initial_generation_name() in self.fitting_run.generation_names:
+
+            # print(self.fitting_run.last_genetic_generation_index)
+
+            # Set index and name
+            self.generation_index = self.fitting_run.last_genetic_generation_index + 1
+            self.generation_name = self.get_genetic_generation_name(self.generation_index)
+
+        # Initial generation
+        else: self.generation_name = self.get_initial_generation_name()
+
+        # Create the generator
+        self.generator = GeneticModelGenerator()
+
+    # -----------------------------------------------------------------
+
+    def set_generator_options(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Setting general model generator options ...")
+
+        # Set the modeling path for the model generator
+        self.generator.config.path = self.config.path
+
+        # Set generator options
+        self.generator.config.ngenerations = self.config.ngenerations
+        self.generator.config.nmodels = self.config.nsimulations
 
     # -----------------------------------------------------------------
 
@@ -527,10 +567,6 @@ class ParameterExplorer(FittingComponent):
 
         # Inform the user
         log.info("Generating the model parameters ...")
-
-        # Set generator options
-        self.generator.config.ngenerations = self.config.ngenerations
-        self.generator.config.nmodels = self.config.nsimulations
 
         # Run the model generator
         self.generator.run(fitting_run=self.fitting_run, parameter_ranges=self.ranges)

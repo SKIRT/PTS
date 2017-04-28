@@ -376,6 +376,7 @@ def combine_configs(*args):
     # Initialize a new configuration
     config = Configuration()
 
+    # Loop over the configurations
     for cfg in args:
         for label in cfg: config[label] = cfg[label]
 

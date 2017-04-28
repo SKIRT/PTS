@@ -28,6 +28,7 @@ from pts.core.plot.sed import SEDPlotter
 from pts.modeling.preparation.unitconversion import neutral_fluxdensity_to_jansky, si_to_jansky
 from pts.core.data.sun import Sun
 from pts.core.filter.filter import parse_filter
+from pts.core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -488,11 +489,6 @@ def test(temp_path):
 
 # -----------------------------------------------------------------
 
-# The speed of light
-speed_of_light = constants.c
-
-# -----------------------------------------------------------------
-
 def spectral_factor_hz_to_micron(wavelength):
 
     """
@@ -505,8 +501,8 @@ def spectral_factor_hz_to_micron(wavelength):
     frequency_unit = "Hz"
 
     # Convert string units to Unit objects
-    if isinstance(wavelength_unit, basestring): wavelength_unit = u(wavelength_unit)
-    if isinstance(frequency_unit, basestring): frequency_unit = u(frequency_unit)
+    if types.is_string_type(basestring): wavelength_unit = u(wavelength_unit)
+    if types.is_string_type(frequency_unit): frequency_unit = u(frequency_unit)
 
     conversion_factor_unit = wavelength_unit / frequency_unit
 
@@ -527,8 +523,8 @@ def spectral_factor_hz_to_meter(wavelength):
     frequency_unit = "Hz"
 
     # Convert string units to Unit objects
-    if isinstance(wavelength_unit, basestring): wavelength_unit = u(wavelength_unit)
-    if isinstance(frequency_unit, basestring): frequency_unit = u(frequency_unit)
+    if types.is_string_type(wavelength_unit): wavelength_unit = u(wavelength_unit)
+    if types.is_string_type(frequency_unit): frequency_unit = u(frequency_unit)
 
     conversion_factor_unit = wavelength_unit / frequency_unit
 

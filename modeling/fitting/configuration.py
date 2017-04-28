@@ -71,6 +71,9 @@ class FittingConfigurer(FittingComponent):
         # The definition for the genetic algorithm settings
         self.genetic_definition = None
 
+        # The definition for the grid fitting
+        self.grid_definition = None
+
         # The individual configurations
         self.parameters_config = None
         self.descriptions_config = None
@@ -79,6 +82,7 @@ class FittingConfigurer(FittingComponent):
         self.ranges_config = None
         self.filters_config = None
         self.genetic_config = None
+        self.grid_config = None
 
         # Additional settings
         self.settings = None
@@ -121,7 +125,7 @@ class FittingConfigurer(FittingComponent):
         self.set_filters()
 
         # 9. Get the settings for the genetic algorithm
-        self.set_genetic()
+        self.set_method()
 
         # 9. Create the fitting configuration
         self.create_config()
@@ -161,12 +165,10 @@ class FittingConfigurer(FittingComponent):
         if "ranges_config" in kwargs: self.ranges_config = kwargs.pop("ranges_config")
         if "filters_config" in kwargs: self.filters_config = kwargs.pop("filters_config")
         if "genetic_config" in kwargs: self.genetic_config = kwargs.pop("genetic_config")
+        if "grid_config" in kwargs: self.grid_config = kwargs.pop("grid_config")
 
         # Set settings dict
         if "settings" in kwargs: self.settings = kwargs.pop("settings")
-
-        # Set definition of genetic algorithm configuration
-        self.set_genetic_definition()
 
     # -----------------------------------------------------------------
 
@@ -229,21 +231,6 @@ class FittingConfigurer(FittingComponent):
         # Set the initial representation
         path = get_representation_path(self.config.path, name)
         self.initial_representation = Representation(name, self.model_name, path)
-
-    # -----------------------------------------------------------------
-
-    def set_genetic_definition(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the definition of the genetic algorithm configuration ...")
-
-        # Set
-        self.genetic_definition = genetic_definition
 
     # -----------------------------------------------------------------
 
@@ -348,6 +335,18 @@ class FittingConfigurer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def parameter_labels(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.parameters_config.free_parameters
+
+    # -----------------------------------------------------------------
+
     def set_descriptions(self):
 
         """
@@ -377,7 +376,7 @@ class FittingConfigurer(FittingComponent):
 
         # Create configuration definition
         definition = ConfigurationDefinition()
-        for name in self.parameters_config.free_parameters: definition.add_required(name, "string", "description of the '" + name + "' parameter")
+        for name in self.parameter_labels: definition.add_required(name, "string", "description of the '" + name + "' parameter")
 
         # Create the configuration setter
         setter = InteractiveConfigurationSetter("Parameter descriptions", add_cwd=False, add_logging=False)
@@ -385,6 +384,18 @@ class FittingConfigurer(FittingComponent):
         # Get the config and set the descriptions configuration
         config = setter.run(definition, prompt_optional=False)
         self.descriptions_config = Configuration(descriptions=config)
+
+    # -----------------------------------------------------------------
+
+    def description_for_parameter(self, label):
+
+        """
+        This function ...
+        :param label: 
+        :return: 
+        """
+
+        return self.descriptions_config.descriptions[label]
 
     # -----------------------------------------------------------------
 
@@ -417,7 +428,7 @@ class FittingConfigurer(FittingComponent):
 
         # Create definition
         definition = ConfigurationDefinition()
-        for name in self.parameters_config.free_parameters: definition.add_required(name, "string", "type of the '" + name + "' parameter", choices=possible_parameter_types_descriptions)
+        for name in self.parameter_labels: definition.add_required(name, "string", "type of the '" + name + "' parameter", choices=possible_parameter_types_descriptions)
 
         # Create configuration setter
         setter = InteractiveConfigurationSetter("Parameter types", add_cwd=False, add_logging=False)
@@ -457,7 +468,7 @@ class FittingConfigurer(FittingComponent):
 
         # Create definition
         definition = ConfigurationDefinition()
-        for name in self.parameters_config.free_parameters:
+        for name in self.parameter_labels:
 
             # Get the type of quantity for this parameter
             parameter_type = self.types_config.types[name]
@@ -511,7 +522,7 @@ class FittingConfigurer(FittingComponent):
         definition = ConfigurationDefinition(write_config=False)
 
         # Add the options for the ranges
-        for label in self.parameters_config.free_parameters:
+        for label in self.parameter_labels:
 
             # Get the unit
             unit = self.units_config.units[label]
@@ -525,8 +536,7 @@ class FittingConfigurer(FittingComponent):
             parsing_type = parsing_types_for_parameter_types[self.types_config.types[label]]
 
             # Get the description
-            parameter_description = self.descriptions_config.descriptions[label]
-            description = "range of " + parameter_description + units_info_string
+            description = "range of " + self.description_for_parameter(label) + units_info_string
 
             # Make optional or required depending on whether default is given
             if default_range is not None: definition.add_optional(label + "_range", parsing_type + "_range", description, default=default_range, convert_default=True)
@@ -581,6 +591,83 @@ class FittingConfigurer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def set_method(self):
+
+        """
+        THis function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Setting options depending on the fitting method ...")
+
+        # First set the method definitions
+        self.set_method_definitions()
+
+        # Set options depending on the fitting method
+        if self.config.fitting_method == "grid": self.set_grid()
+        elif self.config.fitting_method == "genetic": self.set_genetic()
+        else: raise ValueError("Invalid fitting method: must be 'grid' or 'genetic'")
+
+    # -----------------------------------------------------------------
+
+    def set_method_definitions(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Setting the definitions for the different fitting methods ...")
+
+        # Set genetic defintiion
+        self.set_genetic_definition()
+
+        # Set grid definition
+        self.set_grid_definition()
+
+    # -----------------------------------------------------------------
+
+    def set_genetic_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the definition of the genetic algorithm configuration ...")
+
+        # Set
+        self.genetic_definition = genetic_definition
+
+    # -----------------------------------------------------------------
+
+    def set_grid_definition(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Creating the definition of the grid fitting configuration ...")
+
+        # Create
+        self.grid_definition = ConfigurationDefinition(write_config=False)
+
+        # Loop over the fitting parameters
+        for label in self.parameter_labels:
+
+            # Linear or logarithmic
+            self.grid_definition.add_required(label + "_scale", "string", "scale for " + self.description_for_parameter(label), choices=["linear", "logarithmic"])
+
+            # Number of grid points
+            self.grid_definition.add_positional_optional(label + "_npoints", "positive_integer", "number of grid points for " + self.description_for_parameter(label), default=10)
+
+    # -----------------------------------------------------------------
+
     def set_genetic(self):
 
         """
@@ -599,6 +686,9 @@ class FittingConfigurer(FittingComponent):
         elif isinstance(self.genetic_config, dict): pass
         else: self.prompt_genetic()
 
+        # Set the grid configuration to None
+        self.grid_config = Configuration(grid=None)
+
     # -----------------------------------------------------------------
 
     def prompt_genetic(self):
@@ -612,10 +702,51 @@ class FittingConfigurer(FittingComponent):
         log.info("Prompting for the settings of the genetic algorithm ...")
 
         # Create configuration setter
-        setter = InteractiveConfigurationSetter("filters", add_logging=False, add_cwd=False)
+        setter = InteractiveConfigurationSetter("genetic", add_logging=False, add_cwd=False)
 
-        # Create config, get the filter choices
+        # Create config, get the choices
         self.genetic_config = Configuration(genetic=setter.run(self.genetic_definition, prompt_optional=True))
+
+    # -----------------------------------------------------------------
+
+    def set_grid(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Setting the grid fitting configuration ...")
+
+        # Load or prompt for the settings
+        if self.config.grid is not None:
+            setter = DictConfigurationSetter(self.config.grid, "grid")
+            configuration = setter.run(self.grid_definition)
+            self.grid_config = Configuration(grid=configuration)
+        elif isinstance(self.grid_config, dict): pass
+        else: self.prompt_grid()
+
+        # Set the genetic configuration to None
+        self.genetic_config = Configuration(genetic=None)
+
+    # -----------------------------------------------------------------
+
+    def prompt_grid(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Prompting for the grid fitting settings ...")
+
+        # Create configuration setter
+        setter = InteractiveConfigurationSetter("grid", add_logging=False, add_cwd=False)
+
+        # Create config, get the choices
+        self.grid_config = Configuration(grid=setter.run(self.grid_definition, prompt_optional=True))
 
     # -----------------------------------------------------------------
 
@@ -662,7 +793,10 @@ class FittingConfigurer(FittingComponent):
         # Combine configs
         self.fitting_config = combine_configs(self.parameters_config, self.descriptions_config, self.types_config,
                                               self.units_config, self.ranges_config, self.filters_config,
-                                              self.genetic_config)
+                                              self.genetic_config, self.grid_config)
+
+        # NEW: Set the fitting method !!
+        self.fitting_config.method = self.config.fitting_method
 
         # Set the name of the initial representation
         self.fitting_config.initial_representation = self.initial_representation.name

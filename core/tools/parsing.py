@@ -31,6 +31,87 @@ from . import filesystem as fs
 
 # -----------------------------------------------------------------
 
+def bit(argument):
+
+    """
+    This function ...
+    :param argument: 
+    :return: 
+    """
+
+    value = integer(argument)
+    if value == 0 or value == 1: return value
+    else: raise ValueError("")
+
+# -----------------------------------------------------------------
+
+def digit(argument):
+
+    """
+    This function ...
+    :param argument: 
+    :return: 
+    """
+
+    value = integer(argument)
+    if 0 <= value <= 9: return value
+    else: raise ValueError("Not a digit: must be integer between 0 and 9")
+
+# -----------------------------------------------------------------
+
+def binary(argument):
+
+    """
+    This function ...
+    :param argument: 
+    :return: 
+    """
+
+    chars = characters(argument)
+    return [bit(char) for char in chars]
+
+# -----------------------------------------------------------------
+
+def characters(argument):
+
+    """
+    This function ...
+    :param argument: 
+    :return: 
+    """
+
+    return list(argument)
+
+# -----------------------------------------------------------------
+
+def character(argument):
+
+    """
+    This function ...
+    :param argument: 
+    :return: 
+    """
+
+    chars = character(argument)
+    if len(chars) == 1: return chars[0]
+    else: raise ValueError("Contains multiple characters")
+
+# -----------------------------------------------------------------
+
+def letter(argument):
+
+    """
+    THis function ...
+    :param argument: 
+    :return: 
+    """
+
+    char = character(argument)
+    if char.isalpha(): return char
+    else: raise ValueError("Is not a letter character")
+
+# -----------------------------------------------------------------
+
 def integer_array(argument):
 
     """

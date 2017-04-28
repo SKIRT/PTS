@@ -205,6 +205,18 @@ class FittingRun(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def fitting_method(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.fitting_configuration.method
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def spectral_convolution(self):
 
         """
@@ -417,6 +429,18 @@ class FittingRun(object):
         """
 
         return self.fitting_configuration.genetic
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def grid_settings(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.fitting_configuration.grid
 
     # -----------------------------------------------------------------
 
@@ -1974,6 +1998,19 @@ def load_fitting_configuration(modeling_path):
 
     # Open the configuration and return it
     return Configuration.from_file(fitting_configuration_path)
+
+# -----------------------------------------------------------------
+
+def get_fitting_method(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path: 
+    :return: 
+    """
+
+    configuration = load_fitting_configuration(modeling_path)
+    return configuration.method
 
 # -----------------------------------------------------------------
 

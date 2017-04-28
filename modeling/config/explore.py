@@ -7,11 +7,10 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-#from pts.core.tools.stringify import stringify_not_list
 from pts.core.tools import filesystem as fs
-#from pts.modeling.component.component import load_fitting_configuration
 from pts.modeling.fitting.component import get_run_names
 from pts.core.remote.host import find_host_ids
+from pts.modeling.fitting.run import get_fitting_method
 
 # -----------------------------------------------------------------
 
@@ -20,11 +19,29 @@ modeling_path = fs.cwd()
 
 # -----------------------------------------------------------------
 
-# Load the fitting configuration
-#fitting_configuration = load_fitting_configuration(fs.cwd())
+# Model generation methods
+#generation_methods = ["genetic", "grid", "instinctive"]
 
-# Free parameter labels
-#free_parameter_labels = fitting_configuration.free_parameters
+# Default model generation method
+#default_generation_method = "genetic"
+
+# -----------------------------------------------------------------
+
+# Get the fitting method
+fitting_method = get_fitting_method(modeling_path)
+
+# Set generation methods and default generation method, based on the fitting method
+if fitting_method == "genetic":
+
+    default_generation_method = "genetic"
+    generation_methods = ["genetic", "grid"]
+
+elif fitting_method == "grid":
+
+    default_generation_method = "grid"
+    generation_methods = ["grid"]
+
+else: raise ValueError("Fitting method has an invalid value: " + fitting_method + " (must be 'genetic' or 'grid'")
 
 # -----------------------------------------------------------------
 
@@ -38,7 +55,7 @@ elif len(run_names) == 1: definition.add_fixed("name", "name of the fitting run"
 else: definition.add_required("name", "string", "name of the fitting run", choices=run_names)
 
 # Positional optional parameter
-definition.add_positional_optional("generation_method", "string", "the model generation method ('grid', 'instinctive', 'genetic')", "genetic", ["genetic", "grid", "instinctive"])
+definition.add_positional_optional("generation_method", "string", "model generation method", default_generation_method, choices=generation_methods)
 
 # Optional parameters
 if len(find_host_ids()) > 0: definition.add_optional("remotes", "string_list", "the remote hosts on which to run the parameter exploration", default=find_host_ids(schedulers=False), choices=find_host_ids(schedulers=False))

@@ -651,6 +651,9 @@ class M81SEDTest(M81TestBase):
         # Create genetic config
         input_model["genetic_config"] = Map(genetic=self.config.genetic)
 
+        # Create grid config ??
+        #input_model["grid_config"] = Map(grid=self.config.grid)
+
         # Create ranges config
         ranges_config = Map()
         for parameter_name in self.config.free_parameters: # Define range
