@@ -193,6 +193,22 @@ class ImageFetcher(DataComponent):
         # Fetch the GALEX data from the DustPedia archive
         self.fetch_from_dustpedia("GALEX")
 
+        # Make the GALEX poisson error maps
+        if self.config.make_poisson: self.make_poisson_galex()
+        else: log.warning("The GALEX poisson error maps will have to be created manually with 'make_galex' and be placed next to the images with the suffix '_poisson'")
+
+    # -----------------------------------------------------------------
+
+    def make_poisson_galex(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Launching the procedures to create GALEX poisson error mosaic maps ...")
+
         # Determine local output directory path
         local_output_path = fs.create_directory_in(self.data_images_paths["GALEX"], "temp")
 
@@ -233,6 +249,22 @@ class ImageFetcher(DataComponent):
 
         # Fetch the SDSS data from the DustPedia archive
         self.fetch_from_dustpedia("SDSS")
+
+        # Make the SDSS poisson error maps
+        if self.config.make_poisson: self.make_poisson_sdss()
+        else: log.warning("The SDSS poisson error maps will have to be created manually with 'make_sdss' and be placed next to the images with the suffix '_poisson'")
+
+    # -----------------------------------------------------------------
+
+    def make_poisson_sdss(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Launching the procedures to create SDSS poisson error mosaic maps ...")
 
         # Determine the output directory path
         local_output_path = fs.create_directory_in(self.data_images_paths["SDSS"], "temp")

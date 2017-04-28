@@ -23,6 +23,7 @@ calibration_errors = {"GALEX FUV": "0.05 mag",
                       #"SDSS g": "2%", # maybe less for DR12? (1%) http://www.sdss.org/dr12/algorithms/fluxcal/
                       #"SDSS r": "2%", # maybe less for DR12? (1%)
                       "Mosaic Halpha": "5%",
+                      "Halpha": "5%",
                       #"SDSS i": "2%", # maybe less for DR12? (1%)
                       #"SDSS z": "2%", # maybe less for DR12? (1%)
                       # SDSS:

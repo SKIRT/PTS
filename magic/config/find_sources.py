@@ -46,4 +46,7 @@ definition.import_section("extended", "options for extended source finder", exte
 definition.import_section("point", "options for point source finder", point_definition)
 definition.import_section("other", "options for finding other contaminating sources", other_definition)
 
+# Flags
+definition.add_flag("weak", "only do weak search: find point source positions, create regions and segments but let user adjust them manually, no segmentation or source finding", False)
+
 # -----------------------------------------------------------------

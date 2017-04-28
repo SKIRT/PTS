@@ -476,11 +476,12 @@ class SourceFinder(Configurable):
         self.galaxies = GalaxyList()
         self.stars = StarList()
 
-        # The PSFs
+        # The FWHMs and PSFs
+        self.fwhms = dict()
         self.psfs = dict()
 
         # The statistics table
-        self.statistics = None
+        #self.statistics = None
 
         # The photometry table
         self.photometry = None
@@ -516,6 +517,7 @@ class SourceFinder(Configurable):
 
         # If output path is given
         if output_path is not None:
+
             if self.output_paths is None: self.output_paths = dict()
             self.output_paths[name] = output_path
 
@@ -890,6 +892,9 @@ class SourceFinder(Configurable):
                 #if ignore_mask is not None: ignore_mask.saveto(ignore_mask_path)
                 #if bad_mask is not None: bad_mask.saveto(bad_mask_path)
 
+                # Weak search
+                config.weak = self.config.weak
+
                 # Do the detection
                 # Call the target function
                 result = target(frame, self.extended_source_catalog, config, special_mask, ignore_mask, bad_mask)
@@ -1079,6 +1084,9 @@ class SourceFinder(Configurable):
                 config = self.config.point.copy()
                 if name in self.star_finder_settings: config.set_items(self.star_finder_settings[name])
 
+                # Weak search
+                config.weak = self.config.weak
+
                 # Call the target function
                 result = target(frame, self.galaxies, self.point_source_catalog, config, special_mask, ignore_mask, bad_mask, self.principal_masks[name])
 
@@ -1109,6 +1117,7 @@ class SourceFinder(Configurable):
 
             # Set the PSF
             if fwhm is None: fwhm = self.frames[name].fwhm
+            self.fwhms[name] = fwhm
 
             # Create a Gaussian convolution kernel and return it
             if fwhm is not None:
@@ -1125,12 +1134,12 @@ class SourceFinder(Configurable):
                 self.psfs[name] = kernel
 
             # Get the statistics
-            #self.statistics[name] = statistics
+            #self.statistics[name] = point_source_statistics
 
             # Show the FWHM
             #log.info("The FWHM that could be fitted to the point sources in the " + name + " image is " + str(self.statistics[name].fwhm))
 
-        # Set the kernels of the frames for which point sources were not found
+        # Set the kernels of the frames for which point sources were not searched
         for name in self.frames:
 
             if name in self.psfs: continue
@@ -1141,6 +1150,9 @@ class SourceFinder(Configurable):
 
             # Debugging
             log.debug("The FWHM of the '" + name + "' image is " + tostr(fwhm))
+
+            # Set the FWHM
+            self.fwhms[name] = fwhm
 
             # Create kernel
             fwhm_pix = (fwhm / self.frames[name].average_pixelscale.to("arcsec")).value

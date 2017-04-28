@@ -94,4 +94,7 @@ definition.add_section("apertures", "apertures")
 definition.sections["apertures"].add_optional("sigma_level", "real", "approximate isophotal extent", 4.0)
 definition.sections["apertures"].add_optional("max_offset", "real", "maximal offset between the aperture center and galaxy position (in number of pixels) (None=no limit)")
 
+# Flags
+definition.add_flag("weak", "weak search", False)
+
 # -----------------------------------------------------------------

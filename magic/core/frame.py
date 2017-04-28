@@ -103,6 +103,18 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
+    def filter_name(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return str(self.filter) if self.filter is not None else None
+
+    # -----------------------------------------------------------------
+
+    @property
     def psf_filter(self):
 
         """
@@ -115,6 +127,18 @@ class Frame(NDDataArray):
         # BUT: if PSFFLTR WAS NOT FOUND IN HEADER, AND THUS PRESENT AS _PSF_FILTER, ASSUME PSF_FILTER = FILTER (ORIGINAL IMAGE)
         if self._psf_filter is None: return self.filter
         else: return self._psf_filter
+
+    # -----------------------------------------------------------------
+
+    @property
+    def psf_filter_name(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return str(self.psf_filter) if self.psf_filter is not None else None
 
     # -----------------------------------------------------------------
 

@@ -60,7 +60,10 @@ class PreparationInitializer(PreparationComponent):
         self.launcher = PTSRemoteLauncher()
 
         # The statistics
-        self.statistics = None
+        #self.statistics = None
+
+        # The FWHMs found by the source finder
+        self.finder_fwhms = None
 
     # -----------------------------------------------------------------
 
@@ -123,7 +126,7 @@ class PreparationInitializer(PreparationComponent):
         for path, origin in fs.directories_in_path(self.data_images_path, returns=["path", "name"]):
 
             # Ignore the Planck data (for now)
-            if origin == "Planck": continue
+            #if origin == "Planck": continue
 
             # Loop over the FITS files in the current directory
             for image_path, image_name in fs.files_in_path(path, extension="fits", not_contains="poisson", returns=["path", "name"]):
@@ -132,17 +135,27 @@ class PreparationInitializer(PreparationComponent):
                 frame = Frame.from_file(image_path)
 
                 # Determine the preparation name
-                if frame.filter is not None: prep_name = str(frame.filter)
-                else: prep_name = image_name
+                #if frame.filter is not None: prep_name = str(frame.filter)
+                #else: prep_name = image_name
+                if frame.filter is None:
+                    log.warning("Did not recognize the filter of the '" + image_name + "' image: skipping")
+                    continue
+
+                # Determine name
+                name = frame.filter_name
 
                 # Add the image path
-                self.paths[prep_name] = image_path
+                self.paths[frame.filter_name] = image_path
 
                 # Determine path to poisson error map
                 poisson_path = fs.join(path, image_name + "_poisson.fits")
 
                 # Set the path to the poisson error map
-                if fs.is_file(poisson_path): self.error_paths[prep_name] = poisson_path
+                if fs.is_file(poisson_path):
+
+                    # Debugging
+                    log.debug("Poisson error frame found for " + name + "' image ...")
+                    self.error_paths[name] = poisson_path
 
     # -----------------------------------------------------------------
 
@@ -196,16 +209,16 @@ class PreparationInitializer(PreparationComponent):
             # Set the image name
             image.name = prep_name
 
-            # -----------------------------------------------------------------
-
             # Remove all frames except for the primary frame
             image.remove_frames_except("primary")
-
-            # -----------------------------------------------------------------
 
             # If a poisson error map was found, add it to the image
             if prep_name in self.error_paths:
 
+                # Debugging
+                log.debug("Adding the poisson error frame to the " + prep_name + " image ...")
+
+                # Add the error frame
                 error_map = Frame.from_file(self.error_paths[prep_name])
                 image.add_frame(error_map, "errors")
 
@@ -230,9 +243,6 @@ class PreparationInitializer(PreparationComponent):
             # Add entry to the dataset
             self.set.add_path(prep_name, self.paths[prep_name])
 
-            # Set the path to the poisson error map (included in the image now!)
-            #if prep_name in self.error_paths: self.set.add_error_path(prep_name, self.error_paths[prep_name])
-
     # -----------------------------------------------------------------
 
     def find_sources(self):
@@ -246,7 +256,7 @@ class PreparationInitializer(PreparationComponent):
         log.info("Finding sources in the images ...")
 
         # Don't look for stars in the Halpha image
-        ignore_stars = ["Mosaic Halpha"]
+        ignore_stars = ["Mosaic Halpha", "Halpha"]
 
         # Don't look for other sources in the IRAC images
         ignore_other_sources = ["IRAC I1", "IRAC I2", "IRAC I3", "IRAC I4"]
@@ -280,7 +290,7 @@ class PreparationInitializer(PreparationComponent):
         else: self.find_sources_local(ignore_images, ignore_stars, ignore_other_sources)
 
         # Set FWHM of optical images
-        self.set_fwhm()
+        self.set_fwhms()
 
     # -----------------------------------------------------------------
 
@@ -298,7 +308,10 @@ class PreparationInitializer(PreparationComponent):
         self.finder.run(dataset=self.set, ignore=ignore_images, ignore_stars=ignore_stars, ignore_other_sources=ignore_other_sources)
 
         # Get the statistics
-        self.statistics = self.finder.statistics
+        #self.statistics = self.finder.statistics
+
+        # Get the fwhms
+        self.finder_fwhms = self.finder.fwhms
 
     # -----------------------------------------------------------------
 
@@ -322,25 +335,50 @@ class PreparationInitializer(PreparationComponent):
         input_dict["ignore_other_sources"] = ignore_other_sources
 
         # Run the PTS find_sources command remotely and get the output
-        self.statistics = self.launcher.run_attached("find_sources", self.config.sources, input_dict, return_output_names=["statistics"], unpack=True)
+        #self.statistics = self.launcher.run_attached("find_sources", self.config.sources, input_dict, return_output_names=["statistics"], unpack=True)
+        self.finder_fwhms = self.launcher.run_attached("find_sources", self.config.sources, input_dict, return_output_names=["fwhms"], unpack=True)
 
     # -----------------------------------------------------------------
 
-    def set_fwhm(self):
+    #def set_fwhm(self):
+
+        #"""
+        #This function ...
+        #:return:
+        #"""
+
+        # Set the FWHM of the images
+        #for prep_name in self.set:
+            #if prep_name not in fwhms:
+                #image = self.set.get_image(prep_name)
+                #image.fwhm = self.statistics[prep_name].fwhm
+                #image.saveto(self.set.paths[prep_name])
+
+    # -----------------------------------------------------------------
+
+    def set_fwhms(self):
 
         """
         This function ...
-        :return:
+        :return: 
         """
 
-        # Set the FWHM of the images
+        # Inform the user
+        log.info("Setting the FWHMs of the images ...")
+
+        # Loop over the images
         for prep_name in self.set:
 
-            if prep_name not in fwhms:
+            # Get the filter
+            fltr = parse_filter(prep_name)
 
+            # Set the FWHM if the instrument has a fixed PSF
+            if has_variable_fwhm(fltr):
+
+                # Open the image, set the FWHM, and save again
                 image = self.set.get_image(prep_name)
-                image.fwhm = self.statistics[prep_name].fwhm
-                image.saveto(self.set.paths[prep_name])
+                image.fwhm = self.finder_fwhms[prep_name]
+                image.save()
 
     # -----------------------------------------------------------------
 

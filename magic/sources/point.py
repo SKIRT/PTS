@@ -944,7 +944,7 @@ class PointSourceFinder(Configurable):
         default_fwhm = self.fwhm_pix
 
         # Loop over all stars
-        for star in self.stars:
+        for star in self.sources:
 
             # -- Saturation sources ---
 
@@ -1350,33 +1350,33 @@ class PointSourceFinder(Configurable):
         #not_saturation_column = []
 
         # Loop over all stars
-        for star in self.stars:
+        for source in self.sources:
 
-            index_column.append(star.index)
-            have_source_column.append(star.has_source)
-            have_model_column.append(star.has_model)
-            have_saturation_column.append(star.has_saturation)
+            index_column.append(source.index)
+            have_source_column.append(source.has_detection)
+            have_model_column.append(source.has_model)
+            have_saturation_column.append(source.has_saturation)
 
-            if star.has_source and star.source.has_peak:
+            if source.has_detection and source.detection.has_peak:
 
-                x_peak_column.append(star.source.peak.x)
-                y_peak_column.append(star.source.peak.y)
+                x_peak_column.append(source.detection.peak.x)
+                y_peak_column.append(source.detection.peak.y)
 
             else:
 
                 x_peak_column.append(None)
                 y_peak_column.append(None)
 
-            fwhm_column.append(star.fwhm if star.has_model else None)
+            fwhm_column.append(source.fwhm if source.has_model else None)
 
-            if star.has_saturation:
+            if source.has_saturation:
 
-                contour_position = star.contour.center
+                contour_position = source.contour.center
                 x_centroid_column.append(contour_position.x)
                 y_centroid_column.append(contour_position.y)
-                a_column.append(star.contour.semimajor)
-                b_column.append(star.contour.semiminor)
-                angle_column.append(star.contour.angle.degree)
+                a_column.append(source.contour.semimajor)
+                b_column.append(source.contour.semiminor)
+                angle_column.append(source.contour.angle.degree)
 
             else:
 
@@ -1386,7 +1386,7 @@ class PointSourceFinder(Configurable):
                 b_column.append(None)
                 angle_column.append(None)
 
-            ignore_column.append(star.ignore)
+            ignore_column.append(source.ignore)
             #not_star_column.append()
             #force_column.append()
             #not_saturation_column.append()

@@ -1330,3 +1330,52 @@ def get_data_images_path(modeling_path):
     return fs.join(data_path, "images")
 
 # -----------------------------------------------------------------
+
+def get_reference_seds(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    seds = dict()
+
+    # Loop over the SEDs in the data/SEDs directory
+    for path, name in fs.files_in_path(get_data_seds_path(modeling_path), extension="dat", returns=["path", "name"], not_contains="Lines"):
+
+        # Open the observed SED
+        sed = ObservedSED.from_file(path)
+
+        # Add the SED to the dictionary
+        seds[name] = sed
+
+    # Return the SEDs
+    return seds
+
+# -----------------------------------------------------------------
+
+def get_dustpedia_sed_path(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path: 
+    :return: 
+    """
+
+    return fs.join(get_data_seds_path(modeling_path), "DustPedia.dat")
+
+# -----------------------------------------------------------------
+
+def get_dustpedia_sed(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path: 
+    :return: 
+    """
+
+    # Open the SED and return it
+    return ObservedSED.from_file(get_dustpedia_sed_path(modeling_path))
+
+# -----------------------------------------------------------------

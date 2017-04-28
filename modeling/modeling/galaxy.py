@@ -39,7 +39,7 @@ from ..config.parameters import default_ranges, types, parameter_descriptions
 from ...core.units.parsing import parse_unit as u
 from ..build.model import ModelBuilder
 from ..build.representation import RepresentationBuilder
-from ..component.galaxy import get_galaxy_properties_path, get_data_seds_path, get_data_images_path
+from ..component.galaxy import get_galaxy_properties_path, get_data_seds_path, get_data_images_path, get_dustpedia_sed
 from ...core.tools import filesystem as fs
 from ...core.filter.filter import parse_filter
 from ...magic.core.image import Image
@@ -50,6 +50,8 @@ from ..maps.ssfr import SSFRMapMaker
 from ...core.tools import types
 from ..maps.significance import SignificanceMaskCreator
 from ..preparation.inspector import PreparationInspector
+from ..component.galaxy import get_observed_sed_file_path, get_reference_seds
+from ...core.plot.sed import SEDPlotter
 
 # -----------------------------------------------------------------
 
@@ -119,6 +121,18 @@ class GalaxyModeler(ModelerBase):
         #
         self.disk_model = None
         self.bulge_model = None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def galaxy_name(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.modeling_config.name
 
     # -----------------------------------------------------------------
 
@@ -378,6 +392,9 @@ class GalaxyModeler(ModelerBase):
         config["halpha_flux"] = halpha_fluxes[self.hyperleda_name]
         config["max_nobservations_mosaic"] = self.config.max_nobservations_mosaic
 
+        # Set flag to create Poisson error maps
+        config["make_poisson"] = self.config.make_poisson
+
         # Create the image fetcher
         fetcher = ImageFetcher(config)
 
@@ -479,6 +496,8 @@ class GalaxyModeler(ModelerBase):
         config = dict()
         config["remote"] = self.moderator.host_id_for_single("other")
         config["attached"] = self.config.attached
+        config["sources"] = dict()
+        config["sources"]["weak"] = self.config.sources_weak
 
         # Create the initializer
         initializer = PreparationInitializer(config)
@@ -627,7 +646,25 @@ class GalaxyModeler(ModelerBase):
         """
 
         # Inform the user
-        log.info("Running photometry on the galaxy images ...")
+        log.info("Getting the photometry ...")
+
+        # Perform the photometry
+        if self.config.perform_photometry: self.perform_photometry()
+
+        # Or just get the DustPedia photometry
+        else: self.get_photometry()
+
+    # -----------------------------------------------------------------
+
+    def perform_photometry(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Performing photometry on the galaxy images ...")
 
         # Create the photometer
         photometer = PhotoMeter()
@@ -640,6 +677,46 @@ class GalaxyModeler(ModelerBase):
 
         # Run the photometer
         photometer.run()
+
+        # Mark the end and save the history file
+        self.history.mark_end()
+        self.history.save()
+
+    # -----------------------------------------------------------------
+
+    def get_photometry(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Getting the DustPedia photometry for the galaxy ...")
+
+        # Add an entry to the history
+        self.history.add_entry("photometry")
+
+        # Get the DustPedia SED
+        sed = get_dustpedia_sed(self.modeling_path)
+
+        # Save
+        sed.saveto(get_observed_sed_file_path(self.modeling_path))
+
+        # Plot
+        plotter = SEDPlotter()
+        plotter.add_sed(sed, "DustPedia")
+        path = fs.join(self.environment.phot_path, "sed.pdf")
+        plotter.run(output=path, title=self.galaxy_name)
+
+        # Plot with references
+        plotter = SEDPlotter()
+        seds = get_reference_seds(self.modeling_path)
+        for label in seds:
+            if label == "DustPedia": continue
+            plotter.add_sed(seds[label], label)
+        path = fs.join(self.environment.phot_path, "sed_with_references.pdf")
+        plotter.run(ouput=path, title=self.galaxy_name)
 
         # Mark the end and save the history file
         self.history.mark_end()
@@ -670,16 +747,16 @@ class GalaxyModeler(ModelerBase):
         if "make_attenuation_maps" not in self.history: self.make_attenuation_maps()
 
         # Create the dust map
-        if "make_dust_map" not in self.history: self.make_dust_map()
+        if "make_dust_map" not in self.history: self.make_dust_maps()
 
         # Create the map of the old stellar disk
-        if "make_old_stars_map" not in self.history: self.make_old_stellar_map()
+        if "make_old_stars_map" not in self.history: self.make_old_stellar_maps()
 
         # Create the map of the young stellar population
-        if "make_young_stars_map" not in self.history: self.make_young_stellar_map()
+        if "make_young_stars_map" not in self.history: self.make_young_stellar_maps()
 
         # Create the map of the ionizing stellar population
-        if "make_ionizing_stars_map" not in self.history: self.make_ionizing_stellar_map()
+        if "make_ionizing_stars_map" not in self.history: self.make_ionizing_stellar_maps()
 
         # Calculate the significance masks
         if "create_significance_masks" not in self.history: self.create_significance_masks()
@@ -782,7 +859,7 @@ class GalaxyModeler(ModelerBase):
 
     # -----------------------------------------------------------------
 
-    def make_old_stellar_map(self):
+    def make_dust_maps(self):
 
         """
         This function ...
@@ -790,7 +867,40 @@ class GalaxyModeler(ModelerBase):
         """
 
         # Inform the user
-        log.info("Making the map of old stars ...")
+        log.info("Making the dust maps ...")
+
+        # Create the configuration
+        config = dict()
+        config["black_body"] = dict()
+        config["black_body"]["remote"] = self.moderator.host_id_for_single("other")
+
+        # Create the dust map maker
+        maker = DustMapMaker(config)
+
+        # Add an entry to the history
+        self.history.add_entry(DustMapMaker.command_name())
+
+        # Set the working directory
+        maker.config.path = self.modeling_path
+
+        # Run the dust map maker
+        maker.run()
+
+        # Mark the end and save the history file
+        self.history.mark_end()
+        self.history.save()
+
+    # -----------------------------------------------------------------
+
+    def make_old_stellar_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making the maps of old stars ...")
 
         # Create the old stellar map maker
         maker = OldStellarMapMaker()
@@ -810,7 +920,7 @@ class GalaxyModeler(ModelerBase):
 
     # -----------------------------------------------------------------
 
-    def make_young_stellar_map(self):
+    def make_young_stellar_maps(self):
 
         """
         This function ...
@@ -818,7 +928,7 @@ class GalaxyModeler(ModelerBase):
         """
 
         # Inform the user
-        log.info("Making the map of young stars ...")
+        log.info("Making the maps of young stars ...")
 
         # Create the young stellar map maker
         maker = YoungStellarMapMaker()
@@ -838,7 +948,7 @@ class GalaxyModeler(ModelerBase):
 
     # -----------------------------------------------------------------
 
-    def make_ionizing_stellar_map(self):
+    def make_ionizing_stellar_maps(self):
 
         """
         This function ...
@@ -846,7 +956,7 @@ class GalaxyModeler(ModelerBase):
         """
 
         # Inform the user
-        log.info("Making the map of ionizing stars ...")
+        log.info("Making the maps of ionizing stars ...")
 
         # Create the ionizing stellar map maker
         maker = IonizingStellarMapMaker()
@@ -858,39 +968,6 @@ class GalaxyModeler(ModelerBase):
         maker.config.path = self.modeling_path
 
         # Run the ionizing stellar map maker
-        maker.run()
-
-        # Mark the end and save the history file
-        self.history.mark_end()
-        self.history.save()
-
-    # -----------------------------------------------------------------
-
-    def make_dust_map(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making the dust map ...")
-
-        # Create the configuration
-        config = dict()
-        config["black_body"] = dict()
-        config["black_body"]["remote"] = self.moderator.host_id_for_single("other")
-
-        # Create the dust map maker
-        maker = DustMapMaker(config)
-
-        # Add an entry to the history
-        self.history.add_entry(DustMapMaker.command_name())
-
-        # Set the working directory
-        maker.config.path = self.modeling_path
-
-        # Run the dust map maker
         maker.run()
 
         # Mark the end and save the history file

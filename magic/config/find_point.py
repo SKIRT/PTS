@@ -181,4 +181,7 @@ definition.add_section("fwhm", "calculation of the default FWHM")
 definition.sections["fwhm"].add_optional("measure", "string", "measure", "mean", choices=["mean", "max", "median"])
 definition.sections["fwhm"].add_optional("scale_factor", "real", "scale factor", 1.0)
 
+# Flags
+definition.add_flag("weak", "only do weak search")
+
 # -----------------------------------------------------------------

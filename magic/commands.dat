@@ -1,6 +1,6 @@
 # Command | Configuration | Class | Configuration method | Description
 aperture_correction | -- | photometry.aperturecorrector.ApertureCorrector | interactive | Calculate the aperture correction factor on the extended photometry measurement of a Herschel image of a galaxy
-prepare_images | -- | prepare.batch.BatchImagePreparer | arguments | Prepare a dataset of images or a single image of a galaxy
+prepare_images | -- | prepare.preparer.ImagePreparer | arguments | Prepare a dataset of images or a single image of a galaxy
 summarize_images | -- | misc.summarizer.ImageSummarizer | arguments | Summarize the properties of a set of images
 create_dataset | -- | core.dataset.DataSetCreator | arguments | Create a dataset from a set of images
 list_ned | -- | services.ned.NED | arguments | List images found on NED
