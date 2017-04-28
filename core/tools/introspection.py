@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import getpass
+import traceback
 from os import devnull
 import warnings
 import sys
@@ -31,6 +32,7 @@ from importlib import import_module
 # Import the relevant PTS classes and modules
 from . import filesystem as fs
 from ..basics.map import Map
+from .logging import log
 
 # -----------------------------------------------------------------
 
@@ -2092,6 +2094,21 @@ def resolve_from_match(subproject, table, index):
 
 # -----------------------------------------------------------------
 
+def is_existing_pts_module(module_path):
+
+    """
+    This function ...
+    :param module_path: 
+    :return: 
+    """
+
+    # Check whether the file exists
+    filepath = fs.join(pts_package_dir, module_path.split("pts.")[1].replace(".", "/") + ".py")
+    print(filepath)
+    return fs.is_file(filepath)
+
+# -----------------------------------------------------------------
+
 def get_class(module_path, class_name):
 
     """
@@ -2103,7 +2120,18 @@ def get_class(module_path, class_name):
 
     # Get the class of the configurable of which an instance has to be created
     try: module = import_module(module_path)
-    except ImportError: raise ValueError("The module '" + module_path + "' does not exist")
+    except ImportError as e:
+
+        # Existing module, but error occured
+        if is_existing_pts_module(module_path):
+
+            print(str(e))
+            traceback.print_exc()
+            log.error("Something went wrong importing the PTS module")
+            exit()
+
+        # Not existing
+        else: raise ValueError("The module '" + module_path + "' does not exist")
 
     try: cls = getattr(module, class_name)
     except AttributeError:

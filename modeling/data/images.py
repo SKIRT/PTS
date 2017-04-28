@@ -163,20 +163,23 @@ class ImageFetcher(DataComponent):
         # Loop over all images from this origin
         for name in self.dustpedia_image_urls[origin]:
 
-            # Debugging
-            log.debug("Fetching the '" + name + "' image from the DustPedia archive ...")
-
             # Determine the path to the image file
             path = fs.join(self.data_images_paths[origin], name)
 
             # Check if the image is already present
             if fs.is_file(path):
-                log.warning("The '" + name + "' image is already present")
+                log.success("The '" + name + "' image is already present")
                 continue
+
+            # Debugging
+            log.debug("Fetching the '" + name + "' image from the DustPedia archive ...")
 
             # Download the image
             url = self.dustpedia_image_urls[origin][name]
             self.database.download_image_from_url(url, path)
+
+            # Success
+            log.success("The '" + name + "' image was downloaded")
 
     # -----------------------------------------------------------------
 

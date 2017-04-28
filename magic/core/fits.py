@@ -374,7 +374,10 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
 
     # Add meta information
     if add_meta:
-        for key in header: metadata[key.lower()] = header[key]
+        for key in header:
+            #print(header[key], type(header[key]))
+            if isinstance(header[key], fits.header._HeaderCommentaryCards): continue # skip these weird things
+            metadata[key.lower()] = header[key]
 
     # Add extra meta data
     if extra_meta is not None:

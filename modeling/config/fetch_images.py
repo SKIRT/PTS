@@ -12,7 +12,7 @@ from ...core.remote.host import find_host_ids
 # -----------------------------------------------------------------
 
 # Add required settings
-definition.add_required("remote", "string", "remote host to use for creating the GALEX and SDSS data", choices=find_host_ids(schedulers=False))
+definition.add_positional_optional("remote", "string", "remote host to use for creating the GALEX and SDSS data", choices=find_host_ids(schedulers=False))
 definition.add_flag("attached", "run remote in attached mode")
 
 # Add flags

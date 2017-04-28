@@ -598,10 +598,10 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
             if self.uses_scheduler: self.launcher.set_scheduling_options(self.remote_host_id, simulation_name, self.scheduling_options[contribution])
 
         # Run the launcher, schedules the simulations
-        simulations = self.launcher.run()
+        self.launcher.run()
 
         # Loop over the scheduled simulations
-        for simulation in simulations:
+        for simulation in self.launcher.launched_simulations:
 
             # Add the path to the modeling directory to the simulation object
             simulation.analysis.modeling_path = self.config.path

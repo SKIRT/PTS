@@ -295,7 +295,8 @@ class SKIRTJobScript(_JobScript):
     This class
     """
 
-    def __init__(self, name, arguments, cluster, skirt_path, mpi_command, walltime, modules, mail=False, bind_to_cores=False):
+    def __init__(self, name, arguments, cluster, skirt_path, mpi_command, walltime, modules, mail=False,
+                 bind_to_cores=False, extra_header_lines=None):
 
         """
         The constructor ...
@@ -307,6 +308,7 @@ class SKIRTJobScript(_JobScript):
         :param walltime:
         :param mail:
         :param bind_to_cores:
+        :param extra_header_lines:
         """
 
         # Determine the paths to the output and error files
@@ -370,7 +372,7 @@ class SKIRTJobScript(_JobScript):
             ppn = cores_per_node
 
         # Call the constructor of the base class
-        super(SKIRTJobScript, self).__init__(name, walltime, nodes, ppn, output_file_path, error_file_path, mail)
+        super(SKIRTJobScript, self).__init__(name, walltime, nodes, ppn, output_file_path, error_file_path, mail, extra_header_lines=extra_header_lines)
 
         # Add the appropriate syntax for hybrid / multithreaded runs
         mpi_command += " --hybrid " + str(processes_per_node)

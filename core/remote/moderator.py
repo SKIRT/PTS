@@ -92,6 +92,8 @@ class PlatformModerator(object):
         :return:
         """
 
+        if host_ids is None: raise ValueError("Cannot pass None as host IDs, use add_local")
+
         if self.has_name(name): raise ValueError("Already set the allowed platform(s) for procedure '" + name + "'")
         self.single[name] = host_ids
 
@@ -103,6 +105,8 @@ class PlatformModerator(object):
         This function ...
         :return:
         """
+
+        if host_ids is None: raise ValueError("Cannot pass None as host IDs, use add_local")
 
         if self.has_name(name): raise ValueError("Already set the allowed platform(s) for procedure '" + name + "'")
         self.ensemble[name] = host_ids

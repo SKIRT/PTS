@@ -50,6 +50,18 @@ class ExecutionHandle(object):
     # -----------------------------------------------------------------
 
     @classmethod
+    def postponed(cls, host_id):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return cls("postponed", host_id=host_id)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def tty(cls, session_number, host_id):
 
         """

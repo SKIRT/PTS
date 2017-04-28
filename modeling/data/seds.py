@@ -51,14 +51,14 @@ class SEDFetcher(DataComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Get the SEDs
         self.get_seds()
@@ -68,15 +68,16 @@ class SEDFetcher(DataComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(SEDFetcher, self).setup()
+        super(SEDFetcher, self).setup(**kwargs)
 
         # Configure the SED fetcher
         self.fetcher.config.galaxy_name = self.galaxy_name

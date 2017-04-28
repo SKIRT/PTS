@@ -5377,6 +5377,19 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def clear_temp_and_sessions(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        self.clear_pts_temp()
+        self.close_all_screen_sessions()
+        self.close_all_tmux_sessions()
+
+    # -----------------------------------------------------------------
+
     def clear_pts_temp(self):
 
         """

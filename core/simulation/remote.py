@@ -183,7 +183,7 @@ class SkirtRemote(Remote):
     # -----------------------------------------------------------------
 
     def start_queue(self, queue_name=None, local_script_path=None, screen_output_path=None, group_simulations=False,
-                    group_walltime=None, use_pts=False, jobscripts_path=None, attached=False):
+                    group_walltime=None, use_pts=False, jobscripts_path=None, attached=False, dry=False):
 
         """
         This function ...
@@ -195,6 +195,7 @@ class SkirtRemote(Remote):
         :param use_pts:
         :param jobscripts_path:
         :param attached:
+        :param dry:
         :return:
         """
 
@@ -211,10 +212,10 @@ class SkirtRemote(Remote):
         if self.scheduler: handles = self.start_queue_jobs(group_simulations=group_simulations,
                                                            group_walltime=group_walltime,
                                                            use_pts=use_pts,
-                                                           jobscripts_path=jobscripts_path, queue_name=queue_name)
+                                                           jobscripts_path=jobscripts_path, queue_name=queue_name, dry=dry)
 
         # Else, initiate a screen session in which the simulations are executed
-        else: handles = self.start_queue_screen(queue_name, local_script_path, screen_output_path, attached=attached)
+        else: handles = self.start_queue_screen(queue_name, local_script_path, screen_output_path, attached=attached, dry=dry)
 
         # Clear the queue
         self.clear_queue()
@@ -225,7 +226,7 @@ class SkirtRemote(Remote):
     # -----------------------------------------------------------------
 
     def start_queue_jobs(self, group_simulations=False, group_walltime=None, use_pts=False, jobscripts_path=None,
-                         queue_name=None):
+                         queue_name=None, dry=False):
 
         """
         This function ...
@@ -234,6 +235,7 @@ class SkirtRemote(Remote):
         :param use_pts:
         :param jobscripts_path:
         :param queue_name:
+        :param dry:
         :return:
         """
 
@@ -266,10 +268,12 @@ class SkirtRemote(Remote):
                 scheduling_options = self.scheduling_options[name] if name in self.scheduling_options else None
 
                 # Submit the simulation to the remote scheduling system
-                job_id = self.schedule(arguments, name, scheduling_options, local_ski_path=None, jobscript_dir_path=jobscripts_path)
+                job_id = self.schedule(arguments, name, scheduling_options, local_ski_path=None, jobscript_dir_path=jobscripts_path, dry=dry)
 
                 # Set the execution handle
-                handles[name] = ExecutionHandle.job(job_id, self.host_id)
+                if job_id is not None: handle = ExecutionHandle.job(job_id, self.host_id)
+                else: handle = ExecutionHandle.postponed(self.host_id)
+                handles[name] = handle
 
         # Return execution handles
         return handles
@@ -400,7 +404,7 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def start_queue_screen(self, screen_name, local_script_path, screen_output_path=None, attached=False):
+    def start_queue_screen(self, screen_name, local_script_path, screen_output_path=None, attached=False, dry=False):
 
         """
         This function ...
@@ -408,6 +412,7 @@ class SkirtRemote(Remote):
         :param local_script_path:
         :param screen_output_path:
         :param attached:
+        :param dry:
         :return:
         """
 
@@ -425,14 +430,21 @@ class SkirtRemote(Remote):
         # If a path is given, create a script file at the specified location
         else: script_file = open(local_script_path, 'w')
 
+        # If no screen output path is set, create a directory
+        if screen_output_path is None: screen_output_path = self.create_directory_in(self.pts_temp_path, screen_name)
+
         # Write a general header to the batch script
+        remote_script_file_name = screen_name + ".sh"
         script_file.write("#!/bin/sh\n")
         script_file.write("# Batch script for running SKIRT on remote host " + self.host_id + "\n")
-        script_file.write("# To execute manualy, copy this file to the remote filesystem and enter the following commmand:\n")
-        script_file.write("# screen -S " + screen_name + " -L -d -m " + fs.name(local_script_path) + "'\n")
+        script_file.write("# To execute manualy, upload this file to the remote filesystem in the following directory:\n")
+        script_file.write("# " + screen_output_path + "\n")
+        script_file.write("# under the name '" + remote_script_file_name + "' and enter the following commmands:\n")
+        script_file.write("# cd '" + screen_output_path + "' # navigate to the screen output directory\n")
+        script_file.write("# screen -S " + screen_name + " -L -d -m " + remote_script_file_name + "'\n")
         script_file.write("\n")
 
-        # Loop over the items in the queue
+        # Loop over the items in the queue, add a line for each simulation
         for arguments, name in self.queue:
 
             # Write the command string to the job script
@@ -445,11 +457,8 @@ class SkirtRemote(Remote):
         # Write to disk
         script_file.flush()
 
-        # If no screen output path is set, create a directory
-        if screen_output_path is None: screen_output_path = self.create_directory_in(self.pts_temp_path, screen_name)
-
-        # Start a screen session
-        self.start_screen(screen_name, local_script_path, self.skirt_run_dir, screen_output_path, attached=attached)
+        # Start a screen session, UNLESS DRY MODE IS ENABLED, IN WHICH CASE THE USER HAS TO UPLOAD AND RUN THE SCRIPT HIM/HERSELF
+        if not dry: self.start_screen(screen_name, local_script_path, self.skirt_run_dir, screen_output_path, attached=attached)
 
         # Close the script file (if it is temporary it will automatically be removed)
         script_file.close()
@@ -725,7 +734,7 @@ class SkirtRemote(Remote):
 
     # -----------------------------------------------------------------
 
-    def schedule(self, arguments, name, scheduling_options, local_ski_path, jobscript_dir_path=None):
+    def schedule(self, arguments, name, scheduling_options, local_ski_path, jobscript_dir_path=None, dry=False):
 
         """
         This function ...
@@ -734,6 +743,7 @@ class SkirtRemote(Remote):
         :param scheduling_options:
         :param local_ski_path:
         :param jobscript_dir_path:
+        :param dry:
         :return:
         """
 
@@ -768,30 +778,63 @@ class SkirtRemote(Remote):
         #                      self.host.mpi_command, modules, walltime, nodes, ppn, name=name, mail=mail,
         #                      full_node=full_node, bind_to_cores=self.host.force_process_binding)
 
+        # Determine remote jobscript location
+        remote_simulation_path = fs.directory_of(arguments.ski_pattern)  # NEW, to avoid having to pass this as an argument
+        remote_jobscript_path = fs.join(remote_simulation_path, jobscript_name)
+
+        # Set header lines
+        header_lines = []
+        header_lines.append("To submit manualy, upload this file to the remote filesystem in the directory:")
+        header_lines.append("'" + remote_simulation_path + "'")
+        header_lines.append("with the name '" + jobscript_name + "' and enter the following commmands:")
+        header_lines.append("cd '" + remote_simulation_path + "' # navigate to the simulation directory")
+        header_lines.append("module swap cluster/[cluster_name] # swap to cluster [cluster_name], if desired")
+        header_lines.append("qsub " + jobscript_name)
+        header_lines.append("when the job has been submitted, copy the job ID that is returned [XXXX] and run the following command (locally):")
+        header_lines.append("pts set_postponed_job_id " + self.host_id + " " + name + " XXXX")
+        header_lines.append("")
+
         # Create the job script
         jobscript = SKIRTJobScript(name, arguments, self.host.cluster, self.skirt_path, self.host.mpi_command, walltime,
-                                   modules, mail=mail, bind_to_cores=self.host.force_process_binding)
+                                   modules, mail=mail, bind_to_cores=self.host.force_process_binding, extra_header_lines=header_lines)
 
         # Save the job script locally
         jobscript.saveto(local_jobscript_path)
 
+        # Upload and submit
+        if dry:
+            log.warning("Dry mode is enabled, run job '" + jobscript_name + "' by locating the job script file at '" + local_jobscript_path + "' and following the instructions therein")
+            job_id = None
+        else: job_id = self.upload_and_submit_job(local_jobscript_path, remote_jobscript_path, remote_simulation_path)
+
+        # Return the job ID
+        return job_id
+
+    # -----------------------------------------------------------------
+
+    def upload_and_submit_job(self, local_jobscript_path, remote_jobscript_path, remote_simulation_path):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Debugging
+        log.debug("Uploading and submitting job from script '" + remote_jobscript_path + "'")
+
         # Copy the job script to the remote simulation directory
-        remote_simulation_path = fs.directory_of(arguments.ski_pattern) # NEW, to avoid having to pass this as an argument
-        remote_jobscript_path = fs.join(remote_simulation_path, jobscript_name)
         self.upload(local_jobscript_path, remote_simulation_path)
 
         ## Swap clusters
         # Then, swap to the desired cluster and launch the job script
-        #output = subprocess.check_output("module swap cluster/" + self._clustername + "; qsub " + self._path, shell=True, stderr=subprocess.STDOUT)
+        # output = subprocess.check_output("module swap cluster/" + self._clustername + "; qsub " + self._path, shell=True, stderr=subprocess.STDOUT)
 
         # Submit the job script to the remote scheduling system
-        #output = self.execute("qsub " + remote_jobscript_path, contains_extra_eof=True)
+        # output = self.execute("qsub " + remote_jobscript_path, contains_extra_eof=True)
         output = self.execute("qsub " + remote_jobscript_path)
 
         # The queue number of the submitted job is used to identify this simulation
         job_id = int(output[0].split(".")[0])
-
-        # Return the job ID
         return job_id
 
     # -----------------------------------------------------------------

@@ -2875,7 +2875,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                         indices = parsing.integer_list(answer)
                         value = [choices_list[index] for index in indices] # value is a list
                         break
-                    except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+                    except (ValueError, IndexError) as e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
             # Single-value setting
             else:
@@ -2889,14 +2889,13 @@ def add_settings_interactive(config, definition, prompt_optional=True):
 
                 value = None  # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
-
                     # Get the number of the choice
                     answer = raw_input("   : ")
                     try:
                         index = parsing.integer(answer)
                         value = choices_list[index]
                         break
-                    except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+                    except (ValueError, IndexError) as e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
         # Only one choice
         #elif len(choices) == 1:
@@ -3082,7 +3081,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                             indices = parsing.integer_list(answer)
                             value = [choices_list[index] for index in indices] # value is a list
                             break
-                        except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+                        except (ValueError, IndexError) as e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
             else:
 
@@ -3105,7 +3104,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                             index = parsing.integer(answer)
                             value = choices_list[index]
                             break
-                        except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+                        except (ValueError, IndexError) as e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
         # Exactly one choice AND a default value
         else:
@@ -3300,7 +3299,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                             indices = parsing.integer_list(answer)
                             value = [choices_list[index] for index in indices] # value is a list here
                             break
-                        except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+                        except (ValueError, IndexError) as e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
             # Not a list
             else:
@@ -3325,7 +3324,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                             index = parsing.integer(answer)
                             value = choices_list[index] # if we are here, no error was raised
                             break
-                        except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+                        except (ValueError, IndexError) as e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
         # No choices
         else:

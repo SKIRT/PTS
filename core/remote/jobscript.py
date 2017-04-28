@@ -20,7 +20,7 @@ class JobScript(object):
     This class ...
     """
 
-    def __init__(self, name, walltime, nodes, ppn, output_path=None, error_path=None, mail=False):
+    def __init__(self, name, walltime, nodes, ppn, output_path=None, error_path=None, mail=False, extra_header_lines=None):
 
         """
         This function ...
@@ -28,6 +28,7 @@ class JobScript(object):
         :param output_path:
         :param error_path:
         :param mail:
+        :param extra_header_lines:
         :return:
         """
 
@@ -53,6 +54,8 @@ class JobScript(object):
         # Set header
         self.header.append("#!/bin/sh")
         self.header.append("# Batch script created with PTS")
+        if extra_header_lines is not None:
+            for line in extra_header_lines: self.header.append("# " + line)
 
         # The path
         self.path = None

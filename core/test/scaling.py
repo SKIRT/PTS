@@ -501,10 +501,10 @@ class ScalingTest(Configurable):
         if not self.scheduler: self.launcher.enable_screen_output(self.config.remote)
 
         # Run the launcher, schedules or initiates the simulations
-        simulations = self.launcher.run()
+        self.launcher.run()
 
         # Loop over the scheduled simulations
-        for simulation in simulations:
+        for simulation in self.launcher.launched_simulations:
 
             # Set scaling test characteristics
             simulation.analysis.scaling_path = self.base_path

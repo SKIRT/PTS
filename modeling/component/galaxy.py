@@ -29,7 +29,7 @@ from ...magic.region.list import SkyRegionList
 from ..basics.models import load_3d_model, load_2d_model
 from ..basics.properties import GalaxyProperties
 from ...core.tools.logging import log
-from ...magic.prepare.batch import PreparationStatistics
+from ...magic.prepare.statistics import PreparationStatistics
 from .component import ModelingComponent
 
 # -----------------------------------------------------------------

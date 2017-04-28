@@ -267,7 +267,10 @@ class MemoryTester(Configurable):
         else: self.launcher.set_parallelization_for_host(self.launcher.single_host.id, self.parallelization)
 
         # Run the batch launcher
-        self.simulations = self.launcher.run()
+        self.launcher.run()
+
+        # Set the simulations
+        self.simulations = self.launcher.launched_simulations
 
     # -----------------------------------------------------------------
 

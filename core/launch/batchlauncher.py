@@ -98,6 +98,9 @@ class BatchLauncher(Configurable):
         # The list of remote hosts for which the screen output should be saved remotely (for debugging)
         self.save_screen_output = []
 
+        # The simulations that have been launched
+        self.launched_simulations = []
+
         # The simulations that have been retrieved
         self.simulations = []
 
@@ -694,7 +697,7 @@ class BatchLauncher(Configurable):
         self.set_parallelization()
 
         # 3. Launch the simulations
-        simulations = self.launch()
+        self.launch()
 
         # 4. Retrieve the simulations that are finished
         self.try_retrieving()
@@ -702,8 +705,8 @@ class BatchLauncher(Configurable):
         # 5. Analyse the output of the retrieved simulations
         self.try_analysing()
 
-        # 6. Return the simulations that are just scheduled
-        return simulations
+        # Write
+        self.write()
 
     # -----------------------------------------------------------------
 
@@ -733,11 +736,26 @@ class BatchLauncher(Configurable):
         # Clear the assignment
         self.assignment = None
 
+        # Clear the launched simulations
+        self.launched_simulations = []
+
         # Clear the simulations
         self.simulations = []
 
         # Clear the script path dictionary
         self.script_paths = dict()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_remotes(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return len(self.remotes) > 0
 
     # -----------------------------------------------------------------
 
@@ -753,7 +771,7 @@ class BatchLauncher(Configurable):
         super(BatchLauncher, self).setup(**kwargs)
 
         # Setup the remote instances
-        if len(self.remotes) == 0: self.setup_remotes()
+        if not self.has_remotes: self.setup_remotes()
 
         # Create the logging options
         self.logging_options = LoggingOptions()
@@ -764,6 +782,9 @@ class BatchLauncher(Configurable):
 
         # If attached mode is enabled, check whether all remotes are non-schedulers
         if self.config.attached and self.uses_schedulers: raise ValueError("Cannot use attached mode when remotes with scheduling system are used")
+
+        # If dry mode is enabled, check whether all remotes are non-schedulers
+        if self.config.dry and self.uses_schedulers: log.warning("Using dry mode when remotes with scheduling system are used can be impractical, since it requires uploading and submitting each seperate job script")
 
     # -----------------------------------------------------------------
 
@@ -1188,8 +1209,8 @@ class BatchLauncher(Configurable):
         # Launch remotely
         if self.has_queued_remote: simulations += self.launch_remote()
 
-        # Return the simulations
-        return simulations
+        # Set the launched simulations
+        self.launched_simulations = simulations
 
     # -----------------------------------------------------------------
 
@@ -1301,126 +1322,159 @@ class BatchLauncher(Configurable):
         # Loop over the different remotes
         for remote in self.remotes:
 
-            # Debugging
-            log.debug("Launching simulations on host '" + remote.host_id + "' ...")
+            # Schedule simulations for the current remote host
+            simulations_remote = self.schedule_simulations(remote)
 
-            # The remote input path
-            remote_input_path = None
-
-            # Get the parallelization scheme for this remote host
-            parallelization_host = self.parallelization_for_host(remote.host_id)
-
-            # Cache the simulation objects scheduled to the current remote
-            simulations_remote = []
-
-            # Loop over the simulation in the queue for this remote host
-            total_queued_host = len(self.queues[remote.host_id])
-            for index in range(total_queued_host):
-
-                # Get the last item from the queue (it is removed)
-                definition, name, analysis_options_item = self.queues[remote.host_id].pop()
-
-                # Get the parallelization scheme that has been defined for this simulation
-                parallelization_item = self.parallelization_for_simulation(name)
-
-                # If no parallelization scheme has been defined for this simulation, use the parallelization scheme
-                # defined for the current remote host
-                if parallelization_item is None: parallelization_item = parallelization_host
-
-                # Check whether scheduling options are defined for this simulation and for this remote host
-                if remote.host_id in self.scheduling_options and name in self.scheduling_options[remote.host_id]:
-                    scheduling_options = self.scheduling_options[remote.host_id][name]
-                else: scheduling_options = None
-
-                # Generate the analysis options
-                logging_options, analysis_options = self.generate_options(name, definition, analysis_options_item)
-
-                # Queue the simulation
-                try:
-
-                    # Inform the user
-                    log.info("Adding simulation " + str(index + 1) + " out of " + str(total_queued_host) + " to the queue of remote host " + remote.host_id + " ...")
-
-                    # Add to the queue
-                    simulation = remote.add_to_queue(definition, logging_options, parallelization_item, name=name,
-                                                     scheduling_options=scheduling_options, remote_input_path=remote_input_path,
-                                                     analysis_options=analysis_options, emulate=self.config.emulate)
-                    simulations_remote.append(simulation)
-
-                    # Success
-                    log.success("Added simulation " + str(index + 1) + " out of " + str(total_queued_host) + " to the queue of remote host " + remote.host_id)
-
-                    # Set the parallelization scheme of the simulation (important since SkirtRemote does not know whether
-                    # hyperthreading would be enabled if the user provided the parallelization_item when adding the
-                    # simulation to the queue
-                    simulation.parallelization = parallelization_item
-
-                    # If the input directory is shared between the different simulations
-                    if self.config.shared_input and remote_input_path is None: remote_input_path = simulation.remote_input_path
-
-                    ## SET OPTIONS
-
-                    # Remove remote files
-                    simulation.remove_remote_input = not self.config.keep and not self.config.shared_input
-                    simulation.remove_remote_output = not self.config.keep
-                    simulation.remove_remote_simulation_directory = not self.config.keep and not self.config.shared_input
-
-                    # Retrieval
-                    simulation.retrieve_types = self.config.retrieve_types
-
-                    # Add analyser classes
-                    if self.config.analysers is not None:
-                        for class_path in self.config.analysers: simulation.add_analyser(class_path)
-
-                    # Save the simulation object
-                    simulation.save()
-
-                # Exception was raised
-                except Exception:
-
-                    log.error("Adding simulation '" + name + "' to the queue failed:")
-                    traceback.print_exc()
-                    log.error("Cancelling following simulations in the queue for remote host '" + remote.host_id + "' ...")
-                    break
-
-            # Determine queue name (name of the screen session or the remote simulation queue)
-            queue_name = time.unique_name("batch_launcher")
-
-            # Set a path for the script file to be saved to locally (for manual inspection)
-            if remote.host_id in self.script_paths: local_script_path = fs.join(self.script_paths[remote.host_id], queue_name + "_" + remote.host_id  + ".sh")
-            else: local_script_path = None
-
-            # Set a path for the screen output to be saved remotely (for debugging)
-            if remote.host_id in self.save_screen_output:
-                remote_skirt_dir_path = remote.skirt_dir
-                remote_skirt_screen_output_path = fs.join(remote_skirt_dir_path, "screen")
-                if not remote.is_directory(remote_skirt_screen_output_path): remote.create_directory(remote_skirt_screen_output_path)
-                this_screen_output_path = fs.join(remote_skirt_screen_output_path, queue_name)
-                remote.create_directory(this_screen_output_path)
-                screen_output_path = this_screen_output_path
-            else: screen_output_path = None
-
-            # Start the queue
-            jobscripts_path = self.script_paths[remote.host_id] if remote.host_id in self.script_paths else None
-            handles = remote.start_queue(queue_name=queue_name, group_simulations=self.config.group_simulations,
-                                         group_walltime=self.config.group_walltime, use_pts=self.config.use_pts,
-                                         local_script_path=local_script_path, screen_output_path=screen_output_path,
-                                         jobscripts_path=jobscripts_path, attached=self.config.attached)
-
-            # SET THE EXECUTION HANDLES
-            # Loop over the simulation for this remote
-            for simulation in simulations_remote:
-
-                # If all simulations should have the same handle
-                if isinstance(handles, ExecutionHandle): simulation.handle = handles
-                else: simulation.handle = handles[simulation.name] # get the handle for this particular simulation
-                simulation.save()
+            # Start the simulations
+            self.start_simulations(remote, simulations_remote)
 
             # Add the simulations of this remote to the total list of simulations
             simulations += simulations_remote
 
         # Return the list of simulations
         return simulations
+
+    # -----------------------------------------------------------------
+
+    def schedule_simulations(self, remote):
+
+        """
+        This function ...
+        :param remote
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Scheduling simulations on remote host '" + remote.host_id + "' ...")
+
+        # The remote input path
+        remote_input_path = None
+
+        # Get the parallelization scheme for this remote host
+        parallelization_host = self.parallelization_for_host(remote.host_id)
+
+        # Cache the simulation objects scheduled to the current remote
+        simulations_remote = []
+
+        # Loop over the simulation in the queue for this remote host
+        total_queued_host = len(self.queues[remote.host_id])
+        for index in range(total_queued_host):
+
+            # Get the last item from the queue (it is removed)
+            definition, name, analysis_options_item = self.queues[remote.host_id].pop()
+
+            # Get the parallelization scheme that has been defined for this simulation
+            parallelization_item = self.parallelization_for_simulation(name)
+
+            # If no parallelization scheme has been defined for this simulation, use the parallelization scheme
+            # defined for the current remote host
+            if parallelization_item is None: parallelization_item = parallelization_host
+
+            # Check whether scheduling options are defined for this simulation and for this remote host
+            if remote.host_id in self.scheduling_options and name in self.scheduling_options[remote.host_id]:
+                scheduling_options = self.scheduling_options[remote.host_id][name]
+            else: scheduling_options = None
+
+            # Generate the analysis options
+            logging_options, analysis_options = self.generate_options(name, definition, analysis_options_item)
+
+            # Queue the simulation
+            try:
+
+                # Inform the user
+                log.info("Adding simulation " + str(index + 1) + " out of " + str(total_queued_host) + " to the queue of remote host " + remote.host_id + " ...")
+
+                # Add to the queue
+                simulation = remote.add_to_queue(definition, logging_options, parallelization_item, name=name,
+                                                 scheduling_options=scheduling_options, remote_input_path=remote_input_path,
+                                                 analysis_options=analysis_options, emulate=self.config.emulate)
+                simulations_remote.append(simulation)
+
+                # Success
+                log.success("Added simulation " + str(index + 1) + " out of " + str(total_queued_host) + " to the queue of remote host " + remote.host_id)
+
+                # Set the parallelization scheme of the simulation (important since SkirtRemote does not know whether
+                # hyperthreading would be enabled if the user provided the parallelization_item when adding the
+                # simulation to the queue
+                simulation.parallelization = parallelization_item
+
+                # If the input directory is shared between the different simulations
+                if self.config.shared_input and remote_input_path is None: remote_input_path = simulation.remote_input_path
+
+                ## SET OPTIONS
+
+                # Remove remote files
+                simulation.remove_remote_input = not self.config.keep and not self.config.shared_input
+                simulation.remove_remote_output = not self.config.keep
+                simulation.remove_remote_simulation_directory = not self.config.keep and not self.config.shared_input
+
+                # Retrieval
+                simulation.retrieve_types = self.config.retrieve_types
+
+                # Add analyser classes
+                if self.config.analysers is not None:
+                    for class_path in self.config.analysers: simulation.add_analyser(class_path)
+
+                # Save the simulation object
+                simulation.save()
+
+            # Exception was raised
+            except Exception:
+
+                log.error("Adding simulation '" + name + "' to the queue failed:")
+                traceback.print_exc()
+                log.error("Cancelling following simulations in the queue for remote host '" + remote.host_id + "' ...")
+                break
+
+        # Return the simulations scheduled for the host
+        return simulations_remote
+
+    # -----------------------------------------------------------------
+
+    def start_simulations(self, remote, simulations_remote):
+
+        """
+        This function ...
+        :param remote:
+        :param simulations_remote:
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Starting the simulations on remote host '" + remote.host_id + "' ...")
+
+        # Determine queue name (name of the screen session or the remote simulation queue)
+        queue_name = time.unique_name("batch_launcher")
+
+        # Set a path for the script file to be saved to locally (for manual inspection)
+        if remote.host_id in self.script_paths: local_script_path = fs.join(self.script_paths[remote.host_id], queue_name + "_" + remote.host_id  + ".sh")
+        else: local_script_path = None
+
+        # Set a path for the screen output to be saved remotely (for debugging)
+        if remote.host_id in self.save_screen_output:
+            remote_skirt_dir_path = remote.skirt_dir
+            remote_skirt_screen_output_path = fs.join(remote_skirt_dir_path, "screen")
+            if not remote.is_directory(remote_skirt_screen_output_path): remote.create_directory(remote_skirt_screen_output_path)
+            this_screen_output_path = fs.join(remote_skirt_screen_output_path, queue_name)
+            remote.create_directory(this_screen_output_path)
+            screen_output_path = this_screen_output_path
+        else: screen_output_path = None
+
+        # Start the queue
+        jobscripts_path = self.script_paths[remote.host_id] if remote.host_id in self.script_paths else None
+        handles = remote.start_queue(queue_name=queue_name, group_simulations=self.config.group_simulations,
+                                     group_walltime=self.config.group_walltime, use_pts=self.config.use_pts,
+                                     local_script_path=local_script_path, screen_output_path=screen_output_path,
+                                     jobscripts_path=jobscripts_path, attached=self.config.attached, dry=self.config.dry)
+
+        # SET THE EXECUTION HANDLES
+        # Loop over the simulation for this remote
+        for simulation in simulations_remote:
+
+            # If all simulations should have the same handle
+            if isinstance(handles, ExecutionHandle): simulation.handle = handles
+            else: simulation.handle = handles[simulation.name] # get the handle for this particular simulation
+            simulation.save()
 
     # -----------------------------------------------------------------
 
@@ -1447,6 +1501,7 @@ class BatchLauncher(Configurable):
             # Get a copy of the default logging options, create the default analysis options and adjust logging options according to the analysis options
             logging_options = self.logging_options.copy()
 
+            # Create analysis options
             analysis_options_item = self.create_analysis_options(definition, name, logging_options, add_timing=add_timing, add_memory=add_memory)
 
         # AnalysisOptions object
@@ -1549,6 +1604,18 @@ class BatchLauncher(Configurable):
 
             # Clear the analyser
             self.analyser.clear()
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Writing ...")
 
     # -----------------------------------------------------------------
 

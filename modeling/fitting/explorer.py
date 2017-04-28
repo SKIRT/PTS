@@ -19,7 +19,6 @@ from ...core.tools import filesystem as fs
 from ...core.launch.batchlauncher import BatchLauncher
 from .modelgenerators.grid import GridModelGenerator
 from .modelgenerators.genetic import GeneticModelGenerator
-from .modelgenerators.instinctive import InstinctiveModelGenerator
 from ...core.tools import time
 from .tables import ParametersTable, ChiSquaredTable, IndividualsTable
 from ...core.launch.options import SchedulingOptions
@@ -982,23 +981,24 @@ class ParameterExplorer(FittingComponent):
             for host_id in self.scheduling_options: self.launcher.set_scheduling_options(host_id, simulation_name, self.scheduling_options[host_id])
 
         # Run the launcher, launches the simulations and retrieves and analyses finished simulations
-        simulations = self.launcher.run()
+        self.launcher.run()
 
         # Check the launched simulations
-        self.check_simulations(simulations)
+        self.check_simulations()
 
     # -----------------------------------------------------------------
 
-    def check_simulations(self, simulations):
+    def check_simulations(self):
 
         """
         This function ...
-        :param simulations: 
         :return: 
         """
 
         # Inform the user
         log.info("Checking the simulations ...")
+
+        simulations = self.launcher.launched_simulations
 
         # Check the number of simulations that were effectively launched
         if self.nmodels == len(simulations):

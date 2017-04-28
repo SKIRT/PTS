@@ -164,15 +164,79 @@ class ModelerBase(Configurable):
                 remote = Remote()
                 if not remote.setup(host_id): log.warning("Could not connect to remote host '" + host_id + "'")
 
-                # Clear temporary directory
-                remote.clear_pts_temp()
-
-                # Clear sessions
-                remote.close_all_screen_sessions()
-                remote.close_all_tmux_sessions()
+                # Clear temporary data and close sessions
+                remote.clear_temp_and_sessions()
 
         # Deploy SKIRT and PTS
         if self.config.deploy: self.deploy()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_local(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # If local flag is set
+        if self.config.fitting_local: return True
+
+        # Fitting remotes have been set
+        elif self.config.fitting_remotes is not None: return True
+
+        # If no host ids have been set
+        else: return self.modeling_config.fitting_host_ids is None or self.modeling_config.fitting_host_ids == []
+
+    # -----------------------------------------------------------------
+
+    @property
+    def other_local(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # If local flag is set
+        if self.config.local: return True
+
+        # Remotes have been set
+        elif self.config.remotes is not None: return True
+
+        # If no host ids have been set
+        else: return self.modeling_config.host_ids is None or self.modeling_config.host_ids == []
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_host_ids(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if self.fitting_local: return None
+        elif self.config.fitting_remotes is not None: return self.config.fitting_remotes
+        elif self.modeling_config.fitting_host_ids is None: return None
+        else: return self.modeling_config.fitting_host_ids
+
+    # -----------------------------------------------------------------
+
+    @property
+    def other_host_ids(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if self.config.local: return None
+        elif self.config.remotes is not None: return self.config.remotes
+        elif self.modeling_config.host_ids is None: return None
+        else: return self.modeling_config.host_ids
 
     # -----------------------------------------------------------------
 
@@ -190,16 +254,12 @@ class ModelerBase(Configurable):
         self.moderator = PlatformModerator()
 
         # Set platform(s) for fitting (simulations)
-        if self.config.fitting_local: self.moderator.add_local("fitting")
-        elif self.config.fitting_remotes is not None: self.moderator.add_ensemble("fitting", self.config.fitting_remotes)
-        elif self.modeling_config.fitting_host_ids is None: self.moderator.add_local("fitting")
-        else: self.moderator.add_ensemble("fitting", self.modeling_config.fitting_host_ids)
+        if self.fitting_local: self.moderator.add_local("fitting")
+        else: self.moderator.add_ensemble("fitting", self.fitting_host_ids)
 
         # Other computations
-        if self.config.local: self.moderator.add_local("other")
-        elif self.config.remotes is not None: self.moderator.add_single("other", self.config.remotes)
-        elif self.modeling_config.host_ids is None: self.moderator.add_local("other")
-        else: self.moderator.add_single("other", self.modeling_config.host_ids)
+        if self.other_local: self.moderator.add_local("other")
+        else: self.moderator.add_single("other", self.other_host_ids)
 
         # Run the moderator
         self.moderator.run()

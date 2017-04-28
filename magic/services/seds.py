@@ -1325,6 +1325,9 @@ class SEDFetcher(Configurable):
         ha_frequency = ha_wavelength.to("Hz", equivalencies=spectral())
 
         # Calculate flux density
+        #print(ha_flux, type(ha_flux))
+        #print(ha_frequency, type(ha_frequency))
+        print(ha_flux / ha_frequency)
         ha_fluxdensity = (ha_flux / ha_frequency).to("Jy")
         ha_fluxdensity_error = (ha_flux_error / ha_frequency).to("Jy")
         ha_errorbar = ErrorBar(ha_fluxdensity_error)

@@ -1768,6 +1768,7 @@ def divide_units(unit_a, unit_b):
         elif is_frequency(unit_b):
             unit = PhotometricUnit(make_composite_division(unit_a, unit_b), density=False)
             if unit.density: warnings.warn("A " + unit_a.physical_type + " unit is converted to a " + unit.physical_type + " by division with the unit '" + str(unit_b) + "'. This may not be the intention.")
+            return unit
 
         # Unit b contains a wavelength
         elif contains_wavelength(unit_b):
