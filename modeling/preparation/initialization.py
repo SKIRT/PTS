@@ -143,6 +143,7 @@ class PreparationInitializer(PreparationComponent):
 
                 # Determine name
                 name = frame.filter_name
+                #print(path, str(frame.filter), name)
 
                 # Add the image path
                 self.paths[frame.filter_name] = image_path
@@ -180,7 +181,7 @@ class PreparationInitializer(PreparationComponent):
 
             # Check whether this image already has an initialized image
             initialized_path = fs.join(output_path, "initialized.fits")
-            if fs.is_file(initialized_path): continue
+            if fs.is_file(initialized_path): log.success("Initialized '" + prep_name + "' is already present")
 
             # Debugging
             log.debug("Initializing image '" + image_path + "' ...")
@@ -224,6 +225,9 @@ class PreparationInitializer(PreparationComponent):
 
             # Save the image
             image.saveto(initialized_path)
+
+            # Success
+            log.success("Initialized the '" + prep_name + "' image")
 
     # -----------------------------------------------------------------
 

@@ -250,7 +250,7 @@ class GalaxyModeler(ModelerBase):
         # Get the galaxy images
         if "fetch_images" not in self.history:
             if self.images is not None: self.set_images()
-            else: self.get_images_and_exit()
+            else: self.get_images()
 
     # -----------------------------------------------------------------
 
@@ -356,24 +356,6 @@ class GalaxyModeler(ModelerBase):
 
     # -----------------------------------------------------------------
 
-    def get_images_and_exit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Get the images
-        self.get_images()
-
-        # If not running in attached remote mode, exit now
-        if not self.config.attached:
-            log.warning("The procedure that calculates the Poisson error maps for GALEX and SDSS is now running. "
-                        "Wait for it to finished and resume the modeling afterwards")
-            raise DetachedCalculation(self.__class__, "get_data")
-
-    # -----------------------------------------------------------------
-
     def get_images(self):
 
         """
@@ -410,6 +392,12 @@ class GalaxyModeler(ModelerBase):
         # Mark the end and save the history file
         self.history.mark_end()
         self.history.save()
+
+        # If not running in attached remote mode, exit now
+        if fetcher.detached:
+            log.warning("The procedure that calculates the Poisson error maps for GALEX and SDSS is now running. "
+                        "Wait for it to finished and resume the modeling afterwards")
+            raise DetachedCalculation(self.__class__, "get_data")
 
     # -----------------------------------------------------------------
 
@@ -456,29 +444,13 @@ class GalaxyModeler(ModelerBase):
         log.info("Preparing the galaxy data ...")
 
         # Initialize the preparation
-        if "initialize_preparation" not in self.history: self.initialize_preparation_and_exit()
+        if "initialize_preparation" not in self.history: self.initialize_preparation()
 
         # Run the preparation
         if "prepare_data" not in self.history: self.prepare()
 
         # Inspect the preparation
         if "inspect_preparation" not in self.history: self.inspect_preparation()
-
-    # -----------------------------------------------------------------
-
-    def initialize_preparation_and_exit(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Initialize preparation
-        self.initialize_preparation()
-
-        # Give warning and exit
-        message = "Check the result of the source detection, make adjustments where necessary, and resume the modeling afterwards"
-        raise UserIntervention(message, self.__class__, "initialize_preparation")
 
     # -----------------------------------------------------------------
 
@@ -514,6 +486,10 @@ class GalaxyModeler(ModelerBase):
         # Mark the end and save the history file
         self.history.mark_end()
         self.history.save()
+
+        # Give warning and exit
+        message = "Check the result of the source detection, make adjustments where necessary, and resume the modeling afterwards"
+        raise UserIntervention(message, self.__class__, "initialize_preparation")
 
     # -----------------------------------------------------------------
 

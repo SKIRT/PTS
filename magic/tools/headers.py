@@ -28,6 +28,7 @@ from ..basics.pixelscale import Pixelscale
 from ...core.units.unit import PhotometricUnit
 from ...core.units.parsing import parse_unit as u
 from ...core.units.parsing import parse_quantity
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -207,10 +208,16 @@ def get_filter(name, header=None):
         elif "WVLNGTH" in header: wavelength = get_quantity(header["WVLNGTH"], "micron")
         else: wavelength = None
 
+        # Get the frequency
+        if "FREQ" in header: frequency = get_quantity(header["FREQ"], "GHz")
+        elif "FREQUENCY" in header: frequency = get_quantity(header["FREQUENCY"], "GHz")
+        else: frequency = None
+
     # Debug information
     log.debug("filterid = " + str(filterid))
     log.debug("channel = " + str(channel))
     log.debug("wavelength = " + str(wavelength))
+    log.debug("frequency = " + str(frequency))
 
     final_filter_name = None
 
@@ -328,8 +335,8 @@ def get_filter(name, header=None):
 
             elif "3.4" in filterid: final_filter_name = "WISE W1"
             elif "4.6" in filterid: final_filter_name = "WISE W2"
-            elif "11.6" in filterid: final_filter_name = "WISE W3"
-            elif "22.1" in filterid: final_filter_name = "WISE W4"
+            elif "11.6" in filterid or "12" in filterid: final_filter_name = "WISE W3"
+            elif "22.1" in filterid or "22" in filterid: final_filter_name = "WISE W4"
             else: log.warning("Could not determine which WISE filter was used for this image")
 
     # MIPS filters
@@ -390,23 +397,104 @@ def get_filter(name, header=None):
 
             elif wavelength is not None:
 
-                if wavelength == 250: final_filter_name = "SPIRE PSW"
-                elif wavelength == 350: final_filter_name = "SPIRE PMW"
-                elif wavelength == 500: final_filter_name = "SPIRE PLW"
+                if np.isclose(wavelength.to("micron").value, 250., rtol=0.05): final_filter_name = "SPIRE PSW"
+                elif np.isclose(wavelength.to("micron").value, 350, rtol=0.05): final_filter_name = "SPIRE PMW"
+                elif np.isclose(wavelength.to("micron").value, 500., rtol=0.05): final_filter_name = "SPIRE PLW"
                 else: log.warning("Could not determine which SPIRE filter was used for this image")
 
     # -- H alpha --
     elif "alpha" in filterid or "6561" in filterid or "656_1" in filterid: final_filter_name = "656_1"
     elif "ha" in filterid and "kpno" in filterid: final_filter_name = "Halpha"
 
+    # Planck
+    elif "planck" in filterid:
+
+        # ngc3031_planck_10600
+        # ngc3031_planck_1380
+        # ngc3031_planck_2100
+        # ngc3031_planck_3000
+        # ngc3031_planck_350
+        # ngc3031_planck_4260
+        # ngc3031_planck_550
+        # ngc3031_planck_6810
+        # ngc3031_planck_850
+
+        # planck_info["Planck_350"] = ("857", "HFI")
+        # planck_info["Planck_550"] = ("545", "HFI")
+        # planck_info["Planck_850"] = ("353", "HFI")
+        # planck_info["Planck_1380"] = ("217", "HFI")
+        # planck_info["Planck_2100"] = ("143", "HFI")
+        # planck_info["Planck_3000"] = ("100", "HFI")
+        # planck_info["Planck_4260"] = ("070", "LFI")
+        # planck_info["Planck_6810"] = ("044", "LFI")
+        # planck_info["Planck_10600"] = ("030", "LFI")
+
+        if "350" in filterid: final_filter_name = "Planck 350"
+        elif "550" in filterid: final_filter_name = "Planck 550"
+        elif "850" in filterid: final_filter_name = "Planck 850"
+        elif "1380" in filterid: final_filter_name = "Planck 1380"
+        elif "2100" in filterid: final_filter_name = "Planck 2100"
+        elif "3000" in filterid: final_filter_name = "Planck 3000"
+        elif "4260" in filterid: final_filter_name = "Planck 4260"
+        elif "6810" in filterid: final_filter_name = "Planck 6810"
+        elif "10600" in filterid: final_filter_name = "Planck 10600"
+        else:
+
+            if "30" in filterid: final_filter_name = "Planck 30"
+            elif "44" in filterid: final_filter_name = "Planck 44"
+            elif "70" in filterid: final_filter_name = "Planck 70"
+            elif "100" in filterid: final_filter_name = "Planck 100"
+            elif "143" in filterid: final_filter_name = "Planck 143"
+            elif "217" in filterid: final_filter_name = "Planck 217"
+            elif "353" in filterid: final_filter_name = "Planck 353"
+            elif "545" in filterid: final_filter_name = "Planck 545"
+            elif "857" in filterid: final_filter_name = "Planck 857"
+            else:
+
+                # Wavelength
+                if wavelength is not None:
+
+                    if np.isclose(wavelength.to("micron").value, 350., rtol=0.05): final_filter_name = "Planck 350"
+                    elif np.isclose(wavelength.to("micron").value, 550., rtol=0.05): final_filter_name = "Planck 550"
+                    elif np.isclose(wavelength.to("micron").value, 850., rtol=0.05): final_filter_name = "Planck 850"
+                    elif np.isclose(wavelength.to("micron").value, 1380., rtol=0.05): final_filter_name = "Planck 1380"
+                    elif np.isclose(wavelength.to("micron").value, 2100., rtol=0.05): final_filter_name = "Planck 2100"
+                    elif np.isclose(wavelength.to("micron").value, 3000., rtol=0.05): final_filter_name = "Planck 3000"
+                    elif np.isclose(wavelength.to("micron").value, 4260., rtol=0.05): final_filter_name = "Planck 4260"
+                    elif np.isclose(wavelength.to("micron").value, 6810, rtol=0.05): final_filter_name = "Planck 6810"
+                    elif np.isclose(wavelength.to("micron").value, 10600, rtol=0.05): final_filter_name = "Planck 10600"
+                    else: log.warning("Could not determine which Planck filter was used for this image")
+
+                # Frequency
+                elif frequency is not None:
+
+                    if np.isclose(frequency.to("GHz").value, 30., rtol=0.05): final_filter_name = "Planck 30"
+                    elif np.isclose(frequency.to("GHz").value, 44., rtol=0.05): final_filter_name = "Planck 44"
+                    elif np.isclose(frequency.to("GHz").value, 70., rtol=0.05): final_filter_name = "Planck 70"
+                    elif np.isclose(frequency.to("GHz").value, 100, rtol=0.05): final_filter_name = "Planck 100"
+                    elif np.isclose(frequency.to("GHz").value, 143, rtol=0.05): final_filter_name = "Planck 143"
+                    elif np.isclose(frequency.to("GHz").value, 217, rtol=0.05): final_filter_name = "Planck 217"
+                    elif np.isclose(frequency.to("GHz").value, 353, rtol=0.05): final_filter_name = "Planck 353"
+                    elif np.isclose(frequency.to("GHz").value, 545, rtol=0.05): final_filter_name = "Planck 545"
+                    elif np.isclose(frequency.to("GHz").value, 857, rtol=0.05): final_filter_name = "Planck 857"
+                    else: log.warning("Could not determine which Planck filter was used for this image")
+
+    # No filter name could be composed
     if final_filter_name is None:
 
+        # If wavelength was found
         if wavelength is not None:
 
+            # Warning
+            log.warning("Filter could not be identified, but wavelength is " + str(wavelength))
+
+            # Set limits
             value = wavelength.to("micron").value
             five_percent = 0.05 * value
             lower = value - five_percent
             upper = value + five_percent
+
+            log.warning("Setting the filter to a uniform filter between the wavelengths " + str(lower) + " micron and " + str(upper) + " micron")
 
             if "FILTER" in header: name = header["FILTER"].split("  / ")[0].replace(" ", "")
             else: name = None
@@ -414,8 +502,12 @@ def get_filter(name, header=None):
             # Create a custom filter around the wavelength
             fltr = parse_filter((lower, upper), name=name)
 
-        else: fltr = None
+        # Wavelength could not be found
+        else:
+            log.warning("Filter or wavelength could not be identified")
+            fltr = None
 
+    # Filter name could be composed
     else:
 
         # Create the filter
@@ -809,9 +901,10 @@ def get_quantity(entry, default_unit=None):
     :return:
     """
 
-    if isinstance(entry, basestring): value = entry.split("   / ")[0].rstrip()
+    if types.is_string_type(entry): value = entry.split("   / ")[0].rstrip()
     else: value = entry
 
+    # Try parsing
     try:
 
         num_value = float(value)
@@ -831,10 +924,11 @@ def get_quantity(entry, default_unit=None):
         #unit = u.Unit(unit_description)
 
         composite_unit = u(value)
+        if default_unit is None: raise RuntimeError("Default unit is not provided")
+        num_value = composite_unit.to(default_unit)
+        unit = u(default_unit)
 
-        num_value = composite_unit.to("micron")
-        unit = u("micron")
-
+    # Return quantity
     return num_value * unit
 
 # -----------------------------------------------------------------

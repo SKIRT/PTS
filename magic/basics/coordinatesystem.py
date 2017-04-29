@@ -722,9 +722,16 @@ class CoordinateSystem(wcs.WCS):
         dec_distance_new = abs(SkyCoordinate(ra=ra_begin, dec=dec_begin, unit="deg").separation(SkyCoordinate(ra=ra_begin, dec=dec_end, unit="deg")).deg)
 
         # Checks
-        assert np.isclose(ra_distance_top, ra_distance_bottom, rtol=0.05), (ra_distance_top, ra_distance_bottom)
-        assert np.isclose(ra_distance_top, ra_distance, rtol=0.05), (ra_distance_top, ra_distance)
+        #assert np.isclose(ra_distance_top, ra_distance_bottom, rtol=0.05), (ra_distance_top, ra_distance_bottom)
+        #assert np.isclose(ra_distance_top, ra_distance, rtol=0.05), (ra_distance_top, ra_distance)
         assert np.isclose(dec_distance_new, dec_distance, rtol=0.05), (dec_distance_new, dec_distance)
+
+        if not np.isclose(ra_distance_top, ra_distance_bottom, rtol=0.05):
+            log.warning("RA distance at top of image is " + str(ra_distance_top) + " whereas at the bottom is " + str(ra_distance_bottom))
+            log.warning("RA distance at center is " + str(ra_distance))
+
+        if not np.isclose(ra_distance_top, ra_distance, rtol=0.05):
+            log.warning("RA distance at top of image is " + str(ra_distance_top) + " whereas at the center it is " + str(ra_distance))
 
         # Calculate the pixel scale of this image in degrees
         x_pixelscale_deg = self.pixelscale.x.to("deg").value
@@ -758,6 +765,7 @@ class CoordinateSystem(wcs.WCS):
         #assert np.isclose(ra_distance, size_ra_deg, rtol=0.05), "The coordinate system and pixel scale do not match: ra_distance=" + str(ra_distance) + ",size_ra_deg=" + str(size_ra_deg)
         #assert np.isclose(dec_distance, size_dec_deg, rtol=0.05), "The coordinate system and pixel scale do not match: dec_distance=" + str(dec_distance) + ",size_dec_deg=" + str(size_dec_deg)
 
+        # Checks
         if not np.isclose(ra_distance, size_ra_deg, rtol=0.05):
             warnings.warn("The coordinate system and pixel scale do not match: ra_distance = " + str(ra_distance) + ", size_ra_deg = " + str(size_ra_deg))
         if not np.isclose(dec_distance, size_dec_deg, rtol=0.05):

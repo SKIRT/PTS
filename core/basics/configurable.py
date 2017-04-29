@@ -69,6 +69,9 @@ class Configurable(object):
         # Set configuration
         self.config = self.get_config(config, interactive=interactive, unlisted=unlisted)
 
+        # Set the detached calculations flag
+        self.detached = False
+
     # -----------------------------------------------------------------
 
     @classmethod

@@ -329,6 +329,9 @@ class ModelerBase(Configurable):
         :return: 
         """
 
+        # Inform the user
+        log.info("Fitting multiple generations at once ...")
+
         # Start: launch the initial generation
         self.start()
 
@@ -347,6 +350,9 @@ class ModelerBase(Configurable):
         :param self: 
         :return: 
         """
+
+        # Inform the user
+        log.info("Fitting a single generation ...")
 
         # Load the generations table
         generations = get_generations_table(self.modeling_path, self.fitting_run_name)

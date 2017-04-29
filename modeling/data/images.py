@@ -236,7 +236,9 @@ class ImageFetcher(DataComponent):
         elif self.config.attached: self.launcher.run_and_analyse(command, config_dict, local_output_path, analysers, analysis_info, use_session=False)
 
         # Remote, run in detached mode
-        else: self.launcher.run_detached("make_galex", config_dict, analysers=analysers, analysis_info=analysis_info, remove_local_output=True)
+        else:
+            self.launcher.run_detached("make_galex", config_dict, analysers=analysers, analysis_info=analysis_info, remove_local_output=True)
+            self.detached = True
 
     # -----------------------------------------------------------------
 
@@ -296,7 +298,9 @@ class ImageFetcher(DataComponent):
         elif self.config.attached: self.launcher.run_and_analyse(command, config_dict, local_output_path, analysers, analysis_info, use_session=False)
 
         # Run in detached mode
-        else: self.launcher.run_detached(command, config_dict, analysers=analysers, analysis_info=analysis_info, remove_local_output=True)
+        else:
+            self.launcher.run_detached(command, config_dict, analysers=analysers, analysis_info=analysis_info, remove_local_output=True)
+            self.detached = True
 
     # -----------------------------------------------------------------
 
