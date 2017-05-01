@@ -596,6 +596,8 @@ class ExtendedSourceFinder(Configurable):
         # Loop over all sources
         for source in self.sources:
 
+            if source is None: continue
+
             # Get the center in pixel coordinates
             center = source.pixel_position(self.frame.wcs)
 
