@@ -77,6 +77,7 @@ def generate_overlap_file(path, ra, dec, meta_path, mode='box', width=None, radi
     # Convert RA and DEC into degrees
     ra_deg = ra.to("deg").value
     dec_deg = dec.to("deg").value
+    radius_deg = radius.to("deg").value
 
     # Check the coverage for our galaxy
     montage.commands_extra.mCoverageCheck(meta_path, overlap_path, mode=mode, ra=ra_deg, dec=dec_deg, width=width, radius=radius)

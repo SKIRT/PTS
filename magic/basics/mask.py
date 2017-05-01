@@ -136,14 +136,14 @@ class MaskBase(object):
 
     # -----------------------------------------------------------------
 
-    @property
-    def array(self):
+    #@property
+    #def array(self):
 
-        """
-        The underlying array
-        """
+        #"""
+        #The underlying array
+        #"""
 
-        return self._data
+        #return self._data
 
     # -----------------------------------------------------------------
 
