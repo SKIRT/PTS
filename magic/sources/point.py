@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import astronomical modules
-from astropy.convolution import Gaussian2DKernel
+from astropy.modeling.models import Gaussian2D
 
 # Import the relevant PTS classes and modules
 from ..basics.vector import Extent
@@ -37,6 +37,7 @@ from ..basics.stretch import PixelStretch
 from ...core.basics.table import SmartTable
 from ...core.units.parsing import parse_unit as u
 from ..basics.vector import Pixel
+from ..core.kernel import ConvolutionKernel
 
 # -----------------------------------------------------------------
 
@@ -285,10 +286,11 @@ class PointSourceFinder(Configurable):
         self.load_sources()
 
         # 3. For each star, find a corresponding source in the image
-        self.detect_sources()
+        if not self.config.weak: self.detect_sources()
+        else: self.set_sources()
 
         # 4. Fit analytical models to the stars
-        if not self.config.use_frame_fwhm or self.frame.fwhm is None: self.fit_psf()
+        if not self.has_psf: self.fit_psf()
 
         # 5. Set the final sources
         self.adjust_sources()
@@ -519,6 +521,15 @@ class PointSourceFinder(Configurable):
 
         # Inform the user
         log.debug("Found a source for {0} out of {1} objects ({2:.2f}%)".format(self.have_detection, len(self.sources), self.have_detection / len(self.sources) * 100.0))
+
+    # -----------------------------------------------------------------
+
+    def set_detections(self):
+
+        """
+        This function ...
+        :return: 
+        """
 
     # -----------------------------------------------------------------
 
@@ -1302,16 +1313,49 @@ class PointSourceFinder(Configurable):
     # -----------------------------------------------------------------
 
     @property
-    def kernel(self):
+    def psf(self):
 
         """
         This function ...
         :return:
         """
 
+        #if self.config.use_frame_fwhm and self.frame.fwhm is not None:
+
+        if self.fwhm_pix is None: return None
+
         # Create a Gaussian convolution kernel and return it
         sigma = self.fwhm_pix * statistics.fwhm_to_sigma
-        return Gaussian2DKernel(sigma)
+        model = Gaussian2D(1. / (2 * np.pi * sigma ** 2), 0, sigma, sigma)
+        return model
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_psf(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.psf is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def kernel(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Create the kernel
+        kernel = ConvolutionKernel.from_model(self.psf, to_filter=self.frame.psf_filter)
+
+        # Return the kernel
+        return kernel
 
     # -----------------------------------------------------------------
 

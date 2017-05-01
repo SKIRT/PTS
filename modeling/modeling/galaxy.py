@@ -370,8 +370,16 @@ class GalaxyModeler(ModelerBase):
         config = dict()
         config["remote"] = self.moderator.host_id_for_single("other")
         config["attached"] = self.config.attached
-        config["halpha_url"] = halpha_urls[self.hyperleda_name]
-        config["halpha_flux"] = halpha_fluxes[self.hyperleda_name]
+
+        # Get Halpha URL and flux
+        if self.hyperleda_name in halpha_urls: halpha_url = halpha_urls[self.hyperleda_name]
+        else: halpha_url = None
+        if self.hyperleda_name in halpha_fluxes: halpha_flux = halpha_fluxes[self.hyperleda_name]
+        else: halpha_flux = None
+        config["halpha_url"] = halpha_url
+        config["halpha_flux"] = halpha_flux
+
+        # Advanced
         config["max_nobservations_mosaic"] = self.config.max_nobservations_mosaic
 
         # Set flag to create Poisson error maps
@@ -470,6 +478,7 @@ class GalaxyModeler(ModelerBase):
         config["attached"] = self.config.attached
         config["sources"] = dict()
         config["sources"]["weak"] = self.config.sources_weak
+        config["sources"]["nprocesses"] = self.config.nprocesses
 
         # Create the initializer
         initializer = PreparationInitializer(config)
@@ -508,6 +517,7 @@ class GalaxyModeler(ModelerBase):
         config["remote"] = self.moderator.host_id_for_single("other")
         config["attached"] = self.config.attached
         config["exclude_filters"] = lower_resolution_filters
+        config["nprocesses"] = self.config.nprocesses
 
         # Create the data preparer
         preparer = DataPreparer()

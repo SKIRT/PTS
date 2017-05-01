@@ -153,7 +153,7 @@ class MaskBase(object):
         Array representation of the mask (e.g., for matplotlib).
         """
 
-        return self._data
+        return self.data
 
     # -----------------------------------------------------------------
 
@@ -167,6 +167,7 @@ class MaskBase(object):
 
         if isinstance(item, MaskBase): return self._data[item.data]
         elif isinstance(item, Pixel): return self._data[item.y, item.x]
+        elif isinstance(item, tuple): return self._data[item[0], item[1]]
         else: return self._data[item]
 
     # -----------------------------------------------------------------
@@ -181,6 +182,15 @@ class MaskBase(object):
 
         if isinstance(item, MaskBase): self._data[item.data] = value
         elif isinstance(item, Pixel): self._data[item.y, item.x] = value
+        elif isinstance(item, tuple):
+            #print(self._data)
+            #print(type(self._data))
+            #print(item)
+            #self._data[0, 0] = value
+            #self._data[item[0], item[1]] = value
+            ## WHY IS THIS NOT WORKING?????!!!
+            # Error: TypeError: __array__() takes exactly 1 argument (2 given)
+            self._data.__setitem__(item, value)
         else: self._data[item] = value
 
     # -----------------------------------------------------------------

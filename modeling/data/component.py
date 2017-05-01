@@ -42,7 +42,7 @@ class DataComponent(GalaxyModelingComponent):
         self.galaxy_info_path = None
 
         # Different origins
-        self.data_origins = ["GALEX", "SDSS", "Halpha", "2MASS", "Spitzer", "WISE", "Herschel", "Planck"]
+        self.data_origins = ["GALEX", "SDSS", "Halpha", "2MASS", "Spitzer", "WISE", "Herschel", "Planck", "Other"]
 
         # The paths to the data/images/ directories for the different origins
         self.data_images_paths = dict()

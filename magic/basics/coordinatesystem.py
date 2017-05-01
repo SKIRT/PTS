@@ -733,6 +733,9 @@ class CoordinateSystem(wcs.WCS):
         if not np.isclose(ra_distance_top, ra_distance, rtol=0.05):
             log.warning("RA distance at top of image is " + str(ra_distance_top) + " whereas at the center it is " + str(ra_distance))
 
+        # Set the RA distance to the maximum of ra_distance, ra_distance_bottom, and ra_distance_top
+        ra_distance = max(ra_distance_bottom, ra_distance_top)
+
         # Calculate the pixel scale of this image in degrees
         x_pixelscale_deg = self.pixelscale.x.to("deg").value
         y_pixelscale_deg = self.pixelscale.y.to("deg").value

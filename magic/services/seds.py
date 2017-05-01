@@ -869,6 +869,9 @@ class SEDFetcher(Configurable):
 
         # On SimBad, only sdss bands are used, from /sample ...
 
+        # If nothing is found
+        if len(result) == 0: return
+
         relevant_bands = [("U", "U"), ("B", "B"), ("V", "V"), ("R", "R"), ("u", "SDSS u"), ("g", "SDSS g"), ("r", "SDSS r"), ("i", "SDSS i"), ("z", "SDSS z")]
         for band_prefix_catalog, filter_name in relevant_bands:
 
@@ -937,6 +940,9 @@ class SEDFetcher(Configurable):
         # F160: Spitzer/MIPS 160 micron band flux density [Jy]
         # e_F160: Uncertainty in F160 [Jy]
 
+        # If no results are found
+        if len(result) == 0: return
+
         table = result[0]
 
         relevant_bands = [("1.25", "J"), ("1.65", "H"), ("2.17", "K"), ("3.6", "I1"), ("4.5", "I2"), ("5.8", "I3"), ("8.0", "I4"), ("24", "MIPS 24"), ("70", "MIPS 70"), ("160", "MIPS 160")]
@@ -988,6 +994,9 @@ class SEDFetcher(Configurable):
         sed = ObservedSED(photometry_unit="Jy")
 
         result = self.vizier.query_object(self.config.galaxy_name, catalog="J/MNRAS/414/500/catalog")
+
+        # No results found
+        if len(result) == 0: return
 
         table = result[0]
 
@@ -1311,6 +1320,9 @@ class SEDFetcher(Configurable):
         # e_FHa: Uncertainty in Ha (aW/m2)
         # FNII: The [NII] 6584Å line flux (aW/m2)
         # e_FNII: Uncertainty in NII (aW/m2)
+
+        # Nothing found
+        if galaxy_index is None: return
 
         # H alpha
         ha_flux = table["FHa"][galaxy_index] * u("aW/m2")

@@ -1098,6 +1098,18 @@ def url(argument):
 
 # -----------------------------------------------------------------
 
+def url_list(argument):
+
+    """
+    This function ...
+    :param argument: 
+    :return: 
+    """
+
+    return [url(element) for element in string_list(argument)]
+
+# -----------------------------------------------------------------
+
 def image_path(argument):
 
     """

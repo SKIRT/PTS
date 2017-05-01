@@ -356,6 +356,7 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     # Look for the first HDU with data
     if hdulist_index is None:
 
+        #try:
         _hdulist_index = 0
         while True:
 
@@ -365,6 +366,8 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
             _hdulist_index += 1
 
         if hdulist_index is None: raise ValueError("The FITS file does not contain any data")
+        #except TypeError: # TypeError: buffer is too small for requested array
+        #    hdulist_index = 0
 
     # Get the primary HDU
     hdu = hdulist[hdulist_index]

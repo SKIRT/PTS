@@ -604,6 +604,20 @@ def sigma(model):
 
 # -----------------------------------------------------------------
 
+def sigma_symmetric(model):
+
+    """
+    This function ...
+    :param model: 
+    :return: 
+    """
+
+    stddev = sigma(model)
+    if stddev.x != stddev.y: raise ValueError("x and y stddev are not equal")
+    return stddev.x
+
+# -----------------------------------------------------------------
+
 def airy_radius_to_gaussian_sigma(radius):
 
     """
@@ -650,6 +664,18 @@ def fwhm(model):
     """
 
     return statistics.sigma_to_fwhm * sigma(model)
+
+# -----------------------------------------------------------------
+
+def fwhm_symmetric(model):
+
+    """
+    This function ...
+    :param model: 
+    :return: 
+    """
+
+    return statistics.sigma_to_fwhm * sigma_symmetric(model)
 
 # -----------------------------------------------------------------
 

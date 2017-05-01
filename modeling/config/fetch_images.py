@@ -30,4 +30,7 @@ definition.add_flag("make_poisson", "perform the poisson error mosaicing", True)
 # Advanced
 definition.add_optional("max_nobservations_mosaic", "positive_integer", "maximum number of observations to use for the mosaic and poisson frames (GALEX and SDSS)")
 
+# Other images
+definition.add_optional("other_urls", "url_list", "urls of other images to fetch")
+
 # -----------------------------------------------------------------

@@ -198,6 +198,13 @@ class ExtendedSource(Source):
         # Get the parameters describing the elliptical contour
         ellipse = self.ellipse(frame.wcs, None)
 
+        #print(ellipse, dir(ellipse))
+        #print(ellipse.center)
+        #print(ellipse.radius)
+        #print(ellipse.angle)
+        #print(self.has_extent)
+        #print(self.major)
+
         if ellipse.center.x < 0 or ellipse.center.y < 0:
             self.detection = None
             return

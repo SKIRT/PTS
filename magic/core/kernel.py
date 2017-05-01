@@ -21,12 +21,15 @@ from scipy.ndimage.interpolation import shift, zoom
 # Import astronomical modules
 #from astropy.modeling import models, fitting
 from photutils.centroids import centroid_com, centroid_1dg, centroid_2dg
+from astropy.modeling.models import Gaussian2D, AiryDisk2D
+from astropy.convolution.kernels import Gaussian2DKernel, AiryDisk2DKernel
 
 # Import the relevant PTS classes and modules
 from .frame import Frame
 from ...core.tools.logging import log
 from ..tools import statistics
 from ...core.filter.filter import parse_filter
+from ..tools import fitting
 
 # -----------------------------------------------------------------
 
@@ -102,6 +105,49 @@ class ConvolutionKernel(Frame):
 
         # Call the from_file function of the base class
         return super(ConvolutionKernel, cls).from_file(path, fwhm=fwhm, add_meta=True, extra_meta=extra_meta)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_model(cls, model, from_filter=None, to_filter=None):
+
+        """
+        This function ...
+        :param model: 
+        :param from_filter:
+        :param to_filter:
+        :return: 
+        """
+
+        # Get properties
+        #center =
+        #sigma = fitting.sigma_symmetric(model)
+
+        # Create a kernel
+        #kernel = Gaussian2DKernel(sigma, x_size=kernel_size, y_size=kernel_size)
+        #kernel.normalize()  # to suppress warning
+
+        if isinstance(model, Gaussian2D):
+            x_stddev = model.x_stddev
+            y_stddev = model.y_stddev
+            if not np.isclose(x_stddev, y_stddev): raise ValueError("Model is not symmetric")
+            kernel = Gaussian2DKernel(x_stddev)
+        elif isinstance(model, AiryDisk2D):
+            radius = model.radius
+            kernel = AiryDisk2DKernel(radius)
+        else: raise ValueError("Model not supported")
+        kernel.normalize()
+
+        # Get the FWHM
+        fwhm = fitting.fwhm_symmetric(model)
+
+        # Set metadata
+        extra_meta = dict()
+        if from_filter is not None: extra_meta["frmfltr"] = str(from_filter)
+        if to_filter is not None: extra_meta["tofltr"] = str(to_filter)
+
+        # Create instance of this class
+        return cls(kernel.array, fwhm=fwhm, extra_meta=extra_meta, prepared=True)
 
     # -----------------------------------------------------------------
 

@@ -15,6 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import traceback
 
+# Import astronomical modules
+from astropy.coordinates import Angle
+
 # Import the relevant PTS classes and modules
 from ..region.list import PixelRegionList, SkyRegionList
 from ..basics.stretch import PixelStretch
@@ -196,7 +199,8 @@ class ExtendedSourceFinder(Configurable):
         self.load_sources()
 
         # 3. Detect the sources
-        self.detect_sources()
+        if not self.config.weak: self.detect_sources()
+        else: self.set_detections()
 
         # Find apertures
         #if self.config.find_apertures: self.find_contours()
@@ -356,7 +360,7 @@ class ExtendedSourceFinder(Configurable):
             # If this source should be ignored, skip it
             if source.ignore: continue
 
-            # If the galaxy is the principal galaxy and a region file is
+            # If the galaxy is the principal galaxy and a region file is given
             if source.principal and self.config.principal_region is not None:
 
                 # Load the principal galaxy region file
@@ -365,7 +369,7 @@ class ExtendedSourceFinder(Configurable):
 
                 # Create a detection for the galaxy from the shape in the region file
                 outer_factor = self.config.detection.background_outer_factor
-                source.source_from_shape(self.frame, shape, outer_factor)
+                source.detection_from_shape(self.frame, shape, outer_factor)
 
             else:
 
@@ -397,6 +401,56 @@ class ExtendedSourceFinder(Configurable):
 
         # Inform the user
         log.info("Found a detection for {0} out of {1} objects ({2:.2f}%)".format(self.have_detection, len(self.sources), self.have_source/len(self.sources)*100.0))
+
+    # -----------------------------------------------------------------
+
+    def set_detections(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Setting the detections ...")
+
+        # Loop over all sources
+        for source in self.sources:
+
+            # Skip None
+            if source is None: continue
+
+            # If this source should be ignored, skip it
+            if source.ignore: continue
+
+            # If the galaxy is the principal galaxy and a region file is given
+            if source.principal and self.config.principal_region is not None:
+
+                # Load the principal galaxy region file
+                region = SkyRegionList.from_file(self.config.principal_region)
+                shape = region[0].to_pixel(self.frame.wcs)
+
+                # Create a detection for the galaxy from the shape in the region file
+                outer_factor = self.config.detection.background_outer_factor
+                source.detection_from_shape(self.frame, shape, outer_factor)
+
+            else:
+
+                # If requested, use the galaxy extents obtained from the catalog to create the source
+                if source.has_extent:
+
+                    outer_factor = self.config.detection.background_outer_factor
+                    expansion_factor = self.config.detection.d25_expansion_factor
+                    source.detection_from_parameters(self.frame, outer_factor, expansion_factor)
+
+                # The galaxy has no extent, use a standard radius of 20 pixels
+                else:
+
+                    default_radius = self.config.region.default_radius
+
+                    outer_factor = self.config.detection.background_outer_factor
+                    shape = source.ellipse(self.frame.wcs, default_radius)
+                    source.detection_from_shape(self.frame, shape, outer_factor)
 
     # -----------------------------------------------------------------
 
@@ -543,7 +597,7 @@ class ExtendedSourceFinder(Configurable):
             center = source.pixel_position(self.frame.wcs)
 
             # Set the angle
-            angle = source.pa_for_wcs(self.frame.wcs).to("deg") if source.pa is not None else 0.0
+            angle = source.pa_for_wcs(self.frame.wcs).to("deg") if source.pa is not None else Angle(0.0, "deg")
 
             if source.major is None:
 

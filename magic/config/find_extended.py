@@ -36,7 +36,7 @@ definition.add_section("fetching", "fetching")
 definition.add_section("detection", "detection")
 
 definition.sections["detection"].add_flag("use_d25", "use D25")
-definition.sections["detection"].add_optional("d25_expansion_factor", "real", 1.2)
+definition.sections["detection"].add_optional("d25_expansion_factor", "real", "D25 expansion factor", 1.2)
 
 definition.sections["detection"].add_optional("initial_radius", "real", 20.0)
 definition.sections["detection"].add_optional("detection_method", "string", "detection method", "segmentation")
@@ -88,7 +88,7 @@ definition.sections["detection"].add_optional("user_expansion_factor", "real", "
 definition.sections["detection"].add_flag("remove_appendages", "remove appendages from overlapping mask")
 
 definition.add_section("region", "region")
-definition.sections["region"].add_optional("default_radius", "real", "default radius", 4.0)
+definition.sections["region"].add_optional("default_radius", "real", "default radius", 20.0)
 
 definition.add_section("apertures", "apertures")
 definition.sections["apertures"].add_optional("sigma_level", "real", "approximate isophotal extent", 4.0)

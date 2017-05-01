@@ -615,7 +615,7 @@ class SourceFinder(Configurable):
         #self.do_photometry()
 
         # Writing
-        self.write()
+        if self.config.write: self.write()
 
     # -----------------------------------------------------------------
 
@@ -680,6 +680,21 @@ class SourceFinder(Configurable):
         # Initialize the star table
         self.star_table = StarTable(filters=self.filters)
 
+        # Load the catalogs
+        self.load_catalogs(**kwargs)
+
+    # -----------------------------------------------------------------
+
+    def load_catalogs(self, **kwargs):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Loading the catalogs ...")
+
         # Load extended sources catalog
         self.load_extended_sources_catalog(kwargs)
 
@@ -700,7 +715,7 @@ class SourceFinder(Configurable):
         log.info("Loading catalog of extended sources ...")
 
         # From kwargs
-        if "extended_source_catalog" in kwargs: self.extended_source_catalog = kwargs.pop("extended_source_catalog")
+        if "extended_source_catalog" in kwargs and kwargs["extended_source_catalog"] is not None: self.extended_source_catalog = kwargs.pop("extended_source_catalog")
 
         # From file
         elif self.config.extended_sources_catalog is not None: self.extended_source_catalog = ExtendedSourceCatalog.from_file(self.config.extended_sources_catalog)
@@ -721,7 +736,7 @@ class SourceFinder(Configurable):
         log.info("Loading catalog of point sources ...")
 
         # From kwargs
-        if "point_source_catalog" in kwargs: self.point_source_catalog = kwargs.pop("point_source_catalog")
+        if "point_source_catalog" in kwargs and kwargs["point_source_catalog"] is not None: self.point_source_catalog = kwargs.pop("point_source_catalog")
 
         # From file
         elif self.config.point_sources_catalog is not None: self.point_source_catalog = PointSourceCatalog.from_file(self.config.point_sources_catalog)
@@ -892,8 +907,10 @@ class SourceFinder(Configurable):
                 #if ignore_mask is not None: ignore_mask.saveto(ignore_mask_path)
                 #if bad_mask is not None: bad_mask.saveto(bad_mask_path)
 
+                #print(self.config)
+
                 # Weak search
-                config.weak = self.config.weak
+                config["weak"] = self.config.weak
 
                 # Do the detection
                 # Call the target function
@@ -1084,8 +1101,10 @@ class SourceFinder(Configurable):
                 config = self.config.point.copy()
                 if name in self.star_finder_settings: config.set_items(self.star_finder_settings[name])
 
+                print(self.config)
+
                 # Weak search
-                config.weak = self.config.weak
+                config["weak"] = self.config.weak
 
                 # Call the target function
                 result = target(frame, self.galaxies, self.point_source_catalog, config, special_mask, ignore_mask, bad_mask, self.principal_masks[name])

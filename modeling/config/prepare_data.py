@@ -8,6 +8,7 @@
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.remote.host import find_host_ids
+from pts.core.tools.parallelization import ncores
 
 # -----------------------------------------------------------------
 
@@ -25,5 +26,8 @@ definition.add_flag("visualise", "make visualisations")
 # Remote preparation
 definition.add_optional("remote", "string", "remote host on which to run the preparation", choices=find_host_ids())
 definition.add_flag("attached", "run remotely in attached mode")
+
+# Parallelization
+definition.add_optional("nprocesses", "positive_integer", "number of parallel processes for parallel computations", max(8, ncores()))
 
 # -----------------------------------------------------------------

@@ -8,6 +8,7 @@
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.remote.host import find_host_ids
+from pts.core.tools.parallelization import ncores
 
 # -----------------------------------------------------------------
 
@@ -52,5 +53,8 @@ definition.add_optional("max_nobservations_mosaic", "positive_integer", "maximum
 definition.add_flag("make_poisson", "make the poisson error mosaic maps", True)
 definition.add_flag("perform_photometry", "perform photometry (as opposed to just using the DustPedia photometry", True)
 definition.add_flag("sources_weak", "weak source finding", False)
+
+# Parallelization
+definition.add_optional("nprocesses", "positive_integer", "number of processes to use for parallel computations", max(8, ncores()))
 
 # -----------------------------------------------------------------

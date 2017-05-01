@@ -148,8 +148,8 @@ class ParallelTarget(object):
         # Error occured
         if exc_type is not None:
             log.error("A " + str(exc_type) + " occured")
-            log.error(str(exc_value))
-            print(traceback)
+            #log.error(str(exc_value))
+            #print(traceback)
 
         # Close and join the process pool
         if self.pool is not None:

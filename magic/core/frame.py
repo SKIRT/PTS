@@ -284,6 +284,7 @@ class Frame(NDDataArray):
 
         if isinstance(item, MaskBase): self._data[item.data] = value
         elif isinstance(item, Pixel): self._data[item.y, item.x] = value
+        elif isinstance(item, tuple): self._data[item[0], item[1]] = value
         else: self._data[item] = value
 
     # -----------------------------------------------------------------
@@ -704,8 +705,10 @@ class Frame(NDDataArray):
         #from . import fits as pts_fits
         from ..core.fits import load_frame
 
-        # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
-        return load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta, extra_meta=extra_meta)
+        try:
+            # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
+            return load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta, extra_meta=extra_meta)
+        except TypeError: raise IOError("File is possibly damaged")
 
     # -----------------------------------------------------------------
 

@@ -9,6 +9,7 @@
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.magic.config.extract import definition as extraction_definition
 from pts.magic.config.subtract_sky import definition as subtraction_definition
+from pts.core.tools.parallelization import ncores
 
 # -----------------------------------------------------------------
 
@@ -34,7 +35,7 @@ definition.add_optional("max_pixelscale", "quantity", "maximum pixelscale for re
 #definition.sections["input"].add_optional("segments", "file_path", "image with segmentation maps (as planes 'galaxies', 'stars' and 'other_sources')", "segments.fits")
 
 # Number of parallel processes
-definition.add_optional("nprocesses", "integer", "number of parallel processes for the preparation", 8)
+definition.add_optional("nprocesses", "integer", "number of parallel processes for the preparation", max(8, ncores()))
 
 definition.add_optional("error_frame_names", "string_list", "the names of error planes to be included in the final error map")
 

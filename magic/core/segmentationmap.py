@@ -101,8 +101,10 @@ class SegmentationMap(SegmentationImage):
 
         from .fits import load_frame # Import here because .fits imports SegmentationMap
 
-        # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
-        segments = load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta)
+        try:
+            # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
+            segments = load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta)
+        except TypeError: raise IOError("The file is possibly damaged")
 
         # Set the path
         segments.path = path

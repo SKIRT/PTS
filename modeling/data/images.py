@@ -59,6 +59,29 @@ class ImageFetcher(DataComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_halpha_url(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.config.halpha_url is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_other_urls(self):
+
+        """
+        This function ..
+        """
+
+        return self.config.other_urls is not None and len(self.config.other_urls) > 0
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -80,7 +103,7 @@ class ImageFetcher(DataComponent):
         self.fetch_sdss()
 
         # 5. Fetch the H-alpha image
-        self.fetch_halpha()
+        if self.has_halpha_url: self.fetch_halpha()
 
         # 6. Fetch the 2MASS images
         self.fetch_2mass()
@@ -96,6 +119,9 @@ class ImageFetcher(DataComponent):
 
         # 10. Fetch the Planck images
         self.fetch_planck()
+
+        # Fetch other images
+        if self.has_other_urls: self.fetch_other()
 
         # 11. Writing
         self.write()
@@ -412,6 +438,25 @@ class ImageFetcher(DataComponent):
 
         # Fetch the Planck data from the DustPedia archive
         self.fetch_from_dustpedia("Planck")
+
+    # -----------------------------------------------------------------
+
+    def fetch_other(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Fetching other images ...")
+
+        # Download the images
+        paths = network.download_files(self.config.other_urls, self.data_images_path["Other"])
+
+        # Unpack the image files if necessary
+        for path in paths:
+            if not path.endswith("fits"): path = archive.decompress_file_in_place(path, remove=True)
 
     # -----------------------------------------------------------------
 

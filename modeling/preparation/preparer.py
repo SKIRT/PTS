@@ -123,6 +123,9 @@ class DataPreparer(PreparationComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Setting the image preparer options ...")
+
         # Write results of intermediate steps
         self.preparer_config["steps"] = True
 
@@ -151,6 +154,9 @@ class DataPreparer(PreparationComponent):
 
         # Make visualisations (but won't work yet when preparing remotely)
         #self.preparer_config["visualisation_path"] = self.visualisation_path
+
+        # Set parallelization options
+        self.preparer_config["nprocesses"] = self.config.nprocesses
 
     # -----------------------------------------------------------------
 

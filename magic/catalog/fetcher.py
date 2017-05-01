@@ -17,6 +17,7 @@ from ..tools import catalogs
 from ...core.tools.logging import log
 from .extended import ExtendedSourceCatalog
 from .point import PointSourceCatalog
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -81,7 +82,7 @@ class CatalogFetcher(object):
         """
 
         # Check whether the 'catalogs' setting defines a single catalog name or a list of such names
-        if isinstance(catalogues, basestring): catalog_list = [catalogues]
+        if types.is_string_type(catalogues): catalog_list = [catalogues]
         elif isinstance(catalogues, list): catalog_list = catalogues
         else: raise ValueError("Invalid option for 'catalogs', should be a string or a list of strings")
 

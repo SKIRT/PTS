@@ -48,5 +48,6 @@ definition.import_section("other", "options for finding other contaminating sour
 
 # Flags
 definition.add_flag("weak", "only do weak search: find point source positions, create regions and segments but let user adjust them manually, no segmentation or source finding", False)
+definition.add_flag("write", "writing", True)
 
 # -----------------------------------------------------------------
