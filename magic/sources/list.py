@@ -118,7 +118,7 @@ class GalaxyList(object):
         for galaxy in self.companions:
 
             # Check if the galaxy has a source and add its mask to the total mask
-            if galaxy.has_source: mask[galaxy.detection.cutout.y_slice, galaxy.detection.cutout.x_slice] = galaxy.detection.mask
+            if galaxy.has_detection: mask[galaxy.detection.cutout.y_slice, galaxy.detection.cutout.x_slice] = galaxy.detection.mask
 
         # Return the mask
         return mask

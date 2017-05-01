@@ -167,7 +167,24 @@ class MaskBase(object):
 
         if isinstance(item, MaskBase): return self._data[item.data]
         elif isinstance(item, Pixel): return self._data[item.y, item.x]
-        elif isinstance(item, tuple): return self._data[item[0], item[1]]
+        elif isinstance(item, tuple):
+            #return self._data[item] #  ## WHY IS THIS NOT WORKING?????!!!
+            #print(item)
+            #print(self.shape)
+            if isinstance(item[0], slice) and isinstance(item[1], slice):
+                slice_y = item[0]
+                slice_x = item[1]
+                #indices_y = slice_y.indices(self.ysize)
+                #indices_x = slice_x.indices(self.xsize)
+                #print(indices_x)
+                #print(indices_y)
+                return self._data[slice_y, slice_x]
+            elif isinstance(item[0], int) and isinstance(item[1], int):
+                print(self.shape)
+                print(item)
+                return self._data.__getitem__(item)
+            else: raise NotImplementedError("Not implemented")
+            #return self._data[item[0], item[1]]
         else: return self._data[item]
 
     # -----------------------------------------------------------------
@@ -190,7 +207,19 @@ class MaskBase(object):
             #self._data[item[0], item[1]] = value
             ## WHY IS THIS NOT WORKING?????!!!
             # Error: TypeError: __array__() takes exactly 1 argument (2 given)
-            self._data.__setitem__(item, value)
+            try: self._data.__setitem__(item, value)
+            except TypeError:
+                #print(item)
+                #print(value)
+                #data = np.array(self._data)
+                slice_y = item[0]
+                slice_x = item[1]
+                indices_y = slice_y.indices(self.ysize)
+                indices_x = slice_x.indices(self.xsize)
+                for index_y, y in enumerate(indices_y):
+                    for index_x, x in enumerate(indices_x):
+                        self._data[y, x] = value[index_y, index_x]
+                #for index in range(indices[0], indices[1], indices[2]):
         else: self._data[item] = value
 
     # -----------------------------------------------------------------

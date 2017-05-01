@@ -77,10 +77,11 @@ def generate_overlap_file(path, ra, dec, meta_path, mode='box', width=None, radi
     # Convert RA and DEC into degrees
     ra_deg = ra.to("deg").value
     dec_deg = dec.to("deg").value
-    radius_deg = radius.to("deg").value
+    radius_deg = radius.to("deg").value if radius is not None else None
+    width_deg = width.to("deg").value if width is not None else None
 
     # Check the coverage for our galaxy
-    montage.commands_extra.mCoverageCheck(meta_path, overlap_path, mode=mode, ra=ra_deg, dec=dec_deg, width=width, radius=radius)
+    montage.commands_extra.mCoverageCheck(meta_path, overlap_path, mode=mode, ra=ra_deg, dec=dec_deg, width=width_deg, radius=radius_deg)
 
     # Check if there is any coverage for this galaxy and band
     if sum(1 for line in open(overlap_path)) <= 3: log.warning("No coverage")

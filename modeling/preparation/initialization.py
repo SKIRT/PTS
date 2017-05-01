@@ -97,6 +97,9 @@ class PreparationInitializer(PreparationComponent):
         # 4. Create the dataset
         self.create_dataset()
 
+        # Get the catalogs
+        self.get_catalogs()
+
         # 5. Find sources
         self.find_sources()
 
@@ -308,7 +311,7 @@ class PreparationInitializer(PreparationComponent):
         if fs.is_file(extended_sources_path): self.extended_sources = ExtendedSourceCatalog.from_file(extended_sources_path)
         else:
             fetcher = CatalogFetcher()
-            self.extended_sources = fetcher.get_extended_source_catalog(self.dataset.get_bounding_box())
+            self.extended_sources = fetcher.get_extended_source_catalog(self.set.get_bounding_box())
             self.extended_sources.saveto(extended_sources_path)
 
     # -----------------------------------------------------------------
@@ -331,7 +334,7 @@ class PreparationInitializer(PreparationComponent):
         if fs.is_file(point_sources_path): self.point_sources = PointSourceCatalog.from_file(point_sources_path)
         else:
             fetcher = CatalogFetcher()
-            self.point_sources = fetcher.get_extended_source_catalog(self.dataset.get_bounding_box())
+            self.point_sources = fetcher.get_extended_source_catalog(self.set.get_bounding_box())
             self.point_sources.saveto(point_sources_path)
 
     # -----------------------------------------------------------------
