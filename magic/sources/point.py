@@ -287,7 +287,7 @@ class PointSourceFinder(Configurable):
 
         # 3. For each star, find a corresponding source in the image
         if not self.config.weak: self.detect_sources()
-        else: self.set_sources()
+        else: self.set_detections()
 
         # 4. Fit analytical models to the stars
         if not self.has_psf: self.fit_psf()
@@ -530,6 +530,26 @@ class PointSourceFinder(Configurable):
         This function ...
         :return: 
         """
+
+        # Inform the user
+        log.info("Setting the detections ...")
+
+        # Loop over all sources
+        for source in self.sources:
+
+            # Skip None
+            if source is None: continue
+
+            # If this source should be ignored, skip it
+            if source.ignore: continue
+
+            # Get the parameters of the circle
+            radius = PixelStretch(self.config.detection.initial_radius, self.config.detection.initial_radius)
+            ellipse = source.ellipse(self.frame.wcs, radius)
+
+            # Create a source object
+            detection = Detection.from_ellipse(self.frame, ellipse, self.config.detection.background_outer_factor)
+            source.detection = detection
 
     # -----------------------------------------------------------------
 

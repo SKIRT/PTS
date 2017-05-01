@@ -180,9 +180,11 @@ class MaskBase(object):
                 #print(indices_y)
                 return self._data[slice_y, slice_x]
             elif isinstance(item[0], int) and isinstance(item[1], int):
-                print(self.shape)
-                print(item)
+                #print(self.shape)
+                #print(item)
+                #try:
                 return self._data.__getitem__(item)
+                #except IndexError:
             else: raise NotImplementedError("Not implemented")
             #return self._data[item[0], item[1]]
         else: return self._data[item]
