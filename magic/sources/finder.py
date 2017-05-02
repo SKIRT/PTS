@@ -1101,7 +1101,7 @@ class SourceFinder(Configurable):
                 config = self.config.point.copy()
                 if name in self.star_finder_settings: config.set_items(self.star_finder_settings[name])
 
-                print(self.config)
+                #print(self.config)
 
                 # Weak search
                 config["weak"] = self.config.weak

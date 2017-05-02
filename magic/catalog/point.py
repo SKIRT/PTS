@@ -192,8 +192,12 @@ class PointSourceCatalog(SmartTable):
         # Debugging
         log.debug("Creating an point source for entry " + str(index) + " in the catalog ...")
 
+        print(index, len(self))
+
         # Get the row
         row = self.get_row(index)
+
+        print(row)
 
         # Get properties
         catalog = row["Catalog"]

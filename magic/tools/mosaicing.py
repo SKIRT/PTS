@@ -49,6 +49,9 @@ def generate_meta_file(path):
     # Get the image table of which images cover a given part of the sky
     montage.commands.mImgtbl(path, meta_path, corners=True)
 
+    # Check whether the meta file contains any lines
+    if not fs.contains_lines(meta_path): raise RuntimeError("The meta table doesn't contain any lines")
+
     # Return the path to the created file
     return meta_path
 

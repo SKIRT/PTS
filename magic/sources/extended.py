@@ -278,6 +278,7 @@ class ExtendedSourceFinder(Configurable):
         for source in self.sources:
             if source is None: continue
             if source.principal: return source
+        return None
 
     # -----------------------------------------------------------------
 
@@ -337,7 +338,8 @@ class ExtendedSourceFinder(Configurable):
             self.sources.append(source)
 
         # Debug messages
-        log.debug(self.principal.name + " is the principal galaxy in the frame")
+        if self.principal is not None: log.debug(self.principal.name + " is the principal galaxy in the frame")
+        else: log.warning("No principal galaxy found in the frame")
         log.debug("The following galaxies are its companions: " + str(self.principal.companions))
 
     # -----------------------------------------------------------------
@@ -662,6 +664,9 @@ class ExtendedSourceFinder(Configurable):
         # Loop over all source
         for source in self.sources:
 
+            # No source: continue
+            if source is None: continue
+
             # Skip galaxies without source
             if not source.has_detection: continue
 
@@ -779,6 +784,8 @@ class ExtendedSourceFinder(Configurable):
 
         # Loop over all sources
         for source in self.sources:
+
+            if source is None: continue
 
             # Check if this is the principal galaxy source
             if source.principal:

@@ -942,6 +942,30 @@ def read_lines(path):
 
 # -----------------------------------------------------------------
 
+def get_lines(path):
+
+    """
+    This function ...
+    :param path: 
+    :return: 
+    """
+
+    return list(read_lines(path))
+
+# -----------------------------------------------------------------
+
+def contains_lines(path):
+
+    """
+    This function ...
+    :param path: 
+    :return: 
+    """
+
+    return len(get_lines(path)) > 0
+
+# -----------------------------------------------------------------
+
 def get_line(path, row):
 
     """
