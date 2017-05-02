@@ -879,6 +879,19 @@ def copy_file(file_path, directory_path, new_name=None):
 
 # -----------------------------------------------------------------
 
+def copy_from_directory(from_directory, to_directory):
+
+    """
+    This function ..
+    :param from_directory: 
+    :param to_directory: 
+    :return: 
+    """
+
+    copy_files(fs.files_in_path(from_directory), to_directory)
+
+# -----------------------------------------------------------------
+
 def copy_files(file_paths, directory_path):
 
     """

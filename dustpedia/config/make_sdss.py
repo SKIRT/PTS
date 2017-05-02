@@ -32,4 +32,7 @@ definition.add_optional("max_nobservations_z", "positive_integer", "maximum numb
 # Parallelization
 definition.add_optional("nprocesses", "positive_integer", "number of processes for parallel execution", max(8, ncores()))
 
+# Advanced
+definition.add_optional("fields_directories", "string_string_dictionary", "dictionary of fields directories where the keys are the bands")
+
 # -----------------------------------------------------------------

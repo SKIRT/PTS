@@ -44,10 +44,28 @@ def generate_meta_file(path):
     log.info("Generating meta file ...")
 
     # Path of the meta file
-    meta_path = fs.join(path, "meta.dat")
+    meta_filename = "meta.dat"
+    meta_path = fs.join(path, meta_filename)
+
+    # Change working directory
+    dirname = fs.name(path)
+    cwd = fs.change_cwd(fs.directory_of(path))
+
+    # Path of status file
+    status_filename = "status.txt"
+    status_path = fs.join(path, status_filename)
+
+    # Debugging
+    log.debug("Changed working directory to '" + fs.directory_of(path) + "' ...")
+    log.debug("Fields directory name: '" + dirname + "'")
+    log.debug("Meta file path: '" + meta_path + "'")
+    log.debug("Status file path: '" + status_path + "'")
 
     # Get the image table of which images cover a given part of the sky
-    montage.commands.mImgtbl(path, meta_path, corners=True)
+    montage.commands.mImgtbl(dirname, meta_path, corners=True, debug=log.is_debug(), output_invalid=True, status_file=status_path)
+
+    # Change working directory again
+    fs.change_cwd(cwd)
 
     # Check whether the meta file contains any lines
     if not fs.contains_lines(meta_path): raise RuntimeError("The meta table doesn't contain any lines")
@@ -197,6 +215,9 @@ def filter_non_overlapping(ngc_name, band, fields_path, cutout_center, cutout_wi
 
     # Inform the user
     log.info("Getting the overlap of the SDSS observations for " + ngc_name + " in the " + band + " band ...")
+
+    # Debugging
+    log.debug("Fields path: '" + fields_path + "'")
 
     # Generate meta file
     meta_path = generate_meta_file(fields_path)

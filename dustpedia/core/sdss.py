@@ -417,6 +417,32 @@ class SDSSMosaicMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    def has_existing_fields(self, band):
+
+        """
+        This fucntion ...
+        :param band: 
+        :return: 
+        """
+
+        if self.config.fields_directories is not None and band in self.config.fields_directories: return True
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    def existing_fields_path(self, band):
+        
+        """
+        This function ...
+        :param band: 
+        :return: 
+        """
+
+        if self.config.fields_directories is not None and band in self.config.fields_directories: return fs.absolute_path(self.config.fields_directories[band])
+        else: return None
+
+    # -----------------------------------------------------------------
+
     def download_fields(self):
 
         """
@@ -431,7 +457,10 @@ class SDSSMosaicMaker(Configurable):
         with ParallelTarget(network.download_files, self.config.nprocesses) as target:
 
             # Download for different bands in parallel
-            for band in self.config.bands: target(self.urls[band], self.fields_paths[band])
+            for band in self.config.bands:
+
+                if self.has_existing_fields(band): fs.copy_from_directory(self.existing_fields_path(band), self.fields_path[band])
+                else: target(self.urls[band], self.fields_paths[band])
 
         # Debugging
         for band in self.config.bands: print_files_in_path(self.fields_paths[band])

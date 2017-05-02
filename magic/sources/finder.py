@@ -44,6 +44,7 @@ from ...core.tools.stringify import tostr
 from ..convolution.kernels import get_fwhm
 from ...core.tools import filesystem as fs
 from ..region.list import PixelRegionList
+from ...core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
@@ -162,7 +163,8 @@ class GalaxyTable(SmartTable):
             if not name.endswith("flux"): continue
 
             # Filter
-            fltr = BroadBandFilter(name.split(" flux")[0])
+            #fltr = BroadBandFilter(name.split(" flux")[0])
+            fltr = parse_filter(name.split(" flux")[0])
 
             # Get flux
             if galaxy.sed is not None and fltr in galaxy.sed.filters(): flux = galaxy.sed.photometry_for_filter(fltr)
@@ -269,7 +271,8 @@ class StarTable(SmartTable):
             elif name.endswith("flux"):
 
                 # Filter
-                fltr = BroadBandFilter(name.split(" flux")[0])
+                #fltr = BroadBandFilter(name.split(" flux")[0])
+                fltr = parse_filter(name.split(" flux")[0])
 
                 #print(star.sed)
                 #print(fltr)

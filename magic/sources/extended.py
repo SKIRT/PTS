@@ -544,6 +544,8 @@ class ExtendedSourceFinder(Configurable):
         :return:
         """
 
+        if self.principal is None: return Mask.empty_like(self.frame)
+
         #return self.galaxies.get_principal_mask(self.frame)
 
         # Create a new mask with the dimensions of the frame

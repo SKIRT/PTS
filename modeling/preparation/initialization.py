@@ -334,7 +334,9 @@ class PreparationInitializer(PreparationComponent):
         if fs.is_file(point_sources_path): self.point_sources = PointSourceCatalog.from_file(point_sources_path)
         else:
             fetcher = CatalogFetcher()
-            self.point_sources = fetcher.get_extended_source_catalog(self.set.get_bounding_box())
+            min_pixelscale = self.set.min_pixelscale
+            catalogs = ["II/246"]
+            self.point_sources = fetcher.get_point_source_catalog(self.set.get_bounding_box(), min_pixelscale, catalogs)
             self.point_sources.saveto(point_sources_path)
 
     # -----------------------------------------------------------------
