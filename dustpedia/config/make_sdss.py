@@ -8,6 +8,7 @@
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.dustpedia.core.sdss import sdss_bands
+from pts.core.tools.parallelization import ncores
 
 # -----------------------------------------------------------------
 
@@ -27,5 +28,8 @@ definition.add_optional("max_nobservations_g", "positive_integer", "maximum numb
 definition.add_optional("max_nobservations_r", "positive_integer", "maximum number of r band observations")
 definition.add_optional("max_nobservations_i", "positive_integer", "maximum number of i band observations")
 definition.add_optional("max_nobservations_z", "positive_integer", "maximum number of z band observations")
+
+# Parallelization
+definition.add_optional("nprocesses", "positive_integer", "number of processes for parallel execution", max(8, ncores()))
 
 # -----------------------------------------------------------------

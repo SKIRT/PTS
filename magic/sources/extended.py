@@ -338,9 +338,10 @@ class ExtendedSourceFinder(Configurable):
             self.sources.append(source)
 
         # Debug messages
-        if self.principal is not None: log.debug(self.principal.name + " is the principal galaxy in the frame")
+        if self.principal is not None:
+            log.debug(self.principal.name + " is the principal galaxy in the frame")
+            log.debug("The following galaxies are its companions: " + str(self.principal.companions))
         else: log.warning("No principal galaxy found in the frame")
-        log.debug("The following galaxies are its companions: " + str(self.principal.companions))
 
     # -----------------------------------------------------------------
 

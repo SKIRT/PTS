@@ -8,6 +8,7 @@
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.dustpedia.core.galex import galex_bands
+from pts.core.tools.parallelization import ncores
 
 # -----------------------------------------------------------------
 
@@ -24,5 +25,8 @@ definition.add_optional("output", "string", "the name of the output directory", 
 # Advanced
 definition.add_optional("max_nobservations_fuv", "positive_integer", "limit the number of FUV observations")
 definition.add_optional("max_nobservations_nuv", "positive_integer", "limit the number of NUV observations")
+
+# Parallelization
+definition.add_optional("nprocesses", "positive_integer", "number of processes for parallel execution", max(8, ncores()))
 
 # -----------------------------------------------------------------
