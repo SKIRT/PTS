@@ -888,7 +888,7 @@ def copy_from_directory(from_directory, to_directory):
     :return: 
     """
 
-    copy_files(fs.files_in_path(from_directory), to_directory)
+    copy_files(files_in_path(from_directory), to_directory)
 
 # -----------------------------------------------------------------
 

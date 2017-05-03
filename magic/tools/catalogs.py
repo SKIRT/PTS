@@ -487,8 +487,8 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs=None):
                 # Fill in the column lists
                 catalog_column.append(catalog)
                 id_column.append(star_id)
-                ra_column.append(star_ra) * u("deg")
-                dec_column.append(star_dec) * u("deg")
+                ra_column.append(star_ra * u("deg"))
+                dec_column.append(star_dec * u("deg"))
                 ra_error_column.append(ra_error.value)
                 dec_error_column.append(dec_error.value)
                 confidence_level_column.append(1)
