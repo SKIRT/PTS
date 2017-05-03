@@ -459,7 +459,7 @@ class SDSSMosaicMaker(Configurable):
             # Download for different bands in parallel
             for band in self.config.bands:
 
-                if self.has_existing_fields(band): fs.copy_from_directory(self.existing_fields_path(band), self.fields_path[band])
+                if self.has_existing_fields(band): fs.copy_from_directory(self.existing_fields_path(band), self.fields_paths[band])
                 else: target(self.urls[band], self.fields_paths[band])
 
         # Debugging
