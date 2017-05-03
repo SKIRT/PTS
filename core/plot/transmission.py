@@ -155,6 +155,30 @@ class TransmissionPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def ncurves(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return len(self.curves)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_curves(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.ncurves > 0
+
+    # -----------------------------------------------------------------
+
     def add_wavelength(self, wavelength, label=None):
 
         """
@@ -169,6 +193,30 @@ class TransmissionPlotter(Configurable):
 
         # Set the label if a label is given
         if label is not None: self.wavelength_labels[len(self.wavelengths)-1] = label
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nwavelengths(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return len(self.wavelengths)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_wavelengths(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.nwavelengths > 0
 
     # -----------------------------------------------------------------
 
@@ -202,7 +250,7 @@ class TransmissionPlotter(Configurable):
         if "curves" in kwargs: self.curves = kwargs.pop("curves")
         if "filters" in kwargs:
             for fltr in kwargs.pop("filters"): self.add_filter(fltr)
-        elif self.config.filters is not None:
+        elif not self.has_curves and self.config.filters is not None:
             for fltr in self.config.filters: self.add_filter(fltr)
 
         # Add emission lines
@@ -221,7 +269,7 @@ class TransmissionPlotter(Configurable):
                 for wavelength in wavelengths: self.add_wavelength(wavelength)
 
         # Wavelengths are specified in the configuration
-        elif self.config.wavelengths is not None:
+        elif not self.has_wavelengths and self.config.wavelengths is not None:
             for wavelength in self.config.wavelengths:
                 self.add_wavelength(wavelength)
 
@@ -280,9 +328,16 @@ class TransmissionPlotter(Configurable):
         if self._min_wavelength is not None: return self._min_wavelength
 
         min_wavelength = None
+
+        # Check the curves
         for label in self.curves:
             if min_wavelength is None or self.curves[label].min_wavelength < min_wavelength: min_wavelength = self.curves[label].min_wavelength
 
+        # Check the wavelengths
+        for wavelength in self.wavelengths:
+            if min_wavelength is None or wavelength < min_wavelength: min_wavelength = wavelength
+
+        # Return the minimum wavelength
         return min_wavelength
 
     # -----------------------------------------------------------------
@@ -301,6 +356,11 @@ class TransmissionPlotter(Configurable):
         for label in self.curves:
             if max_wavelength is None or self.curves[label].max_wavelength > max_wavelength: max_wavelength = self.curves[label].max_wavelength
 
+        # CHeck the wavelengths
+        for wavelength in self.wavelengths:
+            if max_wavelength is None or wavelength > max_wavelength: max_wavelength = wavelength
+
+        # Return the maximum wavelength
         return max_wavelength
 
     # -----------------------------------------------------------------

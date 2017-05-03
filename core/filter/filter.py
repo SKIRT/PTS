@@ -62,8 +62,6 @@ class Filter(object):
         self._FilterID = filter_id
         self._Description = description
 
-    # -----------------------------------------------------------------
-
     def filterID(self):
 
         """
