@@ -2505,12 +2505,12 @@ class Remote(object):
         # Trial and error to get it right for HPC UGent login nodes; don't know what is happening
         if contains_extra_eof:
             splitted = self.ssh.before.replace('\x1b[K', '').split("\r\n")
-            for i in range(len(splitted)): splitted[i] = splitted[i].replace(" \r", "").replace("\x08", "")
+            for i in range(len(splitted)): splitted[i] = splitted[i].replace(" \r", "").replace("\x08", "").replace("\xe2\x80\x98", "'").replace("\xe2\x80\x99", "'")
             if splitted[-1] == "": the_output = splitted[output_start:-1]
             else: the_output = splitted[output_start:]
         else:
             splitted = self.ansi_escape.sub('', self.ssh.before).replace('\x1b[K', '').split("\r\n")
-            for i in range(len(splitted)): splitted[i] = splitted[i].replace(" \r", "").replace("\x08", "")
+            for i in range(len(splitted)): splitted[i] = splitted[i].replace(" \r", "").replace("\x08", "").replace("\xe2\x80\x98", "'").replace("\xe2\x80\x99", "'")
             if splitted[-1] == "": the_output = splitted[output_start:-1]
             else: the_output = splitted[output_start:]
 
@@ -2759,11 +2759,18 @@ class Remote(object):
         :return:
         """
 
+        # Check if directory
+        if not self.is_directory(path): raise ValueError("Not a directory: '" + path + "'")
+
         # Debugging
         self.debug("Removing directory '" + path + "' ...")
 
         # Execute the command
-        self.execute("rm -rf " + path, output=False)
+        output = self.execute("rm -rf " + path, output=True)
+
+        # Check for error
+        for line in output:
+            if "cannot remove" in line: raise RuntimeError(line)
 
     # -----------------------------------------------------------------
 
@@ -2795,11 +2802,18 @@ class Remote(object):
         :return:
         """
 
+        # Check if file
+        if not self.is_file(path): raise ValueError("Not a file: '" + path + "'")
+
         # Debugging
         self.debug("Removing file '" + path + "' ...")
 
         # Execute the command
-        self.execute("rm " + path, output=False, show_output=show_output)
+        output = self.execute("rm " + path, output=True, show_output=show_output)
+
+        # Check for error
+        for line in output:
+            if "cannot remove" in line: raise RuntimeError(line)
 
     # -----------------------------------------------------------------
 

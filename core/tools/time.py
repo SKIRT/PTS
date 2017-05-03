@@ -162,6 +162,86 @@ def day_and_time_as_string():
 
 # -----------------------------------------------------------------
 
+def is_unique_name(name):
+
+    """
+    This function ...
+    :param name: 
+    :return: 
+    """
+
+    try:
+        name, time = get_name_and_time_from_unique_name(name)
+        return True
+    except Exception: return False
+
+# -----------------------------------------------------------------
+
+def get_name_and_time_from_unique_name(name):
+
+    """
+    This function ...
+    :param name: 
+    :return: 
+    """
+
+    splitted = name.split("_")
+    if len(splitted) > 2:
+        return "_".join(splitted[:-1]), time_from_timestamp(splitted[-1])
+    elif len(splitted) == 2: return splitted[0], time_from_timestamp(splitted[1])
+    else: raise ValueError("Not a timestamped unique name")
+
+# -----------------------------------------------------------------
+
+def get_name_from_unique_name(name):
+
+    """
+    This function ...
+    :param name: 
+    :return: 
+    """
+
+    splitted = name.split("_")
+    if len(splitted) > 2: return "_".join(splitted[:-1])
+    elif len(splitted) == 2: return splitted[0]
+    else: raise ValueError("Not a timestamped unique name")
+
+# -----------------------------------------------------------------
+
+def get_time_from_unique_name(name):
+
+    """
+    This function ...
+    :param name: 
+    :return: 
+    """
+
+    splitted = name.split("_")
+    last = splitted[-1]
+    return time_from_timestamp(last)
+
+# -----------------------------------------------------------------
+
+def time_from_timestamp(stamp):
+
+    """
+    This function ...
+    :param stamp: 
+    :return: 
+    """
+
+    # Millisecond precision
+    if len(stamp) == 24: stamp = stamp + "000"
+    # Microsecond precision
+    elif len(stamp) == 27: pass
+    # Else
+    else: raise ValueError("The timestamp '" + stamp + "' could not be recognized")
+
+    # Parse
+    return datetime.strptime(stamp, "%Y-%m-%d--%H-%M-%S-%f")
+
+# -----------------------------------------------------------------
+
 def unique_name(name=None, separator="_", precision="milli"):
 
     """
