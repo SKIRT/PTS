@@ -113,6 +113,9 @@ class SEDModeler(ModelerBase):
         # Config for the fitting initializer
         if "initialize_config" in kwargs: self.initialize_config = kwargs.pop("initialize_config")
 
+        # If we get fixed initial parameter values
+        if "fixed_initial_parameters" in kwargs: self.fixed_initial_parameters = kwargs.pop("fixed_initial_parameters")
+
     # -----------------------------------------------------------------
 
     def load_data(self):

@@ -33,9 +33,8 @@ configure_fit | -- | fitting.configuration.FittingConfigurer | arguments | Confi
 initialize_fit_galaxy | initialize_fit | fitting.initialization.galaxy.GalaxyFittingInitializer | arguments | Do the initialization before starting the fitting
 initialize_fit_sed | initialize_fit | fitting.initialization.sed.SEDFittingInitializer | arguments | Do the initialization before starting the fitting
 explore | -- | fitting.explorer.ParameterExplorer | arguments | Explore the parameter space for the radiative transfer modeling
-generate_genetic | -- | fitting.modelgenerators.genetic | arguments | Generate models using genetic algorithms
-generate_intrinsic | -- | fitting.modelgenerators.intrinsic | arguments | Generate models based on current probability distributions
-generate_grid | -- | fitting.modelgenerators.grid | arguments | Generate models on a grid in parameter space
+generate_genetic | -- | fitting.modelgenerators.genetic.GeneticModelGenerator | arguments | Generate models using genetic algorithms
+generate_grid | -- | fitting.modelgenerators.grid.GridModelGenerator | arguments | Generate models on a grid in parameter space
 fit_sed | -- | fitting.sedfitting.SEDFitter | arguments | Determine the best fit with the observed SED
 finish_exploration | -- | fitting.finisher.ExplorationFinisher  | arguments | Finish the parameter exploration
 launch_best | -- | fitting.bestmodellauncher.BestModelLauncher | interactive | Launch simulations to inspect the current best RT model for a certain generation

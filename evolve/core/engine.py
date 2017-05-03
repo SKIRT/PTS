@@ -47,7 +47,7 @@ from types import BooleanType
 from sys import stdout as sys_stdout
 
 # Import other evolve modules
-from pts.evolve.core.population import Population, NamedPopulation
+from pts.evolve.core.population import Population, NamedPopulation, PopulationBase
 from pts.evolve.core.functionslot import FunctionSlot
 from pts.evolve.core.genome import GenomeBase
 from pts.evolve.core.adapters import DataBaseAdapter
@@ -194,26 +194,42 @@ class GeneticEngine(object):
     generation.
     """
 
-    def __init__(self, genome, interactive=True, named_individuals=False):
+    def __init__(self, genome_or_pop, interactive=True, named_individuals=False):
 
         """
         Initializator of GSimpleGA
-        :param genome:
+        :param genome_or_pop:
         :param interactive:
         """
 
         if type(interactive) != BooleanType:
             utils.raiseException("Interactive Mode option must be True or False", TypeError)
 
-        if not isinstance(genome, GenomeBase):
-            utils.raiseException("The genome must be a GenomeBase subclass", TypeError)
+        #if not isinstance(genome, GenomeBase):
+        #    utils.raiseException("The genome must be a GenomeBase subclass", TypeError)
 
-        # Set named flag
-        self.named_individuals = named_individuals
+        if isinstance(genome_or_pop, GenomeBase):
 
-        # Create the internal population
-        if self.named_individuals: self.internalPop = NamedPopulation(genome)
-        else: self.internalPop = Population(genome)
+            # Set named flag
+            self.named_individuals = named_individuals
+
+            # Create the internal population
+            if self.named_individuals: self.internalPop = NamedPopulation(genome_or_pop)
+            else: self.internalPop = Population(genome_or_pop)
+
+            self.initialized_population = False
+
+        elif isinstance(genome_or_pop, PopulationBase):
+
+            self.internalPop = genome_or_pop
+
+            if isinstance(genome_or_pop, NamedPopulation): self.named_individuals = True
+            elif isinstance(genome_or_pop, Population): self.named_individuals = False
+            else: raise ValueError("Invalid population object")
+
+            self.initialized_population = True
+
+        else: raise ValueError("Genome or population should be passed")
 
         # Initialize things
         self.nGenerations = constants.CDefGAGenerations
@@ -874,6 +890,18 @@ class GeneticEngine(object):
 
         # Keep track of the time passed
         self.time_init = time()
+
+        # Initialize population
+        if not self.initialized_population: self.initialize_population()
+
+    # -----------------------------------------------------------------
+
+    def initialize_population(self):
+
+        """
+        This function initilizes the population
+        :return: 
+        """
 
         # Create the first population
         self.internalPop.create(minimax=self.minimax)

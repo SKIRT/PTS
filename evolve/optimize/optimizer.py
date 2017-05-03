@@ -45,6 +45,7 @@ from ..core.scaling import LinearScaling, SigmaTruncScaling, PowerLawScaling, Bo
 from ..core.selectors import GRankSelector, GUniformSelector, GTournamentSelector, GTournamentSelectorAlternative, GRouletteWheel
 from ...core.tools import sequences
 from ...core.tools.serialization import write_dict
+from ..core.population import Population, NamedPopulation
 
 # -----------------------------------------------------------------
 
@@ -103,6 +104,9 @@ class Optimizer(Configurable):
 
         # The parameter range
         self.parameter_range = None
+
+        # Lists of igegegegrehth
+        self.initial_parameters = None
 
     # -----------------------------------------------------------------
 
@@ -218,6 +222,9 @@ class Optimizer(Configurable):
 
         # Debugging
         if self.parameter_range is not None: log.debug("The parameter range is " + str(self.parameter_range))
+
+        # ghege
+        if "initial_parameters" in kwargs: self.initial_parameters = kwargs.pop("initial_parameters")
 
     # -----------------------------------------------------------------
 
@@ -595,6 +602,8 @@ class Optimizer(Configurable):
             # Real SBX
             elif self.config.crossover_method == "real_SBX": return G1DListCrossoverRealSBX
 
+            #elif self.config.crossover_method == "":
+
             # Invalid
             else: raise ValueError("Invalid crossover method for one-dimensional genomes")
 
@@ -649,6 +658,18 @@ class Optimizer(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_initial_parameters(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.initial_parameters is not None
+
+    # -----------------------------------------------------------------
+
     def create_engine(self):
 
         """
@@ -659,8 +680,32 @@ class Optimizer(Configurable):
         # Inform the user
         log.info("Creating the genetic engine ...")
 
-        # Create the engine, passing the initial genome, and the 'named_individuals' flag
-        self.engine = GeneticEngine(self.initial_genome, named_individuals=self.config.named_individuals)
+        #  Create the engine, passing the initial genome, and the 'named_individuals' flag
+        if self.has_initial_parameters: self.engine = GeneticEngine(self.create_initial_population())
+        else: self.engine = GeneticEngine(self.initial_genome, named_individuals=self.config.named_individuals)
+
+    # -----------------------------------------------------------------
+
+    def create_initial_population(self):
+
+        """
+        This function doesn't set any attributes but is jsut used to create an initial population
+        :return: 
+        """
+
+        if self.config.named_individuals: population = NamedPopulation()
+        else: population = Population()
+
+        for parameters in self.initial_parameters:
+
+            genome = self.initial_genome.clone()
+
+            for gene_index in range(self.config.nparameters):
+                #genome[gene_index] = parameters[gene_index] # maybe this should be the way it is done because its a bit cleaner
+                genome.append(parameters[gene_index])
+            population.append(genome)
+
+        return population
 
     # -----------------------------------------------------------------
 

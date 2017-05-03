@@ -112,6 +112,9 @@ class ParameterExplorer(FittingComponent):
         # The parameter ranges
         self.ranges = dict()
 
+        # Initf ngemgeg
+        self.fixed_initial_parameters = None
+
         # The generation index and name
         self.generation_index = None
         self.generation_name = None
@@ -241,6 +244,9 @@ class ParameterExplorer(FittingComponent):
 
         # Get ranges
         if "ranges" in kwargs: self.ranges = kwargs.pop("ranges")
+
+        # Get the initial parameter values
+        if "fixed_initial_parameters" in kwargs: self.fixed_initial_parameters = kwargs.pop("fixed_initial_parameters")
 
         # Set options for the batch launcher
         self.set_launcher_options()
@@ -533,7 +539,7 @@ class ParameterExplorer(FittingComponent):
         self.generator.config.nmodels = self.config.nsimulations
 
         # Run the model generator
-        self.generator.run(fitting_run=self.fitting_run, parameter_ranges=self.ranges)
+        self.generator.run(fitting_run=self.fitting_run, parameter_ranges=self.ranges, fixed_initial_parameters=self.fixed_initial_parameters)
 
     # -----------------------------------------------------------------
 

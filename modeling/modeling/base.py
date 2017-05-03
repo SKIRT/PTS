@@ -87,6 +87,9 @@ class ModelerBase(Configurable):
         # The exploration finisher
         self.finisher = None
 
+        # egege
+        self.fixed_initial_parameters = None
+
     # -----------------------------------------------------------------
 
     @property
@@ -456,6 +459,9 @@ class ModelerBase(Configurable):
         # Set the input
         input_dict = dict()
         if self.parameter_ranges is not None: input_dict["ranges"] = self.parameter_ranges
+
+        # Add the fixed parameter values
+        if self.fixed_initial_parameters is not None: input_dict["fixed_initial_parameters"] = self.fixed_initial_parameters
 
         # Run the parameter explorer
         self.explorer.run(**input_dict)

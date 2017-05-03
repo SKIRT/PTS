@@ -1491,7 +1491,7 @@ class M81TestBase(TestImplementation):
             scores_database = get_scores_named_individuals(self.database_path, self.fitting_run_name, database_index)
 
             # Keep track of the number of mismatches
-            mismatches = 0
+            mismatches = []
 
             # Loop over the indnividual names
             for name in scores_database:
@@ -1506,12 +1506,17 @@ class M81TestBase(TestImplementation):
                 score = scores_table.chi_squared_for(simulation_name)
 
                 # Check if equal
-                equal = np.isclose(score, score_database)
-                if not equal: mismatches += 1
+                equal = np.isclose(score, score_database, rtol=1.e-4)
+                if not equal:
+                    mismatches.append((score, score_database))
+                    #mismatches += 1
 
             # Report
-            if mismatches == 0: log.success(generation_name + ": OK")
-            else: log.error(generation_name + ": " + str(mismatches) + " mismatches")
+            if len(mismatches) == 0: log.success(generation_name + ": OK")
+            else:
+                log.error(generation_name + ": " + str(len(mismatches)) + " mismatches:")
+                for score, score_database in mismatches:
+                    log.error("   " + str(score) + " , " + str(score_database))
 
     # -----------------------------------------------------------------
 

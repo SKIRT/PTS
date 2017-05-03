@@ -10,6 +10,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+from collections import defaultdict
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
@@ -76,6 +77,9 @@ class M81SEDTest(M81TestBase):
 
         # The initial parameter values for the fitting
         self.initial_parameter_values = dict()
+
+
+        self.initial_population = []
 
     # -----------------------------------------------------------------
 
@@ -657,11 +661,18 @@ class M81SEDTest(M81TestBase):
             ranges_config[parameter_name + "_range"] = self.config.relative_range_fitting * self.real_parameter_values[parameter_name]
         input_model["ranges_config"] = ranges_config
 
+        # If we're cheating ... oops
+        if self.config.cheat:
+            fixed_parameter_values = defaultdict(list)
+            for label in self.config.free_parameters:
+                fixed_parameter_values[label].append(self.real_parameter_values[label])
+            input_model["fixed_initial_parameters"] = fixed_parameter_values
+
         # Create initialize config
         initialize_config = Map()
         initialize_config.npackages = self.config.npackages_fitting
-        initialize_config.selfabsorption = True
-        initialize_config.transient_heating = False
+        initialize_config.selfabsorption = self.config.selfabsorption
+        initialize_config.transient_heating = self.config.transient_heating
         input_model["initialize_config"] = initialize_config
 
         # Construct the command
