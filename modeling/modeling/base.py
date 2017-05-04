@@ -511,7 +511,7 @@ class ModelerBase(Configurable):
         config["name"] = self.fitting_run_name
 
         # Create the parameter explorer
-        self.explorer = ParameterExplorer(config)
+        self.explorer = ParameterExplorer(config, cwd=self.modeling_path)
 
         # Add an entry to the history
         self.history.add_entry(ParameterExplorer.command_name())

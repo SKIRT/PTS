@@ -335,7 +335,7 @@ class TransmissionPlotter(Configurable):
 
         # Check the wavelengths
         for wavelength in self.wavelengths:
-            if min_wavelength is None or wavelength < min_wavelength: min_wavelength = wavelength
+            if min_wavelength is None or wavelength.to("micron").value < min_wavelength: min_wavelength = wavelength.to("micron").value
 
         # Return the minimum wavelength
         return min_wavelength
@@ -358,7 +358,7 @@ class TransmissionPlotter(Configurable):
 
         # CHeck the wavelengths
         for wavelength in self.wavelengths:
-            if max_wavelength is None or wavelength > max_wavelength: max_wavelength = wavelength
+            if max_wavelength is None or wavelength.to("micron").value > max_wavelength: max_wavelength = wavelength.to("micron").value
 
         # Return the maximum wavelength
         return max_wavelength

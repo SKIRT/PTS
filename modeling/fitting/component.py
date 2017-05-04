@@ -37,7 +37,7 @@ class FittingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, config=None, interactive=False, cwd=None):
 
         """
         The constructor ...
@@ -47,7 +47,7 @@ class FittingComponent(ModelingComponent):
         """
 
         # Call the constructor of the base class
-        super(FittingComponent, self).__init__(config, interactive)
+        super(FittingComponent, self).__init__(config, interactive, cwd=cwd)
 
         # -- Attributes --
 

@@ -73,7 +73,7 @@ class ParameterExplorer(FittingComponent):
     This class...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, config=None, interactive=False, cwd=None):
 
         """
         The constructor ...
@@ -83,7 +83,7 @@ class ParameterExplorer(FittingComponent):
         """
 
         # Call the constructor of the base class
-        super(ParameterExplorer, self).__init__(config, interactive)
+        super(ParameterExplorer, self).__init__(config, interactive, cwd=cwd)
 
         # -- Attributes --
 

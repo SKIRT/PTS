@@ -206,7 +206,7 @@ def create_configuration_flexible(name, definition, settings=None, default=False
 
 # -----------------------------------------------------------------
 
-def get_config_for_class(cls, config=None, interactive=False):
+def get_config_for_class(cls, config=None, interactive=False, cwd=None):
 
     """
     This function ...
@@ -228,7 +228,7 @@ def get_config_for_class(cls, config=None, interactive=False):
             command_name, class_name, configuration_module_path, description = find_command(cls)
 
             # Get configuration definition
-            if command_name is not None: definition = get_definition(class_name, configuration_module_path)
+            if command_name is not None: definition = get_definition(class_name, configuration_module_path, cwd=cwd)
             else: definition = ConfigurationDefinition(write_config=False)
 
             # Create the DictConfigurationSetter
@@ -342,7 +342,7 @@ def find_command(cls):
 
 # -----------------------------------------------------------------
 
-def get_definition(class_name, configuration_module_path):
+def get_definition(class_name, configuration_module_path, cwd=None):
 
     """
     This function ...
@@ -353,9 +353,12 @@ def get_definition(class_name, configuration_module_path):
 
     ## GET THE CONFIGURATION DEFINITION
     try:
+        if cwd is not None: original_cwd = fs.change_cwd(cwd)
+        else: original_cwd = None
         configuration_module = importlib.import_module(configuration_module_path)
         # has_configuration = True
         definition = getattr(configuration_module, "definition")
+        if original_cwd is not None: fs.change_cwd(original_cwd)
     except ImportError:
         log.warning("No configuration definition found for the " + class_name + " class")
         # has_configuration = False

@@ -2104,7 +2104,7 @@ def is_existing_pts_module(module_path):
 
     # Check whether the file exists
     filepath = fs.join(pts_package_dir, module_path.split("pts.")[1].replace(".", "/") + ".py")
-    print(filepath)
+    #print(filepath)
     return fs.is_file(filepath)
 
 # -----------------------------------------------------------------
@@ -2118,6 +2118,9 @@ def get_class(module_path, class_name):
     :return:
     """
 
+    #print(module_path)
+    #module = import_module(module_path)
+
     # Get the class of the configurable of which an instance has to be created
     try: module = import_module(module_path)
     except ImportError as e:
@@ -2127,8 +2130,9 @@ def get_class(module_path, class_name):
 
             print(str(e))
             traceback.print_exc()
-            log.error("Something went wrong importing the PTS module")
-            exit()
+            #log.error("Something went wrong importing the PTS module")
+            #exit()
+            raise ImportError("Something went wrong importing the PTS module")
 
         # Not existing
         else: raise ValueError("The module '" + module_path + "' does not exist")

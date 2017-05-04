@@ -57,7 +57,7 @@ class Configurable(object):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None, interactive=False, unlisted=False):
+    def __init__(self, config=None, interactive=False, unlisted=False, cwd=None):
 
         """
         The constructor ...
@@ -67,7 +67,7 @@ class Configurable(object):
         """
 
         # Set configuration
-        self.config = self.get_config(config, interactive=interactive, unlisted=unlisted)
+        self.config = self.get_config(config, interactive=interactive, unlisted=unlisted, cwd=cwd)
 
         # Set the detached calculations flag
         self.detached = False
@@ -75,7 +75,7 @@ class Configurable(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def get_config(cls, config=None, interactive=False, unlisted=False):
+    def get_config(cls, config=None, interactive=False, unlisted=False, cwd=None):
 
         """
         This function ...
@@ -92,7 +92,7 @@ class Configurable(object):
             from .map import Map
             assert isinstance(config, Map)
             return config
-        else: return get_config_for_class(cls, config, interactive=interactive)
+        else: return get_config_for_class(cls, config, interactive=interactive, cwd=cwd)
 
     # -----------------------------------------------------------------
 
