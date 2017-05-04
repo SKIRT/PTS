@@ -403,7 +403,7 @@ class PTSTestSuite(Configurable):
 
                 # Find the class
                 try: cls = introspection.get_class(module_path, class_name)
-                except ValueError: log.warning("The class '" + class_name + "' could not be found in module '" + module_path + "'")
+                except (ValueError, ImportError): log.warning("The class '" + class_name + "' could not be found in module '" + module_path + "'")
 
     # -----------------------------------------------------------------
 

@@ -320,7 +320,7 @@ class M81SEDTest(M81TestBase):
             # Multiply the value with a random number between 1/3 and 3.
             random = np.random.uniform(log_low, log_high)
             random_factor = 10 ** random
-            value *= random_factor
+            value = value * random_factor
 
             # Set the value as the initial parameter value
             self.initial_parameter_values[parameter_name] = value

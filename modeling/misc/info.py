@@ -18,8 +18,8 @@ from ...core.tools import formatting as fmt
 from ...core.tools import filesystem as fs
 from ...magic.core.frame import Frame
 from ..component.galaxy import load_preparation_statistics
-from ..component.component import load_fitting_configuration
-from ..fitting.component import get_generations_table
+#from ..component.component import load_fitting_configuration
+#from ..fitting.component import get_generations_table
 
 # -----------------------------------------------------------------
 

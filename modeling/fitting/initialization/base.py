@@ -30,7 +30,7 @@ class FittingInitializerBase(FittingComponent):
     This class...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, config=None, interactive=False, cwd=None):
 
         """
         The constructor ...
@@ -40,7 +40,7 @@ class FittingInitializerBase(FittingComponent):
         """
 
         # Call the constructor of the base class
-        FittingComponent.__init__(self, config, interactive)
+        super(FittingInitializerBase, self).__init__(config, interactive, cwd=cwd)
 
         # The fitting run
         self.fitting_run = None

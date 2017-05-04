@@ -40,7 +40,7 @@ class ModelingComponent(Configurable):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, config=None, interactive=False, cwd=None):
 
         """
         The constructor ...
@@ -50,7 +50,7 @@ class ModelingComponent(Configurable):
         """
 
         # Call the constructor of the base class
-        super(ModelingComponent, self).__init__(config, interactive)
+        super(ModelingComponent, self).__init__(config, interactive, cwd=cwd)
 
         # The modeling configuration file
         self.config_file_path = None
