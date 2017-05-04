@@ -28,4 +28,7 @@ definition.add_flag("attached", "run remotely in attached mode")
 # Add section for the source finder
 definition.import_section("sources", "options for the source finder", sources_definition)
 
+# Flags
+definition.add_flag("catalog_overlapping", "only fetch catalog data in the area where all images are overlapping", True)
+
 # -----------------------------------------------------------------

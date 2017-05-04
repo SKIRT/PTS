@@ -15,6 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import gc
 
+# Import astronomical modules
+from astropy.utils import lazyproperty
+
 # Import the relevant PTS classes and modules
 from .component import PreparationComponent
 from ...magic.sources.finder import SourceFinder
@@ -121,6 +124,9 @@ class PreparationInitializer(PreparationComponent):
 
         # Set the path for the source finder to the preparation path
         self.config.sources.path = self.prep_path
+
+        # Set other options
+        self.config.catalog_overlapping = self.config.catalog_overlapping
 
         # Setup the remote PTS launcher
         if self.config.remote is not None: self.launcher.setup(self.config.remote)
@@ -272,6 +278,23 @@ class PreparationInitializer(PreparationComponent):
 
             # Add entry to the dataset
             self.set.add_path(prep_name, self.paths[prep_name])
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def catalog_coordinate_box(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Determine the bounding box
+        if self.config.catalog_overlapping: coordinate_box = self.set.get_overlap_box()
+        else: coordinate_box = self.set.get_bounding_box()
+
+        # Return
+        return coordinate_box
 
     # -----------------------------------------------------------------
 

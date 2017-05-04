@@ -50,4 +50,6 @@ definition.import_section("other", "options for finding other contaminating sour
 definition.add_flag("weak", "only do weak search: find point source positions, create regions and segments but let user adjust them manually, no segmentation or source finding", False)
 definition.add_flag("write", "writing", True)
 
+definition.add_flag("catalog_overlapping", "only fetch catalog data in the area where all frames are overlapping", False)
+
 # -----------------------------------------------------------------

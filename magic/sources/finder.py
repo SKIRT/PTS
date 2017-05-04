@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.sources.batchfinder Contains the SourceFinder class.
+## \package pts.magic.sources.finder Contains the SourceFinder class.
 
 # -----------------------------------------------------------------
 
@@ -26,7 +26,6 @@ from ...core.tools.logging import log
 from ..core.dataset import DataSet
 from ..region.list import SkyRegionList
 from ..core.image import Image
-from ...core.basics.table import SmartTable
 from ..catalog.extended import ExtendedSourceCatalog
 from ..catalog.point import PointSourceCatalog
 from ..catalog.fetcher import CatalogFetcher
@@ -35,259 +34,16 @@ from ..object.galaxy import Galaxy
 from ..object.star import Star
 from ...core.data.sed import ObservedSED
 from ...core.filter.broad import BroadBandFilter
-from ...core.basics.curve import FilterCurve
-from ...core.units.parsing import parse_unit as u
 from ...core.tools.parallelization import ParallelTarget
 from ..core.frame import Frame
 from ..tools import statistics
 from ...core.tools.stringify import tostr
 from ..convolution.kernels import get_fwhm
 from ...core.tools import filesystem as fs
-from ..region.list import PixelRegionList
-from ...core.filter.filter import parse_filter
-
-# -----------------------------------------------------------------
-
-class FWHMTable(FilterCurve):
-
-    """
-    This function ...
-    """
-
-    def __init__(self, *args, **kwargs):
-
-        """
-        This function ...
-        :param args:
-        :param kwargs:
-        """
-
-        # Set properties
-        kwargs["y_name"] = "FWHM"
-        kwargs["y_description"] = "FWHM of the PSF"
-        kwargs["y_unit"] = "arcsec"
-
-        # Call the constructor of the base class
-        super(FWHMTable, self).__init__(*args, **kwargs)
-
-    # -----------------------------------------------------------------
-
-    def add_fwhm(self, fltr, fwhm):
-
-        """
-        This function ...
-        :param fltr:
-        :param fwhm:
-        :return:
-        """
-
-        self.add_point(fltr, fwhm)
-
-    # -----------------------------------------------------------------
-
-    def fwhm_for_filter(self, fltr):
-
-        """
-        This function ...
-        :param fltr:
-        :return:
-        """
-
-        return self.value_for_filter(fltr)
-
-# -----------------------------------------------------------------
-
-class GalaxyTable(SmartTable):
-
-    """
-    This class ...
-    """
-
-    def __init__(self, *args, **kwargs):
-
-        """
-        The constructor ...
-        :param args:
-        :param kwargs:
-        """
-
-        # Check
-        if "filters" in kwargs: from_astropy = False
-        else: from_astropy = True
-
-        # Get properties
-        if not from_astropy: filters = kwargs.pop("filters")
-        else: filters = None
-
-        # Call the constructor of the base class
-        super(GalaxyTable, self).__init__(*args, **kwargs)
-
-        # Add column info
-        if not from_astropy:
-
-            # Add columns
-            self.add_column_info("Index", int, None, "index of the extended source in the catalog")
-            self.add_column_info("Name", str, None, "name of the galaxy")
-
-            for fltr in filters:
-
-                column_name = str(fltr) + " flux"
-                self.add_column_info(column_name, float, u("Jy"), str(fltr) + " flux density")
-
-    # -----------------------------------------------------------------
-
-    def add_galaxy(self, galaxy):
-
-        """
-        This function ...
-        :param galaxy:
-        :return:
-        """
-
-        # Setup if necessary
-        if len(self.colnames) == 0: self.setup()
-
-        values = []
-
-        index = galaxy.index
-        name = galaxy.name
-
-        # Add index and name
-        values.append(index)
-        values.append(name)
-
-        # Loop over the filters for which we need a flux
-        for name in self.colnames:
-
-            # Skip
-            if not name.endswith("flux"): continue
-
-            # Filter
-            #fltr = BroadBandFilter(name.split(" flux")[0])
-            fltr = parse_filter(name.split(" flux")[0])
-
-            # Get flux
-            if galaxy.sed is not None and fltr in galaxy.sed.filters(): flux = galaxy.sed.photometry_for_filter(fltr)
-            else: flux = None
-
-            # Add the flux to the values
-            values.append(flux)
-
-        # Add a row to the table
-        self.add_row(values)
-
-# -----------------------------------------------------------------
-
-class StarTable(SmartTable):
-
-    """
-    This class ...
-    """
-
-    def __init__(self, *args, **kwargs):
-
-        """
-        The constructor ...
-        :param args:
-        :param kwargs:
-        """
-
-        # Check
-        if "filters" in kwargs: from_astropy = False
-        else: from_astropy = True
-
-        # Get properties
-        if not from_astropy: filters = kwargs.pop("filters")
-        else: filters = None
-
-        # Call the constructor of the base class
-        super(StarTable, self).__init__(*args, **kwargs)
-
-        # Add column info
-        if not from_astropy:
-
-            self.add_column_info("Index", int, None, "index of the point source in the catalog")
-            self.add_column_info("Catalog", str, None, "original catalog")
-            self.add_column_info("ID", str, None, "ID of the point source in the original catalog")
-
-            # Loop over the filters
-            for fltr in filters:
-
-                column_name = str(fltr) + " FWHM"
-                self.add_column_info(column_name, float, u("arcsec"), str(fltr) + " FWHM")
-
-            # Loop over the filters
-            for fltr in filters:
-
-                column_name = str(fltr) + " flux"
-                self.add_column_info(column_name, float, u("Jy"), str(fltr) + " flux density")
-
-    # -----------------------------------------------------------------
-
-    def add_star(self, star):
-
-        """
-        This function ...
-        :param star:
-        :return:
-        """
-
-        if len(self.colnames) == 0: self.setup()
-
-        values = []
-
-        catalog = star.catalog
-        id = star.id
-
-        # Add index, catalog and ID
-        values.append(star.index)
-        values.append(catalog)
-        values.append(id)
-
-        # Loop over the filters for which we need a FWHM
-        for name in self.colnames:
-
-            if name == "Index": continue
-            if name == "Catalog": continue
-            if name == "ID": continue
-
-            # FWHM
-            if name.endswith("FWHM"):
-
-                filter_name = name.split(" FWHM")[0]
-
-                # Filter
-                fltr = BroadBandFilter(filter_name)
-                #filter_name = str(fltr)
-
-                #print(star.fwhms)
-                if star.fwhms.has_filter(fltr): fwhm = star.fwhms.fwhm_for_filter(fltr)
-                #if filter_name in star.fwhms: fwhm = star.fwhms[filter_name]
-                else: fwhm = None
-
-                values.append(fwhm)
-
-            # Flux
-            elif name.endswith("flux"):
-
-                # Filter
-                #fltr = BroadBandFilter(name.split(" flux")[0])
-                fltr = parse_filter(name.split(" flux")[0])
-
-                #print(star.sed)
-                #print(fltr)
-
-                # Get flux
-                flux = star.sed.photometry_for_filter(fltr)
-
-                # Add the flux to the values
-                values.append(flux)
-
-            # Unknown
-            else: raise ValueError("Don't know what value to fill in for column '" + name + "'")
-
-        # Add the row
-        self.add_row(values)
+from .tables import FWHMTable, StarTable, GalaxyTable
+from ..region.rectangle import SkyRectangleRegion
+from ..basics.coordinate import SkyCoordinate
+from ..basics.stretch import SkyStretch
 
 # -----------------------------------------------------------------
 
@@ -584,6 +340,63 @@ class SourceFinder(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def overlap_box(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Edges
+        min_ra = None
+        max_ra = None
+        min_dec = None
+        max_dec = None
+
+        # Loop over the frames
+        for name in self.frames:
+
+            # Get coordinate range
+            #center, ra_span, dec_span = self.frames[name].wcs.coordinate_range
+            #radius = SkyStretch(0.5 * ra_span, 0.5 * dec_span)
+            #box = SkyRectangleRegion(center, radius)
+
+            # Get wcs
+            wcs = self.frames[name]
+
+            if min_ra is None or wcs.min_ra > min_ra: min_ra = wcs.min_ra
+            if max_ra is None or wcs.max_ra < max_ra: max_ra = wcs.max_ra
+            if min_dec is None or wcs.min_dec > min_dec: min_dec = wcs.min_dec
+            if max_dec is None or wcs.max_dec < max_dec: max_dec = wcs.max_dec
+
+        # Determine center and radius
+        # Get center and radius of the new bounding box
+        center = SkyCoordinate(0.5 * (min_ra + max_ra), 0.5 * (min_dec + max_dec))
+        radius = SkyStretch(0.5 * (max_ra - min_ra), 0.5 * (max_dec - min_dec))
+
+        # Return the bounding box
+        return SkyRectangleRegion(center, radius)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def catalog_coordinate_box(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Determine the bounding box
+        if self.config.catalog_overlapping: coordinate_box = self.overlap_box
+        else: coordinate_box = self.bounding_box
+
+        # Return
+        return coordinate_box
+
+    # -----------------------------------------------------------------
+
+    @property
     def filters(self):
 
         """
@@ -859,7 +672,7 @@ class SourceFinder(Configurable):
         log.info("Fetching catalog of extended sources ...")
 
         # Fetch the catalog
-        self.extended_source_catalog = self.fetcher.get_extended_source_catalog(self.bounding_box)
+        self.extended_source_catalog = self.fetcher.get_extended_source_catalog(self.catalog_coordinate_box)
 
     # -----------------------------------------------------------------
 
@@ -1053,12 +866,11 @@ class SourceFinder(Configurable):
         # Inform the user
         log.info("Fetching catalog of point sources ...")
 
-        # Get the coordinate box and minimum pixelscale
-        coordinate_box = self.bounding_box
+        # Get minimum pixelscale
         min_pixelscale = self.min_pixelscale
 
         # Fetch
-        self.point_source_catalog = self.fetcher.get_point_source_catalog(coordinate_box, min_pixelscale, self.config.point.fetching.catalogs)
+        self.point_source_catalog = self.fetcher.get_point_source_catalog(self.catalog_coordinate_box, min_pixelscale, self.config.point.fetching.catalogs)
 
     # -----------------------------------------------------------------
 
@@ -1093,7 +905,7 @@ class SourceFinder(Configurable):
                     continue
 
                 # Inform the user
-                log.info("Finding the point sources ...")
+                log.info("Finding the point sources for the '" + name + "' image ...")
 
                 # Get masks
                 special_mask = self.special_masks[name] if name in self.special_masks else None
