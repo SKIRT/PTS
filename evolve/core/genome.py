@@ -20,6 +20,7 @@ from . import utils
 
 # Import the relevant PTS classes and modules
 from ...core.tools.random import prng
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -399,6 +400,29 @@ class G1DBase(GenomeBase):
         """
 
         self.genomeList.append(value)
+
+    # -----------------------------------------------------------------
+
+    def set_genes(self, genes):
+
+        """
+        THis function ...
+        :param genes: 
+        :return: 
+        """
+
+        # Check the length of the gene list
+        if len(genes) != self.getSize(): raise ValueError("The number of genes must be " + str(self.getSize()))
+
+        # Clear
+        if len(self.genomeList) == 0:
+            log.warning("The genome is not empty: removing current genes")
+            self.clearList()
+
+        # Copy genes into genome
+        for index in range(self.getSize()):
+            # genome[gene_index] = parameters[gene_index] # maybe this should be the way it is done because its a bit cleaner
+            self.append(genes[index])
 
     # -----------------------------------------------------------------
 

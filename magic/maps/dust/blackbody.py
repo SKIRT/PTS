@@ -648,7 +648,7 @@ class BlackBodyDustMapsMaker(Configurable):
 
         # Set options for the engine
         engine.terminationCriteria.set(RawScoreCriteria)
-        engine.setMinimax(constants.minimaxType["minimize"])
+        engine.setMinimax("minimize")
         engine.setGenerations(5)
         engine.setCrossoverRate(0.5)
         engine.setPopulationSize(100)

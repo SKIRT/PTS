@@ -37,6 +37,9 @@ from .list import NamedImageList, NamedFrameList
 from ...core.tools import types
 from ...core.filter.filter import parse_filter
 from .mask import intersection, union
+from ..region.rectangle import SkyRectangleRegion
+from ..basics.coordinate import SkyCoordinate
+from ..basics.stretch import SkyStretch
 
 # -----------------------------------------------------------------
 
@@ -826,6 +829,40 @@ class DataSet(object):
 
         # Return the bounding box of the region of rectangles
         return boxes_region.bounding_box
+
+    # -----------------------------------------------------------------
+
+    def get_overlap_box(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        min_ra = None
+        max_ra = None
+        min_dec = None
+        max_dec = None
+
+        # Loop over the frames
+        for name in self.paths:
+
+            # Get wcs
+            wcs = self.get_coordinate_system(name)
+
+            # Adjust
+            if min_ra is None or wcs.min_ra > min_ra: min_ra = wcs.min_ra
+            if max_ra is None or wcs.max_ra < max_ra: max_ra = wcs.max_ra
+            if min_dec is None or wcs.min_dec > min_dec: min_dec = wcs.min_dec
+            if max_dec is None or wcs.max_dec < max_dec: max_dec = wcs.max_dec
+
+        # Determine center and radius
+        # Get center and radius of the new bounding box
+        center = SkyCoordinate(0.5 * (min_ra + max_ra), 0.5 * (min_dec + max_dec))
+        radius = SkyStretch(0.5 * (max_ra - min_ra), 0.5 * (max_dec - min_dec))
+
+        # Return the bounding box
+        return SkyRectangleRegion(center, radius)
 
     # -----------------------------------------------------------------
 

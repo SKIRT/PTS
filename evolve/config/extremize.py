@@ -11,6 +11,10 @@ from pts.evolve.solve.extremizer import genetic_definition
 
 # -----------------------------------------------------------------
 
+min_or_max = ["minimize", "maximize"]
+
+# -----------------------------------------------------------------
+
 # Create the configuration
 definition = ConfigurationDefinition()
 
@@ -22,6 +26,6 @@ definition.sections["genetic"].add_optional("ngenerations", "positive_integer", 
 definition.sections["genetic"].add_optional("nindividuals", "even_integer", "number of individuals per generation", 100)
 
 # Minimize or maximize
-definition.add_required("min_or_max", "string", "minimize or maximize", choices=["min", "max"])
+definition.add_required("min_or_max", "string", "minimize or maximize", choices=min_or_max)
 
 # -----------------------------------------------------------------

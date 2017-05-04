@@ -45,6 +45,7 @@ from ..core.scaling import LinearScaling, SigmaTruncScaling, PowerLawScaling, Bo
 from ..core.selectors import GRankSelector, GUniformSelector, GTournamentSelector, GTournamentSelectorAlternative, GRouletteWheel
 from ...core.tools import sequences
 from ...core.tools.serialization import write_dict
+from ..core.population import Population, NamedPopulation
 
 # -----------------------------------------------------------------
 
@@ -103,6 +104,9 @@ class Optimizer(Configurable):
 
         # The parameter range (for homogeneous 1D list genomes)
         self.parameter_range = None
+
+        # Lists of igegegegrehth
+        self.initial_parameters = None
 
     # -----------------------------------------------------------------
 
@@ -227,6 +231,9 @@ class Optimizer(Configurable):
 
         # Debugging
         if self.parameter_range is not None: log.debug("The parameter range is " + str(self.parameter_range))
+
+        # ghege
+        if "initial_parameters" in kwargs: self.initial_parameters = kwargs.pop("initial_parameters")
 
     # -----------------------------------------------------------------
 
@@ -613,6 +620,8 @@ class Optimizer(Configurable):
             # Real SBX
             elif self.config.crossover_method == "real_SBX": return G1DListCrossoverRealSBX
 
+            #elif self.config.crossover_method == "":
+
             # Invalid
             else: raise ValueError("Invalid crossover method for one-dimensional genomes")
 
@@ -667,6 +676,18 @@ class Optimizer(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_initial_parameters(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.initial_parameters is not None
+
+    # -----------------------------------------------------------------
+
     def create_engine(self):
 
         """
@@ -677,8 +698,40 @@ class Optimizer(Configurable):
         # Inform the user
         log.info("Creating the genetic engine ...")
 
-        # Create the engine, passing the initial genome, and the 'named_individuals' flag
-        self.engine = GeneticEngine(self.initial_genome, named_individuals=self.config.named_individuals)
+        #  Create the engine, passing the initial genome, and the 'named_individuals' flag
+        if self.has_initial_parameters: self.engine = GeneticEngine(self.create_initial_population())
+        else: self.engine = GeneticEngine(self.initial_genome, named_individuals=self.config.named_individuals)
+
+    # -----------------------------------------------------------------
+
+    def create_initial_population(self):
+
+        """
+        This function doesn't set any attributes but is jsut used to create an initial population
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Creating the initial population ...")
+
+        # Initialize the population
+        if self.config.named_individuals: population = NamedPopulation()
+        else: population = Population()
+
+        # Loop over the parameter sets
+        for parameters in self.initial_parameters:
+
+            # Make a new genome by cloning the initial genome
+            genome = self.initial_genome.clone()
+
+            # Set the gens
+            genome.set_genes(parameters)
+
+            # Add the genome (individual) to the population
+            population.append(genome)
+
+        # Return the population
+        return population
 
     # -----------------------------------------------------------------
 
@@ -694,7 +747,7 @@ class Optimizer(Configurable):
 
         # Set options
         self.engine.terminationCriteria.set(RawScoreCriteria)
-        self.engine.setMinimax(constants.minimaxType[self.config.min_or_max])
+        self.engine.setMinimax(self.config.min_or_max)
         self.engine.setGenerations(self.config.ngenerations)
         if self.config.crossover_rate is not None: self.engine.setCrossoverRate(self.config.crossover_rate)
         self.engine.setPopulationSize(self.config.nindividuals)

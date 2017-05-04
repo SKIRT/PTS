@@ -14,7 +14,11 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import math
+import random
 import numpy as np
+
+# Import the relevant PTS classes and modules
+from . import sequences
 
 # -----------------------------------------------------------------
 
@@ -83,5 +87,67 @@ def derivatives(x, y):
 
     # Return x, y finite differences derivative data
     return new_x, new_y
+
+# -----------------------------------------------------------------
+
+def test_division_in_n_dimensions(n):
+
+    """
+    This function ...
+    :param n: 
+    :return: 
+    """
+
+    amount = 50
+
+    # Generate random integer numbers between 10 and 1000
+    for _ in range(amount):
+
+        number = random.randint(10, 1000)
+        factors = divide_in_n_dimensions(number, n)
+
+        result = sequences.multiply_all_integers(factors)
+
+        print(number, result)
+
+# -----------------------------------------------------------------
+
+def divide_in_n_dimensions(number, n):
+
+    """
+    This function ...
+    :param number: 
+    :param n: 
+    :return: 
+    """
+
+    from . import types
+    if not types.is_integer_type(number): raise ValueError("Number must be integer")
+
+    result = number**(1./n)
+    result = int(math.ceil(result))
+
+    factors = [result] * n
+
+    #print(factors)
+
+    from itertools import cycle
+    lst = range(n)
+    indices = cycle(lst)
+
+    # Lower some of the factors till the result is as small as possible, but still equal to or greater than the initial number
+    previous_factors = None
+    while True:
+
+        #print("factors", factors)
+        product = sequences.multiply_all_integers(factors)
+
+        if product < number: return previous_factors
+        else:
+            previous_factors = factors[:] # copy
+            index = indices.next()
+            #print("index", index)
+            # Lower one of the factors
+            factors[index] = factors[index] - 1
 
 # -----------------------------------------------------------------

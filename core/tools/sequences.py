@@ -59,6 +59,30 @@ def combinations(lst, lengths, repeat=False):
 
 # -----------------------------------------------------------------
 
+def iterate_lists_combinations(*lsts):
+
+    """
+    This function ...
+    :param lsts: 
+    :return: 
+    """
+
+    return itertools.product(*lsts)
+
+# -----------------------------------------------------------------
+
+def lists_combinations(*lsts):
+
+    """
+    This function ...
+    :param lsts: 
+    :return: 
+    """
+
+    return list(iterate_lists_combinations(*lsts))
+
+# -----------------------------------------------------------------
+
 def interleave(seqs):
 
     """ Interleave a sequence of sequences
@@ -265,5 +289,87 @@ def extend_unique(lst, elements):
     """
 
     for element in elements: append_unique(lst, element)
+
+# -----------------------------------------------------------------
+
+def imerge(a, b):
+
+    """
+    This function ...
+    :param a: 
+    :param b: 
+    :return: 
+    """
+
+    for i, j in itertools.izip_longest(a,b):
+        yield i
+        if j is not None:
+            yield j
+
+# -----------------------------------------------------------------
+
+def iterate_from_middle(lst):
+
+    """
+    This function ...
+    :param lst: 
+    :return: 
+    """
+
+    try:
+
+        middle = len(lst)/2
+        yield lst[middle]
+
+        for shift in range(1, middle+1):
+
+            # order is important!
+            yield lst[middle - shift]
+            yield lst[middle + shift]
+
+    # occures on lst[len(lst)] or for empty list
+    except IndexError: raise StopIteration
+
+# -----------------------------------------------------------------
+
+def rearrange_from_middle(lst):
+
+    """
+    This function ...
+    :param lst: 
+    :return: 
+    """
+
+    return list(iterate_from_middle(lst))
+
+# -----------------------------------------------------------------
+
+def multiply_all(lst):
+
+    """
+    This function ...
+    :param lst: 
+    :return: 
+    """
+
+    #print("lst", lst)
+
+    result = 1.
+    for element in lst: result *= element
+    return result
+
+# -----------------------------------------------------------------
+
+def multiply_all_integers(lst):
+
+    """
+    THis function ...
+    :param lst: 
+    :return: 
+    """
+
+    result = 1
+    for element in lst: result *= int(element)
+    return result
 
 # -----------------------------------------------------------------

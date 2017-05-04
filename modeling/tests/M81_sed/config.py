@@ -34,7 +34,7 @@ definition.add_flag("attached", "launch remote executions in attached mode", Fal
 # Fitting
 definition.add_optional("ngenerations", "positive_integer", "number of generations", 2)
 definition.add_optional("nsimulations", "even_positive_integer", "number of simulations per generation", 2)
-definition.add_optional("npackages_fitting", "positive_integer", "number of photon packages for each fitting simulation", int(1e4))
+definition.add_optional("npackages_fitting", "positive_integer", "number of photon packages for each fitting simulation", int(1e3))
 
 # Free parameters
 definition.add_optional("free_parameters", "string_list", "free parameter labels", choices=possible_free_parameters, default=default_free_parameters)
@@ -49,8 +49,12 @@ definition.add_optional("physical_domain_disk_ellipse_factor", "positive_real", 
 
 # Genetic section
 definition.import_section("genetic", "genetic algorithm options", genetic_definition)
+#definition.sections["genetic"].optional["crossover_method"].default = ""
+#definition.sections["genetic"].optional["nelite_individuals"].default = 2
+definition.sections["genetic"].optional["mutation_rate"].default = 0.07
 
 # Flags
 definition.add_flag("spectral_convolution", "use spectral convolution to calculate observed fluxes", False)
+definition.add_flag("cheat", "giegeigjeig", True)
 
 # -----------------------------------------------------------------

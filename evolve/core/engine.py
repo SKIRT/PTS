@@ -47,7 +47,7 @@ from types import BooleanType
 from sys import stdout as sys_stdout
 
 # Import other evolve modules
-from pts.evolve.core.population import Population, NamedPopulation
+from pts.evolve.core.population import Population, NamedPopulation, PopulationBase
 from pts.evolve.core.functionslot import FunctionSlot
 from pts.evolve.core.genome import GenomeBase
 from pts.evolve.core.adapters import DataBaseAdapter
@@ -79,16 +79,23 @@ def RawScoreCriteria(ga_engine):
     if bestRawScore is None:
         utils.raiseException("you must specify the bestrawscore parameter", ValueError)
 
-    if ga_engine.getMinimax() == constants.minimaxType["maximize"]:
+    #if ga_engine.getMinimax() == constants.minimaxType["maximize"]:
+    if ga_engine.getMinimax() == "maximize":
+
         if roundDecimal is not None:
             return round(bestRawScore, roundDecimal) <= round(ind.score, roundDecimal)
         else:
             return bestRawScore <= ind.score
-    else:
+
+    #else:
+    elif ga_engine.getMinimax() == "minimize":
+
         if roundDecimal is not None:
             return round(bestRawScore, roundDecimal) >= round(ind.score, roundDecimal)
         else:
             return bestRawScore >= ind.score
+
+    else: raise RuntimeError("Invalid minimax type: " + str(ga_engine.getMinimax()))
 
 # -----------------------------------------------------------------
 
@@ -194,26 +201,42 @@ class GeneticEngine(object):
     generation.
     """
 
-    def __init__(self, genome, interactive=True, named_individuals=False):
+    def __init__(self, genome_or_pop, interactive=True, named_individuals=False):
 
         """
         Initializator of GSimpleGA
-        :param genome:
+        :param genome_or_pop:
         :param interactive:
         """
 
         if type(interactive) != BooleanType:
             utils.raiseException("Interactive Mode option must be True or False", TypeError)
 
-        if not isinstance(genome, GenomeBase):
-            utils.raiseException("The genome must be a GenomeBase subclass", TypeError)
+        #if not isinstance(genome, GenomeBase):
+        #    utils.raiseException("The genome must be a GenomeBase subclass", TypeError)
 
-        # Set named flag
-        self.named_individuals = named_individuals
+        if isinstance(genome_or_pop, GenomeBase):
 
-        # Create the internal population
-        if self.named_individuals: self.internalPop = NamedPopulation(genome)
-        else: self.internalPop = Population(genome)
+            # Set named flag
+            self.named_individuals = named_individuals
+
+            # Create the internal population
+            if self.named_individuals: self.internalPop = NamedPopulation(genome_or_pop)
+            else: self.internalPop = Population(genome_or_pop)
+
+            self.initialized_population = False
+
+        elif isinstance(genome_or_pop, PopulationBase):
+
+            self.internalPop = genome_or_pop
+
+            if isinstance(genome_or_pop, NamedPopulation): self.named_individuals = True
+            elif isinstance(genome_or_pop, Population): self.named_individuals = False
+            else: raise ValueError("Invalid population object")
+
+            self.initialized_population = True
+
+        else: raise ValueError("Genome or population should be passed")
 
         # Initialize things
         self.nGenerations = constants.CDefGAGenerations
@@ -221,7 +244,7 @@ class GeneticEngine(object):
         self.pCrossover = constants.CDefGACrossoverRate
         self.nElitismReplacement = constants.CDefGAElitismReplacement
         self.setPopulationSize(constants.CDefGAPopulationSize)
-        self.minimax = constants.minimaxType["maximize"]
+        self.minimax = constants.CDefPopMinimax
         self.elitism = True
 
         # The new population
@@ -541,7 +564,7 @@ class GeneticEngine(object):
         The string representation of the GA Engine
         """
 
-        minimax_type = constants.minimaxType.keys()[constants.minimaxType.values().index(self.minimax)]
+        #minimax_type = constants.minimaxType.keys()[constants.minimaxType.values().index(self.minimax)]
         ret = "- GSimpleGA\n"
         ret += "\tGP Mode:\t\t %s\n" % self.getGPMode()
         ret += "\tPopulation Size:\t %d\n" % self.internalPop.popSize
@@ -549,7 +572,7 @@ class GeneticEngine(object):
         ret += "\tCurrent Generation:\t %d\n" % self.currentGeneration
         ret += "\tMutation Rate:\t\t %.2f\n" % self.pMutation
         ret += "\tCrossover Rate:\t\t %.2f\n" % self.pCrossover
-        ret += "\tMinimax Type:\t\t %s\n" % minimax_type.capitalize()
+        ret += "\tMinimax Type:\t\t %s\n" % self.minimax.capitalize()
         ret += "\tElitism:\t\t %s\n" % self.elitism
         ret += "\tElitism Replacement:\t %d\n" % self.nElitismReplacement
         #ret += "\tDB Adapter:\t\t %s\n" % self.dbAdapter
@@ -765,8 +788,12 @@ class GeneticEngine(object):
         :param mtype: the minimax mode, from constants.minimaxType
         """
 
-        if mtype not in constants.minimaxType.values():
-            utils.raiseException("Minimax must be maximize or minimize", TypeError)
+        #if mtype not in constants.minimaxType.values():
+        #    utils.raiseException("Minimax must be maximize or minimize", TypeError)
+
+        if mtype not in ["minimize", "maximize"]: raise ValueError("Minimax must be 'maximize' or 'minimize'")
+
+        # Set
         self.minimax = mtype
 
     # -----------------------------------------------------------------
@@ -874,6 +901,18 @@ class GeneticEngine(object):
 
         # Keep track of the time passed
         self.time_init = time()
+
+        # Initialize population
+        if not self.initialized_population: self.initialize_population()
+
+    # -----------------------------------------------------------------
+
+    def initialize_population(self):
+
+        """
+        This function initilizes the population
+        :return: 
+        """
 
         # Create the first population
         self.internalPop.create(minimax=self.minimax)
@@ -1140,7 +1179,8 @@ class GeneticEngine(object):
         log.debug("Doing elitism ...")
 
         # The best individual is the one with the highest score
-        if self.getMinimax() == constants.minimaxType["maximize"]:
+        #if self.getMinimax() == constants.minimaxType["maximize"]:
+        if self.getMinimax() == "maximize":
 
             for i in xrange(self.nElitismReplacement):
 
@@ -1151,7 +1191,8 @@ class GeneticEngine(object):
                     new_population[len(new_population) - 1 - i] = self.internalPop.bestRaw(i)
 
         # The best individual is the one with the highest score
-        elif self.getMinimax() == constants.minimaxType["minimize"]:
+        #elif self.getMinimax() == constants.minimaxType["minimize"]:
+        elif self.getMinimax() == "minimize":
 
             for i in xrange(self.nElitismReplacement):
 
@@ -1162,7 +1203,7 @@ class GeneticEngine(object):
                     new_population[len(new_population) - 1 - i] = self.internalPop.bestRaw(i)
 
         # Invalid
-        else: raise ValueError("Invalid state of 'minimax': must be '" + constants.minimaxType["maximize"] + "' or '" + constants.minimaxType["minimize"] + "'")
+        else: raise ValueError("Invalid state of 'minimax': must be 'maximize' or 'minimize'")
 
     # -----------------------------------------------------------------
 

@@ -416,7 +416,12 @@ class PopulationBase(object):
         # Already sorted?
         if self.sorted: return
 
-        rev = (self.minimax == constants.minimaxType["maximize"])
+        #rev = (self.minimax == constants.minimaxType["maximize"])
+
+        # Reverse or not
+        if self.minimax == "minimize": rev = False
+        elif self.minimax == "maximize": rev = True
+        else: raise ValueError("Wrong minimax type: must be 'maximize' or 'minimize'")
 
         if self.sortType == constants.sortType["raw"]: self.internalPop.sort(cmp=utils.cmp_individual_raw, reverse=rev)
         else:
@@ -916,7 +921,8 @@ class NamedPopulation(PopulationBase):
         ret = "- NamedPopulation\n"
         ret += "\tPopulation Size:\t %d\n" % (self.popSize,)
         ret += "\tSort Type:\t\t %s\n" % (constants.sortType.keys()[constants.sortType.values().index(self.sortType)].capitalize(),)
-        ret += "\tMinimax Type:\t\t %s\n" % (constants.minimaxType.keys()[constants.minimaxType.values().index(self.minimax)].capitalize(),)
+        #ret += "\tMinimax Type:\t\t %s\n" % (constants.minimaxType.keys()[constants.minimaxType.values().index(self.minimax)].capitalize(),)
+        ret += "\tMinimax Type:\t\t %s\n" % (self.minimax.capitalize(),)
         for slot in self.allSlots:
          ret += "\t" + slot.__repr__()
         ret += "\n"
@@ -1033,7 +1039,8 @@ class Population(PopulationBase):
         ret = "- Population\n"
         ret += "\tPopulation Size:\t %d\n" % (self.popSize,)
         ret += "\tSort Type:\t\t %s\n" % (constants.sortType.keys()[constants.sortType.values().index(self.sortType)].capitalize(),)
-        ret += "\tMinimax Type:\t\t %s\n" % (constants.minimaxType.keys()[constants.minimaxType.values().index(self.minimax)].capitalize(),)
+        #ret += "\tMinimax Type:\t\t %s\n" % (constants.minimaxType.keys()[constants.minimaxType.values().index(self.minimax)].capitalize(),)
+        ret += "\tMinimax Type:\t\t %s\n" % (self.minimax.capitalize(),)
         for slot in self.allSlots:
          ret += "\t" + slot.__repr__()
         ret += "\n"
