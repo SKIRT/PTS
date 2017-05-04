@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from abc import abstractmethod, ABCMeta
+from abc import abstractmethod, ABCMeta, abstractproperty
 from collections import OrderedDict, defaultdict
 
 # Import the relevant PTS classes and modules
@@ -54,7 +54,6 @@ class ModelGenerator(FittingComponent):
         self.ranges = OrderedDict()
 
         # The dictionary with the list of the model parameters
-        #self.parameters = defaultdict(list)
         self.parameters = defaultdict(dict)
 
         # The parameter value distributions
@@ -208,6 +207,18 @@ class ModelGenerator(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @abstractproperty
+    def individual_names(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -318,19 +329,25 @@ class ModelGenerator(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def generate_grid_points(self, scale):
+    def generate_grid_points_one_scale(self, scale, most_sampled=None, weights=None):
 
         """
         This function ...
         :param scale: 
+        :param most_sampled:
+        :param weights:
         :return: 
         """
 
         # Inform the user
         log.info("Generating grid points for the parameter values of models on a " + scale + " scale ...")
 
+        # The order is important!
+        if most_sampled is not None: sampled_most = [(label in most_sampled) for label in self.fitting_run.free_parameter_labels]
+        else: sampled_most = None
+
         # Determine the number of grid points for each parameter based on the desired total number of models
-        factors = numbers.divide_in_n_dimensions(self.config.nmodels, self.fitting_run.nfree_parameters)
+        factors = numbers.divide_in_n_dimensions(self.config.nmodels, self.fitting_run.nfree_parameters, sampled_most=sampled_most, weights=weights)
 
         # Initialize a dictionary for the grid points for each parameter
         grid_points = dict()
@@ -345,18 +362,85 @@ class ModelGenerator(FittingComponent):
             parameter_range = self.ranges[label]
 
             # Generate the grid points, based on the scale
-            if scale == "linear": values = parameter_range.linear(npoints, as_list=True)
-            elif scale == "logarithmic": values = parameter_range.log(npoints, as_list=True)
-            else: raise ValueError("Invalid scale: " + str(scale))
-
-            # Re-arrange the list to contain the grid points from the center towards the edges
-            values = sequences.rearrange_from_middle(values)
+            values = generate_grid_points_from_center(parameter_range, npoints, scale)
 
             # Set the values
             grid_points[label] = values
 
         # Return the dictionary
         return grid_points
+
+    # -----------------------------------------------------------------
+
+    def generate_grid_points_different_scales(self, scales, most_sampled=None, weights=None):
+
+        """
+        This function ...
+        :param scales: 
+        :param most_sampled:
+        :param weights:
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Generating grid points for the parameter values of models ...")
+
+        # The order is important!
+        if most_sampled is not None: sampled_most = [(label in most_sampled) for label in self.fitting_run.free_parameter_labels]
+        else: sampled_most = None
+
+        # Determine the number of grid points for each parameter based on the desired total number of models
+        factors = numbers.divide_in_n_dimensions(self.config.nmodels, self.fitting_run.nfree_parameters, sampled_most=sampled_most, weights=weights)
+
+        # Initialize a dictionary for the grid points for each parameter
+        grid_points = dict()
+
+        # Generate the grid points for each parameter, and loop from the center of the range
+        for label_index, label in enumerate(self.fitting_run.free_parameter_labels):
+
+            # Determine the number of grid points
+            npoints = factors[label_index]
+
+            # Get the range
+            parameter_range = self.ranges[label]
+
+            # Get the scale
+            scale = scales[label]
+
+            # Generate the grid points, based on the scale
+            values = generate_grid_points_from_center(parameter_range, npoints, scale)
+
+            # Set the values
+            grid_points[label] = values
+
+        # Return the dictionary
+        return grid_points
+
+    # -----------------------------------------------------------------
+
+    def grid_points_to_lists(self, grid_points_dict):
+
+        """
+        This function ...
+        :param grid_points_dict:
+        :return: 
+        """
+
+        # Convert into lists, and strip units
+        grid_points_lists = []
+        for label in enumerate(self.fitting_run.free_parameter_labels):
+
+            # Get the list of scalar values
+            if label in self.fitting_run.parameter_units and self.fitting_run.parameter_units[label] is not None:
+                unit = self.fitting_run.parameter_units[label]
+                values = [value.to(unit).value for value in grid_points_dict[label]]
+            else: values = grid_points_dict[label]
+
+            # Add the list of grid point values
+            grid_points_lists.append(values)
+
+        # Return the lists
+        return grid_points_lists
 
     # -----------------------------------------------------------------
 
@@ -395,5 +479,28 @@ class ModelGenerator(FittingComponent):
 
             # Add a point (and thus one frame) to the individual parameter animations
             for label in values_dict: self.parameter_animations[label].add_value(values_dict[label])
+
+# -----------------------------------------------------------------
+
+def generate_grid_points_from_center(parameter_range, npoints, scale):
+
+    """
+    This function ...
+    :param parameter_range:
+    :param npoints:
+    :param scale:
+    :return: 
+    """
+
+    # Generate the grid points, based on the scale
+    if scale == "linear": values = parameter_range.linear(npoints, as_list=True)
+    elif scale == "logarithmic": values = parameter_range.log(npoints, as_list=True)
+    else: raise ValueError("Invalid scale: " + str(scale))
+
+    # Re-arrange the list to contain the grid points from the center towards the edges
+    values = sequences.rearrange_from_middle(values)
+
+    # Return the values
+    return values
 
 # -----------------------------------------------------------------

@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 import math
 import random
 import numpy as np
+from itertools import cycle
 
 # Import the relevant PTS classes and modules
 from . import sequences
@@ -112,14 +113,19 @@ def test_division_in_n_dimensions(n):
 
 # -----------------------------------------------------------------
 
-def divide_in_n_dimensions(number, n):
+def divide_in_n_dimensions(number, n, sampled_most=None, weights=None):
 
     """
     This function ...
     :param number: 
     :param n: 
+    :param sampled_most:
+    :param weights:
     :return: 
     """
+
+    # Check sampled_most and weights argument
+    if sampled_most is not None and weights is not None: raise ValueError("Either define 'sampled_most' or 'weights'")
 
     from . import types
     if not types.is_integer_type(number): raise ValueError("Number must be integer")
@@ -127,12 +133,16 @@ def divide_in_n_dimensions(number, n):
     result = number**(1./n)
     result = int(math.ceil(result))
 
-    factors = [result] * n
+    the_factors = [result] * n
+
+    # Multiply with weights
+    if weights is not None: the_factors = [int(math.ceil(the_factors[index] * weights[index])) for index in range(len(the_factors))]
 
     #print(factors)
 
-    from itertools import cycle
-    lst = range(n)
+    # Create iterator of indices of labels to decrease the value
+    if sampled_most is not None: lst = [index for index in range(n) if not sampled_most[index]]
+    else: lst = range(n)
     indices = cycle(lst)
 
     # Lower some of the factors till the result is as small as possible, but still equal to or greater than the initial number
@@ -140,14 +150,14 @@ def divide_in_n_dimensions(number, n):
     while True:
 
         #print("factors", factors)
-        product = sequences.multiply_all_integers(factors)
+        product = sequences.multiply_all_integers(the_factors)
 
         if product < number: return previous_factors
         else:
-            previous_factors = factors[:] # copy
+            previous_factors = the_factors[:] # copy
             index = indices.next()
             #print("index", index)
             # Lower one of the factors
-            factors[index] = factors[index] - 1
+            the_factors[index] = the_factors[index] - 1
 
 # -----------------------------------------------------------------

@@ -2001,6 +2001,30 @@ def load_fitting_configuration(modeling_path):
 
 # -----------------------------------------------------------------
 
+def get_free_parameter_labels(modeling_path):
+
+    """
+    THIS FUNCTION GUARANTEES THAT THE LABELS ARE ALWAYS ORDERED ALPHABETICALLY !!
+    :return:
+    """
+
+    fitting_configuration = load_fitting_configuration(modeling_path)
+    return sorted(fitting_configuration.free_parameters)
+
+# -----------------------------------------------------------------
+
+def get_parameter_descriptions(modeling_path):
+
+    """
+    This function ...
+    :return:
+    """
+
+    fitting_configuration = load_fitting_configuration(modeling_path)
+    return fitting_configuration.descriptions
+
+# -----------------------------------------------------------------
+
 def get_fitting_method(modeling_path):
 
     """

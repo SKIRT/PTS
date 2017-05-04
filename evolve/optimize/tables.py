@@ -18,6 +18,27 @@ from pts.core.tools import sequences
 
 # -----------------------------------------------------------------
 
+class Elitismtable(SmartTable):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args: 
+        :param kwargs: 
+        """
+
+        # Call the constructor of the base class
+        super(ScoresTable, self).__init__(*args, **kwargs)
+
+        self.column_info.append("")
+
+# -----------------------------------------------------------------
+
 class ScoresTable(SmartTable):
 
     """

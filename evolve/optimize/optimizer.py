@@ -104,7 +104,7 @@ class Optimizer(Configurable):
         # The parameter range (for homogeneous 1D list genomes)
         self.parameter_range = None
 
-        # Lists of igegegegrehth
+        # Parameters for the initial generation
         self.initial_parameters = None
 
     # -----------------------------------------------------------------

@@ -1428,3 +1428,33 @@ def instrument_frame_list(argument):
     return [instrument_frame(arg) for arg in string_list(argument)]
 
 # -----------------------------------------------------------------
+
+def parts(argument):
+
+    """
+    This function ...
+    :param argument: 
+    :return: 
+    """
+
+    import numpy as np
+    values = real_array(argument)
+    relative_values = list(values / np.sum(values))
+    return relative_values
+
+# -----------------------------------------------------------------
+
+def weights(argument):
+
+    """
+    This fucntion ...
+    :param argument: 
+    :return: 
+    """
+
+    import numpy as np
+    ratios = np.array(parts(argument))
+    the_weights = list(ratios * len(ratios))
+    return the_weights
+
+# -----------------------------------------------------------------

@@ -15,6 +15,8 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
 from .generator import ModelGenerator
+from ....core.tools import sequences
+from ....core.tools import strings
 
 # -----------------------------------------------------------------
 
@@ -35,6 +37,9 @@ class GridModelGenerator(ModelGenerator):
         # Call the constructor of the base class
         super(GridModelGenerator, self).__init__(*args, **kwargs)
 
+        # Scales
+        self.scales = None
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -47,6 +52,31 @@ class GridModelGenerator(ModelGenerator):
         # Call the constructor of the base class
         super(GridModelGenerator, self).setup(**kwargs)
 
+        # Get scales for different free parameters
+        if "scales" in kwargs: self.scales = kwargs.pop("scales")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_scales(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        scales = dict()
+
+        # Loop over the free parameter
+        for label in self.fitting_run.free_parameter_labels:
+
+            # Check whether scales were given as input
+            if self.scales is not None and label in self.scales: scales[label] = self.scales[label]
+            else: scales[label] = self.config[label + "_scale"]
+
+        # Return the scales
+        return scales
+
     # -----------------------------------------------------------------
 
     def generate(self):
@@ -57,42 +87,54 @@ class GridModelGenerator(ModelGenerator):
         """
 
         # Inform the user
-        log.info("")
+        log.info("Generating the model grid points ...")
 
-        scale = None
-        grid_points = self.generate_grid_points(scale) # returns dictionary
+        # Generate the grid points (as dictionary of lists)
+        grid_points = self.generate_grid_points_different_scales(self.parameter_scales, most_sampled=self.config.most_sampled_parameters, weights=self.config.sampling_weights) # returns dictionary
 
-        # FROM GENETIC:
+        # Convert into lists
+        grid_points = self.grid_points_to_lists(grid_points)
 
-        # NAMED:
+        # Create iterator of combinations
+        iterator = sequences.iterate_lists_combinations(grid_points)
 
-        # Loop over the individual names
-        for name in self.individual_names:
+        # Create name iterator
+        name_iterator = strings.alphabet_strings_iterator()
 
-            # Get the individual
-            individual = self.optimizer.population[name]
+        # Generate the initial parameter sets
+        # Loop over the number of required models minus the number of fixed model parameter sets
+        for index in range(self.config.nmodels):
 
-            # Loop over all the genes (parameters)
-            for i in range(len(individual)):
+            # The next combination
+            parameters_model = list(iterator.next())  # returns tuple
+
+            # Generate a new individual name
+            name = name_iterator.next()
+
+            # Loop over all the parameters
+            for i in range(len(parameters_model)):
 
                 # Get the parameter value
-                value = individual[i]
+                value = parameters_model[i]
+
+                # Get the parameter label
+                label = self.fitting_run.free_parameter_labels[i]
 
                 # Add the parameter value to the dictionary
-                self.parameters[self.fitting_run.free_parameter_labels[i]][name] = value
+                self.parameters[label][name] = value
 
-        # UNNAMED:
+    # -----------------------------------------------------------------
 
-        # Loop over the individuals of the population
-        for individual in self.optimizer.population:
+    @property
+    def individual_names(self):
 
-            # Loop over all the genes (parameters)
-            for i in range(len(individual)):
-                # Get the parameter value
-                value = individual[i]
+        """
+        This function ...
+        :return: 
+        """
 
-                # Add the parameter value to the dictionary
-                self.parameters[self.fitting_run.free_parameter_labels[i]].append(value)
+        one_free_parameter = self.fitting_run.free_parameter_labels[0]
+        return self.parameters[one_free_parameter].keys()
 
     # -----------------------------------------------------------------
 
@@ -102,5 +144,8 @@ class GridModelGenerator(ModelGenerator):
         This function ...
         :return: 
         """
+
+        # Inform the user
+        log.info("Writing ...")
 
 # -----------------------------------------------------------------

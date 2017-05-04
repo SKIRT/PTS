@@ -89,6 +89,7 @@ definition.sections["writing"].add_optional("config_path", "string", "path for t
 definition.sections["writing"].add_optional("statistics_path", "string", "path for the statistics file")
 definition.sections["writing"].add_optional("database_path", "string", "path for the database")
 definition.sections["writing"].add_optional("individuals_path", "string", "path for the individuals")
+definition.sections["writing"].add_optional("elitism_table_path", "string", "path for the elitism table")
 
 # Advanced
 definition.add_optional("nelite_individuals", "positive_integer", "number of individuals to take as elite", 1)

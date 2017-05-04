@@ -14,11 +14,127 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
-from collections import OrderedDict
+from collections import OrderedDict, Callable
 
 # Import the relevant PTS classes and modules
 from ..tools import types
 from ..filter.filter import parse_filter, Filter
+
+# -----------------------------------------------------------------
+
+# Source: http://stackoverflow.com/a/6190500/562769
+class DefaultOrderedDict(OrderedDict):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, default_factory=None, *a, **kw):
+
+        """
+        The cosntructor ...
+        :param default_factory: 
+        :param a: 
+        :param kw: 
+        """
+
+        if (default_factory is not None and
+           not isinstance(default_factory, Callable)):
+            raise TypeError('first argument must be callable')
+        OrderedDict.__init__(self, *a, **kw)
+        self.default_factory = default_factory
+
+    # -----------------------------------------------------------------
+
+    def __getitem__(self, key):
+
+        """
+        This function ...
+        :param key: 
+        :return: 
+        """
+
+        try:
+            return OrderedDict.__getitem__(self, key)
+        except KeyError:
+            return self.__missing__(key)
+
+    # -----------------------------------------------------------------
+
+    def __missing__(self, key):
+
+        """
+        This fucntion ...
+        :param key: 
+        :return: 
+        """
+
+        if self.default_factory is None:
+            raise KeyError(key)
+        self[key] = value = self.default_factory()
+        return value
+
+    # -----------------------------------------------------------------
+
+    def __reduce__(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if self.default_factory is None:
+            args = tuple()
+        else:
+            args = self.default_factory,
+        return type(self), args, None, None, self.items()
+
+    # -----------------------------------------------------------------
+
+    def copy(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.__copy__()
+
+    # -----------------------------------------------------------------
+
+    def __copy__(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return type(self)(self.default_factory, self)
+
+    # -----------------------------------------------------------------
+
+    def __deepcopy__(self, memo):
+
+        """
+        This function ...
+        :param memo: 
+        :return: 
+        """
+
+        import copy
+        return type(self)(self.default_factory,
+                          copy.deepcopy(self.items()))
+
+    # -----------------------------------------------------------------
+
+    def __repr__(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return 'OrderedDefaultDict(%s, %s)' % (self.default_factory, OrderedDict.__repr__(self))
 
 # -----------------------------------------------------------------
 

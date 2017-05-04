@@ -58,6 +58,7 @@ import pts.evolve.core.utils as utils
 from ...core.tools.logging import log
 from ...core.tools import serialization
 from ...core.tools.random import prng
+from ...core.basics.containers import DefaultOrderedDict
 
 # -----------------------------------------------------------------
 
@@ -932,6 +933,9 @@ class GeneticEngine(object):
         :return:
         """
 
+        # Elitism data
+        elitism_data = None
+
         # Set the scores for the initial population
         if self.is_initial_generation: self.set_scores_for_population(self.internalPop, scores, check)
 
@@ -942,7 +946,7 @@ class GeneticEngine(object):
             self.set_scores_for_population(self.new_population, scores, check)
 
             # Replace
-            if self.new_population is not None: self.replace_internal_population()
+            if self.new_population is not None: elitism_data = self.replace_internal_population()
 
             # Increment the current generation number
             self.currentGeneration += 1
@@ -952,6 +956,9 @@ class GeneticEngine(object):
 
         # Set new pop to None
         self.new_population = None
+
+        # Return the information about the elitism replacements as a result of the scoring
+        return elitism_data
 
     # -----------------------------------------------------------------
 
@@ -1117,7 +1124,7 @@ class GeneticEngine(object):
         self.new_population.evaluate(silent, **self.evaluator_kwargs)
 
         # Replace population
-        self.replace_internal_population()
+        elitism_data = self.replace_internal_population()
 
         # Sort the population
         self.internalPop.sort()
@@ -1148,11 +1155,15 @@ class GeneticEngine(object):
         :return:
         """
 
-        # Elitism:
-        if self.elitism: self.do_elitism(self.new_population)
+        # Elitism
+        if self.elitism: elitism_data = self.do_elitism(self.new_population)
+        else: elitism_data = None
 
         # Set the new population as the internal population and sort it
         self.internalPop = self.new_population
+
+        # Return the elitism data
+        return elitism_data
 
     # -----------------------------------------------------------------
 
@@ -1176,34 +1187,80 @@ class GeneticEngine(object):
         # re-discovering previously discarded partial solutions. Candidate solutions that are preserved unchanged
         # through elitism remain eligible for selection as parents when breeding the remainder of the next generation.
 
-        log.debug("Doing elitism ...")
+        # Inform the user
+        log.info("Performing elitism ...")
 
-        # The best individual is the one with the highest score
-        #if self.getMinimax() == constants.minimaxType["maximize"]:
-        if self.getMinimax() == "maximize":
+        # Elitism data
+        data = DefaultOrderedDict()
 
-            for i in xrange(self.nElitismReplacement):
+        # Determine the generation index
+        new_generation_index = self.currentGeneration + 1
 
-                ##re-evaluate before being sure this is the best
-                # self.internalPop.bestRaw(i).evaluate(**self.evaluator_kwargs) # IS THIS REALLY NECESSARY ?
+        # Debugging
+        log.debug("Elitism is performed on the new population that will afterwards become generation " + str(new_generation_index) + " ...")
 
-                if self.internalPop.bestRaw(i).score > new_population.bestRaw(i).score:
-                    new_population[len(new_population) - 1 - i] = self.internalPop.bestRaw(i)
+        # Loop over the number of elitism replacements
+        for i in xrange(self.nElitismReplacement):
 
-        # The best individual is the one with the highest score
-        #elif self.getMinimax() == constants.minimaxType["minimize"]:
-        elif self.getMinimax() == "minimize":
+            ##re-evaluate before being sure this is the best
+            # self.internalPop.bestRaw(i).evaluate(**self.evaluator_kwargs) # IS THIS REALLY NECESSARY ?
 
-            for i in xrange(self.nElitismReplacement):
+            # Get old and new best raw score individual
+            old_best = self.internalPop.bestRaw(i)
+            new_best = new_population.bestRaw(i)
 
-                ##re-evaluate before being sure this is the best
-                # self.internalPop.bestRaw(i).evaluate(**self.evaluator_kwargs) # IS THIS REALLY NECESSARY ?
+            # Get scores
+            old_best_raw = old_best.score
+            new_best_raw = new_best.score
 
-                if self.internalPop.bestRaw(i).score < new_population.bestRaw(i).score:
-                    new_population[len(new_population) - 1 - i] = self.internalPop.bestRaw(i)
+            # Get fitness
+            old_best_fitness = old_best.fitness
+            new_best_fitness = new_best.fitness
 
-        # Invalid
-        else: raise ValueError("Invalid state of 'minimax': must be 'maximize' or 'minimize'")
+            # Check condition, depending on the min max type
+            if self.getMinimax() == "maximize": condition = old_best_raw > new_best_raw
+            elif self.getMinimax() == "minimize": condition = old_best_raw < new_best_raw
+            else: raise ValueError("Invalid state of 'minimax': must be 'maximize' or 'minimize'")
+
+            # Determine the index of the individual to be replaced
+            replacement_index = len(new_population) - 1 - i
+
+            # Determine the individual ID
+            if isinstance(new_population, NamedPopulation): individual_id = new_population.names[replacement_index]
+            else: individual_id = replacement_index
+
+            # Replace the individual, if the condition is met
+            if condition:
+
+                # Determine the score of the individual to be replaced
+                replaced = new_population[replacement_index]
+                replaced_raw = replaced.score
+                replaced_fitness = replaced.fitness
+
+                # Debugging
+                log.debug("Replacing individual '" + str(individual_id) + "' (raw score=" + str(replaced_raw) + ", fitness=" + str(replaced_fitness) + ") with the " + str(i) + "th individual from the old (internal) population (raw score=" + str(old_best_raw) + ", fitness=" + str(old_best_fitness) + ")...")
+
+                # Replace
+                new_population[replacement_index] = old_best
+
+            # No replacement
+            else: replaced_raw = replaced_fitness = None
+
+            # Set the data
+            data["Generation"].append(new_generation_index)
+            data["Elitism replacement"].append(i)
+            data["Min_or_max"].append(self.getMinimax())
+            data["Old best raw score"].append(old_best_raw)
+            data["Old best fitness"].append(old_best_fitness)
+            data["New best raw score"].append(new_best_raw)
+            data["New best fitness"].append(new_best_fitness)
+            data["Individual ID"].append(individual_id)
+            data["Elitism performed"].append(condition)
+            data["Replaced raw score"].append(replaced_raw)
+            data["Replaced fitness"].append(replaced_fitness)
+
+        # Return the elitism data
+        return data
 
     # -----------------------------------------------------------------
 

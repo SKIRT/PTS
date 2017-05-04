@@ -21,6 +21,7 @@ from ...core.basics.configuration import Configuration
 from ..core.adapters import DBFileCSV, DBSQLite
 from .optimizer import Optimizer
 from ..core.population import NamedPopulation
+from .tables import Elitismtable
 
 # -----------------------------------------------------------------
 
@@ -48,6 +49,9 @@ class StepWiseOptimizer(Optimizer):
 
         # A check for the parameters of the models that are scored
         self.scores_check = None
+
+        # The elitism table
+        self.elitism_table = None
 
     # -----------------------------------------------------------------
 
@@ -336,7 +340,10 @@ class StepWiseOptimizer(Optimizer):
         if self.scores is None: raise ValueError("The scores are not set")
 
         # Set the scores
-        self.engine.set_scores(self.scores, self.scores_check)
+        elitism_data = self.engine.set_scores(self.scores, self.scores_check)
+
+        # Create elitism table
+        self.elitism_table = ElitismTable.from_data(elitism_data)
 
     # -----------------------------------------------------------------
 
@@ -403,6 +410,9 @@ class StepWiseOptimizer(Optimizer):
 
         # Write the parameters
         self.write_parameters()
+
+        # Write the elitism data
+        self.write_elitism()
 
     # -----------------------------------------------------------------
 
@@ -529,6 +539,25 @@ class StepWiseOptimizer(Optimizer):
 
             # Loop over the entries
             for key, genes in entries: print(key + " " + str(genes), file=population_file)
+
+    # -----------------------------------------------------------------
+
+    def write_elitism(self):
+
+        """
+        This fucntion ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Writing the elitism table ...")
+
+        # Determine the path
+        if self.config.writing.elitism_table_path is not None: path = fs.absolute_or_in(self.config.writing.elitism_table_path, self.output_path)
+        else: path = self.output_path_file("elitism.dat")
+
+        # Save the table
+        self.elitism_table.saveto(path)
 
     # -----------------------------------------------------------------
 

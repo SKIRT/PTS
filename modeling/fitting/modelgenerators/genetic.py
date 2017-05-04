@@ -57,9 +57,6 @@ class GeneticModelGenerator(ModelGenerator):
         self.evaluator = None
         self.evaluator_kwargs = None
 
-        # The names of the individuals
-        self.individual_names = None
-
         # The parameter ranges
         self.parameter_ranges = None
 
@@ -116,7 +113,8 @@ class GeneticModelGenerator(ModelGenerator):
                                                                 self.fitting_run.main_engine_path,
                                                                 self.fitting_run.main_prng_path,
                                                                 self.fitting_run.optimizer_config_path,
-                                                                self.statistics_path, self.database_path, self.fitting_run.name)
+                                                                self.statistics_path, self.database_path,
+                                                                self.fitting_run.name)
                 # Set initial flag
                 self.initial = False
 
@@ -230,7 +228,7 @@ class GeneticModelGenerator(ModelGenerator):
         # Set the scores
         if not self.initial: self.set_scores()
 
-        #
+        # Generate parameters of the initial generation
         if self.initial and self.generate_initial_manual: self.generate_initial_parameters()
 
         # Run the optimizer
@@ -239,8 +237,7 @@ class GeneticModelGenerator(ModelGenerator):
                            evaluator_kwargs=self.evaluator_kwargs, initial_parameters=self.initial_parameters)
 
         # Get the parameter values of the new models
-        self.get_model_parameters_named_individuals()
-        #self.get_model_parameters_unnamed_individuals()
+        self.get_model_parameters()
 
     # -----------------------------------------------------------------
 
@@ -316,13 +313,16 @@ class GeneticModelGenerator(ModelGenerator):
             # Get the value for each free parameters
             for label in self.fitting_run.free_parameter_labels:
 
+                # Get the quantity
                 quantity = self.fixed_initial_parameters[label][i]
 
+                # Get only the scalar value
                 if label in self.fitting_run.parameter_units and self.fitting_run.parameter_units[label] is not None:
                     unit = self.fitting_run.parameter_units[label]
                     value = quantity.to(unit).value
                 else: value = quantity
 
+                # Add the value to the parameter set
                 initial_parameters_model.append(value)
 
             # Add the parameter set
@@ -349,6 +349,7 @@ class GeneticModelGenerator(ModelGenerator):
             # Set the list values
             for label_index, label in enumerate(self.fitting_run.free_parameter_labels):
 
+                # Get range limits
                 range_min = self.parameter_minima_scalar[label_index]
                 range_max = self.parameter_maxima_scalar[label_index]
 
@@ -358,9 +359,9 @@ class GeneticModelGenerator(ModelGenerator):
                 # Logarithmic scale
                 elif self.config.manual_initial_generation_scale == "logarithmic":
 
+                    # Generate random logarithmic variate
                     logmin = np.log10(range_min)
                     logmax = np.log10(range_max)
-
                     lograndom = np.random.uniform(logmin, logmax)
                     random = 10**lograndom
 
@@ -386,23 +387,13 @@ class GeneticModelGenerator(ModelGenerator):
         log.info("Generating initial parameter sets based on a grid in the n-d parameter space ...")
 
         # Generate grid points
-        grid_points = self.generate_grid_points(self.config.manual_initial_generation_scale)
+        grid_points = self.generate_grid_points_one_scale(self.config.manual_initial_generation_scale)
 
-        # Convert into lists, and strip units
-        grid_points_lists = []
-        for label in enumerate(self.fitting_run.free_parameter_labels):
-
-            # Get the list of scalar values
-            if label in self.fitting_run.parameter_units and self.fitting_run.parameter_units[label] is not None:
-                unit = self.fitting_run.parameter_units[label]
-                values = [value.to(unit).value for value in grid_points[label]]
-            else: values = grid_points[label]
-
-            # Add the list of grid point values
-            grid_points_lists.append(values)
+        # Convert into lists
+        grid_points = self.grid_points_to_lists(grid_points)
 
         # Create iterator of combinations
-        iterator = sequences.iterate_lists_combinations(grid_points_lists)
+        iterator = sequences.iterate_lists_combinations(grid_points)
 
         # Generate the initial parameter sets
         # Loop over the number of required models minus the number of fixed model parameter sets
@@ -416,7 +407,19 @@ class GeneticModelGenerator(ModelGenerator):
 
     # -----------------------------------------------------------------
 
-    def get_model_parameters_named_individuals(self):
+    @property
+    def individual_names(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.optimizer.individual_names
+
+    # -----------------------------------------------------------------
+
+    def get_model_parameters(self):
 
         """
         THis function ...
@@ -425,9 +428,6 @@ class GeneticModelGenerator(ModelGenerator):
 
         # Inform the user
         log.info("Getting the model parameters ...")
-
-        # Set the individual names
-        self.individual_names = self.optimizer.population.names
 
         # Loop over the individual names
         for name in self.individual_names:
@@ -443,30 +443,6 @@ class GeneticModelGenerator(ModelGenerator):
 
                 # Add the parameter value to the dictionary
                 self.parameters[self.fitting_run.free_parameter_labels[i]][name] = value
-
-    # -----------------------------------------------------------------
-
-    def get_model_parameters_unnamed_individuals(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Getting the model parameters ...")
-
-        # Loop over the individuals of the population
-        for individual in self.optimizer.population:
-
-            # Loop over all the genes (parameters)
-            for i in range(len(individual)):
-
-                # Get the parameter value
-                value = individual[i]
-
-                # Add the parameter value to the dictionary
-                self.parameters[self.fitting_run.free_parameter_labels[i]].append(value)
 
     # -----------------------------------------------------------------
 

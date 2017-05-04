@@ -139,26 +139,45 @@ def prompt_string(name, description, choices=None, default=None):
 
 # -----------------------------------------------------------------
 
-def create_configuration(definition, command_name, description, configuration_method):
+def create_configuration_interactive(definition, command_name, description, **kwargs):
 
     """
     This function ...
+    :param definition: 
+    :param command_name: 
+    :param description: 
+    :return: 
+    """
+
+    return create_configuration(definition, command_name, description, "interactive", **kwargs)
+
+# -----------------------------------------------------------------
+
+def create_configuration(definition, command_name, description, configuration_method, **kwargs):
+
+    """
+    This function ...
+    :param definition:
+    :param command_name:
+    :param description:
+    :param configuration_method:
+    :param kwargs:
     :return:
     """
 
     ## CREATE THE CONFIGURATION
 
     # Create the configuration setter
-    if configuration_method == "interactive": setter = InteractiveConfigurationSetter(command_name, description)
-    elif configuration_method == "arguments": setter = ArgumentConfigurationSetter(command_name, description)
+    if configuration_method == "interactive": setter = InteractiveConfigurationSetter(command_name, description, **kwargs)
+    elif configuration_method == "arguments": setter = ArgumentConfigurationSetter(command_name, description, **kwargs)
     elif configuration_method.startswith("file"):
         configuration_filepath = configuration_method.split(":")[1]
-        setter = FileConfigurationSetter(configuration_filepath, command_name, description)
+        setter = FileConfigurationSetter(configuration_filepath, command_name, description, **kwargs)
     elif configuration_method == "last":
         configuration_filepath = fs.join(introspection.pts_user_config_dir, command_name + ".cfg")
         if not fs.is_directory(introspection.pts_user_config_dir): fs.create_directory(introspection.pts_user_config_dir)
         if not fs.is_file(configuration_filepath): raise RuntimeError("Cannot use rerun (config file not present)")
-        setter = FileConfigurationSetter(configuration_filepath, command_name, description)
+        setter = FileConfigurationSetter(configuration_filepath, command_name, description, **kwargs)
     else: raise ValueError("Invalid configuration method: " + configuration_method)
 
     # Create the configuration from the definition and from reading the command line arguments

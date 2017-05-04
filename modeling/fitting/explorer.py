@@ -27,43 +27,12 @@ from ...core.tools.stringify import stringify_not_list, stringify
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.advanced.parallelizationtool import ParallelizationTool
 from ...core.remote.host import Host
-from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
+from ...core.basics.configuration import ConfigurationDefinition, create_configuration_interactive
 from .evaluate import prepare_simulation, generate_simulation_name, get_parameter_values_for_named_individual
 from ...core.simulation.input import SimulationInput
 from ...core.tools import introspection
 from ...core.tools import parallelization as par
-
-# -----------------------------------------------------------------
-
-class GenerationInfo(object):
-
-    """
-    This function ...
-    """
-
-    def __init__(self, **kwargs):
-
-        """
-        This function ...
-        :param kwargs:
-        """
-
-        # Set info
-        self.name = kwargs.pop("name", None)
-        self.index = kwargs.pop("index", None)
-        self.method = kwargs.pop("method", None)
-        self.wavelength_grid_level = kwargs.pop("wavelength_grid_level", None)
-        #self.dust_grid_level = kwargs.pop("dust_grid_level", None)
-        self.model_representation = kwargs.pop("model_representation", None)
-        self.nsimulations = kwargs.pop("nsimulations", None)
-        self.npackages = kwargs.pop("npackages", None)
-        self.selfabsorption = kwargs.pop("selfabsorption", None)
-        self.transient_heating = kwargs.pop("transient_heating", None)
-
-        self.path = kwargs.pop("path", None)
-        self.individuals_table_path = kwargs.pop("individuals_table_path", None)
-        self.parameters_table_path = kwargs.pop("parameters_table_path", None)
-        self.chi_squared_table_path = kwargs.pop("chi_squared_table_path", None)
+from .generation import GenerationInfo
 
 # -----------------------------------------------------------------
 
@@ -434,8 +403,6 @@ class ParameterExplorer(FittingComponent):
         # Not the initial generation
         if self.get_initial_generation_name() in self.fitting_run.generation_names:
 
-            # print(self.fitting_run.last_genetic_generation_index)
-
             # Set index and name
             self.generation_index = self.fitting_run.last_genetic_generation_index + 1
             self.generation_name = self.get_genetic_generation_name(self.generation_index)
@@ -462,7 +429,7 @@ class ParameterExplorer(FittingComponent):
         self.generator.config.path = self.config.path
 
         # Set generator options
-        self.generator.config.ngenerations = self.config.ngenerations
+        self.generator.config.ngenerations = self.config.ngenerations # only useful for genetic model generator (and then again, cannot be more then 1 yet)
         self.generator.config.nmodels = self.config.nsimulations
 
     # -----------------------------------------------------------------
@@ -492,8 +459,67 @@ class ParameterExplorer(FittingComponent):
         # Inform the user
         log.info("Setting the parameter ranges ...")
 
+        # Create definition
+        definition = self.create_parameter_ranges_definition()
+
+        # Get the ranges
+        if len(definition) > 0: config = create_configuration_interactive(definition, "ranges", "parameter ranges", add_cwd=False, add_logging=False)
+
+        # No parameters for which the ranges still have to be specified interactively
+        else: config = None
+
+        # Set the ranges
+        for label in self.fitting_run.free_parameter_labels:
+
+            # If range is already defined
+            if label in self.ranges: continue
+
+            # Set the range
+            self.ranges[label] = config[label + "_range"]
+
+    # -----------------------------------------------------------------
+
+    def create_parameter_ranges_definition(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
         # Create a definition
         definition = ConfigurationDefinition(write_config=False)
+
+        # Create info
+        extra_info = self.create_parameter_ranges_info()
+
+        # Loop over the free parameters, add a setting slot for each parameter range
+        for label in self.fitting_run.free_parameter_labels:
+
+            # Skip if range is already defined for this label
+            if label in self.ranges: continue
+
+            # Get the default range
+            default_range = self.fitting_run.fitting_configuration[label + "_range"]
+            ptype, string = stringify_not_list(default_range)
+
+            # Determine description
+            description = "the range of " + label
+            description += " (" + extra_info[label] + ")"
+
+            # Add the optional range setting for this free parameter
+            definition.add_optional(label + "_range", ptype, description, default_range)
+
+        # Return the definition
+        return definition
+
+    # -----------------------------------------------------------------
+
+    def create_parameter_ranges_info(self):
+
+        """
+        This function ...
+        :return: 
+        """
 
         extra_info = dict()
 
@@ -524,43 +550,10 @@ class ParameterExplorer(FittingComponent):
             parameter_values = self.fitting_run.first_guess_parameter_values
 
             # Set info
-            for label in parameter_values:
-                extra_info[label] = "initial parameter value = " + stringify(parameter_values[label])[1]
+            for label in parameter_values: extra_info[label] = "initial parameter value = " + stringify(parameter_values[label])[1]
 
-        # Loop over the free parameters, add a setting slot for each parameter range
-        for label in self.fitting_run.free_parameter_labels:
-
-            # Skip if range is already defined for this label
-            if label in self.ranges: continue
-
-            # Get the default range
-            default_range = self.fitting_run.fitting_configuration[label + "_range"]
-            ptype, string = stringify_not_list(default_range)
-
-            # Determine description
-            description = "the range of " + label
-            description += " (" + extra_info[label] + ")"
-
-            # Add the optional range setting for this free parameter
-            definition.add_optional(label + "_range", ptype, description, default_range)
-
-        # Get the ranges
-        if len(definition) > 0:
-
-            setter = InteractiveConfigurationSetter("ranges", add_cwd=False, add_logging=False)
-            config = setter.run(definition)
-
-        # No parameters for which the ranges still have to be specified interactively
-        else: config = None
-
-        # Set the ranges
-        for label in self.fitting_run.free_parameter_labels:
-
-            # If range is already defined
-            if label in self.ranges: continue
-
-            # Set the range
-            self.ranges[label] = config[label + "_range"]
+        # Return the info
+        return extra_info
 
     # -----------------------------------------------------------------
 
