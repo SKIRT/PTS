@@ -747,7 +747,7 @@ class Optimizer(Configurable):
 
         # Set options
         self.engine.terminationCriteria.set(RawScoreCriteria)
-        self.engine.setMinimax(constants.minimaxType[self.config.min_or_max])
+        self.engine.setMinimax(self.config.min_or_max)
         self.engine.setGenerations(self.config.ngenerations)
         if self.config.crossover_rate is not None: self.engine.setCrossoverRate(self.config.crossover_rate)
         self.engine.setPopulationSize(self.config.nindividuals)

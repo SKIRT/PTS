@@ -27,9 +27,9 @@ sortType = {
 
 # Optimization type
 # - Minimize or Maximize the Evaluator Function
-minimaxType = {"minimize": 0,
-               "maximize": 1
-               }
+#minimaxType = {"minimize": 0,
+#               "maximize": 1
+#               }
 
 CDefESCKey = 27
 
@@ -59,7 +59,7 @@ CDefScaleBoltzStart = 40.0
 
 # - Population Defaults
 CDefPopSortType = sortType["scaled"]
-CDefPopMinimax = minimaxType["maximize"]
+CDefPopMinimax = "maximize" #minimaxType["maximize"]
 from .scaling import LinearScaling
 CDefPopScale = LinearScaling
 

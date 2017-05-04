@@ -79,16 +79,23 @@ def RawScoreCriteria(ga_engine):
     if bestRawScore is None:
         utils.raiseException("you must specify the bestrawscore parameter", ValueError)
 
-    if ga_engine.getMinimax() == constants.minimaxType["maximize"]:
+    #if ga_engine.getMinimax() == constants.minimaxType["maximize"]:
+    if ga_engine.getMinimax() == "maximize":
+
         if roundDecimal is not None:
             return round(bestRawScore, roundDecimal) <= round(ind.score, roundDecimal)
         else:
             return bestRawScore <= ind.score
-    else:
+
+    #else:
+    elif ga_engine.getMinimax() == "minimize":
+
         if roundDecimal is not None:
             return round(bestRawScore, roundDecimal) >= round(ind.score, roundDecimal)
         else:
             return bestRawScore >= ind.score
+
+    else: raise RuntimeError("Invalid minimax type: " + str(ga_engine.getMinimax()))
 
 # -----------------------------------------------------------------
 
@@ -237,7 +244,7 @@ class GeneticEngine(object):
         self.pCrossover = constants.CDefGACrossoverRate
         self.nElitismReplacement = constants.CDefGAElitismReplacement
         self.setPopulationSize(constants.CDefGAPopulationSize)
-        self.minimax = constants.minimaxType["maximize"]
+        self.minimax = constants.CDefPopMinimax
         self.elitism = True
 
         # The new population
@@ -557,7 +564,7 @@ class GeneticEngine(object):
         The string representation of the GA Engine
         """
 
-        minimax_type = constants.minimaxType.keys()[constants.minimaxType.values().index(self.minimax)]
+        #minimax_type = constants.minimaxType.keys()[constants.minimaxType.values().index(self.minimax)]
         ret = "- GSimpleGA\n"
         ret += "\tGP Mode:\t\t %s\n" % self.getGPMode()
         ret += "\tPopulation Size:\t %d\n" % self.internalPop.popSize
@@ -565,7 +572,7 @@ class GeneticEngine(object):
         ret += "\tCurrent Generation:\t %d\n" % self.currentGeneration
         ret += "\tMutation Rate:\t\t %.2f\n" % self.pMutation
         ret += "\tCrossover Rate:\t\t %.2f\n" % self.pCrossover
-        ret += "\tMinimax Type:\t\t %s\n" % minimax_type.capitalize()
+        ret += "\tMinimax Type:\t\t %s\n" % self.minimax.capitalize()
         ret += "\tElitism:\t\t %s\n" % self.elitism
         ret += "\tElitism Replacement:\t %d\n" % self.nElitismReplacement
         #ret += "\tDB Adapter:\t\t %s\n" % self.dbAdapter
@@ -781,8 +788,12 @@ class GeneticEngine(object):
         :param mtype: the minimax mode, from constants.minimaxType
         """
 
-        if mtype not in constants.minimaxType.values():
-            utils.raiseException("Minimax must be maximize or minimize", TypeError)
+        #if mtype not in constants.minimaxType.values():
+        #    utils.raiseException("Minimax must be maximize or minimize", TypeError)
+
+        if mtype not in ["minimize", "maximize"]: raise ValueError("Minimax must be 'maximize' or 'minimize'")
+
+        # Set
         self.minimax = mtype
 
     # -----------------------------------------------------------------
@@ -1168,7 +1179,8 @@ class GeneticEngine(object):
         log.debug("Doing elitism ...")
 
         # The best individual is the one with the highest score
-        if self.getMinimax() == constants.minimaxType["maximize"]:
+        #if self.getMinimax() == constants.minimaxType["maximize"]:
+        if self.getMinimax() == "maximize":
 
             for i in xrange(self.nElitismReplacement):
 
@@ -1179,7 +1191,8 @@ class GeneticEngine(object):
                     new_population[len(new_population) - 1 - i] = self.internalPop.bestRaw(i)
 
         # The best individual is the one with the highest score
-        elif self.getMinimax() == constants.minimaxType["minimize"]:
+        #elif self.getMinimax() == constants.minimaxType["minimize"]:
+        elif self.getMinimax() == "minimize":
 
             for i in xrange(self.nElitismReplacement):
 
@@ -1190,7 +1203,7 @@ class GeneticEngine(object):
                     new_population[len(new_population) - 1 - i] = self.internalPop.bestRaw(i)
 
         # Invalid
-        else: raise ValueError("Invalid state of 'minimax': must be '" + constants.minimaxType["maximize"] + "' or '" + constants.minimaxType["minimize"] + "'")
+        else: raise ValueError("Invalid state of 'minimax': must be 'maximize' or 'minimize'")
 
     # -----------------------------------------------------------------
 

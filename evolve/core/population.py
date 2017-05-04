@@ -921,7 +921,8 @@ class NamedPopulation(PopulationBase):
         ret = "- NamedPopulation\n"
         ret += "\tPopulation Size:\t %d\n" % (self.popSize,)
         ret += "\tSort Type:\t\t %s\n" % (constants.sortType.keys()[constants.sortType.values().index(self.sortType)].capitalize(),)
-        ret += "\tMinimax Type:\t\t %s\n" % (constants.minimaxType.keys()[constants.minimaxType.values().index(self.minimax)].capitalize(),)
+        #ret += "\tMinimax Type:\t\t %s\n" % (constants.minimaxType.keys()[constants.minimaxType.values().index(self.minimax)].capitalize(),)
+        ret += "\tMinimax Type:\t\t %s\n" % (self.minimax.capitalize(),)
         for slot in self.allSlots:
          ret += "\t" + slot.__repr__()
         ret += "\n"
@@ -1038,7 +1039,8 @@ class Population(PopulationBase):
         ret = "- Population\n"
         ret += "\tPopulation Size:\t %d\n" % (self.popSize,)
         ret += "\tSort Type:\t\t %s\n" % (constants.sortType.keys()[constants.sortType.values().index(self.sortType)].capitalize(),)
-        ret += "\tMinimax Type:\t\t %s\n" % (constants.minimaxType.keys()[constants.minimaxType.values().index(self.minimax)].capitalize(),)
+        #ret += "\tMinimax Type:\t\t %s\n" % (constants.minimaxType.keys()[constants.minimaxType.values().index(self.minimax)].capitalize(),)
+        ret += "\tMinimax Type:\t\t %s\n" % (self.minimax.capitalize(),)
         for slot in self.allSlots:
          ret += "\t" + slot.__repr__()
         ret += "\n"

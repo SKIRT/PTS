@@ -30,12 +30,15 @@ def GRankSelector(population, **args):
     count = 0
 
     if args["popID"] != GRankSelector.cachePopID:
+
       if population.sortType == constants.sortType["scaled"]:
+
          best_fitness = population.bestFitness().fitness
          for index in xrange(1, len(population.internalPop)):
             if population[index].fitness == best_fitness:
                count += 1
       else:
+
          best_raw = population.bestRaw().score
          for index in xrange(1, len(population.internalPop)):
             if population[index].score == best_raw:
@@ -84,7 +87,7 @@ def GTournamentSelector(population, **args):
    from . import constants
 
    choosen = None
-   should_minimize = population.minimax == constants.minimaxType["minimize"]
+   should_minimize = population.minimax == "minimize" #constants.minimaxType["minimize"]
    minimax_operator = min if should_minimize else max
 
    poolSize = population.getParam("tournamentPool", constants.CDefTournamentPoolSize)
@@ -114,7 +117,9 @@ def GTournamentSelectorAlternative(population, **args):
 
    pool_size = population.getParam("tournamentPool", constants.CDefTournamentPoolSize)
    len_pop = len(population)
-   should_minimize = population.minimax == constants.minimaxType["minimize"]
+
+   should_minimize = population.minimax == "minimize" #constants.minimaxType["minimize"]
+
    minimax_operator = min if should_minimize else max
    tournament_pool = [population[prng.randint(0, len_pop)] for i in xrange(pool_size)]
 
@@ -178,6 +183,7 @@ def GRouletteWheel_PrepareWheel(population):
    population.statistics()
 
    if population.sortType == constants.sortType["scaled"]:
+
       pop_fitMax = population.stats["fitMax"]
       pop_fitMin = population.stats["fitMin"]
 
@@ -185,20 +191,32 @@ def GRouletteWheel_PrepareWheel(population):
          for index in xrange(len_pop):
             psum[index] = (index + 1) / float(len_pop)
       elif (pop_fitMax > 0 and pop_fitMin >= 0) or (pop_fitMax <= 0 and pop_fitMin < 0):
+
          population.sort()
-         if population.minimax == constants.minimaxType["maximize"]:
+
+         #if population.minimax == constants.minimaxType["maximize"]:
+         if population.minimax == "maximize":
+
             psum[0] = population[0].fitness
             for i in xrange(1, len_pop):
                psum[i] = population[i].fitness + psum[i - 1]
             for i in xrange(len_pop):
                psum[i] /= float(psum[len_pop - 1])
-         else:
+
+         #else:
+         elif population.minimax == "minimize":
+
             psum[0] = -population[0].fitness + pop_fitMax + pop_fitMin
             for i in xrange(1, len_pop):
                psum[i] = -population[i].fitness + pop_fitMax + pop_fitMin + psum[i - 1]
             for i in xrange(len_pop):
                psum[i] /= float(psum[len_pop - 1])
+
+         # Invalid
+         else: raise ValueError("Invalid minimax: " + str(population.minimax))
+
    else:
+
       pop_rawMax = population.stats["rawMax"]
       pop_rawMin = population.stats["rawMin"]
 
@@ -207,19 +225,28 @@ def GRouletteWheel_PrepareWheel(population):
             psum[index] = (index + 1) / float(len_pop)
 
       elif (pop_rawMax > 0 and pop_rawMin >= 0) or (pop_rawMax <= 0 and pop_rawMin < 0):
+
          population.sort()
-         if population.minimax == constants.minimaxType["maximize"]:
+
+         #if population.minimax == constants.minimaxType["maximize"]:
+         if population.minimax == "maximize":
+
             psum[0] = population[0].score
             for i in xrange(1, len_pop):
                psum[i] = population[i].score + psum[i - 1]
             for i in xrange(len_pop):
                psum[i] /= float(psum[len_pop - 1])
-         else:
+
+         #else:
+         elif population.minimax == "minimize":
+
             psum[0] = - population[0].score + pop_rawMax + pop_rawMin
             for i in xrange(1, len_pop):
                psum[i] = - population[i].score + pop_rawMax + pop_rawMin + psum[i - 1]
             for i in xrange(len_pop):
                psum[i] /= float(psum[len_pop - 1])
+
+         else: raise ValueError("Invalid minimax: " + str(population.minimax))
 
    return psum
 
