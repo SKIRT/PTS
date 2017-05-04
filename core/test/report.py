@@ -28,7 +28,7 @@ class TestReport(object):
         """
 
         # Call the constructor of the base class
-        super(ImportsChecker, self).__init__(config)
+        super(TestReport, self).__init__()
 
         csscommands = """<style type="text/css">
                              [id^="togList"],                        /* HIDE CHECKBOX */

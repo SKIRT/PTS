@@ -28,7 +28,7 @@ class OldStellarMapMaker(MapsComponent):
     This class...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
@@ -37,7 +37,7 @@ class OldStellarMapMaker(MapsComponent):
         """
 
         # Call the constructor of the base class
-        super(OldStellarMapMaker, self).__init__(config, interactive)
+        super(OldStellarMapMaker, self).__init__(*args, **kwargs)
 
     # -----------------------------------------------------------------
 

@@ -36,18 +36,17 @@ class TruncationPlotter(PlottingComponent, TruncationComponent):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
-        :param interactive:
+        :param kwargs:
         :return:
         """
 
         # Call the constructors of the base classes
-        PlottingComponent.__init__(self, config, interactive)
-        TruncationComponent.__init__(self, config, interactive)
+        PlottingComponent.__init__(self, *args, **kwargs)
+        TruncationComponent.__init__(self, *args, **kwargs)
 
         # -- Attributes --
 

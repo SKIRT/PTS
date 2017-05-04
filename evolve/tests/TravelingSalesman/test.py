@@ -45,15 +45,15 @@ class TSPTest(TestImplementation):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param path:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(TSPTest, self).__init__(config)
+        super(TSPTest, self).__init__(*args, **kwargs)
 
     # -----------------------------------------------------------------
 

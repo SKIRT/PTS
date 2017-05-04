@@ -65,16 +65,15 @@ class Installer(Configurable):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
-        :param config:
-        :param interactive:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(Installer, self).__init__(config, interactive)
+        super(Installer, self).__init__(*args, **kwargs)
 
         # The remote execution environment
         self.remote = None
@@ -304,16 +303,15 @@ class SKIRTInstaller(Installer):
     This class ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
-        :param interactive:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(SKIRTInstaller, self).__init__(config, interactive)
+        super(SKIRTInstaller, self).__init__(*args, **kwargs)
 
         # The paths to the C++ compiler and MPI compiler
         self.compiler_path = None
@@ -1234,16 +1232,15 @@ class PTSInstaller(Installer):
     This function ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
-        :param config:
-        :param interactive:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(PTSInstaller, self).__init__(config, interactive)
+        super(PTSInstaller, self).__init__(*args, **kwargs)
 
         # Path to python executable
         self.python_path = None

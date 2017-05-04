@@ -37,7 +37,7 @@ class MemoryEstimator(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
@@ -45,7 +45,7 @@ class MemoryEstimator(Configurable):
         """
 
         # Call the constructor of the base class
-        super(MemoryEstimator, self).__init__(config, interactive)
+        super(MemoryEstimator, self).__init__(*args, **kwargs)
 
         # The ski file
         self.ski = None

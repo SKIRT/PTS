@@ -37,7 +37,7 @@ class TotalOldStellarMapMaker(Configurable):
     This class...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
@@ -46,7 +46,7 @@ class TotalOldStellarMapMaker(Configurable):
         """
 
         # Call the constructor of the base class
-        super(TotalOldStellarMapMaker, self).__init__(config, interactive)
+        super(TotalOldStellarMapMaker, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 

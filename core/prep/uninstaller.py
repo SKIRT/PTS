@@ -28,16 +28,16 @@ class Uninstaller(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None,interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
-        :param interactive:
+        :param kwargs:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(Uninstaller, self).__init__(config, interactive)
+        super(Uninstaller, self).__init__(*args, **kwargs)
 
         # The remote
         self.remote = None

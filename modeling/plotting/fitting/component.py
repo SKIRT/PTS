@@ -25,7 +25,7 @@ class FittingPlottingComponent(PlottingComponent, FittingComponent):
     This class ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
@@ -33,8 +33,8 @@ class FittingPlottingComponent(PlottingComponent, FittingComponent):
         """
 
         # Call the constructor of the base classes
-        PlottingComponent.__init__(self, config, interactive)
-        FittingComponent.__init__(self, config, interactive)
+        PlottingComponent.__init__(self, *args, **kwargs)
+        FittingComponent.__init__(self, *args, **kwargs)
 
         self.plot_fitting_chisquared_path = None
         self.plot_fitting_distributions_path = None

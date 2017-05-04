@@ -41,3 +41,18 @@ class UserIntervention(Exception):
         super(UserIntervention, self).__init__(message)
 
 # -----------------------------------------------------------------
+
+class abstractclassmethod(classmethod):
+
+    """
+    This class is a decorator for abstract class methods
+    """
+
+    __isabstractmethod__ = True
+
+    def __init__(self, callable):
+
+        callable.__isabstractmethod__ = True
+        super(abstractclassmethod, self).__init__(callable)
+
+# -----------------------------------------------------------------

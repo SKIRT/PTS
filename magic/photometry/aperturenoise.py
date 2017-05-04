@@ -64,16 +64,15 @@ class ApertureNoiseCalculator(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
-        :param interactive:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(ApertureNoiseCalculator, self).__init__(config, interactive)
+        super(ApertureNoiseCalculator, self).__init__(*args, **kwargs)
 
         # INPUT
 
@@ -254,16 +253,15 @@ class ExactApertureNoiseCalculator(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
-        :param interactive:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(ExactApertureNoiseCalculator, self).__init__(config, interactive)
+        super(ExactApertureNoiseCalculator, self).__init__(*args, **kwargs)
 
         # INPUT
 
@@ -1416,16 +1414,15 @@ class ExtrapolatingApertureNoiseCalculator(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The consturctor ...
-        :param config:
-        :param interactive:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(ExtrapolatingApertureNoiseCalculator, self).__init__(config, interactive)
+        super(ExtrapolatingApertureNoiseCalculator, self).__init__(*args, **kwargs)
 
         # INPUT
 

@@ -45,16 +45,15 @@ class M81SEDTest(M81TestBase):
     and fitting to a mock observed SED
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor
-        :param config:
-        :param interactive:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(M81SEDTest, self).__init__(config, interactive)
+        super(M81SEDTest, self).__init__(*args, **kwargs)
 
         # The galaxy properties
         self.properties = None

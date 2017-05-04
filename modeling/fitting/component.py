@@ -37,17 +37,17 @@ class FittingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None, interactive=False, cwd=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
-        :param interactive:
+        :param args:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(FittingComponent, self).__init__(config, interactive, cwd=cwd)
+        super(FittingComponent, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 

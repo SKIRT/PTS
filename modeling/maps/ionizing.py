@@ -26,17 +26,16 @@ class IonizingStellarMapMaker(MapsComponent):
     This class...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
-        :param interactive:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(IonizingStellarMapMaker, self).__init__(config, interactive)
+        super(IonizingStellarMapMaker, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 

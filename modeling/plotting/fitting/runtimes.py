@@ -30,7 +30,7 @@ class RuntimesPlotter(FittingPlottingComponent):
     This function ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
@@ -38,7 +38,7 @@ class RuntimesPlotter(FittingPlottingComponent):
         """
 
         # Call the constructor of the base class
-        super(RuntimesPlotter, self).__init__(config, interactive)
+        super(RuntimesPlotter, self).__init__(*args, **kwargs)
 
         # The runtimes
         self.runtimes = None

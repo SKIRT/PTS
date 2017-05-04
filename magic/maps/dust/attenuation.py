@@ -60,7 +60,7 @@ class AttenuationDustMapsMaker(Configurable):
     This class...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
@@ -69,7 +69,7 @@ class AttenuationDustMapsMaker(Configurable):
         """
 
         # Call the constructor of the base class
-        super(AttenuationDustMapsMaker, self).__init__(config, interactive)
+        super(AttenuationDustMapsMaker, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 

@@ -35,16 +35,15 @@ class SkiFiller(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
-        :param interactive:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(SkiFiller, self).__init__(config, interactive)
+        super(SkiFiller, self).__init__(*args, **kwargs)
 
         # The ski file
         self.ski = None

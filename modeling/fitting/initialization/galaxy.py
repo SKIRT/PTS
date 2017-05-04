@@ -28,18 +28,18 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
     This class...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
-        :param interactive:
+        :param args:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        FittingInitializerBase.__init__(self, config, interactive)
-        GalaxyModelingComponent.__init__(self, config, interactive)
+        FittingInitializerBase.__init__(self, *args, **kwargs)
+        GalaxyModelingComponent.__init__(self, *args, **kwargs)
 
         # The initial model representation
         self.representation = None

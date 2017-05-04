@@ -49,7 +49,7 @@ class ColoursSSFRMapsMaker(Configurable):
     This class...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
@@ -58,7 +58,7 @@ class ColoursSSFRMapsMaker(Configurable):
         """
 
         # Call the constructor of the base class
-        super(ColoursSSFRMapsMaker, self).__init__(config, interactive)
+        super(ColoursSSFRMapsMaker, self).__init__(*args, **kwargs)
 
         # The colour maps
         self.colours = dict()

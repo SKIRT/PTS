@@ -67,16 +67,17 @@ class SEDPlotter(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
+        :param *args
         :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(SEDPlotter, self).__init__(config, interactive)
+        super(SEDPlotter, self).__init__(*args, **kwargs)
 
         # The plot title
         self.title = None

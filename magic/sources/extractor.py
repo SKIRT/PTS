@@ -43,7 +43,7 @@ class SourceExtractor(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
@@ -52,7 +52,7 @@ class SourceExtractor(Configurable):
         """
 
         # Call the constructor of the base class
-        super(SourceExtractor, self).__init__(config, interactive)
+        super(SourceExtractor, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 

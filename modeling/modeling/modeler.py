@@ -29,16 +29,15 @@ class Modeler(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
-        :param interactive:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(Modeler, self).__init__(config, interactive)
+        super(Modeler, self).__init__(*args, **kwargs)
 
         # The modeling path
         self.modeling_path = None

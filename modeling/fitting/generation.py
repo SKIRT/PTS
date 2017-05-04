@@ -34,10 +34,10 @@ class Generation(object):
         """
 
         # Call the constructor of the base class
-        super(FittingComponent, self).__init__(config)
+        #super(FittingComponent, self).__init__(config)
 
         # -- Attributes --
 
-        
+        pass
 
 # -----------------------------------------------------------------

@@ -36,17 +36,16 @@ class BuildComponent(ModelingComponent):
     This class...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
-        :param interactive:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(BuildComponent, self).__init__(config, interactive)
+        super(BuildComponent, self).__init__(*args, **kwargs)
 
         # Path to the models directory
         self.models_path = None

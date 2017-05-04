@@ -28,18 +28,18 @@ class ImagesFittingInitializer(FittingInitializerBase, ImagesModelingComponent):
     This class...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
-        :param interactive:
+        :param args:
+        :param kwargs:
         :return:
         """
 
         # Call the constructors of the base classes
-        FittingInitializerBase.__init__(self, config, interactive)
-        ImagesModelingComponent.__init__(self, config, interactive)
+        FittingInitializerBase.__init__(self, *args, **kwargs)
+        ImagesModelingComponent.__init__(self, *args, **kwargs)
 
     # -----------------------------------------------------------------
 

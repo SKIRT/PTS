@@ -28,7 +28,7 @@ class ExplorationFinisher(FittingComponent):
     This class ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
@@ -37,7 +37,7 @@ class ExplorationFinisher(FittingComponent):
         """
 
         # Call the constructor of the base class
-        super(ExplorationFinisher, self).__init__(config, interactive)
+        super(ExplorationFinisher, self).__init__(*args, **kwargs)
 
         # The fitting run
         self.fitting_run = None

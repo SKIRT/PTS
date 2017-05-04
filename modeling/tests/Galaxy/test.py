@@ -172,15 +172,15 @@ class GalaxyTest(TestImplementation):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
-        :param config:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(GalaxyTest, self).__init__(config)
+        super(GalaxyTest, self).__init__(*args, **kwargs)
 
         # Free parameters for fitting
         self.free_parameters = Map()

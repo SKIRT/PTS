@@ -37,15 +37,14 @@ class DecompositionResidualsCalculator(DecompositionComponent):
     This function ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
-        :param config:
-        :param interactive:
+        :param kwargs:
         """
 
-        super(DecompositionResidualsCalculator, self).__init__(config, interactive)
+        super(DecompositionResidualsCalculator, self).__init__(*args, **kwargs)
 
         self.i1_jy = None
         self.disk_jy = None

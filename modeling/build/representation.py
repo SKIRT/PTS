@@ -174,19 +174,18 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
     This class...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
-        :param interactive:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        #super(RepresentationBuilder, self).__init__(config, interactive)
-        BuildComponent.__init__(self, config=config, interactive=interactive)
-        GalaxyModelingComponent.__init__(self, config=config, interactive=interactive)
+        #super(RepresentationBuilder, self).__init__(*args, **kwargs)
+        BuildComponent.__init__(self, *args, **kwargs)
+        GalaxyModelingComponent.__init__(self, *args, **kwargs)
 
         # The model definition
         self.definition = None

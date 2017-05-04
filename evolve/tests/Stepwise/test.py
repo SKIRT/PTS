@@ -80,16 +80,15 @@ class StepWiseTest(TestImplementation):
     This class ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
-        :param config:
-        :param interactive:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(StepWiseTest, self).__init__(config, interactive)
+        super(StepWiseTest, self).__init__(*args, **kwargs)
 
         # Paths
         self.main_engine_path = None

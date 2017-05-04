@@ -53,7 +53,7 @@ class Fitter(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
@@ -62,7 +62,7 @@ class Fitter(Configurable):
         """
 
         # Call the constructor of the base class
-        super(Fitter, self).__init__(config, interactive)
+        super(Fitter, self).__init__(*args, **kwargs)
 
         # The function to be minimized or maximized
         self.function = None

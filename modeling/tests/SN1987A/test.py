@@ -40,16 +40,15 @@ class SN1987ATest(TestImplementation):
     This class ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
-        :param interactive:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(SN1987ATest, self).__init__(config, interactive)
+        super(SN1987ATest, self).__init__(*args, **kwargs)
 
         # The modeler
         self.modeler = None

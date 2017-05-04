@@ -49,16 +49,15 @@ class M81Test(M81TestBase):
     This class runs the test on M81
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
-        :param config:
-        :param interactive:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(M81Test, self).__init__(config, interactive)
+        super(M81Test, self).__init__(*args, **kwargs)
 
         # The coordinate systems for the various filters
         self.wcs_paths = None

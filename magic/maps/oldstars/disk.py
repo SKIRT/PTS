@@ -49,7 +49,7 @@ class DiskOldStellarMapMaker(Configurable):
     This class...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
@@ -58,7 +58,7 @@ class DiskOldStellarMapMaker(Configurable):
         """
 
         # Call the constructor of the base class
-        super(DiskOldStellarMapMaker, self).__init__(config, interactive)
+        super(DiskOldStellarMapMaker, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 

@@ -14,21 +14,12 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 
 # Import the relevant PTS classes and modules
 from ...core.basics.composite import SimplePropertyComposite
 from .projection import GalaxyProjection
-
-# -----------------------------------------------------------------
-
-class abstractclassmethod(classmethod):
-
-    __isabstractmethod__ = True
-
-    def __init__(self, callable):
-        callable.__isabstractmethod__ = True
-        super(abstractclassmethod, self).__init__(callable)
+from ...core.tools.utils import abstractclassmethod
 
 # -----------------------------------------------------------------
 

@@ -67,7 +67,7 @@ class ScalingTest(Configurable):
     An instance of the ScalingTest class represents a SKIRT scaling benchmark test for a particular ski file.
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
@@ -75,7 +75,7 @@ class ScalingTest(Configurable):
         """
 
         # Call the constructor of the base class
-        super(ScalingTest, self).__init__(config, interactive)
+        super(ScalingTest, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 

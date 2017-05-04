@@ -117,7 +117,7 @@ class WavelengthGridGenerator(Configurable):
     This class...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
@@ -126,7 +126,7 @@ class WavelengthGridGenerator(Configurable):
         """
 
         # Call the constructor of the base class
-        super(WavelengthGridGenerator, self).__init__(config, interactive)
+        super(WavelengthGridGenerator, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 

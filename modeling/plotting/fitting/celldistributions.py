@@ -27,16 +27,15 @@ class CellDistributionsPlotter(FittingPlottingComponent):
     This function ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
-        :param config:
-        :param interactive:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(CellDistributionsPlotter, self).__init__(config, interactive)
+        super(CellDistributionsPlotter, self).__init__(*args, **kwargs)
 
         # The distribution of dust cells per level
         self.dust_cell_trees = []

@@ -30,17 +30,17 @@ class FittingInitializerBase(FittingComponent):
     This class...
     """
 
-    def __init__(self, config=None, interactive=False, cwd=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
-        :param interactive:
+        :param args:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(FittingInitializerBase, self).__init__(config, interactive, cwd=cwd)
+        super(FittingInitializerBase, self).__init__(*args, **kwargs)
 
         # The fitting run
         self.fitting_run = None

@@ -63,7 +63,7 @@ class BlackBodyDustMapsMaker(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
@@ -73,7 +73,7 @@ class BlackBodyDustMapsMaker(Configurable):
         """
 
         # Call the constructor of the base class
-        super(BlackBodyDustMapsMaker, self).__init__(config, interactive)
+        super(BlackBodyDustMapsMaker, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 

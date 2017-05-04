@@ -29,17 +29,16 @@ class SEDRepresentationBuilder(BuildComponent):
     This class...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
-        :param interactive:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(SEDRepresentationBuilder, self).__init__(config, interactive)
+        super(SEDRepresentationBuilder, self).__init__(*args, **kwargs)
 
         # The model definition
         self.definition = None

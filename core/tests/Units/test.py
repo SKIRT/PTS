@@ -52,16 +52,15 @@ class UnitsTest(TestImplementation):
     This class ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
-        :param config:
-        :param interactive:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(UnitsTest, self).__init__(config, interactive)
+        super(UnitsTest, self).__init__(*args, **kwargs)
 
         self.observed_sed = None
         self.model_sed_1 = None

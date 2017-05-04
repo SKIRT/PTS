@@ -25,7 +25,7 @@ class SSFRMapMaker(Configurable):
     This class...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
@@ -34,7 +34,7 @@ class SSFRMapMaker(Configurable):
         """
 
         # Call the constructor of the base class
-        super(SSFRMapMaker, self).__init__(config, interactive)
+        super(SSFRMapMaker, self).__init__(*args, **kwargs)
 
     # -----------------------------------------------------------------
 

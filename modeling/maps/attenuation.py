@@ -26,7 +26,7 @@ class AttenuationMapMaker(MapsComponent):
     This class...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
@@ -35,7 +35,7 @@ class AttenuationMapMaker(MapsComponent):
         """
 
         # Call the constructor of the base class
-        super(AttenuationMapMaker, self).__init__(config, interactive)
+        super(AttenuationMapMaker, self).__init__(*args, **kwargs)
 
     # -----------------------------------------------------------------
 

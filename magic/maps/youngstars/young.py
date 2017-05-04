@@ -73,7 +73,7 @@ class YoungStellarMapsMaker(Configurable):
     This class...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
@@ -82,7 +82,7 @@ class YoungStellarMapsMaker(Configurable):
         """
 
         # Call the constructor of the base class
-        super(YoungStellarMapsMaker, self).__init__(config, interactive)
+        super(YoungStellarMapsMaker, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 

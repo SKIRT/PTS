@@ -70,7 +70,7 @@ class SchedulingOptions(Options):
     This function ...
     """
 
-    def __init__(self, **kwargs):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...

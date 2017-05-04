@@ -54,17 +54,16 @@ class TransmissionPlotter(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
-        :param config:
-        :param interactive:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(TransmissionPlotter, self).__init__(config, interactive)
+        super(TransmissionPlotter, self).__init__(*args, **kwargs)
 
         # The title
         self.title = None

@@ -31,7 +31,7 @@ class SignificanceMaskCreator(MapsComponent):
     This class...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
@@ -40,7 +40,7 @@ class SignificanceMaskCreator(MapsComponent):
         """
 
         # Call the constructor of the base class
-        super(SignificanceMaskCreator, self).__init__(config, interactive)
+        super(SignificanceMaskCreator, self).__init__(*args, **kwargs)
 
         # The origins
         self.origins_dict = None

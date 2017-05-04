@@ -80,17 +80,16 @@ class PhotoMeter(PhotometryComponent):
     This class...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
-        :param interactive:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(PhotoMeter, self).__init__(config, interactive)
+        super(PhotoMeter, self).__init__(*args, **kwargs)
 
         # The list of image frames
         self.frames = dict()
@@ -639,7 +638,7 @@ class PhotoMeter(PhotometryComponent):
         config = setter.run(definition)
 
         # Create the aperture noise calculator, configure it with the configuration
-        calculator = ApertureNoiseCalculator(config)
+        calculator = ApertureNoiseCalculator(config=config)
 
         # Set the input
         input_dict = dict()

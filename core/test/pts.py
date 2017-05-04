@@ -141,17 +141,16 @@ class PTSTestSuite(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
 
         """
         This class ...
-        :param config:
-        :param interactive:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(PTSTestSuite, self).__init__(config, interactive)
+        super(PTSTestSuite, self).__init__(*args, **kwargs)
 
         # The import statements checker
         self.checker = None

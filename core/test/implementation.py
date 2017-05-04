@@ -39,16 +39,16 @@ class TestImplementation(Configurable):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
-        :param config:
-        :param interactive:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(TestImplementation, self).__init__(config, interactive, unlisted=True)
+        kwargs["unlisted"] = True
+        super(TestImplementation, self).__init__(*args, **kwargs)
 
         # The test path
         self.path = None

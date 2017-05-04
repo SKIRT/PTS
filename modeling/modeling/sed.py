@@ -36,16 +36,15 @@ class SEDModeler(ModelerBase):
     This class ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
-        :param interactive:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(SEDModeler, self).__init__(config, interactive)
+        super(SEDModeler, self).__init__(*args, **kwargs)
 
         # Optional configs for the fitting configurer
         self.descriptions_config = None
@@ -150,7 +149,7 @@ class SEDModeler(ModelerBase):
         config["name"] = self.model_name
 
         # Create the builder
-        builder = SEDModelBuilder(config)
+        builder = SEDModelBuilder(config=config)
 
         # Run
         builder.run()
@@ -173,7 +172,7 @@ class SEDModeler(ModelerBase):
         config["model_name"] = self.model_name
 
         # Create the representation
-        builder = SEDRepresentationBuilder(config)
+        builder = SEDRepresentationBuilder(config=config)
 
         # Run
         builder.run()

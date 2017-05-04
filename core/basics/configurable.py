@@ -57,17 +57,16 @@ class Configurable(object):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None, interactive=False, unlisted=False, cwd=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
-        :param interactive:
-        :param unlisted:
+        :param args:
+        :param kwargs:
         """
 
         # Set configuration
-        self.config = self.get_config(config, interactive=interactive, unlisted=unlisted, cwd=cwd)
+        self.config = self.get_config(*args, **kwargs)
 
         # Set the detached calculations flag
         self.detached = False
@@ -75,15 +74,28 @@ class Configurable(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def get_config(cls, config=None, interactive=False, unlisted=False, cwd=None):
+    def get_config(cls, *args, **kwargs):
 
         """
         This function ...
-        :param config:
-        :param interactive:
-        :param unlisted:
+        :param kwargs:
         :return:
         """
+
+        # Get config from positional args
+        if len(args) == 0: config = None
+        elif len(args) == 1: config = args[0]
+        else: raise ValueError("Can only one positional argument, which is the configuration (dictionary)")
+
+        # Get config from kwargs
+        if "config" in kwargs:
+            if config is not None: raise ValueError("Config was passed as positional argument, so cannot be passed as keyword argument as well")
+            else: config = kwargs.pop("config")
+
+        # Get other settings from kwargs
+        interactive = kwargs.pop("interactive", False)
+        unlisted = kwargs.pop("unlisted", False)
+        cwd = kwargs.pop("cwd", None)
 
         from .configuration import get_config_for_class
 
@@ -206,15 +218,15 @@ class HierarchicConfigurable(Configurable):
     This class ...
     """
 
-    def __init__(self, config):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(HierarchicConfigurable, self).__init__(config)
+        super(HierarchicConfigurable, self).__init__(*args, **kwargs)
 
         # The children
         self.children = dict()

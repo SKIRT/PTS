@@ -55,7 +55,7 @@ class SDSSMosaicMaker(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
@@ -63,7 +63,7 @@ class SDSSMosaicMaker(Configurable):
         """
 
         # Call the constructor of the base class
-        super(SDSSMosaicMaker, self).__init__(config, interactive)
+        super(SDSSMosaicMaker, self).__init__(*args, **kwargs)
 
         # The DustPedia sample object
         self.sample = None

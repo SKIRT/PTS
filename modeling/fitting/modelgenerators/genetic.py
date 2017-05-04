@@ -33,7 +33,7 @@ class GeneticModelGenerator(ModelGenerator):
     This function ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
@@ -41,7 +41,7 @@ class GeneticModelGenerator(ModelGenerator):
         """
 
         # Call the constructor of the base class
-        super(GeneticModelGenerator, self).__init__(config, interactive)
+        super(GeneticModelGenerator, self).__init__(*args, **kwargs)
 
         # The scores (only if this is not the initial generation)
         self.scores = None

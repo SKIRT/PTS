@@ -213,6 +213,7 @@ def get_config_for_class(cls, config=None, interactive=False, cwd=None):
     :param cls:
     :param config:
     :param interactive:
+    :param cwd:
     :return:
     """
 

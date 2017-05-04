@@ -25,16 +25,15 @@ class RunsOptimizer(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None, interactive=False):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
-        :param config:
-        :param interactive:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(RunsOptimizer, self).__init__(config, interactive)
+        super(RunsOptimizer, self).__init__(*args, **kwargs)
 
     # -----------------------------------------------------------------
 
