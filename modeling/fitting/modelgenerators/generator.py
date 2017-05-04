@@ -22,6 +22,7 @@ from ..component import FittingComponent
 from ....magic.animation.scatter import ScatterAnimation
 from ....magic.animation.distribution import DistributionAnimation
 from ....core.tools import types
+from ....core.tools import numbers, sequences
 
 # -----------------------------------------------------------------
 
@@ -243,6 +244,9 @@ class ModelGenerator(FittingComponent):
         # Call the setup of the base class
         super(ModelGenerator, self).setup(**kwargs)
 
+        # Get the fitting run
+        self.fitting_run = kwargs.pop("fitting_run")
+
     # -----------------------------------------------------------------
 
     def load_distributions(self):
@@ -311,6 +315,48 @@ class ModelGenerator(FittingComponent):
         """
 
         pass
+
+    # -----------------------------------------------------------------
+
+    def generate_grid_points(self, scale):
+
+        """
+        This function ...
+        :param scale: 
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Generating grid points for the parameter values of models on a " + scale + " scale ...")
+
+        # Determine the number of grid points for each parameter based on the desired total number of models
+        factors = numbers.divide_in_n_dimensions(self.config.nmodels, self.fitting_run.nfree_parameters)
+
+        # Initialize a dictionary for the grid points for each parameter
+        grid_points = dict()
+
+        # Generate the grid points for each parameter, and loop from the center of the range
+        for label_index, label in enumerate(self.fitting_run.free_parameter_labels):
+
+            # Determine the number of grid points
+            npoints = factors[label_index]
+
+            # Get the range
+            parameter_range = self.ranges[label]
+
+            # Generate the grid points, based on the scale
+            if scale == "linear": values = parameter_range.linear(npoints, as_list=True)
+            elif scale == "logarithmic": values = parameter_range.log(npoints, as_list=True)
+            else: raise ValueError("Invalid scale: " + str(scale))
+
+            # Re-arrange the list to contain the grid points from the center towards the edges
+            values = sequences.rearrange_from_middle(values)
+
+            # Set the values
+            grid_points[label] = values
+
+        # Return the dictionary
+        return grid_points
 
     # -----------------------------------------------------------------
 

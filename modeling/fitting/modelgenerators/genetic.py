@@ -23,6 +23,7 @@ from ....evolve.optimize.stepwise import StepWiseOptimizer
 from ....evolve.optimize.continuous import ContinuousOptimizer
 from ..evaluate import evaluate
 from ....core.tools.stringify import tostr
+from ....core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -62,10 +63,10 @@ class GeneticModelGenerator(ModelGenerator):
         # The parameter ranges
         self.parameter_ranges = None
 
-        #
+        # A dictionary of fixed parameter values for the initial generation
         self.fixed_initial_parameters = None
 
-        # The parametsr values of the intial populaiton
+        # The parameter values of the intial populaiton
         self.initial_parameters = None
 
     # -----------------------------------------------------------------
@@ -80,9 +81,6 @@ class GeneticModelGenerator(ModelGenerator):
 
         # Call the constructor of the base class
         super(GeneticModelGenerator, self).setup(**kwargs)
-
-        # Get the fitting run
-        self.fitting_run = kwargs.pop("fitting_run")
 
         # If the number of generations in one run is more than one
         if self.config.ngenerations > 1:
@@ -265,10 +263,11 @@ class GeneticModelGenerator(ModelGenerator):
     def nfixed_initial_parameters(self):
 
         """
-        gergg
+        This property ...
         :return: 
         """
 
+        # No fixed initial parameters
         if self.fixed_initial_parameters is None: return 0
         else: return len(self.fixed_initial_parameters[self.fixed_initial_parameters.keys()[0]])
 
@@ -277,24 +276,44 @@ class GeneticModelGenerator(ModelGenerator):
     def generate_initial_parameters(self):
 
         """
-        rgeg
+        This function ...
         :return: 
         """
 
+        # Initialize a list to contain the parameter sets
         self.initial_parameters = []
 
+        # Add fixed initial parameter sets if desired
         if self.fixed_initial_parameters is not None: self.generate_initial_parameters_fixed()
 
-        self.generate_initial_parameters_random()
+        # Add random initial parameter sets
+        if self.config.manual_initial_generation_method == "random": self.generate_initial_parameters_random()
+
+        # Add initial parameter sets based on a grid
+        elif self.config.manual_initial_generation_method == "grid": self.generate_initial_parameters_grid()
+
+        # Invalid method
+        else: raise ValueError("Invalid manual initial generation method: " + self.config.manual_initial_generation_method)
 
     # -----------------------------------------------------------------
 
     def generate_initial_parameters_fixed(self):
 
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Generating parameter sets based on the fixed initial parameters ...")
+
+        # Loop over the number of fixed initial parameter sets
         for i in range(self.nfixed_initial_parameters):
 
+            # Initialize the parameter set
             initial_parameters_model = []
 
+            # Get the value for each free parameters
             for label in self.fitting_run.free_parameter_labels:
 
                 quantity = self.fixed_initial_parameters[label][i]
@@ -306,14 +325,25 @@ class GeneticModelGenerator(ModelGenerator):
 
                 initial_parameters_model.append(value)
 
+            # Add the parameter set
             self.initial_parameters.append(initial_parameters_model)
 
     # -----------------------------------------------------------------
 
     def generate_initial_parameters_random(self):
 
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Generating initial parameter sets based on random number generation ...")
+
+        # Loop over the number of required models minus the number of fixed model parameter sets
         for _ in range(self.config.nmodels - self.nfixed_initial_parameters):
 
+            # Initialize list for parameter set
             initial_parameters_model = []
 
             # Set the list values
@@ -322,10 +352,10 @@ class GeneticModelGenerator(ModelGenerator):
                 range_min = self.parameter_minima_scalar[label_index]
                 range_max = self.parameter_maxima_scalar[label_index]
 
-                if self.config.manual_initial_generation_scale == "linear":
+                # Linear scale
+                if self.config.manual_initial_generation_scale == "linear": random = np.random.uniform(range_min, range_max)
 
-                    random = np.random.uniform(range_min, range_max)
-
+                # Logarithmic scale
                 elif self.config.manual_initial_generation_scale == "logarithmic":
 
                     logmin = np.log10(range_min)
@@ -334,13 +364,55 @@ class GeneticModelGenerator(ModelGenerator):
                     lograndom = np.random.uniform(logmin, logmax)
                     random = 10**lograndom
 
+                # Invalid scale
                 else: raise ValueError("Invalid scale: " + str(self.config.manual_initial_generation_scale))
 
+                # Add value to the parameter set
                 initial_parameters_model.append(random)
 
-
+            # Add the parameter set
             self.initial_parameters.append(initial_parameters_model)
 
+    # -----------------------------------------------------------------
+
+    def generate_initial_parameters_grid(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Generating initial parameter sets based on a grid in the n-d parameter space ...")
+
+        # Generate grid points
+        grid_points = self.generate_grid_points(self.config.manual_initial_generation_scale)
+
+        # Convert into lists, and strip units
+        grid_points_lists = []
+        for label in enumerate(self.fitting_run.free_parameter_labels):
+
+            # Get the list of scalar values
+            if label in self.fitting_run.parameter_units and self.fitting_run.parameter_units[label] is not None:
+                unit = self.fitting_run.parameter_units[label]
+                values = [value.to(unit).value for value in grid_points[label]]
+            else: values = grid_points[label]
+
+            # Add the list of grid point values
+            grid_points_lists.append(values)
+
+        # Create iterator of combinations
+        iterator = sequences.iterate_lists_combinations(grid_points_lists)
+
+        # Generate the initial parameter sets
+        # Loop over the number of required models minus the number of fixed model parameter sets
+        for index in range(self.config.nmodels - self.nfixed_initial_parameters):
+
+            # The next combination
+            initial_parameters_model = list(iterator.next()) # returns tuple
+
+            # Add the parameter set
+            self.initial_parameters.append(initial_parameters_model)
 
     # -----------------------------------------------------------------
 

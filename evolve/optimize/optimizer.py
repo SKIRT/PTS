@@ -711,18 +711,26 @@ class Optimizer(Configurable):
         :return: 
         """
 
+        # Inform the user
+        log.info("Creating the initial population ...")
+
+        # Initialize the population
         if self.config.named_individuals: population = NamedPopulation()
         else: population = Population()
 
+        # Loop over the parameter sets
         for parameters in self.initial_parameters:
 
+            # Make a new genome by cloning the initial genome
             genome = self.initial_genome.clone()
 
-            for gene_index in range(self.config.nparameters):
-                #genome[gene_index] = parameters[gene_index] # maybe this should be the way it is done because its a bit cleaner
-                genome.append(parameters[gene_index])
+            # Set the gens
+            genome.set_genes(parameters)
+
+            # Add the genome (individual) to the population
             population.append(genome)
 
+        # Return the population
         return population
 
     # -----------------------------------------------------------------
