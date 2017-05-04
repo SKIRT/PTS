@@ -225,6 +225,8 @@ class GalaxyModeler(ModelerBase):
         # Check whether a remote is available for the heavy computations, if one was configured
         if not self.other_local and self.moderator.host_id_for_single("other") is None: raise RuntimeError("The desired remote(s) for heavy computations are currently unavailable")
 
+        #
+
     # -----------------------------------------------------------------
 
     def get_data(self):

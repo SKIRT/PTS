@@ -416,7 +416,12 @@ class PopulationBase(object):
         # Already sorted?
         if self.sorted: return
 
-        rev = (self.minimax == constants.minimaxType["maximize"])
+        #rev = (self.minimax == constants.minimaxType["maximize"])
+
+        # Reverse or not
+        if self.minimax == "minimize": rev = False
+        elif self.minimax == "maximize": rev = True
+        else: raise ValueError("Wrong minimax type: must be 'maximize' or 'minimize'")
 
         if self.sortType == constants.sortType["raw"]: self.internalPop.sort(cmp=utils.cmp_individual_raw, reverse=rev)
         else:

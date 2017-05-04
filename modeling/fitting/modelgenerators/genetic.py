@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
 from .generator import ModelGenerator
@@ -58,6 +61,12 @@ class GeneticModelGenerator(ModelGenerator):
 
         # The parameter ranges
         self.parameter_ranges = None
+
+        #
+        self.fixed_initial_parameters = None
+
+        # The parametsr values of the intial populaiton
+        self.initial_parameters = None
 
     # -----------------------------------------------------------------
 
@@ -132,6 +141,9 @@ class GeneticModelGenerator(ModelGenerator):
         # Get the parameter ranges
         if "parameter_ranges" in kwargs: self.parameter_ranges = kwargs.pop("parameter_ranges")
 
+        # Get the fixed initial parameter values
+        if "fixed_initial_parameters" in kwargs: self.fixed_initial_parameters= kwargs.pop("fixed_initial_parameters")
+
         # Set parameters
         self.set_parameters()
 
@@ -194,6 +206,19 @@ class GeneticModelGenerator(ModelGenerator):
 
     # -----------------------------------------------------------------
 
+    @property
+    def generate_initial_manual(self):
+
+        """
+        This poret ekgpoege
+        :return: 
+        """
+
+        if self.fixed_initial_parameters is not None: return True
+        else: return self.config.manual_initial_generation
+
+    # -----------------------------------------------------------------
+
     def generate(self):
 
         """
@@ -207,9 +232,13 @@ class GeneticModelGenerator(ModelGenerator):
         # Set the scores
         if not self.initial: self.set_scores()
 
+        #
+        if self.initial and self.generate_initial_manual: self.generate_initial_parameters()
+
         # Run the optimizer
         self.optimizer.run(scores=self.scores, scores_check=self.scores_check, minima=self.parameter_minima_scalar,
-                           maxima=self.parameter_maxima_scalar, evaluator=self.evaluator, evaluator_kwargs=self.evaluator_kwargs)
+                           maxima=self.parameter_maxima_scalar, evaluator=self.evaluator,
+                           evaluator_kwargs=self.evaluator_kwargs, initial_parameters=self.initial_parameters)
 
         # Get the parameter values of the new models
         self.get_model_parameters_named_individuals()
@@ -229,6 +258,89 @@ class GeneticModelGenerator(ModelGenerator):
 
         # Get the scores (and check)
         self.scores, self.scores_check = get_last_generation_scores(self.fitting_run)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nfixed_initial_parameters(self):
+
+        """
+        gergg
+        :return: 
+        """
+
+        if self.fixed_initial_parameters is None: return 0
+        else: return len(self.fixed_initial_parameters[self.fixed_initial_parameters.keys()[0]])
+
+    # -----------------------------------------------------------------
+
+    def generate_initial_parameters(self):
+
+        """
+        rgeg
+        :return: 
+        """
+
+        self.initial_parameters = []
+
+        if self.fixed_initial_parameters is not None: self.generate_initial_parameters_fixed()
+
+        self.generate_initial_parameters_random()
+
+    # -----------------------------------------------------------------
+
+    def generate_initial_parameters_fixed(self):
+
+        for i in range(self.nfixed_initial_parameters):
+
+            initial_parameters_model = []
+
+            for label in self.fitting_run.free_parameter_labels:
+
+                quantity = self.fixed_initial_parameters[label][i]
+
+                if label in self.fitting_run.parameter_units and self.fitting_run.parameter_units[label] is not None:
+                    unit = self.fitting_run.parameter_units[label]
+                    value = quantity.to(unit).value
+                else: value = quantity
+
+                initial_parameters_model.append(value)
+
+            self.initial_parameters.append(initial_parameters_model)
+
+    # -----------------------------------------------------------------
+
+    def generate_initial_parameters_random(self):
+
+        for _ in range(self.config.nmodels - self.nfixed_initial_parameters):
+
+            initial_parameters_model = []
+
+            # Set the list values
+            for label_index, label in enumerate(self.fitting_run.free_parameter_labels):
+
+                range_min = self.parameter_minima_scalar[label_index]
+                range_max = self.parameter_maxima_scalar[label_index]
+
+                if self.config.manual_initial_generation_scale == "linear":
+
+                    random = np.random.uniform(range_min, range_max)
+
+                elif self.config.manual_initial_generation_scale == "logarithmic":
+
+                    logmin = np.log10(range_min)
+                    logmax = np.log10(range_max)
+
+                    lograndom = np.random.uniform(logmin, logmax)
+                    random = 10**lograndom
+
+                else: raise ValueError("Invalid scale: " + str(self.config.manual_initial_generation_scale))
+
+                initial_parameters_model.append(random)
+
+
+            self.initial_parameters.append(initial_parameters_model)
+
 
     # -----------------------------------------------------------------
 
