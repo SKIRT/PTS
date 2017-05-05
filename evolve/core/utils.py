@@ -137,7 +137,7 @@ def cmp_individual_scaled(a, b):
             -1 if the B individual fitness score is greater than A and
             1 if the A individual fitness score is greater than B.
 
-    .. note:: this function is used to sorte the population individuals
+    .. note:: this function is used to sort the population individuals
     """
 
     if a.fitness < b.fitness:

@@ -28,20 +28,19 @@ modeling_path = fs.cwd()
 # -----------------------------------------------------------------
 
 # Get the fitting method
-fitting_method = get_fitting_method(modeling_path)
+#fitting_method = get_fitting_method(modeling_path)
 
 # Set generation methods and default generation method, based on the fitting method
-if fitting_method == "genetic":
+#if fitting_method == "genetic":
+#    default_generation_method = "genetic"
+#    generation_methods = ["genetic", "grid"]
+#elif fitting_method == "grid":
+#    default_generation_method = "grid"
+#    generation_methods = ["grid"]
+#else: raise ValueError("Fitting method has an invalid value: " + fitting_method + " (must be 'genetic' or 'grid'")
 
-    default_generation_method = "genetic"
-    generation_methods = ["genetic", "grid"]
-
-elif fitting_method == "grid":
-
-    default_generation_method = "grid"
-    generation_methods = ["grid"]
-
-else: raise ValueError("Fitting method has an invalid value: " + fitting_method + " (must be 'genetic' or 'grid'")
+default_generation_method = "genetic"
+generation_methods = ["genetic", "grid"]
 
 # -----------------------------------------------------------------
 

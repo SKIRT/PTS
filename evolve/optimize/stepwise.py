@@ -343,7 +343,8 @@ class StepWiseOptimizer(Optimizer):
         elitism_data = self.engine.set_scores(self.scores, self.scores_check)
 
         # Create elitism table
-        self.elitism_table = Elitismtable.from_data(elitism_data)
+        if elitism_data is not None: self.elitism_table = Elitismtable.from_data(elitism_data)
+        else: log.warning("No elitism has been performed in this generation")
 
     # -----------------------------------------------------------------
 
@@ -414,7 +415,7 @@ class StepWiseOptimizer(Optimizer):
         self.write_parameters()
 
         # Write the elitism data
-        self.write_elitism()
+        if self.elitism_table is not None: self.write_elitism()
 
     # -----------------------------------------------------------------
 

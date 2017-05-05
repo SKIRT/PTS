@@ -373,6 +373,7 @@ def get_definition(class_name, configuration_module_path, cwd=None):
 
     ## GET THE CONFIGURATION DEFINITION
     try:
+        #print(cwd)
         if cwd is not None: original_cwd = fs.change_cwd(cwd)
         else: original_cwd = None
         configuration_module = importlib.import_module(configuration_module_path)
