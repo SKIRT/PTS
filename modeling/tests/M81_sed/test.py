@@ -77,9 +77,6 @@ class M81SEDTest(M81TestBase):
         # The initial parameter values for the fitting
         self.initial_parameter_values = dict()
 
-
-        self.initial_population = []
-
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -131,9 +128,6 @@ class M81SEDTest(M81TestBase):
 
         # 14. Generate the initial parameter values
         self.generate_initial_parameter_values()
-
-        # Generate the initial population of individuals
-        self.generate_initial_population()
 
         # 15. Create the ski file template
         self.create_template()
@@ -319,7 +313,7 @@ class M81SEDTest(M81TestBase):
             # Multiply the value with a random number between 1/3 and 3.
             random = np.random.uniform(log_low, log_high)
             random_factor = 10 ** random
-            value = value * random_factor
+            value = value * random_factor # DON'T DO VALUE *= RANDOM_FACTOR HERE: CHANGES THE UNDERLYING QUANTITY OBJECT AS WELL IN SELF.REAL_PARAMETER_VALUES !!
 
             # Set the value as the initial parameter value
             self.initial_parameter_values[parameter_name] = value
@@ -329,21 +323,6 @@ class M81SEDTest(M81TestBase):
         log.debug("")
         for parameter_name in self.real_parameter_values: log.debug(" - " + parameter_name + ": " + tostr(self.initial_parameter_values[parameter_name])[1])
         log.debug("")
-
-    # -----------------------------------------------------------------
-
-    def generate_initial_population(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        # Inform the user
-        log.info("Generating the initial population ...")
-
-        # Loop
-        for label in self.parameter_labels: pass
 
     # -----------------------------------------------------------------
 

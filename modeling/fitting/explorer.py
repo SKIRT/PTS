@@ -568,7 +568,7 @@ class ParameterExplorer(FittingComponent):
         log.info("Generating the model parameters ...")
 
         # Run the model generator
-        self.generator.run(fitting_run=self.fitting_run, parameter_ranges=self.ranges, fixed_initial_parameters=self.fixed_initial_parameters)
+        self.generator.run(fitting_run=self.fitting_run, parameter_ranges=self.ranges, fixed_initial_parameters=self.fixed_initial_parameters, generation_path=self.generation_path)
 
     # -----------------------------------------------------------------
 
@@ -1117,6 +1117,18 @@ class ParameterExplorer(FittingComponent):
         """
 
         return self.individuals_table.simulation_names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def generation_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.generation.path
 
     # -----------------------------------------------------------------
 

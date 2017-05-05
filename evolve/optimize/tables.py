@@ -33,9 +33,48 @@ class Elitismtable(SmartTable):
         """
 
         # Call the constructor of the base class
-        super(ScoresTable, self).__init__(*args, **kwargs)
+        super(Elitismtable, self).__init__(*args, **kwargs)
 
-        self.column_info.append("")
+        # Add column information
+        self.column_info.append("Generation", int, None, "Generation index")
+        self.column_info.append("Elitism replacement", int, None, "# elitism replacement")
+        self.column_info.append("Min_or_max", str, None, "minimize or maximize")
+        self.column_info.append("Old best raw score", float, None, "raw score of best individual of old population")
+        self.column_info.append("Old best fitness", float, None, "fitness of best individual of old population")
+        self.column_info.append("New best raw score", float, None, "raw score of best individual of new population")
+        self.column_info.append("New best fitness", float, None, "fitness of best individual of new population")
+        self.column_info.append("Individual ID", str, None, "name or index of the individual that is replaced")
+        self.column_info.append("Elitism performed", bool, None, "elitism condition was met")
+        self.column_info.append("Replaced raw score", float, None, "raw score of the individual that was replaced")
+        self.column_info.append("Replaced fitness", float, None, "fitness of the individual that was replaced")
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_data(cls, data):
+
+        """
+        This function ...
+        :param data:
+        :return: 
+        """
+
+        # Create a new table
+        table = cls()
+
+        # Setup
+        table.setup()
+
+        # Add the rows
+        length = len(data["Generation"])
+        for i in range(length):
+
+            values = []
+            for name in table.colnames: values.append(data[name][i])
+            table.add_row(values)
+
+        # Return the table
+        return table
 
 # -----------------------------------------------------------------
 

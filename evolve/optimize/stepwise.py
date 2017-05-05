@@ -343,7 +343,7 @@ class StepWiseOptimizer(Optimizer):
         elitism_data = self.engine.set_scores(self.scores, self.scores_check)
 
         # Create elitism table
-        self.elitism_table = ElitismTable.from_data(elitism_data)
+        self.elitism_table = Elitismtable.from_data(elitism_data)
 
     # -----------------------------------------------------------------
 
@@ -362,6 +362,8 @@ class StepWiseOptimizer(Optimizer):
 
         # Get the new population
         self.population = self.engine.new_population
+
+        # check_recurrence????????
 
     # -----------------------------------------------------------------
 

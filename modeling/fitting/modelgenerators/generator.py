@@ -50,6 +50,9 @@ class ModelGenerator(FittingComponent):
         # The fitting run
         self.fitting_run = None
 
+        # The generation path
+        self.generation_path = None
+
         # The dictionary with the parameter ranges
         self.ranges = OrderedDict()
 
@@ -257,6 +260,9 @@ class ModelGenerator(FittingComponent):
 
         # Get the fitting run
         self.fitting_run = kwargs.pop("fitting_run")
+
+        # Get the generation path
+        self.generation_path = kwargs.pop("generation_path")
 
     # -----------------------------------------------------------------
 

@@ -1227,7 +1227,7 @@ class GeneticEngine(object):
 
             # Determine the individual ID
             if isinstance(new_population, NamedPopulation): individual_id = new_population.names[replacement_index]
-            else: individual_id = replacement_index
+            else: individual_id = str(replacement_index)
 
             # Replace the individual, if the condition is met
             if condition:
@@ -1238,7 +1238,7 @@ class GeneticEngine(object):
                 replaced_fitness = replaced.fitness
 
                 # Debugging
-                log.debug("Replacing individual '" + str(individual_id) + "' (raw score=" + str(replaced_raw) + ", fitness=" + str(replaced_fitness) + ") with the " + str(i) + "th individual from the old (internal) population (raw score=" + str(old_best_raw) + ", fitness=" + str(old_best_fitness) + ")...")
+                log.debug("Replacing individual '" + individual_id + "' (raw score=" + str(replaced_raw) + ", fitness=" + str(replaced_fitness) + ") with the " + str(i) + "th individual from the old (internal) population (raw score=" + str(old_best_raw) + ", fitness=" + str(old_best_fitness) + ")...")
 
                 # Replace
                 new_population[replacement_index] = old_best

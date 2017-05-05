@@ -97,4 +97,9 @@ definition.add_optional("nelite_individuals", "positive_integer", "number of ind
 # Must only be defined when specifying only centers and sigmas for gaussian initializers and mutators, and no minima or maxima, or parameter_range
 definition.add_optional("parameter_type", "string", "parameter type", choices=["real", "integer"])
 
+# Recurrence of the same individuals
+definition.add_flag("check_recurrence", "check for the recurrence of the same individuals", False)
+definition.add_optional("recurrence_rtol", "positive_real", "relative tolerance for comparing equality of individuals for checking recurrence", 1e-5)
+definition.add_optional("recurrence_atol", "positive_real", "absolute tolerance for comparing equality of individuals for checking recurrence", 1e-8)
+
 # -----------------------------------------------------------------

@@ -105,6 +105,10 @@ class GeneticModelGenerator(ModelGenerator):
 
         else:
 
+            # Set generation specific paths
+            individuals_path = fs.join(self.generation_path, "individuals.dat")
+            elitism_path = fs.join(self.generation_path, "elitism.dat")
+
             # Re-invoke existing optimizer run
             if fs.is_file(self.fitting_run.main_engine_path):
 
@@ -133,6 +137,10 @@ class GeneticModelGenerator(ModelGenerator):
 
                 # Set initial flag
                 self.initial = True
+
+            # Set generation specific paths
+            self.optimizer.config.writing.individuals_path = individuals_path
+            self.optimizer.config.writing.elitism_table_path = elitism_path
 
         # Get the parameter ranges
         if "parameter_ranges" in kwargs: self.parameter_ranges = kwargs.pop("parameter_ranges")
