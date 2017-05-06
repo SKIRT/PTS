@@ -90,38 +90,9 @@ class M81SEDTest(M81TestBase):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 2. Load the properties
-        self.load_properties()
-
-        # 3. Load the components
-        self.load_components()
-
-        # 4. Load the input maps
-        self.load_maps()
-
-        # 5. Create instrument
-        self.create_instrument()
-
-        # 6. Create deprojection
-        self.create_deprojections()
-
-        # 7. Create the wavelength grid
-        self.create_wavelength_grid()
-
-        # 8. Create the dust grid
-        self.create_dust_grid()
-
-        # 9. Create the ski file
-        self.create_ski()
-
-        # 10. Write
-        self.write()
-
-        # 11. Plot
-        self.plot()
-
-        # 12. Launch the reference simulation
-        self.launch_reference()
+        # Reference simulation
+        if self.config.reference_path is not None: self.load_reference()
+        else: self.create_reference()
 
         # 13. Get the real parameter values
         self.get_real_parameter_values()
@@ -189,6 +160,57 @@ class M81SEDTest(M81TestBase):
         # Create the SED instrument
         azimuth = parse_angle("0. deg")
         self.instrument = SEDInstrument(distance=self.galaxy_distance, inclination=self.galaxy_inclination, azimuth=azimuth, position_angle=self.galaxy_position_angle)
+
+    # -----------------------------------------------------------------
+
+    def load_reference(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+    # -----------------------------------------------------------------
+
+    def create_reference(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # 2. Load the properties
+        self.load_properties()
+
+        # 3. Load the components
+        self.load_components()
+
+        # 4. Load the input maps
+        self.load_maps()
+
+        # 5. Create instrument
+        self.create_instrument()
+
+        # 6. Create deprojection
+        self.create_deprojections()
+
+        # 7. Create the wavelength grid
+        self.create_wavelength_grid()
+
+        # 8. Create the dust grid
+        self.create_dust_grid()
+
+        # 9. Create the ski file
+        self.create_ski()
+
+        # 10. Write
+        self.write()
+
+        # 11. Plot
+        self.plot()
+
+        # 12. Launch the reference simulation
+        self.launch_reference()
 
     # -----------------------------------------------------------------
 

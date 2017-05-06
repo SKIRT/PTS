@@ -1191,7 +1191,7 @@ class GeneticEngine(object):
         log.info("Performing elitism ...")
 
         # Elitism data
-        data = DefaultOrderedDict()
+        data = DefaultOrderedDict(list)
 
         # Determine the generation index
         new_generation_index = self.currentGeneration + 1

@@ -36,17 +36,17 @@ class Elitismtable(SmartTable):
         super(Elitismtable, self).__init__(*args, **kwargs)
 
         # Add column information
-        self.column_info.append("Generation", int, None, "Generation index")
-        self.column_info.append("Elitism replacement", int, None, "# elitism replacement")
-        self.column_info.append("Min_or_max", str, None, "minimize or maximize")
-        self.column_info.append("Old best raw score", float, None, "raw score of best individual of old population")
-        self.column_info.append("Old best fitness", float, None, "fitness of best individual of old population")
-        self.column_info.append("New best raw score", float, None, "raw score of best individual of new population")
-        self.column_info.append("New best fitness", float, None, "fitness of best individual of new population")
-        self.column_info.append("Individual ID", str, None, "name or index of the individual that is replaced")
-        self.column_info.append("Elitism performed", bool, None, "elitism condition was met")
-        self.column_info.append("Replaced raw score", float, None, "raw score of the individual that was replaced")
-        self.column_info.append("Replaced fitness", float, None, "fitness of the individual that was replaced")
+        self.add_column_info("Generation", int, None, "Generation index")
+        self.add_column_info("Elitism replacement", int, None, "# elitism replacement")
+        self.add_column_info("Min_or_max", str, None, "minimize or maximize")
+        self.add_column_info("Old best raw score", float, None, "raw score of best individual of old population")
+        self.add_column_info("Old best fitness", float, None, "fitness of best individual of old population")
+        self.add_column_info("New best raw score", float, None, "raw score of best individual of new population")
+        self.add_column_info("New best fitness", float, None, "fitness of best individual of new population")
+        self.add_column_info("Individual ID", str, None, "name or index of the individual that is replaced")
+        self.add_column_info("Elitism performed", bool, None, "elitism condition was met")
+        self.add_column_info("Replaced raw score", float, None, "raw score of the individual that was replaced")
+        self.add_column_info("Replaced fitness", float, None, "fitness of the individual that was replaced")
 
     # -----------------------------------------------------------------
 

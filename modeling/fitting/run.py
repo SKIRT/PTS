@@ -1984,61 +1984,93 @@ def has_unevaluated_generations(modeling_path, fitting_run):
 # NEW FROM MODELINGCOMPONENT
 # -----------------------------------------------------------------
 
-def load_fitting_configuration(modeling_path):
+def get_fitting_run_path(modeling_path, fitting_run):
+
+    """
+    This function ...
+    :param modeling_path: 
+    :param fitting_run: 
+    :return: 
+    """
+
+    return fs.join(modeling_path, "fit", fitting_run)
+
+# -----------------------------------------------------------------
+
+def get_fitting_configuration_path(modeling_path, fitting_run):
+
+    """
+    This function ...
+    :param modeling_path: 
+    :param fitting_run: 
+    :return: 
+    """
+
+    run_path = get_fitting_run_path(modeling_path, fitting_run)
+    fitting_configuration_path = fs.join(run_path, "configuration.cfg")
+    return fitting_configuration_path
+
+# -----------------------------------------------------------------
+
+def load_fitting_configuration(modeling_path, fitting_run):
 
     """"
     This function ...
     :param modeling_path:
+    :param fitting_run:
     :return:
     """
 
+    # Get path
+    path = get_fitting_configuration_path(modeling_path, fitting_run)
+
     # Determine the path to the fitting configuration file
-    fitting_configuration_path = fs.join(modeling_path, "fit", "configuration.cfg")
-    if not fs.is_file(fitting_configuration_path): return None
+    if not fs.is_file(path): return None
 
     # Open the configuration and return it
-    return Configuration.from_file(fitting_configuration_path)
+    return Configuration.from_file(path)
 
 # -----------------------------------------------------------------
 
-def get_free_parameter_labels(modeling_path):
+def get_free_parameter_labels(modeling_path, fitting_run):
 
     """
     THIS FUNCTION GUARANTEES THAT THE LABELS ARE ALWAYS ORDERED ALPHABETICALLY !!
     :return:
     """
 
-    fitting_configuration = load_fitting_configuration(modeling_path)
+    fitting_configuration = load_fitting_configuration(modeling_path, fitting_run)
     return sorted(fitting_configuration.free_parameters)
 
 # -----------------------------------------------------------------
 
-def get_parameter_descriptions(modeling_path):
+def get_parameter_descriptions(modeling_path, fitting_run):
 
     """
     This function ...
     :return:
     """
 
-    fitting_configuration = load_fitting_configuration(modeling_path)
+    fitting_configuration = load_fitting_configuration(modeling_path, fitting_run)
     return fitting_configuration.descriptions
 
 # -----------------------------------------------------------------
 
-def get_fitting_method(modeling_path):
+def get_fitting_method(modeling_path, fitting_run):
 
     """
     This function ...
     :param modeling_path: 
+    :param fitting_run:
     :return: 
     """
 
-    configuration = load_fitting_configuration(modeling_path)
+    configuration = load_fitting_configuration(modeling_path, fitting_run)
     return configuration.method
 
 # -----------------------------------------------------------------
 
-def get_spectral_convolution_flag(modeling_path):
+def get_spectral_convolution_flag(modeling_path, fitting_run):
 
     """
     This function ...
@@ -2046,7 +2078,7 @@ def get_spectral_convolution_flag(modeling_path):
     :return:
     """
 
-    fitting_configuration = load_fitting_configuration(modeling_path)
+    fitting_configuration = load_fitting_configuration(modeling_path, fitting_run)
     return fitting_configuration.spectral_convolution
 
 # -----------------------------------------------------------------

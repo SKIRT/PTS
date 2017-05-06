@@ -706,7 +706,7 @@ class Optimizer(Configurable):
     def create_initial_population(self):
 
         """
-        This function doesn't set any attributes but is jsut used to create an initial population
+        This function doesn't set any attributes but is used to create an initial population
         :return: 
         """
 
@@ -865,8 +865,26 @@ class Optimizer(Configurable):
         # Get the internal population
         self.initial_population = self.engine.get_population()
 
+        # Set population minimax type
+        self.set_population_minimax()
+
         # Set scaling method
         self.set_population_scaling()
+
+    # -----------------------------------------------------------------
+
+    def set_population_minimax(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Setting the population minimize/maximize flag ...")
+
+        # Set
+        self.initial_population.setMinimax(self.config.min_or_max)
 
     # -----------------------------------------------------------------
 
