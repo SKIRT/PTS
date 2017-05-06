@@ -99,6 +99,11 @@ class ParameterExplorer(FittingComponent):
         # The number of wavelengths used
         self.nwavelengths = None
 
+        # Extra input for the model generator
+        self.scales = None
+        self.most_sampled_parameters = None
+        self.sampling_weights = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -230,6 +235,11 @@ class ParameterExplorer(FittingComponent):
         if self.modeling_type == "galaxy":
             if not fs.is_file(self.fitting_run.wavelength_grids_table_path): raise RuntimeError("Call initialize_fit_galaxy before starting the parameter exploration")
             #if not fs.is_file(self.fitting_run.dust_grids_table_path): raise RuntimeError("Call initialize_fit_galaxy before starting the parameter exploration") # doesn't exist anymore: incorporated in the representations
+
+        # Get grid generation settings
+        self.scales = kwargs.pop("scales", None)
+        self.most_sampled_parameters = kwargs.pop("most_sampled_parameters", None)
+        self.sampling_weights = kwargs.pop("sampling_weigths", None)
 
     # -----------------------------------------------------------------
 
@@ -568,7 +578,9 @@ class ParameterExplorer(FittingComponent):
         log.info("Generating the model parameters ...")
 
         # Run the model generator
-        self.generator.run(fitting_run=self.fitting_run, parameter_ranges=self.ranges, fixed_initial_parameters=self.fixed_initial_parameters, generation_path=self.generation_path)
+        self.generator.run(fitting_run=self.fitting_run, parameter_ranges=self.ranges,
+                           fixed_initial_parameters=self.fixed_initial_parameters, generation_path=self.generation_path,
+                           scales=self.scales, most_sampled_parameters=self.most_sampled_parameters, sampling_weights=self.sampling_weights)
 
     # -----------------------------------------------------------------
 

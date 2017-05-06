@@ -66,6 +66,11 @@ class GeneticModelGenerator(ModelGenerator):
         # The parameter values of the intial populaiton
         self.initial_parameters = None
 
+        # Input for grid generation of initial generation
+        self.manual_initial_generation_scales = None
+        self.most_sampled_parameters = None
+        self.sampling_weights = None
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -153,6 +158,11 @@ class GeneticModelGenerator(ModelGenerator):
 
         # Set settings
         self.set_optimizer_settings()
+
+        # Get other input
+        if "scales" in kwargs: self.manual_initial_generation_scales = kwargs.pop("scale")
+        if "most_sampled_parameters" in kwargs: self.most_sampled_parameters = kwargs.pop("most_sampled_parameters")
+        if "sampling_weights" in kwargs: self.sampling_weights = kwargs.pop("sampling_weights")
 
     # -----------------------------------------------------------------
 
@@ -285,6 +295,9 @@ class GeneticModelGenerator(ModelGenerator):
         :return: 
         """
 
+        # Inform the user
+        log.info("Generating the parameters of the initial generation ...")
+
         # Initialize a list to contain the parameter sets
         self.initial_parameters = []
 
@@ -338,6 +351,43 @@ class GeneticModelGenerator(ModelGenerator):
 
     # -----------------------------------------------------------------
 
+    @property
+    def single_parameter_scale(self):
+        
+        """
+        This function ..
+        :return: 
+        """
+
+        return self.manual_initial_generation_scales is None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def multiple_parameter_scales(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.manual_initial_generation_scales is not None
+
+    # -----------------------------------------------------------------
+
+    def scale_for_parameter(self, label):
+
+        """
+        This function ...
+        :param label: 
+        :return: 
+        """
+
+        if self.multiple_parameter_scales: return self.manual_initial_generation_scales[label]
+        else: return self.config.manual_initial_generation_scale
+
+    # -----------------------------------------------------------------
+
     def generate_initial_parameters_random(self):
 
         """
@@ -362,10 +412,10 @@ class GeneticModelGenerator(ModelGenerator):
                 range_max = self.parameter_maxima_scalar[label_index]
 
                 # Linear scale
-                if self.config.manual_initial_generation_scale == "linear": random = np.random.uniform(range_min, range_max)
+                if self.scale_for_parameter(label) == "linear": random = np.random.uniform(range_min, range_max)
 
                 # Logarithmic scale
-                elif self.config.manual_initial_generation_scale == "logarithmic":
+                elif self.scale_for_parameter(label) == "logarithmic":
 
                     # Generate random logarithmic variate
                     logmin = np.log10(range_min)
@@ -374,7 +424,7 @@ class GeneticModelGenerator(ModelGenerator):
                     random = 10**lograndom
 
                 # Invalid scale
-                else: raise ValueError("Invalid scale: " + str(self.config.manual_initial_generation_scale))
+                else: raise ValueError("Invalid scale: " + str(self.scale_for_parameter(label)))
 
                 # Add value to the parameter set
                 initial_parameters_model.append(random)
@@ -395,7 +445,8 @@ class GeneticModelGenerator(ModelGenerator):
         log.info("Generating initial parameter sets based on a grid in the n-d parameter space ...")
 
         # Generate grid points
-        grid_points = self.generate_grid_points_one_scale(self.config.manual_initial_generation_scale)
+        if self.single_parameter_scale: grid_points = self.generate_grid_points_one_scale(self.config.manual_initial_generation_scale, most_sampled=self.most_sampled_parameters, weights=self.sampling_weights)
+        else: grid_points = self.generate_grid_points_different_scales(self.manual_initial_generation_scales, most_sampled=self.most_sampled_parameters, weights=self.sampling_weights)
 
         # Convert into lists
         grid_points = self.grid_points_to_lists(grid_points)

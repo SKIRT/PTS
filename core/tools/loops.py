@@ -14,16 +14,17 @@ from __future__ import absolute_import, division, print_function
 
 # -----------------------------------------------------------------
 
-def repeat(target, ntimes):
+def repeat(target, ntimes, **kwargs):
 
     """
     This function ...
     :param target:
     :param ntimes:
+    :param kwargs:
     :return:
     """
 
-    for _ in range(ntimes): target()
+    for _ in range(ntimes): target(**kwargs)
 
 # -----------------------------------------------------------------
 

@@ -27,6 +27,7 @@ from ...core.simulation.skifile import LabeledSkiFile
 from ..core.environment import GalaxyModelingEnvironment, SEDModelingEnvironment, ImagesModelingEnvironment
 from ..component.images import get_images_path, get_images_header_path
 from ...magic.core.frame import Frame
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -196,10 +197,10 @@ class ModelingSetupTool(Configurable):
         self.hyperleda_name = kwargs.pop("hyperleda_name", None)
 
         # If is path, load the SED
-        if isinstance(self.sed, basestring): self.sed = ObservedSED.from_file(self.sed)
+        if types.is_string_type(self.sed): self.sed = ObservedSED.from_file(self.sed)
 
         # If is path, load the ski file template
-        if isinstance(self.ski, basestring): self.ski = LabeledSkiFile(self.ski)
+        if types.is_string_type(self.ski): self.ski = LabeledSkiFile(self.ski)
 
     # -----------------------------------------------------------------
 

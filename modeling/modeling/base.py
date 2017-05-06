@@ -299,10 +299,11 @@ class ModelerBase(Configurable):
 
     # -----------------------------------------------------------------
 
-    def fit(self):
+    def fit(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
@@ -316,18 +317,18 @@ class ModelerBase(Configurable):
         if not self.history.has_initialized_fit: self.initialize_fit()
 
         # If we do multiple generations at once
-        if self.multiple_generations: self.fit_multiple()
+        if self.multiple_generations: self.fit_multiple(**kwargs)
 
         # We just do one generation now, or finish
-        else: self.fit_single()
+        else: self.fit_single(**kwargs)
 
     # -----------------------------------------------------------------
 
-    def fit_multiple(self):
+    def fit_multiple(self, **kwargs):
 
         """
         This function ...
-        :param self: 
+        :param kwargs:
         :return: 
         """
 
@@ -335,21 +336,21 @@ class ModelerBase(Configurable):
         log.info("Fitting multiple generations at once ...")
 
         # Start: launch the initial generation
-        self.start()
+        self.start(**kwargs)
 
         # Advance: launch generations 0 -> (n-1)
-        repeat(self.advance, self.config.ngenerations)
+        repeat(self.advance, self.config.ngenerations, **kwargs)
 
         # Finish
         self.finish()
 
     # -----------------------------------------------------------------
 
-    def fit_single(self):
+    def fit_single(self, **kwargs):
 
         """
         This function ...
-        :param self: 
+        :param kwargs: 
         :return: 
         """
 
@@ -363,10 +364,10 @@ class ModelerBase(Configurable):
         if self.config.finish: self.finish()
 
         # If this is the initial generation
-        elif generations.last_generation_name is None: self.start()
+        elif generations.last_generation_name is None: self.start(**kwargs)
 
         # Advance the fitting with a new generation
-        else: self.advance()
+        else: self.advance(**kwargs)
 
     # -----------------------------------------------------------------
 
@@ -394,25 +395,27 @@ class ModelerBase(Configurable):
 
     # -----------------------------------------------------------------
 
-    def start(self):
+    def start(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Inform the user
-        log.info("Starting with a randomly created generation ...")
+        log.info("Starting with the initial generation ...")
 
         # Explore
-        self.explore()
+        self.explore(**kwargs)
 
     # -----------------------------------------------------------------
 
-    def advance(self):
+    def advance(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
@@ -439,7 +442,7 @@ class ModelerBase(Configurable):
         if generations.has_finished and has_unevaluated_generations(self.modeling_path, self.fitting_run_name): self.fit_sed()
 
         # If all generations have finished, explore new generation of models
-        if generations.all_finished: self.explore()
+        if generations.all_finished: self.explore(**kwargs)
 
         # Do SED fitting after the exploration step if it has been performed locally (simulations are done, evaluation can be done directly)
         #if self.moderator.single_is_local("fitting"): self.finish()
@@ -495,7 +498,7 @@ class ModelerBase(Configurable):
 
     # -----------------------------------------------------------------
 
-    def explore(self):
+    def explore(self, **kwargs):
 
         """
         This function ...
@@ -547,6 +550,9 @@ class ModelerBase(Configurable):
 
         # Add the fixed parameter values
         if self.fixed_initial_parameters is not None: input_dict["fixed_initial_parameters"] = self.fixed_initial_parameters
+
+        # NEW: Add additional input
+        input_dict.update(kwargs)
 
         # Run the parameter explorer
         self.explorer.run(**input_dict)

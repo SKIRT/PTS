@@ -124,8 +124,8 @@ def divide_in_n_dimensions(number, n, sampled_most=None, weights=None):
     :return: 
     """
 
-    # Check sampled_most and weights argument
-    if sampled_most is not None and weights is not None: raise ValueError("Either define 'sampled_most' or 'weights'")
+    # Check sampled_most and weights argument: NO, IT IS POSSIBLE FOR BOTH TO HAVE EFFECT
+    #if sampled_most is not None and weights is not None: raise ValueError("Either define 'sampled_most' or 'weights'")
 
     from . import types
     if not types.is_integer_type(number): raise ValueError("Number must be integer")

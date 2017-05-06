@@ -17,6 +17,7 @@ from ....core.tools.logging import log
 from .generator import ModelGenerator
 from ....core.tools import sequences
 from ....core.tools import strings
+from ....core.basics.configuration import prompt_string_list, prompt_weights
 
 # -----------------------------------------------------------------
 
@@ -37,8 +38,10 @@ class GridModelGenerator(ModelGenerator):
         # Call the constructor of the base class
         super(GridModelGenerator, self).__init__(*args, **kwargs)
 
-        # Scales
+        # Input
         self.scales = None
+        self.most_sampled_parameters = None
+        self.sampling_weights = None
 
     # -----------------------------------------------------------------
 
@@ -46,6 +49,7 @@ class GridModelGenerator(ModelGenerator):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
@@ -54,6 +58,44 @@ class GridModelGenerator(ModelGenerator):
 
         # Get scales for different free parameters
         if "scales" in kwargs: self.scales = kwargs.pop("scales")
+
+        # Most sampled parameters
+        if "most_sampled_parameters" in kwargs: self.most_sampled_parameters = kwargs.pop("most_sampled_parameters")
+        else: self.prompt_most_sampled_parameters()
+
+        # Sampling weights
+        if "sampling_weights" in kwargs: self.sampling_weights = kwargs.pop("sampling_weights")
+        else: self.prompt_sampling_weights()
+
+    # -----------------------------------------------------------------
+
+    def prompt_most_sampled_parameters(self):
+
+        """
+        THis function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Prompting for the most sampled parameters ...")
+
+        # Get the most sampled parameters
+        self.most_sampled_parameters = prompt_string_list("parameters", "free parameter(s) which get the most sampling points", choices=self.fitting_run.free_parameter_labels, required=False)
+
+    # -----------------------------------------------------------------
+
+    def prompt_sampling_weights(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Prompting for the sampling weights ...")
+
+        # Get the sampling weights
+        self.sampling_weights = prompt_weights("weights", "relative sampling for the free parameters: " + ",".join(self.fitting_run.free_parameter_labels), required=False)
 
     # -----------------------------------------------------------------
 
@@ -72,10 +114,26 @@ class GridModelGenerator(ModelGenerator):
 
             # Check whether scales were given as input
             if self.scales is not None and label in self.scales: scales[label] = self.scales[label]
-            else: scales[label] = self.config[label + "_scale"]
+            elif self.config.scales is not None and label in self.config.scales: scales[label] = self.config.scales[label]
+            else: raise ValueError("Scale was not set for " + label)
 
         # Return the scales
         return scales
+
+    # -----------------------------------------------------------------
+
+    def scale_for_parameter(self, label):
+
+        """
+        This function ...
+        :param label: 
+        :return: 
+        """
+
+        # Check whether scales were given as input
+        if self.scales is not None and label in self.scales: return self.scales[label]
+        elif self.config.scales is not None and label in self.config.scales: return self.config.scales[label]
+        else: raise ValueError("Scale was not set for " + label)
 
     # -----------------------------------------------------------------
 

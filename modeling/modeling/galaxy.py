@@ -52,6 +52,9 @@ from ..maps.significance import SignificanceMaskCreator
 from ..preparation.inspector import PreparationInspector
 from ..component.galaxy import get_observed_sed_file_path, get_reference_seds
 from ...core.plot.sed import SEDPlotter
+from ...core.tools import parsing
+from ...core.basics.configuration import prompt_string
+from ..config.configure_fit import fitting_methods
 
 # -----------------------------------------------------------------
 
@@ -73,6 +76,21 @@ free_parameter_ranges = dict()
 free_parameter_ranges["DL14"] = {"fuv_young": QuantityRange(0.0, 1e37, unit="W/micron"),
                                  "dust_mass": QuantityRange(0.5e7, 3.e7, unit="Msun"),
                                  "fuv_ionizing": QuantityRange(0.0, 1e34, unit="W/micron")}
+
+# -----------------------------------------------------------------
+
+parameter_grid_scales = dict()
+parameter_grid_scales["DL14"] = {"fuv_young": "logarithmic",
+                                 "dust_mass": "logarithmic",
+                                 "fuv_ionizing": "logarithmic"}
+
+# -----------------------------------------------------------------
+
+parameter_grid_weights = dict()
+weight_young, weight_mass, weight_ionizing = parsing.weights("7,10,5")
+parameter_grid_weights["DL14"] = {"fuv_young": weight_young,
+                                  "dust_mass": weight_mass,
+                                  "fuv_ionizing": weight_ionizing}
 
 # -----------------------------------------------------------------
 
@@ -192,7 +210,7 @@ class GalaxyModeler(ModelerBase):
         self.build()
 
         # 9. Do the fitting
-        self.fit()
+        self.fit(scales=parameter_grid_scales, sampling_weights=parameter_grid_weights)
 
         # 10. Writing
         self.write()
@@ -223,8 +241,6 @@ class GalaxyModeler(ModelerBase):
 
         # Check whether a remote is available for the heavy computations, if one was configured
         if not self.other_local and self.moderator.host_id_for_single("other") is None: raise RuntimeError("The desired remote(s) for heavy computations are currently unavailable")
-
-        #
 
     # -----------------------------------------------------------------
 
@@ -1119,6 +1135,9 @@ class GalaxyModeler(ModelerBase):
 
         # Set fitting filters
         config["filters"] = fitting_filter_names
+
+        # Ask for and set the fitting method
+        config["fitting_method"] = prompt_string("fitting_method", "fitting method", choices=fitting_methods)
 
         # Create the fitting configurer
         configurer = FittingConfigurer(config)
