@@ -19,7 +19,7 @@ import numpy as np
 from ....core.tools.logging import log
 from .generator import ModelGenerator
 from ....core.tools import filesystem as fs
-from ....evolve.optimize.stepwise import StepWiseOptimizer
+from ....evolve.optimize.stepwise import StepWiseOptimizer, load_population
 from ....evolve.optimize.continuous import ContinuousOptimizer
 from ..evaluate import evaluate
 from ....core.tools.stringify import tostr
@@ -71,6 +71,9 @@ class GeneticModelGenerator(ModelGenerator):
         self.most_sampled_parameters = None
         self.sampling_weights = None
 
+        # Previous population
+        self.previous_population = None
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -111,7 +114,7 @@ class GeneticModelGenerator(ModelGenerator):
         else:
 
             # Set generation specific paths
-            individuals_path = fs.join(self.generation_path, "individuals.dat")
+            population_path = fs.join(self.generation_path, "population.dat")
             elitism_path = fs.join(self.generation_path, "elitism.dat")
 
             # Re-invoke existing optimizer run
@@ -126,6 +129,11 @@ class GeneticModelGenerator(ModelGenerator):
                                                                 self.fitting_run.name)
                 # Set initial flag
                 self.initial = False
+
+                # Load the previous population
+                previous_generation_path = self.fitting_run.last_genetic_generation_path
+                previous_population_path = fs.join(previous_generation_path, "population.dat")
+                self.previous_population = load_population(previous_population_path)
 
             # New optimizer run
             else:
@@ -143,8 +151,11 @@ class GeneticModelGenerator(ModelGenerator):
                 # Set initial flag
                 self.initial = True
 
+                # Set previous population to None
+                self.previous_population = None
+
             # Set generation specific paths
-            self.optimizer.config.writing.individuals_path = individuals_path
+            self.optimizer.config.writing.population_path = population_path
             self.optimizer.config.writing.elitism_table_path = elitism_path
 
         # Get the parameter ranges
@@ -252,7 +263,8 @@ class GeneticModelGenerator(ModelGenerator):
         # Run the optimizer
         self.optimizer.run(scores=self.scores, scores_check=self.scores_check, minima=self.parameter_minima_scalar,
                            maxima=self.parameter_maxima_scalar, evaluator=self.evaluator,
-                           evaluator_kwargs=self.evaluator_kwargs, initial_parameters=self.initial_parameters)
+                           evaluator_kwargs=self.evaluator_kwargs, initial_parameters=self.initial_parameters,
+                           previous_population=self.previous_population)
 
         # Get the parameter values of the new models
         self.get_model_parameters()
@@ -474,7 +486,7 @@ class GeneticModelGenerator(ModelGenerator):
         :return: 
         """
 
-        return self.optimizer.individual_names
+        return self.optimizer.new_individual_names
 
     # -----------------------------------------------------------------
 
@@ -492,7 +504,7 @@ class GeneticModelGenerator(ModelGenerator):
         for name in self.individual_names:
 
             # Get the individual
-            individual = self.optimizer.population[name]
+            individual = self.optimizer.get_individual(name)
 
             # Loop over all the genes (parameters)
             for i in range(len(individual)):

@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ..core.engine import GeneticEngine
@@ -52,6 +55,9 @@ class StepWiseOptimizer(Optimizer):
 
         # The elitism table
         self.elitism_table = None
+
+        # The previous population
+        self.previous_population = None
 
     # -----------------------------------------------------------------
 
@@ -196,9 +202,6 @@ class StepWiseOptimizer(Optimizer):
         # 6. Plot
         if self.config.plot: self.plot()
 
-        # Return the current population
-        return self.population
-
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -223,6 +226,9 @@ class StepWiseOptimizer(Optimizer):
 
         # Get the output path
         if "output" in kwargs: self.config.output = kwargs.pop("output")
+
+        # Get the previous population
+        if "previous_population" in kwargs: self.previous_population = kwargs.pop("previous_population")
 
         # Set best to None: only when finish_evoluation is run, best should be set
         self.best = None
@@ -301,6 +307,18 @@ class StepWiseOptimizer(Optimizer):
 
     # -----------------------------------------------------------------
 
+    @property
+    def check_recurrence(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.config.check_recurrence and self.previous_population is not None
+
+    # -----------------------------------------------------------------
+
     def evolve(self):
 
         """
@@ -321,8 +339,11 @@ class StepWiseOptimizer(Optimizer):
         # Set the scores from the previous generation
         self.set_scores()
 
-        # Generate the new models
-        self.generate_new_models()
+        # Generate new population
+        self.generate_new_population()
+
+        # Check recurrency
+        if self.check_recurrence: self.set_recurrent()
 
     # -----------------------------------------------------------------
 
@@ -348,7 +369,7 @@ class StepWiseOptimizer(Optimizer):
 
     # -----------------------------------------------------------------
 
-    def generate_new_models(self):
+    def generate_new_population(self):
 
         """
         This function ...
@@ -364,7 +385,34 @@ class StepWiseOptimizer(Optimizer):
         # Get the new population
         self.population = self.engine.new_population
 
-        # check_recurrence????????
+    # -----------------------------------------------------------------
+
+    def set_recurrent(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Looking for recurrency of old individuals within the new population ...")
+
+        # Loop over the individual names
+        for name in self.individual_names:
+
+            # Get the individual
+            individual = self.population[name]
+
+            # Look for a match with the previous generation (population)
+
+
+            # Loop over all the genes (parameters)
+            for i in range(len(individual)):
+
+                # Get the parameter value
+                value = individual[i]
+
+
 
     # -----------------------------------------------------------------
 
@@ -476,6 +524,18 @@ class StepWiseOptimizer(Optimizer):
 
     # -----------------------------------------------------------------
 
+    def get_individual(self, name):
+
+        """
+        This function ...
+        :param name: 
+        :return: 
+        """
+
+        return self.population[name]
+
+    # -----------------------------------------------------------------
+
     @property
     def is_named_population(self):
 
@@ -513,6 +573,26 @@ class StepWiseOptimizer(Optimizer):
 
     # -----------------------------------------------------------------
 
+    @property
+    def new_individual_names(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
+    def new_individual_keys(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+    # -----------------------------------------------------------------
+
     def write_population(self):
 
         """
@@ -527,21 +607,8 @@ class StepWiseOptimizer(Optimizer):
         if self.config.writing.population_path is not None: path = fs.absolute_or_in(self.config.writing.population_path, self.output_path)
         else: path = self.output_path_file("population.dat")
 
-        # Loop over the individuals
-        entries = []
-        for key in self.individual_keys:
-
-            # Get the individual
-            individual = self.population[key]
-
-            # Add entry to the list
-            entries.append((key, individual.genomeList)) # .genomeList works for all G1D genomes (list, binary string, ...)
-
-        # Loop over the entries, write to file
-        with open(path, 'w') as population_file:
-
-            # Loop over the entries
-            for key, genes in entries: print(key + " " + str(genes), file=population_file)
+        # Write
+        write_population(self.population, path)
 
     # -----------------------------------------------------------------
 
@@ -573,5 +640,57 @@ class StepWiseOptimizer(Optimizer):
 
         # Inform the user
         log.info("Plotting ...")
+
+# -----------------------------------------------------------------
+
+def write_population(population, path):
+
+    """
+    This function ...
+    :param population: 
+    :param path: 
+    :return: 
+    """
+
+    # Loop over the individuals
+    entries = []
+    for key in population.keys:
+
+        # Get the individual
+        individual = population[key]
+
+        # Add entry to the list
+        entries.append((key, individual.genomeList)) # .genomeList works for all G1D genomes (list, binary string, ...)
+
+    # Loop over the entries, write to file
+    with open(path, 'w') as population_file:
+
+        # Loop over the entries
+        for key, genes in entries: print(key + " " + str(genes), file=population_file)
+
+# -----------------------------------------------------------------
+
+def load_population(path):
+
+    """
+    This function ...
+    :param path: 
+    :return: 
+    """
+
+    population = OrderedDict()
+
+    # loop over the lines in the file
+    for line in fs.read_lines(path):
+
+        parts = line.split(" ")
+        key = parts[0]
+        rest = line.split(key + " ")[1]
+        genome = eval(rest)
+
+        population[key] = genome
+
+    # Return the population
+    return population
 
 # -----------------------------------------------------------------

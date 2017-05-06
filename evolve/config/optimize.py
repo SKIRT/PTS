@@ -88,7 +88,7 @@ definition.sections["writing"].add_optional("prng_path", "string", "path for the
 definition.sections["writing"].add_optional("config_path", "string", "path for the configuration file")
 definition.sections["writing"].add_optional("statistics_path", "string", "path for the statistics file")
 definition.sections["writing"].add_optional("database_path", "string", "path for the database")
-definition.sections["writing"].add_optional("individuals_path", "string", "path for the individuals")
+definition.sections["writing"].add_optional("population_path", "string", "path for the population data file")
 definition.sections["writing"].add_optional("elitism_table_path", "string", "path for the elitism table")
 
 # Advanced
