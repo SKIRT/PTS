@@ -23,7 +23,7 @@ from pts.core.tools.logging import log
 from pts.core.tools.loops import repeat
 from pts.evolve.optimize.stepwise import StepWiseOptimizer
 from pts.core.tools import types
-from pts.evolve.optimize.tables import ScoresTable
+from pts.evolve.optimize.tables import ScoresTable, Elitismtable
 from pts.modeling.fitting.tables import GenerationsTable, ParametersTable
 from pts.modeling.fitting.explorer import GenerationInfo
 from pts.core.tools import stringify
@@ -598,6 +598,18 @@ class StepWiseTest(TestImplementation):
 
     # -----------------------------------------------------------------
 
+    def elitism_table_path_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name: 
+        :return: 
+        """
+
+        return fs.join(self.path_for_generation(generation_name), "elitism.dat")
+
+    # -----------------------------------------------------------------
+
     def create_generation_directory(self):
 
         """
@@ -1052,6 +1064,18 @@ class StepWiseTest(TestImplementation):
         """
 
         return ScoresTable.from_file(self.scores_table_path_for_generation(generation_name))
+
+    # -----------------------------------------------------------------
+
+    def elitism_table_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name: 
+        :return: 
+        """
+
+        return ElitismTable.from_file(self.elitism_table_path_for_generation(generation_name))
 
     # -----------------------------------------------------------------
 
@@ -1667,8 +1691,8 @@ class StepWiseTest(TestImplementation):
             database_index = index + 1
             scores_database = get_scores_named_individuals(self.database_path, run_name, database_index)
 
-            # Keep track of the number of mismatches
-            mismatches = 0
+            # Keep track of the mismatches
+            mismatches = []
 
             # Loop over the indnividual names
             for name in scores_database:
@@ -1684,11 +1708,13 @@ class StepWiseTest(TestImplementation):
 
                 # Check if equal
                 equal = np.isclose(score, score_database)
-                if not equal: mismatches += 1
+                if not equal: mismatches.append((score, score_database))
 
-            # Report
-            if mismatches == 0: log.success(generation_name + ": OK")
-            else: log.error(generation_name + ": " + str(mismatches) + " mismatches")
+                # Report
+                if len(mismatches) == 0: log.success(generation_name + ": OK")
+                else:
+                    log.error(generation_name + ": " + str(len(mismatches)) + " mismatch(es):")
+                    for score, score_database in mismatches: log.error("   " + str(score) + " , " + str(score_database))
 
     # -----------------------------------------------------------------
 

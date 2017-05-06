@@ -77,7 +77,8 @@ def launch_local(pts_command, config_dict, input_dict=None, analysers=None, anal
     cls = introspection.get_class(class_module_path, class_name)
 
     # Change working directory
-    if cwd is not None: fs.change_cwd(cwd)
+    if cwd is not None: previous_cwd = fs.change_cwd(cwd)
+    else: previous_cwd = None
 
     # Create the class instance, configure it with the configuration settings
     inst = cls(config)
@@ -106,6 +107,9 @@ def launch_local(pts_command, config_dict, input_dict=None, analysers=None, anal
 
     # Reset the log level
     log.setLevel(previous_level)
+
+    # Move back to the previous working directory
+    if previous_cwd is not None: fs.change_cwd(previous_cwd)
 
     # Return the instance
     return inst

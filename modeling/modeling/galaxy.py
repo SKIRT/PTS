@@ -53,8 +53,6 @@ from ..preparation.inspector import PreparationInspector
 from ..component.galaxy import get_observed_sed_file_path, get_reference_seds
 from ...core.plot.sed import SEDPlotter
 from ...core.tools import parsing
-from ...core.basics.configuration import prompt_string
-from ..config.configure_fit import fitting_methods
 
 # -----------------------------------------------------------------
 
@@ -1137,7 +1135,7 @@ class GalaxyModeler(ModelerBase):
         config["filters"] = fitting_filter_names
 
         # Ask for and set the fitting method
-        config["fitting_method"] = prompt_string("fitting_method", "fitting method", choices=fitting_methods)
+        config["fitting_method"] = self.fitting_method
 
         # Create the fitting configurer
         configurer = FittingConfigurer(config)

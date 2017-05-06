@@ -164,7 +164,8 @@ def get_run_names(modeling_path):
     """
 
     fit_path = fs.join(modeling_path, "fit")
-    return fs.directories_in_path(fit_path, returns="name")
+    if fs.is_directory(fit_path): return fs.directories_in_path(fit_path, returns="name")
+    else: return None
 
 # -----------------------------------------------------------------
 

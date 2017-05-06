@@ -25,12 +25,17 @@ from ..fitting.sedfitting import SEDFitter
 from ..component.component import load_modeling_history, get_config_file_path, load_modeling_configuration
 from ...core.launch.synchronizer import RemoteSynchronizer
 from ...core.prep.deploy import Deployer
-from ..fitting.run import get_generations_table, get_ngenerations, has_unevaluated_generations, has_unfinished_generations, get_unevaluated_generations
+from ..fitting.run import get_generations_table, has_unevaluated_generations, get_unevaluated_generations
 from ...core.remote.moderator import PlatformModerator
 from ...core.tools import stringify
 from ...core.tools.loops import repeat
 from ...core.remote.remote import Remote
 from ..fitting.finisher import ExplorationFinisher
+from ...core.basics.configuration import prompt_string
+
+# -----------------------------------------------------------------
+
+fitting_methods = ["genetic", "grid"]
 
 # -----------------------------------------------------------------
 
@@ -88,6 +93,33 @@ class ModelerBase(Configurable):
 
         # egege
         self.fixed_initial_parameters = None
+
+        # The fitting method (grid, genetic)
+        self.fitting_method = None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def grid_fitting(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.fitting_method == "grid"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def genetic_fitting(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.fitting_method == "genetic"
 
     # -----------------------------------------------------------------
 
@@ -171,6 +203,10 @@ class ModelerBase(Configurable):
 
         # Deploy SKIRT and PTS
         if self.config.deploy: self.deploy()
+
+        # Set the fitting method
+        if "fitting_method" in kwargs: self.fitting_method = kwargs.pop("fitting_method")
+        else: self.fitting_method = prompt_string("fitting_method", "fitting method", choices=fitting_methods)
 
     # -----------------------------------------------------------------
 

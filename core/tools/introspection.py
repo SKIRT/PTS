@@ -148,6 +148,9 @@ def remove_temp_dirs():
     # Loop over the temporary directories created in this PTS runtime
     for path in temp_dirs:
 
+        # Debugging
+        log.debug("Removing temporary directory '" + path + "' ...")
+
         # Remove the directory
         fs.remove_directory(path)
 

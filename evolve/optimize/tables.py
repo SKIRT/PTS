@@ -76,6 +76,19 @@ class Elitismtable(SmartTable):
         # Return the table
         return table
 
+    # -----------------------------------------------------------------
+
+    @property
+    def replaced_names(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        mask = self["Elitism performed"]
+        return list(self["Individual ID"][mask])
+
 # -----------------------------------------------------------------
 
 class ScoresTable(SmartTable):

@@ -12,7 +12,7 @@ from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-modeling_path = fs.cwd()
+#modeling_path = fs.cwd()
 
 # -----------------------------------------------------------------
 

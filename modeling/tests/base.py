@@ -49,6 +49,7 @@ from pts.core.tools.stringify import tostr
 from pts.evolve.analyse.database import get_scores_named_individuals, load_database
 from pts.evolve.analyse.statistics import get_best_score_for_generation, load_statistics
 from pts.do.commandline import Command
+from pts.evolve.optimize.tables import Elitismtable
 
 # -----------------------------------------------------------------
 
@@ -1263,6 +1264,30 @@ class M81TestBase(TestImplementation):
 
     # -----------------------------------------------------------------
 
+    def elitism_table_path_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name: 
+        :return: 
+        """
+
+        return fs.join(self.fitting_run.generations_path, generation_name, "elitism.dat")
+
+    # -----------------------------------------------------------------
+
+    def elitism_table_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name: 
+        :return: 
+        """
+
+        return ElitismTable.from_file(self.elitism_table_path_for_generation(generation_name))
+
+    # -----------------------------------------------------------------
+
     def get_parameter_values_for_simulation(self, generation_name, simulation_name):
 
         """
@@ -1491,6 +1516,9 @@ class M81TestBase(TestImplementation):
             # Debugging
             log.debug("Checking generation '" + generation_name + "' ...")
 
+            # Load the elitism table
+            elitism_table = self.elitism_table_for_generation(generation_name)
+
             # Load the scores table
             scores_table = self.chi_squared_table_for_generation(generation_name)
 
@@ -1501,11 +1529,19 @@ class M81TestBase(TestImplementation):
             database_index = index + 1
             scores_database = get_scores_named_individuals(self.database_path, self.fitting_run_name, database_index)
 
-            # Keep track of the number of mismatches
+            # Keep track of the number of elitisms
+            nelitisms = 0
+
+            # Keep track of the mismatches
             mismatches = []
 
-            # Loop over the indnividual names
+            # Loop over the individual names
             for name in scores_database:
+
+                # Check whether name in elitism table as replaced individual, in this case don't check the score
+                if name in elitism_table.replaced_names:
+                    nelitisms += 1
+                    continue
 
                 # Get the score from the database
                 score_database = scores_database[name]
@@ -1518,16 +1554,14 @@ class M81TestBase(TestImplementation):
 
                 # Check if equal
                 equal = np.isclose(score, score_database, rtol=1.e-4)
-                if not equal:
-                    mismatches.append((score, score_database))
-                    #mismatches += 1
+                if not equal: mismatches.append((score, score_database))
 
             # Report
             if len(mismatches) == 0: log.success(generation_name + ": OK")
             else:
-                log.error(generation_name + ": " + str(len(mismatches)) + " mismatches:")
-                for score, score_database in mismatches:
-                    log.error("   " + str(score) + " , " + str(score_database))
+                log.error(generation_name + ": " + str(len(mismatches)) + " mismatch(es):")
+                for score, score_database in mismatches: log.error("   " + str(score) + " , " + str(score_database))
+            log.info("Number of elitism replacements: " + str(nelitisms))
 
     # -----------------------------------------------------------------
 
@@ -1572,7 +1606,7 @@ class M81TestBase(TestImplementation):
 
     # -----------------------------------------------------------------
 
-    def plot_genetic(self):
+    def plot(self):
 
         """
         This function ...

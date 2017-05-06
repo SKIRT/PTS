@@ -39,7 +39,7 @@ from ..tools.introspection import possible_cpp_compilers, possible_mpi_compilers
 from .python import AttachedPythonSession, DetachedPythonSession
 from ..units.parsing import parse_unit as u
 from ..basics.map import Map
-from ..tools import strings
+from ..tools import strings, types
 
 # -----------------------------------------------------------------
 
@@ -2560,11 +2560,8 @@ class Remote(object):
             #print("BEFORE", self.ssh.before)
             #print("AFTER", self.ssh.after)
 
-            # If string
-            if isinstance(line, basestring):
-
-                # Send the command
-                self.ssh.sendline(line)
+            # If string, send the command
+            if types.is_string_type(line): self.ssh.sendline(line)
 
             # If tuple
             elif isinstance(line, tuple):
@@ -2945,7 +2942,7 @@ class Remote(object):
             # If the directory name matches the 'exact not name', skip it
             if exact_not_name is not None:
 
-                if isinstance(exact_not_name, basestring):
+                if types.is_string_type(exact_not_name):
                     if exact_not_name == item: continue
                 elif isinstance(exact_not_name, list):
                     if item in exact_not_name: continue
@@ -2956,7 +2953,7 @@ class Remote(object):
             if endswith is not None and not item.endswith(endswith): continue
 
             # Create the return value
-            if isinstance(returns, basestring):
+            if types.is_string_type(returns):
 
                 if returns == "path": thing = item_path
                 elif returns == "name": thing = item
@@ -2979,6 +2976,32 @@ class Remote(object):
 
         # Return the result
         return result
+
+    # -----------------------------------------------------------------
+
+    def find_directory_in_path(self, path, recursive=False, ignore_hidden=True, contains=None, not_contains=None,
+                               exact_name=None, exact_not_name=None, startswith=None, endswith=None):
+
+        """
+        This function ...
+        :param path: 
+        :param recursive: 
+        :param ignore_hidden: 
+        :param contains: 
+        :param not_contains: 
+        :param exact_name: 
+        :param exact_not_name: 
+        :param startswith: 
+        :param endswith: 
+        :return: 
+        """
+
+        paths = self.directories_in_path(path, recursive=recursive, ignore_hidden=ignore_hidden, contains=contains,
+                                    not_contains=not_contains, exact_name=exact_name, exact_not_name=exact_not_name,
+                                    startswith=startswith, endswith=endswith)
+        if len(paths) == 1: return paths[0]
+        elif len(paths) == 0: raise ValueError("Not found")
+        else: raise ValueError("Multiple directories found")
 
     # -----------------------------------------------------------------
 
@@ -3054,7 +3077,7 @@ class Remote(object):
             if endswith is not None and not item_name.endswith(endswith): continue
 
             # Create the return value
-            if isinstance(returns, basestring):
+            if types.is_string_type(returns):
 
                 if returns == "path": thing = item_path
                 elif returns == "name": thing = item_name + "." + item_extension if extensions else item_name
@@ -3077,6 +3100,34 @@ class Remote(object):
 
         # Return the result
         return result
+
+    # -----------------------------------------------------------------
+
+    def find_file_in_path(self, path, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None,
+                            exact_name=None, exact_not_name=None, startswith=None, endswith=None):
+
+        """
+        This function ...
+        :param path:
+        :param recursive:
+        :param ignore_hidden:
+        :param extension:
+        :param contains:
+        :param not_contains:
+        :param exact_name:
+        :param exact_not_name:
+        :param startswith:
+        :param endswith:
+        :return: 
+        """
+
+        # Get paths
+        paths = self.files_in_path(path, recursive=recursive, ignore_hidden=ignore_hidden, extension=extension,
+                              contains=contains, not_contains=not_contains, exact_name=exact_name,
+                              exact_not_name=exact_not_name, startswith=startswith, endswith=endswith)
+        if len(paths) == 1: return paths[0]
+        elif len(paths) == 0: raise ValueError("Not found")
+        else: raise ValueError("Multiple files found")
 
     # -----------------------------------------------------------------
 

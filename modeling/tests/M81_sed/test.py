@@ -31,6 +31,8 @@ from pts.core.tools import sequences
 from pts.core.basics.map import Map
 from pts.modeling.tests.base import free_parameter_descriptions, free_parameter_units
 from pts.modeling.core.environment import SEDModelingEnvironment
+from pts.core.tools import introspection
+from pts.core.simulation.discover import find_one_simulation_in_path
 
 # -----------------------------------------------------------------
 
@@ -79,6 +81,18 @@ class M81SEDTest(M81TestBase):
 
     # -----------------------------------------------------------------
 
+    @property
+    def from_existing_reference(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.config.reference_path is not None or self.config.reference_test is not None
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -90,36 +104,38 @@ class M81SEDTest(M81TestBase):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Reference simulation
-        if self.config.reference_path is not None: self.load_reference()
-        else: self.create_reference()
+        # 2. Load the properties
+        self.load_properties()
 
-        # 13. Get the real parameter values
+        # 3. Reference simulation
+        self.set_reference()
+
+        # 4. Get the real parameter values
         self.get_real_parameter_values()
 
-        # 14. Generate the initial parameter values
+        # 5. Generate the initial parameter values
         self.generate_initial_parameter_values()
 
-        # 15. Create the ski file template
+        # 6. Create the ski file template
         self.create_template()
 
-        # 16. Load the observed SED
+        # 7. Load the observed SED
         self.load_observed_sed()
 
-        # 17. Setup the modeling
+        # 8. Setup the modeling
         self.setup_modelling()
 
-        # 18. Model
+        # 9. Model
         self.model()
 
-        # 19. Get best parameter values
+        # 10. Get best parameter values
         self.get_best_parameter_values()
 
-        # Test
+        # 11. Test
         self.test()
 
-        # Plot
-        self.plot_genetic()
+        # 12. Plot
+        self.plot()
 
     # -----------------------------------------------------------------
 
@@ -163,12 +179,78 @@ class M81SEDTest(M81TestBase):
 
     # -----------------------------------------------------------------
 
+    def set_reference(self):
+
+        """
+        This function ....
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Setting the reference simulation ...")
+
+        # Load or create
+        if self.from_existing_reference: self.load_reference()
+        else: self.create_reference()
+
+    # -----------------------------------------------------------------
+
     def load_reference(self):
 
         """
         This function ...
         :return: 
         """
+
+        # Inform the user
+        log.info("Loading the reference simulation ...")
+
+        # Determine simulation directory
+        if self.config.reference_path is not None: simulation_path = self.config.reference_path
+        elif self.config.reference_test is not None: simulation_path = fs.join(introspection.pts_tests_dir, self.config.reference_test, "ref")
+        else: raise ValueError("Reference path and reference test settings are None")
+
+        # Look for simulation
+        prefix, ski_path, in_path, out_path = find_one_simulation_in_path(simulation_path)
+
+        # Load the ski file
+        self.ski = LabeledSkiFile(ski_path)
+
+        # Other paths
+        extr_path = fs.join(simulation_path, "extr")
+        plot_path = fs.join(simulation_path, "plot")
+        misc_path = fs.join(simulation_path, "misc")
+        
+        # Check existence
+        if not fs.is_directory(extr_path): raise IOError("Extraction directory not found")
+        if not fs.is_directory(plot_path): raise IOError("Plotting directory not found")
+        if not fs.is_directory(misc_path): raise IOError("Misc directory not found")
+
+        # Copy
+        self.copy_reference(ski_path, in_path, out_path, extr_path, plot_path, misc_path)
+
+    # -----------------------------------------------------------------
+
+    def copy_reference(self, ski_path, in_path, out_path, extr_path, plot_path, misc_path):
+
+        """
+        This function ...
+        :param ski_path:
+        :param in_path:
+        :param out_path:
+        :param extr_path:
+        :param plot_path:
+        :param misc_path:
+        :return: 
+        """
+
+        # Copy to new reference path
+        fs.copy_file(ski_path, self.reference_ski_path)
+        if in_path is not None: fs.copy_from_directory(in_path, self.simulation_input_path)
+        fs.copy_from_directory(out_path, self.simulation_output_path)
+        fs.copy_from_directory(extr_path, self.simulation_extract_path)
+        fs.copy_from_directory(plot_path, self.simulation_plot_path)
+        fs.copy_from_directory(misc_path, self.simulation_misc_path)
 
     # -----------------------------------------------------------------
 
@@ -179,42 +261,42 @@ class M81SEDTest(M81TestBase):
         :return: 
         """
 
-        # 2. Load the properties
-        self.load_properties()
+        # Inform the user
+        log.info("Creating the reference simulation ...")
 
-        # 3. Load the components
+        # 1. Load the components
         self.load_components()
 
-        # 4. Load the input maps
+        # 2. Load the input maps
         self.load_maps()
 
-        # 5. Create instrument
+        # 3. Create instrument
         self.create_instrument()
 
-        # 6. Create deprojection
+        # 4. Create deprojection
         self.create_deprojections()
 
-        # 7. Create the wavelength grid
+        # 5. Create the wavelength grid
         self.create_wavelength_grid()
 
-        # 8. Create the dust grid
+        # 6. Create the dust grid
         self.create_dust_grid()
 
-        # 9. Create the ski file
+        # 7. Create the ski file
         self.create_ski()
 
-        # 10. Write
-        self.write()
+        # 8. Write
+        self.write_reference()
 
-        # 11. Plot
-        self.plot()
+        # 9. Plot
+        self.plot_reference()
 
-        # 12. Launch the reference simulation
+        # 10. Launch the reference simulation
         self.launch_reference()
 
     # -----------------------------------------------------------------
 
-    def write(self):
+    def write_reference(self):
 
         """
         This function ...
@@ -232,7 +314,7 @@ class M81SEDTest(M81TestBase):
 
     # -----------------------------------------------------------------
 
-    def plot(self):
+    def plot_reference(self):
 
         """
         This function ...
@@ -343,7 +425,7 @@ class M81SEDTest(M81TestBase):
         # Debugging
         log.debug("The initial parameter values are:")
         log.debug("")
-        for parameter_name in self.real_parameter_values: log.debug(" - " + parameter_name + ": " + tostr(self.initial_parameter_values[parameter_name])[1])
+        for parameter_name in self.real_parameter_values: log.debug(" - " + parameter_name + ": " + tostr(self.initial_parameter_values[parameter_name]))
         log.debug("")
 
     # -----------------------------------------------------------------
@@ -695,6 +777,13 @@ class M81SEDTest(M81TestBase):
         initialize_config.selfabsorption = self.config.selfabsorption
         initialize_config.transient_heating = self.config.transient_heating
         input_model["initialize_config"] = initialize_config
+
+        # Other input
+        scales = dict()
+        for label in self.config.free_parameters: scales[label] = "logarithmic"
+        input_model["fitting_method"] = self.config.fitting_method
+        input_model["parameter_grid_scales"] = scales
+        input_model["parameter_grid_weights"] = None
 
         # Construct the command
         command = Command("model", "perform the modelling", settings_model, input_model, cwd=self.modeling_path)

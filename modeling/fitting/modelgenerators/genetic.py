@@ -160,7 +160,7 @@ class GeneticModelGenerator(ModelGenerator):
         self.set_optimizer_settings()
 
         # Get other input
-        if "scales" in kwargs: self.manual_initial_generation_scales = kwargs.pop("scale")
+        if "scales" in kwargs: self.manual_initial_generation_scales = kwargs.pop("scales")
         if "most_sampled_parameters" in kwargs: self.most_sampled_parameters = kwargs.pop("most_sampled_parameters")
         if "sampling_weights" in kwargs: self.sampling_weights = kwargs.pop("sampling_weights")
 

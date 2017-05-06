@@ -57,6 +57,11 @@ definition.sections["genetic"].optional["mutation_rate"].default = 0.07
 definition.add_flag("spectral_convolution", "use spectral convolution to calculate observed fluxes", False)
 definition.add_flag("cheat", "giegeigjeig", True)
 
+default_fitting_method = "genetic"
+fitting_methods = ["genetic", "grid"]
+definition.add_optional("fitting_method", "string", "fitting method", default_fitting_method, fitting_methods)
+
 definition.add_optional("reference_path", "directory_path", "use the simulation in this directory as the reference simulation and infer the real parameter values from it")
+definition.add_optional("reference_test", "string", "use the reference simulation of this previous test")
 
 # -----------------------------------------------------------------

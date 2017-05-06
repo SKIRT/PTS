@@ -126,8 +126,8 @@ class ParameterExplorer(FittingComponent):
         # 4. Set the generation info
         self.set_info()
 
-        # 5. Create the generation directory
-        self.create_generation_directory()
+        # 5. Create the generation
+        self.create_generation()
 
         # 6. Generate the model parameters
         self.generate_models()
@@ -666,7 +666,7 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def create_generation_directory(self):
+    def create_generation(self):
 
         """
         This function ...
@@ -675,6 +675,21 @@ class ParameterExplorer(FittingComponent):
 
         # Inform the user
         log.info("Creating the generation directory")
+
+        # Set paths
+        self.set_generation_paths()
+
+        # Initialize tables
+        self.initialize_generation_tables()
+
+    # -----------------------------------------------------------------
+
+    def set_generation_paths(self):
+
+        """
+        This function ...
+        :return: 
+        """
 
         # Determine the path to the generation directory
         self.generation.path = fs.create_directory_in(self.fitting_run.generations_path, self.generation_name)
@@ -687,6 +702,15 @@ class ParameterExplorer(FittingComponent):
 
         # Determine the path to the chi squared table
         self.generation.chi_squared_table_path = fs.join(self.generation.path, "chi_squared.dat")
+
+    # -----------------------------------------------------------------
+
+    def initialize_generation_tables(self):
+
+        """
+        This function ...
+        :return: 
+        """
 
         # Initialize the individuals table
         self.individuals_table = IndividualsTable()

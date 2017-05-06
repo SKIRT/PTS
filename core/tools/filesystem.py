@@ -22,6 +22,7 @@ import datetime
 
 # Import the relevant PTS classes and modules
 from . import time
+from . import types
 
 # -----------------------------------------------------------------
 
@@ -602,7 +603,8 @@ def extension_of(path, filename):
 # -----------------------------------------------------------------
 
 def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None,
-                  extensions=False, returns="path", exact_name=None, exact_not_name=None, startswith=None, endswith=None, sort=None):
+                  extensions=False, returns="path", exact_name=None, exact_not_name=None, startswith=None, endswith=None,
+                  sort=None):
 
     """
     This function ...
@@ -686,7 +688,7 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
         if not os.path.isfile(item_path): continue
 
         # Create the return value
-        if isinstance(returns, basestring):
+        if types.is_string_type(returns):
 
             if returns == "path": thing = item_path
             elif returns == "name": thing = item_name + "." + item_extension if extensions else item_name
@@ -708,6 +710,34 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
 
     # Return the list of file paths
     return file_paths
+
+# -----------------------------------------------------------------
+
+def find_file_in_path(path, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None,
+                      exact_name=None, exact_not_name=None, startswith=None, endswith=None):
+
+    """
+    This function ...
+    :param path: 
+    :param recursive:
+    :param ignore_hidden:
+    :param extension:
+    :param contains:
+    :param not_contains:
+    :param exact_name:
+    :param exact_not_name:
+    :param startswith:
+    :param endswith:
+    :return: 
+    """
+
+    # Get paths
+    paths = files_in_path(path, recursive=recursive, ignore_hidden=ignore_hidden, extension=extension, contains=contains,
+                          not_contains=not_contains, exact_name=exact_name, exact_not_name=exact_not_name,
+                          startswith=startswith, endswith=endswith)
+    if len(paths) == 1: return paths[0]
+    elif len(paths) == 0: raise ValueError("Not found")
+    else: raise ValueError("Multiple files found")
 
 # -----------------------------------------------------------------
 
@@ -779,7 +809,7 @@ def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains
         # If the directory name matches the 'exact not name', skip it
         if exact_not_name is not None:
 
-            if isinstance(exact_not_name, basestring):
+            if types.is_string_type(exact_not_name):
                 if exact_not_name == item: continue
             elif isinstance(exact_not_name, list):
                 if item in exact_not_name: continue
@@ -793,7 +823,7 @@ def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains
         if not os.path.isdir(item_path): continue
 
         # Create the return value
-        if isinstance(returns, basestring):
+        if types.is_string_type(returns):
 
             if returns == "path": thing = item_path
             elif returns == "name": thing = item
@@ -815,6 +845,32 @@ def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains
 
     # Return the list of directory paths
     return directory_paths
+
+# -----------------------------------------------------------------
+
+def find_directory_in_path(path, recursive=False, ignore_hidden=True, contains=None, not_contains=None,
+                           exact_name=None, exact_not_name=None, startswith=None, endswith=None):
+
+    """
+    This function ...
+    :param path: 
+    :param recursive:
+    :param ignore_hidden:
+    :param contains:
+    :param not_contains:
+    :param exact_name:
+    :param exact_not_name:
+    :param startswith:
+    :param endswith:
+    :return: 
+    """
+
+    paths = directories_in_path(path, recursive=recursive, ignore_hidden=ignore_hidden, contains=contains,
+                                not_contains=not_contains, exact_name=exact_name, exact_not_name=exact_not_name,
+                                startswith=startswith, endswith=endswith)
+    if len(paths) == 1: return paths[0]
+    elif len(paths) == 0: raise ValueError("Not found")
+    else: raise ValueError("Multiple directories found")
 
 # -----------------------------------------------------------------
 

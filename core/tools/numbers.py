@@ -17,6 +17,7 @@ import math
 import random
 import numpy as np
 from itertools import cycle
+from math import log10, floor
 
 # Import the relevant PTS classes and modules
 from . import sequences
@@ -159,5 +160,44 @@ def divide_in_n_dimensions(number, n, sampled_most=None, weights=None):
             #print("index", index)
             # Lower one of the factors
             the_factors[index] = the_factors[index] - 1
+
+# -----------------------------------------------------------------
+
+def round_to_1_significant_digit(x):
+
+    """
+    >>> round_to_1_significant_digit(0.0232)
+    0.02
+    >>> round_to_1_significant_digit(1234243)
+    1000000.0
+    >>> round_to_1_significant_digit(13)
+    10.0
+    >>> round_to_1_significant_digit(4)
+    4.0
+    >>> round_to_1_significant_digit(19)
+    20.0
+    :param x: 
+    :return: 
+    """
+
+    return round(x, -int(floor(log10(abs(x)))))
+
+# -----------------------------------------------------------------
+
+def round_to_n_significant_digits(x, n):
+
+    """
+    >>> round_to_n_significant_digits(0.0232)
+    0.023
+    >>> round_to_n_significant_digits(0.0232, 1)
+    0.02
+    >>> round_to_n_significant_digits(1234243, 3)
+    1230000.0
+    :param x: 
+    :param n: 
+    :return: 
+    """
+
+    return round(x, n-int(floor(log10(abs(x))))-1)
 
 # -----------------------------------------------------------------

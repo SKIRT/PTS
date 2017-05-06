@@ -31,6 +31,35 @@ from ..basics.map import Map
 
 # -----------------------------------------------------------------
 
+def find_one_simulation_in_path(path):
+
+    """
+    This function ...
+    :param path: 
+    :return: 
+    """
+
+    # Check paths
+    ski_path = fs.find_file_in_path(path, extension="ski")
+    in_path = fs.join(path, "in")
+    out_path = fs.join(path, "out")
+
+    # Determine ski prefix
+    prefix = fs.strip_extension(fs.name(ski_path))
+
+    if not fs.is_directory(in_path): in_path = None  # no input required
+    if not fs.is_directory(out_path):
+        log_path = fs.join(path, prefix + "_log.txt")
+        out_path = path
+    else: log_path = fs.join(out_path, prefix + "_log.txt")
+
+    if not fs.is_file(log_path): raise IOError("Log file is not found for simulation '" + prefix + "'")
+
+    # Return relevant stuff
+    return prefix, ski_path, in_path, out_path
+
+# -----------------------------------------------------------------
+
 class SimulationDiscoverer(Configurable):
 
     """

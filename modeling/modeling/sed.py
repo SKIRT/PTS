@@ -13,6 +13,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import astronomical modules
+from astropy.utils import lazyproperty
+
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ..fitting.configuration import FittingConfigurer
@@ -27,6 +30,12 @@ from ..build.sedrepresentation import SEDRepresentationBuilder
 #from ..build.definition import get_input_paths
 from ..component.sed import get_ski_input_path
 from ..core.environment import SEDModelingEnvironment
+from ...core.basics.configuration import prompt_weights
+
+# -----------------------------------------------------------------
+
+default_scale = "logarithmic"
+scales = ["linear", "logarithmic"]
 
 # -----------------------------------------------------------------
 
@@ -58,6 +67,10 @@ class SEDModeler(ModelerBase):
         # Configuration for the fitting initializer
         self.initialize_config = None
 
+        # Input for the explorer
+        self.parameter_grid_scales = None
+        self.parameter_grid_weights = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -81,7 +94,7 @@ class SEDModeler(ModelerBase):
         self.build_representation()
 
         # 5. Do the fitting
-        self.fit()
+        self.fit(scales=self.parameter_grid_scales, sampling_weights=self.parameter_grid_weights)
 
         # 6. Writing
         self.write()
@@ -116,6 +129,55 @@ class SEDModeler(ModelerBase):
 
         # If we get fixed initial parameter values
         if "fixed_initial_parameters" in kwargs: self.fixed_initial_parameters = kwargs.pop("fixed_initial_parameters")
+
+        # Extra input for the fitting (explorer)
+        if "parameter_grid_scales" in kwargs: self.parameter_grid_scales = kwargs.pop("parameter_grid_scales")
+        elif self.grid_fitting: self.prompt_parameter_grid_scales()
+        if "parameter_grid_weights" in kwargs: self.parameter_grid_weights = kwargs.pop("parameter_grid_weights")
+        elif self.grid_fitting: self.prompt_parameter_grid_weigths()
+
+    # -----------------------------------------------------------------
+
+    def prompt_parameter_grid_scales(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Prompting for the grid scales of the different free parameters ...")
+
+        # Initialize dict
+        self.parameter_grid_scales = dict()
+
+        # Create definition
+        definition = ConfigurationDefinition(write_config=False)
+
+        # Loop over the parameters
+        for label in self.free_parameter_labels: definition.add_optional(label + "_scale", "string", "scale for parameter '" + label + "'", default_scale, choices=scales)
+
+        # Get config
+        setter = InteractiveConfigurationSetter("parameter_grid_scales", add_logging=False, add_cwd=False)
+        config = setter.run(definition, prompt_optional=True)
+
+        # Set the scales
+        for label in self.free_parameter_labels: self.parameter_grid_scales[label] = config[label + "_scale"]
+
+    # -----------------------------------------------------------------
+
+    def prompt_parameter_grid_weigths(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Prompting for the parameter grid sampling weights ...")
+
+        # Get the sampling weights
+        self.parameter_grid_weights = prompt_weights("weights", "relative sampling for the free parameters: " + ",".join(self.free_parameter_labels), required=False)
 
     # -----------------------------------------------------------------
 
@@ -205,6 +267,34 @@ class SEDModeler(ModelerBase):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def free_parameter_labels(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Load the ski template, get the free parameters
+        ski = get_ski_template(self.config.path)
+        free_parameter_names = ski.labels
+        return sorted(free_parameter_names) # sorted, just like in FittingRun.free_parameter_labels
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nfree_parameters(self):
+
+        """
+        This function ...
+        :param self: 
+        :return: 
+        """
+
+        return len(self.free_parameter_labels)
+
+    # -----------------------------------------------------------------
+
     def configure_fit(self):
 
         """
@@ -231,6 +321,9 @@ class SEDModeler(ModelerBase):
         # Set fitting run name and model name
         config["name"] = self.fitting_run_name
         config["model_name"] = self.model_name
+
+        # Ask for and set the fitting method
+        config["fitting_method"] = self.fitting_method
 
         # Create the fitting configurer
         configurer = FittingConfigurer(config)
