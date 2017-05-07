@@ -170,6 +170,9 @@ CDefMySQLStatsCommitFreq = 300
 # - DB Adapters URL Post defaults
 CDefURLPostStatsGenFreq = 100
 
+# - NEW: DB Adapters for populations file
+CDefPopulationsFileName = "populations.dat"
+
 # - DB Adapters CSV File defaults
 CDefCSVFileName = "pyevolve.csv"
 CDefCSVFileStatsGenFreq = 1

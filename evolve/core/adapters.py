@@ -53,8 +53,7 @@ class DataBaseAdapter(object):
 
       self.statsGenFreq = frequency
 
-      if identify is None:
-         self.identify = datetime.datetime.now().strftime("%d/%m/%y-%H:%M")
+      if identify is None: self.identify = datetime.datetime.now().strftime("%d/%m/%y-%H:%M")
       else: self.identify = identify
 
     # -----------------------------------------------------------------
@@ -141,15 +140,125 @@ class DataBaseAdapter(object):
 
 # -----------------------------------------------------------------
 
+class PopulationsFile(DataBaseAdapter):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, filepath, identify=None, frequency=constants.CDefPopulationsFileName, reset=True):
+
+        """
+        This function ...
+        :param filepath: 
+        :param identify: 
+        :param frequency:
+        :param reset:
+        """
+
+        # Call the constructor of the base class
+        super(PopulationsFile, self).__init__(frequency, identify)
+
+        # Set properties
+        self.filepath = filepath
+        self.reset = reset
+
+        # THe file handle
+        self.handle = None
+
+    # -----------------------------------------------------------------
+
+    def __repr__(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        ret = "PopulationsFile Adapter [File='%s', identify='%s']" % (self.filepath, self.getIdentify())
+        return ret
+
+    # -----------------------------------------------------------------
+
+    def open(self, ga_engine):
+
+        """
+        Open the populations file
+        """
+
+        # Debugging
+        log.debug("Opening the populations file to dump genome properties '%s'", self.filepath)
+        open_mode = 'w' if self.reset else 'a'
+
+        self.handle = open(self.filepath, open_mode)
+
+    # -----------------------------------------------------------------
+
+    def close(self):
+
+        """ 
+        Closes the populations file handle
+        """
+
+        log.debug("Closing the populations file [%s]", self.filepath)
+
+        if self.handle: self.handle.close()
+
+    # -----------------------------------------------------------------
+
+    def commit_and_close(self):
+
+        """
+        Commits and closes
+        """
+
+        self.close()
+
+    # -----------------------------------------------------------------
+
+    def insert(self, engine):
+
+        """
+        Inserts the genomes into the populations file
+        :param engine: the GeneticEngine
+        """
+
+        # Get the generation index (0 for intitial -> n for Generation n-1)
+        generation = engine.getCurrentGeneration()
+
+        # Get the internal population (the survivors (newborns + elitism))
+        population = engine.get_population()
+
+        # Loop over the population's individuals
+        for key in population.keys:
+
+            line = [self.getIdentify(), generation]
+
+            # Get the individual
+            individual = population[key]
+
+            # Add entry to the list
+            key = str(key)
+            genes_string = str(individual.genomeList)  # .genomeList works for all G1D genomes (list, binary string, ...)
+
+            # Add to the line
+            line.append(key)
+            line.append(genes_string)
+
+            # Loop over the entries
+            self.handle.write(" ".join(line) + "\n")
+
+# -----------------------------------------------------------------
+
 class DBFileCSV(DataBaseAdapter):
 
-    """ DBFileCSV Class - Adapter to dump statistics in CSV format
+    """
+    DBFileCSV Class - Adapter to dump statistics in CSV format
     Inheritance diagram for :class:`DBAdapters.DBFileCSV`:
     .. inheritance-diagram:: DBAdapters.DBFileCSV
 
     Example:
-      >>> adapter = DBFileCSV(filename="file.csv", identify="run_01",
-                              frequency = 1, reset = True)
+      >>> adapter = DBFileCSV(filename="file.csv", identify="run_01", frequency = 1, reset = True)
       :param filename: the CSV filename
       :param identify: the identify of the run
       :param frequency: the generational dump frequency
@@ -348,13 +457,6 @@ class DBSQLite(DataBaseAdapter):
    This parameter will erase all the database tables and will create the new ones.
    The *resetDB* parameter is different from the *resetIdentify* parameter, the *resetIdentify*
    only erases the rows with the same "identify" name.
-
-   :param dbname: the database filename
-   :param identify: the identify if the run
-   :param resetDB: if True, the database structure will be recreated
-   :param resetIdentify: if True, the identify with the same name will be overwrite with new data
-   :param frequency: the generational dump frequency
-   :param commit_freq: the commit frequency
    """
 
    def __init__(self, dbname=constants.CDefSQLiteDBName, identify=None, resetDB=False,
@@ -363,6 +465,12 @@ class DBSQLite(DataBaseAdapter):
 
       """
       The creator of the DBSQLite Class
+      :param dbname: the database filename
+      :param identify: the identify if the run
+      :param resetDB: if True, the database structure will be recreated
+      :param resetIdentify: if True, the identify with the same name will be overwrite with new data
+      :param frequency: the generational dump frequency
+      :param commit_freq: the commit frequency
       """
 
       # Call the constructor of the base class
@@ -377,6 +485,8 @@ class DBSQLite(DataBaseAdapter):
       self.typeDict = {types.FloatType: "real"}
       self.cursorPool = None
       self.commitFreq = commit_freq
+
+      self.named_individuals = False
 
    # -----------------------------------------------------------------
 
@@ -439,7 +549,9 @@ class DBSQLite(DataBaseAdapter):
 
    def close(self):
 
-      """ Close the database connection """
+      """
+      Close the database connection
+      """
 
       log.debug("Closing database ...")
 
@@ -572,12 +684,16 @@ class DBSQLite(DataBaseAdapter):
       pstmt = "insert into %s values(?, ?, ?, ?, ?)" % (constants.CDefSQLiteDBTablePop,)
       tups = []
 
+      # Named
       if self.named_individuals:
 
+         # Loop over the individuals
          for name in population.names:
+
             ind = population[name]
             tups.append((self.getIdentify(), generation, name, ind.fitness, ind.score))
 
+      # Not named
       else:
 
          for i in xrange(len(population)):
@@ -591,69 +707,85 @@ class DBSQLite(DataBaseAdapter):
 
 class DBXMLRPC(DataBaseAdapter):
 
-   """ DBXMLRPC Class - Adapter to dump statistics to a XML Remote Procedure Call
-   Inheritance diagram for :class:`DBAdapters.DBXMLRPC`:
-   .. inheritance-diagram:: DBAdapters.DBXMLRPC
-
-   Example:
+    """
+    DBXMLRPC Class - Adapter to dump statistics to a XML Remote Procedure Call
+    Inheritance diagram for :class:`DBAdapters.DBXMLRPC`:
+    .. inheritance-diagram:: DBAdapters.DBXMLRPC
+    
+    Example:
       >>> adapter = DBXMLRPC(url="http://localhost:8000/", identify="run_01",
                              frequency = 1)
-
+    
       :param url: the URL of the XML RPC
       :param identify: the identify of the run
       :param frequency: the generational dump frequency
-
-
-   .. note:: The XML RPC Server must implement the *insert* method, wich receives
+    
+    
+    .. note:: The XML RPC Server must implement the *insert* method, wich receives
              a python dictionary as argument.
-
-   Example of an server in Python: ::
-
+    
+    Example of an server in Python: ::
+    
       import xmlrpclib
       from SimpleXMLRPCServer import SimpleXMLRPCServer
-
+    
       def insert(l):
           print "Received statistics: %s" % l
-
+    
       server = SimpleXMLRPCServer(("localhost", 8000), allow_none=True)
       print "Listening on port 8000..."
       server.register_function(insert, "insert")
       server.serve_forever()
-
-   .. versionadded:: 0.6
+    
+    .. versionadded:: 0.6
       The :class:`DBXMLRPC` class.
+    
+    """
 
-   """
-   def __init__(self, url, identify=None, frequency=constants.CDefXMLRPCStatsGenFreq):
-      """ The creator of DBXMLRPC Class """
-
+    def __init__(self, url, identify=None, frequency=constants.CDefXMLRPCStatsGenFreq):
+    
+      """
+      The creator of DBXMLRPC Class
+      """
+    
       super(DBXMLRPC, self).__init__(frequency, identify)
       self.xmlrpclibmod = None
-
+    
       self.url = url
       self.proxy = None
 
-   def __repr__(self):
-      """ The string representation of adapter """
+    # -----------------------------------------------------------------
+
+    def __repr__(self):
+
+      """
+      The string representation of adapter
+      """
+
       ret = "DBXMLRPC DB Adapter [URL='%s', identify='%s']" % (self.url, self.getIdentify())
       return ret
 
-   def open(self, ga_engine):
+    # -----------------------------------------------------------------
 
-      """ Open the XML RPC Server proxy
-      :param ga_engine: the GA Engine
-      .. versionchanged:: 0.6
+    def open(self, ga_engine):
+
+        """
+        Open the XML RPC Server proxy
+        :param ga_engine: the GA Engine
+        .. versionchanged:: 0.6
          The method now receives the *ga_engine* parameter.
-      """
+        """
 
-      if self.xmlrpclibmod is None:
-         log.debug("Loding the xmlrpclib module...")
-         self.xmlrpclibmod = utils.importSpecial("xmlrpclib")
+        if self.xmlrpclibmod is None:
+             log.debug("Loding the xmlrpclib module...")
+             self.xmlrpclibmod = utils.importSpecial("xmlrpclib")
 
-      log.debug("Opening the XML RPC Server Proxy on %s", self.url)
-      self.proxy = self.xmlrpclibmod.ServerProxy(self.url, allow_none=True)
+        log.debug("Opening the XML RPC Server Proxy on %s", self.url)
+        self.proxy = self.xmlrpclibmod.ServerProxy(self.url, allow_none=True)
 
-   def insert(self, ga_engine):
+    # -----------------------------------------------------------------
+
+    def insert(self, ga_engine):
 
       """
       Calls the XML RPC procedure
@@ -719,7 +851,8 @@ class DBVPythonGraph(DataBaseAdapter):
 
       :rtype: the window (the return of gdisplay call)
       """
-      title = "Pyevolve v.%s - %s - id [%s]" % (__version__, title_sec, self.identify)
+      #title = "Pyevolve v.%s - %s - id [%s]" % (__version__, title_sec, self.identify)
+      title = "PTS/evolve"
       if self.genmax:
          disp = self.vtkGraph.gdisplay(title=title, xtitle='Generation', ytitle=title_sec,
                                        xmax=ga_engine.getGenerations(), xmin=0., width=500,
@@ -733,7 +866,8 @@ class DBVPythonGraph(DataBaseAdapter):
 
    def open(self, ga_engine):
 
-      """ Imports the VPython module and creates the four graph windows
+      """
+      Imports the VPython module and creates the four graph windows
       :param ga_engine: the GA Engine
       """
 
@@ -756,17 +890,18 @@ class DBVPythonGraph(DataBaseAdapter):
 
    def insert(self, ga_engine):
 
-      """ Plot the current statistics to the graphs
-      :param ga_engine: the GA Engine
-      """
+        """
+        Plot the current statistics to the graphs
+        :param ga_engine: the GA Engine
+        """
 
-      stats = ga_engine.getStatistics()
-      generation = ga_engine.getCurrentGeneration()
+        stats = ga_engine.getStatistics()
+        generation = ga_engine.getCurrentGeneration()
 
-      self.curveMin.plot(pos=(generation, stats["rawMin"]))
-      self.curveMax.plot(pos=(generation, stats["rawMax"]))
-      self.curveDev.plot(pos=(generation, stats["rawDev"]))
-      self.curveAvg.plot(pos=(generation, stats["rawAve"]))
+        self.curveMin.plot(pos=(generation, stats["rawMin"]))
+        self.curveMax.plot(pos=(generation, stats["rawMax"]))
+        self.curveDev.plot(pos=(generation, stats["rawDev"]))
+        self.curveAvg.plot(pos=(generation, stats["rawAve"]))
 
 # -----------------------------------------------------------------
 
@@ -807,7 +942,9 @@ class DBMySQLAdapter(DataBaseAdapter):
                 db=constants.CDefMySQLDBName, identify=None, resetDB=False, resetIdentify=True,
                 frequency=constants.CDefMySQLStatsGenFreq, commit_freq=constants.CDefMySQLStatsCommitFreq):
 
-      """ The creator of the DBMySQLAdapter Class """
+      """
+      The creator of the DBMySQLAdapter Class
+      """
 
       # Callt he cosntructor of the base class
       super(DBMySQLAdapter, self).__init__(frequency, identify)
@@ -825,11 +962,15 @@ class DBMySQLAdapter(DataBaseAdapter):
       self.cursorPool = None
       self.commitFreq = commit_freq
 
+      self.named_individuals = False
+
    # -----------------------------------------------------------------
 
    def __repr__(self):
 
-      """ The string representation of adapter """
+      """
+      The string representation of adapter
+      """
 
       ret = "DBMySQLAdapter DB Adapter [identify='%s', host='%s', username='%s', db='%s']" % (self.getIdentify(),
             self.host, self.user, self.db)

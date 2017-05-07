@@ -24,6 +24,7 @@ from ....evolve.optimize.continuous import ContinuousOptimizer
 from ..evaluate import evaluate
 from ....core.tools.stringify import tostr
 from ....core.tools import sequences
+from ....core.tools.serialization import load_dict
 
 # -----------------------------------------------------------------
 
@@ -74,6 +75,9 @@ class GeneticModelGenerator(ModelGenerator):
         # Previous population
         self.previous_population = None
 
+        # Previous recurrent
+        self.previous_recurrent = None
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -116,6 +120,7 @@ class GeneticModelGenerator(ModelGenerator):
             # Set generation specific paths
             population_path = fs.join(self.generation_path, "population.dat")
             elitism_path = fs.join(self.generation_path, "elitism.dat")
+            recurrent_path = fs.join(self.generation_path, "recurrent.dat")
 
             # Re-invoke existing optimizer run
             if fs.is_file(self.fitting_run.main_engine_path):
@@ -126,7 +131,7 @@ class GeneticModelGenerator(ModelGenerator):
                                                                 self.fitting_run.main_prng_path,
                                                                 self.fitting_run.optimizer_config_path,
                                                                 self.statistics_path, self.database_path,
-                                                                self.fitting_run.name)
+                                                                self.populations_path, self.fitting_run.name)
                 # Set initial flag
                 self.initial = False
 
@@ -134,6 +139,10 @@ class GeneticModelGenerator(ModelGenerator):
                 previous_generation_path = self.fitting_run.last_genetic_generation_path
                 previous_population_path = fs.join(previous_generation_path, "population.dat")
                 self.previous_population = load_population(previous_population_path)
+
+                # Load the previous recurrent data, BUT NOT WHEN THE PREVIOUS GENERATION WAS THE INTIAL ONE ?
+                previous_recurrent_path = fs.join(previous_generation_path, "recurrent.dat")
+                self.previous_recurrent = load_dict(previous_recurrent_path)
 
             # New optimizer run
             else:
@@ -146,6 +155,7 @@ class GeneticModelGenerator(ModelGenerator):
                 self.optimizer.config.writing.config_path = self.fitting_run.optimizer_config_path
                 self.optimizer.config.writing.statistics_path = self.statistics_path
                 self.optimizer.config.writing.database_path = self.database_path
+                self.optimizer.config.writing.populations_path = self.populations_path
                 self.optimizer.config.run_id = self.fitting_run.name
 
                 # Set initial flag
@@ -157,6 +167,7 @@ class GeneticModelGenerator(ModelGenerator):
             # Set generation specific paths
             self.optimizer.config.writing.population_path = population_path
             self.optimizer.config.writing.elitism_table_path = elitism_path
+            self.optimizer.config.writing.recurrent_path = recurrent_path
 
         # Get the parameter ranges
         if "parameter_ranges" in kwargs: self.parameter_ranges = kwargs.pop("parameter_ranges")
@@ -264,7 +275,7 @@ class GeneticModelGenerator(ModelGenerator):
         self.optimizer.run(scores=self.scores, scores_check=self.scores_check, minima=self.parameter_minima_scalar,
                            maxima=self.parameter_maxima_scalar, evaluator=self.evaluator,
                            evaluator_kwargs=self.evaluator_kwargs, initial_parameters=self.initial_parameters,
-                           previous_population=self.previous_population)
+                           previous_population=self.previous_population, previous_recurrent=self.previous_recurrent)
 
         # Get the parameter values of the new models
         self.get_model_parameters()
@@ -575,6 +586,7 @@ def set_optimizer_settings(optimizer, fitting_run, ngenerations=None, nmodels=No
     # self.optimizer.config.run_id = self.fitting_run.name # THIS IS NOW DONE IN THE SETUP
     optimizer.config.database_frequency = 1
     optimizer.config.statistics_frequency = 1
+    optimizer.config.populations_frequency = 1
 
     # Fixed
     # self.optimizer.config.output = self.fitting_run.path
@@ -590,6 +602,11 @@ def set_optimizer_settings(optimizer, fitting_run, ngenerations=None, nmodels=No
 
     # Set named_individuals flag
     optimizer.config.named_individuals = True
+
+    # Recurrency checking
+    optimizer.config.check_recurrence = True
+    optimizer.config.recurrence_rtol = 1e-5
+    optimizer.config.recurrence_atol = 1e-8
 
 # -----------------------------------------------------------------
 

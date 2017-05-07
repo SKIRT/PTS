@@ -39,6 +39,7 @@ default_mutation_method = "range"
 default_min_or_max = "maximize"
 default_database_frequency = 1
 default_statistics_frequency = 1
+default_populations_frequency = 1
 
 default_elitism = True
 
@@ -66,6 +67,7 @@ definition.add_optional("min_or_max", "string", "minimize or maximize", default_
 definition.add_optional("run_id", "string", "identifier for this run", default="run0")
 definition.add_optional("database_frequency", "positive_integer", "frequency of appending to the database (in the number of generations)", default_database_frequency)
 definition.add_optional("statistics_frequency", "positive_integer", "frequency of appending to the statistics table", default_statistics_frequency)
+definition.add_optional("populations_frequency", "positive_integer", "frequency of appending to the populations table", default_populations_frequency)
 definition.add_optional("scaling_method", "string", "scaling method", "linear", choices=scaling_methods)
 definition.add_optional("selector_method", "string", "selector method", "rank", choices=selector_methods)
 
@@ -88,8 +90,10 @@ definition.sections["writing"].add_optional("prng_path", "string", "path for the
 definition.sections["writing"].add_optional("config_path", "string", "path for the configuration file")
 definition.sections["writing"].add_optional("statistics_path", "string", "path for the statistics file")
 definition.sections["writing"].add_optional("database_path", "string", "path for the database")
+definition.sections["writing"].add_optional("populations_path", "string", "path for the populations data file")
 definition.sections["writing"].add_optional("population_path", "string", "path for the population data file")
 definition.sections["writing"].add_optional("elitism_table_path", "string", "path for the elitism table")
+definition.sections["writing"].add_optional("recurrent_path", "string", "path for the recurrency data")
 
 # Advanced
 definition.add_optional("nelite_individuals", "positive_integer", "number of individuals to take as elite", 1)

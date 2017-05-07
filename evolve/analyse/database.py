@@ -94,6 +94,37 @@ def get_generations(database, run_id):
 
 # -----------------------------------------------------------------
 
+def get_individual(database, run_id, generation, individual_key):
+
+    """
+    This function ...
+    :param database: 
+    :param run_id: 
+    :param generation: 
+    :param individual_key: 
+    :return: 
+    """
+
+    # Get the cursor
+    if types.is_string_type(database): database = load_database(database)
+
+    ret = database.execute("""
+                         select *  from population
+                         where identify = ?
+                         and generation = ?
+                         and individual = ?
+                         """, (run_id, generation, individual_key))
+
+    ret_fetch = ret.fetchall()
+
+    if len(ret_fetch) == 0: raise RuntimeError("No individuals found in the range")
+    elif len(ret_fetch) > 1: raise RuntimeError("Ambigious input")
+
+    ind = ret_fetch[0]
+    return ind
+
+# -----------------------------------------------------------------
+
 def get_individuals(database, run_id, generation, individual_range=None):
 
     """
@@ -156,6 +187,22 @@ def get_scores_named_individuals(database, run_id, generation):
 
     # Return the scores dictionary
     return scores
+
+# -----------------------------------------------------------------
+
+def get_score_for_individual(database, run_id, generation, key):
+
+    """
+    This function ...
+    :param database: 
+    :param run_id: 
+    :param generation: 
+    :param key: 
+    :return: 
+    """
+
+    ind = get_individual(database, run_id, generation, key)
+    return ind["raw"]
 
 # -----------------------------------------------------------------
 

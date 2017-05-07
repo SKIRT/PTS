@@ -60,6 +60,9 @@ class FittingComponent(ModelingComponent):
         # The statistics path
         self.statistics_path = None
 
+        # The path to the populations file
+        self.populations_path = None
+
         # The name of the instrument
         self.earth_instrument_name = None
 
@@ -88,6 +91,9 @@ class FittingComponent(ModelingComponent):
 
         # Set the path to the statistics file
         self.statistics_path = fs.join(self.fit_path, "statistics.csv")
+
+        # Set the path to the populations file
+        self.populations_path = fs.join(self.fit_path, "populations.dat")
 
         # The name of the instrument
         self.earth_instrument_name = "earth"

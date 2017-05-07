@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import numpy as np
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
@@ -21,10 +22,13 @@ from ..core.engine import GeneticEngine
 from ...core.tools import filesystem as fs
 from ...core.tools.random import save_state, load_state
 from ...core.basics.configuration import Configuration
-from ..core.adapters import DBFileCSV, DBSQLite
+from ..core.adapters import DBFileCSV, DBSQLite, PopulationsFile
 from .optimizer import Optimizer
 from ..core.population import NamedPopulation
 from .tables import Elitismtable
+from ...core.tools import types
+from ..analyse.database import load_database, get_score_for_individual
+from ...core.tools.serialization import write_dict, load_dict
 
 # -----------------------------------------------------------------
 
@@ -59,6 +63,12 @@ class StepWiseOptimizer(Optimizer):
         # The previous population
         self.previous_population = None
 
+        # The previous recurrent data
+        self.previous_recurrent = None
+
+        # Recurrent data
+        self.recurrent = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -83,19 +93,23 @@ class StepWiseOptimizer(Optimizer):
         # Determine the path to the configuration
         config_path = fs.join(dir_path, "optimizer.cfg")
 
-        # Load the statistics (opening is done during initialization or evolution)
+        # Set the path to the statistics file (opening is done during initialization or evolution)
         statistics_path = fs.join(dir_path, "statistics.csv")
 
-        # Load the database (opening is done during initialization or evolution)
+        # Set the path to the database (opening is done during initialization or evolution)
         database_path = fs.join(dir_path, "database.db")
 
+        # Set the path to the populations file (opening is done during initialization or evolution)
+        populations_path = fs.join(dir_path, "populations.dat")
+
         # Create the optimizer instance and return it
-        return cls.from_paths(dir_path, engine_path, prng_path, config_path, statistics_path, database_path, run_id)
+        return cls.from_paths(dir_path, engine_path, prng_path, config_path, statistics_path, database_path, populations_path, run_id)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_paths(cls, output_path, engine_path, prng_path, config_path, statistics_path, database_path, run_id):
+    def from_paths(cls, output_path, engine_path, prng_path, config_path, statistics_path, database_path,
+                   populations_path, run_id):
 
         """
         This function ...
@@ -105,6 +119,7 @@ class StepWiseOptimizer(Optimizer):
         :param config_path:
         :param statistics_path:
         :param database_path:
+        :param populations_path:
         :param run_id:
         :return:
         """
@@ -118,6 +133,7 @@ class StepWiseOptimizer(Optimizer):
         log.debug(" - Configuration: " + config_path)
         log.debug(" - Statistics: " + statistics_path)
         log.debug(" - Database: " + database_path)
+        log.debug(" - Populations: " + populations_path)
         log.debug(" - Output: " + output_path)
         log.debug("")
 
@@ -146,6 +162,11 @@ class StepWiseOptimizer(Optimizer):
         log.debug("Loading the database from '" + database_path + "' ...")
         optimizer.database = DBSQLite(dbname=database_path, resetDB=False, identify=run_id, resetIdentify=False)
 
+        # Load the populations file (opening is done during initialization or evoluation)
+        if not fs.is_file(populations_path): raise IOError("The populations file could not be found at '" + populations_path + "'")
+        log.debug("Loading the populations file from '" + populations_path + "' ...")
+        optimizer.populations = PopulationsFile(filepath=populations_path, reset=False, identify=run_id)
+
         # Set the path
         optimizer.config.output = output_path
 
@@ -155,6 +176,7 @@ class StepWiseOptimizer(Optimizer):
         optimizer.config.writing.config_path = config_path
         optimizer.config.writing.statistics_path = statistics_path
         optimizer.config.writing.database_path = database_path
+        optimizer.config.writing.populations_path = populations_path
 
         # Return the optimizer
         return optimizer
@@ -230,6 +252,9 @@ class StepWiseOptimizer(Optimizer):
         # Get the previous population
         if "previous_population" in kwargs: self.previous_population = kwargs.pop("previous_population")
 
+        # Get the previous recurrent data
+        if "previous_recurrent" in kwargs: self.previous_recurrent = kwargs.pop("previous_recurrent")
+
         # Set best to None: only when finish_evoluation is run, best should be set
         self.best = None
 
@@ -245,22 +270,19 @@ class StepWiseOptimizer(Optimizer):
         # Inform the user
         log.info("Initializing ...")
 
-        # 1. Initialize the statistics table
-        self.initialize_statistics()
+        # Initialize the adapters
+        self.initialize_adapters()
 
-        # 2. Initialize databse
-        self.initialize_database()
-
-        # 3. Initialize genome
+        # 4. Initialize genome
         self.initialize_genome(**kwargs)
 
-        # 4. Initialize engine
+        # 5. Initialize engine
         self.initialize_engine(**kwargs)
 
-        # 5. Initialize the initial population
+        # 6. Initialize the initial population
         self.initialize_population()
 
-        # 6. Initialize the evolution (the initial generation)
+        # 7. Initialize the evolution (the initial generation)
         self.initialize_evolution()
 
     # -----------------------------------------------------------------
@@ -293,8 +315,8 @@ class StepWiseOptimizer(Optimizer):
         # Inform the user
         log.info("Finishing ...")
 
-        # Set the database adapter again
-        self.set_engine_database_and_statistics()
+        # Set the database adapters again
+        self.set_engine_adapters()
 
         # Set the scores from the previous generation
         self.set_scores()
@@ -315,7 +337,7 @@ class StepWiseOptimizer(Optimizer):
         :return: 
         """
 
-        return self.config.check_recurrence and self.previous_population is not None
+        return self.config.check_recurrence and not self.engine.is_initial_generation
 
     # -----------------------------------------------------------------
 
@@ -330,7 +352,7 @@ class StepWiseOptimizer(Optimizer):
         log.info("Evolve ...")
 
         # Set the database and statistics adapters again
-        self.set_engine_database_and_statistics()
+        self.set_engine_adapters()
 
         # Make sure we don't stop unexpectedly, always increment the number of generations we want
         # (it doesn't matter what the value is)
@@ -344,6 +366,69 @@ class StepWiseOptimizer(Optimizer):
 
         # Check recurrency
         if self.check_recurrence: self.set_recurrent()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_scores(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if self.previous_recurrent is None: return self.scores
+
+        scores = []
+
+        passed_scores = iter(self.scores)
+
+        # Loop over the names in the previous population, because the order IS IMPORTANT
+        for key in self.previous_population:
+
+            if key in self.previous_recurrent: score = self.previous_recurrent[key]
+            else: score = passed_scores.next()
+
+            # Add the score
+            scores.append(score)
+
+        # Check the length of the scores list
+        if len(scores) != len(self.previous_population): raise RuntimeError("Something went wrong")
+
+        # Return the scores
+        return scores
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_scores_check(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if self.scores_check is None: return None
+        if self.previous_recurrent is None: return self.scores_check
+    
+        checks = []
+
+        passed_checks = iter(self.scores_check)
+
+        # Loop over the names in the previous population, because the order IS IMPORTANT
+        for key in self.previous_population:
+
+            if key in self.previous_recurrent: parameters = self.previous_population[key]
+            else: parameters = passed_checks.next()
+
+            # Add the parameters
+            checks.append(parameters)
+
+        # Check the length of the checks list
+        if len(checks) != len(self.previous_population): raise RuntimeError("Something went wrong")
+
+        # Return the checks
+        return checks
 
     # -----------------------------------------------------------------
 
@@ -361,7 +446,7 @@ class StepWiseOptimizer(Optimizer):
         if self.scores is None: raise ValueError("The scores are not set")
 
         # Set the scores
-        elitism_data = self.engine.set_scores(self.scores, self.scores_check)
+        elitism_data = self.engine.set_scores(self.all_scores, self.all_scores_check)
 
         # Create elitism table
         if elitism_data is not None: self.elitism_table = Elitismtable.from_data(elitism_data)
@@ -397,22 +482,39 @@ class StepWiseOptimizer(Optimizer):
         # Inform the user
         log.info("Looking for recurrency of old individuals within the new population ...")
 
-        # Loop over the individual names
+        # Initilaize
+        self.recurrent = dict()
+
+        # Get run ID
+        run_id = self.populations.identify
+
+        # Load the populations data
+        populations = load_populations(self.populations.filepath)
+        populations_run = populations[run_id]
+
+        # Current generation
+        generation = self.engine.currentGeneration
+
+        # Load the database
+        database = load_database(self.database.dbName)
+
+        # Loop over the individual names (of the newborns)
         for name in self.individual_names:
 
             # Get the individual
             individual = self.population[name]
 
-            # Look for a match with the previous generation (population)
+            # Check recurrency
+            generation_index, key = find_recurrent_individual(populations_run, individual, generation, rtol=self.config.recurrence_rtol, atol=self.config.recurrence_atol)
 
+            # If not found, skip
+            if generation_index is None: continue
 
-            # Loop over all the genes (parameters)
-            for i in range(len(individual)):
+            # Otherwise, look for the (raw) score in the database
+            score = get_score_for_individual(database, run_id, generation_index, key)
 
-                # Get the parameter value
-                value = individual[i]
-
-
+            # Set the score for the recurrent individual
+            self.recurrent[name] = score
 
     # -----------------------------------------------------------------
 
@@ -464,6 +566,9 @@ class StepWiseOptimizer(Optimizer):
 
         # Write the elitism data
         if self.elitism_table is not None: self.write_elitism()
+
+        # Write the recurrency data
+        if self.recurrent is not None: self.write_recurrent()
 
     # -----------------------------------------------------------------
 
@@ -581,6 +686,18 @@ class StepWiseOptimizer(Optimizer):
         :return: 
         """
 
+        if not self.is_named_population: raise ValueError("The population is not a named population")
+
+        if self.recurrent is None: return self.individual_names
+
+        names = []
+        for name in self.individual_names:
+
+            if name in self.recurrent: continue
+            names.append(name)
+
+        return names
+
     # -----------------------------------------------------------------
 
     @property
@@ -590,6 +707,16 @@ class StepWiseOptimizer(Optimizer):
         This function ...
         :return: 
         """
+
+        if self.recurrent is None: return self.individual_keys
+
+        keys = []
+        for key in self.individual_keys:
+
+            if key in self.recurrent: continue
+            keys.append(key)
+
+        return keys
 
     # -----------------------------------------------------------------
 
@@ -628,6 +755,25 @@ class StepWiseOptimizer(Optimizer):
 
         # Save the table
         self.elitism_table.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_recurrent(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Writing the recurrent individuals ...")
+
+        # Determine the path
+        if self.config.writing.recurrent_path is not None: path = fs.absolute_or_in(self.config.writing.recurrent_path, self.output_path)
+        else: path = self.output_path_file("recurrent.dat")
+
+        # Save the dictionary
+        write_dict(self.recurrent, path)
 
     # -----------------------------------------------------------------
 
@@ -678,6 +824,7 @@ def load_population(path):
     :return: 
     """
 
+    # ORDERED IS IMPORTANT!!! KEYS ARE USED TO GET LIST OF INDIVIDUAL NAMES FOR CREATING ALL_SCORES
     population = OrderedDict()
 
     # loop over the lines in the file
@@ -692,5 +839,115 @@ def load_population(path):
 
     # Return the population
     return population
+
+# -----------------------------------------------------------------
+
+def load_populations(path):
+
+    """
+    This function ...
+    :param path: 
+    :return: 
+    """
+
+    populations = OrderedDict()
+
+    # Loop over the lines in the file
+    for line in fs.read_lines(path):
+
+        parts = line.split(" ")
+
+        run_name = parts[0]
+        generation = int(parts[1])
+        key = parts[2]
+
+        # Get the genome
+        rest = line.split(key + " ")[1]
+        genome = eval(rest)
+
+        # Create empty list for each run initially
+        if run_name not in populations: populations[run_name] = []
+
+        # Check whether there is place in the list for this population yet (e.g. generation = 2, len must be at least 3)
+        if len(populations[run_name]) < generation + 1: populations[run_name].append(OrderedDict())
+
+        # Add the genome
+        populations[run_name][generation][key] = genome
+
+    # Return the populations data
+    return populations
+
+# -----------------------------------------------------------------
+
+def find_recurrent_individual(populations, individual, current_generation, rtol=1e-5, atol=1e-8):
+
+    """
+    This function ...
+    :param populations:
+    :param individual:
+    :param current_generation:
+    :param rtol:
+    :param atol:
+    :return: 
+    """
+
+    array_individual = np.array(individual.genomeList)
+
+    # Look for a match with previous generations (populations) of the same run
+    # Loop over the previous generations
+    for generation_index in reversed(range(current_generation-1)):
+
+        # Loop over the individuals in this generation
+        for key in populations[generation_index]:
+
+            # Get the genome
+            genome = populations[generation_index][key]
+            array_genome = np.array(genome)
+
+            # Check for equality
+
+            # Binary: check exact
+            if is_binary_values(genome):
+
+                if individual.genomeList == genome: return generation_index, key
+
+            # Real: check with certain tolerance
+            elif is_real_values(genome):
+
+                if np.isclose(array_individual, array_genome, rtol=rtol, atol=atol): return generation_index, key
+
+            # Unrecognized 1D genome list
+            else: raise ValueError("Genome list not recognized: " + str(genome))
+
+    # Nothing found
+    return None, None
+
+# -----------------------------------------------------------------
+
+def is_binary_values(sequence):
+
+    """
+    This function ...
+    :param sequence: 
+    :return: 
+    """
+
+    for element in sequence:
+        if element != 0 and element != 1: return False
+    return True
+
+# -----------------------------------------------------------------
+
+def is_real_values(sequence):
+
+    """
+    This function ...
+    :param sequence:
+    :return: 
+    """
+
+    for element in sequence:
+        if not types.is_real_type(element): return False
+    return True
 
 # -----------------------------------------------------------------

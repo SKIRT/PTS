@@ -34,11 +34,10 @@ from ..core.mutators import G1DListMutatorRealGaussian, G1DListMutatorRealRange
 from ..core.mutators import HeterogeneousListMutatorRealRange, HeterogeneousListMutatorRealGaussian
 from ..core.mutators import HeterogeneousListMutatorIntegerRange, HeterogeneousListMutatorIntegerGaussian
 from ..core.engine import GeneticEngine, RawScoreCriteria
-from ..core import constants
 from ...core.basics.range import RealRange, IntegerRange
 from ...core.tools import formatting as fmt
 from ...core.tools import stringify
-from ..core.adapters import DBFileCSV, DBSQLite
+from ..core.adapters import DBFileCSV, DBSQLite, PopulationsFile
 from ...core.tools import filesystem as fs
 from ...core.tools import types
 from ..core.scaling import LinearScaling, SigmaTruncScaling, PowerLawScaling, BoltzmannScaling, ExponentialScaling, SaturatedScaling
@@ -74,6 +73,9 @@ class Optimizer(Configurable):
 
         # The statistics table adapter
         self.statistics = None
+
+        # The populations file
+        self.populations = None
 
         # The intial genome
         self.initial_genome = None
@@ -205,6 +207,21 @@ class Optimizer(Configurable):
         if "parameter_range" in kwargs: self.parameter_range = kwargs.pop("parameter_range")
         else: self.parameter_range = self.config.parameter_range
 
+        # Prepare the parameter ranges
+        self.prepare_parameter_ranges()
+
+        # Set initial parameters
+        if "initial_parameters" in kwargs: self.initial_parameters = kwargs.pop("initial_parameters")
+
+    # -----------------------------------------------------------------
+
+    def prepare_parameter_ranges(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
         # If minima and maxima are defined but not parameter_range, but the genome is not necessarily a heterogeneous genome,
         # we need to set parameter_range as equal to both parameter ranges IF POSSIBLE ?
         if self.parameter_range is None and self.parameter_minima is not None and self.parameter_maxima is not None:
@@ -231,8 +248,26 @@ class Optimizer(Configurable):
         # Debugging
         if self.parameter_range is not None: log.debug("The parameter range is " + str(self.parameter_range))
 
-        # ghege
-        if "initial_parameters" in kwargs: self.initial_parameters = kwargs.pop("initial_parameters")
+    # -----------------------------------------------------------------
+
+    def initialize_adapters(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Initializing the adapters ...")
+
+        # 1. Initialize the statistics table
+        self.initialize_statistics()
+
+        # 2. Initialize databse
+        self.initialize_database()
+
+        # 3. Initilaize the populations table
+        self.initialize_populations()
 
     # -----------------------------------------------------------------
 
@@ -287,7 +322,36 @@ class Optimizer(Configurable):
 
         # Create the database adapter
         self.database = DBSQLite(dbname=filepath, identify=self.config.run_id, resetDB=reset,
-                                 commit_freq=self.config.database_frequency, frequency=self.config.database_frequency, resetIdentify=False)
+                                 commit_freq=self.config.database_frequency, frequency=self.config.database_frequency,
+                                 resetIdentify=False)
+
+    # -----------------------------------------------------------------
+
+    def initialize_populations(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Initializing the populations ...")
+
+        # Determine the file path
+        if self.config.writing.populations_path is not None: filepath = fs.absolute_or_in(self.config.writing.populations_path, self.output_path)
+        else: filepath = self.output_path_file("populations.dat")
+
+        # Check the file
+        if fs.is_file(filepath):
+            log.debug("The populations file is already present. Adding a new run to the file.")
+            reset = False
+        else:
+            log.debug("Creating a new populations file ...")
+            reset = True
+
+        # Create the populations file adapter
+        self.populations = PopulationsFile(filepath=filepath, identify=self.config.run_id, reset=reset,
+                                           frequency=self.config.populations_frequency)
 
     # -----------------------------------------------------------------
 
@@ -668,7 +732,7 @@ class Optimizer(Configurable):
         self.set_engine_plotter(kwargs)
 
         # 5. Set database and statistics
-        self.set_engine_database_and_statistics()
+        self.set_engine_adapters()
 
         # 6. Set kwargs
         self.set_engine_kwargs(kwargs)
@@ -807,7 +871,7 @@ class Optimizer(Configurable):
 
     # -----------------------------------------------------------------
 
-    def set_engine_database_and_statistics(self):
+    def set_engine_adapters(self):
 
         """
         This function ...
@@ -815,7 +879,7 @@ class Optimizer(Configurable):
         """
 
         # Inform the user
-        log.info("Setting the database and statistics adapters ...")
+        log.info("Setting the engine adapters ...")
 
         # Set the database adapter
         self.database.open(self.engine)
@@ -824,6 +888,10 @@ class Optimizer(Configurable):
         # Set the adapter for the statistics table
         self.statistics.open(self.engine)
         self.engine.add_database_adapter(self.statistics)
+
+        # Set the populations adapter
+        self.populations.open(self.engine)
+        self.engine.add_database_adapter(self.populations)
 
     # -----------------------------------------------------------------
 
@@ -996,6 +1064,21 @@ class Optimizer(Configurable):
 
         # Commit all changes and close
         self.statistics.commit_and_close()
+
+    # -----------------------------------------------------------------
+
+    def write_populations(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Writing the populations ...")
+
+        # Commit all changes and close
+        self.populations.commit_and_close()
 
     # -----------------------------------------------------------------
 
