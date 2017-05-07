@@ -201,3 +201,28 @@ def round_to_n_significant_digits(x, n):
     return round(x, n-int(floor(log10(abs(x))))-1)
 
 # -----------------------------------------------------------------
+
+def integer_to_binary(integer):
+
+    """
+    This function ...
+    :param integer: 
+    :return: 
+    """
+
+    from numpy import binary_repr
+    return binary_repr(integer)
+
+# -----------------------------------------------------------------
+
+def binary_to_integer(binary):
+
+    """
+    This function ...
+    :param binary: 
+    :return: 
+    """
+
+    return int(str(binary), 2)
+
+# -----------------------------------------------------------------

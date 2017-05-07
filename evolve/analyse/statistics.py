@@ -61,7 +61,7 @@ def get_best_score_for_generation(statistics, run_id, generation, minmax="max"):
 
     """
     This function ...
-    :param path: 
+    :param statistics: 
     :param generation: 
     :param run_id:
     :param minmax:
@@ -84,11 +84,38 @@ def get_best_score_for_generation(statistics, run_id, generation, minmax="max"):
 
 # -----------------------------------------------------------------
 
+def get_best_score_and_index_for_generation(statistics, run_id, generation, minmax="max"):
+
+    """
+    This function ...
+    :param statistics: 
+    :param run_id: 
+    :param generation: 
+    :param minmax: 
+    :return: 
+    """
+
+    # Load the table
+    if types.is_string_type(statistics): statistics = load_statistics(statistics)
+
+    # Find the index of the row
+    index = tables.find_index(statistics, generation, "Generation", where={"Identifier": run_id})
+
+    # If no index is found
+    if index is None: raise ValueError("Could not find the generation '" + str(generation) + "' for run id '" + run_id + "'")
+
+    # Return the raw score for the specified generation
+    if minmax == "max": return index, statistics["rawMax"][index]
+    elif minmax == "min": return index, statistics["rawMin"][index]
+    else: raise ValueError("Invalid option for 'minmax'")
+
+# -----------------------------------------------------------------
+
 def get_best_fitness_for_generation(statistics, run_id, generation, minmax="max"):
 
     """
     This function ...
-    :param path: 
+    :param statistics: 
     :param generation: 
     :param run_id:
     :param minmax: 

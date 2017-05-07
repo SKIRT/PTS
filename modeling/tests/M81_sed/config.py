@@ -52,6 +52,7 @@ definition.import_section("genetic", "genetic algorithm options", genetic_defini
 #definition.sections["genetic"].optional["crossover_method"].default = ""
 #definition.sections["genetic"].optional["nelite_individuals"].default = 2
 definition.sections["genetic"].optional["mutation_rate"].default = 0.07
+definition.sections["genetic"].optional["genome_type"].default = "binary_string"
 
 # Flags
 definition.add_flag("spectral_convolution", "use spectral convolution to calculate observed fluxes", False)

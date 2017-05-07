@@ -924,12 +924,13 @@ class GeneticEngine(object):
 
     # -----------------------------------------------------------------
 
-    def set_scores(self, scores, check=None):
+    def set_scores(self, scores, check=None, rtol=1e-11):
 
         """
         This function ...
         :param scores:
         :param check:
+        :param rtol:
         :return:
         """
 
@@ -937,13 +938,13 @@ class GeneticEngine(object):
         elitism_data = None
 
         # Set the scores for the initial population
-        if self.is_initial_generation: self.set_scores_for_population(self.internalPop, scores, check)
+        if self.is_initial_generation: self.set_scores_for_population(self.internalPop, scores, check, rtol=rtol)
 
         # Set the scores for the new population
         else:
 
             # Set scores
-            self.set_scores_for_population(self.new_population, scores, check)
+            self.set_scores_for_population(self.new_population, scores, check, rtol=rtol)
 
             # Replace
             if self.new_population is not None: elitism_data = self.replace_internal_population()
@@ -962,13 +963,14 @@ class GeneticEngine(object):
 
     # -----------------------------------------------------------------
 
-    def set_scores_for_population(self, population, scores, check=None):
+    def set_scores_for_population(self, population, scores, check=None, rtol=1e-11):
 
         """
         This function ...
         :param population:
         :param scores:
         :param check:
+        :param rtol:
         :return:
         """
 
@@ -983,13 +985,13 @@ class GeneticEngine(object):
 
                     # Get the individual parameter value and the check value
                     value = individual.genomeList[j]
-                    check_value = check[j][index]
+                    check_value = check[index][j]
 
                     # Calculate relative difference
                     rel_diff = abs((value - check_value) / value)
 
                     # Check whether they are close enough
-                    assert np.isclose(value, check_value, rtol=1e-11), rel_diff
+                    assert np.isclose(value, check_value, rtol=rtol), rel_diff
 
             # Set the score
             individual.score = scores[index]
@@ -1197,7 +1199,7 @@ class GeneticEngine(object):
         new_generation_index = self.currentGeneration + 1
 
         # Debugging
-        log.debug("Elitism is performed on the new population that will afterwards become generation " + str(new_generation_index) + " ...")
+        log.debug("Elitism is performed on the new population that will afterwards become generation " + str(new_generation_index-1) + " ...")
 
         # Loop over the number of elitism replacements
         for i in xrange(self.nElitismReplacement):
@@ -1355,6 +1357,21 @@ class GeneticEngine(object):
 
         if self.new_population is None:
             if self.currentGeneration > 0: raise RuntimeError("Inconsistent state: 'new_population' does exist but 'currentGeneration' > 0")
+            return True
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_first_generation(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if self.currentGeneration == 1:
+            if self.new_population is None: raise RuntimeError("Inconsistent state: current generation == 1 but 'new_population' does not exist")
             return True
         else: return False
 

@@ -49,7 +49,7 @@ from pts.core.tools.stringify import tostr
 from pts.evolve.analyse.database import get_scores_named_individuals, load_database
 from pts.evolve.analyse.statistics import get_best_score_for_generation, load_statistics
 from pts.do.commandline import Command
-from pts.evolve.optimize.tables import Elitismtable
+from pts.evolve.optimize.tables import ElitismTable
 
 # -----------------------------------------------------------------
 
@@ -1547,14 +1547,20 @@ class M81TestBase(TestImplementation):
                 score_database = scores_database[name]
 
                 # Get the simulation name
-                simulation_name = individuals_table.get_simulation_name(name)
+                if individuals_table.has_individual(name):
 
-                # Get the chi squared value
-                score = scores_table.chi_squared_for(simulation_name)
+                    # Get simulation name
+                    simulation_name = individuals_table.get_simulation_name(name)
 
-                # Check if equal
-                equal = np.isclose(score, score_database, rtol=1.e-4)
-                if not equal: mismatches.append((score, score_database))
+                    # Get the chi squared value
+                    score = scores_table.chi_squared_for(simulation_name)
+
+                    # Check if equal
+                    equal = np.isclose(score, score_database, rtol=1.e-4)
+                    if not equal: mismatches.append((score, score_database))
+
+                # Recurrent
+                else: log.debug("Individual '" + name + "' is recurrent, so not present in the individuals table of generation '" + generation_name + "'")
 
             # Report
             if len(mismatches) == 0: log.success(generation_name + ": OK")

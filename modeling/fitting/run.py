@@ -33,6 +33,7 @@ from ..build.component import get_representation_path
 from ...core.tools.serialization import load_dict
 from .tables import IndividualsTable
 from ...core.tools import types
+from ...evolve.analyse.statistics import get_best_score_and_index_for_generation
 
 # -----------------------------------------------------------------
 
@@ -510,6 +511,30 @@ class FittingRun(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def genetic_generation_indices(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return range(self.ngenetic_generations)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def genetic_generation_indices_for_statistics_and_database(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return [index + 1 for index in self.genetic_generation_indices]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def generation_names(self):
 
         """
@@ -927,6 +952,67 @@ class FittingRun(object):
 
         """
         This function ...
+        :return: 
+        """
+
+        # NEW: THIS FUNCTION WAS CREATED BECAUSE RECURRENCE WAS IMPLEMENTED: THIS MEANS THAT OUR OWN TABLES
+        # (THOSE WHO CONTAIN ONLY MODELS THAT HAVE TO BE SIMULATED AND HAVE NOT OCCURED AND SCORED BEFORE)
+
+        from .component import get_statistics_path, get_populations
+
+        # Get path
+        statistics_path = get_statistics_path(self.modeling_path)
+
+        generation_index = None
+        individual_index = None
+        chi_squared = float("inf")
+
+        # Loop over the generations
+        for index in self.genetic_generation_indices_for_statistics_and_database:
+
+            # Get the best score from the statistics
+            ind_index, score = get_best_score_and_index_for_generation(statistics_path, self.name, index, minmax="min")
+
+            if score < chi_squared:
+                chi_squared = score
+                generation_index = index
+                individual_index = ind_index
+
+        # Look in the populations data for the parameters, for this fitting run
+        populations = get_populations(self.modeling_path)[self.name]
+
+        #print("generation:", generation_index)
+        #print("individual:", individual_index)
+        #print(populations)
+
+        # Get the parameter values for the generation and individual
+        individuals_generation = populations[generation_index]
+        individual_key = individuals_generation.keys()[individual_index]
+        parameters = individuals_generation[individual_key]
+
+        #parameters_table.parameter_values_for_simulation(best_simulation_name)
+
+        values = dict()
+
+        for label_index, label in enumerate(self.free_parameter_labels):
+
+            # Add unit
+            if label in self.parameter_units:
+                value = parameters[label_index] * self.parameter_units[label]
+            else: value = parameters[label_index]
+
+            values[label] = value
+
+        # Return the dictionary
+        return values
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_parameter_values_old_implementation(self):
+
+        """
+        This function ...
         :return:
         """
 
@@ -1303,6 +1389,18 @@ class FittingRun(object):
         """
 
         return self.last_genetic_generation_index + 1
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ngenetic_generations_with_initial(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.ngenetic_generations + 1
 
     # -----------------------------------------------------------------
 

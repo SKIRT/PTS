@@ -78,6 +78,9 @@ class GeneticModelGenerator(ModelGenerator):
         # Previous recurrent
         self.previous_recurrent = None
 
+        # Number of digits for the different parameters
+        self.ndigits = None
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -187,6 +190,9 @@ class GeneticModelGenerator(ModelGenerator):
         if "most_sampled_parameters" in kwargs: self.most_sampled_parameters = kwargs.pop("most_sampled_parameters")
         if "sampling_weights" in kwargs: self.sampling_weights = kwargs.pop("sampling_weights")
 
+        # Special: for binary genomes (but also otherwise for displaying?)
+        if "ndigits" in kwargs: self.ndigits = kwargs.pop("ndigits")
+
     # -----------------------------------------------------------------
 
     def set_parameters(self):
@@ -276,7 +282,8 @@ class GeneticModelGenerator(ModelGenerator):
         self.optimizer.run(scores=self.scores, scores_check=self.scores_check, minima=self.parameter_minima_scalar,
                            maxima=self.parameter_maxima_scalar, evaluator=self.evaluator,
                            evaluator_kwargs=self.evaluator_kwargs, initial_parameters=self.initial_parameters,
-                           previous_population=self.previous_population, previous_recurrent=self.previous_recurrent)
+                           previous_population=self.previous_population, previous_recurrent=self.previous_recurrent,
+                           ndigits=self.ndigits_list)
 
         # Get the parameter values of the new models
         self.get_model_parameters()
@@ -372,6 +379,58 @@ class GeneticModelGenerator(ModelGenerator):
 
             # Add the parameter set
             self.initial_parameters.append(initial_parameters_model)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_parameter_ndigits(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.ndigits is None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def multiple_parameter_ndigits(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.ndigits is not None
+
+    # -----------------------------------------------------------------
+
+    def ndigits_for_parameter(self, label):
+
+        """
+        This function ...
+        :param label: 
+        :return: 
+        """
+
+        if self.multiple_parameter_ndigits: return self.ndigits[label]
+        else: return self.config.ndigits
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ndigits_list(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        ndigits = []
+        for label in self.fitting_run.free_parameter_labels:
+            ndigits.append(self.ndigits_for_parameter(label))
+        return ndigits
 
     # -----------------------------------------------------------------
 
@@ -515,17 +574,11 @@ class GeneticModelGenerator(ModelGenerator):
         # Loop over the individual names
         for name in self.individual_names:
 
-            # Get the individual
-            individual = self.optimizer.get_individual(name)
-
-            # Loop over all the genes (parameters)
-            for i in range(len(individual)):
-
-                # Get the parameter value
-                value = individual[i]
+            # Get the parameters
+            for index, parameter_value in enumerate(self.optimizer.get_parameters(name)):
 
                 # Add the parameter value to the dictionary
-                self.parameters[self.fitting_run.free_parameter_labels[i]][name] = value
+                self.parameters[self.fitting_run.free_parameter_labels[index]][name] = parameter_value
 
     # -----------------------------------------------------------------
 
@@ -556,6 +609,10 @@ def set_optimizer_settings(optimizer, fitting_run, ngenerations=None, nmodels=No
     """
 
     ## In order of optimizer configuration
+
+    # NEW: GENOME TYPE
+    optimizer.config.genome_type = fitting_run.genetic_settings.genome_type
+    optimizer.config.genome_dimension = 1
 
     # Parameters
     optimizer.config.nparameters = fitting_run.nfree_parameters
@@ -650,17 +707,22 @@ def get_last_generation_scores(fitting_run, or_initial=True):
     # List of chi squared values in the same order as the parameters table
     chi_squared_values = []
 
+    # The checks
+    check = []
+
     # Check whether the chi-squared and parameter tables match
     for i in range(len(parameters_table)):
+
         simulation_name = parameters_table["Simulation name"][i]
         chi_squared = chi_squared_table.chi_squared_for(simulation_name)
         chi_squared_values.append(chi_squared)
 
-    # Check individual values with parameter table of the last generation
-    check = []
-    for label in fitting_run.free_parameter_labels:
-        values = parameters_table[label]
-        check.append(values)
+        # Check individual values with parameter table of the last generation
+        check_individual = []
+        for label in fitting_run.free_parameter_labels:
+            value = parameters_table[label][i]
+            check_individual.append(value)
+        check.append(check_individual)
 
     # Set the scores
     scores = chi_squared_values

@@ -18,7 +18,7 @@ from pts.core.tools import sequences
 
 # -----------------------------------------------------------------
 
-class Elitismtable(SmartTable):
+class ElitismTable(SmartTable):
 
     """
     This class ...
@@ -33,7 +33,7 @@ class Elitismtable(SmartTable):
         """
 
         # Call the constructor of the base class
-        super(Elitismtable, self).__init__(*args, **kwargs)
+        super(ElitismTable, self).__init__(*args, **kwargs)
 
         # Add column information
         self.add_column_info("Generation", int, None, "Generation index")

@@ -23,7 +23,7 @@ from pts.core.tools.logging import log
 from pts.core.tools.loops import repeat
 from pts.evolve.optimize.stepwise import StepWiseOptimizer
 from pts.core.tools import types
-from pts.evolve.optimize.tables import ScoresTable, Elitismtable
+from pts.evolve.optimize.tables import ScoresTable
 from pts.modeling.fitting.tables import GenerationsTable, ParametersTable
 from pts.modeling.fitting.explorer import GenerationInfo
 from pts.core.tools import stringify
@@ -35,6 +35,7 @@ from pts.core.tools import sequences
 from pts.modeling.fitting.tables import IndividualsTable
 from pts.core.tools.stringify import tostr
 from pts.do.commandline import Command
+from pts.evolve.optimize.tables import ElitismTable
 
 # -----------------------------------------------------------------
 

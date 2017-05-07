@@ -717,6 +717,19 @@ class IndividualsTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def has_individual(self, individual_name):
+
+        """
+        This function ...
+        :param individual_name: 
+        :return: 
+        """
+
+        index = tables.find_index(self, individual_name, "Individual name")
+        return index is not None
+
+    # -----------------------------------------------------------------
+
     def get_simulation_name(self, individual_name):
 
         """

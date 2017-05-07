@@ -13,6 +13,8 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import math
+import numpy as np
 from abc import ABCMeta, abstractmethod
 
 # Import astronomical modules
@@ -45,6 +47,7 @@ from ..core.selectors import GRankSelector, GUniformSelector, GTournamentSelecto
 from ...core.tools import sequences
 from ...core.tools.serialization import write_dict
 from ..core.population import Population, NamedPopulation
+from ...core.tools import numbers
 
 # -----------------------------------------------------------------
 
@@ -108,6 +111,12 @@ class Optimizer(Configurable):
 
         # Parameters for the initial generation
         self.initial_parameters = None
+
+        # Number of digits for the parameters
+        self.ndigits = None
+
+        # Number of binary digits for the parameters, will be determined in create_binary_genome
+        self.nbits = None
 
     # -----------------------------------------------------------------
 
@@ -212,6 +221,9 @@ class Optimizer(Configurable):
 
         # Set initial parameters
         if "initial_parameters" in kwargs: self.initial_parameters = kwargs.pop("initial_parameters")
+
+        # Set ndigits
+        if "ndigits" in kwargs: self.ndigits = kwargs.pop("ndigits")
 
     # -----------------------------------------------------------------
 
@@ -386,6 +398,44 @@ class Optimizer(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def genome_type(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if isinstance(self.initial_genome, G1DList) or isinstance(self.initial_genome, G2DList): return "list"
+        elif isinstance(self.initial_genome, G1DBinaryString) or isinstance(self.initial_genome, G2DBinaryString): return "binary_string"
+        else: raise ValueError("Genome type not recognized: " + str(type(self.initial_genome)))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def list_genome(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.genome_type == "list"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def binary_string_genome(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.genome_type == "binary_string"
+
+    # -----------------------------------------------------------------
+
     def create_genome(self):
 
         """
@@ -397,32 +447,108 @@ class Optimizer(Configurable):
         log.info("Creating the genome ...")
 
         # List genome
-        if self.config.genome_type == "list":
-
-            # Create 1D genome
-            if self.config.genome_dimension == 1: genome = G1DList(self.config.nparameters)
-            elif self.config.genome_dimension == 2: genome = G2DList(self.config.nparameters, self.config.nparameters2)
-            else: raise ValueError("Dimensions > 2 are not supported")
+        if self.config.genome_type == "list": self.create_list_genome()
 
         # Binary string genome
-        elif self.config.genome_type == "binary_string":
-
-            return NotImplementedError("Not implemented!")
-
-            # THINGS TODO:
-
-            # - conversions from real numbers or integer numbers into binary must be done in this class
-            # - number of binary digits has to be defined, depending on what the resolution is of the 'grid' of parameters to allow
-            # - look in the database for whether a certain binary string has ever occured before, so to avoid having to evaluate again!!
-            # - ...
-
-            # 1D or 2D
-            #if self.config.genome_dimension == 1: genome = G1DBinaryString(self.config.nparameters)
-            #elif self.config.genome_dimension == 2: genome = G2DBinaryString(self.config.nparameters, self.config.nparameters2)
-            #else: raise ValueError("Dimensions > 2 are not supported")
+        elif self.config.genome_type == "binary_string": self.create_binary_genome()
 
         # Invalid option
         else: raise ValueError("Genome type must be 'list' or 'binary_string")
+
+    # -----------------------------------------------------------------
+
+    def create_list_genome(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Creating a list genome ...")
+
+        # Create 1D genome
+        if self.config.genome_dimension == 1: genome = G1DList(self.config.nparameters)
+        elif self.config.genome_dimension == 2: genome = G2DList(self.config.nparameters, self.config.nparameters2)
+        else: raise ValueError("Dimensions > 2 are not supported")
+
+        # Set the genome
+        self.initial_genome = genome
+
+    # -----------------------------------------------------------------
+
+    @property
+    def total_nbits(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        total_nbits = sum(self.nbits)
+        return total_nbits
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def bit_slices(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        slices = []
+
+        tempsum = 0
+        for index in range(len(self.nbits)):
+            nbits = self.nbits[index]
+            slices.append(slice(tempsum, tempsum+nbits))
+            tempsum += nbits
+
+        return slices
+
+    # -----------------------------------------------------------------
+
+    def create_binary_genome(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # THINGS TODO:
+
+        # - conversions from real numbers or integer numbers into binary must be done in this class
+        # - number of binary digits has to be defined, depending on what the resolution is of the 'grid' of parameters to allow
+        # - look in the database for whether a certain binary string has ever occured before, so to avoid having to evaluate again!!
+        # - ...
+
+        # 1D or 2D
+        #if self.config.genome_dimension == 1: genome = G1DBinaryString(self.config.nparameters)
+        #elif self.config.genome_dimension == 2: genome = G2DBinaryString(self.config.nparameters, self.config.nparameters2)
+        #else: raise ValueError("Dimensions > 2 are not supported")
+
+        # Number of digits has to be specified
+        if self.ndigits is None: raise ValueError("Number of digits (in base-10) has to be specified for binary string conversion")
+
+        # Determine the number of bits for each parameter
+        self.nbits = [binary_digits_for_significant_figures(nfigures) for nfigures in self.ndigits]
+
+        # 1D
+        if self.config.genome_dimension == 1:
+
+            # Debugging
+            log.debug("Number of bits for each parameter: " + " ".join(str(n) for n in self.nbits))
+
+            # Initialize the genome
+            genome = G1DBinaryString(self.total_nbits)
+
+        # 2D
+        elif self.config.genome_dimension == 2: raise NotImplementedError("Not implemented")
+
+        # Invalid
+        else: raise ValueError("Dimensions > 2 are not supported")
 
         # Set the genome
         self.initial_genome = genome
@@ -545,7 +671,22 @@ class Optimizer(Configurable):
 
         if self.initial_genome is not None: return self.initial_genome.getSize()
         elif self.config.nparameters2 is None: return self.config.nparameters
-        else: return (self.config.nparameters, self.config.nparameters2)
+        else: return self.config.nparameters, self.config.nparameters2
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nparameters(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Is this the best implementation?
+        if self.list_genome: return len(self.initial_genome)
+        elif self.binary_string_genome: return len(self.nbits)
+        else: raise ValueError("Genome type not recognized")
 
     # -----------------------------------------------------------------
 
@@ -787,8 +928,18 @@ class Optimizer(Configurable):
             # Make a new genome by cloning the initial genome
             genome = self.initial_genome.clone()
 
-            # Set the gens
-            genome.set_genes(parameters)
+            # Set the genes
+            if self.list_genome: genome.set_genes(parameters)
+            elif self.binary_string_genome:
+
+                # Convert
+                binary_string = parameters_to_binary_string(parameters, self.parameter_minima, self.parameter_maxima, self.nbits)
+
+                # Set the binary string genome
+                genome.set_genes(binary_string)
+
+            # Invalid
+            else: raise ValueError("Unrecognized genome type")
 
             # Add the genome (individual) to the population
             population.append(genome)
@@ -1268,5 +1419,131 @@ def show_best(best):
     print(fmt.yellow + "  Fitness: " + fmt.reset + str(fitness))
 
     print("")
+
+# -----------------------------------------------------------------
+
+# FROM:
+# Traditional Techniques of Genetic Algorithms Applied to Floating-Point Chromosome Representations
+# Leo Budin, Marin Golub, Andrea Budin
+
+# -----------------------------------------------------------------
+
+def float_to_binary(value, low, high, nbits):
+
+    """
+    This function ...
+    :param value: 
+    :param high:
+    :param low:
+    :param nbits:
+    :return: 
+    """
+
+    # Set to floats
+    value = float(value)
+    high = float(high)
+    low = float(low)
+
+    scaled = (value - low) / (high - low) * 2**nbits
+    integer = int(round(scaled))
+    return numbers.integer_to_binary(integer)
+
+# -----------------------------------------------------------------
+
+def binary_to_float(binary, low, high, nbits):
+
+    """
+    This function ...
+    :param binary: 
+    :param high:
+    :param low:
+    :param nbits:
+    :return: 
+    """
+
+    # Set to floats
+    high = float(high)
+    low = float(low)
+
+    integer = numbers.binary_to_integer(binary)
+    scaled = float(integer)
+    value = low + scaled * 2**(-nbits) * (high - low)
+    return value
+
+# -----------------------------------------------------------------
+
+def binary_to_binary_string(binary, nbits=None):
+
+    """
+    This function ...
+    :param binary: 
+    :param nbits:
+    :return: 
+    """
+
+    if nbits is None: characters = list(str(binary))
+    else:
+        string = str(binary)
+        npadded = nbits - len(string)
+        characters = list("0" * npadded + string)
+
+    # Return the binary string as a list of integers
+    return [int(character) for character in characters]
+
+# -----------------------------------------------------------------
+
+def binary_string_to_binary(binary_string):
+
+    """
+    This function ...
+    :param binary_string: 
+    :return: 
+    """
+
+    return int("".join(str(bit) for bit in binary_string))
+
+# -----------------------------------------------------------------
+
+# https://math.stackexchange.com/questions/1968416/number-of-significant-figures-when-going-from-base-10-to-binary
+# I would think math.floor(log2(10)) = 3 significant figures in binary per significant figure in base 10
+
+# -----------------------------------------------------------------
+
+def binary_digits_for_significant_figures(nfigures):
+
+    """
+    This function ...
+    :param nfigures: 
+    :return: 
+    """
+
+    return int(math.floor(np.log2(10) * nfigures))
+
+# -----------------------------------------------------------------
+
+def parameters_to_binary_string(parameters, minima, maxima, nbits):
+
+    """
+    This function ...
+    :param parameters: 
+    :param minima:
+    :param maxima
+    :param nbits:
+    :return: 
+    """
+
+    binary_string = []
+
+    # Convert parameter into binary strings
+    for index in range(len(parameters)):
+
+        # Convert floating point value into binary string with specific number of bits
+        value = parameters[index]
+        binary = float_to_binary(value, low=minima[index], high=maxima[index], nbits=nbits[index])
+        binary_string_parameter = binary_to_binary_string(binary, nbits=nbits[index])
+        binary_string.extend(binary_string_parameter)
+
+    # Retunr the binary string
+    return binary_string
 
 # -----------------------------------------------------------------

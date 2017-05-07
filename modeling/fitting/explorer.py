@@ -154,7 +154,9 @@ class ParameterExplorer(FittingComponent):
         self.write()
 
         # 14. Launch the simulations for different parameter values
-        self.launch()
+        # Test whether simulations are required, because if the optimizer detects recurrence of earlier models,
+        # it is possible that no simulations have to be done
+        if self.needs_simulations: self.launch()
 
     # -----------------------------------------------------------------
 
@@ -1153,6 +1155,18 @@ class ParameterExplorer(FittingComponent):
         """
 
         return self.individuals_table.simulation_names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_simulations(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return len(self.simulation_names) > 0
 
     # -----------------------------------------------------------------
 

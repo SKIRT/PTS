@@ -128,8 +128,7 @@ class G1DBinaryString(G1DBase):
         :param value: value to be added, 0 or 1
         """
 
-        if value not in [0, 1]:
-         utils.raiseException("The value must be 0 or 1", ValueError)
+        if value not in [0, 1]: raise ValueError("The value must be 0 or 1") #utils.raiseException("The value must be 0 or 1", ValueError)
         G1DBase.append(self, value)
 
     # -----------------------------------------------------------------

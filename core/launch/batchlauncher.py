@@ -1244,7 +1244,8 @@ class BatchLauncher(Configurable):
             else: original_definition = None
 
             # Generate the analysis options: THIS DOES NOT MODIFY THE DEFINITION
-            logging_options, analysis_options = self.generate_options(name, original_definition, analysis_options_item, local=True)
+            options_definition = original_definition if original_definition is not None else definition
+            logging_options, analysis_options = self.generate_options(name, options_definition, analysis_options_item, local=True)
 
             # Perform the simulation locally
             try:

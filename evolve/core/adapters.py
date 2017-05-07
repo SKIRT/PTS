@@ -146,7 +146,8 @@ class PopulationsFile(DataBaseAdapter):
     This class ...
     """
 
-    def __init__(self, filepath, identify=None, frequency=constants.CDefPopulationsFileName, reset=True):
+    def __init__(self, filepath=constants.CDefPopulationsFileName, identify=None,
+                 frequency=constants.CDefPopulationsStatsGenFreq, reset=True):
 
         """
         This function ...
@@ -232,7 +233,7 @@ class PopulationsFile(DataBaseAdapter):
         # Loop over the population's individuals
         for key in population.keys:
 
-            line = [self.getIdentify(), generation]
+            line = [self.getIdentify(), str(generation)]
 
             # Get the individual
             individual = population[key]
@@ -247,6 +248,9 @@ class PopulationsFile(DataBaseAdapter):
 
             # Loop over the entries
             self.handle.write(" ".join(line) + "\n")
+
+            # FLUSH: IMPORTANT SINCE WE WANT TO GET GENOME INFORMATION FROM INTIIAL GENERATION WHEN WE HAVE JUST SCORED IT AND GENERATED GENERATION0
+            self.handle.flush()
 
 # -----------------------------------------------------------------
 

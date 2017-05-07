@@ -17,10 +17,11 @@ from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
 from ..optimize.continuous import ContinuousOptimizer
 from ...core.basics.configuration import ConfigurationDefinition
-from ..config.optimize import crossover_methods, mutation_methods, scaling_methods, selector_methods
+from ..config.optimize import crossover_methods, mutation_methods, scaling_methods, selector_methods, genome_types
 
 # -----------------------------------------------------------------
 
+default_genome_type = "list"
 default_mutation_rate = 0.03
 default_crossover_rate = 0.65
 default_crossover_method = "single_point"
@@ -37,6 +38,7 @@ default_selector_method = "rank"
 genetic_definition = ConfigurationDefinition(write_config=False)
 
 # Add settings
+genetic_definition.add_optional("genome_type", "string", "genome type", default_genome_type, choices=genome_types)
 genetic_definition.add_optional("mutation_rate", "real", "mutation rate", default_mutation_rate)
 genetic_definition.add_optional("crossover_rate", "real", "crossover rate", default_crossover_rate)
 genetic_definition.add_optional("crossover_method", "string", "crossover method", default_crossover_method, choices=crossover_methods)

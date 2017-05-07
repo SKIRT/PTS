@@ -12,6 +12,8 @@ from pts.core.basics.configuration import ConfigurationDefinition
 
 # CHOICES
 
+genome_types = ["list", "binary_string"]
+
 genome_dimensions = [1, 2]
 
 crossover_methods = ["single_point", "two_point", "uniform", "OX", "edge", "cut_crossfill", "real_SBX", "single_vertical_point", "single_horizontal_point"]
@@ -49,7 +51,7 @@ default_elitism = True
 definition = ConfigurationDefinition()
 
 # Add optional settings
-definition.add_optional("genome_type", "string", "type of genome", default_genome_type, choices=["list", "binary_string"])
+definition.add_optional("genome_type", "string", "type of genome", default_genome_type, choices=genome_types)
 definition.add_optional("genome_dimension", "positive_integer", "dimension of the genome", default_dimension, choices=genome_dimensions)
 definition.add_optional("nparameters", "positive_integer", "number of parameters (genes) of the genome (in the first dimension)", default_nparameters)
 definition.add_optional("nparameters2", "positive_integer", "number of parameters of the genome in the second dimension")

@@ -172,6 +172,7 @@ CDefURLPostStatsGenFreq = 100
 
 # - NEW: DB Adapters for populations file
 CDefPopulationsFileName = "populations.dat"
+CDefPopulationsStatsGenFreq = 1
 
 # - DB Adapters CSV File defaults
 CDefCSVFileName = "pyevolve.csv"

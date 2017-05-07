@@ -24,6 +24,7 @@ from ..component.component import ModelingComponent
 from ...core.tools import filesystem as fs
 from .tables import RunsTable
 from .run import FittingRun, get_generation_names, get_finished_generations
+from ...evolve.optimize.stepwise import load_populations
 
 # -----------------------------------------------------------------
 
@@ -262,5 +263,65 @@ def get_model_for_run(modeling_path, name):
 
     table = get_runs_table(modeling_path)
     return table.model_for_run(name)
+
+# -----------------------------------------------------------------
+
+def get_fit_path(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path: 
+    :return: 
+    """
+
+    return fs.join(modeling_path, "fit")
+
+# -----------------------------------------------------------------
+
+def get_statistics_path(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path: 
+    :return: 
+    """
+
+    return fs.join(get_fit_path(modeling_path), "statistics.csv")
+
+# -----------------------------------------------------------------
+
+def get_database_path(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path: 
+    :return: 
+    """
+
+    return fs.join(get_fit_path(modeling_path), "database.db")
+
+# -----------------------------------------------------------------
+
+def get_populations_path(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path: 
+    :return: 
+    """
+
+    return fs.join(get_fit_path(modeling_path), "populations.dat")
+
+# -----------------------------------------------------------------
+
+def get_populations(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path: 
+    :return: 
+    """
+
+    return load_populations(get_populations_path(modeling_path))
 
 # -----------------------------------------------------------------

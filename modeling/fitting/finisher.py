@@ -19,6 +19,9 @@ from ...evolve.optimize.stepwise import StepWiseOptimizer
 from .modelgenerators.genetic import set_optimizer_settings, get_last_generation_scores, get_last_generation_name
 from ..fitting.sedfitting import SEDFitter
 from ..fitting.run import get_ngenerations, has_unfinished_generations, has_unevaluated_generations
+from ...core.tools import filesystem as fs
+from ...core.tools.serialization import load_dict
+from ...evolve.optimize.stepwise import load_population
 
 # -----------------------------------------------------------------
 
@@ -210,7 +213,7 @@ class ExplorationFinisher(FittingComponent):
                                                       self.fitting_run.main_prng_path,
                                                       self.fitting_run.optimizer_config_path,
                                                       self.statistics_path,
-                                                      self.database_path, self.config.name)
+                                                      self.database_path, self.populations_path, self.config.name)
 
     # -----------------------------------------------------------------
 
@@ -249,9 +252,20 @@ class ExplorationFinisher(FittingComponent):
         parameter_minima = self.fitting_run.parameter_minima_for_generation_scalar(generation_name)
         parameter_maxima = self.fitting_run.parameter_maxima_for_generation_scalar(generation_name)
 
+        # Load the previous population
+        previous_generation_path = self.fitting_run.last_genetic_or_initial_generation_path
+        previous_population_path = fs.join(previous_generation_path, "population.dat")
+        previous_population = load_population(previous_population_path)
+
+        # Load the recurrence data
+        # Load the previous recurrent data
+        previous_recurrent_path = fs.join(self.fitting_run.last_genetic_generation_path, "recurrent.dat")
+        previous_recurrent = load_dict(previous_recurrent_path)
+
         # Run the optimizer
         self.optimizer.run(scores=self.scores, scores_check=self.scores_check, minima=parameter_minima,
-                           maxima=parameter_maxima, evaluator=evaluator, evaluator_kwargs=evaluator_kwargs)
+                           maxima=parameter_maxima, evaluator=evaluator, evaluator_kwargs=evaluator_kwargs,
+                           previous_population=previous_population, previous_recurrent=previous_recurrent)
 
     # -----------------------------------------------------------------
 

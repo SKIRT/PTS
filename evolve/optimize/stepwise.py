@@ -25,10 +25,11 @@ from ...core.basics.configuration import Configuration
 from ..core.adapters import DBFileCSV, DBSQLite, PopulationsFile
 from .optimizer import Optimizer
 from ..core.population import NamedPopulation
-from .tables import Elitismtable
+from .tables import ElitismTable
 from ...core.tools import types
 from ..analyse.database import load_database, get_score_for_individual
-from ...core.tools.serialization import write_dict, load_dict
+from ...core.tools.serialization import write_dict
+from .optimizer import binary_string_to_binary, binary_to_float, parameters_to_binary_string
 
 # -----------------------------------------------------------------
 
@@ -154,6 +155,8 @@ class StepWiseOptimizer(Optimizer):
 
         # Load the statistics (opening is done during initialization or evolution)
         if not fs.is_file(statistics_path): raise IOError("The statistics file could not be found at '" + statistics_path + "'")
+        # Check whether there is data?
+        #if not fs.contains_lines(statistics_path): raise IOError("The statistics file is empty")
         log.debug("Loading the statistics from '" + statistics_path + "' ...")
         optimizer.statistics = DBFileCSV(filename=statistics_path, reset=False, identify=run_id)
 
@@ -164,6 +167,8 @@ class StepWiseOptimizer(Optimizer):
 
         # Load the populations file (opening is done during initialization or evoluation)
         if not fs.is_file(populations_path): raise IOError("The populations file could not be found at '" + populations_path + "'")
+        # Check whether there is data? -> NO, BECAUSE DATA IS ONLY ADDED AT THE END OF THE SECOND RUN (WHEN INITIAL HAS BEEN SCORED, AND GENERATION0 GENERATED)
+        #if not fs.contains_lines(populations_path): raise IOError("The populations file is empty")
         log.debug("Loading the populations file from '" + populations_path + "' ...")
         optimizer.populations = PopulationsFile(filepath=populations_path, reset=False, identify=run_id)
 
@@ -339,6 +344,9 @@ class StepWiseOptimizer(Optimizer):
 
         return self.config.check_recurrence and not self.engine.is_initial_generation
 
+        # if the engine is at its first generation, we just did initial, so no data available in the populations.dat
+        # -> NOT TRUE, the GENERATION INDEX IS ONLY INCREMENTED AT THE SCORING PHASE
+
     # -----------------------------------------------------------------
 
     def evolve(self):
@@ -379,6 +387,8 @@ class StepWiseOptimizer(Optimizer):
 
         if self.previous_recurrent is None: return self.scores
 
+        if len(self.previous_recurrent) == 0: return self.scores
+
         scores = []
 
         passed_scores = iter(self.scores)
@@ -409,14 +419,22 @@ class StepWiseOptimizer(Optimizer):
         """
 
         if self.scores_check is None: return None
+
         if self.previous_recurrent is None: return self.scores_check
-    
+
+        if len(self.previous_recurrent) == 0: return self.scores_check
+
         checks = []
 
+        #print("previous recurrent", self.previous_recurrent)
+
+        #print(self.scores_check)
         passed_checks = iter(self.scores_check)
 
         # Loop over the names in the previous population, because the order IS IMPORTANT
         for key in self.previous_population:
+
+            #print(key)
 
             if key in self.previous_recurrent: parameters = self.previous_population[key]
             else: parameters = passed_checks.next()
@@ -429,6 +447,38 @@ class StepWiseOptimizer(Optimizer):
 
         # Return the checks
         return checks
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_scores_check_converted(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if self.list_genome: return self.all_scores_check
+        elif self.binary_string_genome:
+
+            #
+            checks = []
+
+            scores_check = self.all_scores_check
+            if scores_check is None: return None
+
+            for parameters in scores_check:
+
+                # Convert
+                binary_string = parameters_to_binary_string(parameters, self.parameter_minima, self.parameter_maxima, self.nbits)
+
+                # Add to the check
+                checks.append(binary_string)
+
+            # Return the converted checks
+            return checks
+
+        else: raise ValueError("Unrecognized genome type")
 
     # -----------------------------------------------------------------
 
@@ -445,11 +495,32 @@ class StepWiseOptimizer(Optimizer):
         # Check if the scores are set
         if self.scores is None: raise ValueError("The scores are not set")
 
+        #print(self.scores)
+        #print(self.scores_check)
+
+        #print(self.previous_recurrent)
+        #print(self.previous_population)
+
+        # Get scores and check
+        #scores = self.all_scores
+        #checks = self.all_scores_check
+
+        scores = self.all_scores
+        checks = self.all_scores_check_converted
+
+        # Debugging
+        log.debug("All scores (with recurrent models) are: " + " ".join(str(score) for score in scores))
+        log.debug("All checks (with recurrent models) are: " + " ".join(str(check) for check in checks))
+
+        # Determine rtol
+        if self.binary_string_genome: rtol = max([1./ndigits for ndigits in self.ndigits])
+        else: rtol = 1e-11
+
         # Set the scores
-        elitism_data = self.engine.set_scores(self.all_scores, self.all_scores_check)
+        elitism_data = self.engine.set_scores(scores, checks, rtol=rtol)
 
         # Create elitism table
-        if elitism_data is not None: self.elitism_table = Elitismtable.from_data(elitism_data)
+        if elitism_data is not None: self.elitism_table = ElitismTable.from_data(elitism_data)
         else: log.warning("No elitism has been performed in this generation")
 
     # -----------------------------------------------------------------
@@ -489,11 +560,14 @@ class StepWiseOptimizer(Optimizer):
         run_id = self.populations.identify
 
         # Load the populations data
+        #print(self.populations.filepath)
+        #raw_input("Press Enter to continue...")
         populations = load_populations(self.populations.filepath)
+        #print(populations)
         populations_run = populations[run_id]
 
-        # Current generation
-        generation = self.engine.currentGeneration
+        # Index of the new generation
+        generation = self.engine.currentGeneration + 1
 
         # Load the database
         database = load_database(self.database.dbName)
@@ -504,14 +578,23 @@ class StepWiseOptimizer(Optimizer):
             # Get the individual
             individual = self.population[name]
 
+            #print(individual.genomeList)
+            #print(populations_run)
+
             # Check recurrency
             generation_index, key = find_recurrent_individual(populations_run, individual, generation, rtol=self.config.recurrence_rtol, atol=self.config.recurrence_atol)
 
             # If not found, skip
             if generation_index is None: continue
 
+            # Debugging
+            log.debug("Individual '" + name + "' is recurrent: individual '" + str(key) + "' from generation " + str(generation_index-1))
+
             # Otherwise, look for the (raw) score in the database
             score = get_score_for_individual(database, run_id, generation_index, key)
+
+            # Debugging
+            log.debug("The score of this individual was " + str(score))
 
             # Set the score for the recurrent individual
             self.recurrent[name] = score
@@ -554,6 +637,9 @@ class StepWiseOptimizer(Optimizer):
 
         # Save the statistics
         self.write_statistics()
+
+        # Write the populations
+        self.write_populations()
 
         # Write the new generation
         self.write_population()
@@ -638,6 +724,46 @@ class StepWiseOptimizer(Optimizer):
         """
 
         return self.population[name]
+
+    # -----------------------------------------------------------------
+
+    def get_parameters(self, name):
+
+        """
+        This function ...
+        :param name: 
+        :return: 
+        """
+
+        if self.list_genome: return self.population[name].genomeList
+        elif self.binary_string_genome:
+
+            # Initialize list for the parameters
+            parameters = []
+
+            # Get the binary string genome
+            genes = self.population[name].genomeList
+
+            # Loop over the parameters
+            for index in range(self.nparameters):
+
+                # Get the first n bits
+                bits = genes[self.bit_slices[index]]
+
+                # Convert into binary number
+                binary = binary_string_to_binary(bits)
+
+                # Convert into real value
+                value = binary_to_float(binary, low=self.parameter_minima[index], high=self.parameter_maxima[index], nbits=self.nbits[index])
+
+                # Add the value
+                parameters.append(value)
+
+            # Return the parameter values
+            return parameters
+
+        # Invalid
+        else: raise ValueError("Unrecognized genome type")
 
     # -----------------------------------------------------------------
 
@@ -855,6 +981,8 @@ def load_populations(path):
     # Loop over the lines in the file
     for line in fs.read_lines(path):
 
+        #print("LINE", line)
+
         parts = line.split(" ")
 
         run_name = parts[0]
@@ -893,18 +1021,30 @@ def find_recurrent_individual(populations, individual, current_generation, rtol=
 
     array_individual = np.array(individual.genomeList)
 
+    #print("individual", array_individual)
+
     # Look for a match with previous generations (populations) of the same run
     # Loop over the previous generations
-    for generation_index in reversed(range(current_generation-1)):
+    generation_indices = range(current_generation)
+    #print(current_generation, generation_indices)
+    for generation_index in reversed(generation_indices):
+
+        #print("populations for generation " + str(generation_index-1), populations[generation_index])
 
         # Loop over the individuals in this generation
         for key in populations[generation_index]:
 
+            #print("KEY", key)
+
             # Get the genome
             genome = populations[generation_index][key]
+            #print(populations[generation_index][key])
             array_genome = np.array(genome)
 
             # Check for equality
+
+            #print(array_individual, array_genome)
+            #print(key, genome, array_genome)
 
             # Binary: check exact
             if is_binary_values(genome):
