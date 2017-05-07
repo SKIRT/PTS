@@ -136,13 +136,14 @@ class GeneticModelGenerator(ModelGenerator):
                 self.initial = False
 
                 # Load the previous population
-                previous_generation_path = self.fitting_run.last_genetic_generation_path
+                previous_generation_path = self.fitting_run.last_genetic_or_initial_generation_path
                 previous_population_path = fs.join(previous_generation_path, "population.dat")
                 self.previous_population = load_population(previous_population_path)
 
                 # Load the previous recurrent data, BUT NOT WHEN THE PREVIOUS GENERATION WAS THE INTIAL ONE ?
-                previous_recurrent_path = fs.join(previous_generation_path, "recurrent.dat")
-                self.previous_recurrent = load_dict(previous_recurrent_path)
+                if not self.fitting_run.last_is_initial:
+                    previous_recurrent_path = fs.join(self.fitting_run.last_genetic_generation_path, "recurrent.dat")
+                    self.previous_recurrent = load_dict(previous_recurrent_path)
 
             # New optimizer run
             else:

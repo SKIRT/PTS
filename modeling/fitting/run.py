@@ -1231,6 +1231,18 @@ class FittingRun(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def last_is_initial(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.last_genetic_or_initial_generation_name == "initial"
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def last_genetic_generation_path(self):
 
         """
@@ -1238,6 +1250,7 @@ class FittingRun(object):
         :return:
         """
 
+        if self.last_genetic_generation_name is None: return None
         return fs.join(self.generations_path, self.last_genetic_generation_name)
 
     # -----------------------------------------------------------------
