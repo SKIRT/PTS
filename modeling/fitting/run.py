@@ -422,6 +422,45 @@ class FittingRun(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def parameter_ndigits(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.fitting_configuration.ndigits
+
+    # -----------------------------------------------------------------
+
+    def ndigits_for_parameter(self, label):
+
+        """
+        This function ...
+        :param label: 
+        :return: 
+        """
+
+        return self.parameter_ndigits[label]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ndigits_list(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        ndigits = []
+        for label in self.free_parameter_labels:
+            ndigits.append(self.ndigits_for_parameter(label))
+        return ndigits
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def genetic_settings(self):
 
         """

@@ -183,6 +183,11 @@ for label in free_parameter_types:
     parameter_type = free_parameter_types[label]
     free_parameter_units[label] = default_units[parameter_type]
 
+# Define the number of digits
+parameter_ndigits = dict()
+for label in free_parameter_types:
+    parameter_ndigits[label] = 4
+
 # Absolute ski file parameters
 free_parameters_absolute_paths = dict()
 
@@ -1517,7 +1522,10 @@ class M81TestBase(TestImplementation):
             log.debug("Checking generation '" + generation_name + "' ...")
 
             # Load the elitism table
-            elitism_table = self.elitism_table_for_generation(generation_name)
+            if fs.is_file(self.elitism_table_path_for_generation(generation_name)): elitism_table = self.elitism_table_for_generation(generation_name)
+            else:
+                elitism_table = None
+                log.warning("No elitism data found for generation '" + generation_name + "'")
 
             # Load the scores table
             scores_table = self.chi_squared_table_for_generation(generation_name)
@@ -1539,7 +1547,7 @@ class M81TestBase(TestImplementation):
             for name in scores_database:
 
                 # Check whether name in elitism table as replaced individual, in this case don't check the score
-                if name in elitism_table.replaced_names:
+                if elitism_table is not None and name in elitism_table.replaced_names:
                     nelitisms += 1
                     continue
 

@@ -22,6 +22,7 @@ from ..fitting.run import get_ngenerations, has_unfinished_generations, has_unev
 from ...core.tools import filesystem as fs
 from ...core.tools.serialization import load_dict
 from ...evolve.optimize.stepwise import load_population
+from .modelgenerators.genetic import statistics_name, database_name, populations_name, frequency, commit_frequency
 
 # -----------------------------------------------------------------
 
@@ -213,7 +214,10 @@ class ExplorationFinisher(FittingComponent):
                                                       self.fitting_run.main_prng_path,
                                                       self.fitting_run.optimizer_config_path,
                                                       self.statistics_path,
-                                                      self.database_path, self.populations_path, self.config.name)
+                                                      self.database_path, self.populations_path, self.config.name,
+                                                      statistics_name=statistics_name, database_name=database_name,
+                                                      populations_name=populations_name, frequency=frequency,
+                                                      commit_frequency=commit_frequency)
 
     # -----------------------------------------------------------------
 
@@ -265,7 +269,8 @@ class ExplorationFinisher(FittingComponent):
         # Run the optimizer
         self.optimizer.run(scores=self.scores, scores_check=self.scores_check, minima=parameter_minima,
                            maxima=parameter_maxima, evaluator=evaluator, evaluator_kwargs=evaluator_kwargs,
-                           previous_population=previous_population, previous_recurrent=previous_recurrent)
+                           previous_population=previous_population, previous_recurrent=previous_recurrent,
+                           ndigits=self.fitting_run.ndigits_list)
 
     # -----------------------------------------------------------------
 

@@ -22,7 +22,7 @@ from pts.do.commandline import Command
 from pts.core.simulation.skifile import LabeledSkiFile
 from pts.modeling.tests.base import instrument_name, free_parameters_absolute_paths
 from pts.modeling.tests.base import free_parameters_relative_stellar_component_paths, free_parameters_relative_dust_component_paths
-from pts.modeling.tests.base import free_parameters_relative_instruments_paths, free_parameter_types
+from pts.modeling.tests.base import free_parameters_relative_instruments_paths, free_parameter_types, parameter_ndigits
 from pts.core.data.sed import ObservedSED
 from pts.core.tools.stringify import tostr
 from pts.core.units.parsing import parse_angle
@@ -747,6 +747,10 @@ class M81SEDTest(M81TestBase):
         # Create units config
         units_config = Map(units=free_parameter_units)
         input_model["units_config"] = units_config
+
+        # Create the ndigits config
+        ndigits_config = Map(ndigits=parameter_ndigits)
+        input_model["ndigits_config"] = ndigits_config
 
         # Create filters config
         filters_config = Map(filters=fitting_filter_names)

@@ -759,6 +759,22 @@ def string_string_dictionary(argument):
 
 # -----------------------------------------------------------------
 
+def string_integer_dictionary(argument):
+
+    """
+    This function ...
+    :param argument: 
+    :return: 
+    """
+
+    d = dictionary(argument)
+    for key, value in d.items():
+        if not isinstance(key, basestring): raise ValueError("All keys must be strings")
+        if not isinstance(value, int): raise ValueError("All values must be integers")
+    return d
+
+# -----------------------------------------------------------------
+
 def string_filepath_dictionary(argument):
 
     """

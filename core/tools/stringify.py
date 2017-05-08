@@ -47,137 +47,184 @@ def stringify(value, scientific=False, decimal_places=2):
     """
 
     # List or derived from list
-    if isinstance(value, list):
-
-        #if len(value) == 0: raise ValueError("Cannot stringify an empty list")
-        if len(value) == 0: return "list", ""
-
-        strings = []
-        ptype = None
-        ptypes = set()
-        for entry in value:
-
-            #parsetype, val = stringify_not_list(entry)
-            parsetype, val = stringify(entry)
-
-            if ptype is None: ptype = parsetype
-            elif ptype != parsetype:
-                #raise ValueError("Nonuniform list")
-                ptype = "mixed"
-
-            # Add the parse type
-            ptypes.add(parsetype)
-
-            # Add the string
-            strings.append(val)
-
-        from ..basics.configuration import parent_type
-        from .logging import log
-
-        # Investigate the different ptypes
-        parent_types = [parent_type(type_name) for type_name in ptypes]
-        #print("Parent types:", parent_types)
-        if sequences.all_equal(parent_types) and parent_types[0] is not None: ptype = parent_types[0]
-        elif ptype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_types)[1] + "'")
-
-        # Return the type and the string
-        return ptype + "_list", ",".join(strings)
+    if isinstance(value, list): return stringify_list(value)
 
     # Dictionary
-    if isinstance(value, dict):
+    if isinstance(value, dict): return stringify_dict(value)
 
-        #if len(value) == 0: raise ValueError("Cannot stringify an empty dictionary")
-        if len(value) == 0: return "dictionary", ""
-
-        keytype = None
-        ptype = None
-        parts = []
-
-        keytypes = set()
-        ptypes = set()
-
-        for key in value:
-
-            ktype, kstring = stringify(key)
-
-            # Add key type
-            keytypes.add(ktype)
-
-            # Check key type
-            if keytype is None: keytype = ktype
-            elif keytype != ktype: keytype = "mixed"
-
-            v = value[key]
-
-            vtype, vstring = stringify(v)
-
-            # Add value type
-            ptypes.add(vtype)
-
-            # Check value type
-            if ptype is None: ptype = vtype
-            elif ptype != vtype: ptype = "mixed"
-
-            string = "'" + kstring + "': '" + vstring + "'"
-            parts.append(string)
-
-        from ..basics.configuration import parent_type
-        from .logging import log
-
-        # Investigate the different keytypes
-        parent_key_types = [parent_type(type_name) for type_name in keytypes]
-        #print("Parent key types:", parent_key_types)
-        if sequences.all_equal(parent_key_types) and parent_key_types[0] is not None: ptype = parent_key_types[0]
-        elif keytype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_key_types)[1] + "'")
-
-        # Investigate the different value types
-        parent_value_types = [parent_type(type_name) for type_name in ptypes]
-        #print("Parent value types:", parent_value_types)
-        if sequences.all_equal(parent_value_types) and parent_value_types[0] is not None: ptype = parent_value_types[0]
-        elif ptype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_value_types)[1] + "'")
-
-        # Return
-        return keytype + "_" + ptype + "_dictionary", ",".join(parts)
-
-    # Array or derived from Array, but not quantity
+    # Array or derived from Array, but not quantity!
     #elif isinstance(value, np.ndarray) and not isinstance(value, Quantity):
     #elif introspection.try_importing_module("numpy", True) and (isinstance(value, np.ndarray) and not hasattr(value, "unit")):
     # WE ALSO TEST IF THIS IS NOT A NUMPY INTEGER, FLOAT OR BOOLEAN (because they have a __array__ attribute)
-    elif hasattr(value, "__array__") and not hasattr(value, "unit") and not types.is_boolean_type(value) and not types.is_integer_type(value) and not types.is_real_type(value) and not types.is_string_type(value):
+    elif hasattr(value, "__array__") and not hasattr(value, "unit") and not types.is_boolean_type(value) and not types.is_integer_type(value) and not types.is_real_type(value) and not types.is_string_type(value): return stringify_array(value)
 
-        ptype, val = stringify_not_list(value[0])
-        return ptype + "_array", ",".join([repr(el) for el in value])
-
-    elif type(value).__name__ == "MaskedColumn":
-
-        ptype, val = stringify_not_list(value[0])
-        return ptype + "_array", ",".join([repr(el) for el in value])
+    # Column or masked masked column
+    elif type(value).__name__ == "MaskedColumn" or type(value).__name__ == "Column": return stringify_array(value)
 
     # Tuple or derived from tuple
-    elif isinstance(value, tuple):
-
-        strings = []
-        ptype = None
-        for entry in value:
-
-            parsetype, val = stringify_not_list(entry)
-
-            if ptype is None: ptype = parsetype
-            elif ptype != parsetype: raise ValueError("Nonuniform tuple")
-
-            strings.append(val)
-
-        return ptype + "_tuple", ",".join(strings)
+    elif isinstance(value, tuple): return stringify_tuple(value)
 
     # All other
     else: return stringify_not_list(value, scientific=scientific, decimal_places=decimal_places)
 
 # -----------------------------------------------------------------
 
-def stringify_not_list(value, scientific=False, decimal_places=2):
+def stringify_list(value):
 
     """
     This function ...
+    :param value: 
+    :return: 
+    """
+
+    #if len(value) == 0: raise ValueError("Cannot stringify an empty list")
+    if len(value) == 0: return "list", ""
+
+    strings = []
+    ptype = None
+    ptypes = set()
+    for entry in value:
+
+        #parsetype, val = stringify_not_list(entry)
+        parsetype, val = stringify(entry)
+
+        if ptype is None: ptype = parsetype
+        elif ptype != parsetype:
+            #raise ValueError("Nonuniform list")
+            ptype = "mixed"
+
+        # Add the parse type
+        ptypes.add(parsetype)
+
+        # Add the string
+        strings.append(val)
+
+    from ..basics.configuration import parent_type
+    from .logging import log
+
+    # Investigate the different ptypes
+    parent_types = [parent_type(type_name) for type_name in ptypes]
+    #print("Parent types:", parent_types)
+    if sequences.all_equal(parent_types) and parent_types[0] is not None: ptype = parent_types[0]
+    elif ptype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_types)[1] + "'")
+
+    # Return the type and the string
+    return ptype + "_list", ",".join(strings)
+
+# -----------------------------------------------------------------
+
+def stringify_dict(value):
+
+    """
+    This function ...
+    :param value: 
+    :return: 
+    """
+
+    #if len(value) == 0: raise ValueError("Cannot stringify an empty dictionary")
+    if len(value) == 0: return "dictionary", ""
+
+    keytype = None
+    ptype = None
+    parts = []
+
+    keytypes = set()
+    ptypes = set()
+
+    for key in value:
+
+        ktype, kstring = stringify(key)
+
+        # Add key type
+        keytypes.add(ktype)
+
+        # Check key type
+        if keytype is None: keytype = ktype
+        elif keytype != ktype: keytype = "mixed"
+
+        v = value[key]
+
+        vtype, vstring = stringify(v)
+
+        # Add value type
+        ptypes.add(vtype)
+
+        # Check value type
+        if ptype is None: ptype = vtype
+        elif ptype != vtype: ptype = "mixed"
+
+        # Determine line
+        if ptype == "integer" or ptype == "real" or ptype == "boolean": string = "'" + kstring + "': " + vstring
+        else: string = "'" + kstring + "': '" + vstring + "'"
+
+        # Add line
+        parts.append(string)
+
+    from ..basics.configuration import parent_type
+    from .logging import log
+
+    # Investigate the different keytypes
+    parent_key_types = [parent_type(type_name) for type_name in keytypes]
+    #print("Parent key types:", parent_key_types)
+    if sequences.all_equal(parent_key_types) and parent_key_types[0] is not None: ptype = parent_key_types[0]
+    elif keytype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_key_types)[1] + "'")
+
+    # Investigate the different value types
+    parent_value_types = [parent_type(type_name) for type_name in ptypes]
+    #print("Parent value types:", parent_value_types)
+    if sequences.all_equal(parent_value_types) and parent_value_types[0] is not None: ptype = parent_value_types[0]
+    elif ptype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_value_types)[1] + "'")
+
+    # Return
+    return keytype + "_" + ptype + "_dictionary", ",".join(parts)
+
+# -----------------------------------------------------------------
+
+def stringify_array(value):
+
+    """
+    This function ...
+    :param value: 
+    :return: 
+    """
+
+    ptype, val = stringify_not_list(value[0])
+    return ptype + "_array", ",".join([repr(el) for el in value])
+
+    #ptype, val = stringify_not_list(value[0])
+    #return ptype + "_array", ",".join([repr(el) for el in value])
+
+# -----------------------------------------------------------------
+
+def stringify_tuple(value):
+
+    """
+    This function ...
+    :param value: 
+    :return: 
+    """
+
+    strings = []
+    ptype = None
+    for entry in value:
+
+        parsetype, val = stringify_not_list(entry)
+
+        if ptype is None:
+            ptype = parsetype
+        elif ptype != parsetype:
+            raise ValueError("Nonuniform tuple")
+
+        strings.append(val)
+
+    return ptype + "_tuple", ",".join(strings)
+
+# -----------------------------------------------------------------
+
+def stringify_not_list(value, scientific=False, decimal_places=2):
+
+    """
+    This function does stringify, but not for iterables
     :param value:
     :param scientific:
     :param decimal_places:

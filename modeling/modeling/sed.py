@@ -59,6 +59,7 @@ class SEDModeler(ModelerBase):
         self.descriptions_config = None
         self.types_config = None
         self.units_config = None
+        self.ndigits_config = None
         self.ranges_config = None
         self.filters_config = None
         self.genetic_config = None
@@ -119,6 +120,7 @@ class SEDModeler(ModelerBase):
         if "descriptions_config" in kwargs: self.descriptions_config = kwargs.pop("descriptions_config")
         if "types_config" in kwargs: self.types_config = kwargs.pop("types_config")
         if "units_config" in kwargs: self.units_config = kwargs.pop("units_config")
+        if "ndigits_config" in kwargs: self.ndigits_config = kwargs.pop("ndigits_config")
         if "ranges_config" in kwargs: self.ranges_config = kwargs.pop("ranges_config")
         if "filters_config" in kwargs: self.filters_config = kwargs.pop("filters_config")
         if "genetic_config" in kwargs: self.genetic_config = kwargs.pop("genetic_config")
@@ -336,7 +338,8 @@ class SEDModeler(ModelerBase):
 
         # Run the fitting configurer
         configurer.run(descriptions_config=self.descriptions_config, types_config=self.types_config,
-                       units_config=self.units_config, ranges_config=self.ranges_config, filters_config=self.filters_config,
+                       units_config=self.units_config, ndigits_config=self.ndigits_config,
+                       ranges_config=self.ranges_config, filters_config=self.filters_config,
                        genetic_config=self.genetic_config, grid_config=self.grid_config, settings=self.config.fitting_settings)
 
         # Set the parameter ranges

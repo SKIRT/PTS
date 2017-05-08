@@ -78,6 +78,7 @@ class FittingConfigurer(FittingComponent):
         self.descriptions_config = None
         self.types_config = None
         self.units_config = None
+        self.ndigits_config = None
         self.ranges_config = None
         self.filters_config = None
         self.genetic_config = None
@@ -120,19 +121,22 @@ class FittingConfigurer(FittingComponent):
         # 7. Get the physical parameter ranges
         self.set_ranges()
 
-        # 8. Get the fitting filters
+        # 8. Get the number of significant digits
+        self.set_ndigits()
+
+        # 9. Get the fitting filters
         self.set_filters()
 
-        # 9. Get the settings for the genetic algorithm
+        # 10. Get the settings for the genetic algorithm
         self.set_method()
 
-        # 9. Create the fitting configuration
+        # 11. Create the fitting configuration
         self.create_config()
 
-        # 10. Adjust the labels of the template ski file
+        # 12. Adjust the labels of the template ski file
         self.adjust_labels()
 
-        # 11. Writing
+        # 13. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -161,6 +165,7 @@ class FittingConfigurer(FittingComponent):
         if "descriptions_config" in kwargs: self.descriptions_config = kwargs.pop("descriptions_config")
         if "types_config" in kwargs: self.types_config = kwargs.pop("types_config")
         if "units_config" in kwargs: self.units_config = kwargs.pop("units_config")
+        if "ndigits_config" in kwargs: self.ndigits_config = kwargs.pop("ndigits_config")
         if "ranges_config" in kwargs: self.ranges_config = kwargs.pop("ranges_config")
         if "filters_config" in kwargs: self.filters_config = kwargs.pop("filters_config")
         if "genetic_config" in kwargs: self.genetic_config = kwargs.pop("genetic_config")
@@ -549,6 +554,56 @@ class FittingConfigurer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def set_ndigits(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Setting the number of significant digits ...")
+
+        # load or prompt for the ndigits
+        if self.config.ndigits is not None: self.ndigits_config = Configuration(units=self.config.ndigits)
+        elif isinstance(self.ndigits_config, dict): pass
+        else: self.prompt_ndigits()
+
+    # -----------------------------------------------------------------
+
+    def prompt_ndigits(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Prompting for the number of significant digits ...")
+
+        # Create definition
+        definition = ConfigurationDefinition()
+        for name in self.parameter_labels:
+
+            # Get the type of quantity for this parameter
+            #parameter_type = self.types_config.types[name]
+
+            # Don't ask for units for dimensionless quantities
+            #if parameter_type == "dimless": definition.add_fixed(name, name + " has no unit (dimensionless)", None)
+            #else: definition.add_optional(name, unit_parsing_type(parameter_type), "unit of the '" + name + "' parameter", default=default_units[parameter_type])
+
+            # Ask for the number of significant digits
+            definition.add_optional(name, "positive_integer", "number of significant digits for the '" + name + "' parameter", default=self.config.default_ndigits)
+
+        # Create configuration setter
+        setter = InteractiveConfigurationSetter("Parameter ndigits", add_cwd=False, add_logging=False)
+
+        # Create the config and set the ndigits configuration
+        config = setter.run(definition, prompt_optional=True)
+        self.ndigits_config = Configuration(units=config)
+
+    # -----------------------------------------------------------------
+
     def set_filters(self):
 
         """
@@ -791,8 +846,8 @@ class FittingConfigurer(FittingComponent):
 
         # Combine configs
         self.fitting_config = combine_configs(self.parameters_config, self.descriptions_config, self.types_config,
-                                              self.units_config, self.ranges_config, self.filters_config,
-                                              self.genetic_config, self.grid_config)
+                                              self.units_config, self.ndigits_config, self.ranges_config,
+                                              self.filters_config, self.genetic_config, self.grid_config)
 
         # NEW: Set the fitting method !!
         self.fitting_config.method = self.config.fitting_method

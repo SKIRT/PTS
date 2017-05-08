@@ -191,7 +191,10 @@ class PopulationsFile(DataBaseAdapter):
         """
 
         # Debugging
-        log.debug("Opening the populations file to dump genome properties '%s'", self.filepath)
+        log.debug("Opening the " + self.name + " ...")
+
+        # Debugging
+        #log.debug("Opening the populations file to dump genome properties '%s'", self.filepath)
         open_mode = 'w' if self.reset else 'a'
 
         self.handle = open(self.filepath, open_mode)
@@ -312,6 +315,9 @@ class DBFileCSV(DataBaseAdapter):
          The method now receives the *ga_engine* parameter.
         """
 
+        # Debugging
+        log.debug("Opening the " + self.name + " ...")
+
         if self.csvmod is None:
          log.debug("Loading the csv module...")
          self.csvmod = utils.importSpecial("csv")
@@ -331,7 +337,8 @@ class DBFileCSV(DataBaseAdapter):
         Closes the CSV file handle
         """
 
-        log.debug("Closing the CSV file [%s]", self.filename)
+        log.debug("Closing the " + self.name + " ...")
+        #log.debug("Closing the CSV file [%s]", self.filename)
 
         if self.fHandle: self.fHandle.close()
 
@@ -425,6 +432,9 @@ class DBURLPost(DataBaseAdapter):
         .. versionchanged:: 0.6
          The method now receives the *ga_engine* parameter.
         """
+
+        # Debugging
+        log.debug("Opening the " + self.name + " ...")
 
         if self.urllibmod is None:
          log.debug("Loading urllib module...")
@@ -812,6 +822,9 @@ class DBXMLRPC(DataBaseAdapter):
          The method now receives the *ga_engine* parameter.
         """
 
+        # Debugging
+        log.debug("Opening the " + self.name + " ...")
+
         if self.xmlrpclibmod is None:
              log.debug("Loding the xmlrpclib module...")
              self.xmlrpclibmod = utils.importSpecial("xmlrpclib")
@@ -913,7 +926,8 @@ class DBVPythonGraph(DataBaseAdapter):
       :param ga_engine: the GA Engine
       """
 
-      log.debug("Loading visual.graph (VPython) module...")
+      log.debug("Opening the " + self.name + " ...")
+      #log.debug("Loading visual.graph (VPython) module...")
 
       if self.vtkGraph is None:
          self.vtkGraph = utils.importSpecial("visual.graph").graph
@@ -1034,6 +1048,9 @@ class DBMySQLAdapter(DataBaseAdapter):
       .. versionchanged:: 0.6
          The method now receives the *ga_engine* parameter.
       """
+
+      # Debugging
+      log.debug("Opening the " + self.name + " ...")
 
       if self.mysqldbmod is None:
          log.debug("Loading MySQLdb module...")

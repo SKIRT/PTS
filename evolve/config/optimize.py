@@ -75,6 +75,11 @@ definition.add_optional("populations_frequency", "positive_integer", "frequency 
 definition.add_optional("scaling_method", "string", "scaling method", "linear", choices=scaling_methods)
 definition.add_optional("selector_method", "string", "selector method", "rank", choices=selector_methods)
 
+# Names for the statistics, database and population files
+definition.add_optional("database_name", "string", "name for the database", "database")
+definition.add_optional("statistics_name", "string", "name for the statistics file", "statistics file")
+definition.add_optional("populations_name", "string", "name for the populations file", "populations file")
+
 default_binary_mutation_method = "flip"
 binary_mutation_methods = ["flip", "swap"]
 

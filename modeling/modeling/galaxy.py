@@ -133,7 +133,7 @@ class GalaxyModeler(ModelerBase):
         self.seds = None
         self.images = None
 
-        #
+        # Models
         self.disk_model = None
         self.bulge_model = None
 

@@ -328,7 +328,8 @@ class Optimizer(Configurable):
             reset = True
 
         # Create the adapter
-        self.statistics = DBFileCSV(filename=filepath, frequency=self.config.statistics_frequency, reset=reset, identify=self.config.run_id, name="statistics file")
+        self.statistics = DBFileCSV(filename=filepath, frequency=self.config.statistics_frequency, reset=reset,
+                                    identify=self.config.run_id, name=self.config.statistics_name)
 
     # -----------------------------------------------------------------
 
@@ -357,7 +358,7 @@ class Optimizer(Configurable):
         # Create the database adapter
         self.database = DBSQLite(dbname=filepath, identify=self.config.run_id, resetDB=reset,
                                  commit_freq=self.config.database_commit_frequency, frequency=self.config.database_frequency,
-                                 resetIdentify=False, name="database")
+                                 resetIdentify=False, name=self.config.database_name)
 
     # -----------------------------------------------------------------
 
@@ -385,7 +386,7 @@ class Optimizer(Configurable):
 
         # Create the populations file adapter
         self.populations = PopulationsFile(filepath=filepath, identify=self.config.run_id, reset=reset,
-                                           frequency=self.config.populations_frequency, name="populations file")
+                                           frequency=self.config.populations_frequency, name=self.config.populations_name)
 
     # -----------------------------------------------------------------
 
@@ -1667,10 +1668,70 @@ def parameters_to_binary_string(parameters, minima, maxima, nbits):
         # Convert floating point value into binary string with specific number of bits
         value = parameters[index]
         binary = float_to_binary(value, low=minima[index], high=maxima[index], nbits=nbits[index])
+        #print("BINARY:", binary)
         binary_string_parameter = binary_to_binary_string(binary, nbits=nbits[index])
         binary_string.extend(binary_string_parameter)
 
-    # Retunr the binary string
+    # Return the binary string
     return binary_string
+
+# -----------------------------------------------------------------
+
+def generate_bit_slices(nbits):
+
+    """
+    This function ...
+    :return: 
+    """
+
+    slices = []
+
+    tempsum = 0
+    for index in range(len(nbits)):
+        nbits = nbits[index]
+        slices.append(slice(tempsum, tempsum+nbits))
+        tempsum += nbits
+
+    return slices
+
+# -----------------------------------------------------------------
+
+def binary_string_to_parameters(genome, minima, maxima, nbits):
+    
+    """
+    This function ...
+    :param genome:
+    :param minima: 
+    :param maxima: 
+    :param nbits: 
+    :return: 
+    """
+
+    nparameters = len(minima)
+    assert nparameters == len(maxima) == len(nbits)
+
+    # Initialize list for the parameters
+    parameters = []
+
+    # Generate bit slices
+    bit_slices = generate_bit_slices(nbits)
+
+    # Loop over the parameters
+    for index in range(nparameters):
+
+        # Get the first n bits
+        bits = genome[bit_slices[index]]
+
+        # Convert into binary number
+        binary = binary_string_to_binary(bits)
+
+        # Convert into real value
+        value = binary_to_float(binary, low=minima[index], high=maxima[index], nbits=nbits[index])
+
+        # Add the value
+        parameters.append(value)
+
+    # Return the parameter values
+    return parameters
 
 # -----------------------------------------------------------------

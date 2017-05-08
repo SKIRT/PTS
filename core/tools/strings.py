@@ -28,6 +28,39 @@ alphabet = list(ascii_lowercase)
 
 # -----------------------------------------------------------------
 
+superscripts = "⁰¹²³⁴⁵⁶⁷⁸⁹"
+subscripts = "₀₁₂₃₄₅₆₇₈₉"
+
+# -----------------------------------------------------------------
+
+multiplication = u"\u00D7"
+
+# -----------------------------------------------------------------
+
+def superscript(index):
+
+    """
+    This function ...
+    :param index: 
+    :return: 
+    """
+
+    return superscripts[index]
+
+# -----------------------------------------------------------------
+
+def subscript(index):
+
+    """
+    This function ...
+    :param index: 
+    :return: 
+    """
+
+    return subscripts[index]
+
+# -----------------------------------------------------------------
+
 def lowercase(string):
 
     """

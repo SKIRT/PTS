@@ -28,6 +28,15 @@ from ....core.tools.serialization import load_dict
 
 # -----------------------------------------------------------------
 
+database_name = "database"
+statistics_name = "statistics file"
+populations_name = "populations file"
+
+frequency = 1
+commit_frequency = 1
+
+# -----------------------------------------------------------------
+
 class GeneticModelGenerator(ModelGenerator):
 
     """
@@ -79,7 +88,7 @@ class GeneticModelGenerator(ModelGenerator):
         self.previous_recurrent = None
 
         # Number of digits for the different parameters
-        self.ndigits = None
+        #self.ndigits = None
 
     # -----------------------------------------------------------------
 
@@ -98,23 +107,7 @@ class GeneticModelGenerator(ModelGenerator):
         if self.config.ngenerations > 1: self.create_continuous_optimizer()
 
         # Only one generation at a time
-        else:
-
-            # Re-invoke existing optimizer run
-            if fs.is_file(self.fitting_run.main_engine_path): self.load_optimizer()
-
-            # New optimizer run
-            else: self.create_optimizer()
-
-            # Set generation specific paths
-            population_path = fs.join(self.generation_path, "population.dat")
-            elitism_path = fs.join(self.generation_path, "elitism.dat")
-            recurrent_path = fs.join(self.generation_path, "recurrent.dat")
-
-            # Set generation specific paths
-            self.optimizer.config.writing.population_path = population_path
-            self.optimizer.config.writing.elitism_table_path = elitism_path
-            self.optimizer.config.writing.recurrent_path = recurrent_path
+        else: self.set_stepwise_optimizer()
 
         # Get the parameter ranges
         if "parameter_ranges" in kwargs: self.parameter_ranges = kwargs.pop("parameter_ranges")
@@ -134,7 +127,7 @@ class GeneticModelGenerator(ModelGenerator):
         if "sampling_weights" in kwargs: self.sampling_weights = kwargs.pop("sampling_weights")
 
         # Special: for binary genomes (but also otherwise for displaying?)
-        if "ndigits" in kwargs: self.ndigits = kwargs.pop("ndigits")
+        #if "ndigits" in kwargs: self.ndigits = kwargs.pop("ndigits")
 
     # -----------------------------------------------------------------
 
@@ -171,6 +164,34 @@ class GeneticModelGenerator(ModelGenerator):
 
     # -----------------------------------------------------------------
 
+    def set_stepwise_optimizer(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Setting the optimizer that runs one generation at a time ...")
+
+        # Re-invoke existing optimizer run
+        if fs.is_file(self.fitting_run.main_engine_path): self.load_optimizer()
+
+        # New optimizer run
+        else: self.create_optimizer()
+
+        # Set generation specific paths
+        population_path = fs.join(self.generation_path, "population.dat")
+        elitism_path = fs.join(self.generation_path, "elitism.dat")
+        recurrent_path = fs.join(self.generation_path, "recurrent.dat")
+
+        # Set generation specific paths
+        self.optimizer.config.writing.population_path = population_path
+        self.optimizer.config.writing.elitism_table_path = elitism_path
+        self.optimizer.config.writing.recurrent_path = recurrent_path
+
+    # -----------------------------------------------------------------
+
     def load_optimizer(self):
 
         """
@@ -184,11 +205,14 @@ class GeneticModelGenerator(ModelGenerator):
 
         # Load the optimizer from files
         self.optimizer = StepWiseOptimizer.from_paths(self.fitting_run.path,
-                                                        self.fitting_run.main_engine_path,
-                                                        self.fitting_run.main_prng_path,
-                                                        self.fitting_run.optimizer_config_path,
-                                                        self.statistics_path, self.database_path,
-                                                        self.populations_path, self.fitting_run.name)
+                                                      self.fitting_run.main_engine_path,
+                                                      self.fitting_run.main_prng_path,
+                                                      self.fitting_run.optimizer_config_path,
+                                                      self.statistics_path, self.database_path,
+                                                      self.populations_path, self.fitting_run.name,
+                                                      statistics_name=statistics_name, database_name=database_name,
+                                                      populations_name=populations_name, frequency=frequency,
+                                                      commit_frequency=commit_frequency)
         # Set initial flag
         self.initial = False
 
@@ -324,7 +348,7 @@ class GeneticModelGenerator(ModelGenerator):
                            maxima=self.parameter_maxima_scalar, evaluator=self.evaluator,
                            evaluator_kwargs=self.evaluator_kwargs, initial_parameters=self.initial_parameters,
                            previous_population=self.previous_population, previous_recurrent=self.previous_recurrent,
-                           ndigits=self.ndigits_list)
+                           ndigits=self.fitting_run.ndigits_list)
 
         # Get the parameter values of the new models
         self.get_model_parameters()
@@ -420,58 +444,6 @@ class GeneticModelGenerator(ModelGenerator):
 
             # Add the parameter set
             self.initial_parameters.append(initial_parameters_model)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def single_parameter_ndigits(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        return self.ndigits is None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def multiple_parameter_ndigits(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        return self.ndigits is not None
-
-    # -----------------------------------------------------------------
-
-    def ndigits_for_parameter(self, label):
-
-        """
-        This function ...
-        :param label: 
-        :return: 
-        """
-
-        if self.multiple_parameter_ndigits: return self.ndigits[label]
-        else: return self.config.ndigits
-
-    # -----------------------------------------------------------------
-
-    @property
-    def ndigits_list(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        ndigits = []
-        for label in self.fitting_run.free_parameter_labels:
-            ndigits.append(self.ndigits_for_parameter(label))
-        return ndigits
 
     # -----------------------------------------------------------------
 
@@ -683,10 +655,15 @@ def set_optimizer_settings(optimizer, fitting_run, ngenerations=None, nmodels=No
     # Fixed
     optimizer.config.min_or_max = "minimize"
     # self.optimizer.config.run_id = self.fitting_run.name # THIS IS NOW DONE IN THE SETUP
-    optimizer.config.database_frequency = 1
-    optimizer.config.database_commit_frequency = 1
-    optimizer.config.statistics_frequency = 1
-    optimizer.config.populations_frequency = 1
+    optimizer.config.database_frequency = frequency
+    optimizer.config.database_commit_frequency = commit_frequency
+    optimizer.config.statistics_frequency = frequency
+    optimizer.config.populations_frequency = frequency
+
+    # Set names
+    optimizer.config.database_name = database_name
+    optimizer.config.statistics_name = statistics_name
+    optimizer.config.populations_name = populations_name
 
     # Fixed
     # self.optimizer.config.output = self.fitting_run.path

@@ -26,10 +26,11 @@ from ..core.adapters import DBFileCSV, DBSQLite, PopulationsFile
 from .optimizer import Optimizer
 from ..core.population import NamedPopulation
 from .tables import ElitismTable
-from ..analyse.database import load_database, get_score_for_individual, get_generations
+from ..analyse.database import load_database, get_score_for_individual
 from ...core.tools.serialization import write_dict
-from .optimizer import binary_string_to_binary, binary_to_float, parameters_to_binary_string
+from .optimizer import binary_string_to_binary, binary_to_float, parameters_to_binary_string, binary_string_to_parameters
 from ..core.engine import equal_genomes
+from ..core import constants
 
 # -----------------------------------------------------------------
 
@@ -73,12 +74,18 @@ class StepWiseOptimizer(Optimizer):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_directory(cls, dir_path, run_id):
+    def from_directory(cls, dir_path, run_id, statistics_name=None, database_name=None, populations_name=None,
+                       frequency=None, commit_frequency=None):
 
         """
         This function ...
         :param dir_path:
         :param run_id:
+        :param statistics_name:
+        :param database_name:
+        :param populations_name:
+        :param frequency:
+        :param commit_frequency:
         :return:
         """
 
@@ -104,13 +111,16 @@ class StepWiseOptimizer(Optimizer):
         populations_path = fs.join(dir_path, "populations.dat")
 
         # Create the optimizer instance and return it
-        return cls.from_paths(dir_path, engine_path, prng_path, config_path, statistics_path, database_path, populations_path, run_id)
+        return cls.from_paths(dir_path, engine_path, prng_path, config_path, statistics_path, database_path,
+                              populations_path, run_id, statistics_name=statistics_name, database_name=database_name,
+                              populations_name=populations_name, frequency=frequency, commit_frequency=commit_frequency)
 
     # -----------------------------------------------------------------
 
     @classmethod
     def from_paths(cls, output_path, engine_path, prng_path, config_path, statistics_path, database_path,
-                   populations_path, run_id):
+                   populations_path, run_id, statistics_name=None, database_name=None, populations_name=None,
+                   frequency=None, commit_frequency=None):
 
         """
         This function ...
@@ -122,6 +132,11 @@ class StepWiseOptimizer(Optimizer):
         :param database_path:
         :param populations_path:
         :param run_id:
+        :param statistics_name:
+        :param database_name:
+        :param populations_name:
+        :param frequency:
+        :param commit_frequency:
         :return:
         """
 
@@ -137,6 +152,13 @@ class StepWiseOptimizer(Optimizer):
         log.debug(" - Populations: " + populations_path)
         log.debug(" - Output: " + output_path)
         log.debug("")
+
+        # Set optional values to default values
+        if statistics_name is None: statistics_name = constants.CDefCSVName
+        if database_name is None: database_name = constants.CDefSQLiteName
+        if populations_name is None: populations_name = constants.CDefPopulationsName
+        if frequency is None: frequency = 1
+        if commit_frequency is None: commit_frequency = constants.CDefSQLiteStatsCommitFreq
 
         # Load the engine
         engine = GeneticEngine.from_file(engine_path)
@@ -158,19 +180,19 @@ class StepWiseOptimizer(Optimizer):
         # Check whether there is data?
         #if not fs.contains_lines(statistics_path): raise IOError("The statistics file is empty")
         log.debug("Loading the statistics from '" + statistics_path + "' ...")
-        optimizer.statistics = DBFileCSV(filename=statistics_path, reset=False, identify=run_id)
+        optimizer.statistics = DBFileCSV(filename=statistics_path, reset=False, identify=run_id, name=statistics_name, frequency=frequency)
 
         # Load the database (opening is done during initialization or evolution)
         if not fs.is_file(database_path): raise IOError("The database could not be found at '" + database_path + "'")
         log.debug("Loading the database from '" + database_path + "' ...")
-        optimizer.database = DBSQLite(dbname=database_path, resetDB=False, identify=run_id, resetIdentify=False)
+        optimizer.database = DBSQLite(dbname=database_path, resetDB=False, identify=run_id, resetIdentify=False, name=database_name, frequency=frequency, commit_freq=commit_frequency)
 
         # Load the populations file (opening is done during initialization or evoluation)
         if not fs.is_file(populations_path): raise IOError("The populations file could not be found at '" + populations_path + "'")
         # Check whether there is data? -> NO, BECAUSE DATA IS ONLY ADDED AT THE END OF THE SECOND RUN (WHEN INITIAL HAS BEEN SCORED, AND GENERATION0 GENERATED)
         #if not fs.contains_lines(populations_path): raise IOError("The populations file is empty")
         log.debug("Loading the populations file from '" + populations_path + "' ...")
-        optimizer.populations = PopulationsFile(filepath=populations_path, reset=False, identify=run_id)
+        optimizer.populations = PopulationsFile(filepath=populations_path, reset=False, identify=run_id, name=populations_name, frequency=frequency)
 
         # Set the path
         optimizer.config.output = output_path
@@ -436,7 +458,13 @@ class StepWiseOptimizer(Optimizer):
 
             #print(key)
 
-            if key in self.previous_recurrent: parameters = self.previous_population[key]
+            if key in self.previous_recurrent:
+
+                parameters = self.previous_population[key]
+
+                # If binary genome, convert binary individual into actual parameters list
+                if self.binary_string_genome: parameters = binary_string_to_parameters(parameters, self.parameter_minima, self.parameter_maxima, self.nbits)
+
             else: parameters = passed_checks.next()
 
             # Add the parameters
@@ -475,6 +503,10 @@ class StepWiseOptimizer(Optimizer):
             for parameters in scores_check:
 
                 # Convert
+                #print(parameters)
+                #print(self.parameter_minima)
+                #print(self.parameter_maxima)
+                #print(self.nbits)
                 binary_string = parameters_to_binary_string(parameters, self.parameter_minima, self.parameter_maxima, self.nbits)
 
                 # Add to the check
@@ -601,8 +633,8 @@ class StepWiseOptimizer(Optimizer):
             log.debug("Individual '" + name + "' is recurrent: individual '" + str(key) + "' from generation " + str(generation_index-1))
 
             # Get generations in database
-            generations = get_generations(database, run_id)
-            print(generations)
+            #generations = get_generations(database, run_id)
+            #print(generations)
 
             # Otherwise, look for the (raw) score in the database
             score = get_score_for_individual(database, run_id, generation_index, key)

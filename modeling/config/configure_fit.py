@@ -44,11 +44,15 @@ definition.add_optional("parameters", "string_list", "parameters to be used as f
 definition.add_optional("descriptions", "string_string_dictionary", "parameter descriptions")
 definition.add_optional("types", "string_string_dictionary", "parameter types")
 definition.add_optional("units", "string_unit_dictionary", "parameter units")
+definition.add_optional("ndigits", "string_integer_dictionary", "number of significant digits of the parameters")
 definition.add_optional("filters", "string_list", "fit to the observed data of these filters")
 definition.add_optional("genetic", "dictionary", "options for the genetic algorithm")
 definition.add_optional("grid", "dictionary", "options for the grid fitting")
 
 # Sections
 definition.add_section("ranges", "parameter ranges")
+
+# The default number of significant digits
+definition.add_optional("default_ndigits", "positive_integer", "default value for the number of significant digits", 4)
 
 # -----------------------------------------------------------------
