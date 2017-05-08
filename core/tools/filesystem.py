@@ -935,16 +935,17 @@ def copy_file(file_path, directory_path, new_name=None):
 
 # -----------------------------------------------------------------
 
-def copy_from_directory(from_directory, to_directory):
+def copy_from_directory(from_directory, to_directory, **kwargs):
 
     """
     This function ..
     :param from_directory: 
     :param to_directory: 
+    :param kwargs:
     :return: 
     """
 
-    copy_files(files_in_path(from_directory), to_directory)
+    copy_files(files_in_path(from_directory, **kwargs), to_directory)
 
 # -----------------------------------------------------------------
 

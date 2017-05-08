@@ -32,20 +32,23 @@ temp_montage_path = introspection.create_unique_temp_dir("montage")
 
 # -----------------------------------------------------------------
 
-def generate_meta_file(path):
+def generate_meta_file(path, meta_dir_path=None):
 
     """
     This function ...
     :param path:
+    :param meta_dir_path:
     :return:
     """
+
+    if meta_dir_path is None: meta_dir_path = path
 
     # Inform the user
     log.info("Generating meta file ...")
 
     # Path of the meta file
     meta_filename = "meta.dat"
-    meta_path = fs.join(path, meta_filename)
+    meta_path = fs.join(meta_dir_path, meta_filename)
 
     # Change working directory
     dirname = fs.name(path)
@@ -53,7 +56,7 @@ def generate_meta_file(path):
 
     # Path of status file
     status_filename = "status.txt"
-    status_path = fs.join(path, status_filename)
+    status_path = fs.join(meta_dir_path, status_filename)
 
     # Debugging
     log.debug("Changed working directory to '" + fs.directory_of(path) + "' ...")
@@ -68,7 +71,10 @@ def generate_meta_file(path):
     fs.change_cwd(cwd)
 
     # Check whether the meta file contains any lines
-    if not fs.contains_lines(meta_path): raise RuntimeError("The meta table doesn't contain any lines")
+    if not fs.contains_lines(meta_path):
+        log.debug("STATUS:")
+        for line in fs.read_lines(status_path): log.debug(line)
+        raise RuntimeError("The meta table (" + meta_path + ") doesn't contain any lines")
 
     # Return the path to the created file
     return meta_path
@@ -200,7 +206,7 @@ def make_header(ra, dec, width, pix_size, returns="header"):
 
 # -----------------------------------------------------------------
 
-def filter_non_overlapping(ngc_name, band, fields_path, cutout_center, cutout_width, mode='box'):
+def filter_non_overlapping(ngc_name, band, fields_path, cutout_center, cutout_width, mode='box', path=None):
 
     """
     This function ...
@@ -210,17 +216,20 @@ def filter_non_overlapping(ngc_name, band, fields_path, cutout_center, cutout_wi
     :param cutout_center:
     :param cutout_width:
     :param mode:
+    :param path:
     :return:
     """
 
     # Inform the user
     log.info("Getting the overlap of the SDSS observations for " + ngc_name + " in the " + band + " band ...")
 
+    if path is None: path = fields_path
+
     # Debugging
     log.debug("Fields path: '" + fields_path + "'")
 
     # Generate meta file
-    meta_path = generate_meta_file(fields_path)
+    meta_path = generate_meta_file(fields_path, meta_dir_path=path)
 
     # Generate overlap file
     # path, ra, dec, meta_path, mode='box', width=None, radius=None

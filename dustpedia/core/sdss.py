@@ -462,7 +462,7 @@ class SDSSMosaicMaker(Configurable):
             # Download for different bands in parallel, or copy from existing directory
             for band in self.config.bands:
 
-                if self.has_existing_fields(band): fs.copy_from_directory(self.existing_fields_path(band), self.fields_paths[band])
+                if self.has_existing_fields(band): fs.copy_from_directory(self.existing_fields_path(band), self.fields_paths[band], not_contains="meta", extension="fits")
                 else: target(self.urls[band], self.fields_paths[band])
 
         # Debugging
@@ -515,7 +515,7 @@ class SDSSMosaicMaker(Configurable):
         with ParallelTarget(mosaicing.filter_non_overlapping, self.config.nprocesses) as target:
 
             # Loop over the bands
-            for band in self.config.bands: target(self.ngc_name, band, self.fields_paths[band], self.cutout_center, self.cutout_width)
+            for band in self.config.bands: target(self.ngc_name, band, self.fields_paths[band], self.cutout_center, self.cutout_width, path=self.band_paths[band])
 
         # Debugging
         for band in self.config.bands: print_files_in_path(self.fields_paths[band])
