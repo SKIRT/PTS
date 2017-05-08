@@ -26,10 +26,10 @@ from ..core.adapters import DBFileCSV, DBSQLite, PopulationsFile
 from .optimizer import Optimizer
 from ..core.population import NamedPopulation
 from .tables import ElitismTable
-from ...core.tools import types
-from ..analyse.database import load_database, get_score_for_individual
+from ..analyse.database import load_database, get_score_for_individual, get_generations
 from ...core.tools.serialization import write_dict
 from .optimizer import binary_string_to_binary, binary_to_float, parameters_to_binary_string
+from ..core.engine import equal_genomes
 
 # -----------------------------------------------------------------
 
@@ -458,15 +458,20 @@ class StepWiseOptimizer(Optimizer):
         :return: 
         """
 
+        # If list genome: do nothing
         if self.list_genome: return self.all_scores_check
         elif self.binary_string_genome:
 
-            #
+            # Initialize list for the checks
             checks = []
 
             scores_check = self.all_scores_check
             if scores_check is None: return None
 
+            # Check whether parameter minima and maxima are defined
+            if self.parameter_minima is None or self.parameter_maxima is None: raise ValueError("Parameter minima and maxima should be defined")
+
+            # Loop over the parameter sets
             for parameters in scores_check:
 
                 # Convert
@@ -478,6 +483,7 @@ class StepWiseOptimizer(Optimizer):
             # Return the converted checks
             return checks
 
+        # Invalid
         else: raise ValueError("Unrecognized genome type")
 
     # -----------------------------------------------------------------
@@ -494,6 +500,9 @@ class StepWiseOptimizer(Optimizer):
 
         # Check if the scores are set
         if self.scores is None: raise ValueError("The scores are not set")
+
+        # Check whether the number of bits is defined
+        if self.nbits is None: raise ValueError("The number of bits for each parameter should be defined")
 
         #print(self.scores)
         #print(self.scores_check)
@@ -512,9 +521,10 @@ class StepWiseOptimizer(Optimizer):
         log.debug("All scores (with recurrent models) are: " + " ".join(str(score) for score in scores))
         log.debug("All checks (with recurrent models) are: " + " ".join(str(check) for check in checks))
 
-        # Determine rtol
-        if self.binary_string_genome: rtol = max([1./ndigits for ndigits in self.ndigits])
-        else: rtol = 1e-11
+        # Determine rtol: NO: BINARY GENOMES MUST MATCH EXACTLY!!
+        #if self.binary_string_genome: rtol = max([1./ndigits for ndigits in self.ndigits])
+        #else: rtol = 1e-11
+        rtol = 1e-11
 
         # Set the scores
         elitism_data = self.engine.set_scores(scores, checks, rtol=rtol)
@@ -589,6 +599,10 @@ class StepWiseOptimizer(Optimizer):
 
             # Debugging
             log.debug("Individual '" + name + "' is recurrent: individual '" + str(key) + "' from generation " + str(generation_index-1))
+
+            # Get generations in database
+            generations = get_generations(database, run_id)
+            print(generations)
 
             # Otherwise, look for the (raw) score in the database
             score = get_score_for_individual(database, run_id, generation_index, key)
@@ -1019,7 +1033,7 @@ def find_recurrent_individual(populations, individual, current_generation, rtol=
     :return: 
     """
 
-    array_individual = np.array(individual.genomeList)
+    #array_individual = np.array(individual.genomeList)
 
     #print("individual", array_individual)
 
@@ -1039,7 +1053,11 @@ def find_recurrent_individual(populations, individual, current_generation, rtol=
             # Get the genome
             genome = populations[generation_index][key]
             #print(populations[generation_index][key])
-            array_genome = np.array(genome)
+
+            # If the genomes are equal, return the generation index and the individual key
+            if equal_genomes(individual.genomeList, genome): return generation_index, key
+
+            #array_genome = np.array(genome)
 
             # Check for equality
 
@@ -1047,47 +1065,17 @@ def find_recurrent_individual(populations, individual, current_generation, rtol=
             #print(key, genome, array_genome)
 
             # Binary: check exact
-            if is_binary_values(genome):
-
-                if individual.genomeList == genome: return generation_index, key
+            #if is_binary_values(genome):
+                #if individual.genomeList == genome: return generation_index, key
 
             # Real: check with certain tolerance
-            elif is_real_values(genome):
-
-                if np.isclose(array_individual, array_genome, rtol=rtol, atol=atol): return generation_index, key
+            #elif is_real_values(genome):
+                #if np.isclose(array_individual, array_genome, rtol=rtol, atol=atol): return generation_index, key
 
             # Unrecognized 1D genome list
-            else: raise ValueError("Genome list not recognized: " + str(genome))
+            #else: raise ValueError("Genome list not recognized: " + str(genome))
 
     # Nothing found
     return None, None
-
-# -----------------------------------------------------------------
-
-def is_binary_values(sequence):
-
-    """
-    This function ...
-    :param sequence: 
-    :return: 
-    """
-
-    for element in sequence:
-        if element != 0 and element != 1: return False
-    return True
-
-# -----------------------------------------------------------------
-
-def is_real_values(sequence):
-
-    """
-    This function ...
-    :param sequence:
-    :return: 
-    """
-
-    for element in sequence:
-        if not types.is_real_type(element): return False
-    return True
 
 # -----------------------------------------------------------------

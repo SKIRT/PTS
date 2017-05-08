@@ -40,6 +40,7 @@ default_round_decimal = 2
 default_mutation_method = "range"
 default_min_or_max = "maximize"
 default_database_frequency = 1
+default_database_commit_frequency = 1
 default_statistics_frequency = 1
 default_populations_frequency = 1
 
@@ -68,10 +69,17 @@ definition.add_optional("mutation_method", "string", "mutation method", default_
 definition.add_optional("min_or_max", "string", "minimize or maximize", default_min_or_max, choices=min_or_max)
 definition.add_optional("run_id", "string", "identifier for this run", default="run0")
 definition.add_optional("database_frequency", "positive_integer", "frequency of appending to the database (in the number of generations)", default_database_frequency)
+definition.add_optional("database_commit_frequency", "positive_integer", "frequency of committing the database to disk", default_database_commit_frequency)
 definition.add_optional("statistics_frequency", "positive_integer", "frequency of appending to the statistics table", default_statistics_frequency)
 definition.add_optional("populations_frequency", "positive_integer", "frequency of appending to the populations table", default_populations_frequency)
 definition.add_optional("scaling_method", "string", "scaling method", "linear", choices=scaling_methods)
 definition.add_optional("selector_method", "string", "selector method", "rank", choices=selector_methods)
+
+default_binary_mutation_method = "flip"
+binary_mutation_methods = ["flip", "swap"]
+
+# For binary representation
+definition.add_optional("binary_mutation_method", "string", "mutation method for binary string genome representations", default_binary_mutation_method, binary_mutation_methods)
 
 # Other
 definition.add_optional("output", "directory_path", "output directory")

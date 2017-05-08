@@ -6,7 +6,7 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from .plot import definition
+from pts.evolve.config.plot import definition
 
 # -----------------------------------------------------------------
 

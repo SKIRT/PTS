@@ -59,6 +59,7 @@ from ...core.tools.logging import log
 from ...core.tools import serialization
 from ...core.tools.random import prng
 from ...core.basics.containers import DefaultOrderedDict
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -980,23 +981,26 @@ class GeneticEngine(object):
             # Check if requested
             if check is not None:
 
+                # Check
+                if not equal_genomes(individual.genomeList, check[index], rtol=rtol): raise ValueError("Check failed: individual = " + str(individual.genomeList) + " and check = " + str(check[index]))
+
                 # Loop over the parameters for this individual
-                for j in range(len(individual)):
+                #for j in range(len(individual)):
 
                     # Get the individual parameter value and the check value
-                    value = individual.genomeList[j]
-                    check_value = check[index][j]
+                    #value = individual.genomeList[j]
+                    #check_value = check[index][j]
 
                     # Calculate relative difference
-                    rel_diff = abs((value - check_value) / value)
+                    #rel_diff = abs((value - check_value) / value)
 
                     # Check whether they are close enough
-                    assert np.isclose(value, check_value, rtol=rtol), rel_diff
+                    #assert np.isclose(value, check_value, rtol=rtol), rel_diff
 
             # Set the score
             individual.score = scores[index]
 
-            # Increment the index
+            # Increment the index of the individuals
             index += 1
 
     # -----------------------------------------------------------------
@@ -1306,7 +1310,7 @@ class GeneticEngine(object):
         """
 
         # Debugging
-        log.debug("Dumping statistics to the database adapters ...")
+        log.debug("Dumping data to the database adapters ...")
 
         # Calculate the statistics of the internal populations
         self.internalPop.statistics()
@@ -1555,5 +1559,74 @@ class GeneticEngine(object):
 
         for it in self.selector.applyFunctions(self.internalPop, **args):
             return it
+
+# -----------------------------------------------------------------
+
+def is_binary_values(sequence):
+
+    """
+    This function ...
+    :param sequence: 
+    :return: 
+    """
+
+    for element in sequence:
+        if element != 0 and element != 1: return False
+    return True
+
+# -----------------------------------------------------------------
+
+def is_real_values(sequence):
+
+    """
+    This function ...
+    :param sequence:
+    :return: 
+    """
+
+    for element in sequence:
+        if not types.is_real_type(element): return False
+    return True
+
+# -----------------------------------------------------------------
+
+def equal_individuals(individual_a, individual_b, rtol=1e-5, atol=1e-8):
+
+    """
+    This function ...
+    :param individual_a: 
+    :param individual_b: 
+    :param rtol: 
+    :param atol: 
+    :return: 
+    """
+
+    return equal_genomes(individual_a.genomeList, individual_b.genomeList, rtol=rtol, atol=atol)
+
+# -----------------------------------------------------------------
+
+def equal_genomes(genome_a, genome_b, rtol=1e-5, atol=1e-8):
+
+    """
+    This function ...
+    :param genome_a: 
+    :param genome_b: 
+    :param rtol:
+    :param atol:
+    :return: 
+    """
+
+    # Convert into arrays
+    genome_a = np.array(genome_a)
+    genome_b = np.array(genome_b)
+
+    # Binary: check exact
+    if is_binary_values(genome_a): return np.all(genome_a == genome_b)
+
+    # Real: check with certain tolerance
+    elif is_real_values(genome_b): return np.isclose(genome_a, genome_b, rtol=rtol, atol=atol)
+
+    # Unrecognized 1D genome list
+    else: raise ValueError("Genome list not recognized: " + str(genome_a))
 
 # -----------------------------------------------------------------

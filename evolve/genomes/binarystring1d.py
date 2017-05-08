@@ -68,8 +68,8 @@ class G1DBinaryString(G1DBase):
         0
         """
 
-        if value not in (0, 1):
-         utils.raiseException("The value must be zero (0) or one (1), used (%s)" % value, ValueError)
+        if value not in (0, 1): raise ValueError("The value must be 0 or 1 instead of " + str(value))
+         #utils.raiseException("The value must be zero (0) or one (1), used (%s)" % value, ValueError)
         G1DBase.__setitem__(self, key, value)
 
     # -----------------------------------------------------------------

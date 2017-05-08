@@ -413,6 +413,18 @@ class SimulationStatus(object):
                         #return False
                         self.status = "aborted"
                         return
+                    else: # Still running, but is it hanging because of a problem?
+                        pass
+                        #out, err = process_or_handle.communicate()
+                        #print(out)
+                        #print(err)
+                        # e.g. a possible error on which it hangs can be:
+                        # A system call failed during shared memory initialization that should
+                        # not have.  It is likely that your MPI job will now either abort or
+                        # experience performance degradation.
+                        # Local host:  druif.ugent.be
+                        # System call: ftruncate(2)
+                        # Error:       No space left on device (errno 28)
 
             # Status is 'running'
             self.status = "running"

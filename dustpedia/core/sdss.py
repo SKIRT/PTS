@@ -302,11 +302,11 @@ class SDSSMosaicMaker(Configurable):
         # 2. Download SDSS fields
         self.download_fields()
 
-        # 3. Filter those not overlapping the target position
-        self.filter_non_overlapping()
-
         # 4. Download photofield data
         self.download_photofield()
+
+        # 3. Filter those not overlapping the target position
+        self.filter_non_overlapping()
 
     # -----------------------------------------------------------------
 
@@ -365,7 +365,7 @@ class SDSSMosaicMaker(Configurable):
             self.urls[band] = new_urls
 
             # Debugging
-            log.debug("Number of primary fields for the " + band + " band: " + str(self.nurls_for_band(band)))
+            log.debug("The number of primary fields for the " + band + " band is " + str(self.nurls_for_band(band)))
 
     # -----------------------------------------------------------------
 
@@ -393,7 +393,7 @@ class SDSSMosaicMaker(Configurable):
         for band in self.config.bands:
 
             # Inform the user
-            log.info("Downloading the photofield tables for the " + band + " band ...")
+            log.info("Getting the URLs of the photofield tables for the " + band + " band ...")
 
             # Initialize a list to contain the URLs of the field tables
             field_urls = []
@@ -414,6 +414,9 @@ class SDSSMosaicMaker(Configurable):
 
             # Set the URLs
             self.photofield_urls[band] = field_urls
+
+            # Debugging
+            log.debug("The number of photofield urls for the " + band + " band is " + str(len(self.photofield_urls[band])))
 
     # -----------------------------------------------------------------
 
@@ -456,7 +459,7 @@ class SDSSMosaicMaker(Configurable):
         # Parallel execution
         with ParallelTarget(network.download_files, self.config.nprocesses) as target:
 
-            # Download for different bands in parallel
+            # Download for different bands in parallel, or copy from existing directory
             for band in self.config.bands:
 
                 if self.has_existing_fields(band): fs.copy_from_directory(self.existing_fields_path(band), self.fields_paths[band])

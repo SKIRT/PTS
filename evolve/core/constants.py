@@ -152,6 +152,7 @@ CDefGaussianGradientMU = 1.0
 CDefGaussianGradientSIGMA = (1.0 / 3.0)  # approx. +/- 3-sigma is +/- 10%
 
 # - DB Adapters SQLite defaults
+CDefSQLiteName = "SQLite database"
 CDefSQLiteDBName = "pyevolve.db"
 CDefSQLiteDBTable = "statistics"
 CDefSQLiteDBTablePop = "population"
@@ -159,22 +160,27 @@ CDefSQLiteStatsGenFreq = 1
 CDefSQLiteStatsCommitFreq = 300
 
 # - DB Adapters MySQL defaults
+CDefMySQLName = "MySQL database"
 CDefMySQLDBName = "pyevolve"
 CDefMySQLDBTable = "statistics"
 CDefMySQLDBTablePop = "population"
 CDefMySQLDBHost = "localhost"
 CDefMySQLDBPort = 3306
 CDefMySQLStatsGenFreq = 1
-CDefMySQLStatsCommitFreq = 300
+#CDefMySQLStatsCommitFreq = 300
+CDefMySQLStatsCommitFreq = 1
 
 # - DB Adapters URL Post defaults
+CDefURLPostName = "URL"
 CDefURLPostStatsGenFreq = 100
 
 # - NEW: DB Adapters for populations file
+CDefPopulationsName = "populations file"
 CDefPopulationsFileName = "populations.dat"
 CDefPopulationsStatsGenFreq = 1
 
 # - DB Adapters CSV File defaults
+CDefCSVName = "statistics file"
 CDefCSVFileName = "pyevolve.csv"
 CDefCSVFileStatsGenFreq = 1
 

@@ -27,14 +27,18 @@ from ..genomes.list2d import G2DList
 from ..genomes.binarystring1d import G1DBinaryString
 from ..genomes.binarystring2d import G2DBinaryString
 from ...core.tools.logging import log
-from ..core.initializators import G1DListInitializatorReal, G1DListInitializatorInteger, HeterogeneousListInitializerReal, HeterogeneousListInitializerInteger
+from ..core.initializators import G1DListInitializatorReal, G1DListInitializatorInteger, HeterogeneousListInitializerReal
+from ..core.initializators import G1DBinaryStringInitializator, HeterogeneousListInitializerInteger
 from ..core.crossovers import G1DListCrossoverSinglePoint, G1DListCrossoverTwoPoint, G1DListCrossoverUniform, G1DListCrossoverOX
 from ..core.crossovers import G1DListCrossoverEdge, G1DListCrossoverCutCrossfill, G1DListCrossoverRealSBX
 from ..core.crossovers import G2DListCrossoverUniform, G2DListCrossoverSingleVPoint, G2DListCrossoverSingleHPoint
+from ..core.crossovers import G1DBinaryStringXSinglePoint, G1DBinaryStringXTwoPoint, G1DBinaryStringXUniform
+from ..core.crossovers import G2DBinaryStringXSingleHPoint, G2DBinaryStringXSingleVPoint, G2DBinaryStringXUniform
 from ..core.mutators import G1DListMutatorIntegerRange, G1DListMutatorIntegerGaussian, G1DListMutatorIntegerBinary
 from ..core.mutators import G1DListMutatorRealGaussian, G1DListMutatorRealRange
 from ..core.mutators import HeterogeneousListMutatorRealRange, HeterogeneousListMutatorRealGaussian
 from ..core.mutators import HeterogeneousListMutatorIntegerRange, HeterogeneousListMutatorIntegerGaussian
+from ..core.mutators import G1DBinaryStringMutatorSwap, G1DBinaryStringMutatorFlip
 from ..core.engine import GeneticEngine, RawScoreCriteria
 from ...core.basics.range import RealRange, IntegerRange
 from ...core.tools import formatting as fmt
@@ -115,7 +119,7 @@ class Optimizer(Configurable):
         # Number of digits for the parameters
         self.ndigits = None
 
-        # Number of binary digits for the parameters, will be determined in create_binary_genome
+        # Number of binary digits for the parameters
         self.nbits = None
 
     # -----------------------------------------------------------------
@@ -225,6 +229,9 @@ class Optimizer(Configurable):
         # Set ndigits
         if "ndigits" in kwargs: self.ndigits = kwargs.pop("ndigits")
 
+        # Determine the number of bits per parameter
+        if self.ndigits is not None: self.set_nbits()
+
     # -----------------------------------------------------------------
 
     def prepare_parameter_ranges(self):
@@ -259,6 +266,21 @@ class Optimizer(Configurable):
 
         # Debugging
         if self.parameter_range is not None: log.debug("The parameter range is " + str(self.parameter_range))
+
+    # -----------------------------------------------------------------
+
+    def set_nbits(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Determining the number of bits for each parameter ...")
+
+        # Determine the number of bits for each parameter
+        self.nbits = [binary_digits_for_significant_figures(nfigures) for nfigures in self.ndigits]
 
     # -----------------------------------------------------------------
 
@@ -306,7 +328,7 @@ class Optimizer(Configurable):
             reset = True
 
         # Create the adapter
-        self.statistics = DBFileCSV(filename=filepath, frequency=self.config.statistics_frequency, reset=reset, identify=self.config.run_id)
+        self.statistics = DBFileCSV(filename=filepath, frequency=self.config.statistics_frequency, reset=reset, identify=self.config.run_id, name="statistics file")
 
     # -----------------------------------------------------------------
 
@@ -334,8 +356,8 @@ class Optimizer(Configurable):
 
         # Create the database adapter
         self.database = DBSQLite(dbname=filepath, identify=self.config.run_id, resetDB=reset,
-                                 commit_freq=self.config.database_frequency, frequency=self.config.database_frequency,
-                                 resetIdentify=False)
+                                 commit_freq=self.config.database_commit_frequency, frequency=self.config.database_frequency,
+                                 resetIdentify=False, name="database")
 
     # -----------------------------------------------------------------
 
@@ -363,7 +385,7 @@ class Optimizer(Configurable):
 
         # Create the populations file adapter
         self.populations = PopulationsFile(filepath=filepath, identify=self.config.run_id, reset=reset,
-                                           frequency=self.config.populations_frequency)
+                                           frequency=self.config.populations_frequency, name="populations file")
 
     # -----------------------------------------------------------------
 
@@ -405,6 +427,8 @@ class Optimizer(Configurable):
         This function ...
         :return: 
         """
+
+        if self.initial_genome is None: return self.config.genome_type
 
         if isinstance(self.initial_genome, G1DList) or isinstance(self.initial_genome, G2DList): return "list"
         elif isinstance(self.initial_genome, G1DBinaryString) or isinstance(self.initial_genome, G2DBinaryString): return "binary_string"
@@ -531,9 +555,6 @@ class Optimizer(Configurable):
 
         # Number of digits has to be specified
         if self.ndigits is None: raise ValueError("Number of digits (in base-10) has to be specified for binary string conversion")
-
-        # Determine the number of bits for each parameter
-        self.nbits = [binary_digits_for_significant_figures(nfigures) for nfigures in self.ndigits]
 
         # 1D
         if self.config.genome_dimension == 1:
@@ -700,6 +721,19 @@ class Optimizer(Configurable):
         # Inform the user
         log.info("Getting the initializator type ...")
 
+        if self.list_genome: return self.get_list_initializator()
+        elif self.binary_string_genome: return self.get_binary_string_initializator()
+        else: raise ValueError("Genome type not recognized")
+
+    # -----------------------------------------------------------------
+
+    def get_list_initializator(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
         # Integer type
         if self.is_integer_parameter:
 
@@ -717,6 +751,17 @@ class Optimizer(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_binary_string_initializator(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return G1DBinaryStringInitializator
+
+    # -----------------------------------------------------------------
+
     def get_mutator(self):
 
         """
@@ -727,6 +772,19 @@ class Optimizer(Configurable):
 
         # Inform the user
         log.info("Getting the mutator type ...")
+
+        if self.list_genome: return self.get_list_mutator()
+        elif self.binary_string_genome: return self.get_binary_string_mutator()
+        else: raise ValueError("Genome type not recognized")
+
+    # -----------------------------------------------------------------
+
+    def get_list_mutator(self):
+
+        """
+        This function ...
+        :return: 
+        """
 
         # Integer type
         if self.is_integer_parameter:
@@ -780,6 +838,20 @@ class Optimizer(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_binary_string_mutator(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Check mutation method
+        if self.config.binary_mutation_method == "swap": return G1DBinaryStringMutatorSwap
+        elif self.config.binary_mutation_method == "flip": return G1DBinaryStringMutatorFlip
+        else: raise ValueError("Invalid mutation method: " + self.config.binary_mutation_method)
+
+    # -----------------------------------------------------------------
+
     def get_crossover(self):
 
         """
@@ -789,6 +861,19 @@ class Optimizer(Configurable):
 
         # Inform the user
         log.info("Getting the crossover type ...")
+
+        if self.list_genome: return self.get_list_crossover()
+        elif self.binary_string_genome: return self.get_binary_string_crossover()
+        else: raise ValueError("Genome type not recognized")
+
+    # -----------------------------------------------------------------
+
+    def get_list_crossover(self):
+
+        """
+        This function ...
+        :return: 
+        """
 
         # 1D genome
         if self.config.genome_dimension == 1:
@@ -843,6 +928,48 @@ class Optimizer(Configurable):
 
             # Invalid
             else: raise ValueError("Invalid crossover method for two-dimensional genomes")
+
+        # Not supported number of dimensions
+        else: raise ValueError("Dimensions > 2 are not supported")
+
+    # -----------------------------------------------------------------
+
+    def get_binary_string_crossover(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # 1D genome
+        if self.config.genome_dimension == 1:
+
+            # Single-point crossover
+            if self.config.crossover_method == "single_point": return G1DBinaryStringXSinglePoint
+
+            # Dual-point crossover
+            elif self.config.crossover_method == "two_point": return G1DBinaryStringXTwoPoint
+
+            # Uniform
+            elif self.config.crossover_method == "uniform": return G1DBinaryStringXUniform
+
+            # Invalid
+            else: raise ValueError("Crossover type '" + self.config.crossover_method + "' not supported for binary string genome representations")
+
+        # 2D genome
+        elif self.config.genome_dimension == 2:
+
+            # Uniform
+            if self.config.crossover_method == "uniform": return G2DBinaryStringXUniform
+
+            # Vertical single-point
+            elif self.config.crossover_method == "single_vertical_point": return G2DBinaryStringXSingleVPoint
+
+            # Horizontal single-point
+            elif self.config.crossover_method == "single_horizontal_point": return G2DBinaryStringXSingleHPoint
+
+            # Invalid
+            else: raise ValueError("Invalid crossover method for two-dimensional binary string genome representations")
 
         # Not supported number of dimensions
         else: raise ValueError("Dimensions > 2 are not supported")

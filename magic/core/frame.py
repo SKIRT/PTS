@@ -1964,7 +1964,9 @@ class Frame(NDDataArray):
 
             # Write
             from .fits import write_frame
+            #try:
             write_frame(self._data, header, path)
+            #except IOError("Something went wrong during write")
 
         # ASDF format
         elif path.endswith(".asdf"):

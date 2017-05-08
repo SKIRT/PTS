@@ -95,78 +95,21 @@ class GeneticModelGenerator(ModelGenerator):
         super(GeneticModelGenerator, self).setup(**kwargs)
 
         # If the number of generations in one run is more than one
-        if self.config.ngenerations > 1:
+        if self.config.ngenerations > 1: self.create_continuous_optimizer()
 
-            # Create a new continuous optimizer
-            self.optimizer = ContinuousOptimizer()
-            self.optimizer.config.output = self.fitting_run.path
-            #self.optimizer.config.writing.engine_path = self.fitting_run.main_engine_path
-            #self.optimizer.config.writing.prng_path = self.fitting_run.main_prng_path
-            #self.optimizer.config.writing.config_path = self.fitting_run.optimizer_config_path
-            #self.optimizer.config.writing.statistics_path = self.statistics_path
-            #self.optimizer.config.writing.database_path = self.database_path
-
-            self.optimizer.config.run_id = self.fitting_run.name
-
-            # Set initial flag
-            self.initial = True
-
-            # Set the evaluator function
-            self.evaluator = evaluate
-
-            # Set the evaluator kwargs
-            self.evaluator_kwargs = dict()
-            self.evaluator_kwargs["fitting_run"] = self.fitting_run #self.fitting_run.name
-
+        # Only one generation at a time
         else:
+
+            # Re-invoke existing optimizer run
+            if fs.is_file(self.fitting_run.main_engine_path): self.load_optimizer()
+
+            # New optimizer run
+            else: self.create_optimizer()
 
             # Set generation specific paths
             population_path = fs.join(self.generation_path, "population.dat")
             elitism_path = fs.join(self.generation_path, "elitism.dat")
             recurrent_path = fs.join(self.generation_path, "recurrent.dat")
-
-            # Re-invoke existing optimizer run
-            if fs.is_file(self.fitting_run.main_engine_path):
-
-                # Load the optimizer from files
-                self.optimizer = StepWiseOptimizer.from_paths(self.fitting_run.path,
-                                                                self.fitting_run.main_engine_path,
-                                                                self.fitting_run.main_prng_path,
-                                                                self.fitting_run.optimizer_config_path,
-                                                                self.statistics_path, self.database_path,
-                                                                self.populations_path, self.fitting_run.name)
-                # Set initial flag
-                self.initial = False
-
-                # Load the previous population
-                previous_generation_path = self.fitting_run.last_genetic_or_initial_generation_path
-                previous_population_path = fs.join(previous_generation_path, "population.dat")
-                self.previous_population = load_population(previous_population_path)
-
-                # Load the previous recurrent data, BUT NOT WHEN THE PREVIOUS GENERATION WAS THE INTIAL ONE ?
-                if not self.fitting_run.last_is_initial:
-                    previous_recurrent_path = fs.join(self.fitting_run.last_genetic_generation_path, "recurrent.dat")
-                    self.previous_recurrent = load_dict(previous_recurrent_path)
-
-            # New optimizer run
-            else:
-
-                # Create a new optimizer and set paths
-                self.optimizer = StepWiseOptimizer()
-                self.optimizer.config.output = self.fitting_run.path
-                self.optimizer.config.writing.engine_path = self.fitting_run.main_engine_path
-                self.optimizer.config.writing.prng_path = self.fitting_run.main_prng_path
-                self.optimizer.config.writing.config_path = self.fitting_run.optimizer_config_path
-                self.optimizer.config.writing.statistics_path = self.statistics_path
-                self.optimizer.config.writing.database_path = self.database_path
-                self.optimizer.config.writing.populations_path = self.populations_path
-                self.optimizer.config.run_id = self.fitting_run.name
-
-                # Set initial flag
-                self.initial = True
-
-                # Set previous population to None
-                self.previous_population = None
 
             # Set generation specific paths
             self.optimizer.config.writing.population_path = population_path
@@ -192,6 +135,101 @@ class GeneticModelGenerator(ModelGenerator):
 
         # Special: for binary genomes (but also otherwise for displaying?)
         if "ndigits" in kwargs: self.ndigits = kwargs.pop("ndigits")
+
+    # -----------------------------------------------------------------
+
+    def create_continuous_optimizer(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Creating an optimizer that runs multiple generations at once ...")
+
+        # Create a new continuous optimizer
+        self.optimizer = ContinuousOptimizer()
+        self.optimizer.config.output = self.fitting_run.path
+        # self.optimizer.config.writing.engine_path = self.fitting_run.main_engine_path
+        # self.optimizer.config.writing.prng_path = self.fitting_run.main_prng_path
+        # self.optimizer.config.writing.config_path = self.fitting_run.optimizer_config_path
+        # self.optimizer.config.writing.statistics_path = self.statistics_path
+        # self.optimizer.config.writing.database_path = self.database_path
+
+        self.optimizer.config.run_id = self.fitting_run.name
+
+        # Set initial flag
+        self.initial = True
+
+        # Set the evaluator function
+        self.evaluator = evaluate
+
+        # Set the evaluator kwargs
+        self.evaluator_kwargs = dict()
+        self.evaluator_kwargs["fitting_run"] = self.fitting_run  # self.fitting_run.name
+
+    # -----------------------------------------------------------------
+
+    def load_optimizer(self):
+
+        """
+        This function ...
+        :param self: 
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Loading the optimizer from the previous generation ....")
+
+        # Load the optimizer from files
+        self.optimizer = StepWiseOptimizer.from_paths(self.fitting_run.path,
+                                                        self.fitting_run.main_engine_path,
+                                                        self.fitting_run.main_prng_path,
+                                                        self.fitting_run.optimizer_config_path,
+                                                        self.statistics_path, self.database_path,
+                                                        self.populations_path, self.fitting_run.name)
+        # Set initial flag
+        self.initial = False
+
+        # Load the previous population
+        previous_generation_path = self.fitting_run.last_genetic_or_initial_generation_path
+        previous_population_path = fs.join(previous_generation_path, "population.dat")
+        self.previous_population = load_population(previous_population_path)
+
+        # Load the previous recurrent data, BUT NOT WHEN THE PREVIOUS GENERATION WAS THE INTIAL ONE ?
+        if not self.fitting_run.last_is_initial:
+            previous_recurrent_path = fs.join(self.fitting_run.last_genetic_generation_path, "recurrent.dat")
+            self.previous_recurrent = load_dict(previous_recurrent_path)
+
+    # -----------------------------------------------------------------
+
+    def create_optimizer(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Creating a new stepwise optimizer ...")
+
+        # Create a new optimizer and set paths
+        self.optimizer = StepWiseOptimizer()
+        self.optimizer.config.output = self.fitting_run.path
+        self.optimizer.config.writing.engine_path = self.fitting_run.main_engine_path
+        self.optimizer.config.writing.prng_path = self.fitting_run.main_prng_path
+        self.optimizer.config.writing.config_path = self.fitting_run.optimizer_config_path
+        self.optimizer.config.writing.statistics_path = self.statistics_path
+        self.optimizer.config.writing.database_path = self.database_path
+        self.optimizer.config.writing.populations_path = self.populations_path
+        self.optimizer.config.run_id = self.fitting_run.name
+
+        # Set initial flag
+        self.initial = True
+
+        # Set previous population to None
+        self.previous_population = None
 
     # -----------------------------------------------------------------
 
@@ -277,6 +315,9 @@ class GeneticModelGenerator(ModelGenerator):
 
         # Generate parameters of the initial generation
         if self.initial and self.generate_initial_manual: self.generate_initial_parameters()
+
+        #print(self.parameter_minima_scalar)
+        #print(self.parameter_maxima_scalar)
 
         # Run the optimizer
         self.optimizer.run(scores=self.scores, scores_check=self.scores_check, minima=self.parameter_minima_scalar,
@@ -643,6 +684,7 @@ def set_optimizer_settings(optimizer, fitting_run, ngenerations=None, nmodels=No
     optimizer.config.min_or_max = "minimize"
     # self.optimizer.config.run_id = self.fitting_run.name # THIS IS NOW DONE IN THE SETUP
     optimizer.config.database_frequency = 1
+    optimizer.config.database_commit_frequency = 1
     optimizer.config.statistics_frequency = 1
     optimizer.config.populations_frequency = 1
 
