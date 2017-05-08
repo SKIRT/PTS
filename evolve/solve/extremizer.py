@@ -30,7 +30,7 @@ default_mutation_method = "range"
 default_elitism = True
 default_nelite_individuals = 1
 default_scaling_method = "linear"
-default_selector_method = "rank"
+default_selector_method = "roulette_wheel"
 
 # -----------------------------------------------------------------
 

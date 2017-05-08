@@ -43,6 +43,8 @@ default_database_frequency = 1
 default_database_commit_frequency = 1
 default_statistics_frequency = 1
 default_populations_frequency = 1
+default_scaling_method = "linear"
+default_selector_method = "roulette_wheel"
 
 default_elitism = True
 
@@ -72,8 +74,8 @@ definition.add_optional("database_frequency", "positive_integer", "frequency of 
 definition.add_optional("database_commit_frequency", "positive_integer", "frequency of committing the database to disk", default_database_commit_frequency)
 definition.add_optional("statistics_frequency", "positive_integer", "frequency of appending to the statistics table", default_statistics_frequency)
 definition.add_optional("populations_frequency", "positive_integer", "frequency of appending to the populations table", default_populations_frequency)
-definition.add_optional("scaling_method", "string", "scaling method", "linear", choices=scaling_methods)
-definition.add_optional("selector_method", "string", "selector method", "rank", choices=selector_methods)
+definition.add_optional("scaling_method", "string", "scaling method", default_scaling_method, choices=scaling_methods)
+definition.add_optional("selector_method", "string", "selector method", default_selector_method, choices=selector_methods)
 
 # Names for the statistics, database and population files
 definition.add_optional("database_name", "string", "name for the database", "database")
