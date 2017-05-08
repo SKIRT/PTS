@@ -204,16 +204,13 @@ def G1DListCrossoverUniform(genome, **args):
 
     return (sister, brother)
 
-
-
+# -----------------------------------------------------------------
 
 def G1DListCrossoverMix(genome, **args):
 
     """
-    Each gene is random linear combination between mom and dad
+    Each gene is a random linear combination between mom and dad
     """
-
-    from . import constants
 
     sister = None
     brother = None
@@ -226,12 +223,17 @@ def G1DListCrossoverMix(genome, **args):
     brother.resetStats()
 
     for i in xrange(len(gMom)):
-        ra=random.uniform(0, 1)
+
+        # Generate random uniform number between 0 and 1
+        ra = prng.uniform()
+
         temp_s = sister[i]
         temp_b = brother[i]
-        sister[i] = ra*temp_s + (1-ra)*temp_b
-        brother[i] = (1-ra)*temp_s + ra*temp_b
 
+        sister[i] = ra * temp_s + (1. - ra) * temp_b
+        brother[i] = (1. - ra) * temp_s + ra * temp_b
+
+    # Return sister and brother
     return (sister, brother)
 
 # -----------------------------------------------------------------

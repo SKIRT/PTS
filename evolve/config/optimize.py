@@ -16,7 +16,7 @@ genome_types = ["list", "binary_string"]
 
 genome_dimensions = [1, 2]
 
-crossover_methods = ["single_point", "two_point", "uniform", "OX", "edge", "cut_crossfill", "real_SBX", "single_vertical_point", "single_horizontal_point"]
+crossover_methods = ["single_point", "two_point", "uniform", "OX", "edge", "cut_crossfill", "real_SBX", "single_vertical_point", "single_horizontal_point", "mix"]
 mutation_methods = ["range", "gaussian", "binary"]
 min_or_max = ["minimize", "maximize"]
 

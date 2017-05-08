@@ -30,7 +30,7 @@ from ...core.tools.logging import log
 from ..core.initializators import G1DListInitializatorReal, G1DListInitializatorInteger, HeterogeneousListInitializerReal
 from ..core.initializators import G1DBinaryStringInitializator, HeterogeneousListInitializerInteger
 from ..core.crossovers import G1DListCrossoverSinglePoint, G1DListCrossoverTwoPoint, G1DListCrossoverUniform, G1DListCrossoverOX
-from ..core.crossovers import G1DListCrossoverEdge, G1DListCrossoverCutCrossfill, G1DListCrossoverRealSBX
+from ..core.crossovers import G1DListCrossoverEdge, G1DListCrossoverCutCrossfill, G1DListCrossoverRealSBX, G1DListCrossoverMix
 from ..core.crossovers import G2DListCrossoverUniform, G2DListCrossoverSingleVPoint, G2DListCrossoverSingleHPoint
 from ..core.crossovers import G1DBinaryStringXSinglePoint, G1DBinaryStringXTwoPoint, G1DBinaryStringXUniform
 from ..core.crossovers import G2DBinaryStringXSingleHPoint, G2DBinaryStringXSingleVPoint, G2DBinaryStringXUniform
@@ -883,8 +883,8 @@ class Optimizer(Configurable):
             if self.genome_size == 1:
 
                 # Give a warning that we are not using the user specificied option
-                log.warning("Uniform crossover will be used because the genome size is only one")
-                return G1DListCrossoverUniform
+                log.warning("Mix crossover will be used because the genome size is only one")
+                return G1DListCrossoverMix
 
             # Check whether the genome size is not zero
             elif self.genome_size == 0: raise ValueError("The genome size cannot be zero")
@@ -910,7 +910,8 @@ class Optimizer(Configurable):
             # Real SBX
             elif self.config.crossover_method == "real_SBX": return G1DListCrossoverRealSBX
 
-            #elif self.config.crossover_method == "":
+            # MIX
+            elif self.config.crossover_method == "mix": return G1DListCrossoverMix
 
             # Invalid
             else: raise ValueError("Invalid crossover method for one-dimensional genomes")
