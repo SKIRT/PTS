@@ -31,7 +31,4 @@ definition.add_flag("manual_initial_generation", "generate intitial popultion ma
 definition.add_optional("manual_initial_generation_scale", "string", "scale for generating the initial generation manually", default="logarithmic", choices=scales)
 definition.add_optional("manual_initial_generation_method", "string", "method for generating the initial generation manually", default="random", choices=methods)
 
-# N significant digits: NO NOT ANYMORE, NOW DEFINED WITHIN THE FITTING RUN CONFIGURATION
-#definition.add_optional("ndigits", "positive_integer", "number of digits (in base 10) for binary genomes", 4)
-
 # -----------------------------------------------------------------

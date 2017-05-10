@@ -1684,8 +1684,26 @@ class BatchLauncher(Configurable):
         else: analysis_options.misc.path = None
 
         # Set timing and memory table paths (if specified for this batch launcher)
-        if self.config.timing_table_path is not None and add_timing: analysis_options.timing_table_path = self.config.timing_table_path
-        if self.config.memory_table_path is not None and add_memory: analysis_options.memory_table_path = self.config.memory_table_path
+        if self.config.timing_table_path is not None and add_timing:
+
+            # Set the table path
+            analysis_options.timing_table_path = self.config.timing_table_path
+
+            # Check whether the extract timing option has been enabled
+            if not analysis_options.extraction.timeline:
+                log.warning("Timeline extraction will be enabled for writing to the timing table ...")
+                analysis_options.extraction.timeline = True
+
+        # Set memory table path
+        if self.config.memory_table_path is not None and add_memory:
+
+            # Set
+            analysis_options.memory_table_path = self.config.memory_table_path
+
+            # Check whether the extract memory option has been enabled
+            if not analysis_options.extraction.memory:
+                log.warning("Memory extraction will be enabled for writing to the mrmory table ...")
+                analysis_options.extraction.memory = True
 
         # Check the analysis options
         if logging_options is not None: analysis_options.check(logging_options)

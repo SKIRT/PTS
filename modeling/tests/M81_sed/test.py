@@ -425,7 +425,7 @@ class M81SEDTest(M81TestBase):
         # Debugging
         log.debug("The initial parameter values are:")
         log.debug("")
-        for parameter_name in self.real_parameter_values: log.debug(" - " + parameter_name + ": " + tostr(self.initial_parameter_values[parameter_name]))
+        for parameter_name in self.real_parameter_values: log.debug(" - " + parameter_name + ": " + tostr(self.initial_parameter_values[parameter_name], scientific=True, fancy=True, ndigits=parameter_ndigits[parameter_name]))
         log.debug("")
 
     # -----------------------------------------------------------------
@@ -783,10 +783,8 @@ class M81SEDTest(M81TestBase):
         input_model["initialize_config"] = initialize_config
 
         # Other input
-        scales = dict()
-        for label in self.config.free_parameters: scales[label] = "logarithmic"
         input_model["fitting_method"] = self.config.fitting_method
-        input_model["parameter_grid_scales"] = scales
+        input_model["parameter_grid_scales"] = self.parameter_grid_scales
         input_model["parameter_grid_weights"] = None
 
         # Construct the command
@@ -794,6 +792,20 @@ class M81SEDTest(M81TestBase):
 
         # Run the command
         self.modeler = self.run_command(command)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_grid_scales(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        scales = dict()
+        for label in self.config.free_parameters: scales[label] = self.config.scale
+        return scales
 
     # -----------------------------------------------------------------
 

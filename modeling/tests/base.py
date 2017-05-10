@@ -186,7 +186,7 @@ for label in free_parameter_types:
 # Define the number of digits
 parameter_ndigits = dict()
 for label in free_parameter_types:
-    parameter_ndigits[label] = 4
+    parameter_ndigits[label] = 3
 
 # Absolute ski file parameters
 free_parameters_absolute_paths = dict()
@@ -1103,7 +1103,7 @@ class M81TestBase(TestImplementation):
         # Debugging
         log.debug("The real parameter values are: ")
         log.debug("")
-        for parameter_name in self.real_parameter_values: log.debug(" - " + parameter_name + ": " + stringify.stringify(self.real_parameter_values[parameter_name])[1])
+        for parameter_name in self.real_parameter_values: log.debug(" - " + parameter_name + ": " + tostr(self.real_parameter_values[parameter_name], scientific=True, fancy=True, ndigits=parameter_ndigits[parameter_name]))
         log.debug("")
 
     # -----------------------------------------------------------------
@@ -1120,6 +1120,12 @@ class M81TestBase(TestImplementation):
 
         # Get the best parameter values
         self.best_parameter_values = self.modeler.modeler.fitter.fitting_run.best_parameter_values
+
+        # Debugging
+        log.debug("The best parameter values are:")
+        log.debug("")
+        for parameter_name in self.best_parameter_values: log.debug(" - " + parameter_name + ": " + tostr(self.best_parameter_values[parameter_name], scientific=True, fancy=True, ndigits=parameter_ndigits[parameter_name]))
+        log.debug("")
 
     # -----------------------------------------------------------------
 

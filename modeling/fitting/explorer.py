@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import astronomical modules
+from astropy.utils import lazyproperty
+
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
 from ...core.tools.logging import log
@@ -33,6 +36,7 @@ from ...core.simulation.input import SimulationInput
 from ...core.tools import introspection
 from ...core.tools import parallelization as par
 from .generation import GenerationInfo
+from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -245,6 +249,83 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def remote_host_ids(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Set remote host IDs
+        remote_host_ids = []
+        if self.fitting_run.ngenerations == 0:
+            for host_id in self.config.remotes:
+                if Host(host_id).scheduler:
+                    log.warning("Not using remote host '" + host_id + "' for the initial generation because it uses a scheduling system for launching jobs")
+                else: remote_host_ids.append(host_id)
+        else: remote_host_ids = self.config.remotes
+
+        return remote_host_ids
+
+    # -----------------------------------------------------------------
+
+    @property
+    def record_timing(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if self.config.record_timing: return True
+        elif len(self.remote_host_ids) > 0:
+            log.warning("Record timing will be enabled because remote execution is used")
+            return True
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    @property
+    def record_memory(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if self.config.record_memory: return True
+        elif len(self.remote_host_ids) > 0:
+            log.warning("Record memory will be enabled because remote execution is used")
+            return True
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extract_timeline(self):
+
+        """
+        This
+        :return: 
+        """
+
+        return self.record_timing or self.config.extract_timeline
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extract_memory(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.record_memory or self.config.extract_memory
+
+    # -----------------------------------------------------------------
+
     def set_launcher_options(self):
 
         """
@@ -255,48 +336,43 @@ class ParameterExplorer(FittingComponent):
         # Inform the user
         log.info("Setting options for the batch simulation launcher ...")
 
-        # Set remote host IDs
-        remote_host_ids = []
-        if self.fitting_run.ngenerations == 0:
-            for host_id in self.config.remotes:
-                if Host(host_id).scheduler: log.warning("Not using remote host '" + host_id + "' for the initial generation because it uses a scheduling system for launching jobs")
-                else: remote_host_ids.append(host_id)
-        else: remote_host_ids = self.config.remotes
-
         # Basic options
         self.launcher.config.shared_input = True                               # The input directories (or files) for the different simulations are shared
-        self.launcher.config.remotes = remote_host_ids                         # The remote host(s) on which to run the simulations
+        self.launcher.config.remotes = self.remote_host_ids                         # The remote host(s) on which to run the simulations
         self.launcher.config.attached = self.config.attached                   # Run remote simulations in attached mode
         self.launcher.config.group_simulations = self.config.group             # Group multiple simulations into a single job (because a very large number of simulations will be scheduled) TODO: IMPLEMENT THIS
         self.launcher.config.group_walltime = self.config.walltime             # The preferred walltime for jobs of a group of simulations
-        self.launcher.config.timing_table_path = self.fitting_run.timing_table_path        # The path to the timing table file
-        self.launcher.config.memory_table_path = self.fitting_run.memory_table_path        # The path to the memory table file
         self.launcher.config.cores_per_process = self.config.cores_per_process # The number of cores per process, for non-schedulers
         self.launcher.config.dry = self.config.dry                             # Dry run (don't actually launch simulations, but allow them to be launched manually)
         self.launcher.config.progress_bar = True  # show progress bars for local execution
 
+        # Record memory and timeline information
+        if self.record_timing: self.launcher.config.timing_table_path = self.fitting_run.timing_table_path  # The path to the timing table file
+        if self.record_memory: self.launcher.config.memory_table_path = self.fitting_run.memory_table_path  # The path to the memory table file
+
         # Simulation analysis options
 
         ## General
-        self.launcher.config.analysis.relative = True
+        self.launcher.config.relative = True
 
         ## Logging
         self.launcher.config.logging.verbose = True
         self.launcher.config.logging.memory = True
-        #self.launcher.config.logging.allocation = True
-        #self.launcher.config.logging.allocation_limit = 1e-5
 
         ## Extraction
         self.launcher.config.analysis.extraction.path = "extr"    # name of the extraction directory
-        self.launcher.config.analysis.extraction.progress = True  # extract progress information
-        self.launcher.config.analysis.extraction.timeline = True  # extract the simulation timeline
-        self.launcher.config.analysis.extraction.memory = True    # extract memory information
+        self.launcher.config.analysis.extraction.progress = self.config.extract_progress  # extract progress information
+        self.launcher.config.analysis.extraction.timeline = self.extract_timeline # extract the simulation timeline
+        self.launcher.config.analysis.extraction.memory = self.extract_memory    # extract memory information
 
         ## Plotting
         self.launcher.config.analysis.plotting.path = "plot"  # name of the plot directory
-        self.launcher.config.analysis.plotting.seds = True    # Plot the output SEDs
+        self.launcher.config.analysis.plotting.seds = self.config.plot_seds    # Plot the output SEDs
         self.launcher.config.analysis.plotting.reference_seds = [self.observed_sed_path]  # the path to the reference SED (for plotting the simulated SED against the reference points)
         self.launcher.config.analysis.plotting.format = "pdf"  # plot format
+        self.launcher.config.analysis.plotting.progress = self.config.plot_progress
+        self.launcher.config.analysis.plotting.timeline = self.config.plot_timeline
+        self.launcher.config.analysis.plotting.memory = self.config.plot_memory
 
         ## Miscellaneous
         self.launcher.config.analysis.misc.path = "misc"       # name of the misc output directory
@@ -1000,7 +1076,9 @@ class ParameterExplorer(FittingComponent):
             parameter_values = self.parameters_table.parameter_values_for_simulation(simulation_name)
 
             # Prepare simulation directories, ski file, and return the simulation definition
-            definition = prepare_simulation(simulation_name, self.ski, parameter_values, self.object_name, self.simulation_input, self.generation.path)
+            definition = prepare_simulation(simulation_name, self.ski, parameter_values, self.object_name,
+                                            self.simulation_input, self.generation.path, scientific=True, fancy=True,
+                                            ndigits=self.fitting_run.ndigits_dict)
 
             # Debugging
             log.debug("Adding a simulation to the queue with:")
@@ -1216,7 +1294,7 @@ class ParameterExplorer(FittingComponent):
             log.debug("Adding entry to the parameters table with:")
             log.debug("")
             log.debug(" - Simulation name: " + simulation_name)
-            for label in parameter_values: log.debug(" - " + label + ": " + stringify_not_list(parameter_values[label])[1])
+            for label in parameter_values: log.debug(" - " + label + ": " + tostr(parameter_values[label], scientific=True, fancy=True, ndigits=self.fitting_run.ndigits_dict[label]))
             log.debug("")
 
             # Add an entry to the parameters table

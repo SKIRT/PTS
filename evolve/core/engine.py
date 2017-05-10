@@ -59,7 +59,7 @@ from ...core.tools.logging import log
 from ...core.tools import serialization
 from ...core.tools.random import prng
 from ...core.basics.containers import DefaultOrderedDict
-from ...core.tools import types
+from ...core.tools import types, numbers
 
 # -----------------------------------------------------------------
 
@@ -925,13 +925,14 @@ class GeneticEngine(object):
 
     # -----------------------------------------------------------------
 
-    def set_scores(self, scores, check=None, rtol=1e-11):
+    def set_scores(self, scores, check=None, rtol=1e-11, binary_parameters=None):
 
         """
         This function ...
         :param scores:
         :param check:
         :param rtol:
+        :param binary_parameters:
         :return:
         """
 
@@ -939,13 +940,13 @@ class GeneticEngine(object):
         elitism_data = None
 
         # Set the scores for the initial population
-        if self.is_initial_generation: self.set_scores_for_population(self.internalPop, scores, check, rtol=rtol)
+        if self.is_initial_generation: self.set_scores_for_population(self.internalPop, scores, check, rtol=rtol, binary_parameters=binary_parameters)
 
         # Set the scores for the new population
         else:
 
             # Set scores
-            self.set_scores_for_population(self.new_population, scores, check, rtol=rtol)
+            self.set_scores_for_population(self.new_population, scores, check, rtol=rtol, binary_parameters=binary_parameters)
 
             # Replace
             if self.new_population is not None: elitism_data = self.replace_internal_population()
@@ -964,7 +965,7 @@ class GeneticEngine(object):
 
     # -----------------------------------------------------------------
 
-    def set_scores_for_population(self, population, scores, check=None, rtol=1e-11):
+    def set_scores_for_population(self, population, scores, check=None, rtol=1e-11, binary_parameters=None):
 
         """
         This function ...
@@ -972,6 +973,7 @@ class GeneticEngine(object):
         :param scores:
         :param check:
         :param rtol:
+        :param binary_parameters:
         :return:
         """
 
@@ -982,20 +984,7 @@ class GeneticEngine(object):
             if check is not None:
 
                 # Check
-                if not equal_genomes(individual.genomeList, check[index], rtol=rtol): raise ValueError("Check failed: individual = " + str(individual.genomeList) + " and check = " + str(check[index]))
-
-                # Loop over the parameters for this individual
-                #for j in range(len(individual)):
-
-                    # Get the individual parameter value and the check value
-                    #value = individual.genomeList[j]
-                    #check_value = check[index][j]
-
-                    # Calculate relative difference
-                    #rel_diff = abs((value - check_value) / value)
-
-                    # Check whether they are close enough
-                    #assert np.isclose(value, check_value, rtol=rtol), rel_diff
+                if not equal_genomes(individual.genomeList, check[index], rtol=rtol, binary_parameters=binary_parameters): raise ValueError("Check failed: individual = " + str(individual.genomeList) + " and check = " + str(check[index]))
 
             # Set the score
             individual.score = scores[index]
@@ -1605,7 +1594,7 @@ def equal_individuals(individual_a, individual_b, rtol=1e-5, atol=1e-8):
 
 # -----------------------------------------------------------------
 
-def equal_genomes(genome_a, genome_b, rtol=1e-5, atol=1e-8):
+def equal_genomes(genome_a, genome_b, rtol=1e-5, atol=1e-8, binary_parameters=None):
 
     """
     This function ...
@@ -1613,6 +1602,7 @@ def equal_genomes(genome_a, genome_b, rtol=1e-5, atol=1e-8):
     :param genome_b: 
     :param rtol:
     :param atol:
+    :param binary_parameters:
     :return: 
     """
 
@@ -1621,7 +1611,45 @@ def equal_genomes(genome_a, genome_b, rtol=1e-5, atol=1e-8):
     genome_b = np.array(genome_b)
 
     # Binary: check exact
-    if is_binary_values(genome_a): return np.all(genome_a == genome_b)
+    if is_binary_values(genome_a):
+
+        if binary_parameters is not None:
+
+            minima = binary_parameters.minima
+            maxima = binary_parameters.maxima
+            nbits = binary_parameters.nbits
+            gray = binary_parameters.gray
+            ndigits = binary_parameters.ndigits
+
+            nparameters = len(minima)
+
+            bit_slices = numbers.generate_bit_slices(nbits)
+
+            # Loop over the parameters
+            for index in range(nparameters):
+
+                # Get the first n bits
+                bits_a = genome_a[bit_slices[index]]
+                bits_b = genome_b[bit_slices[index]]
+
+                # Convert into real value
+                if gray:
+                    value_a = numbers.gray_binary_string_to_float(bits_a, low=minima[index], high=maxima[index], nbits=nbits[index])
+                    value_b = numbers.gray_binary_string_to_float(bits_b, low=minima[index], high=maxima[index], nbits=nbits[index])
+                else:
+                    value_a = numbers.binary_string_to_float(bits_a, low=minima[index], high=maxima[index], nbits=nbits[index])
+                    value_b = numbers.binary_string_to_float(bits_b, low=minima[index], high=maxima[index], nbits=nbits[index])
+
+                value_a_rounded = numbers.round_to_n_significant_digits(value_a, ndigits[index])
+                value_b_rounded = numbers.round_to_n_significant_digits(value_b, ndigits[index])
+
+                # Fail!
+                if value_a_rounded != value_b_rounded: return False
+
+            # All checks passed
+            return True
+
+        else: return np.all(genome_a == genome_b)
 
     # Real: check with certain tolerance
     elif is_real_values(genome_b): return np.isclose(genome_a, genome_b, rtol=rtol, atol=atol)

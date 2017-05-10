@@ -456,7 +456,7 @@ class SimulationStatus(object):
                     elif "Setting the value of the density in the cells" in line:
                         self.extra = "Calculating dust densities ..."
                         break
-                    elif "Writing data to plot the dust grid":
+                    elif "Writing data to plot the dust grid" in line:
                         self.extra = "Writing the dust grid ..."
                         break
                     elif "Subdividing node" in line:

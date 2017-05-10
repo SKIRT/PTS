@@ -24,6 +24,7 @@ definition.add_flag("check_commands", "check commands", True)
 definition.add_flag("check_configurations", "check configurations", True)
 definition.add_flag("check_packages", "check package definitions", True)
 definition.add_flag("only_checks", "only performs checks, no actual test cases", False)
+definition.add_flag("only_tests", "only perform the test cases, not internal checks", False)
 
 # Add flags
 definition.add_flag("keep", "keep the output")

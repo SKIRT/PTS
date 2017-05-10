@@ -551,6 +551,14 @@ class ModelerBase(Configurable):
         config = dict()
         config["name"] = self.fitting_run_name
 
+        # Set flags
+        if self.moderator.ensemble_is_local("fitting"):
+            config["record_timing"] = False
+            config["record_memory"] = False
+        else:
+            config["record_timing"] = True
+            config["record_memory"] = True
+
         # Create the parameter explorer
         self.explorer = ParameterExplorer(config, cwd=self.modeling_path)
 

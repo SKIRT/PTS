@@ -685,6 +685,9 @@ def set_optimizer_settings(optimizer, fitting_run, ngenerations=None, nmodels=No
     optimizer.config.recurrence_rtol = 1e-5
     optimizer.config.recurrence_atol = 1e-8
 
+    # ADVANCED: GRAY CODING
+    optimizer.config.gray_code = fitting_run.genetic_settings.gray_code
+
 # -----------------------------------------------------------------
 
 def get_last_generation_name(fitting_run, or_initial=True):

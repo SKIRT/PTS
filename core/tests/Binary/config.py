@@ -7,14 +7,10 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
-
-# Add settings
-definition.add_required("name", "string", "fitting run name")
+# Creaet the definition
+definition = ConfigurationDefinition(write_config=False)
 
 # -----------------------------------------------------------------

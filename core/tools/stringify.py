@@ -19,30 +19,36 @@ from types import NoneType
 from . import types
 from . import introspection
 from . import sequences
+from . import strings
+from . import numbers
 
 # -----------------------------------------------------------------
 
-def tostr(value, scientific=True, decimal_places=2):
+def tostr(value, scientific=True, decimal_places=2, fancy=False, ndigits=None):
 
     """
     This function ...
     :param value: 
     :param scientific:
     :param decimal_places:
+    :param fancy:
+    :param ndigits:
     :return: 
     """
 
-    return stringify(value, scientific=scientific, decimal_places=decimal_places)[1].strip()
+    return stringify(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits)[1].strip()
 
 # -----------------------------------------------------------------
 
-def stringify(value, scientific=False, decimal_places=2):
+def stringify(value, scientific=False, decimal_places=2, fancy=False, ndigits=None):
 
     """
     This function ...
     :param value:
     :param scientific:
     :param decimal_places:
+    :param fancy:
+    :param ndigits:
     :return:
     """
 
@@ -65,7 +71,7 @@ def stringify(value, scientific=False, decimal_places=2):
     elif isinstance(value, tuple): return stringify_tuple(value)
 
     # All other
-    else: return stringify_not_list(value, scientific=scientific, decimal_places=decimal_places)
+    else: return stringify_not_list(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits)
 
 # -----------------------------------------------------------------
 
@@ -221,26 +227,28 @@ def stringify_tuple(value):
 
 # -----------------------------------------------------------------
 
-def stringify_not_list(value, scientific=False, decimal_places=2):
+def stringify_not_list(value, scientific=False, decimal_places=2, fancy=False, ndigits=None):
 
     """
     This function does stringify, but not for iterables
     :param value:
     :param scientific:
     :param decimal_places:
+    :param fancy:
+    :param ndigits:
     :return:
     """
 
     # Standard
     if types.is_boolean_type(value): return "boolean", str_from_bool(value)
-    elif types.is_integer_type(value): return "integer", str_from_integer(value, scientific=scientific)
-    elif types.is_real_type(value): return "real", str_from_real(value, scientific=scientific, decimal_places=decimal_places)
+    elif types.is_integer_type(value): return "integer", str_from_integer(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits)
+    elif types.is_real_type(value): return "real", str_from_real(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits)
     elif types.is_string_type(value): return "string", value
     elif isinstance(value, NoneType): return "None", "None"
 
     # Special
     elif introspection.lazy_isinstance(value, "UnitBase", "astropy.units"): return introspection.lazy_call("stringify_unit", "pts.core.units.stringify", value)
-    elif introspection.lazy_isinstance(value, "Quantity", "astropy.units"): return introspection.lazy_call("stringify_quantity", "pts.core.units.stringify", value)
+    elif introspection.lazy_isinstance(value, "Quantity", "astropy.units"): return introspection.lazy_call("stringify_quantity", "pts.core.units.stringify", value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits)
     elif introspection.lazy_isinstance(value, "Angle", "astropy.coordinates"): return "angle", str_from_angle(value)
     elif introspection.lazy_isinstance(value, "RealRange", "pts.core.basics.range"): return "real_range", repr(value)
     elif introspection.lazy_isinstance(value, "IntegerRange", "pts.core.basics.range"): return "integer_range", repr(value)
@@ -253,6 +261,7 @@ def stringify_not_list(value, scientific=False, decimal_places=2):
     # Other
     #elif introspection.isinstance(Instrument):
 
+    # Unrecognized
     else: raise ValueError("Unrecognized type: " + str(type(value)))
 
 # -----------------------------------------------------------------
@@ -308,31 +317,84 @@ def stringify_list_fancy(lst, width=100, delimiter=", ", lines_prefix=""):
 
 # -----------------------------------------------------------------
 
-def str_from_integer(integer, scientific=False):
+def str_from_integer(integer, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False):
 
     """
     This function ...
     :param integer:
     :param scientific:
+    :param fancy:
+    :param ndigits:
+    :param unicode:
     :return:
     """
 
-    if scientific: return "{:.0e}".format(integer).replace("+", "").replace("e0", "e")
+    # Check input
+    if ndigits is not None and ndigits < 1: raise ValueError("Number of digits cannot be smaller than 1")
+
+    if scientific:
+        if fancy:
+            if ndigits is not None:
+                power = len(str(integer)) - 1
+                digits = []
+                str_rounded = str(integer)
+                for i in range(ndigits):
+                    digit = str_rounded[i]
+                    digits.append(digit)
+                if unicode: return digits[0].decode("utf8") + u"." + u"".join(digits[1:]) + u" " + strings.multiplication + u" 10" + strings.superscript(power) # DOESN'T WORK??
+                else: return digits[0] + "." + "".join(digits[1:]) + " x 10^" + str(power)
+            else:
+                result = "{:.0e}".format(integer).replace("+", "").replace("e0", "e")
+                power = int(result.split("e")[1])
+                if unicode: result = result.split("e")[0].decode("utf8") + u" " + strings.multiplication + u" 10" + strings.superscript(power) # DOESN'T WORK
+                else: result = result.split("e")[0] + " x 10^" + str(power)
+                return result
+        else:
+            if ndigits is not None: decimal_places = ndigits - 1
+            #return "{:.0e}".format(integer).replace("+", "").replace("e0", "e")
+            return ("{:." + str(decimal_places) + "e}").format(float(integer)).replace("+", "").replace("e0", "e")
     else: return str(integer)
 
 # -----------------------------------------------------------------
 
-def str_from_real(real, scientific=False, decimal_places=2):
+def str_from_real(real, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False):
 
     """
     This function ...
     :param real:
     :param scientific:
     :param decimal_places:
+    :param fancy:
+    :param ndigits:
     :return:
     """
 
-    if scientific: return ("{:." + str(decimal_places) + "e}").format(real).replace("+", "").replace("e0", "e")
+    # Check input
+    if ndigits is not None and ndigits < 1: raise ValueError("Number of digits cannot be smaller than 1")
+
+    if scientific:
+        if fancy:
+            if ndigits is not None:
+                power = len(str(real).split(".")[0]) - 1
+                digits = []
+                rounded = numbers.round_to_n_significant_digits(real, ndigits)
+                str_rounded = str(rounded)
+                for i in range(ndigits):
+                    digit = str_rounded[i]
+                    digits.append(digit)
+                if unicode: return digits[0].decode("utf8") + u"." + u"".join(digits[1:]) + u" " + strings.multiplication + u" 10" + strings.superscript(power).decode("utf8") # DOESN'T WORK??
+                else: return digits[0] + "." + "".join(digits[1:]) + " x 10^" + str(power)
+            else:
+                result = ("{:." + str(decimal_places) + "e}").format(real).replace("+", "").replace("e0", "e")
+                power = int(result.split("e")[1])
+                #result = result.split("e")[0].decode("utf8") + u" " + strings.multiplication + u" 10" + strings.superscript(power).decode("utf8")
+                #result = result.split("e")[0].decode("utf8") + u" " + strings.multiplication + u" 10" + strings.superscript(power).decode("utf8")
+                if unicode: result = result.split("e")[0].decode("utf8") + u" " + u"x" + u" 10" + strings.superscript(power).decode("utf8") # SOMETHING LIKE THIS?? DOESN'T WORK??
+                else: result = result.split("e")[0] + " x 10^" + str(power)
+                return result
+        else:
+            if ndigits is not None: decimal_places = ndigits - 1
+            return ("{:." + str(decimal_places) + "e}").format(real).replace("+", "").replace("e0", "e")
     else: return repr(real)
 
 # -----------------------------------------------------------------

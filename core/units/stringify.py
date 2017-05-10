@@ -65,11 +65,15 @@ def represent_unit(unit):
 
 # -----------------------------------------------------------------
 
-def stringify_quantity(quantity):
+def stringify_quantity(quantity, scientific=False, decimal_places=2, fancy=False, ndigits=None):
 
     """
     This function ...
     :param quantity:
+    :param scientific:
+    :param decimal_places:
+    :param fancy:
+    :param ndigits:
     :return:
     """
 
@@ -82,8 +86,11 @@ def stringify_quantity(quantity):
     elif unit_type == "unit": parsing_type = "quantity"
     else: raise ValueError("Unknown unit type: " + unit_type)
 
+    # Import function that converts real to string
+    from ..tools.stringify import str_from_real
+
     # Return parsing type and stringified quantity
-    return parsing_type, repr(quantity.value) + " " + unit_string
+    return parsing_type, str_from_real(quantity.value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits) + " " + unit_string
 
 # -----------------------------------------------------------------
 

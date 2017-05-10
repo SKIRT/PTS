@@ -32,8 +32,10 @@ from ..build.representation import Representation
 from ..build.component import get_representation_path
 from ...core.tools.serialization import load_dict
 from .tables import IndividualsTable
-from ...core.tools import types
-from ...evolve.analyse.statistics import get_best_score_and_index_for_generation
+from ...core.tools import types, numbers
+#from ...evolve.analyse.statistics import get_best_score_for_generation
+from ...evolve.analyse.database import get_scores_named_individuals, get_best_individual_key_and_score_for_generation
+from ...evolve.optimize.optimizer import gray_binary_string_to_parameters, binary_string_to_parameters
 
 # -----------------------------------------------------------------
 
@@ -457,6 +459,18 @@ class FittingRun(object):
         for label in self.free_parameter_labels:
             ndigits.append(self.ndigits_for_parameter(label))
         return ndigits
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ndigits_dict(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.parameter_ndigits
 
     # -----------------------------------------------------------------
 
@@ -998,24 +1012,32 @@ class FittingRun(object):
         # (THOSE WHO CONTAIN ONLY MODELS THAT HAVE TO BE SIMULATED AND HAVE NOT OCCURED AND SCORED BEFORE)
 
         from .component import get_statistics_path, get_populations
+        from .component import get_database_path
 
         # Get path
-        statistics_path = get_statistics_path(self.modeling_path)
+        #statistics_path = get_statistics_path(self.modeling_path)
+        database_path = get_database_path(self.modeling_path)
 
         generation_index = None
-        individual_index = None
+        #individual_index = None
+        individual_key = None
         chi_squared = float("inf")
 
         # Loop over the generations
         for index in self.genetic_generation_indices_for_statistics_and_database:
 
             # Get the best score from the statistics
-            ind_index, score = get_best_score_and_index_for_generation(statistics_path, self.name, index, minmax="min")
+            #ind_index, score = get_best_score_and_index_for_generation(statistics_path, self.name, index, minmax="min")
+            #score = get_best_score_for_generation(statistics_path, self.name, index, minmax="min")
+
+            # Get best key and score
+            key, score = get_best_individual_key_and_score_for_generation(database_path, self.name, index, minmax="min")
 
             if score < chi_squared:
                 chi_squared = score
                 generation_index = index
-                individual_index = ind_index
+                #individual_index = ind_index
+                individual_key = key
 
         # Look in the populations data for the parameters, for this fitting run
         populations = get_populations(self.modeling_path)[self.name]
@@ -1026,10 +1048,33 @@ class FittingRun(object):
 
         # Get the parameter values for the generation and individual
         individuals_generation = populations[generation_index]
-        individual_key = individuals_generation.keys()[individual_index]
-        parameters = individuals_generation[individual_key]
+        #individual_keys = individuals_generation.keys()
+
+        #print("individuals:", individual_keys)
+        #print("individual index:", individual_index)
+
+        # Get parameters
+        #individual_key = individual_keys[individual_index]
+        #parameters = individuals_generation[individual_key]
+
+        # Get genome
+        genome = individuals_generation[individual_key]
 
         #parameters_table.parameter_values_for_simulation(best_simulation_name)
+
+        # NEW: EXPERIMENTAL:
+        # BE AWARE: IF THIS IS CHANGED, ALSO CHANGE IN OPTIMIZER -> set_nbits()
+        nbits_list = []
+        for index in range(len(self.ndigits_list)):
+            ndigits = self.ndigits_list[index]
+            low = self.parameter_minima_scalar[index]
+            high = self.parameter_maxima_scalar[index]
+            nbits = numbers.nbits_for_ndigits_experimental(ndigits, low, high)
+            nbits_list.append(nbits)
+
+        # Convert
+        if self.genetic_settings.gray_code: parameters = gray_binary_string_to_parameters(genome, self.parameter_minima_scalar, self.parameter_maxima_scalar, nbits_list)
+        else: parameters = binary_string_to_parameters(genome, self.parameter_minima_scalar, self.parameter_maxima_scalar, nbits_list)
 
         values = dict()
 

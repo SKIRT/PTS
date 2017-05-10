@@ -13,8 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import math
-import numpy as np
 from abc import ABCMeta, abstractmethod
 
 # Import astronomical modules
@@ -52,6 +50,7 @@ from ...core.tools import sequences
 from ...core.tools.serialization import write_dict
 from ..core.population import Population, NamedPopulation
 from ...core.tools import numbers
+from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -265,7 +264,7 @@ class Optimizer(Configurable):
             elif not self.config.heterogeneous: raise ValueError("Parameter range must be defined for non-heterogeneous genomes")
 
         # Debugging
-        if self.parameter_range is not None: log.debug("The parameter range is " + str(self.parameter_range))
+        if self.parameter_range is not None: log.debug("The parameter range is " + tostr(self.parameter_range))
 
     # -----------------------------------------------------------------
 
@@ -280,7 +279,17 @@ class Optimizer(Configurable):
         log.info("Determining the number of bits for each parameter ...")
 
         # Determine the number of bits for each parameter
-        self.nbits = [binary_digits_for_significant_figures(nfigures) for nfigures in self.ndigits]
+        #self.nbits = [numbers.binary_digits_for_significant_figures(nfigures) for nfigures in self.ndigits]
+
+        # NEW: EXPERIMENTAL:
+        # BE AWARE: IF THIS IS CHANGED, ALSO CHANGE IN FITTING RUN -> best_parameter_values()
+        self.nbits = []
+        for index in range(len(self.ndigits)):
+            ndigits = self.ndigits[index]
+            low = self.parameter_minima[index]
+            high = self.parameter_maxima[index]
+            nbits = numbers.nbits_for_ndigits_experimental(ndigits, low, high)
+            self.nbits.append(nbits)
 
     # -----------------------------------------------------------------
 
@@ -1062,7 +1071,8 @@ class Optimizer(Configurable):
             elif self.binary_string_genome:
 
                 # Convert
-                binary_string = parameters_to_binary_string(parameters, self.parameter_minima, self.parameter_maxima, self.nbits)
+                if self.config.gray_code: binary_string = parameters_to_gray_binary_string(parameters, self.parameter_minima, self.parameter_maxima, self.nbits)
+                else: binary_string = parameters_to_binary_string(parameters, self.parameter_minima, self.parameter_maxima, self.nbits)
 
                 # Set the binary string genome
                 genome.set_genes(binary_string)
@@ -1551,105 +1561,6 @@ def show_best(best):
 
 # -----------------------------------------------------------------
 
-# FROM:
-# Traditional Techniques of Genetic Algorithms Applied to Floating-Point Chromosome Representations
-# Leo Budin, Marin Golub, Andrea Budin
-
-# -----------------------------------------------------------------
-
-def float_to_binary(value, low, high, nbits):
-
-    """
-    This function ...
-    :param value: 
-    :param high:
-    :param low:
-    :param nbits:
-    :return: 
-    """
-
-    # Set to floats
-    value = float(value)
-    high = float(high)
-    low = float(low)
-
-    scaled = (value - low) / (high - low) * 2**nbits
-    integer = int(round(scaled))
-    return numbers.integer_to_binary(integer)
-
-# -----------------------------------------------------------------
-
-def binary_to_float(binary, low, high, nbits):
-
-    """
-    This function ...
-    :param binary: 
-    :param high:
-    :param low:
-    :param nbits:
-    :return: 
-    """
-
-    # Set to floats
-    high = float(high)
-    low = float(low)
-
-    integer = numbers.binary_to_integer(binary)
-    scaled = float(integer)
-    value = low + scaled * 2**(-nbits) * (high - low)
-    return value
-
-# -----------------------------------------------------------------
-
-def binary_to_binary_string(binary, nbits=None):
-
-    """
-    This function ...
-    :param binary: 
-    :param nbits:
-    :return: 
-    """
-
-    if nbits is None: characters = list(str(binary))
-    else:
-        string = str(binary)
-        npadded = nbits - len(string)
-        characters = list("0" * npadded + string)
-
-    # Return the binary string as a list of integers
-    return [int(character) for character in characters]
-
-# -----------------------------------------------------------------
-
-def binary_string_to_binary(binary_string):
-
-    """
-    This function ...
-    :param binary_string: 
-    :return: 
-    """
-
-    return int("".join(str(bit) for bit in binary_string))
-
-# -----------------------------------------------------------------
-
-# https://math.stackexchange.com/questions/1968416/number-of-significant-figures-when-going-from-base-10-to-binary
-# I would think math.floor(log2(10)) = 3 significant figures in binary per significant figure in base 10
-
-# -----------------------------------------------------------------
-
-def binary_digits_for_significant_figures(nfigures):
-
-    """
-    This function ...
-    :param nfigures: 
-    :return: 
-    """
-
-    return int(math.floor(np.log2(10) * nfigures))
-
-# -----------------------------------------------------------------
-
 def parameters_to_binary_string(parameters, minima, maxima, nbits):
 
     """
@@ -1663,14 +1574,14 @@ def parameters_to_binary_string(parameters, minima, maxima, nbits):
 
     binary_string = []
 
-    # Convert parameter into binary strings
+    # Convert parameters into binary strings
     for index in range(len(parameters)):
 
         # Convert floating point value into binary string with specific number of bits
         value = parameters[index]
-        binary = float_to_binary(value, low=minima[index], high=maxima[index], nbits=nbits[index])
-        #print("BINARY:", binary)
-        binary_string_parameter = binary_to_binary_string(binary, nbits=nbits[index])
+        binary_string_parameter = numbers.float_to_binary_string(value, low=minima[index], high=maxima[index], nbits=nbits[index])
+
+        # Extend the complete string
         binary_string.extend(binary_string_parameter)
 
     # Return the binary string
@@ -1678,22 +1589,31 @@ def parameters_to_binary_string(parameters, minima, maxima, nbits):
 
 # -----------------------------------------------------------------
 
-def generate_bit_slices(nbits):
+def parameters_to_gray_binary_string(parameters, minima, maxima, nbits):
 
     """
     This function ...
+    :param parameters: 
+    :param minima: 
+    :param maxima: 
+    :param nbits: 
     :return: 
     """
 
-    slices = []
+    binary_string = []
 
-    tempsum = 0
-    for index in range(len(nbits)):
-        nbits = nbits[index]
-        slices.append(slice(tempsum, tempsum+nbits))
-        tempsum += nbits
+    # Convert parameters into binary strings
+    for index in range(len(parameters)):
 
-    return slices
+        # Convert floating point value into Gray binary string with specific number of bits
+        value = parameters[index]
+        gray_binary_string_parameter = numbers.float_to_gray_binary_string(value, low=minima[index], high=maxima[index], nbits=nbits[index])
+
+        # Extend the complete string
+        binary_string.extend(gray_binary_string_parameter)
+
+    # Return the binary string
+    return binary_string
 
 # -----------------------------------------------------------------
 
@@ -1715,7 +1635,7 @@ def binary_string_to_parameters(genome, minima, maxima, nbits):
     parameters = []
 
     # Generate bit slices
-    bit_slices = generate_bit_slices(nbits)
+    bit_slices = numbers.generate_bit_slices(nbits)
 
     # Loop over the parameters
     for index in range(nparameters):
@@ -1723,11 +1643,45 @@ def binary_string_to_parameters(genome, minima, maxima, nbits):
         # Get the first n bits
         bits = genome[bit_slices[index]]
 
-        # Convert into binary number
-        binary = binary_string_to_binary(bits)
+        # Convert into real value
+        value = numbers.binary_string_to_float(bits, low=minima[index], high=maxima[index], nbits=nbits[index])
+
+        # Add the value
+        parameters.append(value)
+
+    # Return the parameter values
+    return parameters
+
+# -----------------------------------------------------------------
+
+def gray_binary_string_to_parameters(genome, minima, maxima, nbits):
+
+    """
+    This function ...
+    :param genome: 
+    :param minima: 
+    :param maxima: 
+    :param nbits: 
+    :return: 
+    """
+
+    nparameters = len(minima)
+    assert nparameters == len(maxima) == len(nbits)
+
+    # Initialize list for the parameters
+    parameters = []
+
+    # Generate bit slices
+    bit_slices = numbers.generate_bit_slices(nbits)
+
+    # Loop over the parameters
+    for index in range(nparameters):
+
+        # Get the first n bits
+        bits = genome[bit_slices[index]]
 
         # Convert into real value
-        value = binary_to_float(binary, low=minima[index], high=maxima[index], nbits=nbits[index])
+        value = numbers.gray_binary_string_to_float(bits, low=minima[index], high=maxima[index], nbits=nbits[index])
 
         # Add the value
         parameters.append(value)
