@@ -282,6 +282,7 @@ class Optimizer(Configurable):
         #self.nbits = [numbers.binary_digits_for_significant_figures(nfigures) for nfigures in self.ndigits]
 
         # NEW: EXPERIMENTAL:
+        # BE AWARE: IF THIS IS CHANGED, ALSO CHANGE IN FITTING RUN -> best_parameter_values()
         self.nbits = []
         for index in range(len(self.ndigits)):
             ndigits = self.ndigits[index]

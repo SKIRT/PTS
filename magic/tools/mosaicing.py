@@ -61,8 +61,11 @@ def generate_meta_file(path, meta_dir_path=None):
     # Debugging
     log.debug("Changed working directory to '" + fs.directory_of(path) + "' ...")
     log.debug("Fields directory name: '" + dirname + "'")
+    log.debug("Fields directory path: '" + path + "'")
     log.debug("Meta file path: '" + meta_path + "'")
     log.debug("Status file path: '" + status_path + "'")
+
+    dirname = path
 
     # Get the image table of which images cover a given part of the sky
     montage.commands.mImgtbl(dirname, meta_path, corners=True, debug=log.is_debug(), output_invalid=True, status_file=status_path)

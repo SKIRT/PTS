@@ -190,6 +190,82 @@ def get_scores_named_individuals(database, run_id, generation):
 
 # -----------------------------------------------------------------
 
+def get_best_individual_key_for_generation(database, run_id, generation, minmax="max"):
+
+    """
+    This function ...
+    :param database: 
+    :param run_id: 
+    :param generation: 
+    :param minmax:
+    :return: 
+    """
+
+    best_key = None
+    best_score = None
+
+    scores = get_scores_named_individuals(database, run_id, generation)
+
+    for key, score in scores.items():
+
+        if best_score is None:
+
+            best_key = key
+            best_score = score
+
+        elif minmax == "min" and score < best_score:
+
+            best_key = key
+            best_score = score
+
+        elif minmax == "max" and score > best_score:
+
+            best_key = key
+            best_score = score
+
+    # Return the key
+    return best_key
+
+# -----------------------------------------------------------------
+
+def get_best_individual_key_and_score_for_generation(database, run_id, generation, minmax="max"):
+
+    """
+    This function ...
+    :param database: 
+    :param run_id: 
+    :param generation:
+    :param minmax:
+    :return: 
+    """
+
+    best_key = None
+    best_score = None
+
+    scores = get_scores_named_individuals(database, run_id, generation)
+
+    for key, score in scores.items():
+
+        if best_score is None:
+
+            best_key = key
+            best_score = score
+
+        elif minmax == "min" and score < best_score:
+
+            best_key = key
+            best_score = score
+
+        elif minmax == "max" and score > best_score:
+
+            best_key = key
+            best_score = score
+
+    # Return the key
+    return best_key, best_score
+
+# -----------------------------------------------------------------
+
 def get_score_for_individual(database, run_id, generation, key):
 
     """

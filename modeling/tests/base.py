@@ -1121,6 +1121,12 @@ class M81TestBase(TestImplementation):
         # Get the best parameter values
         self.best_parameter_values = self.modeler.modeler.fitter.fitting_run.best_parameter_values
 
+        # Debugging
+        log.debug("The best parameter values are:")
+        log.debug("")
+        for parameter_name in self.best_parameter_values: log.debug(" - " + parameter_name + ": " + tostr(self.best_parameter_values[parameter_name], scientific=True, fancy=True, ndigits=parameter_ndigits[parameter_name]))
+        log.debug("")
+
     # -----------------------------------------------------------------
 
     def get_initial_generation_name(self):
