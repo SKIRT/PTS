@@ -202,6 +202,54 @@ def round_to_n_significant_digits(x, n):
 
 # -----------------------------------------------------------------
 
+def integer_bit_length(integer):
+
+    """
+    This fucntion ...
+    :param integer: 
+    :return: 
+    """
+
+    return integer.bit_length()
+
+# -----------------------------------------------------------------
+
+def nbits_for_integer(integer):
+
+    """
+    This function ...
+    :param integer: 
+    :return: 
+    """
+
+    return integer_bit_length(integer)
+
+# -----------------------------------------------------------------
+
+def max_integer_for_nbits(nbits):
+
+    """
+    This function ...
+    :param nbits: 
+    :return: 
+    """
+
+    return 2 ** nbits - 1
+
+# -----------------------------------------------------------------
+
+def nintegers_for_nbits(nbits):
+
+    """
+    This function ...
+    :param nbits: 
+    :return: 
+    """
+
+    return 2 ** nbits
+
+# -----------------------------------------------------------------
+
 def integer_to_binary(integer):
 
     """
@@ -224,5 +272,297 @@ def binary_to_integer(binary):
     """
 
     return int(str(binary), 2)
+
+# -----------------------------------------------------------------
+
+def integer_to_binary_string(integer, nbits=None):
+
+    """
+    This function ...
+    :param integer: 
+    :param nbits:
+    :return: 
+    """
+
+    binary = integer_to_binary(integer)
+    return binary_to_binary_string(binary, nbits)
+
+# -----------------------------------------------------------------
+
+def binary_string_to_integer(binary_string):
+
+    """
+    This function ...
+    :param binary_string: 
+    :return: 
+    """
+
+    binary = binary_string_to_binary(binary_string)
+    return binary_to_integer(binary)
+
+# -----------------------------------------------------------------
+
+# FROM:
+# Traditional Techniques of Genetic Algorithms Applied to Floating-Point Chromosome Representations
+# Leo Budin, Marin Golub, Andrea Budin
+
+# -----------------------------------------------------------------
+
+def float_to_binary(value, low, high, nbits):
+
+    """
+    This function ...
+    :param value: 
+    :param high:
+    :param low:
+    :param nbits:
+    :return: 
+    """
+
+    # Set to floats
+    value = float(value)
+    high = float(high)
+    low = float(low)
+
+    scaled = (value - low) / (high - low) * 2**nbits
+    integer = int(round(scaled))
+    return integer_to_binary(integer)
+
+# -----------------------------------------------------------------
+
+def binary_to_float(binary, low, high, nbits):
+
+    """
+    This function ...
+    :param binary: 
+    :param high:
+    :param low:
+    :param nbits:
+    :return: 
+    """
+
+    # Set to floats
+    high = float(high)
+    low = float(low)
+
+    integer = binary_to_integer(binary)
+    scaled = float(integer)
+    value = low + scaled * 2**(-nbits) * (high - low)
+    return value
+
+# -----------------------------------------------------------------
+
+def binary_to_binary_string(binary, nbits=None):
+
+    """
+    This function ...
+    :param binary: 
+    :param nbits:
+    :return: 
+    """
+
+    if nbits is None: characters = list(str(binary))
+    else:
+        string = str(binary)
+        npadded = nbits - len(string)
+        characters = list("0" * npadded + string)
+
+    # Return the binary string as a list of integers
+    return [int(character) for character in characters]
+
+# -----------------------------------------------------------------
+
+def binary_string_to_binary(binary_string):
+
+    """
+    This function ...
+    :param binary_string: 
+    :return: 
+    """
+
+    return int("".join(str(bit) for bit in binary_string))
+
+# -----------------------------------------------------------------
+
+def binary_string_to_float(binary_string, low, high, nbits):
+    
+    """
+    This function ...
+    :param binary_string: 
+    :param low:
+    :param high:
+    :param nbits:
+    :return: 
+    """
+
+    binary = binary_string_to_binary(binary_string)
+    return binary_to_float(binary, low, high, nbits)
+
+# -----------------------------------------------------------------
+
+def float_to_binary_string(value, low, high, nbits):
+    
+    """
+    This function ...
+    :param value:
+    :param low:
+    :param high:
+    :param nbits:
+    :return: 
+    """
+
+    #print(value)
+    binary = float_to_binary(value, low, high, nbits)
+    return binary_to_binary_string(binary, nbits)
+
+# -----------------------------------------------------------------
+
+# https://math.stackexchange.com/questions/1968416/number-of-significant-figures-when-going-from-base-10-to-binary
+# First comment: I would think math.floor(log2(10)) = 3 significant figures in binary per significant figure in base 10
+
+# -----------------------------------------------------------------
+
+def binary_digits_for_significant_figures(nfigures):
+
+    """
+    This function ...
+    :param nfigures: 
+    :return: 
+    """
+
+    return int(math.floor(np.log2(10) * nfigures)) + 1
+
+# -----------------------------------------------------------------
+
+def nbits_for_ndigits(ndigits):
+
+    """
+    This fucntion ...
+    :param ndigits: 
+    :return: 
+    """
+
+    return binary_digits_for_significant_figures(ndigits)
+
+# -----------------------------------------------------------------
+
+def gray_code(n):
+
+    """
+    This function generates the Gray code for dimension n
+    :param n: 
+    :return: 
+    """
+
+    def gray_code_recurse(g, n):
+
+        k = len(g)
+
+        if n <= 0: return
+        else:
+
+            for i in range(k-1, -1, -1):
+
+                char = '1' + g[i]
+                g.append(char)
+
+            for i in range(k-1, -1, -1): g[i] = '0' + g[i]
+
+            gray_code_recurse (g, n-1)
+
+    g = ['0','1']
+    gray_code_recurse(g, n-1)
+
+    # Return
+    #return [int(character) for character in g]
+
+    result = []
+    for entry in g: result.append([int(character) for character in entry])
+    return result
+
+# -----------------------------------------------------------------
+
+def binary_string_to_gray_binary_string(bits):
+
+    """
+    This fucntion ...
+    :param bits: 
+    :return: 
+    """
+
+    return bits[:1] + [i ^ ishift for i, ishift in zip(bits[:-1], bits[1:])]
+
+# -----------------------------------------------------------------
+
+def gray_binary_string_to_binary_string(bits):
+
+    """
+    This fucntion ...
+    :param bits: 
+    :return: 
+    """
+    
+    b = [bits[0]]
+    for nextb in bits[1:]: b.append(b[-1] ^ nextb)
+    return b
+
+# -----------------------------------------------------------------
+
+def gray_binary_string_to_integer(binary_string):
+
+    """
+    This function ...
+    :param binary_string: 
+    :return: 
+    """
+
+    normal_binary_string = gray_binary_string_to_binary_string(binary_string)
+    return binary_string_to_integer(normal_binary_string)
+
+# -----------------------------------------------------------------
+
+def integer_to_gray_binary_string(integer, nbits=None):
+
+    """
+    This fucntion ...
+    :param integer: 
+    :param nbits:
+    :return: 
+    """
+
+    normal_binary_string = integer_to_binary_string(integer, nbits=nbits)
+    return binary_string_to_gray_binary_string(normal_binary_string)
+
+# -----------------------------------------------------------------
+
+def next_binary_string(binary_string):
+
+    """
+    This function ...
+    :param binary_string: 
+    :return: 
+    """
+
+    nbits = len(binary_string)
+    max_integer = max_integer_for_nbits(nbits)
+    integer = binary_string_to_integer(binary_string)
+    if integer == max_integer: raise ValueError("Cannot increment: last binary for this number of bits")
+    return integer_to_binary_string(integer + 1, nbits=nbits)
+
+# -----------------------------------------------------------------
+
+def next_gray_binary_string(binary_string):
+
+    """
+    This function ...
+    :param binary_string: 
+    :return: 
+    """
+
+    nbits = len(binary_string)
+    max_integer = max_integer_for_nbits(nbits)
+    integer = gray_binary_string_to_integer(binary_string)
+    if integer == max_integer: raise ValueError("Cannot increment: last binary for this number of bits")
+    return integer_to_gray_binary_string(integer + 1, nbits=nbits)
 
 # -----------------------------------------------------------------

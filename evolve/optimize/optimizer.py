@@ -281,7 +281,7 @@ class Optimizer(Configurable):
         log.info("Determining the number of bits for each parameter ...")
 
         # Determine the number of bits for each parameter
-        self.nbits = [binary_digits_for_significant_figures(nfigures) for nfigures in self.ndigits]
+        self.nbits = [numbers.binary_digits_for_significant_figures(nfigures) for nfigures in self.ndigits]
 
     # -----------------------------------------------------------------
 
@@ -1552,102 +1552,22 @@ def show_best(best):
 
 # -----------------------------------------------------------------
 
-# FROM:
-# Traditional Techniques of Genetic Algorithms Applied to Floating-Point Chromosome Representations
-# Leo Budin, Marin Golub, Andrea Budin
-
-# -----------------------------------------------------------------
-
-def float_to_binary(value, low, high, nbits):
+def generate_bit_slices(nbits):
 
     """
     This function ...
-    :param value: 
-    :param high:
-    :param low:
-    :param nbits:
     :return: 
     """
 
-    # Set to floats
-    value = float(value)
-    high = float(high)
-    low = float(low)
+    slices = []
 
-    scaled = (value - low) / (high - low) * 2**nbits
-    integer = int(round(scaled))
-    return numbers.integer_to_binary(integer)
+    tempsum = 0
+    for index in range(len(nbits)):
+        nbits = nbits[index]
+        slices.append(slice(tempsum, tempsum+nbits))
+        tempsum += nbits
 
-# -----------------------------------------------------------------
-
-def binary_to_float(binary, low, high, nbits):
-
-    """
-    This function ...
-    :param binary: 
-    :param high:
-    :param low:
-    :param nbits:
-    :return: 
-    """
-
-    # Set to floats
-    high = float(high)
-    low = float(low)
-
-    integer = numbers.binary_to_integer(binary)
-    scaled = float(integer)
-    value = low + scaled * 2**(-nbits) * (high - low)
-    return value
-
-# -----------------------------------------------------------------
-
-def binary_to_binary_string(binary, nbits=None):
-
-    """
-    This function ...
-    :param binary: 
-    :param nbits:
-    :return: 
-    """
-
-    if nbits is None: characters = list(str(binary))
-    else:
-        string = str(binary)
-        npadded = nbits - len(string)
-        characters = list("0" * npadded + string)
-
-    # Return the binary string as a list of integers
-    return [int(character) for character in characters]
-
-# -----------------------------------------------------------------
-
-def binary_string_to_binary(binary_string):
-
-    """
-    This function ...
-    :param binary_string: 
-    :return: 
-    """
-
-    return int("".join(str(bit) for bit in binary_string))
-
-# -----------------------------------------------------------------
-
-# https://math.stackexchange.com/questions/1968416/number-of-significant-figures-when-going-from-base-10-to-binary
-# I would think math.floor(log2(10)) = 3 significant figures in binary per significant figure in base 10
-
-# -----------------------------------------------------------------
-
-def binary_digits_for_significant_figures(nfigures):
-
-    """
-    This function ...
-    :param nfigures: 
-    :return: 
-    """
-
-    return int(math.floor(np.log2(10) * nfigures))
+    return slices
 
 # -----------------------------------------------------------------
 
@@ -1669,32 +1589,13 @@ def parameters_to_binary_string(parameters, minima, maxima, nbits):
 
         # Convert floating point value into binary string with specific number of bits
         value = parameters[index]
-        binary = float_to_binary(value, low=minima[index], high=maxima[index], nbits=nbits[index])
+        binary = numbers.float_to_binary(value, low=minima[index], high=maxima[index], nbits=nbits[index])
         #print("BINARY:", binary)
-        binary_string_parameter = binary_to_binary_string(binary, nbits=nbits[index])
+        binary_string_parameter = numbers.binary_to_binary_string(binary, nbits=nbits[index])
         binary_string.extend(binary_string_parameter)
 
     # Return the binary string
     return binary_string
-
-# -----------------------------------------------------------------
-
-def generate_bit_slices(nbits):
-
-    """
-    This function ...
-    :return: 
-    """
-
-    slices = []
-
-    tempsum = 0
-    for index in range(len(nbits)):
-        nbits = nbits[index]
-        slices.append(slice(tempsum, tempsum+nbits))
-        tempsum += nbits
-
-    return slices
 
 # -----------------------------------------------------------------
 
@@ -1725,10 +1626,10 @@ def binary_string_to_parameters(genome, minima, maxima, nbits):
         bits = genome[bit_slices[index]]
 
         # Convert into binary number
-        binary = binary_string_to_binary(bits)
+        binary = numbers.binary_string_to_binary(bits)
 
         # Convert into real value
-        value = binary_to_float(binary, low=minima[index], high=maxima[index], nbits=nbits[index])
+        value = numbers.binary_to_float(binary, low=minima[index], high=maxima[index], nbits=nbits[index])
 
         # Add the value
         parameters.append(value)

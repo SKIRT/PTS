@@ -241,7 +241,7 @@ def stringify_not_list(value, scientific=False, decimal_places=2, fancy=False, n
 
     # Standard
     if types.is_boolean_type(value): return "boolean", str_from_bool(value)
-    elif types.is_integer_type(value): return "integer", str_from_integer(value, scientific=scientific, fancy=fancy, ndigits=ndigits)
+    elif types.is_integer_type(value): return "integer", str_from_integer(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits)
     elif types.is_real_type(value): return "real", str_from_real(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits)
     elif types.is_string_type(value): return "string", value
     elif isinstance(value, NoneType): return "None", "None"
@@ -317,7 +317,7 @@ def stringify_list_fancy(lst, width=100, delimiter=", ", lines_prefix=""):
 
 # -----------------------------------------------------------------
 
-def str_from_integer(integer, scientific=False, fancy=False, ndigits=None, unicode=False):
+def str_from_integer(integer, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False):
 
     """
     This function ...
@@ -328,6 +328,9 @@ def str_from_integer(integer, scientific=False, fancy=False, ndigits=None, unico
     :param unicode:
     :return:
     """
+
+    # Check input
+    if ndigits is not None and ndigits < 1: raise ValueError("Number of digits cannot be smaller than 1")
 
     if scientific:
         if fancy:
@@ -346,7 +349,10 @@ def str_from_integer(integer, scientific=False, fancy=False, ndigits=None, unico
                 if unicode: result = result.split("e")[0].decode("utf8") + u" " + strings.multiplication + u" 10" + strings.superscript(power) # DOESN'T WORK
                 else: result = result.split("e")[0] + " x 10^" + str(power)
                 return result
-        else: return "{:.0e}".format(integer).replace("+", "").replace("e0", "e")
+        else:
+            if ndigits is not None: decimal_places = ndigits - 1
+            #return "{:.0e}".format(integer).replace("+", "").replace("e0", "e")
+            return ("{:." + str(decimal_places) + "e}").format(float(integer)).replace("+", "").replace("e0", "e")
     else: return str(integer)
 
 # -----------------------------------------------------------------
@@ -362,6 +368,9 @@ def str_from_real(real, scientific=False, decimal_places=2, fancy=False, ndigits
     :param ndigits:
     :return:
     """
+
+    # Check input
+    if ndigits is not None and ndigits < 1: raise ValueError("Number of digits cannot be smaller than 1")
 
     if scientific:
         if fancy:
@@ -383,7 +392,9 @@ def str_from_real(real, scientific=False, decimal_places=2, fancy=False, ndigits
                 if unicode: result = result.split("e")[0].decode("utf8") + u" " + u"x" + u" 10" + strings.superscript(power).decode("utf8") # SOMETHING LIKE THIS?? DOESN'T WORK??
                 else: result = result.split("e")[0] + " x 10^" + str(power)
                 return result
-        else: return ("{:." + str(decimal_places) + "e}").format(real).replace("+", "").replace("e0", "e")
+        else:
+            if ndigits is not None: decimal_places = ndigits - 1
+            return ("{:." + str(decimal_places) + "e}").format(real).replace("+", "").replace("e0", "e")
     else: return repr(real)
 
 # -----------------------------------------------------------------

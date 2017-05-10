@@ -181,16 +181,16 @@ class PTSTestSuite(Configurable):
         if not self.test_names_for_all_subprojects and not self.config.only_checks: self.prompt()
 
         # 3. Check the import statements
-        if self.config.check_imports: self.check_imports()
+        if self.config.check_imports and not self.config.only_tests: self.check_imports()
 
         # Check the commands
-        if self.config.check_commands: self.check_commands()
+        if self.config.check_commands and not self.config.only_tests: self.check_commands()
 
         # Check configurations
-        if self.config.check_commands: self.check_configurations()
+        if self.config.check_commands and not self.config.only_tests: self.check_configurations()
 
         # Check package definitions
-        if self.config.check_packages: self.check_packages()
+        if self.config.check_packages and not self.config.only_tests: self.check_packages()
 
         # 4. Load tests
         if not self.config.only_checks: self.load_tests()

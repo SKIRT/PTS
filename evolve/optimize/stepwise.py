@@ -28,7 +28,7 @@ from ..core.population import NamedPopulation
 from .tables import ElitismTable
 from ..analyse.database import load_database, get_score_for_individual
 from ...core.tools.serialization import write_dict
-from .optimizer import binary_string_to_binary, binary_to_float, parameters_to_binary_string, binary_string_to_parameters
+from .optimizer import parameters_to_binary_string, binary_string_to_parameters
 from ..core.engine import equal_genomes
 from ..core import constants
 from ...core.tools import numbers
@@ -798,10 +798,10 @@ class StepWiseOptimizer(Optimizer):
                 bits = genes[self.bit_slices[index]]
 
                 # Convert into binary number
-                binary = binary_string_to_binary(bits)
+                binary = numbers.binary_string_to_binary(bits)
 
                 # Convert into real value
-                value = binary_to_float(binary, low=self.parameter_minima[index], high=self.parameter_maxima[index], nbits=self.nbits[index])
+                value = numbers.binary_to_float(binary, low=self.parameter_minima[index], high=self.parameter_maxima[index], nbits=self.nbits[index])
 
                 # Convert to relevant number of digits
                 if self.ndigits is not None: value = numbers.round_to_n_significant_digits(value, self.ndigits[index])
