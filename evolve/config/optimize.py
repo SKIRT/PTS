@@ -127,6 +127,6 @@ definition.add_optional("recurrence_atol", "positive_real", "absolute tolerance 
 # Due to the Hamming distance properties of Gray codes, they are sometimes used in genetic algorithms.
 # They are very useful in this field, since mutations in the code allow for mostly incremental changes,
 # but occasionally a single bit-change can cause a big leap and lead to new properties.
-definition.add_flag("gray_code", "use Gray coding for the binary genome representations", False)
+definition.add_flag("gray_code", "use Gray coding for the binary genome representations", True)
 
 # -----------------------------------------------------------------

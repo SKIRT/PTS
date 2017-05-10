@@ -1032,13 +1032,19 @@ class FittingRun(object):
         # Look in the populations data for the parameters, for this fitting run
         populations = get_populations(self.modeling_path)[self.name]
 
-        #print("generation:", generation_index)
-        #print("individual:", individual_index)
-        #print(populations)
+        print("generation:", generation_index)
+        print("individual:", individual_index)
+        print(populations)
 
         # Get the parameter values for the generation and individual
         individuals_generation = populations[generation_index]
-        individual_key = individuals_generation.keys()[individual_index]
+        individual_keys = individuals_generation.keys()
+
+        print("individuals:", individual_keys)
+        print("individual index:", individual_index)
+
+        # Get parameters
+        individual_key = individual_keys[individual_index]
         parameters = individuals_generation[individual_key]
 
         #parameters_table.parameter_values_for_simulation(best_simulation_name)

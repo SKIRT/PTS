@@ -52,6 +52,7 @@ genetic_definition.add_flag("elitism", "enable elitism", default_elitism)
 
 # Advanced
 genetic_definition.add_optional("nelite_individuals", "positive_integer", "number of individuals to take as elite", default_nelite_individuals)
+genetic_definition.add_flag("gray_code", "use Gray coding for binary genome representations", True)
 
 # -----------------------------------------------------------------
 
