@@ -1560,25 +1560,6 @@ def show_best(best):
 
 # -----------------------------------------------------------------
 
-def generate_bit_slices(nbits):
-
-    """
-    This function ...
-    :return: 
-    """
-
-    slices = []
-
-    tempsum = 0
-    for index in range(len(nbits)):
-        nbits = nbits[index]
-        slices.append(slice(tempsum, tempsum+nbits))
-        tempsum += nbits
-
-    return slices
-
-# -----------------------------------------------------------------
-
 def parameters_to_binary_string(parameters, minima, maxima, nbits):
 
     """
@@ -1653,7 +1634,7 @@ def binary_string_to_parameters(genome, minima, maxima, nbits):
     parameters = []
 
     # Generate bit slices
-    bit_slices = generate_bit_slices(nbits)
+    bit_slices = numbers.generate_bit_slices(nbits)
 
     # Loop over the parameters
     for index in range(nparameters):
@@ -1690,7 +1671,7 @@ def gray_binary_string_to_parameters(genome, minima, maxima, nbits):
     parameters = []
 
     # Generate bit slices
-    bit_slices = generate_bit_slices(nbits)
+    bit_slices = numbers.generate_bit_slices(nbits)
 
     # Loop over the parameters
     for index in range(nparameters):

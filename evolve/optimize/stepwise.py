@@ -32,6 +32,7 @@ from .optimizer import parameters_to_gray_binary_string, gray_binary_string_to_p
 from ..core.engine import equal_genomes
 from ..core import constants
 from ...core.tools import numbers
+from ...core.basics.map import Map
 
 # -----------------------------------------------------------------
 
@@ -548,8 +549,16 @@ class StepWiseOptimizer(Optimizer):
         #else: rtol = 1e-11
         rtol = 1e-11
 
+        # Create binary parameters map
+        binary_parameters = Map()
+        binary_parameters.minima = self.parameter_minima
+        binary_parameters.maxima = self.parameter_maxima
+        binary_parameters.ndigits = self.ndigits
+        binary_parameters.nbits = self.nbits
+        binary_parameters.gray = self.config.gray_code
+
         # Set the scores
-        elitism_data = self.engine.set_scores(scores, checks, rtol=rtol)
+        elitism_data = self.engine.set_scores(scores, checks, rtol=rtol, binary_parameters=binary_parameters)
 
         # Create elitism table
         if elitism_data is not None: self.elitism_table = ElitismTable.from_data(elitism_data)

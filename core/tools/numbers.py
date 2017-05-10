@@ -716,3 +716,22 @@ def next_gray_binary_string(binary_string):
     return integer_to_gray_binary_string(integer + 1, nbits=nbits)
 
 # -----------------------------------------------------------------
+
+def generate_bit_slices(nbits):
+
+    """
+    This function ...
+    :return: 
+    """
+
+    slices = []
+
+    tempsum = 0
+    for index in range(len(nbits)):
+        nbits = nbits[index]
+        slices.append(slice(tempsum, tempsum+nbits))
+        tempsum += nbits
+
+    return slices
+
+# -----------------------------------------------------------------
