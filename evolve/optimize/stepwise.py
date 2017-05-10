@@ -31,6 +31,7 @@ from ...core.tools.serialization import write_dict
 from .optimizer import binary_string_to_binary, binary_to_float, parameters_to_binary_string, binary_string_to_parameters
 from ..core.engine import equal_genomes
 from ..core import constants
+from ...core.tools import numbers
 
 # -----------------------------------------------------------------
 
@@ -801,6 +802,9 @@ class StepWiseOptimizer(Optimizer):
 
                 # Convert into real value
                 value = binary_to_float(binary, low=self.parameter_minima[index], high=self.parameter_maxima[index], nbits=self.nbits[index])
+
+                # Convert to relevant number of digits
+                if self.ndigits is not None: value = numbers.round_to_n_significant_digits(value, self.ndigits[index])
 
                 # Add the value
                 parameters.append(value)

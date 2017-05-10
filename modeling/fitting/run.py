@@ -460,6 +460,18 @@ class FittingRun(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def ndigits_dict(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.parameter_ndigits
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def genetic_settings(self):
 

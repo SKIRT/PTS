@@ -1690,9 +1690,9 @@ class BatchLauncher(Configurable):
             analysis_options.timing_table_path = self.config.timing_table_path
 
             # Check whether the extract timing option has been enabled
-            if not analysis_options.extraction.timing:
+            if not analysis_options.extraction.timeline:
                 log.warning("Timeline extraction will be enabled for writing to the timing table ...")
-                analysis_options.extraction.timing = True
+                analysis_options.extraction.timeline = True
 
         # Set memory table path
         if self.config.memory_table_path is not None and add_memory:

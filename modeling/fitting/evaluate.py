@@ -17,9 +17,10 @@ from ...core.launch.launcher import SKIRTLauncher
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
 from ...core.tools import time
-from ...core.tools.stringify import stringify_not_list, stringify
+from ...core.tools.stringify import stringify
 from ...core.simulation.definition import SingleSimulationDefinition
 from ...core.tools.filelock import FileLock
+from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -183,7 +184,8 @@ def generate_simulation_name():
 
 # -----------------------------------------------------------------
 
-def prepare_simulation(simulation_name, ski, parameter_values, object_name, simulation_input, generation_path):
+def prepare_simulation(simulation_name, ski, parameter_values, object_name, simulation_input, generation_path,
+                       scientific=False, fancy=False, ndigits=None):
 
     """
     This function ...
@@ -193,12 +195,15 @@ def prepare_simulation(simulation_name, ski, parameter_values, object_name, simu
     :param object_name:
     :param simulation_input:
     :param generation_path:
+    :param scientific:
+    :param fancy:
+    :param ndigits:
     :return:
     """
 
     # Debugging
     log.debug("Adjusting ski file for the following model parameters:")
-    for label in parameter_values: log.debug(" - " + label + ": " + stringify_not_list(parameter_values[label])[1])
+    for label in parameter_values: log.debug(" - " + label + ": " + tostr(parameter_values[label], scientific=scientific, fancy=fancy, ndigits=ndigits[label]))
 
     # Set the parameter values in the ski file template
     ski.set_labeled_values(parameter_values)
