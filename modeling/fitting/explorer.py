@@ -245,6 +245,63 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    #@property
+    def record_timing(self, host_ids):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if self.config.record_timing: return True
+        elif len(host_ids) > 0:
+            log.warning("Record timing will be enabled because remote execution is used")
+            return True
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    #@property
+    def record_memory(self, host_id):
+
+        """
+        This function ...
+        :param host_id
+        :return: 
+        """
+
+        if self.config.record_memory: return True
+        elif len(host_id) > 0:
+            log.warning("Record memory will be enabled because remote execution is used")
+            return True
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    #@property
+    def extract_timeline(self, host_ids):
+
+        """
+        This
+        :return: 
+        """
+
+        return self.record_timing(host_ids) or self.config.extract_timeline
+
+    # -----------------------------------------------------------------
+
+    #@property
+    def extract_memory(self, host_ids):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.record_memory(host_ids) or self.config.extract_memory
+
+    # -----------------------------------------------------------------
+
     def set_launcher_options(self):
 
         """
@@ -269,11 +326,13 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.attached = self.config.attached                   # Run remote simulations in attached mode
         self.launcher.config.group_simulations = self.config.group             # Group multiple simulations into a single job (because a very large number of simulations will be scheduled) TODO: IMPLEMENT THIS
         self.launcher.config.group_walltime = self.config.walltime             # The preferred walltime for jobs of a group of simulations
-        self.launcher.config.timing_table_path = self.fitting_run.timing_table_path        # The path to the timing table file
-        self.launcher.config.memory_table_path = self.fitting_run.memory_table_path        # The path to the memory table file
         self.launcher.config.cores_per_process = self.config.cores_per_process # The number of cores per process, for non-schedulers
         self.launcher.config.dry = self.config.dry                             # Dry run (don't actually launch simulations, but allow them to be launched manually)
         self.launcher.config.progress_bar = True  # show progress bars for local execution
+
+        # Record memory and timeline information
+        if self.record_timing(remote_host_ids): self.launcher.config.timing_table_path = self.fitting_run.timing_table_path  # The path to the timing table file
+        if self.record_memory(remote_host_ids): self.launcher.config.memory_table_path = self.fitting_run.memory_table_path  # The path to the memory table file
 
         # Simulation analysis options
 
@@ -283,14 +342,12 @@ class ParameterExplorer(FittingComponent):
         ## Logging
         self.launcher.config.logging.verbose = True
         self.launcher.config.logging.memory = True
-        #self.launcher.config.logging.allocation = True
-        #self.launcher.config.logging.allocation_limit = 1e-5
 
         ## Extraction
         self.launcher.config.analysis.extraction.path = "extr"    # name of the extraction directory
         self.launcher.config.analysis.extraction.progress = self.config.extract_progress  # extract progress information
-        self.launcher.config.analysis.extraction.timeline = self.config.extract_timeline  # extract the simulation timeline
-        self.launcher.config.analysis.extraction.memory = self.config.extract_memory    # extract memory information
+        self.launcher.config.analysis.extraction.timeline = self.extract_timeline(remote_host_ids)  # extract the simulation timeline
+        self.launcher.config.analysis.extraction.memory = self.extract_memory(remote_host_ids)    # extract memory information
 
         ## Plotting
         self.launcher.config.analysis.plotting.path = "plot"  # name of the plot directory
