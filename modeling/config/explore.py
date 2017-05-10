@@ -86,4 +86,13 @@ definition.add_flag("dry", "dry-run (don't actually launch simulations)")
 # Advanced
 definition.add_optional("ngenerations", "positive_integer", "number of generations to run in one run (ngenerations > 1 is only allowed for local execution)", 1)
 
+# Launcher settings
+definition.add_flag("extract_progress", "extract progress information", False)
+definition.add_flag("extract_timeline", "extract timeline information", False)
+definition.add_flag("extract_memory", "extract memory information", False)
+definition.add_flag("plot_progress", "plot progress information", False)
+definition.add_flag("plot_timeline", "plot simulation timeline", False)
+definition.add_flag("plot_memory", "plot memory information", False)
+definition.add_flag("plot_seds", "plot the SEDs of individual simulations", False)
+
 # -----------------------------------------------------------------

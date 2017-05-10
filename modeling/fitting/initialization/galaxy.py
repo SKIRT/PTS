@@ -37,7 +37,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         :return:
         """
 
-        # Call the constructor of the base class
+        # Call the constructors of the base classes
         FittingInitializerBase.__init__(self, *args, **kwargs)
         GalaxyModelingComponent.__init__(self, *args, **kwargs)
 
@@ -167,108 +167,169 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
             component = load_stellar_component(self.config.path, self.model_name, name)
 
             # If an input map is required
-            if "map_path" in component:
-
-                # Generate a filename for the map
-                filename = "stars_" + name + ".fits"
-
-                # Set the filename
-                if "deprojection" in component: component.deprojection.filename = filename
-                elif "geometry" in component.parameters: component.properties["geometry"].filename = filename
-                else: raise RuntimeError("Stellar component based on an input map should either have a deprojection or geometry properties")
-
-                # Add entry to the input maps dictionary
-                self.input_map_paths[filename] = component.map_path
+            if "map_path" in component: self.set_input_map(name, component)
 
             # Set geometry
-            if "model" in component:
-
-                # Get title
-                title = component.parameters.title
-
-                # Set the geometry
-                self.ski.set_stellar_component_geometry(title, component.model)
+            if "model" in component: self.set_stellar_component_model(component)
 
             # Set deprojection
-            elif "deprojection" in component:
-
-                # Get title
-                title = component.parameters.title
-
-                # Set the deprojection geometry
-                self.ski.set_stellar_component_geometry(title, component.deprojection)
+            elif "deprojection" in component: self.set_stellar_component_deprojection(component)
 
             # Check if this is a new component, add geometry, SED and normalization all at once
-            if "geometry" in component.parameters:
-
-                # Get title
-                title = component.parameters.title
-
-                # Get class names
-                geometry_type = component.parameters.geometry
-                sed_type = component.parameters.sed
-                normalization_type = component.parameters.normalization
-
-                # Get properties for each of the three classes
-                geometry_properties = component.properties["geometry"]
-                sed_properties = component.properties["sed"]
-                normalization_properties = component.properties["normalization"]
-
-                # Create stellar component
-                self.ski.create_new_stellar_component(title, geometry_type, geometry_properties, sed_type, sed_properties, normalization_type, normalization_properties)
+            if "geometry" in component.parameters: self.set_stellar_component_geometry(component)
 
             # Existing component, with MAPPINGS template
-            elif "sfr" in component.parameters:
-
-                # Get title
-                title = component.parameters.title
-
-                # Get SED properties
-                metallicity = component.parameters.metallicity
-                compactness = component.parameters.compactness
-                pressure = component.parameters.pressure
-                covering_factor = component.parameters.covering_factor
-
-                # Get normalization
-                fltr = parse_filter(component.parameters.filter)
-                luminosity = component.parameters.luminosity
-
-                # Set SED
-                self.ski.set_stellar_component_mappingssed(title, metallicity, compactness, pressure, covering_factor)  # SED
-
-                # Set center wavelength of the filter as normalization wavelength (keeps label)
-                self.ski.set_stellar_component_normalization_wavelength(title, fltr.center)
-
-                # Set spectral luminosity at that wavelength (keeps label)
-                self.ski.set_stellar_component_luminosity(title, luminosity)
-
-                # Scale height doesn't need to be set as parameter, this is already in the deprojection model
+            elif "sfr" in component.parameters: self.set_stellar_component_mappings(component)
 
             # Existing component, no MAPPINGS
-            else:
+            else: self.set_stellar_component(component)
 
-                # Get title
-                title = component.parameters.title
+    # -----------------------------------------------------------------
 
-                # Get SED properties
-                template = component.parameters.template
-                age = component.parameters.age
-                metallicity = component.parameters.metallicity
+    def set_input_map(self, name, component):
 
-                # Get normalization
-                fltr = parse_filter(component.parameters.filter)
-                luminosity = component.parameters.luminosity
+        """
+        This function ...
+        :param name:
+        :param component:
+        :return: 
+        """
 
-                # Set SED
-                self.ski.set_stellar_component_sed(title, template, age, metallicity)
+        # Generate a filename for the map
+        filename = "stars_" + name + ".fits"
 
-                # Set center wavelength of the filter as normalization wavelength (keeps label)
-                self.ski.set_stellar_component_normalization_wavelength(title, fltr.center)
+        # Set the filename
+        if "deprojection" in component: component.deprojection.filename = filename
+        elif "geometry" in component.parameters: component.properties["geometry"].filename = filename
+        else: raise RuntimeError("Stellar component based on an input map should either have a deprojection or geometry properties")
 
-                # Set spectral luminosity at that wavelength (keeps label)
-                self.ski.set_stellar_component_luminosity(title, luminosity)
+        # Add entry to the input maps dictionary
+        self.input_map_paths[filename] = component.map_path
 
-                # Scale height doesn't need to be set as parameter, this is already in the deprojection model
+    # -----------------------------------------------------------------
+
+    def set_stellar_component_model(self, component):
+
+        """
+        This function ...
+        :param self: 
+        :return: 
+        """
+
+        # Get title
+        title = component.parameters.title
+
+        # Set the geometry
+        self.ski.set_stellar_component_geometry(title, component.model)
+
+    # -----------------------------------------------------------------
+
+    def set_stellar_component_deprojection(self, component):
+
+        """
+        THis function ...
+        :param self: 
+        :return: 
+        """
+
+        # Get title
+        title = component.parameters.title
+
+        # Set the deprojection geometry
+        self.ski.set_stellar_component_geometry(title, component.deprojection)
+
+    # -----------------------------------------------------------------
+
+    def set_stellar_component_geometry(self, component):
+
+        """
+        This function ...
+        :param self: 
+        :return: 
+        """
+
+        # Get title
+        title = component.parameters.title
+
+        # Get class names
+        geometry_type = component.parameters.geometry
+        sed_type = component.parameters.sed
+        normalization_type = component.parameters.normalization
+
+        # Get properties for each of the three classes
+        geometry_properties = component.properties["geometry"]
+        sed_properties = component.properties["sed"]
+        normalization_properties = component.properties["normalization"]
+
+        # Create stellar component
+        self.ski.create_new_stellar_component(title, geometry_type, geometry_properties, sed_type, sed_properties,
+                                              normalization_type, normalization_properties)
+
+    # -----------------------------------------------------------------
+
+    def set_stellar_component_mappings(self, component):
+
+        """
+        THis function ...
+        :param self: 
+        :return: 
+        """
+
+        # Get title
+        title = component.parameters.title
+
+        # Get SED properties
+        metallicity = component.parameters.metallicity
+        compactness = component.parameters.compactness
+        pressure = component.parameters.pressure
+        covering_factor = component.parameters.covering_factor
+
+        # Get normalization
+        fltr = parse_filter(component.parameters.filter)
+        luminosity = component.parameters.luminosity
+
+        # Set SED
+        self.ski.set_stellar_component_mappingssed(title, metallicity, compactness, pressure, covering_factor)  # SED
+
+        # Set center wavelength of the filter as normalization wavelength (keeps label)
+        self.ski.set_stellar_component_normalization_wavelength(title, fltr.center)
+
+        # Set spectral luminosity at that wavelength (keeps label)
+        self.ski.set_stellar_component_luminosity(title, luminosity)
+
+        # Scale height doesn't need to be set as parameter, this is already in the deprojection model
+
+    # -----------------------------------------------------------------
+
+    def set_stellar_component(self, component):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Get title
+        title = component.parameters.title
+
+        # Get SED properties
+        template = component.parameters.template
+        age = component.parameters.age
+        metallicity = component.parameters.metallicity
+
+        # Get normalization
+        fltr = parse_filter(component.parameters.filter)
+        luminosity = component.parameters.luminosity
+
+        # Set SED
+        self.ski.set_stellar_component_sed(title, template, age, metallicity)
+
+        # Set center wavelength of the filter as normalization wavelength (keeps label)
+        self.ski.set_stellar_component_normalization_wavelength(title, fltr.center)
+
+        # Set spectral luminosity at that wavelength (keeps label)
+        self.ski.set_stellar_component_luminosity(title, luminosity)
+
+        # Scale height doesn't need to be set as parameter, this is already in the deprojection model
 
     # -----------------------------------------------------------------
 

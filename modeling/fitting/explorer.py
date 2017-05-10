@@ -278,7 +278,7 @@ class ParameterExplorer(FittingComponent):
         # Simulation analysis options
 
         ## General
-        self.launcher.config.analysis.relative = True
+        self.launcher.config.relative = True
 
         ## Logging
         self.launcher.config.logging.verbose = True
@@ -288,15 +288,18 @@ class ParameterExplorer(FittingComponent):
 
         ## Extraction
         self.launcher.config.analysis.extraction.path = "extr"    # name of the extraction directory
-        self.launcher.config.analysis.extraction.progress = True  # extract progress information
-        self.launcher.config.analysis.extraction.timeline = True  # extract the simulation timeline
-        self.launcher.config.analysis.extraction.memory = True    # extract memory information
+        self.launcher.config.analysis.extraction.progress = self.config.extract_progress  # extract progress information
+        self.launcher.config.analysis.extraction.timeline = self.config.extract_timeline  # extract the simulation timeline
+        self.launcher.config.analysis.extraction.memory = self.config.extract_memory    # extract memory information
 
         ## Plotting
         self.launcher.config.analysis.plotting.path = "plot"  # name of the plot directory
-        self.launcher.config.analysis.plotting.seds = True    # Plot the output SEDs
+        self.launcher.config.analysis.plotting.seds = self.config.plot_seds    # Plot the output SEDs
         self.launcher.config.analysis.plotting.reference_seds = [self.observed_sed_path]  # the path to the reference SED (for plotting the simulated SED against the reference points)
         self.launcher.config.analysis.plotting.format = "pdf"  # plot format
+        self.launcher.config.analysis.plotting.progress = self.config.plot_progress
+        self.launcher.config.analysis.plotting.timeline = self.config.plot_timeline
+        self.launcher.config.analysis.plotting.memory = self.config.plot_memory
 
         ## Miscellaneous
         self.launcher.config.analysis.misc.path = "misc"       # name of the misc output directory

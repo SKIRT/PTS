@@ -56,7 +56,7 @@ definition.sections["genetic"].optional["genome_type"].default = "binary_string"
 
 # Flags
 definition.add_flag("spectral_convolution", "use spectral convolution to calculate observed fluxes", False)
-definition.add_flag("cheat", "giegeigjeig", True)
+definition.add_flag("cheat", "cheat by putting the real parameter values into the initial population of models", True)
 
 default_fitting_method = "genetic"
 fitting_methods = ["genetic", "grid"]
@@ -64,5 +64,9 @@ definition.add_optional("fitting_method", "string", "fitting method", default_fi
 
 definition.add_optional("reference_path", "directory_path", "use the simulation in this directory as the reference simulation and infer the real parameter values from it")
 definition.add_optional("reference_test", "string", "use the reference simulation of this previous test")
+
+default_scale = "logarithmic"
+scales = ["logarithmic", "linear"]
+definition.add_optional("scale", "string", "scale to use for the generation of grid/initial genetic individuals", default_scale, scales)
 
 # -----------------------------------------------------------------
