@@ -226,6 +226,18 @@ def nbits_for_integer(integer):
 
 # -----------------------------------------------------------------
 
+def min_nbits_for_nintegers(nintegers):
+
+    """
+    This function ...
+    :param nintegers: 
+    :return: 
+    """
+
+    return nbits_for_integer(nintegers-1)
+
+# -----------------------------------------------------------------
+
 def max_integer_for_nbits(nbits):
 
     """
@@ -347,7 +359,15 @@ def binary_to_float(binary, low, high, nbits):
 
     integer = binary_to_integer(binary)
     scaled = float(integer)
+
     value = low + scaled * 2**(-nbits) * (high - low)
+
+    largest_error = 0.5 * (high - low) / nintegers_for_nbits(nbits)
+    #print(largest_error)
+    #scaled += largest_error
+
+    value += 0.5 * largest_error
+
     return value
 
 # -----------------------------------------------------------------
@@ -411,7 +431,6 @@ def float_to_binary_string(value, low, high, nbits):
     :return: 
     """
 
-    #print(value)
     binary = float_to_binary(value, low, high, nbits)
     return binary_to_binary_string(binary, nbits)
 
@@ -443,6 +462,105 @@ def nbits_for_ndigits(ndigits):
     """
 
     return binary_digits_for_significant_figures(ndigits)
+
+# -----------------------------------------------------------------
+
+def largest_error(nbits, low, high):
+
+    """
+    This function ...
+    :param nbits: 
+    :param low: 
+    :param high: 
+    :return: 
+    """
+
+    return 0.5 * (high - low) / nintegers_for_nbits(nbits)
+
+# -----------------------------------------------------------------
+
+def order_of_magnitude(number):
+
+    """
+    This function ...
+    :param number: 
+    :return: 
+    """
+
+    string = str(float(number)).split(".")[0]
+    return len(string) - 1
+
+# -----------------------------------------------------------------
+
+def rounding_error_order_of_magnitude(number, ndigits):
+
+    """
+    This function ...
+    :param number: 
+    :param ndigits: 
+    :return: 
+    """
+
+    error = order_of_magnitude(number) - ndigits
+    return error
+
+# -----------------------------------------------------------------
+
+def rounding_error(number, ndigits):
+
+    """
+    This function ...
+    :param number: 
+    :param ndigits: 
+    :return: 
+    """
+
+    return 5. * 10**rounding_error_order_of_magnitude(number, ndigits)
+
+# -----------------------------------------------------------------
+
+def maximal_error(number, ndigits):
+
+    """
+    This fucntion ...
+    :param number: 
+    :param ndigits: 
+    :return: 
+    """
+
+    return rounding_error(number, ndigits)
+
+# -----------------------------------------------------------------
+
+def minimal_nsteps(number, low, high, ndigits):
+
+    """
+    This function ...
+    :param number: 
+    :param low:
+    :param high:
+    :param ndigits: 
+    :return: 
+    """
+
+    maximal_error = rounding_error(number, ndigits)
+    minimal_number_of_steps = int(math.ceil((high - low) / maximal_error))
+    return minimal_number_of_steps
+
+# -----------------------------------------------------------------
+
+def nbits_for_ndigits_experimental(ndigits, low, high):
+
+    """
+    This function ...
+    :param ndigits: 
+    :param low: 
+    :param high: 
+    :return: 
+    """
+
+    nsteps = minimal_nsteps(low, low, high, ndigits)
+    return min_nbits_for_nintegers(nsteps)
 
 # -----------------------------------------------------------------
 
@@ -532,6 +650,38 @@ def integer_to_gray_binary_string(integer, nbits=None):
 
     normal_binary_string = integer_to_binary_string(integer, nbits=nbits)
     return binary_string_to_gray_binary_string(normal_binary_string)
+
+# -----------------------------------------------------------------
+
+def gray_binary_string_to_float(binary_string, low, high, nbits):
+
+    """
+    This function ...
+    :param binary_string:
+    :param low:
+    :param high:
+    :param nbits:
+    :return: 
+    """
+
+    binary_string = gray_binary_string_to_binary_string(binary_string)
+    return binary_string_to_float(binary_string, low, high, nbits)
+
+# -----------------------------------------------------------------
+
+def float_to_gray_binary_string(value, low, high, nbits):
+
+    """
+    This function ...
+    :param value: 
+    :param low:
+    :param high:
+    :param nbits:
+    :return: 
+    """
+
+    binary_string = float_to_binary_string(value, low, high, nbits)
+    return binary_string_to_gray_binary_string(binary_string)
 
 # -----------------------------------------------------------------
 

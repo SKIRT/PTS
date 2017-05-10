@@ -17,7 +17,4 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 # Add settings
 definition.add_required("name", "string", "fitting run name")
 
-# N significant digits: NO NOT ANYMORE: NOW DEFINED IN THE FITTING RUN DEFINITION
-#definition.add_optional("ndigits", "positive_integer", "number of digits (in base 10) for binary genomes", 4)
-
 # -----------------------------------------------------------------

@@ -21,6 +21,9 @@ modeling_path = fs.cwd()
 default_fitting_method = "genetic"
 fitting_methods = ["genetic", "grid"]
 
+# Default number of digits
+default_ndigits = 3
+
 # -----------------------------------------------------------------
 
 # Create the configuration
@@ -53,6 +56,6 @@ definition.add_optional("grid", "dictionary", "options for the grid fitting")
 definition.add_section("ranges", "parameter ranges")
 
 # The default number of significant digits
-definition.add_optional("default_ndigits", "positive_integer", "default value for the number of significant digits", 4)
+definition.add_optional("default_ndigits", "positive_integer", "default value for the number of significant digits", default_ndigits)
 
 # -----------------------------------------------------------------

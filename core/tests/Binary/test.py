@@ -65,16 +65,28 @@ class BinaryTest(TestImplementation):
         # 1. Call the setup function
         self.setup(**kwargs)
 
+        # Test dust mass
         self.test_dust_mass()
 
+        # 3.
         self.test_dust_mass_with_rounding()
 
+        # 4.
+        self.test_dust_mass_second()
+
+        # 5.
         self.test_speed_of_light()
 
+        # 6. Experimental
+        self.test_speed_of_light_experimental()
+
+        # 6.
         self.test_gray_generation()
 
+        # 7.
         self.test_gray_conversion_dynamic()
 
+        # 8.
         self.test_gray_conversion_fixed()
 
     # -----------------------------------------------------------------
@@ -177,6 +189,57 @@ class BinaryTest(TestImplementation):
 
     # -----------------------------------------------------------------
 
+    def test_dust_mass_second(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Second dust mass test ...")
+
+        ndigits = 4
+
+        genome = [1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0]
+        check = [1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+
+        nbits = len(genome)
+
+        print(nbits)
+
+        unit = "Msun"
+
+        mass_range = parsing.quantity_range("1500000.0 Msun > 300000000.0 Msun")
+
+        minimum = mass_range.min
+        maximum = mass_range.max
+
+        low = minimum.to(unit).value
+        high = maximum.to(unit).value
+
+        if test_from_binary_string_rounding(genome, low, high, ndigits): log.success("Test succeeded")
+        else: log.error("Test failed")
+
+        if test_from_binary_string_rounding(check, low, high, ndigits): log.success("Test succeeded")
+        else: log.error("Test failed")
+
+        genome_mass = numbers.binary_string_to_float(genome, low, high, nbits)
+
+        rounded_genome_mass = numbers.round_to_n_significant_digits(genome_mass, ndigits)
+
+        genome_mass_to_binary = numbers.float_to_binary_string(genome_mass, low, high, nbits)
+        rounded_genome_mass_to_binary = numbers.float_to_binary_string(rounded_genome_mass, low, high, nbits)
+
+        print("original:", genome_mass)
+        print("rounded:", rounded_genome_mass)
+        print("genome:", genome)
+        print("original to binary:", genome_mass_to_binary)
+        print("rounded to binary: ", rounded_genome_mass_to_binary)
+        print("check:             ", check)
+
+    # -----------------------------------------------------------------
+
     def test_speed_of_light(self):
 
         """
@@ -189,7 +252,7 @@ class BinaryTest(TestImplementation):
 
         ndigits = 3
 
-        nbits = numbers.binary_digits_for_significant_figures(ndigits)
+        nbits = numbers.nbits_for_ndigits(ndigits)
 
         print(str(nbits) + " bits for " + str(ndigits) + " digits")
 
@@ -214,6 +277,45 @@ class BinaryTest(TestImplementation):
 
         # With rounding
         if test_from_number_rounding(value, low, high, ndigits): log.success("Test succeeded")
+        else: log.error("Test failed")
+
+    # -----------------------------------------------------------------
+
+    def test_speed_of_light_experimental(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Testing speed of light ...")
+
+        ndigits = 3
+
+        #nbits = numbers.nbits_for_ndigits(ndigits)
+
+        minimum = 0.01 * speed_of_light
+        maximum = speed_of_light
+
+        unit = "km/s"
+
+        # Convert value to binary
+        value = (0.333 * speed_of_light).to(unit).value
+
+        low = minimum.to(unit).value
+        high = maximum.to(unit).value
+
+        nbits = numbers.nbits_for_ndigits_experimental(ndigits, low, high)
+
+        print(str(nbits) + " bits for " + str(ndigits) + " digits")
+
+        # Test without rounding IN CONVERSION, BUT FOR COMPARISON THERE IS ROUNDING
+        if light_test_from_number_rounding(value, low, high, ndigits, experimental=True): log.success("Test succeeded")
+        else: log.error("Test failed")
+
+        # With rounding
+        if test_from_number_rounding(value, low, high, ndigits, experimental=True): log.success("Test succeeded")
         else: log.error("Test failed")
 
     # -----------------------------------------------------------------
@@ -313,16 +415,21 @@ def test_from_binary_rounding(binary, low, high, ndigits):
 
 # -----------------------------------------------------------------
 
-def test_from_number_rounding(number, low, high, ndigits):
+def test_from_number_rounding(number, low, high, ndigits, experimental=False):
 
     """
     This function ...
-    :pram ndigits:
+    :param number:
+    :param low:
+    :param high:
+    :param ndigits:
+    :param experimental:
     :return: 
     """
 
     # Detrmine number of bits
-    nbits = numbers.binary_digits_for_significant_figures(ndigits)
+    if experimental: nbits = numbers.nbits_for_ndigits_experimental(ndigits, low, high)
+    else: nbits = numbers.binary_digits_for_significant_figures(ndigits)
 
     # Number a to binary
     number_binary_string = numbers.float_to_binary_string(number, low, high, nbits)
@@ -381,7 +488,7 @@ def light_test_from_number_no_rounding(number, low, high, ndigits):
 
     number_back = number_to_binary_and_back(number, low, high, nbits)
 
-    smallest_error = 0.5 * (high - low) / numbers.nintegers_for_nbits(nbits)
+    largest_error = 0.5 * (high - low) / numbers.nintegers_for_nbits(nbits)
 
     if number_back != number:
         print(str(number) + " != " + str(number_back))
@@ -389,14 +496,14 @@ def light_test_from_number_no_rounding(number, low, high, ndigits):
         rel = abs((number_back - number) / number)
         print("rel error:", rel * 100, "%")
         print("abs error:", abserror)
-        print("smallest error:", smallest_error)
+        print("largest error:", largest_error)
     else: print(str(number) + " == " + str(number_back))
 
     return number_back == number
 
 # -----------------------------------------------------------------
 
-def light_test_from_number_rounding(number, low, high, ndigits):
+def light_test_from_number_rounding(number, low, high, ndigits, experimental=False):
 
     """
     This fucntion ...
@@ -404,15 +511,17 @@ def light_test_from_number_rounding(number, low, high, ndigits):
     :param low: 
     :param high: 
     :param ndigits: 
+    :param experimental:
     :return: 
     """
 
     # Detrmine number of bits
-    nbits = numbers.binary_digits_for_significant_figures(ndigits)
+    if experimental: nbits = numbers.nbits_for_ndigits_experimental(ndigits, low, high)
+    else: nbits = numbers.binary_digits_for_significant_figures(ndigits)
 
     number_back = number_to_binary_and_back(number, low, high, nbits)
 
-    smallest_error = 0.5 * (high - low) / numbers.nintegers_for_nbits(nbits)
+    largest_error = 0.5 * (high - low) / numbers.nintegers_for_nbits(nbits)
 
     number_rounded = numbers.round_to_n_significant_digits(number, ndigits)
     number_back_rounded = numbers.round_to_n_significant_digits(number_back, ndigits)
@@ -423,7 +532,7 @@ def light_test_from_number_rounding(number, low, high, ndigits):
         rel = abserror / number_rounded
         print("rel error:", rel * 100, "%")
         print("abs error:", abserror)
-        print("smallest error:", smallest_error)
+        print("largest error:", largest_error)
     else: print(str(number_rounded) + " == " + str(number_back_rounded))
 
     # Check

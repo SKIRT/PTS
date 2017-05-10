@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import numpy as np
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
@@ -29,6 +28,7 @@ from .tables import ElitismTable
 from ..analyse.database import load_database, get_score_for_individual
 from ...core.tools.serialization import write_dict
 from .optimizer import parameters_to_binary_string, binary_string_to_parameters
+from .optimizer import parameters_to_gray_binary_string, gray_binary_string_to_parameters
 from ..core.engine import equal_genomes
 from ..core import constants
 from ...core.tools import numbers
@@ -449,23 +449,24 @@ class StepWiseOptimizer(Optimizer):
 
         checks = []
 
-        #print("previous recurrent", self.previous_recurrent)
-
-        #print(self.scores_check)
         passed_checks = iter(self.scores_check)
 
         # Loop over the names in the previous population, because the order IS IMPORTANT
         for key in self.previous_population:
 
-            #print(key)
-
+            # Recurrent
             if key in self.previous_recurrent:
 
                 parameters = self.previous_population[key]
 
                 # If binary genome, convert binary individual into actual parameters list
-                if self.binary_string_genome: parameters = binary_string_to_parameters(parameters, self.parameter_minima, self.parameter_maxima, self.nbits)
+                if self.binary_string_genome:
 
+                    # Convert
+                    if self.config.gray_code: parameters = gray_binary_string_to_parameters(parameters, self.parameter_minima, self.parameter_maxima, self.nbits)
+                    else: parameters = binary_string_to_parameters(parameters, self.parameter_minima, self.parameter_maxima, self.nbits)
+
+            # Not recurrent
             else: parameters = passed_checks.next()
 
             # Add the parameters
@@ -504,11 +505,8 @@ class StepWiseOptimizer(Optimizer):
             for parameters in scores_check:
 
                 # Convert
-                #print(parameters)
-                #print(self.parameter_minima)
-                #print(self.parameter_maxima)
-                #print(self.nbits)
-                binary_string = parameters_to_binary_string(parameters, self.parameter_minima, self.parameter_maxima, self.nbits)
+                if self.config.gray_code: binary_string = parameters_to_gray_binary_string(parameters, self.parameter_minima, self.parameter_maxima, self.nbits)
+                else: binary_string = parameters_to_binary_string(parameters, self.parameter_minima, self.parameter_maxima, self.nbits)
 
                 # Add to the check
                 checks.append(binary_string)
@@ -537,16 +535,7 @@ class StepWiseOptimizer(Optimizer):
         # Check whether the number of bits is defined
         if self.nbits is None: raise ValueError("The number of bits for each parameter should be defined")
 
-        #print(self.scores)
-        #print(self.scores_check)
-
-        #print(self.previous_recurrent)
-        #print(self.previous_population)
-
-        # Get scores and check
-        #scores = self.all_scores
-        #checks = self.all_scores_check
-
+        # Get scores and checks
         scores = self.all_scores
         checks = self.all_scores_check_converted
 
@@ -620,9 +609,6 @@ class StepWiseOptimizer(Optimizer):
 
             # Get the individual
             individual = self.population[name]
-
-            #print(individual.genomeList)
-            #print(populations_run)
 
             # Check recurrency
             generation_index, key = find_recurrent_individual(populations_run, individual, generation, rtol=self.config.recurrence_rtol, atol=self.config.recurrence_atol)
@@ -797,11 +783,9 @@ class StepWiseOptimizer(Optimizer):
                 # Get the first n bits
                 bits = genes[self.bit_slices[index]]
 
-                # Convert into binary number
-                binary = numbers.binary_string_to_binary(bits)
-
-                # Convert into real value
-                value = numbers.binary_to_float(binary, low=self.parameter_minima[index], high=self.parameter_maxima[index], nbits=self.nbits[index])
+                # Convert to real value
+                if self.config.gray_code: value = numbers.gray_binary_string_to_float(bits, low=self.parameter_minima[index], high=self.parameter_maxima[index], nbits=self.nbits[index])
+                else: value = numbers.binary_string_to_float(bits, low=self.parameter_minima[index], high=self.parameter_maxima[index], nbits=self.nbits[index])
 
                 # Convert to relevant number of digits
                 if self.ndigits is not None: value = numbers.round_to_n_significant_digits(value, self.ndigits[index])

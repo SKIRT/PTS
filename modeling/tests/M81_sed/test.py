@@ -425,7 +425,7 @@ class M81SEDTest(M81TestBase):
         # Debugging
         log.debug("The initial parameter values are:")
         log.debug("")
-        for parameter_name in self.real_parameter_values: log.debug(" - " + parameter_name + ": " + tostr(self.initial_parameter_values[parameter_name]))
+        for parameter_name in self.real_parameter_values: log.debug(" - " + parameter_name + ": " + tostr(self.initial_parameter_values[parameter_name], scientific=True, fancy=True, ndigits=parameter_ndigits[parameter_name]))
         log.debug("")
 
     # -----------------------------------------------------------------
