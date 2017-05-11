@@ -660,6 +660,9 @@ class ParameterExplorer(FittingComponent):
                            fixed_initial_parameters=self.fixed_initial_parameters, generation_path=self.generation_path,
                            scales=self.scales, most_sampled_parameters=self.most_sampled_parameters, sampling_weights=self.sampling_weights)
 
+        # Set the actual number of simulations for this generation
+        self.generation.nsimulations = self.nmodels
+
     # -----------------------------------------------------------------
 
     def set_info(self):
@@ -706,7 +709,7 @@ class ParameterExplorer(FittingComponent):
         self.generation.method = self.config.generation_method
         self.generation.wavelength_grid_level = wavelength_grid_level
         #self.generation.dust_grid_level = dust_grid_level
-        self.generation.nsimulations = self.config.nsimulations
+        #self.generation.nsimulations = self.config.nsimulations # DON'T DO IT HERE YET, GET THE NUMBER OF ACTUAL MODELS SPITTED OUT BY THE MODELGENERATOR (RECURRENCE)
         self.generation.npackages = npackages
         self.generation.selfabsorption = selfabsorption
         self.generation.transient_heating = transient_heating
