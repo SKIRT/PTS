@@ -36,6 +36,7 @@ from pts.modeling.fitting.tables import IndividualsTable
 from pts.core.tools.stringify import tostr
 from pts.do.commandline import Command
 from pts.evolve.optimize.tables import ElitismTable
+from pts.evolve.analyse.database import get_best_individual_key_all_generations
 
 # -----------------------------------------------------------------
 
@@ -177,6 +178,9 @@ class StepWiseTest(TestImplementation):
 
         # 2. Optimize
         self.optimize()
+
+        # 3. Get best parameter values
+        self.get_best_parameter_values()
 
         # 3. Writing
         self.write()
@@ -481,7 +485,6 @@ class StepWiseTest(TestImplementation):
         self.scores_table = None
 
         # The dictionary with the list of the model parameters
-        #self.parameters = defaultdict(list)
         self.parameters = defaultdict(dict)
 
     # -----------------------------------------------------------------
@@ -529,7 +532,7 @@ class StepWiseTest(TestImplementation):
         self.generation.index = generation_index
         self.generation.method = "genetic"
         self.generation.wavelength_grid_level = None
-        self.generation.nsimulations = self.config.nindividuals
+        #self.generation.nsimulations = self.config.nindividuals # NO: DO IT AFTER THE MODELS AR GENERATED TO GET THE ACTUAL NUMBER (recurrence)
         self.generation.npackages = None
         self.generation.selfabsorption = None
         self.generation.transient_heating = None
@@ -943,6 +946,17 @@ class StepWiseTest(TestImplementation):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nmodels(self):
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.parameters[free_parameter_labels[0]])
+
+    # -----------------------------------------------------------------
+
     def run_optimizer(self, get_parameters=True):
 
         """
@@ -966,6 +980,9 @@ class StepWiseTest(TestImplementation):
 
         # Get the parameter values of the new models
         if get_parameters: self.get_model_parameters()
+
+        # Set the number of individuals for this generation
+        self.generation.nsimulations = self.nmodels
 
     # -----------------------------------------------------------------
 
@@ -1127,28 +1144,41 @@ class StepWiseTest(TestImplementation):
         # Inform the user
         log.info("Getting the model parameters ...")
 
+        # THIS WAS THE IMPLEMENTATION BEFORE RECURRENCE CHECKING:
+
         # Loop over the individuals of the population
         #for individual in self.optimizer.population:
 
         # Set the individual names
-        self.individual_names = self.optimizer.population.names
+        #self.individual_names = self.optimizer.population.names
 
         # Loop over the individual names
-        for name in self.individual_names:
+        #for name in self.individual_names:
 
             # Get the individual
-            individual = self.optimizer.population[name]
+            #individual = self.optimizer.population[name]
 
             # Loop over all the genes (parameters)
-            for i in range(len(individual)):
+            #for i in range(len(individual)):
 
                 # Get the parameter value
-                value = individual[i]
+                #value = individual[i]
 
                 # Add the parameter value to the dictionary
                 #self.parameters[free_parameter_labels[i]].append(value)
 
-                self.parameters[free_parameter_labels[i]][name] = value
+                #self.parameters[free_parameter_labels[i]][name] = value
+
+        # NEW IMPLEMENTATION: AS IN GENETICMODELGENERATOR
+
+        # Loop over the individual names
+        for name in self.individual_names:
+
+            # Get the parameters
+            for index, parameter_value in enumerate(self.optimizer.get_parameters(name)):
+
+                # Add the parameter value to the dictionary
+                self.parameters[free_parameter_labels[index]][name] = parameter_value
 
     # -----------------------------------------------------------------
 
@@ -1410,6 +1440,27 @@ class StepWiseTest(TestImplementation):
 
             # Add an entry to the best parameters table file
             self.best_parameters_table.add_entry(generation_name, values, chi_squared)
+
+    # -----------------------------------------------------------------
+
+    def get_best_parameter_values(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Getting the best parameter values ...")
+
+        # Get the best parameter values
+        self.best_parameter_values = self.modeler.modeler.fitter.fitting_run.best_parameter_values
+
+        # Debugging
+        log.debug("The best parameter values are:")
+        log.debug("")
+        for parameter_name in self.best_parameter_values: log.debug(" - " + parameter_name + ": " + tostr(self.best_parameter_values[parameter_name], scientific=True, fancy=True, ndigits=parameter_ndigits[parameter_name]))
+        log.debug("")
 
     # -----------------------------------------------------------------
 
@@ -2146,5 +2197,67 @@ def get_parameter_unit(label):
         elif parameter_units[label] == "": return None
         else: return parameter_units[label]
     else: return None
+
+# -----------------------------------------------------------------
+
+def get_best_parameter_values(database_path, run_name, populations):
+
+    """
+    This function ...
+    :param database_path:
+    :param run_name:
+    :param populations:
+    :return: 
+    """
+
+    # NEW: THIS FUNCTION WAS CREATED BECAUSE RECURRENCE WAS IMPLEMENTED: THIS MEANS THAT OUR OWN TABLES
+    # (THOSE WHO CONTAIN ONLY MODELS THAT HAVE TO BE SIMULATED AND HAVE NOT OCCURED AND SCORED BEFORE)
+
+    #from .component import get_statistics_path, get_populations
+    #from .component import get_database_path
+
+    # Get path
+    #statistics_path = get_statistics_path(self.modeling_path)
+    #database_path = get_database_path(self.modeling_path)
+
+    # Get generation and individual
+    generation_index, individual_key = get_best_individual_key_all_generations(database_path, run_name, minmax=min_or_max)
+
+    # Look in the populations data for the parameters, for this fitting run
+    #populations = get_populations(self.modeling_path)[run_name]
+
+    # Get the parameter values for the generation and individual
+    individuals_generation = populations[generation_index]
+
+    # Get genome
+    genome = individuals_generation[individual_key]
+
+    # NEW: EXPERIMENTAL:
+    # BE AWARE: IF THIS IS CHANGED, ALSO CHANGE IN OPTIMIZER -> set_nbits()
+    nbits_list = []
+    for index in range(len(self.ndigits_list)):
+        ndigits = self.ndigits_list[index]
+        low = self.parameter_minima_scalar[index]
+        high = self.parameter_maxima_scalar[index]
+        nbits = numbers.nbits_for_ndigits_experimental(ndigits, low, high)
+        nbits_list.append(nbits)
+
+    # Convert
+    if self.genetic_settings.gray_code: parameters = gray_binary_string_to_parameters(genome, self.parameter_minima_scalar, self.parameter_maxima_scalar, nbits_list)
+    else: parameters = binary_string_to_parameters(genome, self.parameter_minima_scalar, self.parameter_maxima_scalar, nbits_list)
+
+    values = dict()
+
+    for label_index, label in enumerate(free_parameter_labels):
+
+        # Add unit
+        if label in parameter_units:
+            value = parameters[label_index] * parameter_units[label]
+        else: value = parameters[label_index]
+
+        values[label] = value
+
+    # Return the dictionary
+    return values
 
 # -----------------------------------------------------------------

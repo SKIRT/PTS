@@ -266,6 +266,37 @@ def get_best_individual_key_and_score_for_generation(database, run_id, generatio
 
 # -----------------------------------------------------------------
 
+def get_best_individual_key_all_generations(database, run_id, minmax="max"):
+
+    """
+    This function ...
+    :param database: 
+    :param run_id: 
+    :param minmax: 
+    :return: 
+    """
+
+    generation_index = None
+    individual_key = None
+    chi_squared = float("inf")
+
+    # Loop over the generations
+    #for index in self.genetic_generation_indices_for_statistics_and_database:
+    for index in get_generations(database, run_id):
+
+        # Get best key and score
+        key, score = get_best_individual_key_and_score_for_generation(database, run_id, index, minmax="min")
+
+        if score < chi_squared:
+            chi_squared = score
+            generation_index = index
+            individual_key = key
+
+    # Return the individual's key
+    return individual_key
+
+# -----------------------------------------------------------------
+
 def get_score_for_individual(database, run_id, generation, key):
 
     """
