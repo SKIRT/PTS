@@ -87,9 +87,6 @@ class GeneticModelGenerator(ModelGenerator):
         # Previous recurrent
         self.previous_recurrent = None
 
-        # Number of digits for the different parameters
-        #self.ndigits = None
-
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -182,7 +179,9 @@ class GeneticModelGenerator(ModelGenerator):
 
         # Set generation specific paths
         population_path = fs.join(self.generation_path, "population.dat")
-        elitism_path = fs.join(self.generation_path, "elitism.dat")
+        #elitism_path = fs.join(self.generation_path, "elitism.dat")
+        if self.initial: elitism_path = None
+        else: elitism_path = fs.join(self.fitting_run.last_genetic_or_initial_generation_path, "elitism.dat")
         recurrent_path = fs.join(self.generation_path, "recurrent.dat")
 
         # Set generation specific paths
