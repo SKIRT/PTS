@@ -311,6 +311,31 @@ def binary_to_integer(binary):
 
 # -----------------------------------------------------------------
 
+def integer_to_quaternary(integer):
+
+    """
+    This function ...
+    :param integer: 
+    :return: 
+    """
+
+    from numpy import base_repr
+    return base_repr(integer, 4)
+
+# -----------------------------------------------------------------
+
+def quaternary_to_integer(quaternary):
+
+    """
+    This fucntion ...
+    :param quaternary: 
+    :return: 
+    """
+
+    return int(str(quaternary), 4)
+
+# -----------------------------------------------------------------
+
 def integer_to_binary_string(integer, nbits=None):
 
     """
