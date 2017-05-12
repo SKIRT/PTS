@@ -53,4 +53,6 @@ launch_local(pts_command, settings)
 
 # pts tests modeling M81_sed --debug --settings "'free_parameters':['dust_mass'], 'reference_test':'M81_sed_2017-05-06--21-01-58-593', 'ngenerations': 10, 'nsimulations': 10" --keep --only_tests
 
+# pts tests modeling M81_sed --debug --settings "'free_parameters':['dust_mass'], 'reference_test':'M81_sed_2017-05-06--21-01-58-593', 'ngenerations': 3, 'nsimulations': 5" --keep --only_tests
+
 # -----------------------------------------------------------------

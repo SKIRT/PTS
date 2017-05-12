@@ -984,8 +984,77 @@ class GeneticEngine(object):
             # Check if requested
             if check is not None:
 
+                genome_a = individual.genomeList
+                genome_b = check[index]
+
                 # Check
-                if not equal_genomes(individual.genomeList, check[index], rtol=rtol, atol=atol, binary_parameters=binary_parameters): raise ValueError("Check failed: individual = " + str(individual.genomeList) + " and check = " + str(check[index]))
+                if not equal_genomes(genome_a, genome_b, rtol=rtol, atol=atol, binary_parameters=binary_parameters):
+
+                    # Convert into arrays
+                    genome_a = np.array(genome_a)
+                    genome_b = np.array(genome_b)
+
+                    # Show error message
+                    log.error("Failed check for individual " + str(index) + ":")
+
+                    # Binary: check exact
+                    if is_binary_values(genome_a):
+
+                        # Parameters are specified for doing binary to real conversion
+                        if binary_parameters is not None:
+
+                            minima = binary_parameters.minima
+                            maxima = binary_parameters.maxima
+                            nbits = binary_parameters.nbits
+                            gray = binary_parameters.gray
+                            ndigits = binary_parameters.ndigits
+
+                            parameter_index = 0
+                            for value_a, value_b in get_parameters_from_genomes(genome_a, genome_b, minima, maxima, nbits, gray):
+
+                                # Round both values
+                                value_a_rounded = numbers.round_to_n_significant_digits(value_a, ndigits[parameter_index])
+                                value_b_rounded = numbers.round_to_n_significant_digits(value_b, ndigits[parameter_index])
+
+                                adiff = abs(value_a_rounded - value_b_rounded)
+                                rdiff = adiff / value_a_rounded
+
+                                if adiff > atol or rdiff > rtol:
+
+                                    log.error("Different (rounded) values for parameter #" + str(parameter_index) + ":")
+                                    log.error(" - value_a: " + str(value_a))
+                                    log.error(" - value_b: " + str(value_b))
+                                    log.error(" - value_a_rounded: " + str(value_a_rounded))
+                                    log.error(" - value_b_rounded: " + str(value_b_rounded))
+                                    log.error(" - absolute difference: " + str(adiff))
+                                    log.error(" - relative difference: " + str(rdiff * 100.) + "%")
+                                    log.error(" - absolute tolerance: " + str(atol))
+                                    log.error(" - relative tolerance: " + str(rtol * 100.) + "%")
+
+                                parameter_index += 1
+
+                        else:
+
+                            # Show the positions for which there is a mismatch
+                            indices = np.where(genome_a != genome_b)
+                            log.error(" - different bits: " + ",".join(str(index) for index in indices))
+
+                    # Real: check with certain tolerance
+                    elif is_real_values(genome_b):
+
+                        adiff = abs(genome_a - genome_b) # numpy arrays
+                        rdiff = adiff / genome_a
+
+                        log.error(" - absolute differences: " + str(adiff))
+                        log.error(" - relative differences: " + str(rdiff * 100.) + "%")
+                        log.error(" - absolute tolerance: " + str(atol))
+                        log.error(" - relative tolerance: " + str(rtol * 100.) + "%")
+
+                    # Unrecognized 1D genome list
+                    else: raise ValueError("Genome list not recognized: " + str(genome_a))
+
+                    # Raise error since check failed
+                    raise ValueError("Check failed: individual = " + str(genome_a) + " and check = " + str(genome_b))
 
             # Set the score
             individual.score = scores[index]
@@ -1689,9 +1758,77 @@ def equal_binary_genomes_with_conversion(genome_a, genome_b, minima, maxima, nbi
     :return: 
     """
 
+    # Loop over the parameters
+    for value_a_rounded, value_b_rounded in get_parameters_from_genomes_rounded(genome_a, genome_b, minima, maxima, nbits, gray, ndigits):
+
+        # Fail!
+        if value_a_rounded != value_b_rounded: return False
+
+    # All checks passed
+    return True
+
+# -----------------------------------------------------------------
+
+def get_parameters_from_genomes(genome_a, genome_b, minima, maxima, nbits, gray):
+
+    """
+    This function ...
+    :param genome_a: 
+    :param genome_b: 
+    :param minima: 
+    :param maxima: 
+    :param nbits: 
+    :param gray: 
+    :return: 
+    """
+
     nparameters = len(minima)
 
     bit_slices = numbers.generate_bit_slices(nbits)
+
+    pairs = []
+
+    # Loop over the parameters
+    for index in range(nparameters):
+
+        # Get the first n bits
+        bits_a = genome_a[bit_slices[index]]
+        bits_b = genome_b[bit_slices[index]]
+
+        # Convert into real value
+        if gray:
+            value_a = numbers.gray_binary_string_to_float(bits_a, low=minima[index], high=maxima[index], nbits=nbits[index])
+            value_b = numbers.gray_binary_string_to_float(bits_b, low=minima[index], high=maxima[index], nbits=nbits[index])
+        else:
+            value_a = numbers.binary_string_to_float(bits_a, low=minima[index], high=maxima[index], nbits=nbits[index])
+            value_b = numbers.binary_string_to_float(bits_b, low=minima[index], high=maxima[index], nbits=nbits[index])
+
+        pairs.append((value_a, value_b))
+
+    # Return the pairs
+    return pairs
+
+# -----------------------------------------------------------------
+
+def get_parameters_from_genomes_rounded(genome_a, genome_b, minima, maxima, nbits, gray, ndigits):
+
+    """
+    This function ...
+    :param genome_a: 
+    :param genome_b:
+    :param minima:
+    :param maxima:
+    :param nbits:
+    :param gray:
+    :param ndigits:
+    :return: 
+    """
+
+    nparameters = len(minima)
+
+    bit_slices = numbers.generate_bit_slices(nbits)
+
+    pairs = []
 
     # Loop over the parameters
     for index in range(nparameters):
@@ -1711,10 +1848,9 @@ def equal_binary_genomes_with_conversion(genome_a, genome_b, minima, maxima, nbi
         value_a_rounded = numbers.round_to_n_significant_digits(value_a, ndigits[index])
         value_b_rounded = numbers.round_to_n_significant_digits(value_b, ndigits[index])
 
-        # Fail!
-        if value_a_rounded != value_b_rounded: return False
+        pairs.append((value_a_rounded, value_b_rounded))
 
-    # All checks passed
-    return True
+    # Return the pairs
+    return pairs
 
 # -----------------------------------------------------------------
