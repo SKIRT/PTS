@@ -447,7 +447,7 @@ class FittingRun(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def ndigits_list(self):
 
         """
@@ -462,7 +462,7 @@ class FittingRun(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def ndigits_dict(self):
 
         """
@@ -471,6 +471,41 @@ class FittingRun(object):
         """
 
         return self.parameter_ndigits
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nbits_list(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # NEW: EXPERIMENTAL:
+        nbits_list = []
+        for index in range(len(self.ndigits_list)):
+            ndigits = self.ndigits_list[index]
+            low = self.parameter_minima_scalar[index]
+            high = self.parameter_maxima_scalar[index]
+            nbits = numbers.nbits_for_ndigits_experimental(ndigits, low, high)
+            nbits_list.append(nbits)
+
+        return nbits_list
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def nbits_dict(self):
+
+        """
+        This fucntion ...
+        :return: 
+        """
+
+        keys = self.free_parameter_labels
+        values = self.nbits_list
+        return dict(zip(keys, values))
 
     # -----------------------------------------------------------------
 
@@ -1011,29 +1046,11 @@ class FittingRun(object):
         # NEW: THIS FUNCTION WAS CREATED BECAUSE RECURRENCE WAS IMPLEMENTED: THIS MEANS THAT OUR OWN TABLES
         # (THOSE WHO CONTAIN ONLY MODELS THAT HAVE TO BE SIMULATED AND HAVE NOT OCCURED AND SCORED BEFORE)
 
-        from .component import get_statistics_path, get_populations
+        from .component import get_populations
         from .component import get_database_path
 
         # Get path
-        #statistics_path = get_statistics_path(self.modeling_path)
         database_path = get_database_path(self.modeling_path)
-
-        #generation_index = None
-        ##individual_index = None
-        #individual_key = None
-        #chi_squared = float("inf")
-        ## Loop over the generations
-        #for index in self.genetic_generation_indices_for_statistics_and_database:
-        #    # Get the best score from the statistics
-        #    #ind_index, score = get_best_score_and_index_for_generation(statistics_path, self.name, index, minmax="min")
-        #    #score = get_best_score_for_generation(statistics_path, self.name, index, minmax="min")
-        #    # Get best key and score
-        #    key, score = get_best_individual_key_and_score_for_generation(database_path, self.name, index, minmax="min")
-        #    if score < chi_squared:
-        #        chi_squared = score
-        #        generation_index = index
-        #        #individual_index = ind_index
-        #        individual_key = key
 
         # Get generation and individual
         generation_index, individual_key = get_best_individual_key_all_generations(database_path, self.name, minmax="min")
@@ -1043,7 +1060,6 @@ class FittingRun(object):
 
         # Get the parameter values for the generation and individual
         individuals_generation = populations[generation_index]
-        #individual_keys = individuals_generation.keys()
 
         # Get parameters
         #individual_key = individual_keys[individual_index]
@@ -1052,19 +1068,9 @@ class FittingRun(object):
         # Get genome
         genome = individuals_generation[individual_key]
 
-        # NEW: EXPERIMENTAL:
-        # BE AWARE: IF THIS IS CHANGED, ALSO CHANGE IN OPTIMIZER -> set_nbits()
-        nbits_list = []
-        for index in range(len(self.ndigits_list)):
-            ndigits = self.ndigits_list[index]
-            low = self.parameter_minima_scalar[index]
-            high = self.parameter_maxima_scalar[index]
-            nbits = numbers.nbits_for_ndigits_experimental(ndigits, low, high)
-            nbits_list.append(nbits)
-
         # Convert
-        if self.genetic_settings.gray_code: parameters = gray_binary_string_to_parameters(genome, self.parameter_minima_scalar, self.parameter_maxima_scalar, nbits_list)
-        else: parameters = binary_string_to_parameters(genome, self.parameter_minima_scalar, self.parameter_maxima_scalar, nbits_list)
+        if self.genetic_settings.gray_code: parameters = gray_binary_string_to_parameters(genome, self.parameter_minima_scalar, self.parameter_maxima_scalar, self.nbits_list)
+        else: parameters = binary_string_to_parameters(genome, self.parameter_minima_scalar, self.parameter_maxima_scalar, self.nbits_list)
 
         values = dict()
 

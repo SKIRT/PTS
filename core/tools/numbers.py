@@ -24,6 +24,30 @@ from . import sequences
 
 # -----------------------------------------------------------------
 
+def is_even(integer):
+
+    """
+    This function ...
+    :param integer: 
+    :return: 
+    """
+    
+    return integer % 2 == 0
+
+# -----------------------------------------------------------------
+
+def is_odd(integer):
+    
+    """
+    This functio n...
+    :param integer: 
+    :return: 
+    """
+
+    return integer % 2 != 0
+
+# -----------------------------------------------------------------
+
 def is_integer(value):
 
     """
@@ -733,5 +757,37 @@ def generate_bit_slices(nbits):
         tempsum += nbits
 
     return slices
+
+# -----------------------------------------------------------------
+
+def random_linear(low, high):
+
+    """
+    This function ...
+    :param low: 
+    :param high: 
+    :return: 
+    """
+
+    random = np.random.uniform(low, high)
+    return random
+
+# -----------------------------------------------------------------
+
+def random_logarithmic(low, high):
+
+    """
+    This function ...
+    :param low: 
+    :param high: 
+    :return: 
+    """
+
+    # Generate random logarithmic variate
+    logmin = np.log10(low)
+    logmax = np.log10(high)
+    lograndom = np.random.uniform(logmin, logmax)
+    random = 10 ** lograndom
+    return random
 
 # -----------------------------------------------------------------

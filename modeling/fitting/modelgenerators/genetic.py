@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import numpy as np
-
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
 from .generator import ModelGenerator
@@ -25,6 +22,7 @@ from ..evaluate import evaluate
 from ....core.tools.stringify import tostr
 from ....core.tools import sequences
 from ....core.tools.serialization import load_dict
+from ....core.tools import numbers
 
 # -----------------------------------------------------------------
 
@@ -123,9 +121,6 @@ class GeneticModelGenerator(ModelGenerator):
         if "most_sampled_parameters" in kwargs: self.most_sampled_parameters = kwargs.pop("most_sampled_parameters")
         if "sampling_weights" in kwargs: self.sampling_weights = kwargs.pop("sampling_weights")
 
-        # Special: for binary genomes (but also otherwise for displaying?)
-        #if "ndigits" in kwargs: self.ndigits = kwargs.pop("ndigits")
-
     # -----------------------------------------------------------------
 
     def create_continuous_optimizer(self):
@@ -178,10 +173,15 @@ class GeneticModelGenerator(ModelGenerator):
         else: self.create_optimizer()
 
         # Set generation specific paths
+
+        # Population path
         population_path = fs.join(self.generation_path, "population.dat")
-        #elitism_path = fs.join(self.generation_path, "elitism.dat")
+
+        # Set elitism table path -> directory of previous generation!
         if self.initial: elitism_path = None
         else: elitism_path = fs.join(self.fitting_run.last_genetic_or_initial_generation_path, "elitism.dat")
+
+        # Recurrent path
         recurrent_path = fs.join(self.generation_path, "recurrent.dat")
 
         # Set generation specific paths
@@ -347,7 +347,7 @@ class GeneticModelGenerator(ModelGenerator):
                            maxima=self.parameter_maxima_scalar, evaluator=self.evaluator,
                            evaluator_kwargs=self.evaluator_kwargs, initial_parameters=self.initial_parameters,
                            previous_population=self.previous_population, previous_recurrent=self.previous_recurrent,
-                           ndigits=self.fitting_run.ndigits_list)
+                           ndigits=self.fitting_run.ndigits_list, nbits=self.fitting_run.nbits_list)
 
         # Get the parameter values of the new models
         self.get_model_parameters()
@@ -507,16 +507,10 @@ class GeneticModelGenerator(ModelGenerator):
                 range_max = self.parameter_maxima_scalar[label_index]
 
                 # Linear scale
-                if self.scale_for_parameter(label) == "linear": random = np.random.uniform(range_min, range_max)
+                if self.scale_for_parameter(label) == "linear": random = numbers.random_linear(range_min, range_max)
 
                 # Logarithmic scale
-                elif self.scale_for_parameter(label) == "logarithmic":
-
-                    # Generate random logarithmic variate
-                    logmin = np.log10(range_min)
-                    logmax = np.log10(range_max)
-                    lograndom = np.random.uniform(logmin, logmax)
-                    random = 10**lograndom
+                elif self.scale_for_parameter(label) == "logarithmic": random = numbers.random_logarithmic(range_min, range_max)
 
                 # Invalid scale
                 else: raise ValueError("Invalid scale: " + str(self.scale_for_parameter(label)))

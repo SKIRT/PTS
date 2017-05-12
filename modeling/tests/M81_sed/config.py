@@ -68,6 +68,6 @@ definition.add_optional("reference_test", "string", "use the reference simulatio
 
 default_scale = "logarithmic"
 scales = ["logarithmic", "linear"]
-definition.add_optional("scale", "string", "scale to use for the generation of grid/initial genetic individuals", default_scale, scales)
+definition.add_optional("scale", "string", "scale to use for the generation of grid/genetic individuals", default_scale, scales)
 
 # -----------------------------------------------------------------

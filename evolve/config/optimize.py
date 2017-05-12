@@ -23,6 +23,8 @@ min_or_max = ["minimize", "maximize"]
 scaling_methods = ["linear", "sigma_truncation", "power_law", "boltzmann", "exponential", "saturated"]
 selector_methods = ["rank", "uniform", "tournament", "tournament_alternative", "roulette_wheel"]
 
+scales = ["linear", "logarithmic"]
+
 # -----------------------------------------------------------------
 
 # DEFAULT VALUES
@@ -47,6 +49,8 @@ default_scaling_method = "linear"
 default_selector_method = "roulette_wheel"
 
 default_elitism = True
+
+default_scale = "linear"
 
 # -----------------------------------------------------------------
 
@@ -128,5 +132,8 @@ definition.add_optional("recurrence_atol", "positive_real", "absolute tolerance 
 # They are very useful in this field, since mutations in the code allow for mostly incremental changes,
 # but occasionally a single bit-change can cause a big leap and lead to new properties.
 definition.add_flag("gray_code", "use Gray coding for the binary genome representations", True)
+
+# NEW: SCALE FOR THE REAL VALUES ?
+definition.add_optional("default_scale", "string", "default scale", default_scale, scales)
 
 # -----------------------------------------------------------------

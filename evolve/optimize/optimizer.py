@@ -228,8 +228,11 @@ class Optimizer(Configurable):
         # Set ndigits
         if "ndigits" in kwargs: self.ndigits = kwargs.pop("ndigits")
 
-        # Determine the number of bits per parameter
-        if self.ndigits is not None: self.set_nbits()
+        # Set nbits
+        if "nbits" in kwargs: self.nbits = kwargs.pop("nbits")
+
+        # Check whether NBITS is given if binary_string is genome representation
+        if self.binary_string_genome and self.nbits is None: raise ValueError("Number of bits must be specified for binary genomes")
 
     # -----------------------------------------------------------------
 
@@ -268,28 +271,59 @@ class Optimizer(Configurable):
 
     # -----------------------------------------------------------------
 
-    def set_nbits(self):
+    @property
+    def parameter_minima_scaled(self):
 
         """
         This function ...
         :return: 
         """
 
-        # Inform the user
-        log.info("Determining the number of bits for each parameter ...")
+        if self.parameter_minima is None: return None
 
-        # Determine the number of bits for each parameter
-        #self.nbits = [numbers.binary_digits_for_significant_figures(nfigures) for nfigures in self.ndigits]
+    # -----------------------------------------------------------------
 
-        # NEW: EXPERIMENTAL:
-        # BE AWARE: IF THIS IS CHANGED, ALSO CHANGE IN FITTING RUN -> best_parameter_values()
-        self.nbits = []
-        for index in range(len(self.ndigits)):
-            ndigits = self.ndigits[index]
-            low = self.parameter_minima[index]
-            high = self.parameter_maxima[index]
-            nbits = numbers.nbits_for_ndigits_experimental(ndigits, low, high)
-            self.nbits.append(nbits)
+    @property
+    def parameter_maxima_scaled(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if self.parameter_maxima is None: return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_centers_scaled(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if self.parameter_centers is None: return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_sigmas_scaled(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_range_scaled(self):
+
+        """
+        This function ...
+        :return: 
+        """
 
     # -----------------------------------------------------------------
 

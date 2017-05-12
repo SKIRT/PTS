@@ -274,7 +274,7 @@ class ExplorationFinisher(FittingComponent):
         self.optimizer.run(scores=self.scores, scores_check=self.scores_check, minima=parameter_minima,
                            maxima=parameter_maxima, evaluator=evaluator, evaluator_kwargs=evaluator_kwargs,
                            previous_population=previous_population, previous_recurrent=previous_recurrent,
-                           ndigits=self.fitting_run.ndigits_list)
+                           ndigits=self.fitting_run.ndigits_list, nbits=self.fitting_run.nbits_list)
 
     # -----------------------------------------------------------------
 
