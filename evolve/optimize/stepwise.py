@@ -776,8 +776,10 @@ class StepWiseOptimizer(Optimizer):
         # Get the real parameters, unscaled
         parameters = get_parameters_from_genome(genome, self.parameter_minima_scaled, self.parameter_maxima_scaled, self.nbits, self.parameter_scales, gray=self.config.gray_code)
 
-        # Round
-        if self.ndigits is not None: parameters = round_parameters(parameters, self.ndigits)
+        # Round ?? MAYBE NOT -> causes error, after this, the scores_check contains this rounded value,
+        # after which it is scaled again to log scale, then represented in binary, then converted back to log and rounded again
+        # to check --> TOO MANY ERRORS!
+        #if self.ndigits is not None: parameters = round_parameters(parameters, self.ndigits)
 
         # Return the parameters
         return parameters

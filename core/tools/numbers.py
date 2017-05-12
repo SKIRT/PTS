@@ -656,29 +656,49 @@ def quaternary_gray_code(n):
     :return: 
     """
 
-    def gray_code_recurse(g, n):
+    start = ['0', '1', '2', '3']
 
-        k = len(g)
+    #ncombinations = min_nbits_for_nintegers()
 
-        if n <= 0: return
-        else:
+    #total = []
 
-            for i in range(k-1, -1, -1):
+    previous = start
+    #new = None
 
-                char = '1' + g[i]
-                g.append(char)
+    # Do n-1 times: e.g. for 3 qits, there's two steps from the start to the
+    # http://www.eetimes.com/author.asp?section_id=14&doc_id=1283114
+    for _ in range(n-1):
 
-            for i in range(k-1, -1, -1):
+        previous_length = len(previous)
 
-                g[i] = '0' + g[i]
+        # Add flipped orders
+        new = previous + previous[::-1] + previous + previous[::-1]
 
-            gray_code_recurse(g, n-1)
+        # Add first characters
+        for i in range(previous_length):
 
-    g = ['0', '1', '2', '3']
-    gray_code_recurse(g, n-1)
+            new[i] = '0' + new[i]
+
+        for i in range(previous_length, 2*previous_length):
+
+            new[i] = '1' + new[i]
+
+        for i in range(previous_length, 3*previous_length):
+
+            new[i] = '2' + new[i]
+
+        for i in range(previous_length, 4*previous_length):
+
+            new[i] = '3' + new[i]
+
+        previous = new
+
+    #print(previous)
+
+    codes = previous
 
     result = []
-    for entry in g: result.append([int(character) for character in entry])
+    for entry in codes: result.append([int(character) for character in entry])
     return result
 
 # -----------------------------------------------------------------

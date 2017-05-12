@@ -128,8 +128,8 @@ definition.add_optional("recurrence_rtol", "positive_real", "relative tolerance 
 definition.add_optional("recurrence_atol", "positive_real", "absolute tolerance for comparing equality of individuals for checking recurrence", 1e-8)
 
 # Checking
-definition.add_optional("check_rtol", "positive_real", "relative tolerance for comparing for check", 1e-5)
-definition.add_optional("check_atol", "positive_real", "relative tolerance for comparing for check", 1e-8)
+definition.add_optional("check_rtol", "positive_real", "relative tolerance for comparing for check", 1e-4)
+definition.add_optional("check_atol", "positive_real", "relative tolerance for comparing for check", 1e-6)
 
 # Advanced
 # Due to the Hamming distance properties of Gray codes, they are sometimes used in genetic algorithms.

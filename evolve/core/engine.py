@@ -214,9 +214,7 @@ class GeneticEngine(object):
         if type(interactive) != BooleanType:
             utils.raiseException("Interactive Mode option must be True or False", TypeError)
 
-        #if not isinstance(genome, GenomeBase):
-        #    utils.raiseException("The genome must be a GenomeBase subclass", TypeError)
-
+        # Genome is passed
         if isinstance(genome_or_pop, GenomeBase):
 
             # Set named flag
@@ -226,18 +224,28 @@ class GeneticEngine(object):
             if self.named_individuals: self.internalPop = NamedPopulation(genome_or_pop)
             else: self.internalPop = Population(genome_or_pop)
 
+            # Set the flag that we still have to do the population initialization
             self.initialized_population = False
 
+        # Initial population is passed
         elif isinstance(genome_or_pop, PopulationBase):
 
+            # Check whether the population is valid
+            if genome_or_pop.popSize < 2: raise ValueError("The population size cannot be smaller than 2")
+            if genome_or_pop.popSize % 2 != 0: raise ValueError("The population size cannot be odd")
+
+            # Checks passed: set the internal (initial) population
             self.internalPop = genome_or_pop
 
+            # Check whether the population uses named or unnamed individuals
             if isinstance(genome_or_pop, NamedPopulation): self.named_individuals = True
             elif isinstance(genome_or_pop, Population): self.named_individuals = False
             else: raise ValueError("Invalid population object")
 
+            # Set the flag that we don't have to do the population initialization anymore
             self.initialized_population = True
 
+        # Unknown input
         else: raise ValueError("Genome or population should be passed")
 
         # Initialize things
@@ -703,6 +711,9 @@ class GeneticEngine(object):
         # Check the value
         if size < 2: raise ValueError("Population size must be >= 2") #utils.raiseException("population size must be >= 2", ValueError)
 
+        # Other check
+        if size % 2 != 0: raise ValueError("The population size cannot be odd")
+
         # Set the value
         self.internalPop.setPopulationSize(size)
 
@@ -1092,10 +1103,6 @@ class GeneticEngine(object):
         :return:
         """
 
-        #if self.dbAdapter:
-        #    if self.currentGeneration % self.dbAdapter.getStatsGenFreq() == 0:
-        #        self.dumpStatsDB()
-
         # NEW
         self.dump_statistics_adapters()
 
@@ -1106,12 +1113,10 @@ class GeneticEngine(object):
         new_population = self.internalPop.clone_population()
         log.debug("Population was cloned")
 
-        #size_iterate = len(self.internalPop)
         size_iterate = self.internalPop.popSize
 
         # Odd population size
         if size_iterate % 2 != 0: raise ValueError("The population size cannot be odd")
-            #size_iterate -= 1
 
         crossover_empty = self.select(popID=self.currentGeneration).crossover.isEmpty()
 
