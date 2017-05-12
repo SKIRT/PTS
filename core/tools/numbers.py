@@ -791,3 +791,33 @@ def random_logarithmic(low, high):
     return random
 
 # -----------------------------------------------------------------
+
+def to_scale(value, scale):
+
+    """
+    This funciton ...
+    :param value: 
+    :param scale: 
+    :return: 
+    """
+
+    if scale == "linear": return value
+    elif scale == "logarithmic": return np.log10(value)
+    else: raise ValueError("Invalid scale " + scale)
+
+# -----------------------------------------------------------------
+
+def unscale(value, scale):
+
+    """
+    This funciton ...
+    :param value: 
+    :param scale: 
+    :return: 
+    """
+
+    if scale == "linear": return value
+    elif scale == "logarithmic": return 10**value
+    else: raise ValueError("Invalid scale " + scale)
+
+# -----------------------------------------------------------------

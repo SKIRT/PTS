@@ -15,6 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 from collections import OrderedDict
 
+# Import asronomical modules
+from astropy.utils import lazyproperty
+
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ..core.engine import GeneticEngine
@@ -27,8 +30,7 @@ from ..core.population import NamedPopulation
 from .tables import ElitismTable
 from ..analyse.database import load_database, get_score_for_individual
 from ...core.tools.serialization import write_dict
-from .optimizer import parameters_to_binary_string, binary_string_to_parameters
-from .optimizer import parameters_to_gray_binary_string, gray_binary_string_to_parameters
+from .optimizer import get_parameters_from_genome, get_binary_genome_from_parameters, round_parameters
 from ..core.engine import equal_genomes
 from ..core import constants
 from ...core.tools import numbers
@@ -442,12 +444,14 @@ class StepWiseOptimizer(Optimizer):
         :return: 
         """
 
+        # If no check is passed, return None
         if self.scores_check is None: return None
 
+        # No recurrency
         if self.previous_recurrent is None: return self.scores_check
-
         if len(self.previous_recurrent) == 0: return self.scores_check
 
+        # Initialize a list for the checks
         checks = []
 
         passed_checks = iter(self.scores_check)
@@ -456,16 +460,7 @@ class StepWiseOptimizer(Optimizer):
         for key in self.previous_population:
 
             # Recurrent
-            if key in self.previous_recurrent:
-
-                parameters = self.previous_population[key]
-
-                # If binary genome, convert binary individual into actual parameters list
-                if self.binary_string_genome:
-
-                    # Convert
-                    if self.config.gray_code: parameters = gray_binary_string_to_parameters(parameters, self.parameter_minima, self.parameter_maxima, self.nbits)
-                    else: parameters = binary_string_to_parameters(parameters, self.parameter_minima, self.parameter_maxima, self.nbits)
+            if key in self.previous_recurrent: parameters = get_parameters_from_genome(self.previous_population[key], self.parameter_minima_scaled, self.parameter_maxima_scaled, self.nbits, self.parameter_scales, gray=self.config.gray_code)
 
             # Not recurrent
             else: parameters = passed_checks.next()
@@ -502,14 +497,11 @@ class StepWiseOptimizer(Optimizer):
             # Check whether parameter minima and maxima are defined
             if self.parameter_minima is None or self.parameter_maxima is None: raise ValueError("Parameter minima and maxima should be defined")
 
-            # Loop over the parameter sets
+            # Loop over the (unscaled) parameter sets
             for parameters in scores_check:
 
-                # Convert
-                if self.config.gray_code: binary_string = parameters_to_gray_binary_string(parameters, self.parameter_minima, self.parameter_maxima, self.nbits)
-                else: binary_string = parameters_to_binary_string(parameters, self.parameter_minima, self.parameter_maxima, self.nbits)
-
-                # Add to the check
+                # Generate and add the binary string genome from the (unscaled) parameters
+                binary_string = get_binary_genome_from_parameters(parameters, self.parameter_minima_scaled, self.parameter_maxima_scaled, self.nbits, self.parameter_scales, gray=self.config.gray_code)
                 checks.append(binary_string)
 
             # Return the converted checks
@@ -517,6 +509,27 @@ class StepWiseOptimizer(Optimizer):
 
         # Invalid
         else: raise ValueError("Unrecognized genome type")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def binary_parameters(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Create binary parameters map
+        binary_parameters = Map()
+        binary_parameters.minima = self.parameter_minima_scaled
+        binary_parameters.maxima = self.parameter_maxima_scaled
+        binary_parameters.ndigits = self.ndigits
+        binary_parameters.nbits = self.nbits
+        binary_parameters.gray = self.config.gray_code
+
+        # Return
+        return binary_parameters
 
     # -----------------------------------------------------------------
 
@@ -544,21 +557,8 @@ class StepWiseOptimizer(Optimizer):
         log.debug("All scores (with recurrent models) are: " + " ".join(str(score) for score in scores))
         log.debug("All checks (with recurrent models) are: " + " ".join(str(check) for check in checks))
 
-        # Determine rtol: NO: BINARY GENOMES MUST MATCH EXACTLY!!
-        #if self.binary_string_genome: rtol = max([1./ndigits for ndigits in self.ndigits])
-        #else: rtol = 1e-11
-        rtol = 1e-11
-
-        # Create binary parameters map
-        binary_parameters = Map()
-        binary_parameters.minima = self.parameter_minima
-        binary_parameters.maxima = self.parameter_maxima
-        binary_parameters.ndigits = self.ndigits
-        binary_parameters.nbits = self.nbits
-        binary_parameters.gray = self.config.gray_code
-
         # Set the scores
-        elitism_data = self.engine.set_scores(scores, checks, rtol=rtol, binary_parameters=binary_parameters)
+        elitism_data = self.engine.set_scores(scores, checks, rtol=self.config.check_rtol, atol=self.config.check_atol, binary_parameters=self.binary_parameters)
 
         # Create elitism table
         if elitism_data is not None: self.elitism_table = ElitismTable.from_data(elitism_data)
@@ -601,10 +601,7 @@ class StepWiseOptimizer(Optimizer):
         run_id = self.populations.identify
 
         # Load the populations data
-        #print(self.populations.filepath)
-        #raw_input("Press Enter to continue...")
         populations = load_populations(self.populations.filepath)
-        #print(populations)
         populations_run = populations[run_id]
 
         # Index of the new generation
@@ -619,18 +616,14 @@ class StepWiseOptimizer(Optimizer):
             # Get the individual
             individual = self.population[name]
 
-            # Check recurrency
-            generation_index, key = find_recurrent_individual(populations_run, individual, generation, rtol=self.config.recurrence_rtol, atol=self.config.recurrence_atol)
+            # Check recurrence
+            generation_index, key = find_recurrent_individual(populations_run, individual, generation, rtol=self.config.recurrence_rtol, atol=self.config.recurrence_atol, binary_parameters=self.binary_parameters)
 
             # If not found, skip
             if generation_index is None: continue
 
             # Debugging
             log.debug("Individual '" + name + "' is recurrent: individual '" + str(key) + "' from generation " + str(generation_index-1))
-
-            # Get generations in database
-            #generations = get_generations(database, run_id)
-            #print(generations)
 
             # Otherwise, look for the (raw) score in the database
             score = get_score_for_individual(database, run_id, generation_index, key)
@@ -772,41 +765,22 @@ class StepWiseOptimizer(Optimizer):
     def get_parameters(self, name):
 
         """
-        This function ...
+        This fucntion ...
         :param name: 
         :return: 
         """
 
-        if self.list_genome: return self.population[name].genomeList
-        elif self.binary_string_genome:
+        # Get the genome of the individual
+        genome = self.population[name].genomeList
 
-            # Initialize list for the parameters
-            parameters = []
+        # Get the real parameters, unscaled
+        parameters = get_parameters_from_genome(genome, self.parameter_minima_scaled, self.parameter_maxima_scaled, self.nbits, self.parameter_scales, gray=self.config.gray_code)
 
-            # Get the binary string genome
-            genes = self.population[name].genomeList
+        # Round
+        if self.ndigits is not None: parameters = round_parameters(parameters, self.ndigits)
 
-            # Loop over the parameters
-            for index in range(self.nparameters):
-
-                # Get the first n bits
-                bits = genes[self.bit_slices[index]]
-
-                # Convert to real value
-                if self.config.gray_code: value = numbers.gray_binary_string_to_float(bits, low=self.parameter_minima[index], high=self.parameter_maxima[index], nbits=self.nbits[index])
-                else: value = numbers.binary_string_to_float(bits, low=self.parameter_minima[index], high=self.parameter_maxima[index], nbits=self.nbits[index])
-
-                # Convert to relevant number of digits
-                if self.ndigits is not None: value = numbers.round_to_n_significant_digits(value, self.ndigits[index])
-
-                # Add the value
-                parameters.append(value)
-
-            # Return the parameter values
-            return parameters
-
-        # Invalid
-        else: raise ValueError("Unrecognized genome type")
+        # Return the parameters
+        return parameters
 
     # -----------------------------------------------------------------
 
@@ -1050,7 +1024,7 @@ def load_populations(path):
 
 # -----------------------------------------------------------------
 
-def find_recurrent_individual(populations, individual, current_generation, rtol=1e-5, atol=1e-8):
+def find_recurrent_individual(populations, individual, current_generation, rtol=1e-5, atol=1e-8, binary_parameters=None):
 
     """
     This function ...
@@ -1059,50 +1033,23 @@ def find_recurrent_individual(populations, individual, current_generation, rtol=
     :param current_generation:
     :param rtol:
     :param atol:
+    :param binary_parameters:
     :return: 
     """
-
-    #array_individual = np.array(individual.genomeList)
-
-    #print("individual", array_individual)
 
     # Look for a match with previous generations (populations) of the same run
     # Loop over the previous generations
     generation_indices = range(current_generation)
-    #print(current_generation, generation_indices)
     for generation_index in reversed(generation_indices):
-
-        #print("populations for generation " + str(generation_index-1), populations[generation_index])
 
         # Loop over the individuals in this generation
         for key in populations[generation_index]:
 
-            #print("KEY", key)
-
             # Get the genome
             genome = populations[generation_index][key]
-            #print(populations[generation_index][key])
 
             # If the genomes are equal, return the generation index and the individual key
-            if equal_genomes(individual.genomeList, genome): return generation_index, key
-
-            #array_genome = np.array(genome)
-
-            # Check for equality
-
-            #print(array_individual, array_genome)
-            #print(key, genome, array_genome)
-
-            # Binary: check exact
-            #if is_binary_values(genome):
-                #if individual.genomeList == genome: return generation_index, key
-
-            # Real: check with certain tolerance
-            #elif is_real_values(genome):
-                #if np.isclose(array_individual, array_genome, rtol=rtol, atol=atol): return generation_index, key
-
-            # Unrecognized 1D genome list
-            #else: raise ValueError("Genome list not recognized: " + str(genome))
+            if equal_genomes(individual.genomeList, genome, rtol=rtol, atol=atol, binary_parameters=binary_parameters): return generation_index, key
 
     # Nothing found
     return None, None

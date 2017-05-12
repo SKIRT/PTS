@@ -127,6 +127,10 @@ definition.add_flag("check_recurrence", "check for the recurrence of the same in
 definition.add_optional("recurrence_rtol", "positive_real", "relative tolerance for comparing equality of individuals for checking recurrence", 1e-5)
 definition.add_optional("recurrence_atol", "positive_real", "absolute tolerance for comparing equality of individuals for checking recurrence", 1e-8)
 
+# Checking
+definition.add_optional("check_rtol", "positive_real", "relative tolerance for comparing for check", 1e-5)
+definition.add_optional("check_atol", "positive_real" "relative tolerance for comparing for check", 1e-8)
+
 # Advanced
 # Due to the Hamming distance properties of Gray codes, they are sometimes used in genetic algorithms.
 # They are very useful in this field, since mutations in the code allow for mostly incremental changes,
