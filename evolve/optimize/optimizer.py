@@ -1857,7 +1857,7 @@ def get_parameters_from_genome_scaled(genome, minima, maxima, nbits, gray=False)
 
     # If binary genome, convert binary individual into actual parameters list
     if is_binary_genome(genome): parameters = get_parameters_from_binary_genome_scaled(genome, minima, maxima, nbits, gray=gray)
-    elif is_real_genome(genome): parameters = genome
+    elif is_real_genome(genome): parameters = list(genome)
     else: raise ValueError("Unrecognized genome: " + str(genome))
 
     # Return the parameters

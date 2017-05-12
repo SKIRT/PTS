@@ -1574,7 +1574,7 @@ def is_binary_genome(genome):
     :return: 
     """
 
-    return is_binary_values(genome.genomeList)
+    return is_binary_values(genome)
 
 # -----------------------------------------------------------------
 
@@ -1600,7 +1600,7 @@ def is_real_genome(genome):
     :return: 
     """
 
-    return is_real_values(genome.genomeList)
+    return is_real_values(genome)
 
 # -----------------------------------------------------------------
 

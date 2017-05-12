@@ -285,7 +285,7 @@ def get_best_individual_key_all_generations(database, run_id, minmax="max"):
     for index in get_generations(database, run_id):
 
         # Get best key and score
-        key, score = get_best_individual_key_and_score_for_generation(database, run_id, index, minmax="min")
+        key, score = get_best_individual_key_and_score_for_generation(database, run_id, index, minmax=minmax)
 
         if score < chi_squared:
             chi_squared = score
@@ -293,7 +293,7 @@ def get_best_individual_key_all_generations(database, run_id, minmax="max"):
             individual_key = key
 
     # Return the individual's key
-    return individual_key
+    return generation_index, individual_key
 
 # -----------------------------------------------------------------
 
