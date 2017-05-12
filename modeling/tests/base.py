@@ -303,6 +303,9 @@ class M81TestBase(TestImplementation):
         # The best parameter values
         self.best_parameter_values = dict()
 
+        # The chi squared of the best model
+        self.best_chi_squared = None
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -1119,13 +1122,16 @@ class M81TestBase(TestImplementation):
         log.info("Getting the best parameter values ...")
 
         # Get the best parameter values
-        self.best_parameter_values = self.modeler.modeler.fitter.fitting_run.best_parameter_values
+        self.best_parameter_values, self.best_chi_squared = self.modeler.modeler.fitter.fitting_run.best_parameter_values_and_chi_squared
 
         # Debugging
         log.debug("The best parameter values are:")
         log.debug("")
         for parameter_name in self.best_parameter_values: log.debug(" - " + parameter_name + ": " + tostr(self.best_parameter_values[parameter_name], scientific=True, fancy=True, ndigits=parameter_ndigits[parameter_name]))
         log.debug("")
+
+        # Debugging
+        log.debug("The best chi squared value is " + str(self.best_chi_squared))
 
     # -----------------------------------------------------------------
 

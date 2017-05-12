@@ -57,7 +57,7 @@ definition.sections["genetic"].optional["genome_type"].default = "binary_string"
 
 # Flags
 definition.add_flag("spectral_convolution", "use spectral convolution to calculate observed fluxes", False)
-definition.add_flag("cheat", "cheat by putting the real parameter values into the initial population of models", True)
+definition.add_flag("cheat", "cheat by putting the real parameter values into the initial population of models", False)
 
 default_fitting_method = "genetic"
 fitting_methods = ["genetic", "grid"]

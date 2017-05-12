@@ -1001,7 +1001,7 @@ class FittingRun(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def best_parameter_values(self):
+    def best_parameter_values_and_chi_squared(self):
 
         """
         This function ...
@@ -1078,6 +1078,19 @@ class FittingRun(object):
             values[label] = value
 
         # Return the dictionary
+        return values, chi_squared
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def best_parameter_values(self):
+
+        """
+        Egmrhomg
+        :return: 
+        """
+
+        values, chi_squared = self.best_parameter_values_and_chi_squared
         return values
 
     # -----------------------------------------------------------------
