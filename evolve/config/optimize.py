@@ -23,6 +23,8 @@ min_or_max = ["minimize", "maximize"]
 scaling_methods = ["linear", "sigma_truncation", "power_law", "boltzmann", "exponential", "saturated"]
 selector_methods = ["rank", "uniform", "tournament", "tournament_alternative", "roulette_wheel"]
 
+scales = ["linear", "logarithmic"]
+
 # -----------------------------------------------------------------
 
 # DEFAULT VALUES
@@ -47,6 +49,8 @@ default_scaling_method = "linear"
 default_selector_method = "roulette_wheel"
 
 default_elitism = True
+
+default_scale = "linear"
 
 # -----------------------------------------------------------------
 
@@ -123,10 +127,17 @@ definition.add_flag("check_recurrence", "check for the recurrence of the same in
 definition.add_optional("recurrence_rtol", "positive_real", "relative tolerance for comparing equality of individuals for checking recurrence", 1e-5)
 definition.add_optional("recurrence_atol", "positive_real", "absolute tolerance for comparing equality of individuals for checking recurrence", 1e-8)
 
+# Checking
+definition.add_optional("check_rtol", "positive_real", "relative tolerance for comparing for check", 1e-5)
+definition.add_optional("check_atol", "positive_real", "relative tolerance for comparing for check", 1e-8)
+
 # Advanced
 # Due to the Hamming distance properties of Gray codes, they are sometimes used in genetic algorithms.
 # They are very useful in this field, since mutations in the code allow for mostly incremental changes,
 # but occasionally a single bit-change can cause a big leap and lead to new properties.
 definition.add_flag("gray_code", "use Gray coding for the binary genome representations", True)
+
+# NEW: SCALE FOR THE REAL VALUES ?
+definition.add_optional("default_scale", "string", "default scale", default_scale, scales)
 
 # -----------------------------------------------------------------

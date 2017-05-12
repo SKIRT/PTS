@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import astronomical modules
+from astropy.utils import lazyproperty
+
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
 from ...core.tools.logging import log
@@ -36,8 +39,8 @@ class ExplorationFinisher(FittingComponent):
 
         """
         This function ...
-        :param config: 
-        :param interactive: 
+        :param args:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
@@ -61,6 +64,9 @@ class ExplorationFinisher(FittingComponent):
 
         # The best individual
         self.best = None
+
+        # The scales for the different parameters
+        self.scales = None
 
     # -----------------------------------------------------------------
 
@@ -108,6 +114,60 @@ class ExplorationFinisher(FittingComponent):
 
         # Load the fitting run
         self.fitting_run = self.load_fitting_run(self.config.name)
+
+        # Get the scales
+        if "scales" in kwargs: self.scales = kwargs.pop("scales")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_parameter_scale(self):
+
+        """
+        This function ..
+        :return: 
+        """
+
+        return self.scales is None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def multiple_parameter_scales(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.scales is not None
+
+    # -----------------------------------------------------------------
+
+    def scale_for_parameter(self, label):
+
+        """
+        This function ...
+        :param label: 
+        :return: 
+        """
+
+        if self.multiple_parameter_scales: return self.scales[label]
+        else: return self.config.default_scale
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def parameter_scale_list(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        scales = []
+        for label in self.fitting_run.free_parameter_labels: scales.append(self.scale_for_parameter(label))
+        return scales
 
     # -----------------------------------------------------------------
 
@@ -274,7 +334,7 @@ class ExplorationFinisher(FittingComponent):
         self.optimizer.run(scores=self.scores, scores_check=self.scores_check, minima=parameter_minima,
                            maxima=parameter_maxima, evaluator=evaluator, evaluator_kwargs=evaluator_kwargs,
                            previous_population=previous_population, previous_recurrent=previous_recurrent,
-                           ndigits=self.fitting_run.ndigits_list)
+                           ndigits=self.fitting_run.ndigits_list, nbits=self.fitting_run.nbits_list, scales=self.parameter_scale_list)
 
     # -----------------------------------------------------------------
 

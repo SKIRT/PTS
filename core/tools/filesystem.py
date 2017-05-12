@@ -962,6 +962,27 @@ def copy_files(file_paths, directory_path):
 
 # -----------------------------------------------------------------
 
+def copy_and_decompress_files(file_paths, directory_path):
+
+    """
+    This function ...
+    :param file_paths: 
+    :param directory_path: 
+    :return: 
+    """
+
+    # Import here to avoid circular imports
+    from . import archive
+
+    # Loop over the files
+    for file_path in file_paths:
+
+        # Either decompress in the new directory of copy (if not an archive)
+        if archive.is_archive(file_path): archive.decompress_file(file_path, directory_path)
+        else: copy_file(file_path, directory_path)
+
+# -----------------------------------------------------------------
+
 def move_file(file_path, directory_path, new_name=None):
 
     """

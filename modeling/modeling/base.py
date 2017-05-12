@@ -378,7 +378,7 @@ class ModelerBase(Configurable):
         repeat(self.advance, self.config.ngenerations, **kwargs)
 
         # Finish
-        self.finish()
+        self.finish(**kwargs)
 
     # -----------------------------------------------------------------
 
@@ -397,7 +397,7 @@ class ModelerBase(Configurable):
         generations = get_generations_table(self.modeling_path, self.fitting_run_name)
 
         # If finishing the generation is requested
-        if self.config.finish: self.finish()
+        if self.config.finish: self.finish(**kwargs)
 
         # If this is the initial generation
         elif generations.last_generation_name is None: self.start(**kwargs)
@@ -598,7 +598,7 @@ class ModelerBase(Configurable):
         # Add the fixed parameter values
         if self.fixed_initial_parameters is not None: input_dict["fixed_initial_parameters"] = self.fixed_initial_parameters
 
-        # NEW: Add additional input
+        # NEW: Add additional input (such as parameter grid scales)
         input_dict.update(kwargs)
 
         # Run the parameter explorer
@@ -610,10 +610,11 @@ class ModelerBase(Configurable):
 
     # -----------------------------------------------------------------
 
-    def finish(self):
+    def finish(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
@@ -632,6 +633,9 @@ class ModelerBase(Configurable):
 
         # Add an entry to the history
         self.history.add_entry(ExplorationFinisher.command_name())
+
+        # NEW: Add additional input (such as parameter grid scales)
+        input_dict.update(kwargs)
 
         # Run the finisher
         self.finisher.run(**input_dict)

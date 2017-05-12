@@ -17,4 +17,7 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 # Add settings
 definition.add_required("name", "string", "fitting run name")
 
+# Scale
+definition.add_optional("default_scale", "string", "default parameter scale (also for generating the initial generation manually)", default="logarithmic", choices=scales)
+
 # -----------------------------------------------------------------

@@ -27,6 +27,19 @@ from . import filesystem as fs
 
 # -----------------------------------------------------------------
 
+def is_archive(filepath):
+
+    """
+    This function ...
+    :param filepath: 
+    :return: 
+    """
+
+    if filepath.endswith(".bz2") or filepath.endswith(".zip") or filepath.endswith(".gz"): return True
+    else: return False
+
+# -----------------------------------------------------------------
+
 def decompress_directory_in_place(filepath, remove=False, into_root=False):
 
     """
@@ -176,6 +189,11 @@ def decompress_zip(zip_path, new_path):
     :return:
     """
 
+    # If directory is specified
+    if fs.is_directory(new_path):
+        name = fs.name(zip_path).rstrip(".zip")
+        new_path = fs.join(new_path, name)
+
     with zipfile.ZipFile(zip_path, 'w') as myzip:
         myzip.write(new_path)
 
@@ -190,7 +208,13 @@ def decompress_gz(gz_path, new_path):
     :return:
     """
 
-    # Decompress the kernel FITS file
+    # If directory is specified
+    if fs.is_directory(new_path):
+        name = fs.name(gz_path).rstrip(".gz")
+        if name.endswith(".tar"): name = name.split(".tar")[0]
+        new_path = fs.join(new_path, name)
+
+    # Decompress
     with gzip.open(gz_path, 'rb') as f_in:
         with open(new_path, 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
@@ -205,6 +229,11 @@ def decompress_bz2(bz2_path, new_path):
     :param new_path:
     :return:
     """
+
+    # If directory is specified
+    if fs.is_directory(new_path):
+        name = fs.name(bz2_path).rstrip(".bz2")
+        new_path = fs.join(new_path, name)
 
     # Decompress, create decompressed new file
     with open(new_path, 'wb') as new_file, bz2.BZ2File(bz2_path, 'rb') as file:

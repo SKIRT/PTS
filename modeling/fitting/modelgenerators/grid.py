@@ -38,11 +38,6 @@ class GridModelGenerator(ModelGenerator):
         # Call the constructor of the base class
         super(GridModelGenerator, self).__init__(*args, **kwargs)
 
-        # Input
-        self.scales = None
-        self.most_sampled_parameters = None
-        self.sampling_weights = None
-
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -56,16 +51,11 @@ class GridModelGenerator(ModelGenerator):
         # Call the constructor of the base class
         super(GridModelGenerator, self).setup(**kwargs)
 
-        # Get scales for different free parameters
-        if "scales" in kwargs: self.scales = kwargs.pop("scales")
+        # Prompt for most sampled parameters
+        if self.most_sampled_parameters is None: self.prompt_most_sampled_parameters()
 
-        # Most sampled parameters
-        if "most_sampled_parameters" in kwargs: self.most_sampled_parameters = kwargs.pop("most_sampled_parameters")
-        else: self.prompt_most_sampled_parameters()
-
-        # Sampling weights
-        if "sampling_weights" in kwargs: self.sampling_weights = kwargs.pop("sampling_weights")
-        else: self.prompt_sampling_weights()
+        # Prompt for sampling weights
+        if self.sampling_weights is None: self.prompt_sampling_weights()
 
     # -----------------------------------------------------------------
 

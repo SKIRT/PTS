@@ -925,13 +925,14 @@ class GeneticEngine(object):
 
     # -----------------------------------------------------------------
 
-    def set_scores(self, scores, check=None, rtol=1e-11, binary_parameters=None):
+    def set_scores(self, scores, check=None, rtol=1e-5, atol=1e-8, binary_parameters=None):
 
         """
         This function ...
         :param scores:
         :param check:
         :param rtol:
+        :param atol:
         :param binary_parameters:
         :return:
         """
@@ -940,13 +941,13 @@ class GeneticEngine(object):
         elitism_data = None
 
         # Set the scores for the initial population
-        if self.is_initial_generation: self.set_scores_for_population(self.internalPop, scores, check, rtol=rtol, binary_parameters=binary_parameters)
+        if self.is_initial_generation: self.set_scores_for_population(self.internalPop, scores, check, rtol=rtol, atol=atol, binary_parameters=binary_parameters)
 
         # Set the scores for the new population
         else:
 
             # Set scores
-            self.set_scores_for_population(self.new_population, scores, check, rtol=rtol, binary_parameters=binary_parameters)
+            self.set_scores_for_population(self.new_population, scores, check, rtol=rtol, atol=atol, binary_parameters=binary_parameters)
 
             # Replace
             if self.new_population is not None: elitism_data = self.replace_internal_population()
@@ -965,7 +966,7 @@ class GeneticEngine(object):
 
     # -----------------------------------------------------------------
 
-    def set_scores_for_population(self, population, scores, check=None, rtol=1e-11, binary_parameters=None):
+    def set_scores_for_population(self, population, scores, check=None, rtol=1e-5, atol=1e-8, binary_parameters=None):
 
         """
         This function ...
@@ -984,7 +985,7 @@ class GeneticEngine(object):
             if check is not None:
 
                 # Check
-                if not equal_genomes(individual.genomeList, check[index], rtol=rtol, binary_parameters=binary_parameters): raise ValueError("Check failed: individual = " + str(individual.genomeList) + " and check = " + str(check[index]))
+                if not equal_genomes(individual.genomeList, check[index], rtol=rtol, atol=atol, binary_parameters=binary_parameters): raise ValueError("Check failed: individual = " + str(individual.genomeList) + " and check = " + str(check[index]))
 
             # Set the score
             individual.score = scores[index]
@@ -1565,6 +1566,18 @@ def is_binary_values(sequence):
 
 # -----------------------------------------------------------------
 
+def is_binary_genome(genome):
+
+    """
+    This function ...
+    :param genome: 
+    :return: 
+    """
+
+    return is_binary_values(genome)
+
+# -----------------------------------------------------------------
+
 def is_real_values(sequence):
 
     """
@@ -1576,6 +1589,18 @@ def is_real_values(sequence):
     for element in sequence:
         if not types.is_real_type(element): return False
     return True
+
+# -----------------------------------------------------------------
+
+def is_real_genome(genome):
+
+    """
+    This function ...
+    :param genome: 
+    :return: 
+    """
+
+    return is_real_values(genome)
 
 # -----------------------------------------------------------------
 
@@ -1613,6 +1638,7 @@ def equal_genomes(genome_a, genome_b, rtol=1e-5, atol=1e-8, binary_parameters=No
     # Binary: check exact
     if is_binary_values(genome_a):
 
+        # Parameters are specified for doing binary to real conversion
         if binary_parameters is not None:
 
             minima = binary_parameters.minima
@@ -1621,40 +1647,74 @@ def equal_genomes(genome_a, genome_b, rtol=1e-5, atol=1e-8, binary_parameters=No
             gray = binary_parameters.gray
             ndigits = binary_parameters.ndigits
 
-            nparameters = len(minima)
+            # Test
+            if not equal_binary_genomes_with_conversion(genome_a, genome_b, minima, maxima, nbits, gray, ndigits): return False
+            else: return True
 
-            bit_slices = numbers.generate_bit_slices(nbits)
-
-            # Loop over the parameters
-            for index in range(nparameters):
-
-                # Get the first n bits
-                bits_a = genome_a[bit_slices[index]]
-                bits_b = genome_b[bit_slices[index]]
-
-                # Convert into real value
-                if gray:
-                    value_a = numbers.gray_binary_string_to_float(bits_a, low=minima[index], high=maxima[index], nbits=nbits[index])
-                    value_b = numbers.gray_binary_string_to_float(bits_b, low=minima[index], high=maxima[index], nbits=nbits[index])
-                else:
-                    value_a = numbers.binary_string_to_float(bits_a, low=minima[index], high=maxima[index], nbits=nbits[index])
-                    value_b = numbers.binary_string_to_float(bits_b, low=minima[index], high=maxima[index], nbits=nbits[index])
-
-                value_a_rounded = numbers.round_to_n_significant_digits(value_a, ndigits[index])
-                value_b_rounded = numbers.round_to_n_significant_digits(value_b, ndigits[index])
-
-                # Fail!
-                if value_a_rounded != value_b_rounded: return False
-
-            # All checks passed
-            return True
-
-        else: return np.all(genome_a == genome_b)
+        # Check whether the binary genomes are
+        else: return equal_binary_genomes_exact(genome_a, genome_b)
 
     # Real: check with certain tolerance
     elif is_real_values(genome_b): return np.isclose(genome_a, genome_b, rtol=rtol, atol=atol)
 
     # Unrecognized 1D genome list
     else: raise ValueError("Genome list not recognized: " + str(genome_a))
+
+# -----------------------------------------------------------------
+
+def equal_binary_genomes_exact(genome_a, genome_b):
+
+    """
+    This fucntion ...
+    :param genome_a: 
+    :param genome_b: 
+    :return: 
+    """
+
+    return np.all(genome_a == genome_b)
+
+# -----------------------------------------------------------------
+
+def equal_binary_genomes_with_conversion(genome_a, genome_b, minima, maxima, nbits, gray, ndigits):
+
+    """
+    This function ...
+    :param genome_a: 
+    :param genome_b: 
+    :param minima:
+    :param maxima:
+    :param nbits:
+    :param gray:
+    :param ndigits:
+    :return: 
+    """
+
+    nparameters = len(minima)
+
+    bit_slices = numbers.generate_bit_slices(nbits)
+
+    # Loop over the parameters
+    for index in range(nparameters):
+
+        # Get the first n bits
+        bits_a = genome_a[bit_slices[index]]
+        bits_b = genome_b[bit_slices[index]]
+
+        # Convert into real value
+        if gray:
+            value_a = numbers.gray_binary_string_to_float(bits_a, low=minima[index], high=maxima[index], nbits=nbits[index])
+            value_b = numbers.gray_binary_string_to_float(bits_b, low=minima[index], high=maxima[index], nbits=nbits[index])
+        else:
+            value_a = numbers.binary_string_to_float(bits_a, low=minima[index], high=maxima[index], nbits=nbits[index])
+            value_b = numbers.binary_string_to_float(bits_b, low=minima[index], high=maxima[index], nbits=nbits[index])
+
+        value_a_rounded = numbers.round_to_n_significant_digits(value_a, ndigits[index])
+        value_b_rounded = numbers.round_to_n_significant_digits(value_b, ndigits[index])
+
+        # Fail!
+        if value_a_rounded != value_b_rounded: return False
+
+    # All checks passed
+    return True
 
 # -----------------------------------------------------------------

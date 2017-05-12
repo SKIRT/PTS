@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import numpy as np
 from abc import ABCMeta, abstractmethod
 
 # Import astronomical modules
@@ -51,6 +52,7 @@ from ...core.tools.serialization import write_dict
 from ..core.population import Population, NamedPopulation
 from ...core.tools import numbers
 from ...core.tools.stringify import tostr
+from ..core.engine import is_binary_genome, is_real_genome
 
 # -----------------------------------------------------------------
 
@@ -120,6 +122,9 @@ class Optimizer(Configurable):
 
         # Number of binary digits for the parameters
         self.nbits = None
+
+        # The scales for the different parameters
+        self.scales = None
 
     # -----------------------------------------------------------------
 
@@ -228,8 +233,14 @@ class Optimizer(Configurable):
         # Set ndigits
         if "ndigits" in kwargs: self.ndigits = kwargs.pop("ndigits")
 
-        # Determine the number of bits per parameter
-        if self.ndigits is not None: self.set_nbits()
+        # Set nbits
+        if "nbits" in kwargs: self.nbits = kwargs.pop("nbits")
+
+        # Check whether NBITS is given if binary_string is genome representation
+        if self.binary_string_genome and self.nbits is None: raise ValueError("Number of bits must be specified for binary genomes")
+
+        # Get the scales
+        if "scales" in kwargs: self.scales = kwargs.pop("scales")
 
     # -----------------------------------------------------------------
 
@@ -268,28 +279,158 @@ class Optimizer(Configurable):
 
     # -----------------------------------------------------------------
 
-    def set_nbits(self):
+    @lazyproperty
+    def parameter_scales(self):
 
         """
         This function ...
         :return: 
         """
 
-        # Inform the user
-        log.info("Determining the number of bits for each parameter ...")
+        if self.scales is None: return [self.config.default_scale] * self.config.nparameters # DOESN'T WORK FOR 2D GENOMES OF COURSE
+        else: return self.scales
 
-        # Determine the number of bits for each parameter
-        #self.nbits = [numbers.binary_digits_for_significant_figures(nfigures) for nfigures in self.ndigits]
+    # -----------------------------------------------------------------
 
-        # NEW: EXPERIMENTAL:
-        # BE AWARE: IF THIS IS CHANGED, ALSO CHANGE IN FITTING RUN -> best_parameter_values()
-        self.nbits = []
-        for index in range(len(self.ndigits)):
-            ndigits = self.ndigits[index]
-            low = self.parameter_minima[index]
-            high = self.parameter_maxima[index]
-            nbits = numbers.nbits_for_ndigits_experimental(ndigits, low, high)
-            self.nbits.append(nbits)
+    @lazyproperty
+    def parameter_minima_scaled(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if self.parameter_minima is None: return None
+
+        minima = []
+
+        # Loop over the scales and minima
+        for scale, minimum in zip(self.parameter_scales, self.parameter_minima):
+
+            # Convert to sclae
+            value = numbers.to_scale(minimum, scale)
+
+            # Add the minimum value (in lin or log space)
+            minima.append(value)
+
+        # Return the minima
+        return minima
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def parameter_maxima_scaled(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if self.parameter_maxima is None: return None
+
+        maxima = []
+
+        # Loop over the scales and minima
+        for scale, maximum in zip(self.parameter_scales, self.parameter_maxima):
+
+            # Convert to scale
+            value = numbers.to_scale(maximum, scale)
+
+            # Add the maximum value (in lin or log space)
+            maxima.append(value)
+
+        # Return the maxima
+        return maxima
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def parameter_centers_scaled(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if self.parameter_centers is None: return None
+
+        centers = []
+
+        # Loop over the scales and centers
+        for scale, center in zip(self.parameter_scales, self.parameter_centers):
+
+            # Convert to scale
+            value = numbers.to_scale(center, scale)
+
+            # Add the center value
+            centers.append(value)
+
+        # Return the centers
+        return centers
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def parameter_sigmas_scaled(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if self.parameter_sigmas is None: return None
+
+        sigmas = []
+
+        # Loop over the scales and sigmas
+        for scale, sigma in zip(self.parameter_scales, self.parameter_sigmas):
+
+            # Convert to scale
+            value = numbers.to_scale(sigma, scale)
+
+            # Add the sigma value
+            sigmas.append(value)
+
+        # Return the sigmas
+        return sigmas
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def parameter_range_scaled(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if self.parameter_range is None: return None
+
+        if not sequences.all_equal(self.parameter_scales): return None # raise ValueError("Cannot return a scaled parameter ranges because the scales are different for the different parameters")
+
+        else:
+
+            scale = self.parameter_scales[0]
+
+            # Convert and return
+            if scale == "linear": return self.parameter_range
+            elif scale == "logarithmic": return RealRange(np.log10(self.parameter_range.min), np.log10(self.parameter_range.max))
+            else: raise ValueError("Invalid scale " + scale)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def initial_parameters_scaled(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        if self.initial_parameters is None: return None
+
+        # Scale the initial parameter sets according to the parameter scales
+        return scale_parameter_sets(self.initial_parameters, self.parameter_scales)
 
     # -----------------------------------------------------------------
 
@@ -551,17 +692,8 @@ class Optimizer(Configurable):
         :return: 
         """
 
-        # THINGS TODO:
-
-        # - conversions from real numbers or integer numbers into binary must be done in this class
-        # - number of binary digits has to be defined, depending on what the resolution is of the 'grid' of parameters to allow
-        # - look in the database for whether a certain binary string has ever occured before, so to avoid having to evaluate again!!
-        # - ...
-
-        # 1D or 2D
-        #if self.config.genome_dimension == 1: genome = G1DBinaryString(self.config.nparameters)
-        #elif self.config.genome_dimension == 2: genome = G2DBinaryString(self.config.nparameters, self.config.nparameters2)
-        #else: raise ValueError("Dimensions > 2 are not supported")
+        # Inform the user
+        log.info("Creating the binary genome ...")
 
         # Number of digits has to be specified
         if self.ndigits is None: raise ValueError("Number of digits (in base-10) has to be specified for binary string conversion")
@@ -600,7 +732,7 @@ class Optimizer(Configurable):
         log.debug("Setting basic properties ...")
 
         # Set basic properties
-        if self.parameter_range is not None: self.initial_genome.setParams(rangemin=self.parameter_range.min, rangemax=self.parameter_range.max)
+        if self.parameter_range_scaled is not None: self.initial_genome.setParams(rangemin=self.parameter_range_scaled.min, rangemax=self.parameter_range_scaled.max)
         if self.config.best_raw_score is not None: self.initial_genome.setParams(bestrawscore=self.config.best_raw_score)
         if self.config.round_decimal is not None: self.initial_genome.setParams(rounddecimal=self.config.round_decimal)
 
@@ -608,15 +740,15 @@ class Optimizer(Configurable):
         log.debug("Setting parameter minima and maxima ...")
 
         # Set minima or maxima for heterogeneous genome lists
-        if self.parameter_minima is not None: self.initial_genome.setParams(minima=self.parameter_minima)
-        if self.parameter_maxima is not None: self.initial_genome.setParams(maxima=self.parameter_maxima)
+        if self.parameter_minima_scaled is not None: self.initial_genome.setParams(minima=self.parameter_minima_scaled)
+        if self.parameter_maxima_scaled is not None: self.initial_genome.setParams(maxima=self.parameter_maxima_scaled)
 
         # Debugging
         log.debug("Setting parameter centers and sigmas ...")
 
         # Set parameter centers and sigmas
-        if self.parameter_centers is not None: self.initial_genome.setParams(centers=self.parameter_centers)
-        if self.parameter_sigmas is not None: self.initial_genome.setParams(sigmas=self.parameter_sigmas)
+        if self.parameter_centers_scaled is not None: self.initial_genome.setParams(centers=self.parameter_centers_scaled)
+        if self.parameter_sigmas_scaled is not None: self.initial_genome.setParams(sigmas=self.parameter_sigmas_scaled)
 
     # -----------------------------------------------------------------
 
@@ -1061,7 +1193,7 @@ class Optimizer(Configurable):
         else: population = Population()
 
         # Loop over the parameter sets
-        for parameters in self.initial_parameters:
+        for parameters in self.initial_parameters_scaled:
 
             # Make a new genome by cloning the initial genome
             genome = self.initial_genome.clone()
@@ -1070,12 +1202,11 @@ class Optimizer(Configurable):
             if self.list_genome: genome.set_genes(parameters)
             elif self.binary_string_genome:
 
-                # Convert
-                if self.config.gray_code: binary_string = parameters_to_gray_binary_string(parameters, self.parameter_minima, self.parameter_maxima, self.nbits)
-                else: binary_string = parameters_to_binary_string(parameters, self.parameter_minima, self.parameter_maxima, self.nbits)
+                # PARAMETERS IS ALREADY SCALED!!!
+                genes = get_binary_genome_from_scaled_parameters(parameters, self.parameter_minima_scaled, self.parameter_maxima_scaled, self.nbits, gray=self.config.gray_code)
 
                 # Set the binary string genome
-                genome.set_genes(binary_string)
+                genome.set_genes(genes)
 
             # Invalid
             else: raise ValueError("Unrecognized genome type")
@@ -1688,5 +1819,244 @@ def gray_binary_string_to_parameters(genome, minima, maxima, nbits):
 
     # Return the parameter values
     return parameters
+
+# -----------------------------------------------------------------
+
+def get_parameters_from_binary_genome_scaled(genome, minima, maxima, nbits, gray=False):
+
+    """
+    This function ...
+    :param genome:
+    :param minima:
+    :param maxima:
+    :param nbits:
+    :param gray:
+    :return: 
+    """
+
+    # Convert
+    if gray: parameters = gray_binary_string_to_parameters(genome, minima, maxima, nbits)
+    else: parameters = binary_string_to_parameters(genome, minima, maxima, nbits)
+
+    # Return
+    return parameters
+
+# -----------------------------------------------------------------
+
+def get_parameters_from_genome_scaled(genome, minima, maxima, nbits, gray=False):
+
+    """
+    This function ...
+    :param genome: 
+    :param minima: 
+    :param maxima: 
+    :param nbits:
+    :param gray: 
+    :return: 
+    """
+
+    # If binary genome, convert binary individual into actual parameters list
+    if is_binary_genome(genome): parameters = get_parameters_from_binary_genome_scaled(genome, minima, maxima, nbits, gray=gray)
+    elif is_real_genome(genome): parameters = list(genome)
+    else: raise ValueError("Unrecognized genome: " + str(genome))
+
+    # Return the parameters
+    return parameters
+
+# -----------------------------------------------------------------
+
+def get_parameters_from_genome(genome, minima, maxima, nbits, parameter_scales, gray=False):
+
+    """
+    This function ...
+    :param genome: 
+    :param minima: 
+    :param maxima: 
+    :param nbits: 
+    :param parameter_scales: 
+    :param gray: 
+    :return: 
+    """
+
+    # Get scaled form
+    scaled = get_parameters_from_genome_scaled(genome, minima, maxima, nbits, gray=gray)
+
+    # Unscale if necessary
+    parameters = unscale_parameters(scaled, parameter_scales)
+
+    # Return the parameters
+    return parameters
+
+# -----------------------------------------------------------------
+
+def get_binary_genome_from_scaled_parameters(parameters, minima, maxima, nbits, gray=False):
+
+    """
+    This function ...
+    :param parameters: 
+    :param minima:
+    :param maxima:
+    :param nbits:
+    :param gray:
+    :return: 
+    """
+
+    # # Convert
+    if gray: binary_string = parameters_to_gray_binary_string(parameters, minima, maxima, nbits)
+    else: binary_string = parameters_to_binary_string(parameters, minima, maxima, nbits)
+
+    # Return the binary string genome
+    return binary_string
+
+# -----------------------------------------------------------------
+
+def get_binary_genome_from_parameters(parameters, minima, maxima, nbits, parameter_scales, gray=False):
+
+    """
+    This function ...
+    :param parameters: 
+    :param minima: 
+    :param maxima:
+    :param nbits:
+    :param parameter_scales:
+    :param gray: 
+    :return: 
+    """
+
+    # Scale
+    scaled_parameters = scale_parameters(parameters, parameter_scales)
+
+    # Return the binary genome
+    return get_binary_genome_from_scaled_parameters(scaled_parameters, minima, maxima, nbits, gray=gray)
+
+# -----------------------------------------------------------------
+
+def scale_parameters(parameters, scales):
+
+    """
+    This function ...
+    :param parameters: 
+    :param scales: 
+    :return: 
+    """
+
+    new_parameters = []
+
+    # Loop over the scales and parameter values
+    for scale, parameter_value in zip(scales, parameters):
+
+        # Convert to scale
+        value = numbers.to_scale(parameter_value, scale)
+
+        # Add the value to the parameters
+        new_parameters.append(value)
+
+    # Return the new parameter set
+    return new_parameters
+
+# -----------------------------------------------------------------
+
+def unscale_parameters(parameters, scales):
+
+    """
+    This function ...
+    :param parameters: 
+    :param scales: 
+    :return: 
+    """
+
+    new_parameters = []
+
+    # Loop over the scales and scaled parameter values
+    for scale, scaled_value in zip(scales, parameters):
+
+        # Convert to scale
+        value = numbers.unscale(scaled_value, scale)
+
+        # Add the value to the parameters
+        new_parameters.append(value)
+
+    # Return the new parameter set
+    return new_parameters
+
+# -----------------------------------------------------------------
+
+def scale_parameter_sets(sets, scales):
+
+    """
+    This function:
+    :param sets:
+    :param scales
+    :return: 
+    """
+
+    # Initialize a new parameter set list
+    parameter_sets = []
+
+    # Loop over the parameter sets
+    for original_parameters in sets:
+
+        # Scale
+        parameters = scale_parameters(original_parameters, scales)
+
+        # Add the parameter set to the list of parameter sets
+        parameter_sets.append(parameters)
+
+    # Return the new parameter sets
+    return parameter_sets
+
+# -----------------------------------------------------------------
+
+def unscale_parameter_sets(sets, scales):
+
+    """
+    This function ...
+    :param sets: 
+    :param scale: 
+    :return: 
+    """
+
+    # Initialize a new parameter set list
+    parameter_sets = []
+
+    # Loop over the parameter sets
+    for scaled_parameters in sets:
+
+        # Scale
+        parameters = unscale_parameters(scaled_parameters, scales)
+
+        # Add the parameter set to the list of parameter sets
+        parameter_sets.append(parameters)
+
+    # Return the new parameter sets
+    return parameter_sets
+
+# -----------------------------------------------------------------
+
+def round_parameters(parameters, ndigits):
+
+    """
+    This function ...
+    :param parameters: 
+    :param ndigits: 
+    :return: 
+    """
+
+    rounded_parameters = []
+
+    # Loop over the parameters
+    for index in range(len(parameters)):
+
+        # Get the value
+        value = parameters[index]
+
+        # Convert to relevant number of digits
+        value = numbers.round_to_n_significant_digits(value, ndigits[index])
+
+        # Add to the list
+        rounded_parameters.append(value)
+
+    # Return
+    return rounded_parameters
 
 # -----------------------------------------------------------------
