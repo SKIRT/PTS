@@ -567,7 +567,7 @@ def check_gray_generation(dimension):
 
     nbits = dimension
 
-    codes = numbers.gray_code(dimension)
+    codes = numbers.binary_gray_code(dimension)
 
     #if n >= 1:
     #    for i in range(len(g)): print(g[i])

@@ -161,6 +161,7 @@ class ParameterExplorer(FittingComponent):
         # Test whether simulations are required, because if the optimizer detects recurrence of earlier models,
         # it is possible that no simulations have to be done
         if self.needs_simulations: self.launch()
+        else: self.set_finishing_time()
 
     # -----------------------------------------------------------------
 
@@ -1103,6 +1104,22 @@ class ParameterExplorer(FittingComponent):
 
         # Check the launched simulations
         self.check_simulations()
+
+    # -----------------------------------------------------------------
+
+    def set_finishing_time(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Setting the generation finishing time (there were no simulations for this generation) ...")
+
+        # Set the time and save the table
+        self.fitting_run.generations_table.set_finishing_time(self.generation_name, time.timestamp())
+        self.fitting_run.generations_table.save()
 
     # -----------------------------------------------------------------
 

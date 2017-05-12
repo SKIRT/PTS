@@ -28,6 +28,21 @@ def repeat(target, ntimes, **kwargs):
 
 # -----------------------------------------------------------------
 
+def repeat_check(target, ntimes, **kwargs):
+
+    """
+    This function ...
+    :param target: 
+    :param ntimes: 
+    :param kwargs: 
+    :return: 
+    """
+
+    for iteration in range(ntimes):
+        if not target(**kwargs): raise RuntimeError("Iteration " + str(iteration) + " was not succesful")
+
+# -----------------------------------------------------------------
+
 def repeat_multiple(*targets, **kwargs):
 
     """

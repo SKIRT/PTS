@@ -276,24 +276,54 @@ def get_best_individual_key_all_generations(database, run_id, minmax="max"):
     :return: 
     """
 
-    generation_index = None
-    individual_key = None
-    chi_squared = float("inf")
+    best_generation_index, best_individual_key, best_score = get_best_individual_key_and_score_all_generations(database, run_id, minmax=minmax)
+    return best_generation_index, best_individual_key
+
+# -----------------------------------------------------------------
+
+def get_best_individual_key_and_score_all_generations(database, run_id, minmax="max"):
+
+    """
+    This function ...
+    :param database: 
+    :param run_id: 
+    :param minmax: 
+    :return: 
+    """
+
+    best_generation_index = None
+    best_individual_key = None
+    best_score = None
 
     # Loop over the generations
-    #for index in self.genetic_generation_indices_for_statistics_and_database:
-    for index in get_generations(database, run_id):
+    for generation_index in get_generations(database, run_id):
 
         # Get best key and score
-        key, score = get_best_individual_key_and_score_for_generation(database, run_id, index, minmax=minmax)
+        key, score = get_best_individual_key_and_score_for_generation(database, run_id, generation_index, minmax=minmax)
 
-        if score < chi_squared:
-            chi_squared = score
-            generation_index = index
-            individual_key = key
+        # No best score found yet
+        if best_score is None:
+
+            best_score = score
+            best_generation_index = generation_index
+            best_individual_key = key
+
+        # Minimize the scores
+        elif minmax == "min" and score < best_score:
+
+            best_score = score
+            best_generation_index = generation_index
+            best_individual_key = key
+
+        # Maximize the scores
+        elif minmax == "max" and score > best_score:
+
+            best_score = score
+            best_generation_index = generation_index
+            best_individual_key = key
 
     # Return the individual's key
-    return generation_index, individual_key
+    return best_generation_index, best_individual_key, best_score
 
 # -----------------------------------------------------------------
 

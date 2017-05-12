@@ -12,15 +12,13 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 from collections import defaultdict
 import matplotlib.pyplot as plt
-#from mpl_toolkits.mplot3d import Axes3D
-#import matplotlib.mlab as mlab
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
 from pts.core.basics.range import RealRange
 from pts.core.test.implementation import TestImplementation
 from pts.core.tools.logging import log
-from pts.core.tools.loops import repeat
+from pts.core.tools.loops import repeat_check
 from pts.evolve.optimize.stepwise import StepWiseOptimizer
 from pts.core.tools import types
 from pts.evolve.optimize.tables import ScoresTable
@@ -237,7 +235,7 @@ class StepWiseTest(TestImplementation):
         self.start()
 
         # 2. Advance: launch generations 0 -> (n-1)
-        repeat(self.advance, self.config.ngenerations)
+        repeat_check(self.advance, self.config.ngenerations)
 
         # 3. Finish
         self.finish()

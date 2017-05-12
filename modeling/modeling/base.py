@@ -28,10 +28,11 @@ from ...core.prep.deploy import Deployer
 from ..fitting.run import get_generations_table, has_unevaluated_generations, get_unevaluated_generations
 from ...core.remote.moderator import PlatformModerator
 from ...core.tools import stringify
-from ...core.tools.loops import repeat
+from ...core.tools.loops import repeat_check
 from ...core.remote.remote import Remote
 from ..fitting.finisher import ExplorationFinisher
 from ...core.basics.configuration import prompt_string
+from ...core.tools import time
 
 # -----------------------------------------------------------------
 
@@ -58,6 +59,9 @@ class ModelerBase(Configurable):
 
         # Call the constructor of the base class
         super(ModelerBase, self).__init__(*args, **kwargs)
+
+        # A timestamp
+        self.timestamp = None
 
         # The path to the modeling directory
         self.modeling_path = None
@@ -170,6 +174,9 @@ class ModelerBase(Configurable):
 
         # Call the setup function of the base class
         super(ModelerBase, self).setup(**kwargs)
+
+        # Create timestamp
+        self.timestamp = time.filename_timestamp()
 
         # Set the path to the modeling directory
         self.modeling_path = self.config.path
@@ -375,7 +382,7 @@ class ModelerBase(Configurable):
         self.start(**kwargs)
 
         # Advance: launch generations 0 -> (n-1)
-        repeat(self.advance, self.config.ngenerations, **kwargs)
+        repeat_check(self.advance, self.config.ngenerations, **kwargs)
 
         # Finish
         self.finish(**kwargs)
@@ -467,9 +474,6 @@ class ModelerBase(Configurable):
         # Debugging
         log.debug("Previous generation: " + generations.last_generation_name)
 
-        #print("HERE")
-        #raw_input("...")
-
         # If some generations have not finished, check the status of and retrieve simulations
         if generations.has_unfinished and self.has_configured_fitting_host_ids: self.synchronize()
 
@@ -481,10 +485,14 @@ class ModelerBase(Configurable):
         if generations.has_finished and has_unevaluated_generations(self.modeling_path, self.fitting_run_name): self.fit_sed()
 
         # If all generations have finished, explore new generation of models
-        if generations.all_finished: self.explore(**kwargs)
+        if generations.all_finished:
 
-        # Do SED fitting after the exploration step if it has been performed locally (simulations are done, evaluation can be done directly)
-        #if self.moderator.single_is_local("fitting"): self.finish()
+            # Explore a new generation
+            self.explore(**kwargs)
+            return True
+
+        # Return False if exploration could not be performed (not all generations had finished)
+        else: return False
 
     # -----------------------------------------------------------------
 
@@ -528,6 +536,8 @@ class ModelerBase(Configurable):
 
         # Add an entry to the history
         self.history.add_entry(SEDFitter.command_name())
+
+
 
         # Run the fitter
         self.fitter.run()

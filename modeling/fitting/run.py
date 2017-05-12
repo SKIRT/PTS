@@ -33,8 +33,7 @@ from ..build.component import get_representation_path
 from ...core.tools.serialization import load_dict
 from .tables import IndividualsTable
 from ...core.tools import types, numbers
-#from ...evolve.analyse.statistics import get_best_score_for_generation
-from ...evolve.analyse.database import get_scores_named_individuals, get_best_individual_key_and_score_for_generation, get_best_individual_key_all_generations
+from ...evolve.analyse.database import get_best_individual_key_and_score_all_generations
 from ...evolve.optimize.optimizer import gray_binary_string_to_parameters, binary_string_to_parameters
 
 # -----------------------------------------------------------------
@@ -1053,7 +1052,7 @@ class FittingRun(object):
         database_path = get_database_path(self.modeling_path)
 
         # Get generation and individual
-        generation_index, individual_key = get_best_individual_key_all_generations(database_path, self.name, minmax="min")
+        generation_index, individual_key, chi_squared = get_best_individual_key_and_score_all_generations(database_path, self.name, minmax="min")
 
         # Look in the populations data for the parameters, for this fitting run
         populations = get_populations(self.modeling_path)[self.name]

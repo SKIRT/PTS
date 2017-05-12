@@ -17,7 +17,7 @@ import imp
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
-from ..tools.logging import log
+from ..tools.logging import log, set_log_file, unset_log_file
 from ..basics.configurable import Configurable
 from ..tools import introspection
 from ..tools import filesystem as fs
@@ -544,6 +544,10 @@ class PTSTestSuite(Configurable):
                 # Debugging
                 log.debug("Performing test " + str(counter+1) + " of " + str(len(self.tests[subproject])) + " ...")
 
+                # Set log path
+                log_path = fs.join(test.output_path, "log.txt")
+                set_log_file(log_path)
+
                 # Start
                 log.start("Starting test '" + test.name + "' ...")
 
@@ -559,6 +563,9 @@ class PTSTestSuite(Configurable):
 
                     # Add an entry to the table
                     self.table.add_test()
+
+                # Unset the log path
+                unset_log_file()
 
     # -----------------------------------------------------------------
 

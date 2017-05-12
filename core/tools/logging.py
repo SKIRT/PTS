@@ -116,24 +116,47 @@ def setup_log(level="INFO", path=None, memory=False):
 
     log.setLevel(level)
 
-    if path is not None:
-
-        # Create file handler
-        fh = logging.FileHandler(path)
-
-        # Set the formatter
-        fh.setFormatter(log.handlers[0].formatter)
-
-        # Set the level
-        fh.setLevel(level)
-
-        # Add the handler to the log instance
-        log.addHandler(fh)
+    if path is not None: set_log_file(path)
 
     # Memory logging
     if memory: pass
 
     return log
+
+# -----------------------------------------------------------------
+
+def set_log_file(path, level="DEBUG"):
+
+    """
+    This function ...
+    :param path: 
+    :param level:
+    :return: 
+    """
+
+    # Create file handler
+    fh = logging.FileHandler(path)
+
+    # Set the formatter
+    fh.setFormatter(log.handlers[0].formatter)
+
+    # Set the level
+    fh.setLevel(level)
+
+    # Add the handler to the log instance
+    log.addHandler(fh)
+
+# -----------------------------------------------------------------
+
+def unset_log_file():
+
+    """
+    This function ...
+    :return: 
+    """
+
+    #log.removeHandler(fh)
+    log.handlers = []
 
 # -----------------------------------------------------------------
 

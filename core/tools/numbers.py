@@ -613,7 +613,7 @@ def nbits_for_ndigits_experimental(ndigits, low, high):
 
 # -----------------------------------------------------------------
 
-def gray_code(n):
+def binary_gray_code(n):
 
     """
     This function generates the Gray code for dimension n
@@ -633,15 +633,49 @@ def gray_code(n):
                 char = '1' + g[i]
                 g.append(char)
 
-            for i in range(k-1, -1, -1): g[i] = '0' + g[i]
+            for i in range(k-1, -1, -1):
 
-            gray_code_recurse (g, n-1)
+                g[i] = '0' + g[i]
+
+            gray_code_recurse(g, n-1)
 
     g = ['0','1']
     gray_code_recurse(g, n-1)
 
-    # Return
-    #return [int(character) for character in g]
+    result = []
+    for entry in g: result.append([int(character) for character in entry])
+    return result
+
+# -----------------------------------------------------------------
+
+def quaternary_gray_code(n):
+
+    """
+    This fucntion ...
+    :param n: 
+    :return: 
+    """
+
+    def gray_code_recurse(g, n):
+
+        k = len(g)
+
+        if n <= 0: return
+        else:
+
+            for i in range(k-1, -1, -1):
+
+                char = '1' + g[i]
+                g.append(char)
+
+            for i in range(k-1, -1, -1):
+
+                g[i] = '0' + g[i]
+
+            gray_code_recurse(g, n-1)
+
+    g = ['0', '1', '2', '3']
+    gray_code_recurse(g, n-1)
 
     result = []
     for entry in g: result.append([int(character) for character in entry])
