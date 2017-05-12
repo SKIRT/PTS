@@ -66,6 +66,7 @@ definition.add_optional("fitting_method", "string", "fitting method", default_fi
 definition.add_optional("reference_path", "directory_path", "use the simulation in this directory as the reference simulation and infer the real parameter values from it")
 definition.add_optional("reference_test", "string", "use the reference simulation of this previous test")
 
+# Scale
 default_scale = "logarithmic"
 scales = ["logarithmic", "linear"]
 definition.add_optional("scale", "string", "scale to use for the generation of grid/genetic individuals", default_scale, scales)

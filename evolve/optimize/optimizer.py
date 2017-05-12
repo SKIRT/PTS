@@ -123,6 +123,9 @@ class Optimizer(Configurable):
         # Number of binary digits for the parameters
         self.nbits = None
 
+        # The scales for the different parameters
+        self.scales = None
+
     # -----------------------------------------------------------------
 
     @lazyproperty

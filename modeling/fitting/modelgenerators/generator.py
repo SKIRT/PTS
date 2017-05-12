@@ -67,6 +67,13 @@ class ModelGenerator(FittingComponent):
         self.scatter_animation_labels = None
         self.parameter_animations = dict()
 
+        # The scales for the different parameters
+        self.scales = None
+
+        # Other input
+        self.most_sampled_parameters = None
+        self.sampling_weights = None
+
     # -----------------------------------------------------------------
 
     @property
@@ -265,6 +272,13 @@ class ModelGenerator(FittingComponent):
 
         # Get the generation path
         self.generation_path = kwargs.pop("generation_path")
+
+        # Get scales for different free parameters
+        if "scales" in kwargs: self.scales = kwargs.pop("scales")
+
+        # Get other input
+        if "most_sampled_parameters" in kwargs: self.most_sampled_parameters = kwargs.pop("most_sampled_parameters")
+        if "sampling_weights" in kwargs: self.sampling_weights = kwargs.pop("sampling_weights")
 
     # -----------------------------------------------------------------
 

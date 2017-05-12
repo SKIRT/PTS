@@ -771,7 +771,7 @@ class StepWiseOptimizer(Optimizer):
         """
 
         # Get the genome of the individual
-        genome = self.population[name].genomeList
+        genome = self.population[name]
 
         # Get the real parameters, unscaled
         parameters = get_parameters_from_genome(genome, self.parameter_minima_scaled, self.parameter_maxima_scaled, self.nbits, self.parameter_scales, gray=self.config.gray_code)
