@@ -726,12 +726,12 @@ class CoordinateSystem(wcs.WCS):
         #assert np.isclose(ra_distance_top, ra_distance, rtol=0.05), (ra_distance_top, ra_distance)
         assert np.isclose(dec_distance_new, dec_distance, rtol=0.05), (dec_distance_new, dec_distance)
 
-        if not np.isclose(ra_distance_top, ra_distance_bottom, rtol=0.05):
-            log.warning("RA distance at top of image is " + str(ra_distance_top) + " whereas at the bottom is " + str(ra_distance_bottom))
-            log.warning("RA distance at center is " + str(ra_distance))
+        #if not np.isclose(ra_distance_top, ra_distance_bottom, rtol=0.05):
+        #    log.warning("RA distance at top of image is " + str(ra_distance_top) + " whereas at the bottom is " + str(ra_distance_bottom))
+        #    log.warning("RA distance at center is " + str(ra_distance))
 
-        if not np.isclose(ra_distance_top, ra_distance, rtol=0.05):
-            log.warning("RA distance at top of image is " + str(ra_distance_top) + " whereas at the center it is " + str(ra_distance))
+        #if not np.isclose(ra_distance_top, ra_distance, rtol=0.05):
+        #    log.warning("RA distance at top of image is " + str(ra_distance_top) + " whereas at the center it is " + str(ra_distance))
 
         # Set the RA distance to the maximum of ra_distance, ra_distance_bottom, and ra_distance_top
         ra_distance = max(ra_distance_bottom, ra_distance_top)
