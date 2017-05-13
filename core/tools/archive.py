@@ -27,6 +27,10 @@ from . import filesystem as fs
 
 # -----------------------------------------------------------------
 
+extensions = ["bz2", "zip", "gz"]
+
+# -----------------------------------------------------------------
+
 def is_archive(filepath):
 
     """
@@ -35,8 +39,9 @@ def is_archive(filepath):
     :return: 
     """
 
-    if filepath.endswith(".bz2") or filepath.endswith(".zip") or filepath.endswith(".gz"): return True
-    else: return False
+    for extension in extensions:
+        if filepath.endswith("." + extension): return True
+    return False
 
 # -----------------------------------------------------------------
 

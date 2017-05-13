@@ -36,7 +36,8 @@ from ...core.tools import formatting as fmt
 from ...magic.core.frame import Frame, sum_frames, sum_frames_quadratically
 from ...core.tools.parallelization import ParallelTarget
 from ...core.basics.configuration import print_mapping
-from ...core.tools.formatting import print_files_in_list, print_files_in_path, print_directories_in_path
+from ...core.tools.formatting import print_files_in_path, print_directories_in_path
+from ...core.tools import archive
 
 # -----------------------------------------------------------------
 
@@ -465,7 +466,9 @@ class SDSSMosaicMaker(Configurable):
                 if self.has_existing_fields(band):
                     log.debug("Existing fields path for band: " + self.existing_fields_path(band))
                     fmt.print_files_in_path(self.existing_fields_path(band))
-                    paths = fs.files_in_path(self.existing_fields_path(band), not_contains="meta", extension="fits")
+                    extensions = ["fits"]
+                    extensions.extend(archive.extensions)
+                    paths = fs.files_in_path(self.existing_fields_path(band), not_contains="meta", extension=extensions)
                     fmt.print_files_in_list(paths, "existing fields")
                     fs.copy_and_decompress_files(paths, self.fields_paths[band])
                     #fs.copy_from_directory(self.existing_fields_path(band), self.fields_paths[band], not_contains="meta", extension="fits")
