@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import collections
 try:
     HAS_NP = True
     import numpy as np
@@ -134,5 +135,17 @@ def is_dictionary_of_dictionaries(value):
     for key in value:
         if not is_dictionary(value[key]): return False
     return True
+
+# -----------------------------------------------------------------
+
+def is_sequence(value):
+
+    """
+    This function ...
+    :param value: 
+    :return: 
+    """
+
+    return isinstance(value, collections.Iterable)
 
 # -----------------------------------------------------------------

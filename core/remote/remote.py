@@ -3058,7 +3058,10 @@ class Remote(object):
             item_extension = fs.get_extension(item)
 
             # Ignore files with extension different from the one that is specified
-            if extension is not None and item_extension != extension: continue
+            if extension is not None:
+                if types.is_string_type(extension) and item_extension != extension: continue
+                elif types.is_sequence(extension) and item_extension not in extension: continue
+                else: raise ValueError("Unknown type for 'extension': " + str(extension))
 
             # Ignore filenames that do not contain a certain string, if specified
             if contains is not None and contains not in item_name: continue
