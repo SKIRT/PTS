@@ -332,6 +332,9 @@ class SourceMarker(Configurable):
 
             if self.ignore is not None and name in self.ignore: continue
 
+            # Debugging
+            log.debug("Creating extended source regions in pixel coordinates for the " + name + " image ...")
+
             # Get wcs
             wcs = self.frames[name].wcs
 
@@ -361,6 +364,9 @@ class SourceMarker(Configurable):
         for name in self.frames:
 
             if self.ignore is not None and name in self.ignore: continue
+
+            # Debugging
+            log.debug("Creating point source regions in pixel coordinates for the " + name + " image ...")
 
             # Get wcs
             wcs = self.frames[name].wcs

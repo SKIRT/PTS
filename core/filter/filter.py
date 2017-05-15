@@ -62,6 +62,8 @@ class Filter(object):
         self._FilterID = filter_id
         self._Description = description
 
+    # -----------------------------------------------------------------
+
     def filterID(self):
 
         """
@@ -81,6 +83,18 @@ class Filter(object):
         """
 
         return self._Description
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def __repr__(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 

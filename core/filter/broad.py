@@ -649,10 +649,6 @@ class BroadBandFilter(Filter):
         self._EffWidth = None
         self._FWHM = None
 
-    # ---------- Special functions --------------------------------------
-
-
-
     # ---------- Retrieving information -------------------------------
 
     @property
@@ -712,6 +708,12 @@ class BroadBandFilter(Filter):
     def __str__(self):
         if self.true_filter: return self.instrument + " " + self.band
         else: return self.name
+
+    ## This fucntion produces a string representation of this instance
+    def __repr__(self):
+        prefix = "<BroadBandFilter "
+        suffix = " >"
+        return prefix + str(self) + suffix
 
     @property
     def name(self):

@@ -369,6 +369,8 @@ class PreparationInitializer(PreparationComponent):
         # Get FWHMs
         fwhms = properties.fwhms
 
+        print(fwhms)
+
         ignore = self.get_ignore_images()
 
         # Create the source marker

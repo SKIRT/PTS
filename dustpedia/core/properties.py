@@ -95,8 +95,6 @@ class DustPediaProperties(object):
 
         properties = tables.from_file(properties_path, format="ascii.commented_header")
 
-        data = OrderedDict()
-
         # Convert properties in dictionary per filter
         for index in range(len(properties)):
 
@@ -115,7 +113,7 @@ class DustPediaProperties(object):
             calibration = properties["Calibration error"][index]
 
             # Set properties
-            data[fltr] = Map(pixelscale=pixelscale, fwhm=fwhm, calibration=calibration)
+            self.data[fltr] = Map(pixelscale=pixelscale, fwhm=fwhm, calibration=calibration)
 
     # -----------------------------------------------------------------
 

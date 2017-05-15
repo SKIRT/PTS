@@ -301,6 +301,19 @@ class NarrowBandFilter(Filter):
 
     # -----------------------------------------------------------------
 
+    def __repr__(self):
+
+        """
+        This fucntion produces a string representation of this instance
+        :return: 
+        """
+
+        prefix = "<NarrowBandFilter "
+        suffix = " >"
+        return prefix + str(self) + suffix
+
+    # -----------------------------------------------------------------
+
     @property
     def name(self):
 
