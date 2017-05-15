@@ -396,10 +396,10 @@ class SourceMarker(Configurable):
             # Get the FWHm
             if fltr in self.fwhms: fwhm = self.fwhms[fltr]
             elif self.frames[name].fwhm is not None: fwhm = self.frames[name].fwhm
-            else: fwhm = 2.0 * u("arcsec") # default value
+            else: fwhm = self.config.default_fwhm
 
             #default_radius = 20.0
-            sigma_level = 4.0
+            sigma_level = self.config.sigma_level
 
             # Calculate the radius in pixels
             radius = fwhm * statistics.fwhm_to_sigma * sigma_level

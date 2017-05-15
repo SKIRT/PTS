@@ -32,6 +32,7 @@ from ...magic.catalog.fetcher import CatalogFetcher
 from ...dustpedia.core.properties import DustPediaProperties
 from ...magic.tools import statistics
 from ...magic.sources.marker import SourceMarker
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -74,6 +75,9 @@ class PreparationInitializer(PreparationComponent):
         self.extended_sources = None
         self.point_sources = None
 
+        # Sources output directories
+        self.sources_output_paths = dict()
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -98,6 +102,9 @@ class PreparationInitializer(PreparationComponent):
 
         # Get the catalogs
         self.get_catalogs()
+
+        # Create directories
+        self.create_directories()
 
         # 5. Find sources
         if self.config.manual: self.mark_sources()
@@ -353,6 +360,30 @@ class PreparationInitializer(PreparationComponent):
 
     # -----------------------------------------------------------------
 
+    def create_directories(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Creating directories ...")
+
+        # Check for which images the source finding step has already been performed
+        for name in self.paths:
+
+            # Get output path
+            output_path = self.get_prep_path(name)
+
+            # Determine the path to the "sources" directory within the output path for this image
+            sources_output_path = fs.create_directory_in(output_path, "sources")
+
+            # Set path
+            self.sources_output_paths[name] = sources_output_path
+
+    # -----------------------------------------------------------------
+
     def mark_sources(self):
 
         """
@@ -385,13 +416,24 @@ class PreparationInitializer(PreparationComponent):
             if fltr == "Ha": ignore_stars.append(name)
         #ignore_stars = [parse_filter("Halpha")]
 
+        default_fwhm = 2.0 * u("arcsec")
+
+        marker.config.default_fwhm = default_fwhm
+
         # Run
-        marker.run(fwhms=fwhms, dataset=self.set, ignore=ignore, extended_source_catalog=self.extended_sources, point_source_catalog=self.point_sources, ignore_stars=ignore_stars)
+        marker.run(fwhms=fwhms, dataset=self.set, ignore=ignore, extended_source_catalog=self.extended_sources,
+                   point_source_catalog=self.point_sources, ignore_stars=ignore_stars, output_paths=self.sources_output_paths)
 
         # Set the FWHMs
+        self.fwhms = dict()
         for name in self.paths:
             fltr = parse_filter(name)
-            self.fwhms[name] = fwhms[fltr]
+            if fltr in fwhms: fwhm = fwhms[fltr]
+            else:
+                frame = Frame.from_file(self.paths[name])
+                if frame.fwhm is not None: fwhm = frame.fwhm
+                else: fwhm = default_fwhm
+            self.fwhms[name] = fwhm
 
         # Set the FWHMs
         self.set_fwhms()
@@ -441,20 +483,19 @@ class PreparationInitializer(PreparationComponent):
         # Check for which images the source finding step has already been performed
         for prep_name in self.paths:
 
-            # Get output path
-            output_path = self.get_prep_path(prep_name)
-
-            # Determine the path to the "sources" directory within the output path for this image
-            sources_output_path = fs.join(output_path, "sources")
+            # Get sources otuput path
+            sources_output_path = self.sources_output_paths[prep_name]
 
             # If the source finding step has already been performed on this image, don't do it again
-            if fs.is_directory(sources_output_path):
+            if not fs.is_empty(sources_output_path):
+
                 # Debugging
                 log.debug("Source finder output has been found for this image, skipping source finding step")
 
                 # Ignore this image for the source finder
                 ignore_images.append(prep_name)
 
+        # Return the ignore images
         return ignore_images
 
     # -----------------------------------------------------------------
@@ -472,7 +513,7 @@ class PreparationInitializer(PreparationComponent):
         # Run the source finder
         self.finder.run(dataset=self.set, ignore=ignore_images, ignore_stars=ignore_stars,
                         ignore_other_sources=ignore_other_sources, extended_source_catalog=self.extended_sources,
-                        point_source_catalog=self.point_sources)
+                        point_source_catalog=self.point_sources, output_paths=self.sources_output_paths)
 
         # Get the statistics
         #self.statistics = self.finder.statistics
@@ -502,6 +543,7 @@ class PreparationInitializer(PreparationComponent):
         input_dict["ignore_other_sources"] = ignore_other_sources
         input_dict["extended_source_catalog"] = self.extended_sources
         input_dict["point_source_catalog"] = self.point_sources
+        input_dict["output_paths"] = self.sources_output_paths
 
         # Run the PTS find_sources command remotely and get the output
         #self.statistics = self.launcher.run_attached("find_sources", self.config.sources, input_dict, return_output_names=["statistics"], unpack=True)

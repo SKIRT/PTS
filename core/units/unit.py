@@ -1009,6 +1009,8 @@ class PhotometricUnit(CompositeUnit):
         :param fltr:
         :param pixelscale:
         :param brightness:
+        :param brightness_strict:
+        :param density_strict:
         :return:
         """
 

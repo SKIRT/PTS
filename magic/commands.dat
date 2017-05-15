@@ -7,6 +7,7 @@ list_ned | -- | services.ned.NED | arguments | List images found on NED
 get_s4g | -- | services.s4g.S4G | arguments | Get galaxy components from S4G study
 get_projections | -- | misc.project.Projector | arguments | Create projections for creating a simulation of a galaxy according to the galaxy parameters
 get_seds | -- | services.seds.SEDFetcher | arguments | Fetch reference SEDs for a certain galaxy
+mark_sources | -- | sources.marker.SourceMarker | arguments | Mark sources based on catalogs
 find_sources | -- | sources.finder.SourceFinder | arguments | Find sources for the images in a dataset or a single image
 import_catalogs | -- | catalog.importer.CatalogImporter | arguments | Import galactic and stellar catalogs
 find_extended | -- | sources.extended.ExtendedSourceFinder | arguments | Find extended sources in an image

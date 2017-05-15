@@ -1020,8 +1020,9 @@ class Image(object):
         log.debug("Converting the unit of the image from " + str(self.unit) + " to " + str(to_unit) + " ...")
 
         # Calculate the conversion factor
-        factor = self.unit.conversion_factor(to_unit, density=density, filter=self.filter, pixelscale=self.pixelscale,
-                                             distance=distance, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
+        factor = self.unit.conversion_factor(to_unit, density=density, fltr=self.filter, pixelscale=self.pixelscale,
+                                             distance=distance, brightness=brightness, density_strict=density_strict,
+                                             brightness_strict=brightness_strict)
 
         # Debug message
         log.debug("Conversion factor = " + str(factor))
