@@ -350,6 +350,16 @@ class SourceMarker(Configurable):
             # Add
             self.extended_regions[name] = pixel_regions
 
+            ####
+            # Temporary: write here
+
+            # Determine path
+            if self.output_paths is not None and name in self.output_paths: path = fs.join(self.output_paths[name], "galaxies.reg")
+            else: path = self.output_path_file("galaxies_" + name + ".reg")
+
+            # Save
+            pixel_regions.saveto(path)
+
     # -----------------------------------------------------------------
 
     def create_point_regions(self):
@@ -405,6 +415,15 @@ class SourceMarker(Configurable):
             # Add to dictionary
             self.point_regions[name] = pixel_regions
 
+            ### TEmporary: write here
+
+            # Determine path
+            if self.output_paths is not None and name in self.output_paths: path = fs.join(self.output_paths[name], "stars.reg")
+            else: path = self.output_path_file("stars_" + name + ".reg")
+
+            # Save
+            pixel_regions.saveto(path)
+
     # -----------------------------------------------------------------
 
     def write(self):
@@ -447,32 +466,10 @@ class SourceMarker(Configurable):
         # Inform the user
         log.info("Writing the galaxy regions ...")
 
-        # Loop over the extended regions
-        # for name in self.extended_regions:
-
         # Loop over the images
         for name in self.extended_regions:
 
-            # Initialize region list
-            # galaxy_regions = PixelRegionList()
-            #galaxy_regions = SkyRegionList()
-
-            # Loop over the galaxies
-            #for galaxy in self.galaxies:
-                # Get the index
-                #index = galaxy.index
-
-                # print("index", index)
-
-                # Get the corresponding region
-                # region = self.extended_regions[name][index]
-                #region = self.find_extended_region(name, index)
-
-                # print("region", region)
-
-                # Add the region
-                #galaxy_regions.append(region)
-
+            # Get regions
             regions = self.extended_regions[name]
 
             # Determine path
@@ -497,23 +494,7 @@ class SourceMarker(Configurable):
         # Loop over the images
         for name in self.point_regions:
 
-            # Initialize region list
-            # star_regions = PixelRegionList()
-            #star_regions = SkyRegionList()
-
-            # Loop over the stars
-            #for star in self.stars:
-
-                # Get the index
-                #index = star.index
-
-                # Get the corresponding region
-                # region = self.point_regions[name][index]
-                #region = self.find_star_region(name, index)
-
-                # Add the region
-                #if region is not None: star_regions.append(region)
-
+            # Get regions
             regions = self.point_regions[name]
 
             # Determine path
