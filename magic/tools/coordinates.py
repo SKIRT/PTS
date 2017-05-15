@@ -202,6 +202,38 @@ def ra_distance(declination, ra_a, ra_b):
 
 # -----------------------------------------------------------------
 
+def ra_around(ra_center, ra_distance, declination):
+
+    """
+    This function ...
+    :param ra_center: 
+    :param ra_distance: 
+    :param declination: 
+    :return: 
+    """
+
+    difference = abs(ra_difference(ra_distance, declination))
+    return ra_center - difference, ra_center + difference
+
+# -----------------------------------------------------------------
+
+def ra_difference(ra_distance, declination):
+
+    """
+    This function ...
+    :param ra_distance:
+    :param declination
+    :return: 
+    """
+
+    cos_ra_difference = ( np.cos(np.radians(ra_distance)) - np.sin(np.radians(declination))**2 ) / np.cos(np.radians(declination))**2
+
+    if cos_ra_difference > 1.0 and np.isclose(cos_ra_difference, 1.0): cos_ra_difference = 1.0
+
+    return np.degrees(np.arccos(cos_ra_difference))
+
+# -----------------------------------------------------------------
+
 def degrees_to_hms(ra='', dec='', round=False):
 
     """

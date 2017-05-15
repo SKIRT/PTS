@@ -47,7 +47,9 @@ class CatalogFetcher(object):
         """
 
         # Inform the user
-        log.info("Fetching catalog of extended sources ...")
+        log.info("Searching extended sources in: ")
+        log.info(" - center: " + str(coordinate_box.center))
+        log.info(" - radius: " + str(coordinate_box.radius))
 
         # Get the data
         name_column, ra_column, dec_column, redshift_column, type_column, alternative_names_column, distance_column, \
@@ -81,6 +83,11 @@ class CatalogFetcher(object):
         :return:
         """
 
+        # Inform the user
+        log.info("Searching point sources in: ")
+        log.info(" - center: " + str(coordinate_box.center))
+        log.info(" - radius: " + str(coordinate_box.radius))
+
         # Check whether the 'catalogs' setting defines a single catalog name or a list of such names
         if types.is_string_type(catalogues): catalog_list = [catalogues]
         elif isinstance(catalogues, list): catalog_list = catalogues
@@ -95,6 +102,9 @@ class CatalogFetcher(object):
 
         # Add entries
         for index in range(len(catalog_column)):
+
+            # Debugging
+            log.info("Adding entry " + str(index+1) + " to the catalog ...")
 
             catalog.add_entry(catalog_column[index], id_column[index], ra_column[index], dec_column[index],
                               ra_error_column[index], dec_error_column[index], confidence_level_column[index])

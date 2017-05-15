@@ -988,6 +988,22 @@ def copy_and_decompress_files(file_paths, directory_path):
 
 # -----------------------------------------------------------------
 
+def compressed_files_in_path(directory_path, returns="path"):
+
+    """
+    This function ...
+    :param directory_path: 
+    :param returns:
+    :return: 
+    """
+
+    from .archive import extensions
+
+    # Return
+    return files_in_path(directory_path, returns=returns, extension=extensions)
+
+# -----------------------------------------------------------------
+
 def move_file(file_path, directory_path, new_name=None):
 
     """

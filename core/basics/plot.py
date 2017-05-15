@@ -49,7 +49,12 @@ for name, rgb in colors.ColorConverter.colors.items():
 
 color_plt_identifiers = color_hex.keys()
 
-pretty_colors = ["r", "dodgerblue", "purple", "darkorange", "lawngreen", "yellow", "darkblue", "teal", "darkgreen", "lightcoral", "crimson", "saddlebrown"]
+#pretty_colors = ["r", "dodgerblue", "purple", "darkorange", "lawngreen", "yellow", "darkblue", "teal", "darkgreen", "lightcoral", "crimson", "saddlebrown"]
+
+# More:
+pretty_colors = ["dodgerblue", "r", "purple", "darkorange", "lawngreen", "yellow", "darkblue", "teal", "darkgreen",
+                 "lightcoral", "crimson", "saddlebrown", "mediumslateblue", "lightslategrey", "firebrick",
+                 "orange", "darkcyan", "hotpink", "indianred", "aqua"]
 
 # -----------------------------------------------------------------
 

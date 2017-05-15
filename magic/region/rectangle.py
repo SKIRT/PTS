@@ -441,6 +441,26 @@ class SkyRectangleRegion(RectangleRegion, SkyRegion):
     # -----------------------------------------------------------------
 
     @property
+    def min_ra(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_ra(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+    # -----------------------------------------------------------------
+
+    @property
     def corner11(self):
 
         """

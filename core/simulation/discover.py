@@ -28,6 +28,7 @@ from ..tools import formatting as fmt
 from ..tools.logging import log
 from ..simulation.logfile import LogFile
 from ..basics.map import Map
+from ..tools import types
 
 # -----------------------------------------------------------------
 
@@ -503,12 +504,15 @@ class SimulationDiscoverer(Configurable):
         # Loop over the ski files
         for ski_path in self.simulations_ski:
 
-            if isinstance(ski_path, basestring):
+            if types.is_string_type(ski_path):
+
                 rel_ski_path = ski_path.split(self.config.path)[1]
                 print(fmt.green + rel_ski_path + fmt.reset + ":")
                 input_path = self.simulations_ski[ski_path][0].input_path
                 parameters = comparison_parameters_from_ski(ski_path, input_path)
+
             else:
+
                 print(fmt.yellow + "ski file not found (but identical parameters)" + fmt.reset + ":")
                 input_path = self.simulations_ski[ski_path][0].input_path
                 parameters = comparison_parameters_from_ski(ski_path[0], input_path)

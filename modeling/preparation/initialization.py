@@ -67,9 +67,6 @@ class PreparationInitializer(PreparationComponent):
         # Create the PTS remote launcher
         self.launcher = PTSRemoteLauncher()
 
-        # The statistics
-        #self.statistics = None
-
         # The FWHMs found by the source finder
         self.finder_fwhms = None
 
@@ -143,49 +140,8 @@ class PreparationInitializer(PreparationComponent):
         # Inform the user
         log.info("Looking for images and error frames ...")
 
-        # Loop over the different image origins
-        for path, origin in fs.directories_in_path(self.data_images_path, returns=["path", "name"]):
-
-            # Ignore the Planck data (for now)
-            #if origin == "Planck": continue
-
-            # Loop over the FITS files in the current directory
-            for image_path, image_name in fs.files_in_path(path, extension="fits", not_contains="poisson", returns=["path", "name"]):
-
-                try:
-                    # Open the image frame
-                    frame = Frame.from_file(image_path)
-                except IOError:
-                    log.warning("The file '" + image_path + "' is probably damaged. Removing the file and exitting. Run the command again.")
-                    fs.remove_file(image_path)
-                    exit()
-
-                # Determine the preparation name
-                #if frame.filter is not None: prep_name = str(frame.filter)
-                #else: prep_name = image_name
-                if frame.filter is None:
-                    log.warning("Did not recognize the filter of the '" + image_name + "' image: skipping")
-                    continue
-
-                # Determine name
-                name = frame.filter_name
-                #print(path, str(frame.filter), name)
-
-                # Add the image path
-                self.paths[frame.filter_name] = image_path
-
-                # Determine path to poisson error map
-                poisson_path = fs.join(path, image_name + "_poisson.fits")
-
-                # Set the path to the poisson error map
-                if fs.is_file(poisson_path):
-
-                    # Debugging
-                    log.debug("Poisson error frame found for " + name + "' image ...")
-                    self.error_paths[name] = poisson_path
-
-                # Free memory
-                gc.collect()
+        # Get the paths
+        self.paths, self.error_paths = self.get_data_image_and_error_paths()
 
     # -----------------------------------------------------------------
 
@@ -323,7 +279,7 @@ class PreparationInitializer(PreparationComponent):
         """
 
         # Inform the user
-        log.info("Get catalog of extended sources ...")
+        log.info("Getting the catalog of extended sources ...")
 
         # Search for catalogs that are saved in the prepration directory
         # extended_source_catalog and point_source_catalog
@@ -331,10 +287,27 @@ class PreparationInitializer(PreparationComponent):
 
         # Load or fetch the catalog
         if fs.is_file(extended_sources_path): self.extended_sources = ExtendedSourceCatalog.from_file(extended_sources_path)
-        else:
-            fetcher = CatalogFetcher()
-            self.extended_sources = fetcher.get_extended_source_catalog(self.set.get_bounding_box())
-            self.extended_sources.saveto(extended_sources_path)
+        else: self.fetch_extended_sources_catalog(extended_sources_path)
+
+    # -----------------------------------------------------------------
+
+    def fetch_extended_sources_catalog(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Fetching the catalog of extended sources ...")
+
+        # Fetch
+        fetcher = CatalogFetcher()
+        self.extended_sources = fetcher.get_extended_source_catalog(self.catalog_coordinate_box)
+
+        # Save the catalog
+        self.extended_sources.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -346,7 +319,7 @@ class PreparationInitializer(PreparationComponent):
         """
 
         # Inform the user
-        log.info("Get catalog of point sources ...")
+        log.info("Getting the catalog of point sources ...")
 
         # Search for catalogs that are saved in the prepration directory
         # Set the path
@@ -354,12 +327,28 @@ class PreparationInitializer(PreparationComponent):
 
         # Load or fetch the catalog
         if fs.is_file(point_sources_path): self.point_sources = PointSourceCatalog.from_file(point_sources_path)
-        else:
-            fetcher = CatalogFetcher()
-            min_pixelscale = self.set.min_pixelscale
-            catalogs = ["II/246"]
-            self.point_sources = fetcher.get_point_source_catalog(self.set.get_bounding_box(), min_pixelscale, catalogs)
-            self.point_sources.saveto(point_sources_path)
+        else: self.fetch_point_sources_catalog(point_sources_path)
+
+    # -----------------------------------------------------------------
+
+    def fetch_point_sources_catalog(self, path):
+
+        """
+        This function ...
+        :param path
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Fetching the catalog of point sources ...")
+
+        # Fetch
+        fetcher = CatalogFetcher()
+        min_pixelscale = self.set.min_pixelscale
+        self.point_sources = fetcher.get_point_source_catalog(self.catalog_coordinate_box, min_pixelscale, self.config.catalogs)
+
+        # Save the catalog
+        self.point_sources.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -459,22 +448,6 @@ class PreparationInitializer(PreparationComponent):
         # Run the PTS find_sources command remotely and get the output
         #self.statistics = self.launcher.run_attached("find_sources", self.config.sources, input_dict, return_output_names=["statistics"], unpack=True)
         self.finder_fwhms = self.launcher.run_attached("find_sources", self.config.sources, input_dict, return_output_names=["fwhms"], unpack=True)
-
-    # -----------------------------------------------------------------
-
-    #def set_fwhm(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        # Set the FWHM of the images
-        #for prep_name in self.set:
-            #if prep_name not in fwhms:
-                #image = self.set.get_image(prep_name)
-                #image.fwhm = self.statistics[prep_name].fwhm
-                #image.saveto(self.set.paths[prep_name])
 
     # -----------------------------------------------------------------
 

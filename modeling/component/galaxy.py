@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import math
+import gc
 from abc import ABCMeta
 
 # Import astronomical modules
@@ -31,6 +32,8 @@ from ..basics.properties import GalaxyProperties
 from ...core.tools.logging import log
 from ...magic.prepare.statistics import PreparationStatistics
 from .component import ModelingComponent
+from ...magic.region.ellipse import SkyEllipseRegion
+from ...magic.basics.stretch import SkyStretch
 
 # -----------------------------------------------------------------
 
@@ -883,6 +886,33 @@ class GalaxyModelingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def galaxy_ellipse(self): # from properties
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Get properties
+        center = self.galaxy_properties.center
+        major = self.galaxy_properties.major_arcsec
+        position_angle = self.galaxy_properties.position_angle
+        ellipticity = self.galaxy_properties.ellipticity
+
+        # 1 / axial_ratio = 1 - ellipticity
+        axial_ratio = 1. / (1. - ellipticity)
+
+        # Set radius
+        minor = major * axial_ratio
+        radius = SkyStretch(major, minor)
+
+        # Create and return the region
+        region = SkyEllipseRegion(center, radius, position_angle)
+        return region
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def galaxy_distance(self):
 
         """
@@ -1248,6 +1278,82 @@ class GalaxyModelingComponent(ModelingComponent):
         # Return the SED
         return sed
 
+    # -----------------------------------------------------------------
+
+    def get_data_image_and_error_paths(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        paths = dict()
+        error_paths = dict()
+
+        # Loop over the images
+        for image_path, image_name in fs.files_in_path(self.data_images_path, extension="fits", not_contains="poisson",
+                                                       returns=["path", "name"], recursive=True):
+
+            # Determine directory path
+            path = fs.directory_of(image_path)
+
+            # Load the primary image frame
+            frame = load_image_frame(image_path)
+
+            # Determine name
+            name = frame.filter_name
+
+            # Add the image path
+            paths[name] = image_path
+
+            # Determine path to poisson error map
+            poisson_path = fs.join(path, image_name + "_poisson.fits")
+
+            # Set the path to the poisson error map
+            if fs.is_file(poisson_path):
+
+                # Debugging
+                log.debug("Poisson error frame found for " + name + "' image ...")
+                error_paths[name] = poisson_path
+
+            # Free memory
+            gc.collect()
+
+        # Return the paths and error paths
+        return paths, error_paths
+
+    # -----------------------------------------------------------------
+
+    def get_data_image_paths(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        paths = dict()
+
+        # Loop over the images
+        for image_path, image_name in fs.files_in_path(self.data_images_path, extension="fits", not_contains="poisson",
+                                                       returns=["path", "name"], recursive=True):
+            # Determine directory path
+            path = fs.directory_of(image_path)
+
+            # Load the primary image frame
+            frame = load_image_frame(image_path)
+
+            # Determine name
+            name = frame.filter_name
+
+            # Add the image path
+            paths[name] = image_path
+
+            # Free memory
+            gc.collect()
+
+        # Return the image paths
+        return paths
+
 # -----------------------------------------------------------------
 
 def load_preparation_statistics(modeling_path):
@@ -1376,5 +1482,39 @@ def get_dustpedia_sed(modeling_path):
 
     # Open the SED and return it
     return ObservedSED.from_file(get_dustpedia_sed_path(modeling_path))
+
+# -----------------------------------------------------------------
+
+def load_image_frame(path):
+
+    """
+    This function ...
+    :param path: 
+    :return: 
+    """
+
+    name = fs.strip_extension(fs.name(path))
+
+    frame = None
+    # Try opening
+    try:
+        # Open the image frame
+        frame = Frame.from_file(path)
+    except IOError:
+        log.warning("The file '" + path + "' is probably damaged. Removing the file and exitting. Run the command again.")
+        fs.remove_file(path)
+        exit()
+
+    # Determine the preparation name
+    #if frame.filter is not None: prep_name = str(frame.filter)
+    #else: prep_name = image_name
+    if frame.filter is None:
+
+        #log.warning("Did not recognize the filter of the '" + image_name + "' image: skipping")
+        #continue
+        raise RuntimeError("Did not recognize the filter for the '" + name + "' image")
+
+    # Return the frame
+    return frame
 
 # -----------------------------------------------------------------

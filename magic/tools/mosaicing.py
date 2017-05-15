@@ -55,29 +55,31 @@ def generate_meta_file(path, meta_dir_path=None):
     cwd = fs.change_cwd(fs.directory_of(path))
 
     # Path of status file
-    status_filename = "status.txt"
-    status_path = fs.join(meta_dir_path, status_filename)
+    # FOR DEBUGGING
+    #status_filename = "status.txt"
+    #status_path = fs.join(meta_dir_path, status_filename)
 
     # Debugging
     log.debug("Changed working directory to '" + fs.directory_of(path) + "' ...")
     log.debug("Fields directory name: '" + dirname + "'")
     log.debug("Fields directory path: '" + path + "'")
     log.debug("Meta file path: '" + meta_path + "'")
-    log.debug("Status file path: '" + status_path + "'")
+    #log.debug("Status file path: '" + status_path + "'")
 
     dirname = path
 
     # Get the image table of which images cover a given part of the sky
-    montage.commands.mImgtbl(dirname, meta_path, corners=True, debug=log.is_debug(), output_invalid=True, status_file=status_path)
+    #montage.commands.mImgtbl(dirname, meta_path, corners=True, debug=log.is_debug(), output_invalid=True, status_file=status_path) # debuggin
+    montage.commands.mImgtbl(dirname, meta_path, corners=True)
 
     # Change working directory again
     fs.change_cwd(cwd)
 
     # Check whether the meta file contains any lines
-    if not fs.contains_lines(meta_path):
-        log.debug("STATUS:")
-        for line in fs.read_lines(status_path): log.debug(line)
-        raise RuntimeError("The meta table (" + meta_path + ") doesn't contain any lines")
+    #if not fs.contains_lines(meta_path):
+    #    log.debug("STATUS:")
+    #    for line in fs.read_lines(status_path): log.debug(line)
+    #    raise RuntimeError("The meta table (" + meta_path + ") doesn't contain any lines")
 
     # Return the path to the created file
     return meta_path

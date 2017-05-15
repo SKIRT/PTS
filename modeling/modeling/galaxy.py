@@ -18,8 +18,10 @@ from ...core.tools.logging import log
 from ..data.properties import PropertyFetcher
 from ..data.images import ImageFetcher
 from ..data.seds import SEDFetcher
+from ..data.inspector import DataInspector
 from ..preparation.initialization import PreparationInitializer
 from ..preparation.preparer import DataPreparer
+from ..preparation.inspector import PreparationInspector
 from ..decomposition.decomposition import GalaxyDecomposer
 from ..truncation.truncation import Truncator
 from ..photometry.photometry import PhotoMeter
@@ -268,6 +270,9 @@ class GalaxyModeler(ModelerBase):
             if self.images is not None: self.set_images()
             else: self.get_images()
 
+        # Inspect the data
+        if "inspect_data" not in self.history: self.inspect_data()
+
     # -----------------------------------------------------------------
 
     def get_properties(self):
@@ -284,13 +289,21 @@ class GalaxyModeler(ModelerBase):
         fetcher = PropertyFetcher()
 
         # Add an entry to the history and save
-        self.history.add_entry(PropertyFetcher.command_name())
+        command_name = PropertyFetcher.command_name()
+        self.history.add_entry(command_name)
 
         # Set the working directory
         fetcher.config.path = self.modeling_path
 
+        # Set log path
+        log_path = fs.join(self.environment.log_path, command_name + "_" + self.timestamp + ".txt")
+        set_log_file(log_path)
+
         # Run the fetcher
         fetcher.run()
+
+        # Unset log path
+        unset_log_file()
 
         # Mark the end and save the history file
         self.history.mark_end()
@@ -334,13 +347,21 @@ class GalaxyModeler(ModelerBase):
         fetcher = SEDFetcher()
 
         # Add an entry to the history
-        self.history.add_entry(SEDFetcher.command_name())
+        command_name = SEDFetcher.command_name()
+        self.history.add_entry(command_name)
 
         # Set the working directory
         fetcher.config.path = self.modeling_path
 
+        # Set log path
+        log_path = fs.join(self.environment.log_path, command_name + "_" + self.timestamp + ".txt")
+        set_log_file(log_path)
+
         # Run the SED fetcher
         fetcher.run()
+
+        # Unset log path
+        unset_log_file()
 
         # Mark the end and save the history file
         self.history.mark_end()
@@ -405,10 +426,15 @@ class GalaxyModeler(ModelerBase):
         fetcher = ImageFetcher(config)
 
         # Add an entry to the history
-        self.history.add_entry(ImageFetcher.command_name())
+        command_name = ImageFetcher.command_name()
+        self.history.add_entry(command_name)
 
         # Set the working directory
         fetcher.config.path = self.modeling_path
+
+        # Set log path
+        log_path = fs.join(self.environment.log_path, command_name + "_" + self.timestamp + ".txt")
+        set_log_file(log_path)
 
         # Run the image fetcher
         fetcher.run()
@@ -416,6 +442,9 @@ class GalaxyModeler(ModelerBase):
         # Mark the end and save the history file
         self.history.mark_end()
         self.history.save()
+
+        # Unset log path
+        unset_log_file()
 
         # If not running in attached remote mode, exit now
         if fetcher.detached:
@@ -454,6 +483,45 @@ class GalaxyModeler(ModelerBase):
 
             # Write the image
             image.saveto(image_path)
+
+    # -----------------------------------------------------------------
+
+    def inspect_data(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Inspecting the data ...")
+
+        # Create configuration
+        config = dict()
+
+        # Create the data inspector
+        inspector = DataInspector(config)
+
+        # Add an entry to the history
+        command_name = ImageFetcher.command_name()
+        self.history.add_entry(command_name)
+
+        # Set the working directory
+        inspector.config.path = self.modeling_path
+
+        # Set log path
+        log_path = fs.join(self.environment.log_path, command_name + "_" + self.timestamp + ".txt")
+        set_log_file(log_path)
+
+        # Run the data inspector
+        inspector.run()
+
+        # Unset log path
+        unset_log_file()
+
+        # Mark the end and save the history file
+        self.history.mark_end()
+        self.history.save()
 
     # -----------------------------------------------------------------
 
@@ -512,6 +580,9 @@ class GalaxyModeler(ModelerBase):
 
         # Run the initializer
         initializer.run()
+
+        # Unset log path
+        unset_log_file()
 
         # Mark the end and save the history file
         self.history.mark_end()
@@ -583,7 +654,7 @@ class GalaxyModeler(ModelerBase):
         inspector = PreparationInspector(config)
 
         # Add an entry to the history
-        PreparationInspector.command_name()
+        command_name = PreparationInspector.command_name()
         self.history.add_entry(command_name)
 
         # Set the working directory
@@ -932,7 +1003,8 @@ class GalaxyModeler(ModelerBase):
         maker = AttenuationMapMaker()
 
         # Add an entry to the history
-        self.history.add_entry(maker.command_name())
+        command_name = maker.command_name()
+        self.history.add_entry(command_name)
 
         # Set the working directory
         maker.config.path = self.modeling_path

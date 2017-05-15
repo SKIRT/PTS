@@ -40,6 +40,9 @@ from .mask import intersection, union
 from ..region.rectangle import SkyRectangleRegion
 from ..basics.coordinate import SkyCoordinate
 from ..basics.stretch import SkyStretch
+from ...core.basics.map import Map
+from ..tools import coordinates
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -814,6 +817,18 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    def get_coordinate_box(self, name):
+
+        """
+        This function ...
+        :param name: 
+        :return: 
+        """
+
+        return self.get_wcs(name).bounding_box
+
+    # -----------------------------------------------------------------
+
     def get_bounding_box(self):
 
         """
@@ -825,10 +840,21 @@ class DataSet(object):
         boxes_region = SkyRegionList()
 
         # Add the bounding boxes as sky rectangles
-        for name in self.paths: boxes_region.append(self.get_wcs(name).bounding_box)
+        for name in self.paths: boxes_region.append(self.get_coordinate_box(name))
 
         # Return the bounding box of the region of rectangles
         return boxes_region.bounding_box
+
+    # -----------------------------------------------------------------
+
+    def get_bounding_data(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 
@@ -856,13 +882,95 @@ class DataSet(object):
             if min_dec is None or wcs.min_dec > min_dec: min_dec = wcs.min_dec
             if max_dec is None or wcs.max_dec < max_dec: max_dec = wcs.max_dec
 
+        center_ra = 0.5 * (min_ra + max_ra)
+        center_dec = 0.5 * (min_dec + max_dec)
+
+        # NO:
+        #ra_radius = 0.5 * (max_ra - min_ra)
+        dec_radius = 0.5 * (max_dec - min_dec)
+
+        # BUT:
+        ra_span = abs(coordinates.ra_distance(center_dec.to("deg").value, min_ra.to("deg").value, max_ra.to("deg").value))
+        ra_radius = 0.5 * ra_span * u("deg")
+
         # Determine center and radius
         # Get center and radius of the new bounding box
-        center = SkyCoordinate(0.5 * (min_ra + max_ra), 0.5 * (min_dec + max_dec))
-        radius = SkyStretch(0.5 * (max_ra - min_ra), 0.5 * (max_dec - min_dec))
+        center = SkyCoordinate(center_ra, center_dec)
+        radius = SkyStretch(ra_radius, dec_radius)
 
         # Return the bounding box
         return SkyRectangleRegion(center, radius)
+
+    # -----------------------------------------------------------------
+
+    def get_overlap_data(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        min_ra = None
+        min_ra_name = None
+        max_ra = None
+        max_ra_name = None
+        min_dec = None
+        min_dec_name = None
+        max_dec = None
+        max_dec_name = None
+
+        # Loop over the images
+        for name in self.paths:
+
+            # Get wcs
+            wcs = self.get_coordinate_system(name)
+
+            #
+            if min_ra is None or wcs.min_ra > min_ra:
+                min_ra = wcs.min_ra
+                min_ra_name = name
+
+            if max_ra is None or wcs.max_ra < max_ra:
+                max_ra = wcs.max_ra
+                max_ra_name = name
+
+            if min_dec is None or wcs.min_dec > min_dec:
+                min_dec = wcs.min_dec
+                min_dec_name = name
+
+            if max_dec is None or wcs.max_dec < max_dec:
+                max_dec = wcs.max_dec
+                max_dec_name = name
+
+        # Create the data
+        data = Map()
+        data.ra = Map()
+        data.dec = Map()
+        data.ra.min = min_ra_name
+        data.ra.max = max_ra_name
+        data.dec.min = min_dec_name
+        data.dec.max = max_dec_name
+
+        center_ra = 0.5 * (min_ra + max_ra)
+        center_dec = 0.5 * (min_dec + max_dec)
+
+        # NO:
+        #ra_radius = 0.5 * (max_ra - min_ra)
+        dec_radius = 0.5 * (max_dec - min_dec)
+
+        # BUT:
+        ra_span = abs(coordinates.ra_distance(center_dec.to("deg").value, min_ra.to("deg").value, max_ra.to("deg").value))
+        ra_radius = 0.5 * ra_span * u("deg")
+
+        # Determine center and radius
+        # Get center and radius of the new bounding box
+        center = SkyCoordinate(center_ra, center_dec)
+        radius = SkyStretch(ra_radius, dec_radius)
+
+        box = SkyRectangleRegion(center, radius)
+
+        # Return the box, and the data
+        return box, data
 
     # -----------------------------------------------------------------
 

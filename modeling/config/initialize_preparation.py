@@ -29,6 +29,8 @@ definition.add_flag("attached", "run remotely in attached mode")
 definition.import_section("sources", "options for the source finder", sources_definition)
 
 # Flags
+default_catalogs = ["II/246"]
+definition.add_optional("catalogs", "string_list", "catalogs for point sources", default_catalogs)
 definition.add_flag("catalog_overlapping", "only fetch catalog data in the area where all images are overlapping", True)
 
 # -----------------------------------------------------------------

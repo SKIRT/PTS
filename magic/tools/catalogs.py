@@ -296,7 +296,7 @@ def from_galaxies(galaxies):
 
 # -----------------------------------------------------------------
 
-def create_star_catalog(coordinate_box, pixelscale, catalogs=None):
+def create_star_catalog(coordinate_box, pixelscale, catalogs=None, check_in_box=False):
 
     """
     This function ...
@@ -337,7 +337,7 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs=None):
         encountered = [False] * len(catalog_column)
 
         # Inform the user
-        log.debug("Querying the " + catalog + " catalog")
+        log.debug("Querying the " + catalog + " catalog ...")
 
         # Query Vizier and obtain the resulting table
         result = viz.query_region(center.to_astropy(), width=ra_span, height=dec_span, catalog=catalog)
@@ -369,6 +369,9 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs=None):
         # Loop over all entries in the table
         for i in range(len(table)):
 
+            # Debugging
+            log.debug("Processing entry " + str(i+1) + " ...")
+
             # -- General information --
 
             # Get the ID of this star in the catalog
@@ -389,9 +392,12 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs=None):
 
             number_of_stars += 1
 
-            # If this star does not lie within the frame, skip it
-            #if not frame.contains(position): continue
-            if not coordinate_box.contains(position): continue
+            # Optional because this takes a lot of time
+            if check_in_box:
+
+                # If this star does not lie within the frame, skip it
+                #if not frame.contains(position): continue
+                if not coordinate_box.contains(position): continue
 
             number_of_stars_in_frame += 1
 
@@ -572,7 +578,13 @@ def create_galaxy_catalog(coordinate_box):
     dec_span = 2.0 * coordinate_box.radius.dec
 
     # Find galaxies in the box defined by the center and RA/DEC ranges
+    index = 0
     for name, position in galaxies_in_box(center, ra_span, dec_span):
+
+        # Debugging
+        log.debug("Processing entry " + str(index+1) + " ...")
+
+        index += 1
 
         # Get galaxy information
         gal_name, position, gal_redshift, gal_type, gal_names, gal_distance, gal_inclination, gal_d25, gal_major, gal_minor, gal_pa = get_galaxy_info(name, position)
@@ -647,31 +659,7 @@ def create_galaxy_catalog(coordinate_box):
         if len(companion_list) == 0: companions_column.append(None)
         else: companions_column.append(", ".join(companion_list))
 
-    # Create the data structure and names list
-    #data = [name_column, ra_column, dec_column, redshift_column, type_column, alternative_names_column, distance_column,
-    #        inclination_column, d25_column, major_column, minor_column, pa_column, principal_column, companions_column,
-    #        parent_column]
-    #names = ["Name", "Right ascension", "Declination", "Redshift", "Type", "Alternative names", "Distance",
-    #         "Inclination", "D25", "Major axis length", "Minor axis length", "Position angle", "Principal",
-    #         "Companion galaxies", "Parent galaxy"]
-    #meta = {'name': 'galaxies'}
-
-    # Create the catalog table
-    #catalog = tables.new(data, names, meta)
-
-    # Set the column units
-    #catalog["Distance"].unit = "Mpc"
-    #catalog["Inclination"].unit = "deg"
-    #catalog["D25"].unit = "arcmin"
-    #catalog["Major axis length"].unit = "arcmin"
-    #catalog["Minor axis length"].unit = "arcmin"
-    #catalog["Position angle"].unit = "deg"
-    #catalog["Right ascension"].unit = "deg"
-    #catalog["Declination"].unit = "deg"
-
-    # Return the catalog
-    #return catalog
-
+    # Return the data
     return name_column, ra_column, dec_column, redshift_column, type_column, alternative_names_column, distance_column, \
            inclination_column, d25_column, major_column, minor_column, pa_column, principal_column, companions_column, \
            parent_column

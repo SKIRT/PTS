@@ -29,6 +29,7 @@ from ..basics.properties import GalaxyProperties
 from ...core.tools import tables
 from ...dustpedia.core.database import DustPediaDatabase, get_account
 from ...core.units.parsing import parse_unit as u
+from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -91,6 +92,9 @@ class PropertyFetcher(DataComponent):
 
         # 6. Get spiral properties
         #self.get_spiral_properties()
+
+        # Show
+        self.show()
 
         # 7. Writing
         self.write()
@@ -325,6 +329,25 @@ class PropertyFetcher(DataComponent):
         # ri: Inner radius [arcsec]
         # ro: Outer radius [arcsec]
         # Qual: [1/2] Quality flag
+
+    # -----------------------------------------------------------------
+
+    def show(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Showing galaxy properties ...")
+
+        print("")
+        print("Galaxy properties: ")
+        print(" - Name: " + self.properties.name)
+        print(" - Distance: " + tostr(self.properties.distance, scientific=True, fancy=True, ndigits=3))
+        print(" - Constellation: " + self.properties.center.get_constellation())
+        print("")
 
     # -----------------------------------------------------------------
 

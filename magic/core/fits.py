@@ -174,6 +174,9 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
     # Get flattened form of the header
     flattened_header = headers.flattened(original_header)
 
+    # Clean the header
+    clean_header(flattened_header)
+
     # Obtain the world coordinate system
     try:
         wcs = CoordinateSystem(flattened_header)
@@ -374,6 +377,9 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
 
     # Get the image header
     header = hdu.header
+
+    # Check the header for presence of CDELT while PC is also defined
+    clean_header(header)
 
     # Add meta information
     if add_meta:
@@ -600,5 +606,113 @@ def write_datacube(datacube, header, path):
 
     # Inform the user that the file has been created
     log.debug("File " + path + " created")
+
+# -----------------------------------------------------------------
+
+pc_keywords = ["PC1_1", "PC1_2", "PC2_1", "PC2_2"]
+cdelt_keywords = ["CDELT1", "CDELT2"]
+cd_keywords = ["CD1_1", "CD1_2", "CD2_1", "CD2_2"]
+
+# -----------------------------------------------------------------
+
+def contains_pc_and_cdelt(header):
+
+    """
+    This function ...
+    :param header: 
+    :return: 
+    """
+
+    return contains_keywords(header, pc_keywords) and contains_keywords(header, cdelt_keywords)
+
+# -----------------------------------------------------------------
+
+def contains_pc_and_cd(header):
+
+    """
+    This function ...
+    :param header: 
+    :return: 
+    """
+
+    return contains_keywords(header, pc_keywords) and contains_keywords(header, cd_keywords)
+
+# -----------------------------------------------------------------
+
+def clean_header(header):
+
+    """
+    This function ...
+    :param header: 
+    :return: 
+    """
+
+    if contains_pc_and_cdelt(header): remove_keywords(header, cdelt_keywords)
+    if contains_pc_and_cd(header): remove_keywords(header, cd_keywords)
+
+# -----------------------------------------------------------------
+
+def contains_keywords(header, keys):
+
+    """
+    This function ...
+    :param header: 
+    :param keys: 
+    :return: 
+    """
+
+    for key in keys:
+        if key not in header: return False
+    return True
+
+# -----------------------------------------------------------------
+
+def remove_pc_keywords(header):
+
+    """
+    THis function ...
+    :param header: 
+    :return: 
+    """
+
+    remove_keywords(header, pc_keywords)
+
+# -----------------------------------------------------------------
+
+def remove_cdelt_keywords(header):
+
+    """
+    This ufnction ...
+    :param header: 
+    :return: 
+    """
+
+    remove_keywords(header, cdelt_keywords)
+
+# -----------------------------------------------------------------
+
+def remove_cd_keywords(header):
+
+    """
+    This function ...
+    :param header: 
+    :return: 
+    """
+
+    remove_keywords(header, cd_keywords)
+
+# -----------------------------------------------------------------
+
+def remove_keywords(header, keys):
+
+    """
+    This function ...
+    :param header: 
+    :param keys: 
+    :return: 
+    """
+
+    for key in keys:
+        del header[key]
 
 # -----------------------------------------------------------------
