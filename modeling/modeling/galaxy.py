@@ -564,6 +564,8 @@ class GalaxyModeler(ModelerBase):
         config["sources"]["weak"] = self.config.sources_weak
         config["sources"]["nprocesses"] = self.config.nprocesses
 
+        config["manual"] = self.config.sources_manual
+
         # Create the initializer
         initializer = PreparationInitializer(config)
 

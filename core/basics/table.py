@@ -666,4 +666,34 @@ class SmartTable(Table):
                 self[colname][index] = np.ma.masked
                 self[colname].mask[index] = True
 
+    # -----------------------------------------------------------------
+
+    def print_latex(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        header = " & ".join(self.colnames) + " \\\\"
+        print(header)
+
+        units = []
+        for name in self.colnames:
+            unit = self.column_unit(name)
+            if unit is None:
+                units.append("")
+            else:
+                units.append(str(unit))
+        units_string = " & ".join(units) + " \\\\"
+        print(units_string)
+
+        for index in range(len(self)):
+
+            row = []
+            for name in self.colnames: row.append(str(self[name][index]))
+            row_string = " & ".join(row) + " \\\\"
+
+            print(row_string)
+
 # -----------------------------------------------------------------

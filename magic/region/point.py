@@ -348,6 +348,19 @@ class SkyPointRegion(PointRegion, SkyCoordinate, SkyRegion):
 
     # -----------------------------------------------------------------
 
+    def to_pixel(self, wcs, mode='wcs'):
+
+        """
+        This function ...
+        :param wcs: 
+        :param mode: 
+        :return: 
+        """
+
+        return PixelPointRegion.from_sky(self, wcs, mode=mode)
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def from_pixel(cls, region, wcs, mode='wcs'):
 

@@ -1542,7 +1542,7 @@ def detect_extended_sources(frame, catalog, config, special_mask, ignore_mask, b
     finder = ExtendedSourceFinder(config)
 
     # Inform the user
-    log.info("Starting detection of extended sources ...")
+    log.info("Starting detection of extended sources for '" + frame.name  + "' ...")
 
     # Run the finder
     finder.run(frame=frame, catalog=catalog, special_mask=special_mask, ignore_mask=ignore_mask, bad_mask=bad_mask)

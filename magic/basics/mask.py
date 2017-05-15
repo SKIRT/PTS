@@ -85,6 +85,23 @@ class MaskBase(object):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_region(cls, region, x_size, y_size):
+
+        """
+        This function ...
+        :param region:
+        :param x_size:
+        :param y_size
+        :return:
+        """
+
+        # Return a new Mask object
+        data = region.to_mask(x_size, y_size)
+        return cls(data)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def intersection(cls, *args):
 
         """

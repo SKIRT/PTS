@@ -681,6 +681,22 @@ class CoordinateSystem(wcs.WCS):
 
     # -----------------------------------------------------------------
 
+    def contains(self, coordinate):
+
+        """
+        This function ...
+        :param coordinate: 
+        :return: 
+        """
+
+        if coordinate.ra < self.min_ra: return False
+        if coordinate.ra > self.max_ra: return False
+        if coordinate.dec < self.min_dec: return False
+        if coordinate.dec > self.max_dec: return False
+        return True
+
+    # -----------------------------------------------------------------
+
     @property
     def coordinate_range(self):
 

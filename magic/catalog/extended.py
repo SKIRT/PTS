@@ -12,11 +12,20 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
+# Import astronomical modules
+from astropy.coordinates import Angle
+
 # Import the relevant PTS classes and modules
 from ...core.basics.table import SmartTable
 from ..basics.coordinate import SkyCoordinate
 from ...core.tools.logging import log
 from ..core.extendedsource import ExtendedSource
+from ..region.list import SkyRegionList
+from ..region.list import PixelRegionList
+from ..region.ellipse import SkyEllipseRegion
+from ..basics.stretch import SkyStretch
+from ..region.point import SkyPointRegion
+from ...core.units.parsing import parse_quantity
 
 # -----------------------------------------------------------------
 
@@ -294,5 +303,237 @@ class ExtendedSourceCatalog(SmartTable):
 
         # Return the source
         return source
+
+    # -----------------------------------------------------------------
+
+    def create_point_region(self, index):
+
+        """
+        This function ...
+        :param index: 
+        :return: 
+        """
+
+        position = self.get_position(index)
+
+        # Create a coordinate for the center and add it to the region
+        meta = {"point": "x"}
+
+        # Create and return the region
+        region = SkyPointRegion(position.ra, position.dec, meta=meta)
+        return region
+
+    # -----------------------------------------------------------------
+
+    def create_pixel_point_region(self, index, wcs):
+
+        """
+        This function ... 
+        :param index:
+        :param wcs:
+        :return: 
+        """
+
+        # Sky point region
+        region = self.create_point_region(index)
+
+        # Convert and return
+        return region.to_pixel(wcs)
+
+    # -----------------------------------------------------------------
+
+    def create_region(self, index, default_radius=parse_quantity("20 arcsec")):
+
+        """
+        This function ...
+        :param index: 
+        :param default_radius:
+        :return: 
+        """
+
+        # Debugging
+        log.debug("Creating region for extended source " + str(index+1) + " ...")
+
+        # Get the row
+        row = self.get_row(index)
+
+        position = self.get_position(index)
+
+        position_angle = row["Posangle"]
+
+        if position_angle is not None:
+            angle = Angle(position_angle.to("deg").value, "deg")
+        else: angle = Angle(0.0, "deg")
+
+        major = row["Major"]
+        minor = row["Minor"]
+
+        if major is None:
+
+            color = "red"
+            ra_radius = default_radius
+            dec_radius = default_radius
+
+        elif minor is None or position_angle is None:
+
+            color = "green"
+            ra_radius = 0.5 * major.to("arcsec")
+            dec_radius = ra_radius
+
+        else:
+
+            color = "green"
+            ra_radius = 0.5 * major.to("arcsec")
+            dec_radius = 0.5 * minor.to("arcsec")
+
+        # Get name
+        name = row["Name"]
+        principal = row["Principal"]
+
+        text = name
+        if principal: text += " (principal)"
+
+        # Create ellipse shape
+        center = position
+        radius = SkyStretch(ra_radius, dec_radius)
+        shape = SkyEllipseRegion(center, radius, angle)
+
+        # Set meta information
+        meta = {"text": text, "color": color, "index": index}
+        shape.meta = meta
+
+        # Return the region
+        return shape
+
+    # -----------------------------------------------------------------
+
+    def create_pixel_region(self, index, wcs, default_radius=20.):
+
+        """
+        This function ...
+        :param index: 
+        :param wcs:
+        :param default_radius:
+        :return: 
+        """
+
+        # Calculate radius in sky coordinates (degrees)
+        default_sky_radius = default_radius * wcs.average_pixelscale
+
+        # Create sky region and return it
+        sky_region = self.create_region(index, default_sky_radius)
+
+        # Convert to pixel and return
+        return sky_region.to_pixel(wcs)
+
+    # -----------------------------------------------------------------
+
+    def create_region_list(self, check_in_wcs=None, default_radius=parse_quantity("20 arcsec"), add_point=False):
+
+        """
+        This function ...
+        :param check_in_wcs:
+        :param default_radius:
+        :param add_point:
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Creating region list from extended source catalog ...")
+
+        # Initialize the region list
+        regions = SkyRegionList()
+
+        # Loop over the entries in the catalog
+        for index in range(len(self)):
+
+            # Get position
+            position = self.get_position(index)
+
+            # If the source falls outside of the frame, skip it
+            if check_in_wcs is not None and not check_in_wcs.contains(position): continue
+
+            # Create the region
+            region = self.create_region(index, default_radius=default_radius)
+
+            # Add the region
+            regions.append(region)
+
+            # If add point
+            if add_point:
+
+                region = self.create_point_region(index)
+                regions.append(region)
+
+        # return the region list
+        return regions
+
+    # -----------------------------------------------------------------
+
+    def create_regions(self, check_in_wcs=None, default_radius=parse_quantity("20 arcsec"), add_point=False):
+
+        """
+        THis function ...
+        :param check_in_wcs: 
+        :param default_radius:
+        :param add_point:
+        :return: 
+        """
+
+        return self.create_region_list(check_in_wcs=check_in_wcs, default_radius=default_radius, add_point=add_point)
+
+    # -----------------------------------------------------------------
+
+    def create_pixel_region_list(self, wcs, check_in_wcs=False, default_radius=20.0, add_point=False):
+
+        """
+        This function ...
+        :param wcs: 
+        :param check_in_wcs: 
+        :param default_radius:
+        :param add_point:
+        :return: 
+        """
+
+        # Initialize the region list
+        regions = PixelRegionList()
+
+        # Loop over the entries in the catalog
+        for index in range(len(self)):
+
+            # Get position
+            position = self.get_position(index)
+
+            # If the source falls outside of the frame, skip it
+            if check_in_wcs and not wcs.contains(position): continue
+
+            # Create the pixel region
+            region = self.create_pixel_region(index, wcs, default_radius=default_radius)
+
+            # Add the region
+            regions.append(region)
+
+            # If add point
+            if add_point:
+                region = self.create_pixel_point_region(index, wcs)
+                regions.append(region)
+
+        # return the region list
+        return regions
+
+    # -----------------------------------------------------------------
+
+    def create_pixel_regions(self, wcs, check_in_wcs=False, default_radius=20.0, add_point=False):
+
+        """
+        This function ...
+        :param wcs: 
+        :param check_in_wcs: 
+        :param default_radius:
+        :param add_point:
+        :return: 
+        """
+
+        return self.create_pixel_region_list(wcs, check_in_wcs=check_in_wcs, default_radius=default_radius, add_point=add_point)
 
 # -----------------------------------------------------------------

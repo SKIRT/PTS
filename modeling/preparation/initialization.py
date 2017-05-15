@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import gc
-
 # Import astronomical modules
 from astropy.utils import lazyproperty
 
@@ -32,6 +29,9 @@ from ...magic.convolution.kernels import get_fwhm, has_variable_fwhm
 from ...magic.catalog.extended import ExtendedSourceCatalog
 from ...magic.catalog.point import PointSourceCatalog
 from ...magic.catalog.fetcher import CatalogFetcher
+from ...dustpedia.core.properties import DustPediaProperties
+from ...magic.tools import statistics
+from ...magic.sources.marker import SourceMarker
 
 # -----------------------------------------------------------------
 
@@ -68,7 +68,7 @@ class PreparationInitializer(PreparationComponent):
         self.launcher = PTSRemoteLauncher()
 
         # The FWHMs found by the source finder
-        self.finder_fwhms = None
+        self.fwhms = None
 
         # Catalogs
         self.extended_sources = None
@@ -100,7 +100,8 @@ class PreparationInitializer(PreparationComponent):
         self.get_catalogs()
 
         # 5. Find sources
-        self.find_sources()
+        if self.config.manual: self.mark_sources()
+        else: self.find_sources()
 
         # 6. Writing
         self.write()
@@ -352,6 +353,43 @@ class PreparationInitializer(PreparationComponent):
 
     # -----------------------------------------------------------------
 
+    def mark_sources(self):
+
+        """
+        THis function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Marking sources in the images ...")
+
+        # Get the DustPedia properties instance
+        properties = DustPediaProperties()
+
+        # Get FWHMs
+        fwhms = properties.fwhms
+
+        ignore = self.get_ignore_images()
+
+        # Create the source marker
+        marker = SourceMarker()
+
+        # Set the path for the source finder to the preparation path
+        marker.config.path = self.prep_path
+
+        # Run
+        marker.run(fwhms=fwhms, dataset=self.set, ignore=ignore, extended_source_catalog=self.extended_sources, point_source_catalog=self.point_sources)
+
+        # Set the FWHMs
+        for name in self.paths:
+            fltr = parse_filter(name)
+            self.fwhms[name] = fwhms[fltr]
+
+        # Set the FWHMs
+        self.set_fwhms()
+
+    # -----------------------------------------------------------------
+
     def find_sources(self):
 
         """
@@ -372,6 +410,24 @@ class PreparationInitializer(PreparationComponent):
         #if self.config.visualise: animation = Animation()
         #else: animation = None
 
+        ignore = self.get_ignore_images()
+
+        # Find sources locally or remotely
+        if self.config.remote is not None: self.find_sources_remote(ignore, ignore_stars, ignore_other_sources)
+        else: self.find_sources_local(ignore, ignore_stars, ignore_other_sources)
+
+        # Set FWHM of optical images
+        self.set_fwhms()
+
+    # -----------------------------------------------------------------
+
+    def get_ignore_images(self):
+
+        """
+        This fucntion ...
+        :return: 
+        """
+
         ignore_images = []
 
         # Check for which images the source finding step has already been performed
@@ -385,19 +441,13 @@ class PreparationInitializer(PreparationComponent):
 
             # If the source finding step has already been performed on this image, don't do it again
             if fs.is_directory(sources_output_path):
-
                 # Debugging
                 log.debug("Source finder output has been found for this image, skipping source finding step")
 
                 # Ignore this image for the source finder
                 ignore_images.append(prep_name)
 
-        # Find sources locally or remotely
-        if self.config.remote is not None: self.find_sources_remote(ignore_images, ignore_stars, ignore_other_sources)
-        else: self.find_sources_local(ignore_images, ignore_stars, ignore_other_sources)
-
-        # Set FWHM of optical images
-        self.set_fwhms()
+        return ignore_images
 
     # -----------------------------------------------------------------
 
@@ -420,7 +470,7 @@ class PreparationInitializer(PreparationComponent):
         #self.statistics = self.finder.statistics
 
         # Get the fwhms
-        self.finder_fwhms = self.finder.fwhms
+        self.fwhms = self.finder.fwhms
 
     # -----------------------------------------------------------------
 
@@ -447,7 +497,7 @@ class PreparationInitializer(PreparationComponent):
 
         # Run the PTS find_sources command remotely and get the output
         #self.statistics = self.launcher.run_attached("find_sources", self.config.sources, input_dict, return_output_names=["statistics"], unpack=True)
-        self.finder_fwhms = self.launcher.run_attached("find_sources", self.config.sources, input_dict, return_output_names=["fwhms"], unpack=True)
+        self.fwhms = self.launcher.run_attached("find_sources", self.config.sources, input_dict, return_output_names=["fwhms"], unpack=True)
 
     # -----------------------------------------------------------------
 
@@ -472,7 +522,7 @@ class PreparationInitializer(PreparationComponent):
 
                 # Open the image, set the FWHM, and save again
                 image = self.set.get_image(prep_name)
-                image.fwhm = self.finder_fwhms[prep_name]
+                image.fwhm = self.fwhms[prep_name]
                 image.save()
 
     # -----------------------------------------------------------------

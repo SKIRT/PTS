@@ -71,7 +71,9 @@ class PixelCoordinate(Position, Coordinate):
         :return:
         """
 
-        x, y = super(SkyCoordinate, coordinate).to_pixel(wcs, origin=0, mode=mode)
+        standard = SkyCoord(ra=coordinate.ra, dec=coordinate.dec)
+        x, y = standard.to_pixel(wcs, origin=0, mode=mode)
+        #x, y = super(SkyCoordinate, coordinate).to_pixel(wcs, origin=0, mode=mode)
         return cls(float(x), float(y), meta=coordinate.meta)
 
     # -----------------------------------------------------------------

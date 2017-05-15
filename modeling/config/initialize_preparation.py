@@ -33,4 +33,6 @@ default_catalogs = ["II/246"]
 definition.add_optional("catalogs", "string_list", "catalogs for point sources", default_catalogs)
 definition.add_flag("catalog_overlapping", "only fetch catalog data in the area where all images are overlapping", True)
 
+definition.add_flag("manual", "don't find sources, but mark them from the catalog, and let the selection be done manually", False)
+
 # -----------------------------------------------------------------

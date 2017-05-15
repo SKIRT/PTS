@@ -1671,7 +1671,7 @@ class PixelRegionList(RegionList):
         """
 
         # Check whether the argument is a valid shape
-        if not isinstance(region, PixelRegion): raise ValueError("Region is not a pixel region")
+        if not isinstance(region, PixelRegion): raise ValueError("Region is not a pixel region: " + str(type(region)))
 
         # Otherwise, add the shape
         super(PixelRegionList, self).append(region)

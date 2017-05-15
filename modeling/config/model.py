@@ -54,6 +54,8 @@ definition.add_flag("make_poisson", "make the poisson error mosaic maps", True)
 definition.add_flag("perform_photometry", "perform photometry (as opposed to just using the DustPedia photometry", True)
 definition.add_flag("sources_weak", "weak source finding", False)
 
+definition.add_flag("sources_manual", "don't find sources, but mark them from the catalog, and let the selection be done manually", False)
+
 # Parallelization
 definition.add_optional("nprocesses", "positive_integer", "number of processes to use for parallel computations", max(8, ncores()))
 

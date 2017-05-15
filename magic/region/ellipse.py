@@ -308,8 +308,20 @@ class PixelEllipseRegion(EllipseRegion, PixelRegion):
 
         radius = PixelStretch(semimajor, semiminor)
 
+        # Convert angle
+        # Set the angle
+        angle = region.angle
+        if angle is not None:
+            try: orientation = wcs.standard_orientation_angle
+            except ValueError: orientation = wcs.orientation_angle
+            # Add the orientation angle (w.r.t. standard E-W and S-N projection on the x and y axes) to the position angle
+            # that is expressed in the standard way
+            #return self.pa + orientation
+            angle = angle + orientation
+        else: angle = Angle(0.0, "deg")
+
         # Create a new PixelEllipse
-        return cls(center, radius, region.angle, meta=region.meta)
+        return cls(center, radius, angle, meta=region.meta)
 
     # -----------------------------------------------------------------
 
