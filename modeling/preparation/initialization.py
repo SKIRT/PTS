@@ -369,8 +369,6 @@ class PreparationInitializer(PreparationComponent):
         # Get FWHMs
         fwhms = properties.fwhms
 
-        print(fwhms)
-
         ignore = self.get_ignore_images()
 
         # Create the source marker
@@ -379,8 +377,16 @@ class PreparationInitializer(PreparationComponent):
         # Set the path for the source finder to the preparation path
         marker.config.path = self.prep_path
 
+        # Don't look for stars in the Halpha image
+        # Look for name of Halpha image
+        ignore_stars = []
+        for name in self.paths:
+            fltr = parse_filter(name)
+            if fltr == "Ha": ignore_stars.append(name)
+        #ignore_stars = [parse_filter("Halpha")]
+
         # Run
-        marker.run(fwhms=fwhms, dataset=self.set, ignore=ignore, extended_source_catalog=self.extended_sources, point_source_catalog=self.point_sources)
+        marker.run(fwhms=fwhms, dataset=self.set, ignore=ignore, extended_source_catalog=self.extended_sources, point_source_catalog=self.point_sources, ignore_stars=ignore_stars)
 
         # Set the FWHMs
         for name in self.paths:

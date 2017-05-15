@@ -30,6 +30,7 @@ from ...core.filter.filter import parse_filter
 from ...core.units.parsing import parse_quantity
 from ..region.circle import PixelCircleRegion
 from ..region.ellipse import PixelEllipseRegion
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -69,6 +70,8 @@ class SourceMarker(Configurable):
         # The regions covering areas that should be ignored throughout the entire extraction procedure
         self.special_region = None
         self.ignore_region = None
+
+        self.ignore_stars = []
 
         # Output paths for image names
         self.output_paths = None
@@ -166,6 +169,9 @@ class SourceMarker(Configurable):
 
         # Load ignore region
         self.ignore_region = SkyRegionList.from_file(self.config.ignore_region) if self.config.ignore_region is not None else None
+
+        # Ignore stars in certain images
+        if "ignore_stars" in kwargs: self.ignore_stars = kwargs.pop("ignore_stars")
 
         # Catalogs
         self.load_catalogs(**kwargs)
@@ -363,6 +369,9 @@ class SourceMarker(Configurable):
 
         for name in self.frames:
 
+            # Ignore if requested
+            #if name in self.ignore: continue
+            if name in self.ignore_stars: continue
             if self.ignore is not None and name in self.ignore: continue
 
             # Debugging
@@ -375,7 +384,9 @@ class SourceMarker(Configurable):
             fltr = parse_filter(name)
 
             # Get the FWHm
-            fwhm = self.fwhms[fltr]
+            if fltr in self.fwhms: fwhm = self.fwhms[fltr]
+            elif self.frames[name].fwhm is not None: fwhm = self.frames[name].fwhm
+            else: fwhm = 2.0 * u("arcsec") # default value
 
             #default_radius = 20.0
             sigma_level = 4.0

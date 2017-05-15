@@ -1190,6 +1190,10 @@ def create_mosaic(band, rebinned_path, rebin_wcs, mosaics_path):
     # mosaic_error_path = fs.join(mosaics_path, "mosaic_errors.fits")
     # mosaic_errormap.saveto(mosaic_error_path)
 
+    # Set unit !!
+    mosaic_frame.unit = "nanomaggy"
+    mosaic_errormap.unit = "nanomaggy"
+
     # Create image
     mosaic = Image()
     mosaic.add_frame(mosaic_frame, "primary")
@@ -1215,6 +1219,9 @@ def convert_mosaic_to_jansky(mosaics_path):
     #mosaic_path = fs.join(mosaics_path, "mosaic.fits")
     mosaic_path = fs.join(mosaics_path, "mosaic_nanomaggy.fits")
     mosaic = Image.from_file(mosaic_path)
+
+    # Set unit
+    mosaic.unit = "nanomaggy"
 
     # Do the conversion
     mosaic.convert_to("Jy")
