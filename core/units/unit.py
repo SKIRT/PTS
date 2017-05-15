@@ -127,12 +127,6 @@ class PhotometricUnit(CompositeUnit):
         :param brightness_strict: similar to density_strict
         """
 
-        #print(unit)
-        #print(density)
-        #print(density_strict)
-        #print(brightness)
-        #print(brightness_strict)
-
         # Unit attributes
         self._base_unit = Unit("")
         self._wavelength_unit = Unit("")
@@ -169,7 +163,8 @@ class PhotometricUnit(CompositeUnit):
             #unit = Unit(unit)
 
             # Remove 'per pixel' from the unit
-            if "pix" in str(unit): unit *= "pix"
+            #if "pix" in str(unit): unit *= "pix"
+            if "pix" in unit.bases: unit *= "pix"
 
             # Set whether it represents a density
             self.density = density

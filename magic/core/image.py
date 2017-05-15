@@ -456,7 +456,7 @@ class Image(object):
         fwhm = self.fwhm
 
         # Convert into pixels
-        return (fwhm / self.average_pixelscale).to("pix").value
+        return (fwhm / self.average_pixelscale).to("").value
 
     # -----------------------------------------------------------------
 

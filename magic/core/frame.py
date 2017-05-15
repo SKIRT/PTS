@@ -24,11 +24,12 @@ from reproject import reproject_exact, reproject_interp
 from astropy.io import fits
 from astropy.convolution import convolve, convolve_fft
 from astropy.nddata import NDDataArray
+from astropy.units import UnitConversionError
 
 # Import the relevant PTS classes and modules
 from .cutout import Cutout
 from ..basics.vector import Position
-from ..region.rectangle import PixelRectangleRegion, SkyRectangleRegion
+from ..region.rectangle import SkyRectangleRegion
 from ..basics.coordinate import SkyCoordinate
 from ..basics.stretch import SkyStretch
 from ..tools import cropping
@@ -38,11 +39,11 @@ from ...core.tools import filesystem as fs
 from ...core.tools import archive
 from ..basics.vector import Pixel
 from ...core.units.unit import PhotometricUnit
-from ...core.units.parsing import parse_unit as u
 from ...core.filter.filter import parse_filter
-#from ...core.tools import types
 from .mask import Mask as newMask
 from ..convolution.kernels import get_fwhm, has_variable_fwhm
+from ...core.tools import types
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -217,7 +218,7 @@ class Frame(NDDataArray):
         """
 
         # Convert string units to PhotometricUnit object
-        if isinstance(unit, basestring): unit = PhotometricUnit(unit)
+        if types.is_string_type(unit): unit = PhotometricUnit(unit)
 
         # Set the unit
         self._unit = unit
@@ -794,8 +795,15 @@ class Frame(NDDataArray):
         :return:
         """
 
-        square_pixel = 1.0 * u("pix2")
-        return (self.pixelscale.x * self.pixelscale.y * square_pixel).to("sr")
+        try:
+            solid = (self.pixelscale.x * self.pixelscale.y).to("sr")
+            return solid
+        except UnitConversionError:
+            log.warning("UNIT CONVERSION ERROR: " + str(self.pixelscale.x) + ", " + str(self.pixelscale.y))
+            deg = (self.pixelscale.x * self.pixelscale.y).value
+            return (deg * u("deg")).to("sr")
+
+        #return (self.pixelscale.x * self.pixelscale.y).to("sr")
 
     # -----------------------------------------------------------------
 
@@ -1658,7 +1666,7 @@ class Frame(NDDataArray):
 
         # Calculate the rotated array
         #frame[np.isnan(frame)] = 0.0
-        data = ndimage.interpolation.rotate(self, angle.to("deg").value, reshape=False, order=1, mode='constant', cval=float('nan'))
+        data = ndimage.interpolation.rotate(self.data, angle.to("deg").value, reshape=False, order=1, mode='constant', cval=float('nan'))
         #new_frame = misc.imrotate(frame, angle, interp="bilinear")
 
         # Convert the wcs to header
@@ -1699,7 +1707,7 @@ class Frame(NDDataArray):
         # TODO: change the WCS !!!
 
         # Transform the data
-        data = ndimage.interpolation.shift(self, (extent.y, extent.x))
+        data = ndimage.interpolation.shift(self.data, (extent.y, extent.x))
 
         # Return the shifted frame
         # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None

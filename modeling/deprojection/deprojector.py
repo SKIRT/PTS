@@ -154,7 +154,7 @@ class Deprojector(DeprojectionComponent):
         yc = pixel_center.y
 
         # Get the pixelscale in physical units
-        pixelscale_angular = self.reference_wcs.average_pixelscale * u("pix")  # in deg
+        pixelscale_angular = self.reference_wcs.average_pixelscale #* u("pix")  # in deg
         pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
 
         # Get the number of x and y pixels

@@ -18,6 +18,7 @@ from ...core.tools.logging import log
 from .extended import ExtendedSourceCatalog
 from .point import PointSourceCatalog
 from ...core.tools import types
+from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -48,8 +49,8 @@ class CatalogFetcher(object):
 
         # Inform the user
         log.info("Searching extended sources in: ")
-        log.info(" - center: " + str(coordinate_box.center))
-        log.info(" - radius: " + str(coordinate_box.radius))
+        log.info(" - center: " + tostr(coordinate_box.center))
+        log.info(" - radius: " + tostr(coordinate_box.radius))
 
         # Get the data
         name_column, ra_column, dec_column, redshift_column, type_column, alternative_names_column, distance_column, \
@@ -85,8 +86,8 @@ class CatalogFetcher(object):
 
         # Inform the user
         log.info("Searching point sources in: ")
-        log.info(" - center: " + str(coordinate_box.center))
-        log.info(" - radius: " + str(coordinate_box.radius))
+        log.info(" - center: " + tostr(coordinate_box.center))
+        log.info(" - radius: " + tostr(coordinate_box.radius))
 
         # Check whether the 'catalogs' setting defines a single catalog name or a list of such names
         if types.is_string_type(catalogues): catalog_list = [catalogues]

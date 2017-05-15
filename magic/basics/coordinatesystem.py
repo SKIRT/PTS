@@ -474,7 +474,6 @@ class CoordinateSystem(wcs.WCS):
         :return:
         """
 
-        #square_pixel = 1.0 * u("pix2")
         return (self.pixelscale.x * self.pixelscale.y).to("sr")
 
     # -----------------------------------------------------------------
