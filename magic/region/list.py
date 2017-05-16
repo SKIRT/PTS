@@ -605,7 +605,9 @@ def add_info(string, reg):
 
     if reg.has_info: string += start_chars
     if reg.has_label: string += " text={" + reg.label + "}"
-    if reg.has_meta: string += " " + " ".join(key + "=" + value for key, value in reg.meta.items() if types.is_string_type(value))
+    if reg.has_meta:
+        if "text" in reg.meta: string += " text={" + reg.meta["text"] + "}"
+        string += " " + " ".join(key + "=" + value for key, value in reg.meta.items() if types.is_string_type(value) and key != "text")
     if reg.has_appearance: string += " " + " ".join(key + "=" + value for key, value in reg.appearance.items())
     return string
 
@@ -693,6 +695,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         string = add_info(string, reg)
         return string
 
+    # Line
     elif isinstance(reg, SkyLineRegion):
 
         x1 = float(reg.start.transform_to(frame).spherical.lon.to('deg').value)
@@ -714,6 +717,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         string = add_info(string, reg)
         return string
 
+    # Line
     elif isinstance(reg, PixelLineRegion):
 
         x1 = reg.start.x
@@ -726,6 +730,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         string = add_info(string, reg)
         return string
 
+    # Vector
     elif isinstance(reg, SkyVectorRegion):
 
         x = float(reg.start.transform_to(frame).spherical.lon.to('deg').value)
@@ -737,17 +742,19 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         string = add_info(string, reg)
         return string
 
+    # Vector
     elif isinstance(reg, PixelVectorRegion):
 
         x = reg.start.x
         y = reg.start.y
         l = reg.length
-        ang = reg.angle
+        ang = reg.angle.to("deg").value
 
         string = prefix + ds9_strings['vector'].format(**locals())
         string = add_info(string, reg)
         return string
 
+    # Circle
     elif isinstance(reg, SkyCircleRegion):
 
         x = float(reg.center.transform_to(frame).spherical.lon.to('deg').value)
@@ -758,6 +765,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         string = add_info(string, reg)
         return string
 
+    # Circle
     elif isinstance(reg, PixelCircleRegion):
 
         x = reg.center.x
@@ -768,6 +776,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         string = add_info(string, reg)
         return string
 
+    # Ellipse
     elif isinstance(reg, SkyEllipseRegion):
 
         x = float(reg.center.transform_to(frame).spherical.lon.to('deg').value)
@@ -780,18 +789,20 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         string = add_info(string, reg)
         return string
 
+    # Ellipse
     elif isinstance(reg, PixelEllipseRegion):
 
         x = reg.center.x
         y = reg.center.y
         r1 = reg.semimajor
         r2 = reg.semiminor
-        ang = reg.angle
+        ang = reg.angle.to("deg").value
 
         string = prefix + ds9_strings['ellipse'].format(**locals())
         string = add_info(string, reg)
         return string
 
+    # Rectangle
     elif isinstance(reg, SkyRectangleRegion):
 
         x = float(reg.center.transform_to(frame).spherical.lon.to('deg').value)
@@ -804,18 +815,20 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         string = add_info(string, reg)
         return string
 
+    # Rectangle
     elif isinstance(reg, PixelRectangleRegion):
 
         x = reg.center.x
         y = reg.center.y
         d1 = 2.0 * reg.radius.x
         d2 = 2.0 * reg.radius.y
-        ang = reg.angle
+        ang = reg.angle.to("deg").value
 
         string = prefix + ds9_strings['rectangle'].format(**locals())
         string = add_info(string, reg)
         return string
 
+    # Polygon
     elif isinstance(reg, SkyPolygonRegion):
 
         v = reg.points.transform_to(frame)
@@ -829,6 +842,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         string = add_info(string, reg)
         return string
 
+    # Polygon
     elif isinstance(reg, PixelPolygonRegion):
 
         v = reg.points
@@ -841,6 +855,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         string = add_info(string, reg)
         return string
 
+    # Text
     elif isinstance(reg, SkyTextRegion):
 
         x = float(reg.center.transform_to(frame).spherical.lon.to('deg').value)
@@ -851,6 +866,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         string = add_info(string, reg)
         return string
 
+    # Text
     elif isinstance(reg, PixelTextRegion):
 
         x = reg.center.x
@@ -1891,6 +1907,31 @@ class PixelRegionList(RegionList):
 
         # Return the bounding box
         return SkyRectangleRegion(center, radius)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
+
+        """
+        This fucntion ...
+        :param path: 
+        :param coordsys: 
+        :return: 
+        """
+
+        super(PixelRegionList, self).saveto(path, coordsys="image")
+
+    # -----------------------------------------------------------------
+
+    def save(self, path):
+
+        """
+        This function ...
+        :param path: 
+        :return: 
+        """
+
+        super(PixelRegionList, self).save(coordsys="image")
 
 # -----------------------------------------------------------------
 
