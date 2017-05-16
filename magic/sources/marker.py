@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.convolution.kernels import Gaussian2DKernel
-
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
@@ -29,8 +26,7 @@ from ..catalog.point import PointSourceCatalog
 from ...core.filter.filter import parse_filter
 from ...core.units.parsing import parse_quantity
 from ..region.circle import PixelCircleRegion
-from ..region.ellipse import PixelEllipseRegion
-from ...core.units.parsing import parse_unit as u
+from ..tools import wavelengths
 
 # -----------------------------------------------------------------
 
@@ -354,8 +350,8 @@ class SourceMarker(Configurable):
             # Temporary: write here
 
             # Determine path
-            if self.output_paths is not None and name in self.output_paths: path = fs.join(self.output_paths[name], "galaxies.reg")
-            else: path = self.output_path_file("galaxies_" + name + ".reg")
+            if self.output_paths is not None and name in self.output_paths: path = fs.join(self.output_paths[name], "galaxies_original.reg")
+            else: path = self.output_path_file("galaxies_original_" + name + ".reg")
 
             # Save
             pixel_regions.saveto(path)
@@ -372,6 +368,7 @@ class SourceMarker(Configurable):
         # Inform the user
         log.info("Creating regions of point sources ...")
 
+        # Initialize dictionary for the point source regions
         self.point_regions = dict()
 
         # Create sky region (circles in blue)
@@ -384,11 +381,21 @@ class SourceMarker(Configurable):
             if name in self.ignore_stars: continue
             if self.ignore is not None and name in self.ignore: continue
 
+            # Get the frame
+            frame = self.frames[name]
+
+            # Don't run the star finder if the wavelength of this image is greater than 25 micron
+            if frame.wavelength is None or frame.wavelength > wavelengths.ranges.ir.mir.max:
+
+                # No star subtraction for this image
+                log.info("Marking point sources will not be performed for the '" + name + "' image")
+                continue
+
             # Debugging
             log.debug("Creating point source regions in pixel coordinates for the " + name + " image ...")
 
             # Get wcs
-            wcs = self.frames[name].wcs
+            wcs = frame.wcs
 
             # Get the filter
             fltr = parse_filter(name)
@@ -418,8 +425,8 @@ class SourceMarker(Configurable):
             ### TEmporary: write here
 
             # Determine path
-            if self.output_paths is not None and name in self.output_paths: path = fs.join(self.output_paths[name], "stars.reg")
-            else: path = self.output_path_file("stars_" + name + ".reg")
+            if self.output_paths is not None and name in self.output_paths: path = fs.join(self.output_paths[name], "stars_original.reg")
+            else: path = self.output_path_file("stars_original_" + name + ".reg")
 
             # Save
             pixel_regions.saveto(path)

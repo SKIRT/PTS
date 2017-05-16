@@ -43,6 +43,51 @@ from ..basics.stretch import SkyStretch
 from ...core.basics.map import Map
 from ..tools import coordinates
 from ...core.units.parsing import parse_unit as u
+from ...core.basics.table import SmartTable
+
+# -----------------------------------------------------------------
+
+class DataSetTable(SmartTable):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        #print(args)
+        #print(kwargs)
+
+        # Call the constructor of the base class
+        super(DataSetTable, self).__init__(*args, **kwargs)
+
+        # Add column info
+        self.add_column_info("Name", str, None, "Name for the fitting run")
+        self.add_column_info("Path", str, None, "Name of the model used")
+        self.add_column_info("Error path", str, None, "Path of the error map")
+        self.add_column_info("Mask path", str, None, "Path of the mask")
+
+    # -----------------------------------------------------------------
+
+    def add_entry(self, name, path, error_path, mask_path):
+
+        """
+        THis function ...
+        :param name: 
+        :param path: 
+        :param error_path: 
+        :param mask_path: 
+        :return: 
+        """
+
+        values = [name, path, error_path, mask_path]
+        self.add_row(values)
 
 # -----------------------------------------------------------------
 
@@ -115,7 +160,8 @@ class DataSet(object):
         dataset = cls()
 
         # Load the table
-        table = tables.from_file(path)
+        #table = tables.from_file(path)
+        table = DataSetTable.from_file(path)
 
         # Loop over the entries in the table
         for i in range(len(table)):
@@ -1624,28 +1670,17 @@ class DataSet(object):
         # Inform the user
         log.info("Saving the dataset to " + path + " ...")
 
-        # Create a table
-        column_names = ["Name", "Path", "Error path", "Mask path"]
-
-        # Set the entries
-        names = []
-        paths = []
-        error_paths = []
-        mask_paths = []
+        # Create the table
+        table = DataSetTable()
 
         for name in self.paths:
-
-            names.append(name)
-            paths.append(self.paths[name])
-            error_paths.append(self.error_paths[name] if name in self.error_paths else None)
-            mask_paths.append(self.mask_paths[name] if name in self.mask_paths else None)
-
-        # Construct the table
-        data = [names, paths, error_paths, mask_paths]
-        table = tables.new(data, column_names)
+            path = self.paths[name]
+            error_path = self.error_paths[name] if name in self.error_paths else None
+            mask_path = self.mask_paths[name] if name in self.mask_paths else None
+            table.add_entry(name, path, error_path, mask_path)
 
         # Save the table
-        tables.write(table, path)
+        table.saveto(path)
 
         # Update the path
         self.path = path

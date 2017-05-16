@@ -172,7 +172,7 @@ class DataPreparer(PreparationComponent):
         # Loop over all images of the initial dataset
         for prep_name in self.initial_dataset.paths:
 
-            # Get path of intial image
+            # Get path of initial image
             image_path = self.initial_dataset.paths[prep_name]
 
             # Determine preparation directory for this image
@@ -369,7 +369,7 @@ class DataPreparer(PreparationComponent):
         """
 
         # Inform the user
-        log.info("Preparing the images remotely on host '" + self.config.remote + "'...")
+        log.info("Preparing the images locally ...")
 
         # Run the image preparer, pass the dataset
         self.preparer.run(dataset=self.preparation_dataset)

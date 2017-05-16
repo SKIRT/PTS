@@ -45,8 +45,8 @@ class RunsTable(SmartTable):
         super(RunsTable, self).__init__(*args, **kwargs)
 
         # Add column info
-        self.column_info.append(("Run name", str, None, "Name for the fitting run"))
-        self.column_info.append(("Model name", str, None, "Name of the model used"))
+        self.add_column_info("Run name", str, None, "Name for the fitting run")
+        self.add_column_info("Model name", str, None, "Name of the model used")
 
     # -----------------------------------------------------------------
 
@@ -158,15 +158,15 @@ class BestParametersTable(SmartTable):
         if not from_astropy:
 
             # Generation column
-            self.column_info.append(("Generation name", str, None, "Name for the generation"))
+            self.add_column_info("Generation name", str, None, "Name for the generation")
 
             # Parameters columns
             for label in parameters:
                 unit = units[label] if label in units else None
-                self.column_info.append((label, float, unit, "value for " + label))
+                self.add_column_info(label, float, unit, "value for " + label)
 
             # Add the chi squared column
-            self.column_info.append(("Chi squared", float, None, "chi-squared value"))
+            self.add_column_info("Chi squared", float, None, "chi-squared value")
 
     # -----------------------------------------------------------------
 
@@ -897,8 +897,8 @@ class ChiSquaredTable(SmartTable):
         super(ChiSquaredTable, self).__init__(*args, **kwargs)
 
         # Add column info
-        self.column_info.append(("Simulation name", str, None, "name of the simulation"))
-        self.column_info.append(("Chi squared", float, None, "chi-squared value"))
+        self.add_column_info("Simulation name", str, None, "name of the simulation")
+        self.add_column_info("Chi squared", float, None, "chi-squared value")
 
     # -----------------------------------------------------------------
 
@@ -1123,8 +1123,8 @@ class ParameterProbabilitiesTable(SmartTable):
         super(ParameterProbabilitiesTable, self).__init__(*args, **kwargs)
 
         # Set column info
-        self.column_info.append(("Value", float, None, "value of the parameter"))
-        self.column_info.append(("Probability", float, None, "probability for this parameter value"))
+        self.add_column_info("Value", float, None, "value of the parameter")
+        self.add_column_info("Probability", float, None, "probability for this parameter value")
 
     # -----------------------------------------------------------------
 

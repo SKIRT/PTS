@@ -321,8 +321,8 @@ class ObservedSED(FilterCurve):
         if not from_astropy:
 
             # Add columns
-            self.column_info.append(("Error-", float, unit, "Lower bound error"))
-            self.column_info.append(("Error+", float, unit, "Upper bound error"))
+            self.add_column_info("Error-", float, unit, "Lower bound error")
+            self.add_column_info("Error+", float, unit, "Upper bound error")
 
     # -----------------------------------------------------------------
 

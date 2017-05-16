@@ -118,8 +118,8 @@ class ScoresTable(SmartTable):
         if not from_astropy:
 
             # Add column info
-            self.column_info.append(("Individual name", str, None, "name of the individual"))
-            self.column_info.append(("Score", float, None, "individual's score"))
+            self.add_column_info("Individual name", str, None, "name of the individual")
+            self.add_column_info("Score", float, None, "individual's score")
 
             # Initialize 'min_or_max' meta attribute
             self.meta["min_or_max"] = min_or_max

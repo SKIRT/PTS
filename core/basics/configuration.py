@@ -30,7 +30,7 @@ from ..tools import filesystem as fs
 from ..tools.logging import log
 from .composite import SimplePropertyComposite
 from ..tools import introspection
-from ..tools import numbers
+from ..tools import numbers, types
 
 # -----------------------------------------------------------------
 
@@ -3675,8 +3675,28 @@ def try_to_convert_to_type(default, user_type):
     """
 
     if user_type == "mixed": return default
-    elif parent_type(user_type) == "integer" and numbers.is_integer(default): default = int(default)
-    elif parent_type(user_type) == "real" and numbers.is_integer(default): default = float(default)
-    else:  raise ValueError("Default value '" + str(default) + "'is not of the right type '" + user_type + "'")
+    elif parent_type(user_type) == "integer" and numbers.is_integer(default): return int(default)
+    elif parent_type(user_type) == "real" and numbers.is_integer(default): return float(default)
+    elif types.is_string_type(default): return try_to_convert_from_string(default, user_type)
+    else: raise ValueError("Default value '" + str(default) + "' could not be converted to the right type '" + user_type + "'")
+
+# -----------------------------------------------------------------
+
+def try_to_convert_from_string(string, user_type):
+
+    """
+    This function ...
+    :param string: 
+    :param user_type: 
+    :return: 
+    """
+
+    # Get the parsing function
+    parsing_function = getattr(parsing, user_type)
+
+    try:
+        value = parsing_function(string)
+        return value
+    except ValueError: raise ValueError("String '" + str(string) + "' could not be converted to the right type '" + user_type + "'")
 
 # -----------------------------------------------------------------

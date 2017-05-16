@@ -35,10 +35,6 @@ class Curve(SmartTable):
     This class ...
     """
 
-    column_info = []
-
-    # -----------------------------------------------------------------
-
     def __init__(self, *args, **kwargs):
 
         """

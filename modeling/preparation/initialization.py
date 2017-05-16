@@ -59,6 +59,9 @@ class PreparationInitializer(PreparationComponent):
         self.paths = dict()
         self.error_paths = dict()
 
+        # The paths to the initialized files
+        self.initialized_paths = dict()
+
         # The source finder
         self.finder = None
 
@@ -172,8 +175,11 @@ class PreparationInitializer(PreparationComponent):
             # Determine the output path for this image
             output_path = self.get_prep_path(prep_name)
 
-            # Check whether this image already has an initialized image
+            # Set initialized path
             initialized_path = fs.join(output_path, "initialized.fits")
+            self.initialized_paths[prep_name] = initialized_path
+
+            # Check whether this image already has an initialized image
             if fs.is_file(initialized_path):
                 log.success("Initialized '" + prep_name + "' is already present")
                 continue
@@ -239,8 +245,11 @@ class PreparationInitializer(PreparationComponent):
         # Loop over the image paths
         for prep_name in self.paths:
 
+            # Get initialized path
+            path = self.initialized_paths[prep_name]
+
             # Add entry to the dataset
-            self.set.add_path(prep_name, self.paths[prep_name])
+            self.set.add_path(prep_name, path)
 
     # -----------------------------------------------------------------
 
