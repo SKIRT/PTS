@@ -136,6 +136,10 @@ class SkySubtractor(Configurable):
         # Relevant for when estimation method is 'photutils'
         self.phot_sky = None
         self.phot_rms = None
+        #self.photutils_background = None
+        #self.photutils_background_rms = None
+        self.phot_background_mesh = None
+        self.phot_background_rms_mesh = None
 
         # Relevant for when estimation method is 'pts'
         self.apertures_frame = None
@@ -304,6 +308,66 @@ class SkySubtractor(Configurable):
             self.region.append(annulus)
 
         #else: log.warning("No central region or sky regions have been defined")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def region_bounding_box(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.region.bounding_box if self.region is not None else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def region_x_min(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.region.x_min if self.region is not None else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def region_x_max(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.region.x_max if self.region is not None else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def region_y_min(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.region.y_min if self.region is not None else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def region_y_max(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.region.y_max if self.region is not None else None
 
     # -----------------------------------------------------------------
 
@@ -565,52 +629,126 @@ class SkySubtractor(Configurable):
         # Determine filter size
         filter_size = (self.config.estimation.photutils_filter_size, self.config.estimation.photutils_filter_size)
 
+        exclude_mesh_percentile = 50.0
+
+        # NEW NEW
+        x_min = self.region_x_min
+        x_max = self.region_x_max
+        y_min = self.region.y_min
+        y_max = self.region.y_max
+
+        x_min = max(int(x_min), 0)
+        x_max = min(int(x_max), self.frame.xsize)
+
+        y_min = max(int(y_min), 0)
+        y_max = min(int(y_max), self.frame.ysize)
+
+        y_slice = slice(y_min, y_max)
+        x_slice = slice(x_min, x_max)
+
+        # NEW NEW: MAKE CUTOUT
+        cutout = self.frame[y_slice, x_slice]
+
+        # CUTOUT MASK
+        mask_cutout = self.mask[y_slice, x_slice]
+
         # NEW
         # NO SIGMA CLIP BECAUSE WE HAVE ALREADY DONE THAT OURSELVES
         #sigma_clip = SigmaClip(sigma=3., iters=10)
         sigma_clip = None
         # bkg_estimator = MedianBackground()
         bkg_estimator = SExtractorBackground()
-        bkg = Background2D(self.frame, box_shape, filter_size=filter_size, sigma_clip=sigma_clip,
-                           bkg_estimator=bkg_estimator, mask=self.mask, filter_threshold=None)
+        try:
+            bkg = Background2D(cutout, box_shape, filter_size=filter_size, sigma_clip=sigma_clip,
+                               bkg_estimator=bkg_estimator, mask=mask_cutout, filter_threshold=None,
+                               exclude_mesh_method="threshold",
+                               exclude_mesh_percentile=exclude_mesh_percentile)
+        except ValueError:
+
+            plotting.plot_mask(self.mask, title="mask")
+            raise RuntimeError("Sky subtraction is not possible for this image")
 
         # Keep the background 2D object
         self.photutils_bkg = bkg
 
         # Masked background
-        masked_background = np.ma.masked_array(bkg.background, mask=self.mask.data)
+        background = Frame.nans_like(self.frame)
+        background[y_slice, x_slice] = bkg.background
+        #masked_background = np.ma.masked_array(background, mask=mask_cutout.data)
         #plotting.plot_box(masked_background, title="masked background")
+        background[mask_cutout] = np.NaN
 
         # Masked background rms
-        masked_background_rms = np.ma.masked_array(bkg.background_rms, mask=self.mask.data)
+        background_rms = Frame.nans_like(self.frame)
+        background_rms[y_slice, x_slice] = bkg.background_rms
+        #masked_background_rms = np.ma.masked_array(background_rms, mask=mask_cutout.data)
+        background_rms[mask_cutout] = np.NaN
+
+        # Set as attributes
+        #self.photutils_background = background
+        #self.photutils_background_rms = background_rms
+
+        #
+        self.phot_background_mesh = Frame(bkg.background_mesh)
+        self.phot_background_rms_mesh = Frame(bkg.background_rms_mesh)
 
         # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
-        self.phot_sky = Frame(bkg.background,
-                               wcs=self.frame.wcs,
-                               name="phot_sky",
-                               description="photutils background",
-                               unit=self.frame.unit,
-                               zero_point=self.frame.zero_point,
-                               filter=self.frame.filter,
-                               sky_subtracted=False,
-                               fwhm=self.frame.fwhm)
+        #self.phot_sky = Frame(bkg.background,
+        #                       wcs=self.frame.wcs,
+        #                       name="phot_sky",
+        #                       description="photutils background",
+        #                       unit=self.frame.unit,
+        #                       zero_point=self.frame.zero_point,
+        #                       filter=self.frame.filter,
+        #                       sky_subtracted=False,
+        #                       fwhm=self.frame.fwhm)
+
+        # NEW NEW
+        self.phot_sky = Frame.nans_like(self.frame) #wcs=self.frame.wcs,
+        self.phot_sky.name = "phot_sky"
+        self.phot_sky.description = "photutils background"
+        self.phot_sky.unit = self.frame.unit
+        self.phot_sky.zero_point=self.frame.zero_point
+        self.phot_sky.filter=self.frame.filter
+        self.phot_sky.sky_subtracted=False
+        self.phot_sky.fwhm = self.frame.fwhm
+
+        self.phot_sky[y_slice, x_slice] = bkg.background
 
         # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
-        self.phot_rms = Frame(bkg.background_rms,
-                               wcs=self.frame.wcs,
-                               name="phot_rms",
-                               description="photutils rms",
-                               unit=self.frame.unit,
-                               zero_point=self.frame.zero_point,
-                               filter=self.frame.filter,
-                               sky_subtracted=False,
-                               fwhm=self.frame.fwhm)
+        #self.phot_rms = Frame(bkg.background_rms,
+        #                       wcs=self.frame.wcs,
+        #                       name="phot_rms",
+        #                       description="photutils rms",
+        #                       unit=self.frame.unit,
+        #                       zero_point=self.frame.zero_point,
+        #                       filter=self.frame.filter,
+        #                       sky_subtracted=False,
+        #                       fwhm=self.frame.fwhm)
+
+        self.phot_rms = Frame.nans_like(self.frame)
+        #bkg.background_rms
+        #wcs=self.frame.wcs
+        self.phot_rms.name="phot_rms"
+        self.phot_rms.description="photutils rms"
+        self.phot_rms.unit=self.frame.unit
+        self.phot_rms.zero_point=self.frame.zero_point
+        self.phot_rms.filter=self.frame.filter
+        self.phot_rms.sky_subtracted=False
+        self.phot_rms.fwhm=self.frame.fwhm
+
+        self.phot_rms[y_slice, x_slice] = bkg.background_rms
+
+        ##
 
         # Use global values
         if self.config.estimation.photutils_global is not None:
 
-            mean_sky = np.ma.mean(masked_background)
-            median_sky = np.median(masked_background.compressed())
+            #mean_sky = np.ma.mean(masked_background)
+            #median_sky = np.median(masked_background.compressed())
+
+            mean_sky = np.nanmean(background.data)
+            median_sky = np.nanmedian(background.data)
 
             # Median
             if self.config.estimation.photutils_global == "median":
@@ -619,7 +757,7 @@ class SkySubtractor(Configurable):
                 self.sky = median_sky
 
                 # Set noise
-                self.noise = np.ma.mean(masked_background_rms)
+                self.noise = np.nanmean(background_rms) #np.ma.mean(masked_background_rms)
 
             # Mean
             elif self.config.estimation.photutils_global == "mean":
@@ -628,7 +766,7 @@ class SkySubtractor(Configurable):
                 self.sky = mean_sky
 
                 # Set noise
-                self.noise = np.ma.mean(masked_background_rms)
+                self.noise = np.nanmean(background_rms) #np.ma.mean(masked_background_rms)
 
             # Invalid
             else: raise ValueError("Invalid option for 'photutils_global'")
@@ -646,6 +784,15 @@ class SkySubtractor(Configurable):
             # Set original photutils frames
             self.sky = self.phot_sky
             self.noise = self.phot_rms
+
+            mean_sky = np.nanmean(self.sky)
+            median_sky = np.nanmedian(self.sky)
+            mean_noise = np.nanmean(self.noise)
+
+            # Debugging
+            log.debug("The mean of the sky frame is " + str(mean_sky))
+            log.debug("The median of the sky frame is " + str(median_sky))
+            log.debug("The mean of the sky noise frame is " + str(mean_noise))
 
             # Debugging
             log.debug("The mean value after subtraction is " + str(self.mean_subtracted))
@@ -3024,6 +3171,18 @@ class SkySubtractor(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def subtracted_compressed(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.subtracted_masked_array.compressed()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def frame_masked_array(self):
 
         """
@@ -3067,7 +3226,8 @@ class SkySubtractor(Configurable):
         :return:
         """
 
-        return np.ma.mean(np.ma.masked_array(self.subtracted, mask=self.mask.data))
+        #return np.ma.mean(np.ma.masked_array(self.subtracted, mask=self.mask.data))
+        return np.nanmean(self.subtracted_compressed)
 
     # -----------------------------------------------------------------
 
@@ -3079,7 +3239,9 @@ class SkySubtractor(Configurable):
         :return:
         """
 
-        return np.median(np.ma.masked_array(self.subtracted, mask=self.mask.data).compressed())
+        #return np.median(np.ma.masked_array(self.subtracted, mask=self.mask.data).compressed())
+        #masked_array = np.ma.masked_array(self.subtracted, mask=self.mask.data)
+        return np.nanmedian(self.subtracted_compressed)
 
     # -----------------------------------------------------------------
 
@@ -3091,6 +3253,7 @@ class SkySubtractor(Configurable):
         :return:
         """
 
-        return np.ma.masked_array(self.subtracted, mask=self.mask.data).std()
+        #return np.ma.masked_array(self.subtracted, mask=self.mask.data).std()
+        return np.nanstd(self.subtracted_compressed)
 
 # -----------------------------------------------------------------

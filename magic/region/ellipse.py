@@ -351,6 +351,54 @@ class PixelEllipseRegion(EllipseRegion, PixelRegion):
 
     # -----------------------------------------------------------------
 
+    @property
+    def axis1_min(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.bounding_box.x_min
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis1_max(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.bounding_box.x_max
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis2_min(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.bounding_box.y_min
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis2_max(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.bounding_box.y_max
+
+    # -----------------------------------------------------------------
+
     def to_mask(self, x_size, y_size):
 
         """

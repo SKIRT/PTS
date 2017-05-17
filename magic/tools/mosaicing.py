@@ -76,10 +76,10 @@ def generate_meta_file(path, meta_dir_path=None):
     fs.change_cwd(cwd)
 
     # Check whether the meta file contains any lines
-    #if not fs.contains_lines(meta_path):
-    #    log.debug("STATUS:")
-    #    for line in fs.read_lines(status_path): log.debug(line)
-    #    raise RuntimeError("The meta table (" + meta_path + ") doesn't contain any lines")
+    if not fs.contains_lines(meta_path):
+        #log.debug("STATUS:")
+        #for line in fs.read_lines(status_path): log.debug(line)
+        raise RuntimeError("The meta table (" + meta_path + ") doesn't contain any lines")
 
     # Return the path to the created file
     return meta_path

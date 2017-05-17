@@ -82,6 +82,66 @@ class CompositeRegion(Region):
 
         return sum([element.center.axis2 for element in self.elements]) / float(len(self))
 
+    # -----------------------------------------------------------------
+
+    @property
+    def axis1_min(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        the_min = None
+        for element in self.elements:
+            if the_min is None or element.axis1_min < the_min: the_min = element.axis1_min
+        return the_min
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis1_max(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        the_max = None
+        for element in self.elements:
+            if the_max is None or element.axis1_max > the_max: the_max = element.axis1_max
+        return the_max
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis2_min(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        the_min = None
+        for element in self.elements:
+            if the_min is None or element.axis2_min < the_min: the_min = element.axis2_min
+        return the_min
+
+    # -----------------------------------------------------------------
+
+    @property
+    def axis2_max(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        the_max = None
+        for element in self.elements:
+            if the_max is None or element.axis2_max > the_max: the_max = element.axis2_max
+        return the_max
+
 # -----------------------------------------------------------------
 
 class PixelCompositeRegion(CompositeRegion, PixelRegion):

@@ -153,6 +153,18 @@ class MaskBase(object):
 
     # -----------------------------------------------------------------
 
+    def astype(self, dtype):
+
+        """
+        This function ...
+        :param dtype: 
+        :return: 
+        """
+
+        return self.data.astype(dtype)
+
+    # -----------------------------------------------------------------
+
     #@property
     #def array(self):
 

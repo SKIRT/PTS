@@ -211,6 +211,7 @@ def download_and_decompress_files(urls, path, remove=True, overwrite=False):
     :param urls:
     :param path:
     :param remove:
+    :param overwrite:
     :return:
     """
 
@@ -221,10 +222,20 @@ def download_and_decompress_files(urls, path, remove=True, overwrite=False):
     paths = download_files(urls, path, overwrite=overwrite)
 
     # Debugging
-    log.debug("Decompressing the files ...")
+    log.debug("Decompressing the archived files ...")
 
     # Decompress the files and remove the originals
-    new_paths = archive.decompress_files(paths, remove=remove)
+    #new_paths = archive.decompress_files(paths, remove=remove)
+
+    new_paths = []
+    compressed_paths = []
+    for path in paths:
+
+        if archive.is_archive(path): compressed_paths.append(path)
+        else: new_paths.append(path)
+
+    # Decompress
+    new_paths += archive.decompress_files(compressed_paths, remove=remove)
 
     # Return the paths of the decompressed files
     return new_paths

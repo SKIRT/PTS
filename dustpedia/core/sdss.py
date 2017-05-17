@@ -458,12 +458,13 @@ class SDSSMosaicMaker(Configurable):
         log.info("Downloading fields (in parallel) ...")
 
         # Parallel execution
-        with ParallelTarget(network.download_files, self.config.nprocesses) as target:
+        with ParallelTarget(network.download_and_decompress_files, self.config.nprocesses) as target:
 
             # Download for different bands in parallel, or copy from existing directory
             for band in self.config.bands:
 
                 if self.has_existing_fields(band):
+
                     log.debug("Existing fields path for band: " + self.existing_fields_path(band))
                     fmt.print_files_in_path(self.existing_fields_path(band))
                     extensions = ["fits"]
@@ -472,6 +473,7 @@ class SDSSMosaicMaker(Configurable):
                     fmt.print_files_in_list(paths, "existing fields")
                     fs.copy_and_decompress_files(paths, self.fields_paths[band])
                     #fs.copy_from_directory(self.existing_fields_path(band), self.fields_paths[band], not_contains="meta", extension="fits")
+
                 else: target(self.urls[band], self.fields_paths[band])
 
         # Debugging

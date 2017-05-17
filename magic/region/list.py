@@ -1907,7 +1907,67 @@ class PixelRegionList(RegionList):
         radius = PixelStretch(0.5 * (max_x - min_x), 0.5 * (max_y - min_y))
 
         # Return the bounding box
-        return SkyRectangleRegion(center, radius)
+        return PixelRectangleRegion(center, radius)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def x_min(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        min_x = None
+        for shape in self:
+            if min_x is None or shape.x_min < min_x: min_x = shape.x_min
+        return min_x
+
+    # -----------------------------------------------------------------
+
+    @property
+    def x_max(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        max_x = None
+        for shape in self:
+            if max_x is None or shape.x_max > max_x: max_x = shape.x_max
+        return max_x
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_min(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        min_y = None
+        for shape in self:
+            if min_y is None or shape.y_min < min_y: min_y = shape.y_min
+        return min_y
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_max(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        max_y = None
+        for shape in self:
+            if max_y is None or shape.y_max > max_y: max_y = shape.y_max
+        return max_y
 
     # -----------------------------------------------------------------
 

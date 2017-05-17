@@ -802,15 +802,28 @@ def subtract_sky(image, sky_path, config, principal_sky_region, saturation_sky_r
 
     # Write the apertures frame
     apertures_frame_path = fs.join(sky_path, "apertures.fits")
-    sky_subtractor.apertures_frame.saveto(apertures_frame_path)
+    if sky_subtractor.apertures_frame is not None: sky_subtractor.apertures_frame.saveto(apertures_frame_path)
 
     # Write the apertures mean frame
     apertures_mean_path = fs.join(sky_path, "apertures_values.fits")
-    sky_subtractor.apertures_values_frame.saveto(apertures_mean_path)
+    if sky_subtractor.apertures_values_frame is not None: sky_subtractor.apertures_values_frame.saveto(apertures_mean_path)
 
     # Write the apertures noise frame
     apertures_noise_path = fs.join(sky_path, "apertures_noise.fits")
-    sky_subtractor.apertures_noise_frame.saveto(apertures_noise_path)
+    if sky_subtractor.apertures_noise_frame is not None: sky_subtractor.apertures_noise_frame.saveto(apertures_noise_path)
+
+    # Write photutils results
+    background_mesh_path = fs.join(sky_path, "background_mesh.fits")
+    if sky_subtractor.phot_background_mesh is not None: sky_subtractor.phot_background_mesh.saveto(background_mesh_path)
+
+    background_rms_mesh_path = fs.join(sky_path, "background_rms_mesh.fits")
+    if sky_subtractor.phot_background_rms_mesh is not None: sky_subtractor.phot_background_rms_mesh.saveto(background_rms_mesh_path)
+
+    estimated_sky_path = fs.join(sky_path, "estimated_sky.fits")
+    if sky_subtractor.phot_sky is not None: sky_subtractor.phot_sky.saveto(estimated_sky_path)
+
+    estimated_sky_rms_path = fs.join(sky_path, "estimated_sky_rms.fits")
+    if sky_subtractor.phot_rms is not None: sky_subtractor.phot_rms.saveto(estimated_sky_rms_path)
 
     # Write the animation
     #if visualisation_path is not None:
