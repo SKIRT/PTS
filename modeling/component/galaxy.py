@@ -925,6 +925,18 @@ class GalaxyModelingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def galaxy_center(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.galaxy_properties.center
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def galaxy_inclination(self):
 
         """

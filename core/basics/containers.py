@@ -19,6 +19,7 @@ from collections import OrderedDict, Callable
 # Import the relevant PTS classes and modules
 from ..tools import types
 from ..filter.filter import parse_filter, Filter
+from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -187,6 +188,47 @@ class KeyList(object):
 
     # -----------------------------------------------------------------
 
+    def index(self, value):
+
+        """
+        This function ...
+        :param value: 
+        :return: 
+        """
+
+        return self.values.index(value)
+
+    # -----------------------------------------------------------------
+
+    def key_for_value(self, value):
+
+        """
+        This function ...
+        :param value: 
+        :return: 
+        """
+
+        index = self.index(value)
+        return self.keys[index]
+
+    # -----------------------------------------------------------------
+
+    def remove(self, value):
+
+        """
+        This function ...
+        :param value: 
+        :return: 
+        """
+
+        # Find key
+        key = self.key_for_value(value)
+
+        # Delete
+        del self.contents[key]
+
+    # -----------------------------------------------------------------
+
     def remove_all(self):
 
         """
@@ -195,6 +237,24 @@ class KeyList(object):
         """
 
         self.contents = OrderedDict()
+
+    # -----------------------------------------------------------------
+
+    def pop(self, index_or_key):
+
+        """
+        This function ...
+        :param index_or_key: 
+        :return: 
+        """
+
+        # Integer type 'list[i]'
+        if types.is_integer_type(index_or_key): key = self.keys[index_or_key]
+        # Assume it is a proper key
+        else: key = index_or_key
+
+        # Pop with key
+        return self.contents.pop(key)
 
     # -----------------------------------------------------------------
 
@@ -639,5 +699,71 @@ class NamedList(KeyList):
 
         # Return the old value
         return old
+
+    # -----------------------------------------------------------------
+
+    def pop(self, index_or_name):
+
+        """
+        This function ...
+        :param index_or_name: 
+        :return: 
+        """
+
+        # Get name
+        if types.is_integer_type(index_or_name): name = self.names[index_or_name]
+        elif types.is_string_type(index_or_name): name = index_or_name
+        else: raise ValueError("Invalid index or name: " + str(index_or_name))
+
+        # Pop with name
+        return self.contents.pop(name)
+
+# -----------------------------------------------------------------
+
+class NamedFileList(NamedList):
+
+    """
+    This class ... 
+    :return: 
+    """
+
+    def append(self, name, path):
+
+        """
+        This function ...
+        :param name: 
+        :param path: 
+        :return: 
+        """
+
+        # Check whether file path
+        if not fs.is_file(path): raise ValueError("Not an existing file")
+
+        if name in self.names: raise ValueError("Already a path with the name '" + name + "'")
+        self.contents[name] = path
+
+# -----------------------------------------------------------------
+
+class NamedDirectoryList(NamedList):
+
+    """
+    This class ... 
+    :return: 
+    """
+
+    def append(self, name, path):
+
+        """
+        This function ...
+        :param name: 
+        :param path: 
+        :return: 
+        """
+
+        # Check whether file path
+        if not fs.is_directory(path): raise ValueError("Not an existing directory")
+
+        if name in self.names: raise ValueError("Already a path with the path '" + name + "'")
+        self.contents[name] = path
 
 # -----------------------------------------------------------------

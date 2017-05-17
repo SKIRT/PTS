@@ -15,10 +15,6 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import copy
 
-# Import astronomical modules
-from astropy.io import fits
-from astropy.units import Unit
-
 # Import the relevant PTS classes and modules
 from ..basics.layers import Layers
 from ..region.list import PixelRegionList
@@ -27,6 +23,7 @@ from .mask import Mask as newMask
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from .frame import Frame, sum_frames
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -1491,15 +1488,13 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def remove_frames_except(self, names):
+    def remove_frames_except(self, *names):
 
         """
         This function ...
         :param names:
         :return:
         """
-
-        if isinstance(names, basestring): names = [names]
 
         # Loop over all frames
         for frame_name in list(self.frames.keys()):

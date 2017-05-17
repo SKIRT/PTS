@@ -271,6 +271,19 @@ class DustPediaProperties(object):
 
     # -----------------------------------------------------------------
 
+    def has_calibration_error_magnitude(self, fltr):
+
+        """
+        This function ...
+        :param fltr: 
+        :return: 
+        """
+
+        magn = calibration_magnitude_for_filter(fltr)
+        return magn is not None
+
+    # -----------------------------------------------------------------
+
     def get_pixelsize(self, fltr):
 
         """

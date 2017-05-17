@@ -38,4 +38,6 @@ definition.add_optional("saturation_dilation_factor", "real", "saturation dilati
 definition.add_flag("dilate_other", "dilate other sources")
 definition.add_optional("other_dilation_factor", "real", "dilation factor for other sources", 2.0)
 
+definition.add_flag("only_foreground", "only interpolate over the stars that are in the foreground of the galaxy", False)
+
 # -----------------------------------------------------------------

@@ -53,9 +53,10 @@ def load_region_list(path):
 
     # Get the second line of the region
     second_line = fs.get_line(path, 1)
+    third_line = fs.get_line(path, 2)
 
     # Image coordinates or sky coordinates
-    if "image" in second_line: return PixelRegionList.from_file(path)
+    if "image" in second_line or "image" in third_line: return PixelRegionList.from_file(path)
     else: return SkyRegionList.from_file(path)
 
 # -----------------------------------------------------------------
