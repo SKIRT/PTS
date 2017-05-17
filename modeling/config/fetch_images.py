@@ -6,8 +6,8 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from .fetch import definition
-from ...core.remote.host import find_host_ids
+from pts.modeling.config.fetch import definition
+from pts.core.remote.host import find_host_ids
 
 # -----------------------------------------------------------------
 
@@ -19,7 +19,7 @@ definition.add_flag("attached", "run remote in attached mode")
 definition.add_flag("errors", "also download the error frames from the DustPedia archive")
 
 # H alpha
-definition.add_required("halpha_url", "url", "url of the h-alpha image")
+definition.add_optional("halpha_url", "url", "url of the h-alpha image") # optional for when fetch_images is relaunched, and the Halpha image is already present
 definition.add_optional("halpha_flux", "quantity", "flux of the h-alpha image to which the image should be rescaled")
 # The total H-alpha flux (reference: FAR-ULTRAVIOLET AND Ha IMAGING OF NEARBY SPIRAL GALAXIES: THE OB STELLAR,
 # POPULATION IN THE DIFFUSE IONIZED GAS (Hoopes et. al 2001)

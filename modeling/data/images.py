@@ -170,26 +170,36 @@ class ImageFetcher(DataComponent):
         # Order the names per origin
         for origin in self.data_origins:
 
-            # Loop over all URLs
+            # Loop over all URLs, indexed on image name
             for name in all_urls:
 
-                if not self.config.errors and "_Error" in name: continue # Skip error frames unless the 'errors' flag has been enabled
-                if origin in name: self.dustpedia_image_urls[origin][name] = all_urls[name]
+                # Skip error frames unless the 'errors' flag has been enabled
+                if not self.config.errors and "_Error" in name: continue
+
+                # Add url to the dictionary
+                if origin == "Herschel":
+
+                    if "pacs" in name.lower() or "spire" in name.lower(): self.dustpedia_image_urls[origin][name] = all_urls[name]
+
+                # Not Herschel
+                elif origin in name: self.dustpedia_image_urls[origin][name] = all_urls[name]
 
     # -----------------------------------------------------------------
 
-    def fetch_from_dustpedia(self, origin):
+    def fetch_from_dustpedia(self, origin, common_origin=None):
 
         """
         This function ...
         :return:
         """
 
+        if common_origin is None: common_origin = origin
+
         # Loop over all images from this origin
         for name in self.dustpedia_image_urls[origin]:
 
             # Determine the path to the image file
-            path = fs.join(self.data_images_paths[origin], name)
+            path = fs.join(self.data_images_paths[common_origin], name)
 
             # Check if the image is already present
             if fs.is_file(path):
@@ -420,7 +430,12 @@ class ImageFetcher(DataComponent):
         # Inform the user
         log.info("Fetching the Herschel images ...")
 
-        # Fetch the Herschel data from the DustPedia archive
+        # Fetch the Pacs data
+        #self.fetch_from_dustpedia("PACS", "Herschel")
+
+        # Fetch SPIRE
+        #self.fetch_from_dustpedia("SPIRE", "Herschel")
+
         self.fetch_from_dustpedia("Herschel")
 
     # -----------------------------------------------------------------

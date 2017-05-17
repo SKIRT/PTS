@@ -33,6 +33,10 @@ from ...magic.core.fits import contains_pc_and_cd, contains_pc_and_cdelt, remove
 
 # -----------------------------------------------------------------
 
+essential_origins = ["Herschel", "GALEX", "Spitzer"]
+
+# -----------------------------------------------------------------
+
 class DataInspector(DataComponent):
     
     """
@@ -119,11 +123,51 @@ class DataInspector(DataComponent):
         :return: 
         """
 
+        # Inspect origins
+        self.inspect_origins()
+
+        # Inspect contents
+        self.inspect_contents()
+
+    # -----------------------------------------------------------------
+
+    def inspect_origins(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Inspecting the origins ...")
+
+        # Get the origins
+        origin_names = fs.directories_in_path(self.data_images_path, returns="name")
+
+        # Loop over the essential origins
+        for essential_origin in essential_origins:
+            if essential_origin not in origin_names: raise RuntimeError("No " + essential_origin + " images are present. Run get_images again to fix this.")
+
+    # -----------------------------------------------------------------
+
+    def inspect_contents(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Inspecting the contents ...")
+
         # Loop over the directories in data/image
         for origin_path, origin_name in fs.directories_in_path(self.data_images_path, returns=["path", "name"]):
 
             # Check whether not empty
-            if fs.is_empty(origin_path): log.warning("No images for '" + origin_name + "'")
+            if fs.is_empty(origin_path):
+                log.warning("No images for '" + origin_name + "'")
+                if origin_name in essential_origins:
+                    raise RuntimeError("No " + origin_name + " images are present. Run get_images again to fix this.")
 
             # Check whether compressed files present
             compressed_paths = fs.compressed_files_in_path(origin_path)
@@ -145,10 +189,6 @@ class DataInspector(DataComponent):
 
         # Get paths
         self.paths, self.error_paths = self.get_data_image_and_error_paths()
-
-    # -----------------------------------------------------------------
-
-
 
     # -----------------------------------------------------------------
 

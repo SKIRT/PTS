@@ -33,6 +33,7 @@ from ...core.tools import time
 from ...core.tools import types
 from ...magic.core.list import FrameList, NamedFrameList
 from ...magic.core.list import CoordinateSystemList, NamedCoordinateSystemList
+from ...core.tools import archive
 
 # -----------------------------------------------------------------
 
@@ -406,8 +407,19 @@ class DustPediaDatabase(object):
         # Loop over all the urls
         for url in self.get_image_urls(galaxy_name):
 
+            # Get the filename
             name = url.split("imageName=")[1].split("&instrument")[0]
+
+            # Skip error frames if requested
             if "_Error" in name and not error_maps: continue
+
+            # Check whether this file is a compressed image
+            if archive.is_archive(name):
+
+                # Get the bare name (without .gz)
+                name = archive.bare_name(name)
+
+            # Add an entry to the dictionary
             urls[name] = url
 
         # Return the dictionary of urls
@@ -832,8 +844,26 @@ class DustPediaDatabase(object):
         :return:
         """
 
-        # Download
-        network.download_file(url, path, progress_bar=log.is_debug(), stream=True, session=self.session)
+        # Get the filename
+        filename = url.split("imageName=")[1].split("&")[0]
+
+        # Download archive, decompress
+        if archive.is_archive(filename):
+
+            # Download to temporary path
+            compressed_path = fs.join(self.temp_path, filename)
+
+            # Remove potential file with same name
+            if fs.is_file(compressed_path): fs.remove_file(compressed_path)
+
+            # Download compressed file
+            network.download_file(url, compressed_path, progress_bar=log.is_debug(), stream=True, session=self.session)
+
+            # Decompress
+            archive.decompress_file(compressed_path, path)
+
+        # Regular download
+        else: network.download_file(url, path, progress_bar=log.is_debug(), stream=True, session=self.session)
 
     # -----------------------------------------------------------------
 

@@ -127,11 +127,8 @@ class ImageFetcher(Configurable):
             # Determine image path
             path = fs.join(paths[instrument], name)
 
-            # Download the file
-            #self.database.download_file(url, path)
-
-            from ...core.tools import network
-            network.download_file(url, path)
+            # Download via database (decompressing is also done)
+            self.database.download_image_from_url(url, path)
 
     # -----------------------------------------------------------------
 

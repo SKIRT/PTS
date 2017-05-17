@@ -45,6 +45,20 @@ def is_archive(filepath):
 
 # -----------------------------------------------------------------
 
+def bare_name(filepath):
+
+    """
+    This function ...
+    :param filepath: 
+    :return: 
+    """
+
+    for extension in extensions:
+        if filepath.endswith("." + extension): return filepath.split("." + extension)[0]
+    return filepath
+
+# -----------------------------------------------------------------
+
 def decompress_directory_in_place(filepath, remove=False, into_root=False):
 
     """

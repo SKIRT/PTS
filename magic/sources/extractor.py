@@ -326,90 +326,114 @@ class SourceExtractor(Configurable):
             # Get the star index
             index = int(shape.label)
 
-            # Look whether a saturation source is present
-            saturation_source = None
-
-            # Check whether the star is a foreground star
-            #if self.principal_mask.masks(shape.center): foreground = True
-
-            if self.saturation_region is not None:
-
-                # Add the saturation sources
-                # Loop over the shapes in the saturation region
-                for j in range(len(self.saturation_region)):
-
-                    saturation_shape = self.saturation_region[j]
-
-                    #if "text" not in saturation_shape.meta: continue
-                    if saturation_shape.label is None: continue
-
-                    saturation_index = int(saturation_shape.label)
-
-                    if index != saturation_index: continue
-                    else:
-                        # Remove the saturation shape from the region
-                        saturation_shape = self.saturation_region.pop(j)
-
-                        # Create saturation source
-                        saturation_source = Detection.from_shape(self.frame, saturation_shape, self.config.source_outer_factor)
-
-                        # Replace the saturation mask
-                        segments_cutout = self.star_segments[saturation_source.y_slice, saturation_source.x_slice]
-                        saturation_mask = Mask(segments_cutout == index)
-                        saturation_source.mask = saturation_mask.fill_holes()
-
-                        # Break the loop
-                        break
+            # Get the saturation source
+            saturation_source = self.find_saturation_source(index)
 
             # Check whether the star is a 'special' region
             special = self.special_mask.masks(shape.center) if self.special_mask is not None else False
 
+            # Saturation source was found
             if saturation_source is not None:
 
                 ## DILATION
+                if self.config.dilate_saturation: self.dilate_saturation_source(saturation_source)
 
-                if self.config.dilate_saturation:
+                # Set the source to be the saturation source
+                source = saturation_source
 
-                    # factor = saturation_dilation_factor
-                    dilation_factor = self.config.saturation_dilation_factor
+            # Create a new source from the shape
+            else: source = Detection.from_shape(self.frame, shape, self.config.source_outer_factor)
 
-                    saturation_source = saturation_source.zoom_out(dilation_factor, self.frame, keep_original_mask=True)
+            # Set special flag
+            saturation_source.special = special
 
-                    mask_area = np.sum(saturation_source.mask)
-                    area_dilation_factor = dilation_factor ** 2.
-                    new_area = mask_area * area_dilation_factor
+            # Add it to the list
+            self.sources.append(source)
 
-                    ## Circular mask approximation
+    # -----------------------------------------------------------------
 
-                    # ellipse = find_contour(source.mask.astype(float), source.mask)
-                    # radius = ellipse.radius.norm
+    def find_saturation_source(self, index):
 
-                    mask_radius = math.sqrt(mask_area / math.pi)
-                    new_radius = math.sqrt(new_area / math.pi)
+        """
+        This function ...
+        :param index: 
+        :return: 
+        """
 
-                    kernel_radius = new_radius - mask_radius
+        # Deubgging
+        log.debug("Finding a saturation source for star " + str(index) + " ...")
 
-                    # Replace mask
-                    saturation_source.mask = saturation_source.mask.disk_dilation(radius=kernel_radius)
+        # Look whether a saturation source is present
+        saturation_source = None
 
-                ## END DILATION CODE
+        # Check whether the star is a foreground star
+        #if self.principal_mask.masks(shape.center): foreground = True
 
-                # Set special
-                saturation_source.special = special
+        # If there is a saturation region
+        if self.saturation_region is not None:
 
-                # Add the saturation source
-                self.sources.append(saturation_source)
+            # Add the saturation sources
+            # Loop over the shapes in the saturation region
+            for j in range(len(self.saturation_region)):
 
-            else:
+                saturation_shape = self.saturation_region[j]
 
-                # Create a new source from the shape
-                source = Detection.from_shape(self.frame, shape, self.config.source_outer_factor)
+                #if "text" not in saturation_shape.meta: continue
+                if saturation_shape.label is None: continue
 
-                # Set special
-                source.special = special
+                saturation_index = int(saturation_shape.label)
 
-                # Add it to the list
-                self.sources.append(source)
+                if index != saturation_index: continue
+                else:
+
+                    # Remove the saturation shape from the region
+                    saturation_shape = self.saturation_region.pop(j)
+
+                    # Create saturation source
+                    saturation_source = Detection.from_shape(self.frame, saturation_shape, self.config.source_outer_factor)
+
+                    # Replace the saturation mask
+                    segments_cutout = self.star_segments[saturation_source.y_slice, saturation_source.x_slice]
+                    saturation_mask = Mask(segments_cutout == index)
+                    saturation_source.mask = saturation_mask.fill_holes()
+
+                    # Break the loop
+                    break
+
+        # Return the saturation source
+        return saturation_source
+
+    # -----------------------------------------------------------------
+
+    def dilate_saturation_source(self, saturation_source):
+
+        """
+        This function ...
+        :param saturation_source:
+        :return: 
+        """
+
+        # factor = saturation_dilation_factor
+        dilation_factor = self.config.saturation_dilation_factor
+
+        saturation_source = saturation_source.zoom_out(dilation_factor, self.frame, keep_original_mask=True)
+
+        mask_area = np.sum(saturation_source.mask)
+        area_dilation_factor = dilation_factor ** 2.
+        new_area = mask_area * area_dilation_factor
+
+        ## Circular mask approximation
+
+        # ellipse = find_contour(source.mask.astype(float), source.mask)
+        # radius = ellipse.radius.norm
+
+        mask_radius = math.sqrt(mask_area / math.pi)
+        new_radius = math.sqrt(new_area / math.pi)
+
+        kernel_radius = new_radius - mask_radius
+
+        # Replace mask
+        saturation_source.mask = saturation_source.mask.disk_dilation(radius=kernel_radius)
 
     # -----------------------------------------------------------------
 
@@ -563,6 +587,9 @@ class SourceExtractor(Configurable):
             #foreground = self.principal_mask.masks(source.center)
             if self.principal_mask is not None: foreground = masks.overlap(self.principal_mask[source.y_slice, source.x_slice], source.mask)
             else: foreground = False
+
+            # SKip foreground if requested
+            if self.config.only_foreground and not foreground: continue
 
             # Disable sigma-clipping for estimating background when the source is foreground to the principal galaxy (to avoid clipping the galaxy's gradient)
             sigma_clip = self.config.sigma_clip if not foreground else False

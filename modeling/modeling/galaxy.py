@@ -503,7 +503,7 @@ class GalaxyModeler(ModelerBase):
         inspector = DataInspector(config)
 
         # Add an entry to the history
-        command_name = ImageFetcher.command_name()
+        command_name = DataInspector.command_name()
         self.history.add_entry(command_name)
 
         # Set the working directory
