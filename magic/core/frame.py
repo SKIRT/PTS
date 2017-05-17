@@ -47,6 +47,21 @@ from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
+def get_filter(frame_path):
+
+    """
+    Ths function allows getting the filter of a frame without loading the entire frame
+    :param frame_path: 
+    :return: 
+    """
+
+    from ..tools import headers
+    header = fits.getheader(frame_path)
+    fltr = headers.get_filter(fs.name(frame_path[:-5]), header)
+    return fltr
+
+# -----------------------------------------------------------------
+
 class Frame(NDDataArray):
 
     """

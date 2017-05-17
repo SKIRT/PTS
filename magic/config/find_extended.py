@@ -19,7 +19,7 @@ definition.add_optional("output_path", "directory_path", "path to the output dir
 definition.add_flag("track_record", "track record")
 definition.add_flag("plot_track_record_if_exception", "plot track record if exception", True)
 
-definition.add_flag("find_apertures", True)
+definition.add_flag("find_apertures", "find apertures", True)
 
 definition.add_optional("principal_region", "file_path", "path to a region file with a contour for the principal galaxy")
 

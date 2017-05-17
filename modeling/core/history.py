@@ -58,6 +58,20 @@ class ModelingHistory(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def remove_entry(self, command):
+
+        """
+        This function removes
+        :param command: 
+        :return: 
+        """
+
+        # Find the index of the corresponding row
+        index = tables.find_index(self, command)
+        self.remove_row(index)
+
+    # -----------------------------------------------------------------
+
     def __contains__(self, command_name):
 
         """

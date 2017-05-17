@@ -1674,10 +1674,10 @@ class DataSet(object):
         table = DataSetTable()
 
         for name in self.paths:
-            path = self.paths[name]
+            frame_path = self.paths[name]
             error_path = self.error_paths[name] if name in self.error_paths else None
             mask_path = self.mask_paths[name] if name in self.mask_paths else None
-            table.add_entry(name, path, error_path, mask_path)
+            table.add_entry(name, frame_path, error_path, mask_path)
 
         # Save the table
         table.saveto(path)

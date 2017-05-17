@@ -40,4 +40,6 @@ definition.add_optional("other_dilation_factor", "real", "dilation factor for ot
 
 definition.add_flag("only_foreground", "only interpolate over the stars that are in the foreground of the galaxy", False)
 
+definition.add_flag("write", "do writing", True)
+
 # -----------------------------------------------------------------

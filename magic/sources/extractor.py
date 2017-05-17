@@ -120,7 +120,7 @@ class SourceExtractor(Configurable):
         self.set_nans()
 
         # Writing
-        if self.config.output is not None: self.write()
+        if self.config.output is not None and self.config.write: self.write()
 
     # -----------------------------------------------------------------
 

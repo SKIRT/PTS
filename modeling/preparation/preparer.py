@@ -46,6 +46,10 @@ subtracted_name = "sky_subtracted.fits"
 with_errors_name = "with_errormaps.fits"
 result_name = "result.fits"
 
+# Sources and sky directories names
+sources_name = "sources"
+sky_name = "sky"
+
 # -----------------------------------------------------------------
 
 class DataPreparer(PreparationComponent):
@@ -210,12 +214,13 @@ class DataPreparer(PreparationComponent):
             directory_path = fs.directory_of(path)
 
             # Get sources path
-            sources_path = fs.join(directory_path, "sources")
+            sources_path = fs.join(directory_path, sources_name)
 
             # Load the image
             image = Image.from_file(path)
 
             config = dict()
+            config["write"] = False
             config["only_foreground"] = True
 
             # Extract the sources
@@ -299,18 +304,25 @@ class DataPreparer(PreparationComponent):
             directory_path = fs.directory_of(path)
 
             # Determine sources path
-            sources_path = fs.join(directory_path, "sources")
+            sources_path = fs.join(directory_path, sources_name)
 
             # load the image
             image = Image.from_file(path)
 
             config = dict()
 
+            config["write"] = False
+            config["plot"] = False
+
             principal_shape = get_principal_shape_sky_from_sources_path(sources_path, image.wcs)
             saturation_regions = get_saturation_regions_sky_from_sources_path(sources_path, image.wcs)
 
+            # Determine and create the sky path
+            sky_path = fs.create_directory_in(directory_path, "sky")
+
             # Subtract
-            subtract_sky(image, config, principal_shape, saturation_regions)
+            # image, sky_path, config, principal_sky_region, saturation_sky_region=None, visualisation_path=None
+            subtract_sky(image, sky_path, config, principal_shape, saturation_regions)
 
             # Determine the new path
             new_path = fs.join(directory_path, subtracted_name)
@@ -343,7 +355,7 @@ class DataPreparer(PreparationComponent):
             directory_path = fs.directory_of(path)
 
             # Get the sky directory path
-            sky_path = fs.join(directory_path, "sky")
+            sky_path = fs.join(directory_path, sky_name)
 
             # Get the filter
             fltr = parse_filter(name)
@@ -533,8 +545,8 @@ def check_initialized(name, path):
     # Debugging
     log.debug("Checking the " + name + " image ...")
 
-    initialized_path = fs.join(path, "initialized.fits")
-    sources_path = fs.join(path, "sources")
+    initialized_path = fs.join(path, initialized_name)
+    sources_path = fs.join(path, sources_name)
 
     # Look if an initialized image file is present
     if not fs.is_file(initialized_path):
@@ -706,7 +718,7 @@ def extract_sources(image, config, sources_path, visualisation_path=None):
         #animation.saveto(path)
 
     # Add the sources mask to the image
-    image.add_mask(extractor.mask, "sources")
+    image.add_mask(extractor.mask, sources_name)
 
     # Get the principal shape in sky coordinates
     #principal_shape_sky = extractor.principal_shape.to_sky(image.wcs)

@@ -52,6 +52,9 @@ class PreparationInspector(PreparationComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
+        # Inspect paths
+        self.inspect_paths()
+
         # 2. Inspect errors
         self.inspect_significance()
 
@@ -70,6 +73,20 @@ class PreparationInspector(PreparationComponent):
 
         # Call the setup function of the base class
         super(PreparationInspector, self).setup(**kwargs)
+
+    # -----------------------------------------------------------------
+
+    def inspect_paths(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Inspecting the image paths ...")
+
+        #self.get_prep_path()
 
     # -----------------------------------------------------------------
 

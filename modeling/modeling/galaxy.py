@@ -45,6 +45,7 @@ from ..component.galaxy import get_galaxy_properties_path, get_data_seds_path, g
 from ...core.tools import filesystem as fs
 from ...core.filter.filter import parse_filter
 from ...magic.core.image import Image
+from ...magic.core.frame import get_filter
 from ..core.environment import GalaxyModelingEnvironment
 from ...core.remote.utils import DetachedCalculation
 from ...core.tools.utils import UserIntervention
@@ -538,6 +539,9 @@ class GalaxyModeler(ModelerBase):
         # Initialize the preparation
         if "initialize_preparation" not in self.history: self.initialize_preparation()
 
+        # Inspect the initialization
+        if "inspect_initialization" not in self.history: self.inspect_initialization()
+
         # Run the preparation
         if "prepare_data" not in self.history: self.prepare()
 
@@ -563,7 +567,6 @@ class GalaxyModeler(ModelerBase):
         config["sources"] = dict()
         config["sources"]["weak"] = self.config.sources_weak
         config["sources"]["nprocesses"] = self.config.nprocesses
-
         config["manual"] = self.config.sources_manual
 
         # Create the initializer
@@ -593,6 +596,67 @@ class GalaxyModeler(ModelerBase):
         # Give warning and exit
         message = "Check the result of the source detection, make adjustments where necessary, and resume the modeling afterwards"
         raise UserIntervention(message, self.__class__, "initialize_preparation")
+
+    # -----------------------------------------------------------------
+
+    def inspect_initialization(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Inspecting the initialization ...")
+
+        # Add an entry to the history
+        command_name = "inspect_initialization"
+        self.history.add_entry(command_name)
+
+        # Loop over the directories in the data/images path
+        images_path = fs.join(self.environment.data_path, "images")
+        #for origin_name in fs.directories_in_path(images_path, returns="name"):
+        for image_path in fs.files_in_path(images_path, returns="path", extension="fits", not_contains="poisson", recursive=True):
+
+            # Parse filter
+            #fltr = parse_filter(i)
+
+            # Load frame to get filter
+            fltr = get_filter(image_path)
+
+            # Get prep name
+            prep_name = str(fltr)
+
+            # Check whether directory present in prep path
+            prep_path = fs.join(self.environment.prep_path, prep_name)
+
+            if not fs.is_directory(prep_path):
+                self.history.remove_entry("initialize_preparation") # ? good idea?
+                self.history.save()
+                raise RuntimeError("Preparation directory was not found for the " + prep_name + " image. Run initialize_preparation again to solve this.")
+
+            initialized_path = fs.join(prep_path, "initialized.fits")
+
+            if not fs.is_file(initialized_path):
+                self.history.remove_entry("initialize_preparation") # ? good idea?
+                self.history.save()
+                raise RuntimeError("Initialized image was not found for the " + prep_name + " image. Run initialize_preparation again to fix this.")
+
+            sources_path = fs.join(prep_path, "sources")
+
+            if not fs.is_directory(sources_path):
+                self.history.remove_entry("initialize_preparation") # ? good idea?
+                self.history.save()
+                raise RuntimeError("Sources directory was not found for the " + prep_name + " image. Run initialize_preparation again to fix this.")
+
+            if fs.is_empty(sources_path):
+                self.history.remove_entry("initialize_preparation") # ? good idea?
+                self.history.save()
+                raise RuntimeError("Sources directory for the " + prep_name + " image is empty. Run initialize_preparation again to fix this.")
+
+        # Mark the end and save the history file
+        self.history.mark_end()
+        self.history.save()
 
     # -----------------------------------------------------------------
 

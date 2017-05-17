@@ -245,8 +245,14 @@ class PreparationInitializer(PreparationComponent):
         # Loop over the image paths
         for prep_name in self.paths:
 
+            # Debugging
+            log.debug("Adding the initialized " + prep_name + " image to the dataset ...")
+
             # Get initialized path
             path = self.initialized_paths[prep_name]
+
+            # Debugging
+            log.debug("Path: " + path)
 
             # Add entry to the dataset
             self.set.add_path(prep_name, path)
@@ -445,7 +451,7 @@ class PreparationInitializer(PreparationComponent):
             self.fwhms[name] = fwhm
 
         # Set the FWHMs
-        self.set_fwhms()
+        self.set_fwhms(ignore=ignore)
 
     # -----------------------------------------------------------------
 
@@ -476,7 +482,7 @@ class PreparationInitializer(PreparationComponent):
         else: self.find_sources_local(ignore, ignore_stars, ignore_other_sources)
 
         # Set FWHM of optical images
-        self.set_fwhms()
+        self.set_fwhms(ignore=ignore)
 
     # -----------------------------------------------------------------
 
@@ -499,7 +505,7 @@ class PreparationInitializer(PreparationComponent):
             if not fs.is_empty(sources_output_path):
 
                 # Debugging
-                log.debug("Source finder output has been found for this image, skipping source finding step")
+                log.debug("Source finder output has been found for the " + prep_name + " image, skipping source finding step ...")
 
                 # Ignore this image for the source finder
                 ignore_images.append(prep_name)
@@ -560,10 +566,11 @@ class PreparationInitializer(PreparationComponent):
 
     # -----------------------------------------------------------------
 
-    def set_fwhms(self):
+    def set_fwhms(self, ignore=None):
 
         """
         This function ...
+        :param ignore:
         :return: 
         """
 
@@ -572,6 +579,8 @@ class PreparationInitializer(PreparationComponent):
 
         # Loop over the images
         for prep_name in self.set:
+
+            if ignore is not None and prep_name in ignore: continue
 
             # Get the filter
             fltr = parse_filter(prep_name)
@@ -607,6 +616,12 @@ class PreparationInitializer(PreparationComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing the dataset ...")
+
+        # If already present
+        if fs.is_file(self.initial_dataset_path): fs.remove_file(self.initial_dataset_path)
 
         # Save the dataset
         self.set.saveto(self.initial_dataset_path)
