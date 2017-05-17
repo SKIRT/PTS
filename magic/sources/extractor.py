@@ -221,6 +221,16 @@ class SourceExtractor(Configurable):
             other_region_path = self.input_path_file("other_sources.reg")
             self.other_region = load_as_pixel_region_list(other_region_path, self.frame.wcs) if fs.is_file(other_region_path) else None
 
+        # Debugging
+        if self.galaxy_region is not None: log.debug("Galaxy regions: PRESENT")
+        else: log.debug("Galaxy regions: NOT PRESENT")
+        if self.star_region is not None: log.debug("Star regions: PRESENT")
+        else: log.debug("Star regions: NOT PRESENT")
+        if self.saturation_region is not None: log.debug("Saturation regions: PRESENT")
+        else: log.debug("Saturation regions: NOT PRESENT")
+        if self.other_region is not None: log.debug("Other regions: PRESENT")
+        else: log.debug("Other regions: NOT PRESENT")
+
     # -----------------------------------------------------------------
 
     def load_segments(self, **kwargs):
@@ -235,13 +245,28 @@ class SourceExtractor(Configurable):
         log.info("Loading the segmentation maps ...")
 
         # Load the image with segmentation maps
+        segments = None
         if "segments" in kwargs: segments = kwargs.pop("segments")
-        else: segments = Image.from_file(self.input_path_file("segments.fits"), no_filter=True)
+        else:
+            segments_path = self.input_path_file("segments.fits")
+            if not fs.is_file(segments_path): log.warning("No segmentation maps found, using regions to define the to be extracted patches")
+            else: segments = Image.from_file(segments_path, no_filter=True)
 
-        # Get the segmentation maps
-        self.galaxy_segments = segments.frames["galaxies"] if "galaxies" in segments.frames else None
-        self.star_segments = segments.frames["stars"] if "stars" in segments.frames else None
-        self.other_segments = segments.frames["other_sources"] if "other_sources" in segments.frames else None
+        # If segments is not None
+        if segments is not None:
+
+            # Get the segmentation maps
+            self.galaxy_segments = segments.frames["galaxies"] if "galaxies" in segments.frames else None
+            self.star_segments = segments.frames["stars"] if "stars" in segments.frames else None
+            self.other_segments = segments.frames["other_sources"] if "other_sources" in segments.frames else None
+
+        # Debugging
+        if self.galaxy_segments is not None: log.debug("Galaxy segments: PRESENT")
+        else: log.debug("Galaxy segments: NOT PRESENT")
+        if self.star_segments is not None: log.debug("Star segments: PRESENT")
+        else: log.debug("Star segments: NOT PRESENT")
+        if self.other_segments is not None: log.debug("Other segments: PRESENT")
+        else: log.debug("Other segments: NOT PRESENT")
 
     # -----------------------------------------------------------------
 
@@ -279,24 +304,42 @@ class SourceExtractor(Configurable):
         # Loop over the shapes in the galaxy region
         for shape in self.galaxy_region:
 
+            #print(shape.label)
+            #print(shape.meta)
+
             # Shapes without text are in this case just coordinates
-            if "text" not in shape.meta: continue
+            #if "text" not in shape.meta: continue
 
-            # Get the coordinate of the center for this galaxy
-            center = shape.center
+            if shape.label is None: continue
 
-            #print("here")
+            if self.galaxy_segments is not None:
 
-            # Check the label of the corresponding segment
-            label = self.galaxy_segments[int(center.y), int(center.x)]
+                # Get the coordinate of the center for this galaxy
+                center = shape.center
 
-            if label == 3 or (label == 2 and self.config.remove_companions):
+                #print("here")
+
+                # Check the label of the corresponding segment
+                label = self.galaxy_segments[int(center.y), int(center.x)]
+
+                if label == 3 or (label == 2 and self.config.remove_companions):
+
+                    # Create a source
+                    source = Detection.from_shape(self.frame, shape, self.config.source_outer_factor)
+
+                    # Check whether it is a 'special' source
+                    source.special = self.special_mask.masks(center) if self.special_mask is not None else False
+
+                    # Add the source to the list
+                    self.sources.append(source)
+
+            elif "principal" not in shape.label:
 
                 # Create a source
                 source = Detection.from_shape(self.frame, shape, self.config.source_outer_factor)
 
-                # Check whether it is a 'special' source
-                source.special = self.special_mask.masks(center) if self.special_mask is not None else False
+                # Check whether it is a special source
+                source.special = self.special_mask.masks(shape.center) if self.special_mask is not None else False
 
                 # Add the source to the list
                 self.sources.append(source)
@@ -345,7 +388,7 @@ class SourceExtractor(Configurable):
             else: source = Detection.from_shape(self.frame, shape, self.config.source_outer_factor)
 
             # Set special flag
-            saturation_source.special = special
+            source.special = special
 
             # Add it to the list
             self.sources.append(source)
