@@ -17,6 +17,9 @@ from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from .component import DataComponent
 from ...magic.core.frame import Frame
+from ...magic.core.image import Image
+from ...core.tools import introspection
+from ...core.basics.task import Task
 
 # -----------------------------------------------------------------
 
@@ -90,7 +93,10 @@ class MosaicAnalyser(DataComponent):
         self.setup(**kwargs)
 
         # 2. Load the results from the mosaicing
-        self.load_results()
+        if not self.has_results: self.load_results()
+
+        # Check results
+        self.check_results()
 
         # 3. Load the image as obtained from other source
         self.load_references()
@@ -103,6 +109,84 @@ class MosaicAnalyser(DataComponent):
 
         # 6. Writing
         self.write()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs: 
+        :return: 
+        """
+
+        # Call the setup function of the base class
+        super(MosaicAnalyser, self).setup(**kwargs)
+
+        # Check for image that is specified
+        if "image" in kwargs:
+
+            # Get image
+            image = kwargs.pop("image")
+
+            # Get band ID
+            band_id = image.filter_name
+
+            # Get frames
+            mosaic_frame = image.frames["primary"]
+            mosaic_errors = image.frames["errors"]
+
+            self.mosaics[band_id] = mosaic_frame
+            self.poisson_frames[band_id] = mosaic_errors
+
+        # Check for image path that is specified
+        elif self.config.image_path is not None:
+
+            # Load the image
+            image = Image.from_file(self.config.image_path)
+
+            # Get band id
+            if image.filter is not None: band_id = image.filter_name
+            elif self.config.band_id is not None: band_id = self.config.band_id
+            else: raise ValueError("Band ID must be specified")
+
+            # Get frames
+            mosaic_frame = image.frames["primary"]
+            mosaic_errors = image.frames["errors"]
+
+            self.mosaics[band_id] = mosaic_frame
+            self.poisson_frames[band_id] = mosaic_errors
+
+        # Check whether task is specified
+        if "task" in kwargs: task = kwargs.pop("task")
+        elif self.config.host_id is not None:
+
+            if self.config.task_id is None: raise ValueError("Task ID is not specified")
+
+            # Determine path
+            host_id_run_path = fs.join(introspection.pts_run_dir, self.config.host_id)
+            task_path = fs.join(host_id_run_path, str(self.config.task_id) + ".task")
+
+            # Load the task
+            task = Task.from_file(task_path)
+
+        elif self.config.task_id is not None: raise ValueError("Task ID is specified but host ID is not")
+        else: task = None
+
+        # If the task is not None
+        if task is not None: self.task = task
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_results(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return len(self.mosaics) > 0
 
     # -----------------------------------------------------------------
 
@@ -136,6 +220,39 @@ class MosaicAnalyser(DataComponent):
             elif splitted[-1] == "relerrors": self.relative_poisson_frames[band_id] = Frame.from_file(path)
             elif splitted[-1] == "swarp": continue
             else: self.mosaics[band_id] = Frame.from_file(path) # the mosaic
+
+    # -----------------------------------------------------------------
+
+    def check_results(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Checking the results ...")
+
+        # Loop over the bands
+        for band in self.mosaics:
+
+            # Check whether errors is present
+            if band not in self.poisson_frames: raise ValueError("Poisson frame for " + band + " is not found")
+
+            # Check whether relative errors is present
+            if band not in self.relative_poisson_frames:
+
+                mosaic_errors = self.poisson_frames[band]
+                mosaic_frame = self.mosaics[band]
+
+                # Create the relative poisson frame
+                # Calculate the relative error map
+                relerrors = mosaic_errors / mosaic_frame
+                relerrors[relerrors < 0.] = 0.0  # set negative values for relative error map to zero
+                relerrors.replace_nans(0.0)  # set NaN values (because mosaic was zero) to zero
+
+                # Add the relative errors frame
+                self.relative_poisson_frames[band] = relerrors
 
     # -----------------------------------------------------------------
 

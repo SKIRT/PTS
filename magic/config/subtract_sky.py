@@ -34,8 +34,10 @@ definition.add_flag("eliminate_negatives", "replace negative pixels by zero", Fa
 
 # Creation of the sky mask
 definition.add_section("mask", "creation of sky mask")
-definition.sections["mask"].add_optional("annulus_inner_factor", "real", "sky annulus inner factor (based on principal galaxy ellipse", 1.6)
+definition.sections["mask"].add_optional("annulus_inner_factor", "real", "sky annulus inner factor (based on principal galaxy ellipse", 1.2)
 definition.sections["mask"].add_optional("annulus_outer_factor", "real", "sky annulus outer factor (based on principal galaxy ellipse", 4.0)
+definition.sections["mask"].add_optional("saturation_expansion_factor", "real", "expansion factor for saturation regions", 1.5)
+definition.sections["mask"].add_optional("stars_expansion_factor", "real", "expansion factor for star regions", 1.5)
 
 # Sigma clipping
 definition.add_section("sigma_clipping", "sigma clipping")

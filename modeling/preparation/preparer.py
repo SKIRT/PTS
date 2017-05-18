@@ -31,6 +31,7 @@ from ...core.filter.filter import parse_filter
 from ...magic.sources.extractor import SourceExtractor
 from ...magic.sky.skysubtractor import SkySubtractor
 from ...dustpedia.core.properties import DustPediaProperties
+from ...dustpedia.core.photometry import DustPediaPhotometry
 from ...magic.basics.mask import Mask as oldMask
 from ...magic.core.frame import Frame, sum_frames_quadratically
 from . import unitconversion
@@ -39,6 +40,7 @@ from ...magic.basics.coordinate import PixelCoordinate
 from ...magic.region.ellipse import PixelEllipseRegion
 from ...core.basics.composite import SimplePropertyComposite
 from ...core.tools.serialization import write_dict
+from ...magic.core.mask import Mask
 
 # -----------------------------------------------------------------
 
@@ -142,6 +144,9 @@ class DataPreparer(PreparationComponent):
         # The DustPedia properties
         self.properties = None
 
+        # The DustPedia photometry object
+        self.photometry = None
+
         # The path lists
         self.initialized_paths = NamedFileList()
         self.extracted_paths = NamedFileList()
@@ -212,6 +217,9 @@ class DataPreparer(PreparationComponent):
 
         # Create the DustPedia properties
         self.properties = DustPediaProperties()
+
+        # Create the DustPedia photometry object
+        self.photometry = DustPediaPhotometry()
 
     # -----------------------------------------------------------------
 
@@ -472,8 +480,10 @@ class DataPreparer(PreparationComponent):
             config["write"] = False
             config["plot"] = False
 
+            # Load regions
             principal_shape = get_principal_shape_sky_from_sources_path(sources_path, image.wcs)
             saturation_regions = get_saturation_regions_sky_from_sources_path(sources_path, image.wcs)
+            star_regions = get_star_regions_sky_from_sources_path(sources_path, image.wcs)
 
             # Determine and create the sky path
             sky_path = fs.join(directory_path, "sky")
@@ -482,9 +492,22 @@ class DataPreparer(PreparationComponent):
                 log.warning("There is alread a sky directory present for the " + name + " image: removing ...")
                 fs.remove_directory(sky_path)
 
+            # Use DustPedia aperture
+            if self.config.dustpedia_aperture: aperture = self.photometry.get_aperture(self.ngc_name)
+
+            # Use the galaxy shape
+            else: aperture = principal_shape * self.config.aperture_galaxy_region_factor
+
+            # Set aperture settings
+            config["mask"] = dict()
+            config["mask"]["annulus_inner_factor"] = self.config.annulus_inner_factor
+            config["mask"]["annulus_outer_factor"] = self.config.annulus_inner_factor
+            config["mask"]["saturation_expansion_factor"] = self.config.saturation_expansion_factor
+            config["mask"]["stars_expansion_factor"] = self.config.stars_expansion_factor
+
             # Subtract
-            # image, sky_path, config, principal_sky_region, saturation_sky_region=None, visualisation_path=None
-            try: subtractor = subtract_sky(image, sky_path, config, principal_shape, saturation_regions)
+            # image, sky_path, config, principal_sky_region, saturation_sky_region=None, star_sky_region=None, visualisation_path=None
+            try: subtractor = subtract_sky(image, sky_path, config, aperture, saturation_regions, star_regions)
             except RuntimeError:
                 log.warning("The " + name + " image could not be sky subtracted")
                 subtractor = None
@@ -955,11 +978,12 @@ def extract_sources(image, config, sources_path, visualisation_path=None):
 
 # -----------------------------------------------------------------
 
-def subtract_sky(image, sky_path, config, principal_sky_region, saturation_sky_region=None, visualisation_path=None):
+def subtract_sky(image, sky_path, config, principal_sky_region, saturation_sky_region=None, star_sky_region=None, visualisation_path=None):
 
     """
     This function ...
     :param image:
+    :param sky_path:
     :param config:
     :param principal_sky_region:
     :param saturation_sky_region:
@@ -989,6 +1013,10 @@ def subtract_sky(image, sky_path, config, principal_sky_region, saturation_sky_r
     if saturation_sky_region is not None: saturation_region = saturation_sky_region.to_pixel(image.wcs)
     else: saturation_region = None
 
+    # Convert the star region in sky coordinate into pixel coordinates
+    if star_sky_region is not None: star_region = star_sky_region.to_pixel(image.wcs)
+    else: star_region = None
+
     # Create the 'extra' mask (bad and padded pixels)
     extra_mask = None
     if "bad" in image.masks:
@@ -1003,7 +1031,7 @@ def subtract_sky(image, sky_path, config, principal_sky_region, saturation_sky_r
 
     # Run the sky subtractor
     sky_subtractor.run(frame=image.primary, principal_shape=principal_shape, sources_mask=image.masks.sources,
-                       extra_mask=extra_mask, saturation_region=saturation_region, animation=skysubtractor_animation)
+                       extra_mask=extra_mask, saturation_region=saturation_region, star_region=star_region, animation=skysubtractor_animation)
 
     # Set the subtracted frame as the primary frame
     image.replace_frame("primary", sky_subtractor.subtracted)
@@ -1056,6 +1084,37 @@ def subtract_sky(image, sky_path, config, principal_sky_region, saturation_sky_r
     if sky_subtractor.phot_boundaries is not None:
         phot_boundaries_path = fs.join(sky_path, "boundaries.dat")
         write_dict(sky_subtractor.phot_boundaries, phot_boundaries_path)
+
+    # WRITE MASK CONTRIBUTIONS
+    if sky_subtractor.sources_mask is not None:
+        sources_mask_path = fs.join(sky_path, "sources_mask.fits")
+        mask = Mask(sky_subtractor.sources_mask)
+        mask.saveto(sources_mask_path)
+
+    if sky_subtractor.outside_mask is not None:
+        outside_mask_path = fs.join(sky_path, "outside_mask.fits")
+        mask = Mask(sky_subtractor.outside_mask)
+        mask.saveto(outside_mask_path)
+
+    if sky_subtractor.principal_mask is not None:
+        principal_mask_path = fs.join(sky_path, "principal_mask.fits")
+        mask = Mask(sky_subtractor.principal_mask)
+        mask.saveto(principal_mask_path)
+
+    if sky_subtractor.saturation_mask is not None:
+        saturation_mask_path = fs.join(sky_path, "saturation_mask.fits")
+        mask = Mask(sky_subtractor.saturation_mask)
+        mask.saveto(saturation_mask_path)
+
+    if sky_subtractor.stars_mask is not None:
+        stars_mask_path = fs.join(sky_path, "stars_mask.fits")
+        mask = Mask(sky_subtractor.stars_mask)
+        mask.saveto(stars_mask_path)
+
+    if sky_subtractor.extra_mask is not None:
+        extra_mask_path = fs.join(sky_path, "extra_mask.fits")
+        mask = Mask(sky_subtractor.extra_mask)
+        mask.saveto(extra_mask_path)
 
     # Write properties
 
@@ -1241,6 +1300,30 @@ def get_saturation_regions_sky_from_sources_path(sources_path, wcs):
 
     # Return the saturation regions in sky coordinates
     return saturation_regions_sky
+
+# -----------------------------------------------------------------
+
+def get_star_regions_sky_from_sources_path(sources_path, wcs):
+
+    """
+    This funciton ...
+    :param sources_path: 
+    :param wcs: 
+    :return: 
+    """
+
+    # Determine path
+    path = fs.join(sources_path, "stars.reg")
+
+    if not fs.is_file(path): return None
+
+    regions = PixelRegionList.from_file(path)
+
+    # Get in sky coordinates
+    star_regions_sky = regions.to_sky(wcs)
+
+    # Return
+    return star_regions_sky
 
 # -----------------------------------------------------------------
 

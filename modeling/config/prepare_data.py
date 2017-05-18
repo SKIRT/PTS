@@ -30,4 +30,15 @@ definition.add_flag("attached", "run remotely in attached mode")
 # Parallelization
 definition.add_optional("nprocesses", "positive_integer", "number of parallel processes for parallel computations", max(8, ncores()))
 
+# Advanced
+definition.add_flag("dustpedia_aperture", "use the DustPedia aperture instead of the galaxy region for the sky subtraction", True)
+definition.add_optional("aperture_galaxy_region_factor", "real", "if the galaxy region is used for the aperture, use this scaling factor on the region", 1.5)
+
+# Sky subtraction
+definition.add_optional("annulus_inner_factor", "real", "annulus_inner_factor", 1.2)
+definition.add_optional("annulus_outer_factor", "real", "annulus_outer_factor", 4.0)
+
+definition.add_optional("saturation_expansion_factor", "real", "saturation expansion factor", 1.5)
+definition.add_optional("stars_expansion_factor", "real", "stars expansion factor", 2.)
+
 # -----------------------------------------------------------------

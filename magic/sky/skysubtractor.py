@@ -115,6 +115,9 @@ class SkySubtractor(Configurable):
         # The region of saturated stars
         self.saturation_region = None
 
+        # The region of stars
+        self.star_region = None
+
         # The animation
         self.animation = None
 
@@ -237,6 +240,7 @@ class SkySubtractor(Configurable):
         self.extra_mask = None
         self.principal_shape = None
         self.saturation_region = None
+        self.star_region = None
         self.animation = None
         self.mask = None
         self.sky = None
@@ -275,6 +279,7 @@ class SkySubtractor(Configurable):
         # Get optional input
         self.extra_mask = kwargs.pop("extra_mask", None)
         self.saturation_region = kwargs.pop("saturation_region", None)
+        self.star_region = kwargs.pop("star_region", None)
         self.animation = kwargs.pop("animation", None)
 
     # -----------------------------------------------------------------
@@ -303,6 +308,9 @@ class SkySubtractor(Configurable):
             annulus_inner_factor = self.config.mask.annulus_inner_factor
             inner_shape = self.principal_shape * annulus_inner_factor
             outer_shape = self.principal_shape * annulus_outer_factor
+
+            # Set include flag to false for the inner shape
+            inner_shape.include = False
 
             # Create the annulus
             annulus = PixelCompositeRegion(outer_shape, inner_shape)
@@ -429,7 +437,7 @@ class SkySubtractor(Configurable):
         if self.saturation_region is not None:
 
             # Expand all contours
-            expanded_region = self.saturation_region * 1.5
+            expanded_region = self.saturation_region * self.config.mask.saturation_expansion_factor
 
             # Create the saturation mask
             saturation_mask = expanded_region.to_mask(self.frame.xsize, self.frame.ysize)
@@ -438,6 +446,31 @@ class SkySubtractor(Configurable):
             return saturation_mask
 
         # Saturation region is not provided
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def stars_mask(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # If star region is defined
+        if self.star_region is not None:
+
+            # Expand
+            expanded_region = self.star_region * self.config.mask.stars_expansion_factor
+
+            # Create the mask
+            stars_mask = expanded_region.to_mask(self.frame.xsize, self.frame.ysize)
+
+            # Return the mask
+            return stars_mask
+
+        # Star region not provided
         else: return None
 
     # -----------------------------------------------------------------
@@ -466,6 +499,9 @@ class SkySubtractor(Configurable):
 
         # Add saturation mask
         if self.saturation_mask is not None: masks.append(self.saturation_mask)
+
+        # Add stars mask
+        if self.stars_mask is not None: masks.append(self.stars_mask)
 
         # Add the extra mask (if specified)
         if self.extra_mask is not None: masks.append(self.extra_mask)

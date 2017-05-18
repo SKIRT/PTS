@@ -37,7 +37,7 @@ class Region(object):
         # Set the label
         self.label = kwargs.pop("label", None)
 
-        # Set the 'exclude' flag
+        # Set the 'include' flag
         self.include = kwargs.pop("include", True)
 
         # Set the appearance info

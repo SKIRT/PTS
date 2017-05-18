@@ -347,6 +347,18 @@ class Image(object):
     # -----------------------------------------------------------------
 
     @property
+    def filter_name(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return str(self.filter)
+
+    # -----------------------------------------------------------------
+
+    @property
     def wavelength(self):
 
         """
