@@ -38,6 +38,7 @@ from ...magic.region.point import PixelPointRegion
 from ...magic.basics.coordinate import PixelCoordinate
 from ...magic.region.ellipse import PixelEllipseRegion
 from ...core.basics.composite import SimplePropertyComposite
+from ...core.tools.serialization import write_dict
 
 # -----------------------------------------------------------------
 
@@ -1050,6 +1051,11 @@ def subtract_sky(image, sky_path, config, principal_sky_region, saturation_sky_r
 
     # WRITE THE MASK
     #mask_path = fs.join(mask_path, )
+
+    # Write boundaries for cutting out a piece of the frame for photutils
+    if sky_subtractor.phot_boundaries is not None:
+        phot_boundaries_path = fs.join(sky_path, "boundaries.dat")
+        write_dict(sky_subtractor.phot_boundaries, phot_boundaries_path)
 
     # Write properties
 

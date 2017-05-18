@@ -178,6 +178,10 @@ class SkySubtractor(Configurable):
         # The distributions
         self.distributions = Map()
 
+
+        # Other
+        self.phot_boundaries = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -642,6 +646,13 @@ class SkySubtractor(Configurable):
 
         y_min = max(int(y_min), 0)
         y_max = min(int(y_max), self.frame.ysize)
+
+        # Set the phot_boundaries
+        self.phot_boundaries = dict()
+        self.phot_boundaries["x_min"] = x_min
+        self.phot_boundaries["x_max"] = x_max
+        self.phot_boundaries["y_min"] = y_min
+        self.phot_boundaries["y_max"] = y_max
 
         y_slice = slice(y_min, y_max)
         x_slice = slice(x_min, x_max)
