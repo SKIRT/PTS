@@ -42,6 +42,8 @@ class PreparationComponent(GalaxyModelingComponent):
         # Call the constructor of the base class
         super(PreparationComponent, self).__init__(*args, **kwargs)
 
+        self.preparation_statistics
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):

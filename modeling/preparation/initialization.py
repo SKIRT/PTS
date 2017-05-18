@@ -583,15 +583,15 @@ class PreparationInitializer(PreparationComponent):
             if ignore is not None and prep_name in ignore: continue
 
             # Get the filter
-            fltr = parse_filter(prep_name)
+            #fltr = parse_filter(prep_name)
 
             # Set the FWHM if the instrument has a fixed PSF
-            if has_variable_fwhm(fltr):
+            #if has_variable_fwhm(fltr):
 
-                # Open the image, set the FWHM, and save again
-                image = self.set.get_image(prep_name)
-                image.fwhm = self.fwhms[prep_name]
-                image.save()
+            # Open the image, set the FWHM, and save again
+            image = self.set.get_image(prep_name)
+            image.fwhm = self.fwhms[prep_name]
+            image.save()
 
     # -----------------------------------------------------------------
 

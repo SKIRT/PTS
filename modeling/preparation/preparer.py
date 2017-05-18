@@ -15,6 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 
+# Import astronomical modules
+from astropy.utils import lazyproperty
+
 # Import the relevant PTS classes and modules
 from ...magic.core.image import Image
 from ...magic.region.list import PixelRegionList
@@ -25,20 +28,20 @@ from ...magic.core.dataset import DataSet
 from ...core.basics.containers import NamedFileList
 from ...magic.services.extinction import GalacticExtinction
 from ...core.filter.filter import parse_filter
-from ...core.tools import time
 from ...magic.sources.extractor import SourceExtractor
 from ...magic.sky.skysubtractor import SkySubtractor
 from ...dustpedia.core.properties import DustPediaProperties
-from ...magic.core.mask import Mask
 from ...magic.basics.mask import Mask as oldMask
 from ...magic.core.frame import Frame, sum_frames_quadratically
 from . import unitconversion
 from ...magic.region.point import PixelPointRegion
 from ...magic.basics.coordinate import PixelCoordinate
 from ...magic.region.ellipse import PixelEllipseRegion
+from ...core.basics.composite import SimplePropertyComposite
 
 # -----------------------------------------------------------------
 
+# Define names for the resulting images
 initialized_name = "initialized.fits"
 extracted_name = "extracted.fits"
 corrected_name = "corrected_for_extinction.fits"
@@ -49,6 +52,67 @@ result_name = "result.fits"
 # Sources and sky directories names
 sources_name = "sources"
 sky_name = "sky"
+
+# Statistics file
+statistics_name = "statistics.txt"
+
+# -----------------------------------------------------------------
+
+class PreparationStatistics(SimplePropertyComposite):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, **kwargs):
+
+        """
+        The constructor ...
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(PreparationStatistics, self).__init__()
+
+        # Define properties
+        self.add_property("nsources", "integer", "total number of sources")
+        self.add_property("ngalaxy_sources", "integer", "number of galaxy sources")
+        self.add_property("nstar_sources", "integer", "number of star sources")
+        self.add_property("nother_sources", "integer", "number of other sources")
+        self.add_property("nforeground", "integer", "number of foreground sources")
+        self.add_property("nfailed", "integer", "number of failed extractions")
+        self.add_property("nsuccess", "integer", "number of succesful extractions")
+        self.add_property("nwith_saturation", "integer", "number of stars with a saturation source")
+        self.add_property("galaxy_regions", "boolean", "has galaxy regions")
+        self.add_property("star_regions", "boolean", "has star regions")
+        self.add_property("saturation_regions", "boolean", "has saturation regions")
+        self.add_property("other_regions", "boolean", "has other regions")
+        self.add_property("galaxy_segments", "boolean", "has galaxy segments")
+        self.add_property("star_segments", "boolean", "has star segments")
+        self.add_property("other_segments", "boolean", "has other segments")
+        self.add_property("attenuation", "real", "attenuation value")
+
+        self.add_property("subtracted", "boolean", "subtraction succesful")
+        self.add_property("mean_frame", "real", "mean value")
+        self.add_property("median_frame", "real", "median value")
+        self.add_property("stddev_frame", "real", "stddev")
+        self.add_property("mean_frame_not_clipped", "real", "mean value not clipped")
+        self.add_property("median_frame_not_clipped", "real", "median value not clipped")
+        self.add_property("stddev_frame_not_clipped", "real", "stddev not clipped")
+        self.add_property("mean_sky", "real", "mean sky value")
+        self.add_property("median sky", "real", "median sky value")
+        self.add_property("mean_noise", "real", "mean noise")
+        self.add_property("mean_subtracted", "real", "mean subtracted value")
+        self.add_property("median_subtracted", "real", "median subtracted value")
+        self.add_property("stddev subtracted", "real", "stddev of subtracted frame")
+
+        self.add_property("error_contributions", "string_list", "error contributions")
+
+        self.add_property("original_unit", "string", "original unit")
+        self.add_property("conversion_factor", "real", "unit conversion factor")
+
+        # Set properties
+        self.set_properties(kwargs)
 
 # -----------------------------------------------------------------
 
@@ -85,17 +149,11 @@ class DataPreparer(PreparationComponent):
         self.with_errormaps_paths = NamedFileList()
         self.result_paths = NamedFileList()
 
-        # The FWHM of the reference image
-        self.reference_fwhm = None
-
-        # The Aniano kernels service
-        self.aniano = None
-
-        # The prepared frames
-        #self.frames = None
-
         # The prepared dataset
         self.prepared_dataset = DataSet()
+
+        # The statistics for each
+        self.statistics = dict()
 
     # -----------------------------------------------------------------
 
@@ -124,10 +182,10 @@ class DataPreparer(PreparationComponent):
         # 6. If requested, convert the unit
         self.convert_units()
 
-        # Create the prepared dataset
+        # 7. Create the prepared dataset
         self.create_dataset()
 
-        # 4. Writing
+        # 8. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -142,21 +200,60 @@ class DataPreparer(PreparationComponent):
         # Call the setup function of the base class
         super(DataPreparer, self).setup(**kwargs)
 
-        # Set options for the image preparer
-        #self.set_preparer_options()
-
-        # Setup the remote PTS launcher
-        #if self.config.remote is not None: self.launcher.setup(self.config.remote)
-        #else: self.preparer = ImagePreparer(self.preparer_config)
-
         # Get paths
         self.get_paths()
+
+        # Load statistics
+        self.load_statistics()
 
         # Create the galactic extinction calculator
         self.extinction = GalacticExtinction(self.galaxy_center)
 
         # Create the DustPedia properties
         self.properties = DustPediaProperties()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def all_initialized_names(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.initial_dataset.names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_initialized_paths(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        paths = dict()
+        for name in self.all_initialized_names:
+            path = self.initial_dataset.paths[name]
+            paths[name] = path
+        return paths
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_initialized_directories(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        paths = dict()
+        for name in self.all_initialized_paths:
+            paths[name] = fs.directory_of(self.all_initialized_paths[name])
+        return paths
 
     # -----------------------------------------------------------------
 
@@ -171,13 +268,10 @@ class DataPreparer(PreparationComponent):
         log.info("Collecting and sorting the image paths ...")
 
         # Loop over all images of the initial dataset
-        for name in self.initial_dataset.names:
-
-            # Get path of initial image
-            image_path = self.initial_dataset.paths[name]
+        for name in self.all_initialized_directories:
 
             # Determine preparation directory for this image
-            path = fs.directory_of(image_path)
+            path = self.all_initialized_directories[name]
 
             # Check
             check_initialized(name, path)
@@ -194,6 +288,37 @@ class DataPreparer(PreparationComponent):
 
     # -----------------------------------------------------------------
 
+    def load_statistics(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Loading the statistics file ...")
+
+        # Loop over all the names of the initial dataset
+        for name in self.all_initialized_directories:
+
+            # Determine prep path
+            path = self.all_initialized_directories[name]
+
+            # Determine statistics file path
+            statistics_path = fs.join(path, statistics_name)
+
+            # Load or initialize the statistics file
+            if fs.is_file(statistics_path): statistics = PreparationStatistics()
+            else: statistics = PreparationStatistics.from_file(statistics_path)
+
+            # Set path anyway (so that we can do .save() everytime)
+            statistics.path = statistics_path
+
+            # Set
+            self.statistics[name] = statistics
+
+    # -----------------------------------------------------------------
+
     def extract_sources(self):
 
         """
@@ -201,7 +326,7 @@ class DataPreparer(PreparationComponent):
         :return: 
         """
 
-        # Infomr the user
+        # Inform the user
         log.info("Extracting the sources ...")
 
         # Loop over the images
@@ -224,7 +349,7 @@ class DataPreparer(PreparationComponent):
             config["only_foreground"] = True
 
             # Extract the sources
-            extract_sources(image, config, sources_path)
+            extractor = extract_sources(image, config, sources_path)
 
             # Determine the new path
             new_path = fs.join(directory_path, extracted_name)
@@ -234,6 +359,28 @@ class DataPreparer(PreparationComponent):
 
             # Pop the path and add to extracted
             self.extracted_paths.append(name, new_path)
+
+            # Set statistics
+            self.statistics[name].nsources = extractor.nsources
+            self.statistics[name].ngalaxy_sources = extractor.ngalaxy_sources
+            self.statistics[name].nstar_sources = extractor.nstar_sources
+            self.statistics[name].nother_sources = extractor.nother_sources
+            self.statistics[name].nforeground = extractor.nforeground
+            self.statistics[name].nfailed = extractor.nfailed
+            self.statistics[name].nsuccess = extractor.nsuccess
+            self.statistics[name].nwith_saturation = extractor.nwith_saturation
+
+            self.statistics[name].galaxy_regions = extractor.galaxy_region is not None
+            self.statistics[name].star_regions = extractor.star_region is not None
+            self.statistics[name].saturation_regions = extractor.saturation_region is not None
+            self.statistics[name].other_regions = extractor.other_region is not None
+
+            self.statistics[name].galaxy_segments = extractor.galaxy_segments is not None
+            self.statistics[name].star_segments = extractor.star_segments is not None
+            self.statistics[name].other_segments = extractor.other_segments is not None
+
+            # Save the statistics
+            self.statistics[name].save()
 
     # -----------------------------------------------------------------
 
@@ -282,6 +429,10 @@ class DataPreparer(PreparationComponent):
             # Pop the path and add to corrected
             self.corrected_paths.append(name, new_path)
 
+            # Add info to the statistics
+            self.statistics[name].attenuation = attenuation
+            self.statistics[name].save()
+
     # -----------------------------------------------------------------
 
     def subtract_sky(self):
@@ -309,6 +460,12 @@ class DataPreparer(PreparationComponent):
             # load the image
             image = Image.from_file(path)
 
+            # If the FWHM of the image is undefined, set it now
+            if image.fwhm is None:
+                log.warning("The FWHM of the " + name + " image is still undefined. Getting the value from the DustPedia data properties ...")
+                image.fwhm = self.properties.get_fwhm(image.filter)
+                log.warning("Set the value of the FWHM to " + str(image.fwhm))
+
             config = dict()
 
             config["write"] = False
@@ -318,11 +475,18 @@ class DataPreparer(PreparationComponent):
             saturation_regions = get_saturation_regions_sky_from_sources_path(sources_path, image.wcs)
 
             # Determine and create the sky path
-            sky_path = fs.create_directory_in(directory_path, "sky")
+            sky_path = fs.join(directory_path, "sky")
+
+            if fs.is_directory(sky_path):
+                log.warning("There is alread a sky directory present for the " + name + " image: removing ...")
+                fs.remove_directory(sky_path)
 
             # Subtract
             # image, sky_path, config, principal_sky_region, saturation_sky_region=None, visualisation_path=None
-            subtract_sky(image, sky_path, config, principal_shape, saturation_regions)
+            try: subtractor = subtract_sky(image, sky_path, config, principal_shape, saturation_regions)
+            except RuntimeError:
+                log.warning("The " + name + " image could not be sky subtracted")
+                subtractor = None
 
             # Determine the new path
             new_path = fs.join(directory_path, subtracted_name)
@@ -332,6 +496,37 @@ class DataPreparer(PreparationComponent):
 
             # Pop the path and add to subtracted
             self.subtracted_paths.append(name, new_path)
+
+            # Set statistics
+            if subtractor is not None:
+
+                self.statistics[name].subtracted = True
+
+                mean_sky = np.nanmean(subtractor.sky)
+                median_sky = np.nanmedian(subtractor.sky)
+                mean_noise = np.nanmean(subtractor.noise)
+
+                # Set statistics
+                self.statistics[name].mean_frame = subtractor.mean_frame
+                self.statistics[name].median_frame = subtractor.median_frame
+                self.statistics[name].stddev_frame = subtractor.stddev_frame
+                self.statistics[name].mean_frame_not_clipped = subtractor.mean_frame_not_clipped
+                self.statistics[name].median_frame_not_clipped = subtractor.median_frame_not_clipped
+                self.statistics[name].stddev_frame_not_clipped = subtractor.stddev_frame_not_clipped
+
+                self.statistics[name].mean_sky = mean_sky
+                self.statistics[name].median_sky = median_sky
+                self.statistics[name].mean_noise = mean_noise
+
+                self.statistics[name].mean_subtracted = subtractor.mean_subtracted
+                self.statistics[name].median_subtracted = subtractor.median_subtracted
+                self.statistics[name].stddev_subtracted = subtractor.stddev_subtracted
+
+            # Subtraction failed
+            else: self.statistics[name].subtracted = False
+
+            # Save statistics
+            self.statistics[name].save()
 
     # -----------------------------------------------------------------
 
@@ -378,18 +573,23 @@ class DataPreparer(PreparationComponent):
 
             # Create a list to contain (the squares of) all the individual error contributions so that we can sum these arrays element-wise later
             error_maps = []
+            error_contributions = []
 
             # Add the Poisson errors
-            if "poisson_errors" in image.frames: error_maps.append(image.frames["poisson_errors"])
+            if "poisson_errors" in image.frames:
+                error_maps.append(image.frames["poisson_errors"])
+                error_contributions.append("poisson")
 
             # Load noise frame
             noise_frame = get_noise_frame_from_sky_path(sky_path)
 
             # Add the sky errors
             error_maps.append(noise_frame)
+            error_contributions.append("noise")
 
             # Add the calibration errors
             error_maps.append(image.frames["calibration_errors"])
+            error_contributions.append("calibration")
 
             # Add additional error frames indicated by the user
             #if self.config.error_frame_names is not None:
@@ -409,6 +609,12 @@ class DataPreparer(PreparationComponent):
 
             # Pop the path and add to with_errormaps
             self.with_errormaps_paths.append(name, new_path)
+
+            # Set statistics
+            self.statistics[name].error_contributions = error_contributions
+
+            # Save statistics
+            self.statistics[name].save()
 
     # -----------------------------------------------------------------
 
@@ -434,11 +640,23 @@ class DataPreparer(PreparationComponent):
             # Remove all frames except for the primary and errors
             image.remove_frames_except("primary", "errors")
 
+            # Get original unit
+            original_unit = str(image.unit)
+
             # Convert to Jansky, except for the Ha image
-            if name != "Ha": image.convert_to("Jy")
+            if name != "Ha": conversion_factor = image.convert_to("Jy")
+            else: conversion_factor = None
 
             # Pop the path and add to result paths
             self.result_paths.append(name, path)
+
+            # Set statistics
+            self.statistics[name].original_unit = original_unit
+
+            if conversion_factor is not None: self.statistics[name].conversion_factor = conversion_factor
+
+            # Save statistics
+            self.statistics[name].save()
 
     # -----------------------------------------------------------------
 
@@ -732,6 +950,8 @@ def extract_sources(image, config, sources_path, visualisation_path=None):
     # Return
     #return principal_shape_sky, saturation_region_sky
 
+    return extractor
+
 # -----------------------------------------------------------------
 
 def subtract_sky(image, sky_path, config, principal_sky_region, saturation_sky_region=None, visualisation_path=None):
@@ -747,6 +967,9 @@ def subtract_sky(image, sky_path, config, principal_sky_region, saturation_sky_r
 
     # Inform the user
     log.info("Subtracting the sky ...")
+
+    # SET FLAG TO FALSE
+    image.sky_subtracted = False
 
     # Create an animation to show the result of this step
     #if visualisation_path is not None:
@@ -825,6 +1048,11 @@ def subtract_sky(image, sky_path, config, principal_sky_region, saturation_sky_r
     estimated_sky_rms_path = fs.join(sky_path, "estimated_sky_rms.fits")
     if sky_subtractor.phot_rms is not None: sky_subtractor.phot_rms.saveto(estimated_sky_rms_path)
 
+    # WRITE THE MASK
+    #mask_path = fs.join(mask_path, )
+
+    # Write properties
+
     # Write the animation
     #if visualisation_path is not None:
         # Determine the path to the animation
@@ -847,6 +1075,8 @@ def subtract_sky(image, sky_path, config, principal_sky_region, saturation_sky_r
 
     # Return the noise frame
     #return sky_subtractor.noise_frame
+
+    return sky_subtractor
 
 # -----------------------------------------------------------------
 

@@ -89,6 +89,15 @@ class SourceExtractor(Configurable):
         # The list of sources
         self.sources = []
 
+        # STATISTICS
+        self.ngalaxy_sources = 0
+        self.nstar_sources = 0
+        self.nother_sources = 0
+        self.nforeground = 0
+        self.nfailed = 0
+        self.nsuccess = 0
+        self.nwith_saturation = 0
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -107,19 +116,19 @@ class SourceExtractor(Configurable):
         # 3. Create the mask of all sources to be removed
         self.create_mask()
 
-        # 3. For each source, check the pixels in the background that belong to an other source
+        # 4. For each source, check the pixels in the background that belong to an other source
         self.set_cross_contamination()
 
-        # 4. Remove the sources
+        # 5. Remove the sources
         self.remove_sources()
 
-        # 5. Fix extreme values that showed up during the interpolation steps
+        # 6. Fix extreme values that showed up during the interpolation steps
         self.fix_extreme_values()
 
-        # 6. Set nans back into the frame
+        # 7. Set nans back into the frame
         self.set_nans()
 
-        # Writing
+        # 8. Writing
         if self.config.output is not None and self.config.write: self.write()
 
     # -----------------------------------------------------------------
@@ -330,6 +339,8 @@ class SourceExtractor(Configurable):
                     # Check whether it is a 'special' source
                     source.special = self.special_mask.masks(center) if self.special_mask is not None else False
 
+                    self.ngalaxy_sources += 1
+
                     # Add the source to the list
                     self.sources.append(source)
 
@@ -340,6 +351,8 @@ class SourceExtractor(Configurable):
 
                 # Check whether it is a special source
                 source.special = self.special_mask.masks(shape.center) if self.special_mask is not None else False
+
+                self.ngalaxy_sources += 1
 
                 # Add the source to the list
                 self.sources.append(source)
@@ -378,6 +391,8 @@ class SourceExtractor(Configurable):
             # Saturation source was found
             if saturation_source is not None:
 
+                self.nwith_saturation += 1
+
                 ## DILATION
                 if self.config.dilate_saturation: self.dilate_saturation_source(saturation_source)
 
@@ -389,6 +404,9 @@ class SourceExtractor(Configurable):
 
             # Set special flag
             source.special = special
+
+            # Increment
+            self.nstar_sources += 1
 
             # Add it to the list
             self.sources.append(source)
@@ -546,6 +564,9 @@ class SourceExtractor(Configurable):
             # Check whether source is 'special'
             source.special = self.special_mask.masks(shape.center) if self.special_mask is not None else False
 
+            # Increment
+            self.nother_sources += 1
+
             # Add the source to the list
             self.sources.append(source)
 
@@ -604,6 +625,18 @@ class SourceExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nsources(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return len(self.sources)
+
+    # -----------------------------------------------------------------
+
     def remove_sources(self):
 
         """
@@ -631,6 +664,8 @@ class SourceExtractor(Configurable):
             if self.principal_mask is not None: foreground = masks.overlap(self.principal_mask[source.y_slice, source.x_slice], source.mask)
             else: foreground = False
 
+            if foreground: self.nforeground += 1
+
             # SKip foreground if requested
             if self.config.only_foreground and not foreground: continue
 
@@ -653,6 +688,7 @@ class SourceExtractor(Configurable):
                 source.estimate_background(self.config.interpolation_method, sigma_clip=sigma_clip)
             except ValueError: # ValueError: zero-size array to reduction operation minimum which has no identity
                 # in: limits = (np.min(known_points), np.max(known_points)) [inpaint_biharmonic]
+                self.nfailed += 1
                 count += 1
                 continue
 
@@ -665,6 +701,9 @@ class SourceExtractor(Configurable):
 
             # Replace the pixels by the background
             source.background.replace(self.frame, where=source.mask)
+
+            # Increment
+            self.nsuccess += 1
 
             #if not sigma_clip:
             #    # source.plot()

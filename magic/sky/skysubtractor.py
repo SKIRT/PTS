@@ -665,7 +665,8 @@ class SkySubtractor(Configurable):
                                exclude_mesh_percentile=exclude_mesh_percentile)
         except ValueError:
 
-            plotting.plot_mask(self.mask, title="mask")
+            plotting.plot_box(cutout)
+            plotting.plot_mask(mask_cutout, title="mask")
             raise RuntimeError("Sky subtraction is not possible for this image")
 
         # Keep the background 2D object
@@ -3195,6 +3196,54 @@ class SkySubtractor(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def frame_compressed(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.frame_masked_array.compressed()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mean_frame(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return np.nanmean(self.frame_compressed)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def median_frame(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return np.nanmedian(self.frame_compressed)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def stddev_frame(self):
+
+        """
+        This fucntion ...
+        :return: 
+        """
+
+        return np.nanstd(self.frame_compressed)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def not_clipped_masked_array(self):
 
         """
@@ -3203,6 +3252,54 @@ class SkySubtractor(Configurable):
         """
 
         return np.ma.masked_array(self.frame.data, mask=self.mask_not_clipped.data)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def frame_not_clipped_compressed(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.not_clipped_masked_array.compressed()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def mean_frame_not_clipped(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return np.nanmean(self.frame_not_clipped_compressed)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def median_frame_not_clipped(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return np.nanmedian(self.frame_not_clipped_compressed)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def stddev_frame_not_clipped(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return np.nanstd(self.frame_not_clipped_compressed)
 
     # -----------------------------------------------------------------
 
