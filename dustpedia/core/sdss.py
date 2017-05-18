@@ -38,6 +38,7 @@ from ...core.tools.parallelization import ParallelTarget
 from ...core.basics.configuration import print_mapping
 from ...core.tools.formatting import print_files_in_path, print_directories_in_path
 from ...core.tools import archive
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -711,7 +712,8 @@ class SDSSMosaicMaker(Configurable):
             results[band].request()
             output = results[band].output
 
-            result_mosaic_path = output[0]
+            if types.is_string_type(output): result_mosaic_path = output
+            else: result_mosaic_path = output[0]
 
             self.result_paths[band] = result_mosaic_path
 
