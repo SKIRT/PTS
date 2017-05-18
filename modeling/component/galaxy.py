@@ -34,6 +34,8 @@ from ...magic.prepare.statistics import PreparationStatistics
 from .component import ModelingComponent
 from ...magic.region.ellipse import SkyEllipseRegion
 from ...magic.basics.stretch import SkyStretch
+from ...core.tools import types
+from ...core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
@@ -1292,6 +1294,21 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @staticmethod
+    def needs_poisson_errors(fltr):
+
+        """
+        This function ...
+        :param fltr: 
+        :return: 
+        """
+
+        if types.is_string_type(fltr): fltr = parse_filter(fltr)
+        filter_string = str(fltr)
+        return "GALEX" in filter_string or "SDSS" in filter_string
+
+    # -----------------------------------------------------------------
+
     def get_data_image_and_error_paths(self):
 
         """
@@ -1328,6 +1345,9 @@ class GalaxyModelingComponent(ModelingComponent):
                 log.debug("Poisson error frame found for " + name + "' image ...")
                 error_paths[name] = poisson_path
 
+            # Poisson frame not present
+            elif self.needs_poisson_errors(frame.filter): raise RuntimeError("Poisson error frame not found for the " + name + " image. Run the appropriate command to create the mosaics and poisson frames.")
+
             # Free memory
             gc.collect()
 
@@ -1346,10 +1366,7 @@ class GalaxyModelingComponent(ModelingComponent):
         paths = dict()
 
         # Loop over the images
-        for image_path, image_name in fs.files_in_path(self.data_images_path, extension="fits", not_contains="poisson",
-                                                       returns=["path", "name"], recursive=True):
-            # Determine directory path
-            path = fs.directory_of(image_path)
+        for image_path, image_name in fs.files_in_path(self.data_images_path, extension="fits", not_contains="poisson", returns=["path", "name"], recursive=True):
 
             # Load the primary image frame
             frame = load_image_frame(image_path)

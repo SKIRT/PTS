@@ -146,6 +146,9 @@ class RemoteMounter(object):
         # e.g. sshfs xxx@nancy.ugent.be: ~/PTS/remotes/nancy -C -o volname=nancy
         command = "sshfs " + debug_flags + host.user + "@" + host.name + ": " + mount_path + " -C -o volname=" + host.id
 
+        # Debugging
+        log.debug("Mounting command: '" + command + "'")
+
         # Create the pexpect child instance
         child = pexpect.spawn(command, timeout=30)
         if host.password is not None:
@@ -157,6 +160,8 @@ class RemoteMounter(object):
         # Execute the command and get the output
         child.expect(pexpect.EOF, timeout=None)
         child.close()
+
+        if not fs.is_mount_point(mount_path): raise RuntimeError("An error occured during the mounting")
 
         # Set the path
         self.mount_paths[host_id] = mount_path

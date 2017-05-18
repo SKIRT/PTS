@@ -17,6 +17,7 @@ from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfi
 from pts.core.remote.mounter import RemoteMounter
 from pts.core.remote.host import find_host_ids
 from pts.core.tools import filesystem as fs
+from pts.core.tools.logging import setup_log
 
 # -----------------------------------------------------------------
 
@@ -28,6 +29,15 @@ definition.add_positional_optional("path", "directory_path", "path of directory 
 # Read the command line arguments
 setter = ArgumentConfigurationSetter("mount", "Mount a remote configured in PTS into the local filesystem")
 config = setter.run(definition)
+
+# -----------------------------------------------------------------
+
+# Determine the log level
+level = "DEBUG" if config.debug else "INFO"
+
+# Initialize the logger
+log = setup_log(level=level)
+log.start("Starting mount ...")
 
 # -----------------------------------------------------------------
 
