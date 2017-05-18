@@ -62,3 +62,4 @@ fit_blackbody_genetic | -- | maps.dust.fitter.GeneticBlackBodyFitter | arguments
 make_movie | -- | show.movie.MovieMaker | arguments | Make a movie from the galaxy model
 make_rgb | -- | show.rgb.RGBImageMaker | arguments | Make RGB images from the galaxy model
 fitskirt | -- | fitting.fitskirt.FitSKIRTLauncher | arguments | Launch FitSKIRT
+analyse_mosaic | -- | data.analyser.MosaicAnalyser | arguments | Analyse mosaics and Poisson error mosaic maps

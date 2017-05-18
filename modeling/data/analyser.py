@@ -130,7 +130,7 @@ class MosaicAnalyser(DataComponent):
             image = kwargs.pop("image")
 
             # Get band ID
-            band_id = image.filter_name
+            band_id = image.filter_name.replace(" ", "_")
 
             # Get frames
             mosaic_frame = image.frames["primary"]
@@ -139,6 +139,8 @@ class MosaicAnalyser(DataComponent):
             self.mosaics[band_id] = mosaic_frame
             self.poisson_frames[band_id] = mosaic_errors
 
+            self.origin = band_id.split("_")[0]
+
         # Check for image path that is specified
         elif self.config.image_path is not None:
 
@@ -146,7 +148,7 @@ class MosaicAnalyser(DataComponent):
             image = Image.from_file(self.config.image_path)
 
             # Get band id
-            if image.filter is not None: band_id = image.filter_name
+            if image.filter is not None: band_id = image.filter_name.replace(" ", "_")
             elif self.config.band_id is not None: band_id = self.config.band_id
             else: raise ValueError("Band ID must be specified")
 
@@ -156,6 +158,8 @@ class MosaicAnalyser(DataComponent):
 
             self.mosaics[band_id] = mosaic_frame
             self.poisson_frames[band_id] = mosaic_errors
+
+            self.origin = band_id.split("_")[0]
 
         # Check whether task is specified
         if "task" in kwargs: task = kwargs.pop("task")
