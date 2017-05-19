@@ -1080,7 +1080,8 @@ class ConfigurationDefinition(object):
             if real_type.__name__.endswith("_list"): choices = None
 
             # Construct type
-            the_type = construct_type(real_type, min_value, max_value, forbidden)
+            if min_value is not None or max_value is not None or forbidden is not None: the_type = construct_type(real_type, min_value, max_value, forbidden)
+            else: the_type = real_type
 
             if suggestions is not None: description += " [suggestions: " + stringify.stringify(suggestions)[1] + "]"
 

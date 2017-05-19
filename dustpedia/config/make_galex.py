@@ -29,4 +29,7 @@ definition.add_optional("max_nobservations_nuv", "positive_integer", "limit the 
 # Parallelization
 definition.add_optional("nprocesses", "positive_integer", "number of processes for parallel execution", max(8, ncores()))
 
+# Advanced
+definition.add_optional("download_directories", "string_string_dictionary", "dictionary of download directories where the keys are the bands")
+
 # -----------------------------------------------------------------

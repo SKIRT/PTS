@@ -41,6 +41,8 @@ from ...magic.core.frame import Frame, sum_frames, sum_frames_quadratically
 from ...core.basics.configuration import print_mapping
 from ...core.tools import stringify
 from ...core.tools.formatting import print_files_in_list, print_files_in_path, print_directories_in_path
+from ...core.tools import formatting as fmt
+from ...core.tools import archive
 
 # -----------------------------------------------------------------
 
@@ -452,6 +454,32 @@ class GALEXMosaicMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    def has_existing_downloads(self, band):
+
+        """
+        This fucntion ...
+        :param band: 
+        :return: 
+        """
+
+        if self.config.download_directories is not None and band in self.config.download_directories: return True
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    def existing_downloads_path(self, band):
+
+        """
+        This function ...
+        :param band: 
+        :return: 
+        """
+
+        if self.config.download_directories is not None and band in self.config.download_directories: return fs.absolute_path(self.config.download_directories[band])
+        else: return None
+
+    # -----------------------------------------------------------------
+
     def download(self):
 
         """
@@ -468,14 +496,85 @@ class GALEXMosaicMaker(Configurable):
             # Debugging
             log.debug("Downloading the data for the " + band + " band ...")
 
-            # Parallel execution
-            with ParallelTarget(network.download_files, self.config.nprocesses) as target:
+            # Copy from existing downloads
+            if self.has_existing_downloads(band):
 
-                # Call the target function
-                target(self.observation_urls[band], self.download_observations_paths[band], info="observations")
-                target(self.response_urls[band], self.download_response_paths[band], info="response maps")
-                target(self.background_urls[band], self.download_background_paths[band], info="background maps")
-                target(self.counts_urls[band], self.download_counts_paths[band], info="count maps")
+                log.debug("Existing data for band in: " + self.existing_downloads_path(band))
+
+                extensions = ["fits"]
+                extensions.extend(archive.extensions)
+
+                not_contains = ["meta", "overlap"]
+
+                # OBSERVATIONS
+
+                existing_observations_path = fs.join(self.existing_downloads_path(band), "observations")
+
+                print("OBSERVATIONS:")
+                fmt.print_files_in_path(existing_observations_path)
+
+                paths = fs.files_in_path(existing_observations_path, not_contains=not_contains, extension=extensions)
+                fmt.print_files_in_list(paths, "existing observations")
+
+                # Copy and decompress
+                fs.copy_and_decompress_files(paths, self.download_observations_paths[band])
+
+
+
+                # RESPONSE
+
+                existing_response_path = fs.join(self.existing_downloads_path(band), "response")
+
+                print("RESPONSE:")
+                fmt.print_files_in_path(existing_response_path)
+
+                paths = fs.files_in_path(existing_response_path, not_contains=not_contains, extension=extensions)
+                fmt.print_files_in_list(paths, "existing response maps")
+
+                # Copy and decompress
+                fs.copy_and_decompress_files(paths, self.download_response_paths[band])
+
+
+
+                # BACKGROUND
+
+                existing_background_path = fs.join(self.existing_downloads_path(band), "background")
+
+                print("BACKGROUND:")
+                fmt.print_files_in_path(existing_background_path)
+
+                paths = fs.files_in_path(existing_background_path, not_contains=not_contains, extension=extensions)
+                fmt.print_files_in_list(paths, "existing background maps")
+
+                # Copy and decompress
+                fs.copy_and_decompress_files(paths, self.download_background_paths[band])
+
+
+
+                # COUNTS
+
+                existing_counts_path = fs.join(self.existing_downloads_path(band), "counts")
+
+                print("COUNTS:")
+                fmt.print_files_in_path(existing_counts_path)
+
+                paths = fs.files_in_path(existing_counts_path, not_contains=not_contains, extension=extensions)
+                fmt.print_files_in_list(paths, "existing count maps")
+
+                # Copy and decompress
+                fs.copy_and_decompress_files(paths, self.download_counts_paths[band])
+
+            # Otherwise
+            else:
+
+                # Parallel execution
+                with ParallelTarget(network.download_and_decompress_files, self.config.nprocesses) as target:
+
+                    # Call the target function
+                    target(self.observation_urls[band], self.download_observations_paths[band], info="observations")
+                    target(self.response_urls[band], self.download_response_paths[band], info="response maps")
+                    target(self.background_urls[band], self.download_background_paths[band], info="background maps")
+                    target(self.counts_urls[band], self.download_counts_paths[band], info="count maps")
 
             # Debugging
             print_files_in_path(self.download_observations_paths[band])
@@ -1168,10 +1267,15 @@ def filter_galex_tiles(galaxy_name, tiles_path, center, width, band):
     new_overlap_path = fs.join(tiles_path, "overlap_circle.dat")
 
     # Get overlapping file paths
-    ra = center.ra.to("deg").value
-    dec = center.dec.to("deg").value
-    width = width.to("deg").value
+    #ra = center.ra.to("deg").value
+    #dec = center.dec.to("deg").value
+    #width = width.to("deg").value
+    ra = center.ra
+    dec = center.dec
     overlapping_file_paths = mosaicing.generate_overlapping_file_paths(meta_path, ra, dec, meta_path, mode="circle", radius=(0.5 * width) * (2.0 ** 0.5))
+
+    ra_deg = ra.to("deg").value
+    dec_deg = dec.to("deg").value
 
     # Check
     #if len(overlapping_file_paths.shape) == 0: overlapping_file_paths = [overlapping_file_paths.tolist()]
@@ -1202,7 +1306,7 @@ def filter_galex_tiles(galaxy_name, tiles_path, center, width, band):
 
         # Locate pixel coords
         in_wcs = WCS(in_header)
-        location_pix = in_wcs.wcs_world2pix(np.array([[np.float(ra), np.float(dec)]]), 0)[0]
+        location_pix = in_wcs.wcs_world2pix(np.array([[np.float(ra_deg), np.float(dec_deg)]]), 0)[0]
         pix_i, pix_j = location_pix[1], location_pix[0]
 
         # Evalulate coverage at location, and proceed accordingly

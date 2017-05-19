@@ -373,3 +373,33 @@ def multiply_all_integers(lst):
     return result
 
 # -----------------------------------------------------------------
+
+def all_in(sequence, target):
+
+    """
+    Thisf unction ...
+    :param sequence: 
+    :param target: 
+    :return: 
+    """
+
+    for element in sequence:
+        if element not in target: return False
+    return True
+
+# -----------------------------------------------------------------
+
+def any_in(sequence, target):
+
+    """
+    This function ...
+    :param sequence: 
+    :param target: 
+    :return: 
+    """
+
+    for element in sequence:
+        if element in target: return True
+    return False
+
+# -----------------------------------------------------------------

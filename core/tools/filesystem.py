@@ -23,6 +23,7 @@ import datetime
 # Import the relevant PTS classes and modules
 from . import time
 from . import types
+from . import sequences
 
 # -----------------------------------------------------------------
 
@@ -604,7 +605,7 @@ def extension_of(path, filename):
 
 def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None,
                   extensions=False, returns="path", exact_name=None, exact_not_name=None, startswith=None, endswith=None,
-                  sort=None):
+                  sort=None, contains_operator="OR"):
 
     """
     This function ...
@@ -621,6 +622,7 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
     :param startswith:
     :param endswith:
     :param sort: a function which determines how the files should be sorted based on their filename. Hidden items (starting with .) are placed first.
+    :param contains_operator: relevant for when 'contains' is specified as a sequence (should they be all contained or only at least one?)
     :return:
     """
 
@@ -674,10 +676,24 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
             else: raise ValueError("Unknown type for 'extension': " + str(extension))
 
         # Ignore filenames that do not contain a certain string, if specified
-        if contains is not None and contains not in item_name: continue
+        if contains is not None:
+            if types.is_string_type(contains):
+                if contains not in item_name: continue
+            elif types.is_sequence(contains):
+                if contains_operator == "OR":
+                    if not sequences.any_in(contains, item_name): continue
+                elif contains_operator == "AND":
+                    if not sequences.all_in(contains, item_name): continue
+                else: raise ValueError("Invalid contains operator")
+            else: raise ValueError("contains should be string or sequence")
 
         # Ignore filenames that do contain a certain string that it should not contain, if specified
-        if not_contains is not None and not_contains in item_name: continue
+        if not_contains is not None:
+            if types.is_string_type(not_contains):
+                if not_contains in item_name: continue
+            elif types.is_sequence(not_contains):
+                if sequences.any_in(not_contains, item_name): continue
+            else: raise ValueError("contains should be string or sequence")
 
         # Ignore filenames that do not match the exact filename, if specified
         if exact_name is not None and exact_name != item_name: continue
