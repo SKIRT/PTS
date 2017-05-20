@@ -796,7 +796,6 @@ class GALEXMosaicMaker(Configurable):
 
                 # Loop over the raw files
                 # raw_file_path, response_path, convolve_path, background_path, reproject_path
-                # raw_file_path, response_path, convolve_path, background_path, reproject_path
                 for path in fs.files_in_path(self.download_observations_paths[band]): target(path, response_path, convolve_path, background_path, reproject_path)
 
             # Debugging
@@ -815,7 +814,7 @@ class GALEXMosaicMaker(Configurable):
         # Inform the user
         log.info("Peforming background-leveling on the observations ...")
 
-        print("Performing background-leveling on the observations ...")
+        #print("Performing background-leveling on the observations ...")
 
         target_suffix = "int.fits"
 
@@ -906,7 +905,8 @@ class GALEXMosaicMaker(Configurable):
             reproject_path = self.reproject_paths[band]
 
             # Determine how the files are named
-            filename_ends = "-" + band_short[band] + "-int"  # -fd-int for FUV, -nd-int for NUV
+            #filename_ends = "-" + band_short[band] + "-int"  # -fd-int for FUV, -nd-int for NUV
+            filename_ends = "-" + band_short[band] + "-int.wgt"
 
             # Debugging
             log.debug("Looking for files with a name ending on '" + filename_ends + "' ...")
@@ -956,10 +956,8 @@ class GALEXMosaicMaker(Configurable):
 
             # Rename reprojected files for SWarp
             for listfile in os.listdir(swarp_path):
-                if '_area.fits' in listfile:
-                    os.remove(fs.join(swarp_path, listfile))
-                elif 'hdu0_' in listfile:
-                    os.rename(fs.join(swarp_path, listfile), fs.join(swarp_path, listfile.replace('hdu0_', '')))
+                if '_area.fits' in listfile: os.remove(fs.join(swarp_path, listfile))
+                elif 'hdu0_' in listfile: os.rename(fs.join(swarp_path, listfile), fs.join(swarp_path, listfile.replace('hdu0_', '')))
 
             # Debugging
             print_files_in_path(swarp_path)
@@ -997,6 +995,7 @@ class GALEXMosaicMaker(Configurable):
         # Inform the user
         log.info("Making mosaics with SWARP ...")
 
+        # Get the pixelscale
         pixelscale_arcsec = self.dpdp.get_pixelscale_for_instrument("GALEX").to("arcsec").value
 
         # Parallel execution
@@ -1086,7 +1085,7 @@ class GALEXMosaicMaker(Configurable):
         # Loop over the files in the temp_swarp_path directory, where the tiles from temp_reproject_path are _peakand saved to
         for filename in os.listdir(swarp_path):
 
-            # SKIP WEIGHT FILES
+            # SKIP WEIGHT FILES !
             if not filename.endswith("-int.fits"): continue
 
             # Get the image name
@@ -1540,7 +1539,7 @@ def clean_galex_tile(raw_file_path, response_path, convolve_path, background_pat
     # Inform the user ...
     log.info("Cleaning map " + raw_file_path + " ...")
 
-    print("Cleaning map " + raw_file_path + " ...")
+    #print("Cleaning map " + raw_file_path + " ...")
 
     # Create subdirectories
     #temp_raw_path = fs.create_directory_in(temp_path_band, "raw")
@@ -1611,7 +1610,10 @@ def clean_galex_tile(raw_file_path, response_path, convolve_path, background_pat
     out_hdu = PrimaryHDU(data=out_image, header=in_header)
     out_hdulist = HDUList([out_hdu])
     #out_hdulist.writeto(fs.join(temp_raw_path, raw_file_name), clobber=True)
-    out_hdulist.writeto(raw_file_path, clobber=True)
+
+    out_file_path = fs.join(reproject_path, raw_file_name)
+    #out_hdulist.writeto(raw_file_path, clobber=True)
+    out_hdulist.writeto(out_file_path, clobber=True)
 
     # Create convolved version of map, for later use in background-matching
     """
