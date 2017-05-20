@@ -688,7 +688,8 @@ class GALEXMosaicMaker(Configurable):
 
                 # Loop over the raw files
                 # raw_file_path, response_path, convolve_path, background_path, reproject_path
-                for path in fs.files_in_path(self.download_observations_paths[band]): target(path, response_path, convolve_path, background_path, reproject_path, band)
+                # raw_file_path, response_path, convolve_path, background_path, reproject_path
+                for path in fs.files_in_path(self.download_observations_paths[band]): target(path, response_path, convolve_path, background_path, reproject_path)
 
             # Debugging
             print_files_in_path(convolve_path)
@@ -1305,7 +1306,7 @@ def filter_galex_tiles(galaxy_name, tiles_path, center, width, band):
 
     # NEW: FILTER IN-PLACE
     removed = []
-    for path in fs.files_in_path(tiles_path):
+    for path in fs.files_in_path(tiles_path, extension="fits"):
 
         # Debugging
         log.debug("Checking image " + path + " ...")
@@ -1351,14 +1352,35 @@ def filter_galex_tiles(galaxy_name, tiles_path, center, width, band):
 
         # Locate pixel coords
         in_wcs = WCS(in_header)
+
+        print("WCS:")
+        print(in_wcs)
+
         location_pix = in_wcs.wcs_world2pix(np.array([[np.float(ra_deg), np.float(dec_deg)]]), 0)[0]
         pix_i, pix_j = location_pix[1], location_pix[0]
 
+        log.debug("Pixel coordinate: " + str(pix_i) + ", " + str(pix_j))
+
         # Evalulate coverage at location, and proceed accordingly
-        if True in [coord <= 0 for coord in [pix_i - 10, pix_i + 11, pix_j - 10, pix_j + 11]]: continue
-        try: image_slice = in_image[pix_i - 10:pix_i + 11, pix_j - 10:pix_j + 11]
-        except: continue
-        if np.where(image_slice > 0)[0].shape[0] > 0:
+        check_coordinates = [pix_i - 10, pix_i + 11, pix_j - 10, pix_j + 11]
+        print("check coordinates: " + str(check_coordinates))
+        if True in [coord <= 0 for coord in check_coordinates]:
+            print("FIRST CONDITION WAS EVALUATED AS TRUE, SO IMAGE IS NOT COUNTED AS COVERING")
+            continue
+        try:
+            print(in_image.shape)
+            print(pix_i - 10, pix_i + 11, pix_j - 10, pix_j + 11)
+            image_slice = in_image[pix_i - 10:pix_i + 11, pix_j - 10:pix_j + 11]
+        except:
+            print("AN ERROR OCCURED TRYING TO GET THE IMAGE SLICE, SO THE IMAGE IS NOT COUNTED AS COVERING")
+            continue
+
+        pixels_y, pixels_x = np.where(image_slice > 0)
+
+        #if pixels_y.shape[0] > 0:
+        #if pixels_y.size > 0: # should be the same
+        if len(pixels_y) > 0: # should be the same
+
             coverage = True
             covering.append(path)
             #break
@@ -1369,7 +1391,7 @@ def filter_galex_tiles(galaxy_name, tiles_path, center, width, band):
 
     # No coverage
     if not coverage:
-        log.warning("It seems that there is no flux coverage for the GALEX " + band + " for " + galaxy_name)
+        log.warning("It seems that there is no flux coverage for the GALEX " + band + " band for " + galaxy_name)
         #raise RuntimeError('No GALEX ' + band + ' coverage for ' + galaxy_name)
 
     # Return ...
