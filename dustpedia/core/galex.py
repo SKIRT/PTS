@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import os
 import lmfit
+import traceback
 import numpy as np
 from scipy.ndimage import interpolation
 
@@ -976,7 +977,10 @@ class GALEXMosaicMaker(Configurable):
         log.info("Making GALEX mosaic for " + self.ngc_name + " and map of relative poisson errors ...")
 
         # Mosaic using Swarp
-        self.mosaic_swarp()
+        try: self.mosaic_swarp()
+        except Exception as e:
+            traceback.print_exc()
+            log.warning("Something went wrong during the SWARPing, but that's no problem ...")
 
         # Mosaic PTS method
         self.mosaic_pts()
