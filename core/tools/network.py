@@ -125,6 +125,7 @@ def download_file(url, path, new_name=None, overwrite=False, progress_bar=False,
     This function ...
     :param url
     :param path:
+    :param new_name:
     :param overwrite:
     :param progress_bar:
     :param stream
@@ -204,7 +205,7 @@ def download_file(url, path, new_name=None, overwrite=False, progress_bar=False,
 
 # -----------------------------------------------------------------
 
-def download_and_decompress_files(urls, path, remove=True, overwrite=False):
+def download_and_decompress_files(urls, path, remove=True, overwrite=False, info=None):
 
     """
     This function ...
@@ -212,6 +213,7 @@ def download_and_decompress_files(urls, path, remove=True, overwrite=False):
     :param path:
     :param remove:
     :param overwrite:
+    :param info:
     :return:
     """
 
@@ -219,7 +221,7 @@ def download_and_decompress_files(urls, path, remove=True, overwrite=False):
     log.debug("Downloading the files to '" + path + "' ...")
 
     # Download the files
-    paths = download_files(urls, path, overwrite=overwrite)
+    paths = download_files(urls, path, overwrite=overwrite, info=info)
 
     # Debugging
     log.debug("Decompressing the archived files ...")
