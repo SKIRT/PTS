@@ -160,6 +160,9 @@ class GALEXMosaicMaker(Configurable):
         # 8. Get exposure times
         self.get_exposure_times()
 
+        # Reproject
+        self.reproject()
+
         # 9. Mosaic
         self.mosaic()
 
@@ -893,6 +896,9 @@ class GALEXMosaicMaker(Configurable):
         # Loop over the bands
         for band in self.config.bands:
 
+            # Debugging
+            log.debug("Getting exposure times for the " + band + " band ...")
+
             # Initialize dictionary
             self.exposure_times[band] = dict()
 
@@ -901,14 +907,23 @@ class GALEXMosaicMaker(Configurable):
             # Determine how the files are named
             filename_ends = "-" + band_short[band] + "-int"  # -fd-int for FUV, -nd-int for NUV
 
+            # Debugging
+            log.debug("Looking for files with a name ending on '" + filename_ends + "' ...")
+
             # Get the exposure time for each image
             for path, name in fs.files_in_path(reproject_path, extension="fits", contains=filename_ends, returns=["path", "name"]):
+
+                # Debugging
+                log.debug("Getting the exposure time of the " + name + " image ...")
 
                 # Open the header
                 header = getheader(path)
 
                 # Search for the exposure time
                 exp_time = get_total_exposure_time(header)
+
+                # Debugging
+                log.debug("Found an exposure time of " + str(exp_time) + " ...")
 
                 # Set the exposure time
                 image_name = name.split(filename_ends)[0]
@@ -985,6 +1000,7 @@ class GALEXMosaicMaker(Configurable):
         with ParallelTarget(mosaic_with_swarp, self.config.nprocesses) as target:
 
             # Loop over the bands and execute
+            # band, width, pix_size, swarp_path, center
             for band in self.config.bands: results[band] = target(band, self.cutout_width, pixelscale_arcsec, self.swarp_paths[band], self.cutout_center)
 
         # Loop over bands, LOAD SWARP RESULT, PRESUMABLY IN COUNTS/S
