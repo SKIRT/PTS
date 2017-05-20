@@ -186,7 +186,7 @@ def print_files_in_path(path):
     """
 
     if not log.is_debug(): return
-    in_path = fs.files_in_path(path, returns="name")
+    in_path = fs.files_in_path(path, returns="name", extensions=True)
     if len(in_path) == 0: log.debug("No files in '" + path + "'")
     else:
         log.debug(str(len(in_path)) + " files in '" + path + "':")
@@ -196,12 +196,13 @@ def print_files_in_path(path):
 
 # -----------------------------------------------------------------
 
-def print_files_in_list(lst, name):
+def print_files_in_list(lst, name, only_name=False):
 
     """
     This function ...
     :param lst:
     :param name:
+    :param only_name:
     :return:
     """
 
@@ -210,7 +211,9 @@ def print_files_in_list(lst, name):
     else:
         log.debug(str(len(lst)) + " files in '" + name + "':")
         print("")
-        print(stringify_list_fancy(lst, lines_prefix="  ")[1])
+        if only_name: strings = [fs.name(path) for path in lst]
+        else: strings = lst
+        print(stringify_list_fancy(strings, lines_prefix="  ")[1])
         print("")
 
 # -----------------------------------------------------------------

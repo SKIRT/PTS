@@ -25,6 +25,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools import introspection
 from ...core.tools.logging import log
 from ...core.tools import terminal
+from ...core.tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -243,13 +244,31 @@ def filter_non_overlapping(ngc_name, band, fields_path, cutout_center, cutout_wi
     # Get the names of the overlapping image files
     overlap_files = np.genfromtxt(overlap_path, skip_header=3, usecols=[32], dtype=str)
 
+    ntotal = 0
+    removed = []
+
     # Loop over the FITS files in the temp directory, remove non-overlapping
     for path in fs.files_in_path(fields_path, extension="fits"):
 
+        ntotal += 1
+
         # If the path is not in the overlap_files list, remove the FITS file
         if path not in overlap_files:
+
+            # Debugging
             log.debug("Removing the '" + fs.name(path) + "' image since it does not overlap with the target area ...")
+
+            # Removed
             fs.remove_file(path)
+
+            # Add to list
+            removed.append(fs.name(path))
+
+    # Debugging
+    log.debug("Removed " + str(len(removed)) + " out of " + str(ntotal) + " images for the " + band + "band")
+
+    # Show the removed images
+    fmt.print_files_in_list(removed, "removed images for the " + band + "band")
 
     # Return the meta path and overlap path
     return meta_path, overlap_path
