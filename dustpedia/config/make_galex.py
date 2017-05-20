@@ -32,4 +32,6 @@ definition.add_optional("nprocesses", "positive_integer", "number of processes f
 # Advanced
 definition.add_optional("download_directories", "string_string_dictionary", "dictionary of download directories where the keys are the bands")
 
+definition.add_optional("manual_selection", "string_string_list_dictionary", "dictionary of selected observations to use (no filtering will be done then)")
+
 # -----------------------------------------------------------------

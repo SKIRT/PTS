@@ -149,3 +149,18 @@ def is_sequence(value):
     return isinstance(value, collections.Iterable)
 
 # -----------------------------------------------------------------
+
+def is_string_sequence(value):
+
+    """
+    This function ...
+    :param value: 
+    :return: 
+    """
+
+    if not is_sequence(value): return False
+    for element in value:
+        if not is_string_type(element): return False
+    return True
+
+# -----------------------------------------------------------------

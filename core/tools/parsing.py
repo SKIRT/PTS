@@ -20,6 +20,7 @@ import re
 #from ..basics.range import IntegerRange, RealRange, QuantityRange # imported below to accomodate clean python installs
 from ...magic.basics.vector import Vector
 from . import filesystem as fs
+from . import types
 # Imported below to accomodate clean python installs
 #from ..filter.broad import BroadBandFilter
 #from ..filter.broad import identifiers as broad_band_identifiers
@@ -755,6 +756,22 @@ def string_string_dictionary(argument):
     for key, value in d.items():
         if not isinstance(key, basestring): raise ValueError("All keys must be strings")
         if not isinstance(value, basestring): raise ValueError("All values must be strings")
+    return d
+
+# -----------------------------------------------------------------
+
+def string_string_list_dictionary(argument):
+
+    """
+    This function ...
+    :param argument: 
+    :return: 
+    """
+
+    d = dictionary(argument)
+    for key, value in d.items():
+        if not types.is_string_type(key): raise ValueError("All keys must be strings")
+        if not types.is_string_sequence(value): raise ValueError("All values must be string sequences")
     return d
 
 # -----------------------------------------------------------------

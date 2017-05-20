@@ -480,6 +480,42 @@ class GALEXMosaicMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_manual_selection(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.config.manual_selection is not None
+
+    # -----------------------------------------------------------------
+
+    def has_manual_selection_for_band(self, band):
+
+        """
+        This function ...
+        :param band: 
+        :return: 
+        """
+
+        return self.config.manual_selection is not None and band in self.config.manual_selection
+
+    # -----------------------------------------------------------------
+
+    def selected_names_for_band(self, band):
+
+        """
+        This function ...
+        :param band: 
+        :return: 
+        """
+
+        return self.config.manual_selection[band]
+
+    # -----------------------------------------------------------------
+
     def download(self):
 
         """
@@ -493,6 +529,8 @@ class GALEXMosaicMaker(Configurable):
         # Loop over the bands
         for band in self.config.bands:
 
+            short = band_short[band]
+
             # Debugging
             log.debug("Downloading the data for the " + band + " band ...")
 
@@ -505,11 +543,64 @@ class GALEXMosaicMaker(Configurable):
                 # Parallel execution
                 with ParallelTarget(network.download_and_decompress_files, self.config.nprocesses) as target:
 
+                    # Create selection
+                    if self.has_manual_selection_for_band(band):
+
+                        # Get selected names
+                        selected = self.selected_names_for_band(band)
+
+                        # Loop over the observation URLS
+                        observation_urls = []
+                        for url in self.observation_urls[band]:
+
+                            # Determine the name
+                            name = fs.strip_extension(fs.name(url), double=True).split("-" + short)[0] # .split("-int")[0].split("-")[1] == "nd" else "fuv"
+
+                            if name not in selected: continue
+                            observation_urls.append(url)
+
+                        # Loop over the response URLS
+                        response_urls = []
+                        for url in self.response_urls[band]:
+
+                            # Determine the name
+                            name = fs.strip_extension(fs.name(url), double=True).split("-" + short)[0] #
+
+                            if name not in selected: continue
+                            response_urls.append(url)
+
+                        # Loop over the background URLs
+                        background_urls = []
+                        for url in self.background_urls[band]:
+
+                            # Determine the name
+                            name = fs.strip_extension(fs.name(url), double=True).split("-" + short)[0]
+
+                            if name not in selected: continue
+                            background_urls.append(url)
+
+                        # Loop over the counts URLs
+                        counts_urls = []
+                        for url in self.counts_urls[band]:
+
+                            # Determine the name
+                            name = fs.strip_extension(fs.name(url), double=True).split("-" + short)[0]
+
+                            if name not in selected: continue
+                            counts_urls.append(url)
+
+                    else:
+
+                        observation_urls = self.observation_urls[band]
+                        response_urls = self.response_urls[band]
+                        background_urls = self.background_urls[band]
+                        counts_urls = self.counts_urls[band]
+
                     # Call the target function
-                    target(self.observation_urls[band], self.download_observations_paths[band], info="observations")
-                    target(self.response_urls[band], self.download_response_paths[band], info="response maps")
-                    target(self.background_urls[band], self.download_background_paths[band], info="background maps")
-                    target(self.counts_urls[band], self.download_counts_paths[band], info="count maps")
+                    target(observation_urls, self.download_observations_paths[band], info="observations")
+                    target(response_urls, self.download_response_paths[band], info="response maps")
+                    target(background_urls, self.download_background_paths[band], info="background maps")
+                    target(counts_urls, self.download_counts_paths[band], info="count maps")
 
             # Debugging
             print_files_in_path(self.download_observations_paths[band])
@@ -538,10 +629,13 @@ class GALEXMosaicMaker(Configurable):
 
         existing_observations_path = fs.join(self.existing_downloads_path(band), "observations")
 
+        if self.has_manual_selection_for_band(band): selected_names = self.selected_names_for_band(band)
+        else: selected_names = None
+
         print("OBSERVATIONS:")
         fmt.print_files_in_path(existing_observations_path)
 
-        paths = fs.files_in_path(existing_observations_path, not_contains=not_contains, extension=extensions)
+        paths = fs.files_in_path(existing_observations_path, not_contains=not_contains, extension=extensions, contains=selected_names, contains_operator="OR")
         fmt.print_files_in_list(paths, "existing observations", only_name=True)
 
         # Copy and decompress
@@ -556,7 +650,7 @@ class GALEXMosaicMaker(Configurable):
         print("RESPONSE:")
         fmt.print_files_in_path(existing_response_path)
 
-        paths = fs.files_in_path(existing_response_path, not_contains=not_contains, extension=extensions)
+        paths = fs.files_in_path(existing_response_path, not_contains=not_contains, extension=extensions, contains=selected_names, contains_operator="OR")
         fmt.print_files_in_list(paths, "existing response maps", only_name=True)
 
         # Copy and decompress
@@ -571,7 +665,7 @@ class GALEXMosaicMaker(Configurable):
         print("BACKGROUND:")
         fmt.print_files_in_path(existing_background_path)
 
-        paths = fs.files_in_path(existing_background_path, not_contains=not_contains, extension=extensions)
+        paths = fs.files_in_path(existing_background_path, not_contains=not_contains, extension=extensions, contains=selected_names, contains_operator="OR")
         fmt.print_files_in_list(paths, "existing background maps", only_name=True)
 
         # Copy and decompress
@@ -586,7 +680,7 @@ class GALEXMosaicMaker(Configurable):
         print("COUNTS:")
         fmt.print_files_in_path(existing_counts_path)
 
-        paths = fs.files_in_path(existing_counts_path, not_contains=not_contains, extension=extensions)
+        paths = fs.files_in_path(existing_counts_path, not_contains=not_contains, extension=extensions, contains=selected_names, contains_operator="OR")
         fmt.print_files_in_list(paths, "existing count maps")
 
         # Copy and decompress
