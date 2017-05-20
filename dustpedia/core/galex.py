@@ -44,6 +44,7 @@ from ...core.tools import stringify
 from ...core.tools.formatting import print_files_in_list, print_files_in_path, print_directories_in_path
 from ...core.tools import formatting as fmt
 from ...core.tools import archive
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -857,7 +858,10 @@ class GALEXMosaicMaker(Configurable):
                 results[index].request()
                 output = results[index].output
 
-                level = output[0]
+                if types.is_real_type(output) or types.is_integer_type(output): level = float(output)
+                elif types.is_sequence(output): level = output[0]
+                else: raise RuntimeError("Output type not recognized: " + str(output))
+                #level = output[0]
 
                 if index == 0:
                     level_ref = level
@@ -1691,6 +1695,7 @@ def determine_background_level(filename, convolve_path):
     level_result = lmfit.minimize(level_chi_squared, level_params, args=(image_conv_clipped.flatten(),))
     level = level_result.params['level'].value
 
+    # Return the level
     return level
 
 # -----------------------------------------------------------------
@@ -1729,8 +1734,10 @@ def level_galex_map(filename, average_offset, reproject_path):
     average_offset = peak_offset#np.mean([ floor_offset, peak_offset ])
     """
 
+    filepath = fs.join(fitsfile_dir, filename)
+
     # Read in unconvolved file, and apply offset
-    fitsdata_in = open_fits(fs.join(fitsfile_dir, filename))
+    fitsdata_in = open_fits(filepath)
     image_in = fitsdata_in[0].data
     header_in = fitsdata_in[0].header
     fitsdata_in.close()
@@ -1740,7 +1747,7 @@ def level_galex_map(filename, average_offset, reproject_path):
     # Save corrected file
     image_out_hdu = PrimaryHDU(data=image_out, header=header_in)
     image_out_hdulist = HDUList([image_out_hdu])
-    image_out_hdulist.writeto(fs.join(fitsfile_dir, filename), clobber=True)
+    image_out_hdulist.writeto(filepath, clobber=True)
 
 # -----------------------------------------------------------------
 
