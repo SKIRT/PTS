@@ -1274,7 +1274,10 @@ def filter_galex_tiles(galaxy_name, tiles_path, center, width, band):
     """
 
     meta_path = fs.join(tiles_path, "meta.dat")
-    #new_overlap_path = fs.join(tiles_path, "overlap_circle.dat")
+    circle_overlap_path = fs.join(tiles_path, "overlap_circle.dat")
+
+    # Debuggging
+    log.debug("Circle overlap path: " + circle_overlap_path)
 
     # Get overlapping file paths
     #ra = center.ra.to("deg").value
@@ -1282,7 +1285,16 @@ def filter_galex_tiles(galaxy_name, tiles_path, center, width, band):
     #width = width.to("deg").value
     ra = center.ra
     dec = center.dec
-    overlapping_file_paths = mosaicing.generate_overlapping_file_paths(tiles_path, ra, dec, meta_path, mode="circle", radius=(0.5 * width) * (2.0 ** 0.5))
+
+    #overlapping_file_paths = mosaicing.generate_overlapping_file_paths(tiles_path, ra, dec, meta_path, mode="circle", radius=(0.5 * width) * (2.0 ** 0.5))
+
+    # Generate circle overlap file
+    mosaicing.generate_overlap_file(tiles_path, ra, dec, meta_path, mode="circle", radius=(0.5 * width) * (2.0 ** 0.5), overlap_path=circle_overlap_path)
+
+    # Get overlapping file paths
+    overlapping_file_paths = mosaicing.get_overlapping_file_paths(circle_overlap_path)
+
+    fmt.print_files_in_list(overlapping_file_paths, "overlapping files", only_name=True)
 
     ra_deg = ra.to("deg").value
     dec_deg = dec.to("deg").value
@@ -1292,9 +1304,20 @@ def filter_galex_tiles(galaxy_name, tiles_path, center, width, band):
     #for overlapping_file_path in overlapping_file_paths: fs.copy_file(overlapping_file_path, temp_raw_path)
 
     # NEW: FILTER IN-PLACE
+    removed = []
     for path in fs.files_in_path(tiles_path):
+
+        # Debugging
+        log.debug("Checking image " + path + " ...")
+
         if path in overlapping_file_paths: continue
-        else: fs.remove_file(path)
+        else:
+            log.debug("Removing image " + path + " ...")
+            fs.remove_file(path)
+            removed.append(path)
+
+    print("REMOVED:")
+    fmt.print_files_in_list(removed, "removed files", only_name=True)
 
     temp_raw_path = tiles_path
 
@@ -1303,13 +1326,25 @@ def filter_galex_tiles(galaxy_name, tiles_path, center, width, band):
 
     # Ensure that at least one of the raw GALEX tiles has actual flux coverage at location of source
     # raw_files = os.listdir(temp_raw_path) ## THERE WAS A 'deg' FILE IN THE DIRECTORY AS WELL WHICH WAS NOT A FITS FILE BUT A PLAIN TEXT HEADER FILE, AND SO THIS WASN'T WORKING
-    raw_files = fs.files_in_path(temp_raw_path, extension="fits", returns="name")
-    raw_files = [name + ".fits" for name in raw_files]
+    raw_files = fs.files_in_path(temp_raw_path, extension="fits", returns="name", extensions=True)
+    #raw_files = [name + ".fits" for name in raw_files]
+
+    fmt.print_files_in_list(raw_files, "raw files", only_name=True)
+
     coverage = False
+    covering = []
+
+    # Loop over the files
     for raw_file in raw_files:
 
+        # Debugging
+        log.debug("Checking coverage at galaxy center for image " + raw_file + " ...")
+
+        # Determine path
+        path = fs.join(temp_raw_path, raw_file)
+
         # Read in map
-        in_fitsdata = open_fits(fs.join(temp_raw_path, raw_file))
+        in_fitsdata = open_fits(path)
         in_image = in_fitsdata[0].data
         in_header = in_fitsdata[0].header
         in_fitsdata.close()
@@ -1320,16 +1355,22 @@ def filter_galex_tiles(galaxy_name, tiles_path, center, width, band):
         pix_i, pix_j = location_pix[1], location_pix[0]
 
         # Evalulate coverage at location, and proceed accordingly
-        if True in [coord <= 0 for coord in [pix_i - 10, pix_i + 11, pix_j - 10, pix_j + 11]]:
-            continue
-        try:
-            image_slice = in_image[pix_i - 10:pix_i + 11, pix_j - 10:pix_j + 11]
+        if True in [coord <= 0 for coord in [pix_i - 10, pix_i + 11, pix_j - 10, pix_j + 11]]: continue
+        try: image_slice = in_image[pix_i - 10:pix_i + 11, pix_j - 10:pix_j + 11]
         except: continue
         if np.where(image_slice > 0)[0].shape[0] > 0:
             coverage = True
+            covering.append(path)
+            #break
+
+    # Debugging
+    print("COVERING:")
+    fmt.print_files_in_list(covering, "covering", only_name=True)
 
     # No coverage
-    if not coverage: raise RuntimeError('No GALEX ' + band + ' coverage for ' + galaxy_name)
+    if not coverage:
+        log.warning("It seems that there is no flux coverage for the GALEX " + band + " for " + galaxy_name)
+        #raise RuntimeError('No GALEX ' + band + ' coverage for ' + galaxy_name)
 
     # Return ...
     #return raw_files

@@ -87,7 +87,7 @@ def generate_meta_file(path, meta_dir_path=None):
 
 # -----------------------------------------------------------------
 
-def generate_overlap_file(path, ra, dec, meta_path, mode='box', width=None, radius=None):
+def generate_overlap_file(path, ra, dec, meta_path, mode='box', width=None, radius=None, overlap_path=None):
 
     """
     This function ...
@@ -105,7 +105,7 @@ def generate_overlap_file(path, ra, dec, meta_path, mode='box', width=None, radi
     log.info("Generating overlap file ...")
 
     # Path of the overlap file
-    overlap_path = fs.join(path, "overlap.dat")
+    if overlap_path is None: overlap_path = fs.join(path, "overlap.dat")
 
     # Convert RA and DEC into degrees
     ra_deg = ra.to("deg").value
@@ -140,6 +140,19 @@ def generate_overlapping_file_paths(path, ra, dec, meta_path, mode="box", width=
 
     # Generate the file
     overlap_path = generate_overlap_file(path, ra, dec, meta_path, mode, width, radius)
+
+    # Return the paths of the overlapping files
+    return get_overlapping_file_paths(overlap_path)
+
+# -----------------------------------------------------------------
+
+def get_overlapping_file_paths(overlap_path):
+
+    """
+    This function ...
+    :param overlap_path: 
+    :return: 
+    """
 
     # Get file paths of overlapping observations
     overlapping_file_paths = np.genfromtxt(overlap_path, skip_header=3, usecols=[32], dtype=str)
