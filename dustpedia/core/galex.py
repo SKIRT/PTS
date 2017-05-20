@@ -720,7 +720,12 @@ class GALEXMosaicMaker(Configurable):
         with ParallelTarget(mosaicing.filter_non_overlapping, self.config.nprocesses) as target:
 
             # Loop over the bands
-            for band in self.config.bands: target(self.ngc_name, band, self.download_observations_paths[band], self.cutout_center, self.cutout_width, mode='point')
+            for band in self.config.bands:
+
+                # ALREADY MANUAL SELECTION
+                if self.has_manual_selection_for_band(band): continue
+
+                target(self.ngc_name, band, self.download_observations_paths[band], self.cutout_center, self.cutout_width, mode='point')
 
         # Debugging
         for band in self.config.bands: print_files_in_path(self.download_observations_paths[band])
@@ -742,7 +747,12 @@ class GALEXMosaicMaker(Configurable):
 
             # Loop over the bands
             # galaxy_name, tiles_path, ra, dec, width_deg, temp_raw_path, band_dict
-            for band in self.config.bands: target(self.ngc_name, self.download_observations_paths[band], self.cutout_center, self.cutout_width, band)
+            for band in self.config.bands:
+
+                # ALREADY MANUAL SELECTION
+                if self.has_manual_selection_for_band(band): continue
+
+                target(self.ngc_name, self.download_observations_paths[band], self.cutout_center, self.cutout_width, band)
 
         # Debugging
         for band in self.config.bands: print_files_in_path(self.download_observations_paths[band])
