@@ -303,6 +303,12 @@ class PixelEllipseRegion(EllipseRegion, PixelRegion):
         y_pixelscale = result[1] * u("deg")
         # pixelscale = Extent(x_pixelscale, y_pixelscale)
 
+        #print(region.semimajor)
+        #print(region.semiminor)
+
+        #print(x_pixelscale)
+        #print(y_pixelscale)
+
         semimajor = (region.semimajor / x_pixelscale).to("").value
         semiminor = (region.semiminor / y_pixelscale).to("").value
 

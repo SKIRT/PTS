@@ -27,6 +27,7 @@ from .sample import DustPediaSample
 from ...magic.region.ellipse import SkyEllipseRegion
 from ...magic.basics.coordinate import SkyCoordinate
 from ...magic.basics.stretch import SkyStretch
+from ...core.units.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -156,8 +157,10 @@ class DustPediaPhotometry(object):
         # Create center
         center = SkyCoordinate(ra=ra, dec=dec, unit="deg")
 
+        semimaj = semimaj_arcsec * u("arcsec")
+
         # Create radius
-        radius = SkyStretch(semimaj_arcsec, semimaj_arcsec/axial_ratio)
+        radius = SkyStretch(semimaj, semimaj/axial_ratio)
 
         # Create the angle
         angle = Angle(pos_angle, "deg")

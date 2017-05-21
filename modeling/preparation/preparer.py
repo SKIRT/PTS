@@ -103,7 +103,7 @@ class PreparationStatistics(SimplePropertyComposite):
         self.add_property("median_frame_not_clipped", "real", "median value not clipped")
         self.add_property("stddev_frame_not_clipped", "real", "stddev not clipped")
         self.add_property("mean_sky", "real", "mean sky value")
-        self.add_property("median sky", "real", "median sky value")
+        self.add_property("median_sky", "real", "median sky value")
         self.add_property("mean_noise", "real", "mean noise")
         self.add_property("mean_subtracted", "real", "mean subtracted value")
         self.add_property("median_subtracted", "real", "median subtracted value")
@@ -487,10 +487,10 @@ class DataPreparer(PreparationComponent):
 
             # Determine and create the sky path
             sky_path = fs.join(directory_path, "sky")
-
             if fs.is_directory(sky_path):
                 log.warning("There is alread a sky directory present for the " + name + " image: removing ...")
                 fs.remove_directory(sky_path)
+            fs.create_directory(sky_path)
 
             # Use DustPedia aperture
             if self.config.dustpedia_aperture: aperture = self.photometry.get_aperture(self.ngc_name)
@@ -828,7 +828,7 @@ def sort_image(name, path):
     result_path = fs.join(path, result_name)
 
     # Sky directory path
-    sky_path = fs.join(path, "sky")
+    sky_path = fs.join(path, sky_name)
 
     # -----------------------------------------------------------------
 
@@ -858,17 +858,18 @@ def sort_image(name, path):
         return "with_errors", with_errors_path
 
     # ALREADY SKY-SUBTRACTED
-    if fs.is_file(subtracted_path):
+    #if fs.is_file(subtracted_path):
+    if check_subtracted(name, subtracted_path, sky_path): return "subtracted", subtracted_path
 
         # Check whether the sky directory is present
-        if not fs.is_directory(sky_path): raise IOError("The sky subtraction output directory is not present for the '" + name + "' image")
+        #if not fs.is_directory(sky_path): raise IOError("The sky subtraction output directory is not present for the '" + name + "' image")
 
         # Add the path of the sky-subtracted image
         #self.preparation_dataset.add_path(prep_name, subtracted_path)
 
         # Check whether keywords are set to True in image header ?
 
-        return "subtracted", subtracted_path
+        #return "subtracted", subtracted_path
 
     # -----------------------------------------------------------------
 
@@ -907,6 +908,41 @@ def sort_image(name, path):
 
     # If all images have already been prepared
     #if len(self.preparation_dataset) == 0: log.success("All images are already prepared")
+
+# -----------------------------------------------------------------
+
+def check_subtracted(name, subtracted_path, sky_path):
+
+    """
+    This fucntion ...
+    :param name:
+    :param subtracted_path: 
+    :param sky_path: 
+    :return: 
+    """
+
+    # Subtracted file is present
+    if fs.is_file(subtracted_path):
+
+        # NO: because it's OK that for some images the sky subtraction failed and therefore they don't have the sky directory
+        # Check whether the sky directory is present
+        #if not fs.is_directory(sky_path): #raise IOError("The sky subtraction output directory is not present for the '" + name + "' image")
+            #log.warning("The sky subtraction output directory is not present for the " + name + " image")
+            #log.warning("Removing the subtracted image file ...")
+            #fs.remove_file(subtracted_path)
+
+        #elif fs.is_empty(sky_path):
+        if fs.is_directory(sky_path) and fs.is_empty(sky_path):
+
+            log.warning("The sky subtraction output directory is empty for the " + name + " image")
+            log.warning("Removing the subtracted image file and the empty directory ...")
+
+            fs.remove_file(subtracted_path)
+            fs.remove_directory(sky_path)
+
+        else: return True
+
+    else: return False
 
 # -----------------------------------------------------------------
 
@@ -987,6 +1023,8 @@ def subtract_sky(image, sky_path, config, principal_sky_region, saturation_sky_r
     :param config:
     :param principal_sky_region:
     :param saturation_sky_region:
+    :param star_sky_region:
+    :param visualisation_path:
     :return:
     """
 

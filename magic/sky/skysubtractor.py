@@ -843,6 +843,16 @@ class SkySubtractor(Configurable):
             log.debug("The mean of the sky noise frame is " + str(mean_noise))
 
             # Debugging
+            log.debug("The mean value before subtraction is " + str(self.mean_frame))
+            log.debug("The median value before subtraction is " + str(self.median_frame))
+            log.debug("THe standard deviation before subtration is " + str(self.stddev_frame))
+
+            # Debugging
+            log.debug("The mean value before subtraction without sigma-clipping is " + str(self.mean_frame_not_clipped))
+            log.debug("The median value before subtraction without sigma-clipping is " + str(self.median_frame_not_clipped))
+            log.debug("The standard deviation before subtraction without sigma-clipping is " + str(self.stddev_frame_not_clipped))
+
+            # Debugging
             log.debug("The mean value after subtraction is " + str(self.mean_subtracted))
             log.debug("The median value after subtraction is " + str(self.median_subtracted))
             log.debug("The standard deviation after subtraction is " + str(self.stddev_subtracted))
@@ -2643,11 +2653,8 @@ class SkySubtractor(Configurable):
         # Inform the user
         log.info("Creating distribution of subtracted pixel values ...")
 
-        # Get the subtracted pixel values
-        subtracted_1d = self.subtracted_masked_array.compressed()
-
         # Create distribution of subtracted pixel values
-        subtracted = Distribution.from_values(subtracted_1d)
+        subtracted = Distribution.from_values(self.subtracted_values)
 
         # Set distribution
         self.distributions.subtracted = subtracted
@@ -3351,6 +3358,42 @@ class SkySubtractor(Configurable):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def subtracted_nans(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return np.isnan(self.subtracted.data)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def subtracted_nans_masked_array(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return np.ma.masked_array(self.subtracted_nans, mask=self.mask.data)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def subtracted_nans_compressed(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.subtracted_nans_masked_array.compressed()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def subtracted_masked_array(self):
 
         """
@@ -3397,7 +3440,29 @@ class SkySubtractor(Configurable):
         :return:
         """
 
-        #return np.ma.masked_array(self.subtracted, mask=self.mask.data).std()
+        # return np.ma.masked_array(self.subtracted, mask=self.mask.data).std()
         return np.nanstd(self.subtracted_compressed)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def subtracted_values(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Get the subtracted pixel values
+        subtracted_1d = self.subtracted_masked_array.compressed()
+
+        # Remove nans
+        nans = self.subtracted_nans_compressed
+
+        # Get
+        subtracted_values = np.ma.masked_array(subtracted_1d, mask=nans).compressed()
+
+        # Return
+        return subtracted_values
 
 # -----------------------------------------------------------------
