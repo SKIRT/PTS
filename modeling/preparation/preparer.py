@@ -73,6 +73,28 @@ steps = ["extraction", "extinction", "subtraction", "errormaps", "units"]
 
 # -----------------------------------------------------------------
 
+status_list = ["initialized", "extracted", "corrected", "subtracted", "with_errors", "result"]
+
+# -----------------------------------------------------------------
+
+def status_to_steps(status):
+
+    """
+    This function ...
+    :param status: 
+    :return: 
+    """
+
+    if status == "initialized": return []
+    elif status == "extracted": return steps_before_and_including("extraction")
+    elif status == "corrected": return steps_before_and_including("extinction")
+    elif status == "subtracted": return steps_before_and_including("subtraction")
+    elif status == "with_errors": return steps_before_and_including("errormaps")
+    elif status == "result": return steps_before_and_including("units")
+    else: raise ValueError("Invalid status: '" + status + "'")
+
+# -----------------------------------------------------------------
+
 def steps_before(step):
 
     """
@@ -847,13 +869,14 @@ def check_initialized(name, path):
 
 # -----------------------------------------------------------------
 
-def sort_image(name, path, rerun=None):
+def sort_image(name, path, rerun=None, read_only=False):
 
     """
     This function ...
     :param name: 
     :param path: 
     :param rerun:
+    :param read_only:
     :return: 
     """
 
@@ -874,22 +897,23 @@ def sort_image(name, path, rerun=None):
     sky_path = fs.join(path, sky_name)
 
     # Run through the different checks
-    if check_result(name, result_path): return "result", result_path
-    elif check_with_errors(name, with_errors_path, rerun=rerun): return "with_errors", with_errors_path
-    elif check_subtracted(name, subtracted_path, sky_path, rerun=rerun): return "subtracted", subtracted_path
-    elif check_extinction_corrected(name, corrected_path, rerun=rerun): return "corrected", corrected_path
-    elif check_extracted(name, extracted_path, rerun=rerun): return "extracted", extracted_path
+    if check_result(name, result_path, read_only=read_only): return "result", result_path
+    elif check_with_errors(name, with_errors_path, rerun=rerun, read_only=read_only): return "with_errors", with_errors_path
+    elif check_subtracted(name, subtracted_path, sky_path, rerun=rerun, read_only=read_only): return "subtracted", subtracted_path
+    elif check_extinction_corrected(name, corrected_path, rerun=rerun, read_only=read_only): return "corrected", corrected_path
+    elif check_extracted(name, extracted_path, rerun=rerun, read_only=read_only): return "extracted", extracted_path
     else: return "initialized", initialized_path
 
 # -----------------------------------------------------------------
 
-def check_result(name, path, rerun=None):
+def check_result(name, path, rerun=None, read_only=False):
 
     """
     This function ...
     :param name: 
     :param path:
     :param rerun: 
+    :param read_only:
     :return: 
     """
 
@@ -897,6 +921,7 @@ def check_result(name, path, rerun=None):
 
         if rerun is not None and rerun in steps_before_and_including("units"):
 
+            if read_only: raise RuntimeError("Cannot rerun when read_only=True")
             fs.remove_file(path)
             return False
 
@@ -906,12 +931,13 @@ def check_result(name, path, rerun=None):
 
 # -----------------------------------------------------------------
 
-def check_with_errors(name, path, rerun=None):
+def check_with_errors(name, path, rerun=None, read_only=False):
 
     """
     This function ...
     :param name: 
     :param rerun: 
+    :param read_only:
     :return: 
     """
 
@@ -919,6 +945,7 @@ def check_with_errors(name, path, rerun=None):
 
         if rerun is not None and rerun in steps_before_and_including("errormaps"):
 
+            if read_only: raise RuntimeError("Cannot rerun when read_only=True")
             fs.remove_file(path)
             return False
 
@@ -928,7 +955,7 @@ def check_with_errors(name, path, rerun=None):
 
 # -----------------------------------------------------------------
 
-def check_subtracted(name, subtracted_path, sky_path, rerun=None):
+def check_subtracted(name, subtracted_path, sky_path, rerun=None, read_only=False):
 
     """
     This fucntion ...
@@ -936,6 +963,7 @@ def check_subtracted(name, subtracted_path, sky_path, rerun=None):
     :param subtracted_path: 
     :param sky_path: 
     :param rerun:
+    :param read_only:
     :return: 
     """
 
@@ -955,12 +983,16 @@ def check_subtracted(name, subtracted_path, sky_path, rerun=None):
             log.warning("The sky subtraction output directory is empty for the " + name + " image")
             log.warning("Removing the subtracted image file and the empty directory ...")
 
+            if read_only: raise RuntimeError("Cannot remove when read_only=True")
+
             fs.remove_file(subtracted_path)
             fs.remove_directory(sky_path)
 
             return False
 
         elif rerun is not None and rerun in steps_before_and_including("subtraction"):
+
+            if read_only: raise RuntimeError("Cannot remove when read_only=True")
 
             if fs.is_directory(sky_path): fs.remove_directory(sky_path)
             fs.remove_file(subtracted_path)
@@ -973,13 +1005,14 @@ def check_subtracted(name, subtracted_path, sky_path, rerun=None):
 
 # -----------------------------------------------------------------
 
-def check_extinction_corrected(name, path, rerun=None):
+def check_extinction_corrected(name, path, rerun=None, read_only=False):
 
     """
     This function ...
     :param name: 
     :param path: 
     :param rerun:
+    :param read_only:
     :return: 
     """
 
@@ -987,6 +1020,7 @@ def check_extinction_corrected(name, path, rerun=None):
 
         if rerun is not None and rerun in steps_before_and_including("extinction"):
 
+            if read_only: raise RuntimeError("Cannot remove when read_only=True")
             fs.remove_file(path)
             return False
 
@@ -996,13 +1030,14 @@ def check_extinction_corrected(name, path, rerun=None):
 
 # -----------------------------------------------------------------
 
-def check_extracted(name, path, rerun=None):
+def check_extracted(name, path, rerun=None, read_only=False):
 
     """
     This function ...
     :param name: 
     :param path: 
     :param rerun: 
+    :param read_only:
     :return: 
     """
 
@@ -1010,6 +1045,7 @@ def check_extracted(name, path, rerun=None):
 
         if rerun is not None and rerun in steps_before_and_including("extraction"):
 
+            if read_only: raise RuntimeError("Cannot remove when read_only=True")
             fs.remove_file(path)
             return False
 
