@@ -314,6 +314,7 @@ class DataPreparer(PreparationComponent):
         if self.config.cache:
             self.remote_preparation_path = fs.join(self.remote.home_directory, self.galaxy_name + "_preparation")
             if not self.remote.is_directory(self.remote_preparation_path): self.remote.create_directory(self.remote_preparation_path)
+        else: self.remote_preparation_path = "~/" + self.galaxy_name + "_preparation"
 
         # Get paths
         self.get_paths()
@@ -453,6 +454,9 @@ class DataPreparer(PreparationComponent):
             # Upload
             self.remote.upload(filepath, remote_image_directory_path, compress=True)
 
+            # Debugging
+            log.debug("Removing the local file (" + filepath + ") ...")
+
             # Remove the local file
             fs.remove_file(filepath)
 
@@ -507,8 +511,14 @@ class DataPreparer(PreparationComponent):
         remote_image_directory_path = fs.join(self.remote_preparation_path, name)
         if not self.remote.is_directory(remote_image_directory_path): self.remote.create_directory(remote_image_directory_path)
 
+        # Debugging
+        log.debug("Uploading the file to '" + remote_image_directory_path + "' ...")
+
         # Upload
         self.remote.upload(path, remote_image_directory_path)
+
+        # Debugging
+        log.debug("Removing the local file (" + path + ") ...")
 
         # Remove the file
         fs.remove_file(path)
