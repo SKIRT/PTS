@@ -432,7 +432,6 @@ class DataPreparer(PreparationComponent):
         """
 
         # Debugging
-        status_to_steps()
         log.debug("Caching intermediate results before " + status + " of " + name + " image to remote host '" + self.host_id + "' ...")
 
         # Get filenames that can be cached

@@ -3193,7 +3193,7 @@ class Remote(object):
         """
 
         # Create the remote directory
-        self.execute("mkdir " + path, output=False, show_output=show_output)
+        self.execute("mkdir '" + path + "'", output=False, show_output=show_output)
 
     # -----------------------------------------------------------------
 
@@ -3205,7 +3205,7 @@ class Remote(object):
         """
 
         # Create the remote directories
-        self.execute("mkdir " + " ".join(paths), output=False)
+        self.execute("mkdir '" + "' '".join(paths) + "'", output=False)
 
     # -----------------------------------------------------------------
 
@@ -3522,6 +3522,9 @@ class Remote(object):
         # If debugging is enabled, always show the scp output
         if log.is_debug(): show_output = True
 
+        # WITH SPACES:
+        # scp documents.zip remote:"\"/var/path/containing some spaces/foo/\""
+
         # Construct the command string
         copy_command = "scp "
         if connect_timeout is not None: copy_command += " -o ConnectTimeout=" + str(connect_timeout) + " "
@@ -3530,17 +3533,23 @@ class Remote(object):
         # Add the host address
         copy_command += self.host.user + "@" + self.host.name + ":"
 
+        origin_type = None
+
         # If the origin is a string, we assume it represents a single file path or directory path
         if types.is_string_type(origin):
 
             # Check if the origin represents a file
             #if self.is_file(origin): copy_command += origin.replace(" ", "\\\ ") + " "
-            if self.is_file(origin): copy_command += "'" + origin + "' "
+            if self.is_file(origin):
+                origin_type = "file"
+                copy_command += "'" + origin.replace(" ", "\ ") + "' "
 
             # Check if it represents a directory
             #elif self.is_directory(origin): copy_command += origin.replace(" ", "\\ ") + "/* " + "-r "
             #elif self.is_directory(origin): copy_command += origin.replace(" ", "\\\ ") + "/* "
-            elif self.is_directory(origin): copy_command += "'" + origin + "/*' "
+            elif self.is_directory(origin):
+                origin_type = "directory"
+                copy_command += "'" + origin.replace(" ", "\ ") + "/*' "
 
             # The origin does not exist
             else: raise ValueError("The specified path " + origin + " does not represent an existing directory or file on the remote host")
@@ -3552,9 +3561,11 @@ class Remote(object):
             for file_path in origin:
                 if not self.is_file(file_path): raise ValueError("The file " + file_path + " does not exist on the remote host")
 
+            origin_type = "files"
+
             # Escape possible space characters
             #origin = [path.replace(" ", "\\\ ") for path in origin]
-            origin = ["'" + path + "'" for path in origin]
+            origin = ["'" + path.replace(" ", "\ ") + "'" for path in origin]
 
             # Add a quotation mark character because the seperate file paths are going to be separated by spaces
             # (the command is going to be of the form scp username@ip.of.server.copyfrom:"file1.log file2.log" "~/yourpathtocopy")
@@ -3566,8 +3577,11 @@ class Remote(object):
             # Add another quotation mark to identify the end of the filepath list
             copy_command += '" '
 
+        else: raise ValueError("Invalid origin: " + str(origin))
+
         # Add the destination path to the command
         #copy_command += destination.replace(" ", "\\\ ") + "/"
+        #copy_command += "'" + destination.replace(" ", "\ ") + "/'"
         copy_command += "'" + destination + "/'"
         if new_name is not None: copy_command += new_name
 
@@ -3614,9 +3628,46 @@ class Remote(object):
             # Check for messages that signal an error that has occured
             for line in lines:
                 if "not a regular file" in line: raise ValueError(line)
+                if "scp: ambiguous target" in line: raise ValueError(line)
+                if "No such file or directory" in line: raise ValueError(line)
 
             # Debugging: show the output of the scp command
             self.debug("Copy stdout: " + str(" ".join(lines)))
+
+        #else:
+
+        # EXTRA CHECK
+        if origin_type == "files":
+
+            for path in origin:
+                name = fs.name(path)
+                local_path = fs.join(destination, name)
+                if not fs.is_file(local_path): raise RuntimeError("Something went wrong: file " + name + " is missing from destination")
+
+        elif origin_type == "file":
+
+            if fs.is_directory(destination):
+
+                name = fs.name(origin) if new_name is None else new_name
+                local_path = fs.join(destination, name)
+                if not fs.is_file(local_path): raise RuntimeError("Something went wrong: file " + name + " is missing from destination")
+
+            # It must be a file then
+            elif not fs.is_file(destination): raise RuntimeError("Something went wrong: file " + destination + " is missing")
+
+        elif origin_type == "directory":
+
+            for remote_path in self.files_in_path(origin):
+                filename = fs.name(remote_path)
+                local_path = fs.join(destination, filename)
+                if not fs.is_file(local_path): raise RuntimeError("Something went wrong: file " + filename + " is missing")
+
+            for remote_path in self.directories_in_path(origin):
+                dirname = fs.name(remote_path)
+                local_path = fs.join(destination, dirname)
+                if not fs.is_directory(local_path): raise RuntimeError("Something went wrong: directory " + dirname + " is missing")
+
+        else: raise ValueError("Invalid origin type")
 
         # Success: return True
         return True
@@ -3675,21 +3726,34 @@ class Remote(object):
         # If debugging is enabled, always show the scp output
         if log.is_debug(): show_output = True
 
+        # WITH SPACES:
+        # scp documents.zip remote:"\"/var/path/containing some spaces/foo/\""
+
         # Construct the command string
         copy_command = "scp "
         if connect_timeout is not None: copy_command += " -o ConnectTimeout=" + str(connect_timeout) + " "
         if compress: copy_command += "-C "
+
+        origin_type = None
 
         # If the origin is a string, we assume it represents a single file path or directory path
         if types.is_string_type(origin):
 
             # Check if the origin represents a file
             #if fs.is_file(origin): copy_command += origin.replace(" ", "\\\ ") + " "
-            if fs.is_file(origin): copy_command += "'" + origin + "' "
+            if fs.is_file(origin):
+                origin_type = "file"
+                #copy_command += "'" + origin.replace(" ", "\ ") + "' "
+                #copy_command += "'\\\"" + origin + "\\\"' "
+                copy_command += "'" + origin + "' "
 
             # Check if it represents a directory
             #elif fs.is_directory(origin): copy_command += "-r " + origin.replace(" ", "\\\ ") + "/ "
-            elif fs.is_directory(origin): copy_command += "-r '" + origin + "/' "
+            elif fs.is_directory(origin):
+                origin_type = "directory"
+                #copy_command += "-r '" + origin.replace(" ", "\ ") + "/' "
+                #copy_command += "-r '\\\"" + origin + "/\\\"' "
+                copy_command += "-r '" + origin + "' "
 
             # The origin does not exist
             else: raise ValueError("The specified path " + origin + " does not represent an existing directory or file")
@@ -3701,7 +3765,11 @@ class Remote(object):
             for file_path in origin:
                 if not fs.is_file(file_path): raise ValueError("The file " + file_path + " does not exist")
 
+            #origin = ["'" + path.replace(" ", "\ ") + "'" for path in origin]
+            #origin = ["'\\\"" + path + "\\\"'" for path in origin]
             origin = ["'" + path + "'" for path in origin]
+
+            origin_type = "files"
 
             # Add the file paths to the command string
             copy_command += " ".join(origin) + " "
@@ -3711,7 +3779,9 @@ class Remote(object):
 
         # Add the host address and the destination directory
         #copy_command += self.host.user + "@" + self.host.name + ":" + destination.replace(" ", "\\\ ") + "/"
-        copy_command += self.host.user + "@" + self.host.name + ":'" + destination + "/'"
+        #copy_command += self.host.user + "@" + self.host.name + ":'" + destination.replace(" ", "\ ") + "/'"
+        #copy_command += self.host.user + "@" + self.host.name + ":'\\\"" + destination + "/\\\"'"
+        copy_command += self.host.user + "@" + self.host.name + ":'" + destination.replace(" ", "\ ") + "/'"
         if new_name is not None: copy_command += new_name
 
         # Debugging
@@ -3760,9 +3830,54 @@ class Remote(object):
             # Check for messages that signal an error that has occured
             for line in lines:
                 if "not a regular file" in line: raise ValueError(line)
+                if "scp: ambiguous target" in line: raise ValueError(line)
+                if "No such file or directory" in line: raise ValueError(line)
 
             # Debugging: show the output of the scp command
             self.debug("Copy stdout: " + str(" ".join(lines)))
+
+        #else:
+            #print(sys.stdout)
+            #index = 0
+            #for line in sys.stdout: print(line)
+            #for line in fs.reverse_read_line_impl(sys.stdout):
+            #    if index == 4: break
+            #    print(line)
+            #    index += 1
+
+        # EXTRA check
+        if origin_type == "files":
+
+            for filepath in origin:
+                filename = fs.name(filepath)
+                remote_path = fs.join(destination, filename)
+                if not self.is_file(remote_path): raise RuntimeError("Something went wrong: file " + filename + " is not present at destination")
+
+        elif origin_type == "file":
+
+            if self.is_directory(destination):
+
+                filename = fs.name(origin) if new_name is None else new_name
+                remote_path = fs.join(destination, filename)
+                if not self.is_file(remote_path): raise RuntimeError("Something went wrong: file " + filename + " is not present at destination")
+
+            elif not self.is_file(destination): raise RuntimeError("Something went wrong: file " + destination + " is not present")
+
+        elif origin_type == "directory":
+
+            for local_path in fs.files_in_path(origin):
+
+                filename = fs.name(local_path)
+                remote_path = fs.join(destination, filename)
+                if not self.is_file(remote_path): raise RuntimeError("Something went wrong: file " + filename + " is not present at destination")
+
+            for local_path in fs.directories_in_path(origin):
+
+                dirname = fs.name(local_path)
+                remote_path = fs.join(destination, dirname)
+                if not self.is_directory(remote_path): raise RuntimeError("Something went wrong: directory " + dirname + " is not present at destination")
+
+        else: raise ValueError("Invalid origin type: " + str(origin_type))
 
         # Success: return True
         return True
@@ -5151,7 +5266,7 @@ class Remote(object):
         """
 
         # Launch a bash command to check whether the path exists as a directory on the remote file system
-        return self.evaluate_boolean_expression("-d " + path)
+        return self.evaluate_boolean_expression("-d '" + path + "'")
 
     # -----------------------------------------------------------------
 
@@ -5194,7 +5309,7 @@ class Remote(object):
         """
 
         # Launch a bash command to check whether the path exists as a regular file on the remote file system
-        return self.evaluate_boolean_expression("-f " + path)
+        return self.evaluate_boolean_expression("-f '" + path + "'")
 
     # -----------------------------------------------------------------
 

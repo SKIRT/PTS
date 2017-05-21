@@ -16,7 +16,7 @@ from pts.magic.config.find_sources import definition as sources_definition
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
 # Add optional arguments
-definition.add_optional("image", "string", "the name of the image for which to run the initialization")
+definition.add_positional_optional("image", "string", "the name of the image for which to run the initialization")
 
 # Add flags
 definition.add_flag("visualise", "make visualisations")

@@ -679,8 +679,10 @@ class GalaxyModeler(ModelerBase):
 
         config["rerun"] = self.config.rerun_preparation_step
 
+        config["cache"] = self.config.cache
+
         # Create the data preparer
-        preparer = DataPreparer()
+        preparer = DataPreparer(config)
 
         # Add an entry to the history
         command_name = DataPreparer.command_name()

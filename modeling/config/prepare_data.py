@@ -23,7 +23,7 @@ modeling_path = fs.cwd()
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
 # Add required arguments
-definition.add_required("image", "string", "name of the image for which to run the preparation")
+definition.add_positional_optional("image", "string", "name of the image for which to run the preparation")
 
 # Add optional arguments
 definition.add_optional("exclude_filters", "string_list", "exclude the data for these filters from the procedure that brings all data to the same resolution and pixelscale")

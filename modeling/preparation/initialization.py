@@ -81,6 +81,9 @@ class PreparationInitializer(PreparationComponent):
         # Sources output directories
         self.sources_output_paths = dict()
 
+        # Ignore source finding
+        self.ignore_images = []
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -103,15 +106,14 @@ class PreparationInitializer(PreparationComponent):
         # 4. Create the dataset
         self.create_dataset()
 
-        # Get the catalogs
-        self.get_catalogs()
-
         # Create directories
         self.create_directories()
 
+        # Get the catalogs
+        if self.needs_catalogs: self.get_catalogs()
+
         # 5. Find sources
-        if self.config.manual: self.mark_sources()
-        else: self.find_sources()
+        if self.needs_sources: self.get_sources()
 
         # 6. Writing
         self.write()
@@ -276,6 +278,40 @@ class PreparationInitializer(PreparationComponent):
 
     # -----------------------------------------------------------------
 
+    def create_directories(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Creating directories ...")
+
+        # Loop
+        for name in self.paths:
+
+            # Get output path
+            output_path = self.get_prep_path(name)
+
+            # Determine the path to the "sources" directory within the output path for this image
+            sources_output_path = fs.join(output_path, "sources")
+            if not fs.is_directory(sources_output_path): fs.create_directory(sources_output_path)
+
+            # If the source finding step has already been performed on this image, don't do it again
+            elif not fs.is_empty(sources_output_path):
+
+                # Debugging
+                log.debug("Source finder output has been found for the " + name + " image, skipping source finding step ...")
+
+                # Ignore this image for the source finder
+                self.ignore_images.append(name)
+
+            # Set path
+            self.sources_output_paths[name] = sources_output_path
+
+    # -----------------------------------------------------------------
+
     def get_catalogs(self):
 
         """
@@ -375,27 +411,64 @@ class PreparationInitializer(PreparationComponent):
 
     # -----------------------------------------------------------------
 
-    def create_directories(self):
+    @property
+    def nignored_images(self):
 
         """
         This function ...
         :return: 
         """
 
-        # Inform the user
-        log.info("Creating directories ...")
+        return len(self.ignore_images)
 
-        # Check for which images the source finding step has already been performed
-        for name in self.paths:
+    # -----------------------------------------------------------------
 
-            # Get output path
-            output_path = self.get_prep_path(name)
+    @property
+    def has_non_ignored_images(self):
 
-            # Determine the path to the "sources" directory within the output path for this image
-            sources_output_path = fs.create_directory_in(output_path, "sources")
+        """
+        This function ...
+        :return: 
+        """
 
-            # Set path
-            self.sources_output_paths[name] = sources_output_path
+        return len(self.set) - self.nignored_images > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_catalogs(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.has_non_ignored_images
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_sources(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.has_non_ignored_images
+
+    # -----------------------------------------------------------------
+
+    def get_sources(self):
+
+        """
+        This fucntion ...
+        :return: 
+        """
+
+        # Mark or find
+        if self.config.manual: self.mark_sources()
+        else: self.find_sources()
 
     # -----------------------------------------------------------------
 
@@ -414,8 +487,6 @@ class PreparationInitializer(PreparationComponent):
 
         # Get FWHMs
         fwhms = properties.fwhms
-
-        ignore = self.get_ignore_images()
 
         # Create the source marker
         marker = SourceMarker()
@@ -436,7 +507,7 @@ class PreparationInitializer(PreparationComponent):
         marker.config.default_fwhm = default_fwhm
 
         # Run
-        marker.run(fwhms=fwhms, dataset=self.set, ignore=ignore, extended_source_catalog=self.extended_sources,
+        marker.run(fwhms=fwhms, dataset=self.set, ignore=self.ignore_images, extended_source_catalog=self.extended_sources,
                    point_source_catalog=self.point_sources, ignore_stars=ignore_stars, output_paths=self.sources_output_paths)
 
         # Set the FWHMs
@@ -451,7 +522,7 @@ class PreparationInitializer(PreparationComponent):
             self.fwhms[name] = fwhm
 
         # Set the FWHMs
-        self.set_fwhms(ignore=ignore)
+        self.set_fwhms()
 
     # -----------------------------------------------------------------
 
@@ -475,43 +546,12 @@ class PreparationInitializer(PreparationComponent):
         #if self.config.visualise: animation = Animation()
         #else: animation = None
 
-        ignore = self.get_ignore_images()
-
         # Find sources locally or remotely
-        if self.config.remote is not None: self.find_sources_remote(ignore, ignore_stars, ignore_other_sources)
-        else: self.find_sources_local(ignore, ignore_stars, ignore_other_sources)
+        if self.config.remote is not None: self.find_sources_remote(self.ignore_images, ignore_stars, ignore_other_sources)
+        else: self.find_sources_local(self.ignore_images, ignore_stars, ignore_other_sources)
 
         # Set FWHM of optical images
-        self.set_fwhms(ignore=ignore)
-
-    # -----------------------------------------------------------------
-
-    def get_ignore_images(self):
-
-        """
-        This fucntion ...
-        :return: 
-        """
-
-        ignore_images = []
-
-        # Check for which images the source finding step has already been performed
-        for prep_name in self.paths:
-
-            # Get sources otuput path
-            sources_output_path = self.sources_output_paths[prep_name]
-
-            # If the source finding step has already been performed on this image, don't do it again
-            if not fs.is_empty(sources_output_path):
-
-                # Debugging
-                log.debug("Source finder output has been found for the " + prep_name + " image, skipping source finding step ...")
-
-                # Ignore this image for the source finder
-                ignore_images.append(prep_name)
-
-        # Return the ignore images
-        return ignore_images
+        self.set_fwhms()
 
     # -----------------------------------------------------------------
 
@@ -566,11 +606,10 @@ class PreparationInitializer(PreparationComponent):
 
     # -----------------------------------------------------------------
 
-    def set_fwhms(self, ignore=None):
+    def set_fwhms(self):
 
         """
         This function ...
-        :param ignore:
         :return: 
         """
 
@@ -580,7 +619,7 @@ class PreparationInitializer(PreparationComponent):
         # Loop over the images
         for prep_name in self.set:
 
-            if ignore is not None and prep_name in ignore: continue
+            if self.ignore_images is not None and prep_name in self.ignore_images: continue
 
             # Get the filter
             #fltr = parse_filter(prep_name)

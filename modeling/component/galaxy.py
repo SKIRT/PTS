@@ -1321,7 +1321,7 @@ class GalaxyModelingComponent(ModelingComponent):
 
         # Loop over the images
         for image_path, image_name in fs.files_in_path(self.data_images_path, extension="fits", not_contains="poisson",
-                                                       returns=["path", "name"], recursive=True):
+                                                       returns=["path", "name"], recursive=True, recursion_level=1):
 
             # Determine directory path
             path = fs.directory_of(image_path)
@@ -1342,7 +1342,7 @@ class GalaxyModelingComponent(ModelingComponent):
             if fs.is_file(poisson_path):
 
                 # Debugging
-                log.debug("Poisson error frame found for " + name + "' image ...")
+                log.debug("Poisson error frame found for '" + name + "' image ...")
                 error_paths[name] = poisson_path
 
             # Poisson frame not present

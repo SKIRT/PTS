@@ -615,9 +615,31 @@ def extension_of(path, filename):
 
 # -----------------------------------------------------------------
 
+def walk_level(some_dir, level=1):
+    
+    """
+    This function ...
+    :param some_dir: 
+    :param level: 
+    :return: 
+    """
+    
+    some_dir = some_dir.rstrip(os.path.sep)
+    
+    assert os.path.isdir(some_dir)
+    num_sep = some_dir.count(os.path.sep)
+    
+    for root, dirs, files in os.walk(some_dir):
+        yield root, dirs, files
+        num_sep_this = root.count(os.path.sep)
+        if num_sep + level <= num_sep_this:
+            del dirs[:]
+
+# -----------------------------------------------------------------
+
 def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None,
                   extensions=False, returns="path", exact_name=None, exact_not_name=None, startswith=None, endswith=None,
-                  sort=None, contains_operator="OR"):
+                  sort=None, contains_operator="OR", recursion_level=None):
 
     """
     This function ...
@@ -635,6 +657,7 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
     :param endswith:
     :param sort: a function which determines how the files should be sorted based on their filename. Hidden items (starting with .) are placed first.
     :param contains_operator: relevant for when 'contains' is specified as a sequence (should they be all contained or only at least one?)
+    :param recursion_level:
     :return:
     """
 
@@ -648,7 +671,9 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
     file_paths = []
 
     # Get the list of items
-    if recursive: items = [join(dp, f) for dp, dn, fn in os.walk(path) for f in fn]
+    if recursive:
+        if recursion_level is None: items = [join(dp, f) for dp, dn, fn in os.walk(path) for f in fn]
+        else: items = [join(dp, f) for dp, dn, fn in walk_level(path, recursion_level) for f in fn]
     else: items = [join(path, item) for item in os.listdir(path)]
 
     # If the files have to be sorted on their name
@@ -775,7 +800,8 @@ def find_file_in_path(path, recursive=False, ignore_hidden=True, extension=None,
 # -----------------------------------------------------------------
 
 def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains=None, not_contains=None,
-                        returns="path", exact_name=None, exact_not_name=None, startswith=None, endswith=None, sort=None):
+                        returns="path", exact_name=None, exact_not_name=None, startswith=None, endswith=None, sort=None,
+                        recursion_level=None):
 
     """
     This function ...
@@ -790,6 +816,7 @@ def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains
     :param startswith:
     :param endswith:
     :param sort: a function which determines how the directories should be sorted based on their name. Hidden items (starting with .) are placed first.
+    :param recursion_level:
     :return:
     """
 
@@ -803,7 +830,9 @@ def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains
     directory_paths = []
 
     # Get the list of items
-    if recursive: items = [join(dp, d) for dp, dn, fn in os.walk(path) for d in dn]
+    if recursive:
+        if recursion_level is None: items = [join(dp, d) for dp, dn, fn in os.walk(path) for d in dn]
+        else: items = [join(dp, d) for dp, dn, fn in walk_level(path, recursion_level) for d in dn]
     else: items = [join(path, item) for item in os.listdir(path)]
 
     # If the directories have to be sorted on their name
@@ -1258,5 +1287,56 @@ def creation_date(filepath):
 
     # Return datetime object
     return datetime.datetime.fromtimestamp(seconds)
+
+# -----------------------------------------------------------------
+
+def reverse_readline(filename, buf_size=8192):
+
+    """a generator that returns the lines of a file in reverse order"""
+
+    with open(filename) as fh:
+        for line in reverse_read_line_impl(fh, buf_size=buf_size): yield line
+
+# -----------------------------------------------------------------
+
+def reverse_read_line_impl(fh, buf_size=8192):
+
+    """
+    Thisf unction ...
+    :param fh: 
+    :param buf_size:
+    :return: 
+    """
+
+    segment = None
+    offset = 0
+    fh.seek(0, os.SEEK_END)
+    file_size = remaining_size = fh.tell()
+
+    while remaining_size > 0:
+
+        offset = min(file_size, offset + buf_size)
+        fh.seek(file_size - offset)
+        buffer = fh.read(min(remaining_size, buf_size))
+        remaining_size -= buf_size
+        lines = buffer.split('\n')
+        # the first line of the buffer is probably not a complete line so
+        # we'll save it and append it to the last line of the next buffer
+        # we read
+        if segment is not None:
+            # if the previous chunk starts right from the beginning of line
+            # do not concact the segment to the last line of new chunk
+            # instead, yield the segment first
+            if buffer[-1] is not '\n':
+                lines[-1] += segment
+            else:
+                yield segment
+        segment = lines[0]
+        for index in range(len(lines) - 1, 0, -1):
+            if len(lines[index]):
+                yield lines[index]
+    # Don't yield None if the file was empty
+    if segment is not None:
+        yield segment
 
 # -----------------------------------------------------------------
