@@ -35,6 +35,7 @@ from ...core.tools import types
 galaxy_modeling_definition = ConfigurationDefinition()
 galaxy_modeling_definition.add_required("host_ids", "string_list", "remote hosts to use for heavy computations (in order of preference)", choices=find_host_ids(schedulers=False))
 galaxy_modeling_definition.add_required("method", "string", "method to use for the modeling", choices=modeling_methods)
+galaxy_modeling_definition.add_required("cache_host_id", "string", "remote host to use for caching unimportant data", choices=find_host_ids())
 
 # -----------------------------------------------------------------
 
@@ -347,6 +348,7 @@ class ModelingSetupTool(Configurable):
         self.modeling_config.hyperleda_name = self.hyperleda_name
         self.modeling_config.method = self.object_config.method
         self.modeling_config.host_ids = self.object_config.host_ids
+        self.modeling_config.cache_host_id = self.object_config.cache_host_id
         self.modeling_config.fitting_host_ids = self.config.fitting_host_ids
         self.modeling_config.fitting_method = self.config.fitting_method
 

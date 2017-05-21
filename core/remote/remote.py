@@ -3531,7 +3531,7 @@ class Remote(object):
         copy_command += self.host.user + "@" + self.host.name + ":"
 
         # If the origin is a string, we assume it represents a single file path or directory path
-        if isinstance(origin, basestring):
+        if types.is_string_type(origin):
 
             # Check if the origin represents a file
             #if self.is_file(origin): copy_command += origin.replace(" ", "\\\ ") + " "
@@ -3546,7 +3546,7 @@ class Remote(object):
             else: raise ValueError("The specified path " + origin + " does not represent an existing directory or file on the remote host")
 
         # If the origin is a list, we assume it contains multiple file paths
-        elif isinstance(origin, list):
+        elif types.is_sequence(origin):
 
             # Check whether the files exist remotely
             for file_path in origin:
@@ -3681,7 +3681,7 @@ class Remote(object):
         if compress: copy_command += "-C "
 
         # If the origin is a string, we assume it represents a single file path or directory path
-        if isinstance(origin, basestring):
+        if types.is_string_type(origin):
 
             # Check if the origin represents a file
             #if fs.is_file(origin): copy_command += origin.replace(" ", "\\\ ") + " "
@@ -3695,7 +3695,7 @@ class Remote(object):
             else: raise ValueError("The specified path " + origin + " does not represent an existing directory or file")
 
         # If the origin is a list, we assume it contains multiple file paths
-        elif isinstance(origin, list):
+        elif types.is_sequence(origin):
 
             # Check whether the files exist locally
             for file_path in origin:

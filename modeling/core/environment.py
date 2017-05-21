@@ -125,6 +125,18 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         self.components_path = fs.create_directory_in(self.path, "components")
         self.deprojection_path = fs.create_directory_in(self.path, "deprojection")
 
+    # -----------------------------------------------------------------
+
+    @property
+    def cache_host_id(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.modeling_configuration.cache_host_id
+
 # -----------------------------------------------------------------
 
 class SEDModelingEnvironment(ModelingEnvironment):

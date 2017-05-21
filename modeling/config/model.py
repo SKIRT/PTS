@@ -10,7 +10,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.remote.host import find_host_ids
 from pts.core.tools.parallelization import ncores
 from pts.core.tools import filesystem as fs
-from pts.modeling.component.component import get_default_fitting_method
+from pts.modeling.component.component import get_default_fitting_method, get_cache_host_id
 from pts.modeling.modeling.base import fitting_methods
 from pts.modeling.preparation.preparer import steps
 
@@ -22,6 +22,7 @@ modeling_path = fs.cwd()
 # -----------------------------------------------------------------
 
 default_fitting_method = get_default_fitting_method(modeling_path)
+cache_host_id = get_cache_host_id(modeling_path)
 
 # -----------------------------------------------------------------
 
@@ -75,5 +76,8 @@ definition.add_optional("nprocesses", "positive_integer", "number of processes t
 definition.add_optional("fitting_method", "string", "fitting method", default_fitting_method, choices=fitting_methods)
 
 definition.add_optional("rerun_preparation_step", "string", "rerun a certain preparation step for all images", choices=steps)
+
+if cache_host_id is not None: definition.add_flag("cache", "cache unimportant data to the remote host storage", False)
+else: definition.add_fixed("cache", "caching not possible since cache host ID is not set in the modeling configuration", False)
 
 # -----------------------------------------------------------------

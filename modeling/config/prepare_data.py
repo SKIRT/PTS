@@ -10,6 +10,12 @@ from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.remote.host import find_host_ids
 from pts.core.tools.parallelization import ncores
 from pts.modeling.preparation.preparer import steps
+from pts.modeling.component.component import get_cache_host_id
+from pts.core.tools import filesystem as fs
+
+# -----------------------------------------------------------------
+
+modeling_path = fs.cwd()
 
 # -----------------------------------------------------------------
 
@@ -43,5 +49,10 @@ definition.add_optional("saturation_expansion_factor", "real", "saturation expan
 definition.add_optional("stars_expansion_factor", "real", "stars expansion factor", 2.)
 
 definition.add_optional("rerun", "string", "rerun a certain step for all images", choices=steps)
+
+# Cache
+cache_host_id = get_cache_host_id(modeling_path)
+if cache_host_id is not None: definition.add_flag("cache", "cache intermediate image files to the remote host storage", False)
+else: definition.add_fixed("cache", "caching not possible since cache host id not defined", False)
 
 # -----------------------------------------------------------------

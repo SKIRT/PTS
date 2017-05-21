@@ -41,6 +41,7 @@ from ...magic.region.ellipse import PixelEllipseRegion
 from ...core.basics.composite import SimplePropertyComposite
 from ...core.tools.serialization import write_dict
 from ...magic.core.mask import Mask
+from ...core.remote.remote import Remote
 
 # -----------------------------------------------------------------
 
@@ -74,6 +75,35 @@ steps = ["extraction", "extinction", "subtraction", "errormaps", "units"]
 # -----------------------------------------------------------------
 
 status_list = ["initialized", "extracted", "corrected", "subtracted", "with_errors", "result"]
+
+# -----------------------------------------------------------------
+
+filename_for_status = dict()
+filename_for_status["initialized"] = initialized_name
+filename_for_status["extracted"] = extracted_name
+filename_for_status["corrected"] = corrected_name
+filename_for_status["subtracted"] = subtracted_name
+filename_for_status["with_errors"] = with_errors_name
+filename_for_status["result"] = result_name
+
+# -----------------------------------------------------------------
+
+def filenames_before_status(status):
+
+    """
+    This function ...
+    :param status: 
+    :return: 
+    """
+
+    filenames = []
+
+    for status_i in status_list:
+
+        if status_i == status: break
+        else: filenames.append(filename_for_status[status_i])
+
+    return filenames
 
 # -----------------------------------------------------------------
 
@@ -226,6 +256,12 @@ class DataPreparer(PreparationComponent):
         # The statistics for each
         self.statistics = dict()
 
+        # The remote host (if needed)
+        self.remote = None
+
+        # The remote cache path
+        self.remote_preparation_path = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -270,6 +306,14 @@ class DataPreparer(PreparationComponent):
 
         # Call the setup function of the base class
         super(DataPreparer, self).setup(**kwargs)
+
+        # Setup the remote
+        if self.config.cache: self.remote = Remote(host_id=self.environment.cache_host_id)
+
+        # Create the cache directory
+        if self.config.cache:
+            self.remote_preparation_path = fs.join(self.remote.home_directory, self.galaxy_name + "_preparation")
+            if not self.remote.is_directory(self.remote_preparation_path): self.remote.create_directory(self.remote_preparation_path)
 
         # Get paths
         self.get_paths()
@@ -360,6 +404,59 @@ class DataPreparer(PreparationComponent):
             elif label == "result": self.result_paths.append(name, filepath)
             else: raise RuntimeError("Invalid answer for label: " + label)
 
+            # Cache results from all previous steps
+            if self.config.cache: self.cache_all_before(name, path, label)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def host_id(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.remote.host_id
+
+    # -----------------------------------------------------------------
+
+    def cache_all_before(self, name, directory_path, status):
+
+        """
+        This function ...
+        :param name:
+        :param directory_path: 
+        :param status: 
+        :return: 
+        """
+
+        # Debugging
+        status_to_steps()
+        log.debug("Caching intermediate results before " + status + " of " + name + " image to remote host '" + self.host_id + "' ...")
+
+        # Get filenames that can be cached
+        filenames = filenames_before_status(status)
+
+        # Determine the remote directory for this image
+        remote_image_directory_path = fs.join(self.remote_preparation_path, name)
+        if not self.remote.is_directory(remote_image_directory_path): self.remote.create_directory(remote_image_directory_path)
+
+        # Upload the files one by one, and delete them afterwards from the local
+        for filename in filenames:
+
+            # Debugging
+            log.debug("Uploading file '" + filename + "' ...")
+
+            # Determine the local filepath
+            filepath = fs.join(directory_path, filename)
+
+            # Upload
+            self.remote.upload(filepath, remote_image_directory_path, compress=True)
+
+            # Remove the local file
+            fs.remove_file(filepath)
+
     # -----------------------------------------------------------------
 
     def load_statistics(self):
@@ -390,6 +487,32 @@ class DataPreparer(PreparationComponent):
 
             # Set
             self.statistics[name] = statistics
+
+    # -----------------------------------------------------------------
+
+    def cache(self, name, path):
+
+        """
+        This function ...
+        :param name:
+        :param path: 
+        :return: 
+        """
+
+        filename = fs.strip_extension(fs.name(path))
+
+        # Debugging
+        log.debug("Caching " + filename + " " + name + " image ...")
+
+        # Determine the remote directory for this image
+        remote_image_directory_path = fs.join(self.remote_preparation_path, name)
+        if not self.remote.is_directory(remote_image_directory_path): self.remote.create_directory(remote_image_directory_path)
+
+        # Upload
+        self.remote.upload(path, remote_image_directory_path)
+
+        # Remove the file
+        fs.remove_file(path)
 
     # -----------------------------------------------------------------
 
@@ -456,6 +579,9 @@ class DataPreparer(PreparationComponent):
             # Save the statistics
             self.statistics[name].save()
 
+            # Cache the initialized file on the remote host
+            if self.config.cache: self.cache(name, path)
+
     # -----------------------------------------------------------------
 
     def correct_for_extinction(self):
@@ -506,6 +632,9 @@ class DataPreparer(PreparationComponent):
             # Add info to the statistics
             self.statistics[name].attenuation = attenuation
             self.statistics[name].save()
+
+            # Cache the extracted image
+            if self.config.cache: self.cache(name, path)
 
     # -----------------------------------------------------------------
 
@@ -617,6 +746,9 @@ class DataPreparer(PreparationComponent):
             # Save statistics
             self.statistics[name].save()
 
+            # Cache the extinction corrected image
+            if self.config.cache: self.cache(name, path)
+
     # -----------------------------------------------------------------
 
     def create_errormaps(self):
@@ -705,6 +837,9 @@ class DataPreparer(PreparationComponent):
             # Save statistics
             self.statistics[name].save()
 
+            # Cache the subtracted image
+            if self.config.cache: self.cache(name, path)
+
     # -----------------------------------------------------------------
 
     def convert_units(self):
@@ -746,6 +881,9 @@ class DataPreparer(PreparationComponent):
 
             # Save statistics
             self.statistics[name].save()
+
+            # Cache the with_errormaps image
+            if self.config.cache: self.cache(name, path)
 
     # -----------------------------------------------------------------
 
