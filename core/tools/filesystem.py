@@ -190,6 +190,18 @@ def absolute_or_in(path, in_path):
 
 # -----------------------------------------------------------------
 
+def absolute_or_in_cwd(path):
+
+    """
+    This function ...
+    :param path: 
+    :return: 
+    """
+
+    return absolute_or_in(path, cwd())
+
+# -----------------------------------------------------------------
+
 def is_subdirectory(path, parent_path):
 
     """

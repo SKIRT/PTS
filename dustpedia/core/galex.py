@@ -1318,7 +1318,7 @@ class GALEXMosaicMaker(Configurable):
         for band in self.config.bands:
 
             # Determine path
-            id_string = self.ngc_name + "_SDSS_" + band
+            id_string = self.ngc_name + "_GALEX_" + band
             #path = fs.join(output_path, id_string + ".fits")
             path = self.output_path_file(id_string + ".fits")
 
@@ -1341,9 +1341,9 @@ class GALEXMosaicMaker(Configurable):
         for band in self.config.bands:
 
             # Determine path
-            id_string = self.ngc_name + "_SDSS_" + band
+            id_string = self.ngc_name + "_GALEX_" + band
             #path = fs.join(output_path, id_string + "_errors.fits")
-            path = self.output_path_file(id_string + ".fits")
+            path = self.output_path_file(id_string + "_errors.fits")
 
             # Save error map as FITS file
             self.error_maps[band].saveto(path)
@@ -1364,9 +1364,9 @@ class GALEXMosaicMaker(Configurable):
         for band in self.config.bands:
 
             # Determine path
-            id_string = self.ngc_name + "_SDSS_" + band
+            id_string = self.ngc_name + "_GALEX_" + band
             #path = fs.join(output_path, id_string + "_relerrors.fits")
-            path = self.output_path_file(id_string + ".fits")
+            path = self.output_path_file(id_string + "_relerrors.fits")
 
             # Save relative error map as FITS file
             self.relative_error_maps[band].saveto(path)

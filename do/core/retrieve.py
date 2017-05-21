@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.core.send Send a file or directory to one of the configured remotes.
+## \package pts.do.core.retrieve Retrieve a file or directory from one of the remotes.
 
 # -----------------------------------------------------------------
 
@@ -22,11 +22,11 @@ from pts.core.tools import filesystem as fs
 # -----------------------------------------------------------------
 
 definition = ConfigurationDefinition()
-definition.add_required("local_path", "string", "path or name of the file or directory to send")
-definition.add_required("remote", "string", "the remote host to send to", choices=find_host_ids())
-definition.add_optional("remote_path", "string", "path of the remote directory to send to")
+definition.add_required("remote_path", "string", "remote path of the file or directory to retrieve")
+definition.add_required("remote", "string", "remote host to retrieve from", choices=find_host_ids())
+definition.add_optional("local_path", "string", "path of the local directory to store the file/directory")
 
-setter = ArgumentConfigurationSetter("send")
+setter = ArgumentConfigurationSetter("retrieve")
 config = setter.run(definition)
 
 # -----------------------------------------------------------------
@@ -36,7 +36,7 @@ level = "DEBUG" if config.debug else "INFO"
 
 # Initialize the logger
 log = logging.setup_log(level=level)
-log.start("Starting send ...")
+log.start("Starting retrieve ...")
 
 # -----------------------------------------------------------------
 
@@ -46,14 +46,19 @@ remote = Remote(host_id=config.remote)
 # -----------------------------------------------------------------
 
 # Set full path of origin
-origin = fs.absolute_or_in_cwd(config.local_path)
-name = fs.name(origin)
+origin = remote.absolute_path(config.remote_path)
 
 # Set full path to the destination
-if config.path is not None: destination = fs.join(remote.home_directory, name)
-else: destination = remote.absolute_path(config.remote_path)
+if config.local_path is not None: destination = fs.absolute_or_in_cwd(config.local_path)
+else: destination = fs.cwd()
+
+# -----------------------------------------------------------------
+
+# Debugging
+log.debug("Origin: " + origin)
+log.debug("Destination: " + destination)
 
 # Upload
-remote.upload(origin, destination)
+remote.download(origin, destination)
 
 # -----------------------------------------------------------------
