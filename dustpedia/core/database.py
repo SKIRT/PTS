@@ -34,6 +34,7 @@ from ...core.tools import types
 from ...magic.core.list import FrameList, NamedFrameList
 from ...magic.core.list import CoordinateSystemList, NamedCoordinateSystemList
 from ...core.tools import archive
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -46,11 +47,23 @@ login_link = "http://dustpedia.astro.noa.gr/Account/Login"
 # data: http://dustpedia.astro.noa.gr/Data
 data_link = "http://dustpedia.astro.noa.gr/Data"
 
+# MBB: http://dustpedia.astro.noa.gr/MBB
+mbb_link = "http://dustpedia.astro.noa.gr/MBB"
+
 # user
 user_link = "http://dustpedia.astro.noa.gr/Account/UserProfile"
 
 # print preview
 print_preview_link = "http://dustpedia.astro.noa.gr/Data/GalaxiesPrintView"
+
+# -----------------------------------------------------------------
+
+# http://dustpedia.astro.noa.gr/Content/tempFiles/mbb/dustpedia_mbb_results.csv
+
+all_mmb_results_url = "http://dustpedia.astro.noa.gr/Content/tempFiles/mbb/dustpedia_mbb_results.csv"
+
+# emissivity of κλ=8.52 x (250/λ)1.855 cm2/gr adapted to the THEMIS model
+# A bootstrap analysis was used to calculate the uncertainties in dust temperatures and masses.
 
 # -----------------------------------------------------------------
 
@@ -968,6 +981,183 @@ class DustPediaDatabase(object):
         table = tables.new(data, names)
 
         return table
+
+    # -----------------------------------------------------------------
+
+    def get_dust_black_body_parameters(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Getting general information about galaxy '" + galaxy_name + "' ...")
+
+        # http://dustpedia.astro.noa.gr/MBB?GalaxyName=NGC3031&tLow=&tHigh=&vLow=&vHigh=&inclLow=&inclHigh=&d25Low=&d25High=&SearchButton=Search
+
+        r = self.session.get(mbb_link + "?GalaxyName=" + galaxy_name + "&tLow=&tHigh=&vLow=&vHigh=&inclLow=&inclHigh=&d25Low=&d25High=&SearchButton=Search")
+
+        page_as_string = r.content
+
+        tree = html.fromstring(page_as_string)
+
+        table_list = [e for e in tree.iter() if e.tag == 'table']
+        table = table_list[-1]
+
+        table_rows = [e for e in table.iter() if e.tag == 'tr']
+
+        galaxy_info = None
+
+        for row in table_rows[1:]:
+
+            column_index = 0
+
+            for e in row.iter():
+
+                if e.tag != "td": continue
+
+                if column_index == 0:
+
+                    # for ee in e.iterchildren(): print(ee.text_content())
+                    # for ee in e.iterdescendants(): print(ee.text_content())
+                    # for ee in e.itersiblings(): print(ee.text_content())
+
+                    galaxy_info = e.text_content()
+
+                    # print(galaxy_info)
+
+                column_index += 1
+
+        splitted = galaxy_info.split("\r\n")
+
+        lines = [split.strip() for split in splitted if split.strip()]
+
+        #return lines
+
+        # Dust Temperature (K): 22.6±0.7
+        # Dust Mass (M_sun): 4900000±1000000
+        # Dust Luminosity (L_sun): 2.10E+09
+
+        temperature = None
+        temperature_error = None
+        mass = None
+        mass_error = None
+        luminosity = None
+        luminosity_error = None
+
+        #for index in range(len(lines)):
+        index = 0
+        while index < len(lines):
+
+            line = lines[index]
+
+            if "Dust Temperature" in line:
+
+                next_line = lines[index+1]
+                valuestr, errorstr = next_line.split("&plusmn")
+                value = float(valuestr)
+                error = float(errorstr)
+
+                temperature = value * u("K")
+                temperature_error = error * u("K")
+
+                index += 1
+
+            elif "Dust Mass" in line:
+
+                next_line = lines[index+1]
+                valuestr, errorstr = next_line.split("&plusmn")
+                value = float(valuestr)
+                error = float(errorstr)
+
+                mass = value * u("Msun")
+                mass_error = error * u("Msun")
+
+                index += 1
+
+            elif "Dust Luminosity" in line:
+
+                next_line = lines[index+1]
+
+                #valuestr, errorstr = next_line.split("&plusmn")
+                #value = float(valuestr)
+                #error = float(errorstr)
+
+                value = float(next_line)
+                error = None
+
+                luminosity = value * u("Lsun")
+                #luminosity_error = error * u("Lsun")
+                luminosity_error = None
+
+            index += 1
+
+        # Return the parameters
+        return mass, mass_error, temperature, temperature_error, luminosity, luminosity_error
+
+    # -----------------------------------------------------------------
+
+    def download_dust_black_body_plot(self, galaxy_name, path):
+
+        """
+        This function ...
+        :param galaxy_name: 
+        :param path:
+        :return: 
+        """
+
+        # http://dustpedia.astro.noa.gr/Content/Dustpedia_SEDs_THEMIS/NGC3031.png
+
+        url = "http://dustpedia.astro.noa.gr/Content/Dustpedia_SEDs_THEMIS/" + galaxy_name + ".png"
+
+        # Download
+        filepath = network.download_file(url, path, session=self.session, progress_bar=log.is_debug())
+
+        # Return the filepath
+        return filepath
+
+    # -----------------------------------------------------------------
+
+    def show_dust_black_body_plot(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name: 
+        :return: 
+        """
+
+        # Get
+        filepath = self.download_dust_black_body_plot(galaxy_name, self.temp_path)
+
+        # Open the file
+        fs.open_file(filepath)
+
+    # -----------------------------------------------------------------
+
+    def download_dust_black_body_table(self, path):
+
+        """
+        This function ... 
+        :param path: 
+        :return: 
+        """
+
+        filepath = network.download_file(all_mmb_results_url, path, session=self.session, progress_bar=log.is_debug())
+        return filepath
+
+    # -----------------------------------------------------------------
+
+    def get_dust_black_body_table(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        filepath = self.download_dust_black_body_table(self.temp_path)
+        return tables.from_file(filepath, format="ascii.no_header")
 
     # -----------------------------------------------------------------
 
