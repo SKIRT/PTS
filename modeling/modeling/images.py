@@ -198,6 +198,9 @@ class ImagesModeler(ModelerBase):
         config["name"] = self.fitting_run_name
         config["model_name"] = self.model_name
 
+        # Ask for and set the fitting method
+        config["fitting_method"] = self.fitting_method
+
         # Create the fitting configurer
         configurer = FittingConfigurer(config)
 

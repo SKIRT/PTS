@@ -348,6 +348,7 @@ class ModelingSetupTool(Configurable):
         self.modeling_config.method = self.object_config.method
         self.modeling_config.host_ids = self.object_config.host_ids
         self.modeling_config.fitting_host_ids = self.config.fitting_host_ids
+        self.modeling_config.fitting_method = self.config.fitting_method
 
     # -----------------------------------------------------------------
 
@@ -422,6 +423,7 @@ class ModelingSetupTool(Configurable):
         self.modeling_config.name = self.config.name
         self.modeling_config.modeling_type = self.config.type
         self.modeling_config.fitting_host_ids = self.config.fitting_host_ids
+        self.modeling_config.fitting_method = self.config.fitting_method
 
     # -----------------------------------------------------------------
 
@@ -496,6 +498,7 @@ class ModelingSetupTool(Configurable):
         self.modeling_config.name = self.config.name
         self.modeling_config.modeling_type = self.config.type
         self.modeling_config.fitting_host_ids = self.config.fitting_host_ids
+        self.modeling_config.fitting_method = self.config.fitting_method
 
     # -----------------------------------------------------------------
 

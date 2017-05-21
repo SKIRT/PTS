@@ -9,6 +9,18 @@
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.remote.host import find_host_ids
 from pts.core.tools.parallelization import ncores
+from pts.core.tools import filesystem as fs
+from pts.modeling.component.component import get_default_fitting_method
+from pts.modeling.modeling.base import fitting_methods
+
+# -----------------------------------------------------------------
+
+# Set modeling path
+modeling_path = fs.cwd()
+
+# -----------------------------------------------------------------
+
+default_fitting_method = get_default_fitting_method(modeling_path)
 
 # -----------------------------------------------------------------
 
@@ -58,5 +70,7 @@ definition.add_flag("sources_manual", "don't find sources, but mark them from th
 
 # Parallelization
 definition.add_optional("nprocesses", "positive_integer", "number of processes to use for parallel computations", max(8, ncores()))
+
+definition.add_optional("fitting_method", "string", "fitting method", default_fitting_method, choices=fitting_methods)
 
 # -----------------------------------------------------------------

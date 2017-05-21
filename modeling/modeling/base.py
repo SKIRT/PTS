@@ -31,12 +31,12 @@ from ...core.tools import stringify
 from ...core.tools.loops import repeat_check
 from ...core.remote.remote import Remote
 from ..fitting.finisher import ExplorationFinisher
-from ...core.basics.configuration import prompt_string
 from ...core.tools import time
 
 # -----------------------------------------------------------------
 
 fitting_methods = ["genetic", "grid"]
+default_fitting_method = "genetic"
 
 # -----------------------------------------------------------------
 
@@ -213,7 +213,7 @@ class ModelerBase(Configurable):
 
         # Set the fitting method
         if "fitting_method" in kwargs: self.fitting_method = kwargs.pop("fitting_method")
-        else: self.fitting_method = prompt_string("fitting_method", "fitting method", choices=fitting_methods)
+        else: self.fitting_method = self.config.fitting_method #self.fitting_method = prompt_string("fitting_method", "fitting method", choices=fitting_methods)
 
     # -----------------------------------------------------------------
 

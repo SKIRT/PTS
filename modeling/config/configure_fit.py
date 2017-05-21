@@ -9,6 +9,7 @@
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.modeling.build.component import get_model_names
 from pts.modeling.fitting.component import get_run_names
+from pts.modeling.component.component import get_default_fitting_method
 from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
@@ -18,7 +19,8 @@ modeling_path = fs.cwd()
 # -----------------------------------------------------------------
 
 # Fitting methods
-default_fitting_method = "genetic"
+#default_fitting_method = "genetic"
+default_fitting_method = get_default_fitting_method(modeling_path) # as defined in the modeling configuration
 fitting_methods = ["genetic", "grid"]
 
 # Default number of digits

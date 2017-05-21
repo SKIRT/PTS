@@ -628,6 +628,19 @@ def load_modeling_configuration(modeling_path):
 
 # -----------------------------------------------------------------
 
+def get_default_fitting_method(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path: 
+    :return: 
+    """
+
+    configuration = load_modeling_configuration(modeling_path)
+    return configuration.fitting_method
+
+# -----------------------------------------------------------------
+
 def load_modeling_history(modeling_path):
 
     """

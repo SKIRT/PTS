@@ -329,7 +329,7 @@ class SimplePropertyComposite(object):
                 print(name + ":", value + " [" + actual_dtype + "]", file=fh)
 
         # Update the path
-        self._path = None
+        self._path = path
 
     # -----------------------------------------------------------------
 
