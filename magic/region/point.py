@@ -260,7 +260,7 @@ class PixelPointRegion(PointRegion, PixelCoordinate, PixelRegion):
         :return:
         """
 
-        return self.__class__(self.x, self.y, self.meta)
+        return self.__class__(self.x, self.y, meta=self.meta)
 
     # -----------------------------------------------------------------
 
@@ -284,8 +284,7 @@ class PixelPointRegion(PointRegion, PixelCoordinate, PixelRegion):
         :return:
         """
 
-        return self.__class__(self.x, self.y, self.meta)
-
+        return self.__class__(self.x, self.y, meta=self.meta)
 
     # -----------------------------------------------------------------
 

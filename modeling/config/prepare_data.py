@@ -9,6 +9,7 @@
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.remote.host import find_host_ids
 from pts.core.tools.parallelization import ncores
+from pts.modeling.preparation.preparer import steps
 
 # -----------------------------------------------------------------
 
@@ -40,5 +41,7 @@ definition.add_optional("annulus_outer_factor", "real", "annulus_outer_factor", 
 
 definition.add_optional("saturation_expansion_factor", "real", "saturation expansion factor", 1.5)
 definition.add_optional("stars_expansion_factor", "real", "stars expansion factor", 2.)
+
+definition.add_optional("rerun", "string", "rerun a certain step for all images", choices=steps)
 
 # -----------------------------------------------------------------

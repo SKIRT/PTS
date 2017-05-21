@@ -12,6 +12,7 @@ from pts.core.tools.parallelization import ncores
 from pts.core.tools import filesystem as fs
 from pts.modeling.component.component import get_default_fitting_method
 from pts.modeling.modeling.base import fitting_methods
+from pts.modeling.preparation.preparer import steps
 
 # -----------------------------------------------------------------
 
@@ -72,5 +73,7 @@ definition.add_flag("sources_manual", "don't find sources, but mark them from th
 definition.add_optional("nprocesses", "positive_integer", "number of processes to use for parallel computations", max(8, ncores()))
 
 definition.add_optional("fitting_method", "string", "fitting method", default_fitting_method, choices=fitting_methods)
+
+definition.add_optional("rerun_preparation_step", "string", "rerun a certain preparation step for all images", choices=steps)
 
 # -----------------------------------------------------------------

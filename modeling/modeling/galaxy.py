@@ -673,6 +673,8 @@ class GalaxyModeler(ModelerBase):
         config["exclude_filters"] = lower_resolution_filters
         config["nprocesses"] = self.config.nprocesses
 
+        config["rerun"] = self.config.rerun_preparation_step
+
         # Create the data preparer
         preparer = DataPreparer()
 

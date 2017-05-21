@@ -93,7 +93,7 @@ class CircleRegion(Region):
         :return:
         """
 
-        return self.__class__(self.center, self.radius * value, self.meta)
+        return self.__class__(self.center, self.radius * value, meta=self.meta)
 
     # -----------------------------------------------------------------
 

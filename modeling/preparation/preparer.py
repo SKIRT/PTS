@@ -61,6 +61,49 @@ statistics_name = "statistics.txt"
 
 # -----------------------------------------------------------------
 
+# STEPS:
+
+# Source extraction
+# Correct for galactic extinction
+# Sky SUBTRACTION
+# CALCULATE ERROR MAPS
+# CONVERT UNITS
+
+steps = ["extraction", "extinction", "subtraction", "errormaps", "units"]
+
+# -----------------------------------------------------------------
+
+def steps_before(step):
+
+    """
+    This function ...
+    :param step: 
+    :return: 
+    """
+
+    # Check
+    if step not in steps: raise ValueError("Invalid step: '" + step + "'")
+
+    steps = []
+    for stepi in steps:
+        if step == step: break
+        else: steps.append(stepi)
+    return steps
+
+# -----------------------------------------------------------------
+
+def steps_before_and_including(step):
+
+    """
+    This function ...
+    :param step: 
+    :return: 
+    """
+
+    return steps_before(step) + [step]
+
+# -----------------------------------------------------------------
+
 class PreparationStatistics(SimplePropertyComposite):
 
     """
@@ -107,7 +150,7 @@ class PreparationStatistics(SimplePropertyComposite):
         self.add_property("mean_noise", "real", "mean noise")
         self.add_property("mean_subtracted", "real", "mean subtracted value")
         self.add_property("median_subtracted", "real", "median subtracted value")
-        self.add_property("stddev subtracted", "real", "stddev of subtracted frame")
+        self.add_property("stddev_subtracted", "real", "stddev of subtracted frame")
 
         self.add_property("error_contributions", "string_list", "error contributions")
 
@@ -286,7 +329,7 @@ class DataPreparer(PreparationComponent):
             check_initialized(name, path)
 
             # Sort
-            label, filepath = sort_image(name, path)
+            label, filepath = sort_image(name, path, rerun=self.config.rerun)
             if label == "initialized": self.initialized_paths.append(name, filepath)
             elif label == "extracted": self.extracted_paths.append(name, filepath)
             elif label == "corrected": self.corrected_paths.append(name, filepath)
@@ -501,7 +544,7 @@ class DataPreparer(PreparationComponent):
             # Set aperture settings
             config["mask"] = dict()
             config["mask"]["annulus_inner_factor"] = self.config.annulus_inner_factor
-            config["mask"]["annulus_outer_factor"] = self.config.annulus_inner_factor
+            config["mask"]["annulus_outer_factor"] = self.config.annulus_outer_factor
             config["mask"]["saturation_expansion_factor"] = self.config.saturation_expansion_factor
             config["mask"]["stars_expansion_factor"] = self.config.stars_expansion_factor
 
@@ -804,12 +847,13 @@ def check_initialized(name, path):
 
 # -----------------------------------------------------------------
 
-def sort_image(name, path):
+def sort_image(name, path, rerun=None):
 
     """
     This function ...
     :param name: 
     :param path: 
+    :param rerun:
     :return: 
     """
 
@@ -832,92 +876,82 @@ def sort_image(name, path):
 
     # -----------------------------------------------------------------
 
-    # STEPS:
-
-    # Source extraction
-    # Correct for galactic extinction
-    # Sky SUBTRACTION
-    # CALCULATE ERROR MAPS
-    # CONVERT UNITS
-
-    # -----------------------------------------------------------------
-
     # ALREADY COMPLETELY PREPARED
-
     # Check if a prepared image is already present
-    if fs.is_file(result_path):
-
-        #self.result_paths.append(name, result_path)
-        return "result", result_path
-
-    # -----------------------------------------------------------------
+    if check_result(name, result_path): return "result", result_path
 
     # ALREDAY WITH ERROR MAPS
-    if fs.is_file(with_errors_path):
-
-        return "with_errors", with_errors_path
+    if check_with_errors(name, with_errors_path, rerun=rerun): return "with_errors", with_errors_path
 
     # ALREADY SKY-SUBTRACTED
-    #if fs.is_file(subtracted_path):
-    if check_subtracted(name, subtracted_path, sky_path): return "subtracted", subtracted_path
-
-        # Check whether the sky directory is present
-        #if not fs.is_directory(sky_path): raise IOError("The sky subtraction output directory is not present for the '" + name + "' image")
-
-        # Add the path of the sky-subtracted image
-        #self.preparation_dataset.add_path(prep_name, subtracted_path)
-
-        # Check whether keywords are set to True in image header ?
-
-        #return "subtracted", subtracted_path
-
-    # -----------------------------------------------------------------
+    if check_subtracted(name, subtracted_path, sky_path, rerun=rerun): return "subtracted", subtracted_path
 
     # ALREADY EXTINCTION CORRECTED
-
     # Check if the extinction-corrected image is present
-    elif fs.is_file(corrected_path):
-
-        # Add the path of the extinction-corrected image
-        #self.preparation_dataset.add_path(prep_name, corrected_path)
-
-        return "corrected", corrected_path
+    elif check_extinction_corrected(name, corrected_path, rerun=rerun): return "corrected", corrected_path
 
     # ALREADY SOURCE-EXTRACTED
-
     # Check if the source-extracted image is present
-    elif fs.is_file(extracted_path):
-
-        # Add the path of the source-extracted image
-        #self.preparation_dataset.add_path(prep_name, extracted_path)
-
-        return "extracted", extracted_path
-
-    # -----------------------------------------------------------------
+    elif check_extracted(name, extracted_path, rerun=rerun): return "extracted", extracted_path
 
     # NO STEPS PERFORMED YET, START FROM INITIALIZED IMAGE
-
-    else:
-
-        # Add the path to the initialized image to the dataset
-        #self.preparation_dataset.add_path(prep_name, image_path)
-
-        return "initialized", initialized_path
-
-        # -----------------------------------------------------------------
-
-    # If all images have already been prepared
-    #if len(self.preparation_dataset) == 0: log.success("All images are already prepared")
+    else: return "initialized", initialized_path
 
 # -----------------------------------------------------------------
 
-def check_subtracted(name, subtracted_path, sky_path):
+def check_result(name, path, rerun=None):
+
+    """
+    This function ...
+    :param name: 
+    :param path:
+    :param rerun: 
+    :return: 
+    """
+
+    if fs.is_file(path):
+
+        if rerun is not None and rerun in steps_before_and_including("units"):
+
+            fs.remove_file(path)
+            return False
+
+        else: return True
+
+    else: return False
+
+# -----------------------------------------------------------------
+
+def check_with_errors(name, path, rerun=None):
+
+    """
+    This function ...
+    :param name: 
+    :param rerun: 
+    :return: 
+    """
+
+    if fs.is_file(path):
+
+        if rerun is not None and rerun in steps_before_and_including("errormaps"):
+
+            fs.remove_file(path)
+            return False
+
+        else: return True
+
+    else: return False
+
+# -----------------------------------------------------------------
+
+def check_subtracted(name, subtracted_path, sky_path, rerun=None):
 
     """
     This fucntion ...
     :param name:
     :param subtracted_path: 
     :param sky_path: 
+    :param rerun:
     :return: 
     """
 
@@ -939,6 +973,61 @@ def check_subtracted(name, subtracted_path, sky_path):
 
             fs.remove_file(subtracted_path)
             fs.remove_directory(sky_path)
+
+            return False
+
+        elif rerun is not None and rerun in steps_before_and_including("subtraction"):
+
+            if fs.is_directory(sky_path): fs.remove_directory(sky_path)
+            fs.remove_file(subtracted_path)
+
+            return False
+
+        else: return True
+
+    else: return False
+
+# -----------------------------------------------------------------
+
+def check_extinction_corrected(name, path, rerun=None):
+
+    """
+    This function ...
+    :param name: 
+    :param path: 
+    :param rerun:
+    :return: 
+    """
+
+    if fs.is_file(path):
+
+        if rerun is not None and rerun in steps_before_and_including("extinction"):
+
+            fs.remove_file(path)
+            return False
+
+        else: return True
+
+    else: return False
+
+# -----------------------------------------------------------------
+
+def check_extracted(name, path, rerun=None):
+
+    """
+    This function ...
+    :param name: 
+    :param path: 
+    :param rerun: 
+    :return: 
+    """
+
+    if fs.is_file(path):
+
+        if rerun is not None and rerun in steps_before_and_including("extraction"):
+
+            fs.remove_file(path)
+            return False
 
         else: return True
 
