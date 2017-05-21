@@ -317,8 +317,8 @@ class DataPreparer(PreparationComponent):
             statistics_path = fs.join(path, statistics_name)
 
             # Load or initialize the statistics file
-            if fs.is_file(statistics_path): statistics = PreparationStatistics()
-            else: statistics = PreparationStatistics.from_file(statistics_path)
+            if fs.is_file(statistics_path): statistics = PreparationStatistics.from_file(statistics_path)
+            else: statistics = PreparationStatistics()
 
             # Set path anyway (so that we can do .save() everytime)
             statistics.path = statistics_path

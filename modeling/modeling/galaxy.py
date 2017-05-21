@@ -615,11 +615,7 @@ class GalaxyModeler(ModelerBase):
 
         # Loop over the directories in the data/images path
         images_path = fs.join(self.environment.data_path, "images")
-        #for origin_name in fs.directories_in_path(images_path, returns="name"):
         for image_path in fs.files_in_path(images_path, returns="path", extension="fits", not_contains="poisson", recursive=True):
-
-            # Parse filter
-            #fltr = parse_filter(i)
 
             # Load frame to get filter
             fltr = get_filter(image_path)
