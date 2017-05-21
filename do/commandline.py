@@ -20,6 +20,37 @@ import time as _time
 from pts.core.tools import introspection
 from pts.core.tools import filesystem as fs
 from pts.core.tools import formatting as fmt
+from pts.core.tools import time
+from pts.core.tools.logging import setup_log
+
+# -----------------------------------------------------------------
+
+def initialize_log(config, remote=None):
+
+    """
+    This function ...
+    :parma remote:
+    :return: 
+    """
+
+    # Determine the log level
+    level = "INFO"
+    if config.debug: level = "DEBUG"
+    if config.brief: level = "SUCCESS"
+
+    # Determine log path
+    #if args.remote is None: logfile_path = fs.join(config.log_path, time.unique_name("log") + ".txt") if config.report else None
+    #else: logfile_path = None
+
+    # Determine the log file path
+    if remote is None: logfile_path = fs.join(config.log_path, time.unique_name("log") + ".txt") if config.report else None
+    else: logfile_path = None
+
+    # Initialize the logger
+    log = setup_log(level=level, path=logfile_path)
+
+    # Return the logger
+    return log
 
 # -----------------------------------------------------------------
 

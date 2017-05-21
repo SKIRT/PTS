@@ -67,6 +67,25 @@ all_mmb_results_url = "http://dustpedia.astro.noa.gr/Content/tempFiles/mbb/dustp
 
 # -----------------------------------------------------------------
 
+def get_mbb_dust_mass(galaxy_name):
+
+    """
+    This function ...
+    :param galaxy_name: 
+    :return: 
+    """
+
+    username, password = get_account()
+
+    database = DustPediaDatabase()
+    database.login(username, password)
+
+    parameters = database.get_dust_black_body_parameters(galaxy_name)
+
+    return parameters[0]
+
+# -----------------------------------------------------------------
+
 class DustPediaDatabase(object):
 
     """

@@ -35,7 +35,6 @@ import argparse
 # Import the relevant PTS modules
 from pts.core.tools import introspection, parsing
 from pts.core.tools import filesystem as fs
-from pts.core.tools import time
 from pts.do.commandline import show_all_available, show_possible_matches
 from pts.modeling.welcome import welcome as welcome_modeling
 from pts.magic.welcome import welcome as welcome_magic
@@ -47,6 +46,7 @@ from pts.magic.setup import setup as setup_magic, finish as finish_magic
 from pts.evolve.setup import setup as setup_evolve, finish as finish_evolve
 from pts.dustpedia.setup import setup as setup_dustpedia, finish as finish_dustpedia
 from pts.do.run import run_locally, run_remotely
+from pts.do.commandline import initialize_log
 
 # -----------------------------------------------------------------
 
@@ -202,17 +202,8 @@ elif len(table_matches) == 1 and len(matches) == 0:
     elif subproject == "dustpedia": setup_dustpedia(command_name, fs.cwd())
     elif subproject == "evolve": setup_evolve(command_name, fs.cwd())
 
-    # Determine the log level
-    level = "INFO"
-    if config.debug: level = "DEBUG"
-    if config.brief: level = "SUCCESS"
-
-    # Determine log path
-    if args.remote is None: logfile_path = fs.join(config.log_path, time.unique_name("log") + ".txt") if config.report else None
-    else: logfile_path = None
-
     # Initialize the logger
-    log = logging.setup_log(level=level, path=logfile_path)
+    log = initialize_log(config, remote=args.remote)
 
     # Exact command name
     exact_command_name = subproject + "/" + command_name

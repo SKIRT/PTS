@@ -12,38 +12,37 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import os
-import argparse
-
 # Import the relevant PTS classes and modules
 from pts.core.advanced.resources import ResourceEstimator
-from pts.core.tools.logging import log
+from pts.do.commandline import initialize_log
+from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
 
 # -----------------------------------------------------------------
 
 # Create the command-line parser
-parser = argparse.ArgumentParser()
-parser.add_argument("skifile", type=str, help="the name of the ski file")
-parser.add_argument("threads", type=int, help="the number of parallel threads")
-parser.add_argument("processes", type=int, help="the number of parallel processes")
+definition = ConfigurationDefinition()
+definition.add_required("skifile", "file_path", "name of the ski file")
+definition.add_required("nthreads", "positive_integer", "number of parallel threads")
+definition.add_required("nprocesses", "positive_integer", "number of parallel processes")
 
-# Parse the command line arguments
-arguments = parser.parse_args()
+# Parse
+setter = ArgumentConfigurationSetter("estimate")
+config = setter.run(definition)
 
 # -----------------------------------------------------------------
 
 # Initialize the logger
-log.info("Starting estimate script ...")
+log = initialize_log(config)
+log.info("Starting estimate ...")
 
 # -----------------------------------------------------------------
 
 # Determine the full path to the parameter file
-ski_path = os.path.abspath(arguments.file)
+ski_path = config.skifile
 
 # Create and run a ResourceEstimator oject
 estimator = ResourceEstimator()
-estimator.run(ski_path, arguments.processes, arguments.threads)
+estimator.run(ski_path, config.nprocesses, config.nthreads)
 
 # Inform the user about the resource requirements
 log.info("This simulation requires " + estimator.memory + " GB of virtual memory")

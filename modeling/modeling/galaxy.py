@@ -57,6 +57,7 @@ from ..component.galaxy import get_observed_sed_file_path, get_reference_seds
 from ...core.plot.sed import SEDPlotter
 from ...core.tools import parsing
 from ...core.tools.logging import set_log_file, unset_log_file
+from ...dustpedia.core.database import get_mbb_dust_mass
 
 # -----------------------------------------------------------------
 
@@ -74,10 +75,13 @@ free_parameters["DL14"] = ["fuv_young", "dust_mass", "fuv_ionizing"]
 
 # -----------------------------------------------------------------
 
-free_parameter_ranges = dict()
-free_parameter_ranges["DL14"] = {"fuv_young": QuantityRange(0.0, 1e37, unit="W/micron"),
-                                 "dust_mass": QuantityRange(0.5e7, 3.e7, unit="Msun"),
-                                 "fuv_ionizing": QuantityRange(0.0, 1e34, unit="W/micron")}
+#free_parameter_ranges = dict()
+#free_parameter_ranges["DL14"] = {"fuv_young": QuantityRange(0.0, 1e37, unit="W/micron"),
+#                                 "dust_mass": None, #QuantityRange(0.5e7, 3.e7, unit="Msun"),
+#                                 "fuv_ionizing": QuantityRange(0.0, 1e34, unit="W/micron")}
+
+fuv_young_range = QuantityRange(0.0, 1e37, unit="W/micron")
+fuv_ionizing_range = QuantityRange(0.0, 1e34, unit="W/micron")
 
 # -----------------------------------------------------------------
 
@@ -103,7 +107,7 @@ fitting_filter_names = ["GALEX FUV", "GALEX NUV", "SDSS u", "SDSS g", "SDSS r", 
 
 # -----------------------------------------------------------------
 
-# URLS for Halpha data for different galaxies (keys are the HYPERLEDA names)
+# URLS for Halpha data for different galaxies (keys are the HYPERLEDA [DustPedia] names)
 halpha_urls = {"NGC3031": "https://ned.ipac.caltech.edu/img/2001ApJ...559..878H/MESSIER_081:I:Ha:hwb2001.fits.gz"}
 halpha_fluxes = {"NGC3031": 7.8e40 * u("erg/s")}
 
@@ -1402,7 +1406,8 @@ class GalaxyModeler(ModelerBase):
         config["representation_name"] = self.representation_name
 
         # Set free parameters
-        config["parameters"] = free_parameters[self.modeling_config.method]
+        parameter_labels = free_parameters[self.modeling_config.method]
+        config["parameters"] = parameter_labels
 
         # Set parameter descriptions
         config["descriptions"] = parameter_descriptions
@@ -1413,8 +1418,19 @@ class GalaxyModeler(ModelerBase):
         # Set parameter units
         config["units"] = parameter_units
 
+        # Calculate ranges
+        free_parameter_ranges = dict()
+        for label in parameter_labels:
+            if label == "fuv_young": free_parameter_ranges[label] = fuv_young_range
+            elif label == "fuv_ionizing": free_parameter_ranges[label] = fuv_ionizing_range
+            elif label == "dust_mass":
+                dust_mass = get_mbb_dust_mass(self.hyperleda_name)
+                dust_mass_range = QuantityRange.around(dust_mass, 0.1, 10)
+                free_parameter_ranges[label] = dust_mass_range
+            else: raise ValueError("Free parameter label not recognized: '" + label + "'")
+
         # Set ranges
-        config["ranges"] = free_parameter_ranges[self.modeling_config.method]
+        config["ranges"] = free_parameter_ranges #free_parameter_ranges[self.modeling_config.method]
 
         # Set fitting filters
         config["filters"] = fitting_filter_names

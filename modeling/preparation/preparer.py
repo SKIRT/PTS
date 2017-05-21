@@ -84,11 +84,11 @@ def steps_before(step):
     # Check
     if step not in steps: raise ValueError("Invalid step: '" + step + "'")
 
-    steps = []
+    the_steps = []
     for stepi in steps:
-        if step == step: break
-        else: steps.append(stepi)
-    return steps
+        if stepi == step: break
+        else: the_steps.append(stepi)
+    return the_steps
 
 # -----------------------------------------------------------------
 
@@ -868,33 +868,17 @@ def sort_image(name, path, rerun=None):
     corrected_path = fs.join(path, corrected_name)
     subtracted_path = fs.join(path, subtracted_name)
     with_errors_path = fs.join(path, with_errors_name)
-    #converted_path = fs.join(path, "converted_units.fits")
     result_path = fs.join(path, result_name)
 
     # Sky directory path
     sky_path = fs.join(path, sky_name)
 
-    # -----------------------------------------------------------------
-
-    # ALREADY COMPLETELY PREPARED
-    # Check if a prepared image is already present
+    # Run through the different checks
     if check_result(name, result_path): return "result", result_path
-
-    # ALREDAY WITH ERROR MAPS
-    if check_with_errors(name, with_errors_path, rerun=rerun): return "with_errors", with_errors_path
-
-    # ALREADY SKY-SUBTRACTED
-    if check_subtracted(name, subtracted_path, sky_path, rerun=rerun): return "subtracted", subtracted_path
-
-    # ALREADY EXTINCTION CORRECTED
-    # Check if the extinction-corrected image is present
+    elif check_with_errors(name, with_errors_path, rerun=rerun): return "with_errors", with_errors_path
+    elif check_subtracted(name, subtracted_path, sky_path, rerun=rerun): return "subtracted", subtracted_path
     elif check_extinction_corrected(name, corrected_path, rerun=rerun): return "corrected", corrected_path
-
-    # ALREADY SOURCE-EXTRACTED
-    # Check if the source-extracted image is present
     elif check_extracted(name, extracted_path, rerun=rerun): return "extracted", extracted_path
-
-    # NO STEPS PERFORMED YET, START FROM INITIALIZED IMAGE
     else: return "initialized", initialized_path
 
 # -----------------------------------------------------------------
@@ -1042,6 +1026,7 @@ def extract_sources(image, config, sources_path, visualisation_path=None):
     :param image:
     :param config:
     :param sources_path:
+    :param visualisation_path:
     :return:
     """
 
