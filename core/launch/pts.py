@@ -36,6 +36,27 @@ class RemoteInstance(object):
 
 # -----------------------------------------------------------------
 
+def load_task(host_id, task_id):
+
+    """
+    This function ...
+    :param host_id: 
+    :param task_id: 
+    :return: 
+    """
+
+    # Determine path
+    host_id_run_path = fs.join(introspection.pts_run_dir, host_id)
+    task_path = fs.join(host_id_run_path, str(task_id) + ".task")
+
+    # Load the task
+    task = Task.from_file(task_path)
+
+    # Return the task
+    return task
+
+# -----------------------------------------------------------------
+
 def launch_local(pts_command, config_dict, input_dict=None, analysers=None, analysis_info=None, description=None,
                  cwd=None, debug=False, brief=False):
 

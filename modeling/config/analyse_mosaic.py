@@ -17,6 +17,8 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 # The path of the resulting mosaic image
 definition.add_optional("band_id", "string", "ID of the band")
 definition.add_optional("image_path", "file_path", "path to the resulting mosaic image file")
+definition.add_optional("images_path", "directory_path", "path to a directory with mosaic images files")
+definition.add_optional("out_path", "directory_path", "path of the out directory")
 
 # Task id
 definition.add_optional("host_id", "string", "host ID of the task", choices=find_host_ids())

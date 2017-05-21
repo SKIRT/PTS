@@ -16,10 +16,10 @@ from __future__ import absolute_import, division, print_function
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from .component import DataComponent
-from ...magic.core.frame import Frame
+from ...magic.core.frame import Frame, get_filter
 from ...magic.core.image import Image
-from ...core.tools import introspection
-from ...core.basics.task import Task
+from ...core.launch.pts import load_task
+from ...core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
@@ -124,42 +124,21 @@ class MosaicAnalyser(DataComponent):
         super(MosaicAnalyser, self).setup(**kwargs)
 
         # Check for image that is specified
-        if "image" in kwargs:
-
-            # Get image
-            image = kwargs.pop("image")
-
-            # Get band ID
-            band_id = image.filter_name.replace(" ", "_")
-
-            # Get frames
-            mosaic_frame = image.frames["primary"]
-            mosaic_errors = image.frames["errors"]
-
-            self.mosaics[band_id] = mosaic_frame
-            self.poisson_frames[band_id] = mosaic_errors
-
-            self.origin = band_id.split("_")[0]
+        if "image" in kwargs: self.setup_from_image(kwargs.pop("image"))
 
         # Check for image path that is specified
         elif self.config.image_path is not None:
 
             # Load the image
             image = Image.from_file(self.config.image_path)
+            self.setup_from_image(image, self.config.band_id)
 
-            # Get band id
-            if image.filter is not None: band_id = image.filter_name.replace(" ", "_")
-            elif self.config.band_id is not None: band_id = self.config.band_id
-            else: raise ValueError("Band ID must be specified")
+        # From directory with multiple images
+        if self.config.images_path is not None: self.setup_from_images_path()
 
-            # Get frames
-            mosaic_frame = image.frames["primary"]
-            mosaic_errors = image.frames["errors"]
-
-            self.mosaics[band_id] = mosaic_frame
-            self.poisson_frames[band_id] = mosaic_errors
-
-            self.origin = band_id.split("_")[0]
+        # From seperate mosaic, errors and relerrors files
+        if "mosaic" in kwargs and "errors" in kwargs and "relerrors" in kwargs: self.setup_from_mosaics(kwargs.pop("mosaic"), kwargs.pop("errors"), kwargs.pop("relerrors"))
+        elif self.config.out_path is not None: self.setup_from_out(self.config.out_path)
 
         # Check whether task is specified
         if "task" in kwargs: task = kwargs.pop("task")
@@ -167,18 +146,149 @@ class MosaicAnalyser(DataComponent):
 
             if self.config.task_id is None: raise ValueError("Task ID is not specified")
 
-            # Determine path
-            host_id_run_path = fs.join(introspection.pts_run_dir, self.config.host_id)
-            task_path = fs.join(host_id_run_path, str(self.config.task_id) + ".task")
-
             # Load the task
-            task = Task.from_file(task_path)
+            task = load_task(self.config.host_id, self.config.task_id)
 
         elif self.config.task_id is not None: raise ValueError("Task ID is specified but host ID is not")
         else: task = None
 
         # If the task is not None
         if task is not None: self.task = task
+
+    # -----------------------------------------------------------------
+
+    def setup_from_image(self, image, band_id=None):
+
+        """
+        This function ...
+        :param image:
+        :param band_id: 
+        :return: 
+        """
+
+        # Get band id
+        if image.filter is not None: band_id = image.filter_name.replace(" ", "_")
+        if band_id is None: raise ValueError("Band ID must be specified")
+
+        # Get frames
+        mosaic_frame = image.frames["primary"]
+        mosaic_errors = image.frames["errors"]
+
+        self.mosaics[band_id] = mosaic_frame
+        self.poisson_frames[band_id] = mosaic_errors
+
+        self.origin = band_id.split("_")[0]
+
+    # -----------------------------------------------------------------
+
+    def setup_from_images_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Find files
+        paths = fs.files_in_path(self.config.images_path, extension="fits")
+
+        origin = None
+
+        # Loop over the paths
+        for path in paths:
+
+            name = fs.strip_extension(fs.name(path))
+
+            fltr = get_filter(path)
+            if fltr is None:
+                if "mosaic_jansky" in name: fltr = parse_filter(name.split("mosaic_jansky_")[1])
+                else: raise NotImplementedError("Don't know how to proceed")
+
+            band_id = str(fltr).replace(" ", "_")
+            origin_i = band_id.split("_")[0]
+
+            if origin is None: origin = origin_i
+            elif origin_i != origin: raise IOError("Found files of different origin (instrument)")
+
+            # Load image
+            image = Image.from_file(path)
+
+            # Get frames
+            mosaic_frame = image.frames["primary"]
+            mosaic_errors = image.frames["errors"]
+
+            # Set maps
+            self.mosaics[band_id] = mosaic_frame
+            self.poisson_frames[band_id] = mosaic_errors
+            if "relerrors" in image.frames: self.relative_poisson_frames[band_id] = image.frames["relerrors"]
+
+        # Set origin
+        self.origin = origin
+
+    # -----------------------------------------------------------------
+
+    def setup_from_mosaics(self, mosaic, errors, relerrors=None):
+
+        """
+        This funciton ...
+        :param mosaic: 
+        :param errors: 
+        :param relerrors: 
+        :return: 
+        """
+
+        # Check filter
+        if mosaic.filter is None: raise ValueError("Mosaic filter is not defined")
+        if errors.filter is not None and mosaic.filter != errors.filter: raise ValueError("Filter of mosaic is not the same as filter of errors")
+        if relerrors is not None and relerrors.filter is not None and mosaic.filter != relerrors.filter: raise ValueError("Filter of mosaic is not the same as filter of relerrors")
+
+        # Determine the band ID
+        band_id = mosaic.filter_name.replace(" ", "_")
+
+        # Set
+        self.mosaics[band_id] = mosaic
+        self.poisson_frames[band_id] = errors
+        if relerrors is not None: self.relative_poisson_frames[band_id] = relerrors
+
+        # Set origin
+        self.origin = band_id.split("_")[0]
+
+    # -----------------------------------------------------------------
+
+    def setup_from_out(self, out_path):
+
+        """
+        This function ...
+        :param out_path: 
+        :return: 
+        """
+
+        # Find files
+        paths = fs.files_in_path(out_path, extension="fits")
+
+        # Determine origin
+        origin = None
+        for path in paths:
+            name = fs.strip_extension(fs.name(path))
+            origin_i = name.split("_")[1]
+            if origin is None: origin = origin_i
+            elif origin != origin_i: raise IOError("Found files of different origin (instrument)")
+
+        # Set the origin
+        self.origin = origin
+
+        # Loop over the files
+        for path in paths:
+
+            name = fs.strip_extension(fs.name(path))
+            band_id = origin + "_" + name.split("_")[2]
+
+            maptype = name.split("_")[-1]
+
+            # Check type
+            if maptype == "errors": self.poisson_frames[band_id] = Frame.from_file(path)
+            elif maptype == "relerrors": self.relative_poisson_frames[band_id] = Frame.from_file(path)
+            elif maptype == "swarp": continue
+            else: self.mosaics[band_id] = Frame.from_file(path)  # the mosaic
 
     # -----------------------------------------------------------------
 
