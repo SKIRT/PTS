@@ -320,7 +320,7 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        return DataSet.from_file(self.initial_dataset_path)
+        return DataSet.from_file(self.initial_dataset_path, check=False) # don't check whether the file are actually present (caching on remote)
 
     # -----------------------------------------------------------------
 

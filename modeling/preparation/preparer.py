@@ -308,13 +308,15 @@ class DataPreparer(PreparationComponent):
         super(DataPreparer, self).setup(**kwargs)
 
         # Setup the remote
-        if self.config.cache: self.remote = Remote(host_id=self.environment.cache_host_id)
+        #if self.config.cache: self.remote = Remote(host_id=self.environment.cache_host_id)
+        self.remote = Remote(host_id=self.environment.cache_host_id)
 
         # Create the cache directory
+        self.remote_preparation_path = fs.join(self.remote.home_directory, self.galaxy_name + "_preparation")
         if self.config.cache:
-            self.remote_preparation_path = fs.join(self.remote.home_directory, self.galaxy_name + "_preparation")
+            #self.remote_preparation_path = fs.join(self.remote.home_directory, self.galaxy_name + "_preparation")
             if not self.remote.is_directory(self.remote_preparation_path): self.remote.create_directory(self.remote_preparation_path)
-        else: self.remote_preparation_path = "~/" + self.galaxy_name + "_preparation"
+        #else: self.remote_preparation_path = "~/" + self.galaxy_name + "_preparation"
 
         # Get paths
         self.get_paths()
@@ -393,7 +395,10 @@ class DataPreparer(PreparationComponent):
             path = self.all_initialized_directories[name]
 
             # Check
-            check_initialized(name, path)
+            try: check_initialized_local(name, path)
+            except RuntimeError:
+                check_sources_local(name, path)
+                check_initialized_remote(name, self.remote_preparation_path, self.remote)
 
             # Sort
             label, filepath = sort_image(name, path, rerun=self.config.rerun)
@@ -445,11 +450,17 @@ class DataPreparer(PreparationComponent):
         # Upload the files one by one, and delete them afterwards from the local
         for filename in filenames:
 
-            # Debugging
-            log.debug("Uploading file '" + filename + "' ...")
-
             # Determine the local filepath
             filepath = fs.join(directory_path, filename)
+
+            # If file is not present, it should be cached already
+            if not fs.is_file(filepath):
+                remote_filepath = fs.join(remote_image_directory_path, filename)
+                if not self.remote.is_file(remote_filepath): raise RuntimeError("Local file " + filename + " is not present and not cached on remote")
+                else: continue
+
+            # Debugging
+            log.debug("Uploading file '" + filename + "' ...")
 
             # Upload
             self.remote.upload(filepath, remote_image_directory_path, compress=True)
@@ -987,7 +998,7 @@ def load_sources(path):
 
 # -----------------------------------------------------------------
 
-def check_initialized(name, path):
+def check_initialized_local(name, path):
 
     """
     THis function ...
@@ -1000,7 +1011,6 @@ def check_initialized(name, path):
     log.debug("Checking the " + name + " image ...")
 
     initialized_path = fs.join(path, initialized_name)
-    sources_path = fs.join(path, sources_name)
 
     # Look if an initialized image file is present
     if not fs.is_file(initialized_path):
@@ -1008,11 +1018,52 @@ def check_initialized(name, path):
         # continue
         raise RuntimeError("Initialized " + name + " image could not be found")
 
+    # Check sources directory
+    check_sources_local(name, path)
+
+# -----------------------------------------------------------------
+
+def check_sources_local(name, path):
+
+    """
+    This function ...
+    :param name: 
+    :param path: 
+    :return: 
+    """
+
+    sources_path = fs.join(path, sources_name)
+
     # Look if the 'sources' directory is present
     if not fs.is_directory(sources_path):
+
         # log.warning("Sources directory could not be found for " + path)
         # continue
         raise RuntimeError("Sources directory could not be found for the " + name + " image")
+
+# -----------------------------------------------------------------
+
+def check_initialized_remote(name, remote_prep_path, remote):
+
+    """
+    This function ...
+    :param name: 
+    :param remote_prep_path:
+    :param remote:
+    :return: 
+    """
+
+    # Debugging
+    log.debug("Checking the " + name + " image on remote host '" + remote.host_id + "' ...")
+
+    prep_path_image = fs.join(remote_prep_path, name)
+
+    # Check directory
+    if not remote.is_directory(prep_path_image): raise RuntimeError("Remote preparation directory for " + name + " image is not present")
+
+    # Check initialized
+    initialized_path = fs.join(prep_path_image, initialized_name)
+    if not remote.is_file(initialized_path): raise RuntimeError("Remotely cached initialized image is not present for the " + name + " image")
 
 # -----------------------------------------------------------------
 

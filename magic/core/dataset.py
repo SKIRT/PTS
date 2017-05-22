@@ -148,11 +148,12 @@ class DataSet(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path):
+    def from_file(cls, path, check=True):
 
         """
         This function ...
         :param path:
+        :param check:
         :return:
         """
 
@@ -173,9 +174,9 @@ class DataSet(object):
             mask_path = table["Mask path"][i] if not table["Mask path"].mask[i] else None
 
             # Add the paths to the dataset
-            dataset.add_path(name, path)
-            if error_path is not None: dataset.add_error_path(name, error_path)
-            if mask_path is not None: dataset.add_mask_path(name, mask_path)
+            dataset.add_path(name, path, check=check)
+            if error_path is not None: dataset.add_error_path(name, error_path, check=check)
+            if mask_path is not None: dataset.add_mask_path(name, mask_path, check=check)
 
         # Return the dataset
         return dataset
@@ -227,17 +228,18 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def add_path(self, name, path):
+    def add_path(self, name, path, check=True):
 
         """
         This function ...
         :param name:
         :param path:
+        :param check:
         :return:
         """
 
         # Check if the file exists
-        if not fs.is_file(path): raise IOError("File doesn't exist: '" + path + "'")
+        if check and not fs.is_file(path): raise IOError("File doesn't exist: '" + path + "'")
 
         # Check if already such a name
         if name in self.paths: raise ValueError("Already a path in the dataset with the name " + name)
@@ -247,17 +249,18 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def add_error_path(self, name, path):
+    def add_error_path(self, name, path, check=True):
 
         """
         This function ...
         :param name:
         :param path:
+        :param check:
         :return:
         """
 
         # Check if the file exists
-        if not fs.is_file(path): raise IOError("File doesn't exist: '" + path + "'")
+        if check and not fs.is_file(path): raise IOError("File doesn't exist: '" + path + "'")
 
         # Check if corresponding frame exists
         if name not in self.paths: raise ValueError("Corresponding image with name " + name + " has not been added")
@@ -270,17 +273,18 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def add_mask_path(self, name, path):
+    def add_mask_path(self, name, path, check=True):
 
         """
         This function ...
         :param name:
         :param path:
+        :param check:
         :return:
         """
 
         # Check if the file exists
-        if not fs.is_file(path): raise IOError("File does not exist: '" + path + "'")
+        if check and not fs.is_file(path): raise IOError("File does not exist: '" + path + "'")
 
         # Check if the corresponding frame exists
         if name not in self.paths: raise ValueError("Corresponding image with name " + name + " has not been added")
