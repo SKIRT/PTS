@@ -53,10 +53,11 @@ progress = defaultdict(dict)
 # -----------------------------------------------------------------
 
 # Loop over all images of the initial dataset
-for path in fs.files_in_path(prep_path, recursive=True, exact_name="initialized"):
+#for path in fs.files_in_path(prep_path, recursive=True, exact_name="initialized"):
+for directory_path in fs.directories_in_path(prep_path):
 
     # Directory path
-    directory_path = fs.directory_of(path)
+    #directory_path = fs.directory_of(path)
     image_name = fs.name(directory_path)
 
     # Determine filter

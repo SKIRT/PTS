@@ -497,7 +497,7 @@ class DataPreparer(PreparationComponent):
             else: statistics = PreparationStatistics()
 
             # Set path anyway (so that we can do .save() everytime)
-            statistics.path = statistics_path
+            statistics._path = statistics_path
 
             # Set
             self.statistics[name] = statistics

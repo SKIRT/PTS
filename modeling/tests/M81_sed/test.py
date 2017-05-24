@@ -768,7 +768,7 @@ class M81SEDTest(M81TestBase):
             ranges_config[parameter_name + "_range"] = self.config.relative_range_fitting * self.real_parameter_values[parameter_name]
         input_model["ranges_config"] = ranges_config
 
-        # If we're cheating ... oops
+        # If we're cheating
         if self.config.cheat:
             fixed_parameter_values = defaultdict(list)
             for label in self.config.free_parameters:

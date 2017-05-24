@@ -66,12 +66,15 @@ def create_configuration_passive(command_name, class_name, configuration_module_
     """
 
     # Find definition
-    try:
-        configuration_module = importlib.import_module(configuration_module_path)
-        definition = getattr(configuration_module, "definition")
-    except ImportError:
-        log.warning("No configuration definition found for the " + class_name + " class")
-        definition = ConfigurationDefinition()  # Create new configuration definition
+    #try:
+    #    configuration_module = importlib.import_module(configuration_module_path)
+    #    definition = getattr(configuration_module, "definition")
+    #except ImportError:
+    #    log.warning("No configuration definition found for the " + class_name + " class")
+    #    definition = ConfigurationDefinition()  # Create new configuration definition
+
+    # Get the definition
+    definition = get_definition(class_name, configuration_module_path, cwd=cwd)
 
     ## CREATE THE CONFIGURATION
 
@@ -307,6 +310,11 @@ def get_config_for_class(cls, config=None, interactive=False, cwd=None):
 
             # Set the configuration
             config = setter.run(definition)
+
+            # Set the path
+            if cwd is not None: config.path = cwd
+
+            # Return the configuration
             return config
 
         # Not a valid config argument
@@ -321,14 +329,9 @@ def get_config_for_class(cls, config=None, interactive=False, cwd=None):
         if command_name is not None:
 
             # Get definition
-            definition = get_definition(class_name, configuration_module_path)
+            definition = get_definition(class_name, configuration_module_path, cwd=cwd)
 
             ## CREATE THE CONFIGURATION
-
-            #from pts.core.basics.configuration import ConfigurationDefinition, PassiveConfigurationSetter
-
-            # If not specified on the command line (before the command name), then use the default specified in the commands.dat file
-            # if configuration_method is None: configuration_method = configuration_method_table
 
             # Create configuration setter
             if interactive: setter = InteractiveConfigurationSetter(class_name, add_logging=False)
@@ -336,17 +339,28 @@ def get_config_for_class(cls, config=None, interactive=False, cwd=None):
 
             # Create the configuration from the definition
             config = setter.run(definition)
+
+            # Set the path
+            if cwd is not None: config.path = cwd
+
+            # Return the configuration
             return config
 
             # log.warning("The object has not been configured yet")
 
         else:
 
+            # Create an empty definition
             definition = ConfigurationDefinition(write_config=False)
             setter = InteractiveConfigurationSetter(class_name, add_logging=False)
 
             # Create new config
             config = setter.run(definition, prompt_optional=False)
+
+            # Set the path
+            if cwd is not None: config.path = cwd
+
+            # Return the configuration
             return config
 
 # -----------------------------------------------------------------
@@ -436,6 +450,7 @@ def get_definition(class_name, configuration_module_path, cwd=None):
         # has_configuration = False
         definition = ConfigurationDefinition(write_config=False)  # Create new configuration definition
 
+    # Return the configuration definition
     return definition
 
 # -----------------------------------------------------------------

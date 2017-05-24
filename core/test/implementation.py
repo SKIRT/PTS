@@ -102,7 +102,12 @@ class TestImplementation(Configurable):
         if not command.cwd_specified: cwd = self.path
 
         # Determine the output path
-        output_path = fs.absolute_path(fs.join(self.path, cwd))
+        #output_path = fs.absolute_path(fs.join(self.path, cwd))
+        output_path = fs.absolute_path(fs.absolute_or_in(cwd, self.path))
+
+        #print(self.path)
+        #print(cwd)
+        #print(fs.absolute_or_in(cwd, self.path))
 
         # Launch locally or remotely
         if remote is not None:

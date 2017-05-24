@@ -122,9 +122,9 @@ class SimplePropertyComposite(object):
             self.__dict__[name] = value
             return
 
-        elif hasattr(self, "_" + name):
-            self.__dict__["_" + name] = value
-            return
+        #elif hasattr(self, "_" + name):
+        #    self.__dict__["_" + name] = value
+        #    return
 
         if value is None: pass
         elif isinstance(value, SimplePropertyComposite): assert name in self._descriptions
