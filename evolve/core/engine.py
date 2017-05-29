@@ -227,6 +227,9 @@ class GeneticEngine(object):
             # Set the flag that we still have to do the population initialization
             self.initialized_population = False
 
+            # Initialize
+            self.setPopulationSize(constants.CDefGAPopulationSize)
+
         # Initial population is passed
         elif isinstance(genome_or_pop, PopulationBase):
 
@@ -253,7 +256,6 @@ class GeneticEngine(object):
         self.pMutation = constants.CDefGAMutationRate
         self.pCrossover = constants.CDefGACrossoverRate
         self.nElitismReplacement = constants.CDefGAElitismReplacement
-        self.setPopulationSize(constants.CDefGAPopulationSize)
         self.minimax = constants.CDefPopMinimax
         self.elitism = True
 
@@ -708,14 +710,55 @@ class GeneticEngine(object):
         .. note:: the population size must be >= 2
         """
 
+        if self.initialized_population: self.check_population_size(size)
+        else:
+
+            # Check the value
+            if size < 2: raise ValueError("Population size must be >= 2") #utils.raiseException("population size must be >= 2", ValueError)
+
+            # Other check
+            if size % 2 != 0: raise ValueError("The population size cannot be odd")
+
+            # Set the value
+            self.internalPop.setPopulationSize(size)
+
+    # -----------------------------------------------------------------
+
+    def check_population_size(self, size):
+
+        """
+        This function ...
+        :param size: 
+        :return: 
+        """
+
         # Check the value
-        if size < 2: raise ValueError("Population size must be >= 2") #utils.raiseException("population size must be >= 2", ValueError)
+        if size < 2: raise ValueError("Population size must be >= 2")
 
         # Other check
         if size % 2 != 0: raise ValueError("The population size cannot be odd")
 
-        # Set the value
-        self.internalPop.setPopulationSize(size)
+        # Check
+        self.internalPop.check_population_size(size)
+
+    # -----------------------------------------------------------------
+
+    def set_or_check_population_size(self, size):
+
+        """
+        This function ...
+        :param size: 
+        :return: 
+        """
+
+        # Check the value
+        if size < 2: raise ValueError("Population size must be >= 2")
+
+        # Other check
+        if size % 2 != 0: raise ValueError("The population size cannot be odd")
+
+        # Set or check
+        self.internalPop.set_or_check_population_size(size)
 
     # -----------------------------------------------------------------
 

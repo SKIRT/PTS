@@ -24,6 +24,7 @@ from matplotlib.ticker import FormatStrFormatter
 
 # Import astronomical modules
 from astropy.units import Unit
+from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
@@ -35,6 +36,7 @@ from ..filter.broad import BroadBandFilter
 from ..filter.narrow import NarrowBandFilter
 from ..basics.range import RealRange
 from ..basics.plot import Plot
+from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -229,6 +231,9 @@ class TransmissionPlotter(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
+        # Write
+        if self.config.write: self.write()
+
         # 2. Make the plot
         self.plot()
 
@@ -400,6 +405,69 @@ class TransmissionPlotter(Configurable):
 
     # -----------------------------------------------------------------
 
+    def write(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write the transmission data
+        self.write_data()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def sorted_labels(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return sorted(self.curves.keys(), key=lambda label: self.curves[label].peak_wavelength)
+
+    # -----------------------------------------------------------------
+
+    def write_data(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Writing the transmission data ...")
+
+        # Determine the path for the data file
+        path = fs.join(self.config.path, "transmission.dat")
+
+        # Initialize list to contain the data (titles and columns)
+        data = []
+
+        # Loop over the labels in a sorted order
+        for label in self.sorted_labels:
+
+            curve = self.curves[label]
+
+            wavelengths = curve.wavelengths(unit="micron", add_unit=False)
+            transmissions = curve.transmissions()
+
+            # Add the title
+            data.append(label)
+
+            # Add the columns
+            data.append(wavelengths)
+            data.append(transmissions)
+
+        # Write the data
+        fs.write_multi_data(path, *data)
+
+    # -----------------------------------------------------------------
+
     def plot(self):
 
         """
@@ -424,15 +492,12 @@ class TransmissionPlotter(Configurable):
         cNorm = colors.Normalize(vmin=0, vmax=len(self.curves) - 1.)
         scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
 
-        # Sort the labels based on the peak wavelength
-        sorted_labels = sorted(self.curves.keys(), key=lambda label: self.curves[label].peak_wavelength)
-
         min_wavelength = float("inf")
         max_wavelength = 0.0
 
         # Plot the transmission curves
         counter = 0
-        for label in sorted_labels:
+        for label in self.sorted_labels:
 
             curve = self.curves[label]
 

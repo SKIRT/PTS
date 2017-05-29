@@ -230,6 +230,10 @@ class Optimizer(Configurable):
         # Set initial parameters
         if "initial_parameters" in kwargs: self.initial_parameters = kwargs.pop("initial_parameters")
 
+        # Check whether the number of initial parameter sets is equal to the number of individuals per generation
+        if self.initial_parameters is not None:
+            if len(self.initial_parameters) != self.config.nindividuals: raise ValueError("The number of initial parameter sets should be equal to the configured number of individuals per generation")
+
         # Set ndigits
         if "ndigits" in kwargs: self.ndigits = kwargs.pop("ndigits")
 
@@ -1189,8 +1193,8 @@ class Optimizer(Configurable):
         log.info("Creating the initial population ...")
 
         # Initialize the population
-        if self.config.named_individuals: population = NamedPopulation()
-        else: population = Population()
+        if self.config.named_individuals: population = NamedPopulation(size=self.config.nindividuals)
+        else: population = Population(size=self.config.nindividuals)
 
         # Loop over the parameter sets
         for parameters in self.initial_parameters_scaled:
@@ -1213,6 +1217,8 @@ class Optimizer(Configurable):
 
             # Add the genome (individual) to the population
             population.append(genome)
+
+        #print(population.internalPop.names)
 
         # Return the population
         return population

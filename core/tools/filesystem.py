@@ -1241,6 +1241,103 @@ def write_lines(filepath, lines):
 
 # -----------------------------------------------------------------
 
+def write_data(filepath, title, *cols):
+
+    """
+    This function ...
+    :param filepath: 
+    :param title:
+    :param cols: the columns, as lists
+    :return: 
+    """
+
+    # Check whether the columns have the same length
+    if not sequences.equal_sizes(*cols): raise ValueError("Columns must have the same length")
+
+    # Open the file
+    with open(filepath, 'w') as fh:
+
+        print("# " + title, file=fh)
+
+        # Loop over the rows
+        for index in range(len(cols[0])):
+
+            # Construct the line
+            values = [col[index] for col in cols]
+            line = " ".join(str(value) for value in values)
+
+            # Write the row
+            print(line, file=fh)
+
+# -----------------------------------------------------------------
+
+def write_multi_data(filepath, *data):
+
+    """
+    THis function ...
+    :param filepath: 
+    :param data: title_a, column, column, ..., title_b, column, column, column, ..., title_c, ...
+    :return: 
+    """
+
+    # Open the file
+    with open(filepath, 'w') as fh:
+
+        new_columns = None
+
+        # Loop over the data
+        for entry in data:
+
+            # New title
+            if types.is_string_type(entry):
+
+                # Write previous data (if present)
+                if new_columns is not None:
+
+                    # Check whether the columns have the same length
+                    if not sequences.equal_sizes(*new_columns): raise ValueError("Columns for a certain title must have the same length")
+
+                    # Loop over the rows
+                    for index in range(len(new_columns[0])):
+
+                        # Construct the line
+                        values = [col[index] for col in new_columns]
+                        line = " ".join(str(value) for value in values)
+
+                        # Write the row
+                        print(line, file=fh)
+
+                # Write new title
+                print("# " + entry, file=fh)
+
+                # Clear columns
+                new_columns = []
+
+            # Add column
+            elif types.is_sequence(entry): new_columns.append(entry)
+
+            # Invalid entry
+            else: raise ValueError("Invalid input: must be strings and sequences of values")
+
+        # Write last columns
+
+        if new_columns is None: raise ValueError("No column data was found")
+
+        # Check whether the columns have the same length
+        if not sequences.equal_sizes(*new_columns): raise ValueError("Columns for a certain title must have the same length")
+
+        # Loop over the rows
+        for index in range(len(new_columns[0])):
+
+            # Construct the line
+            values = [col[index] for col in new_columns]
+            line = " ".join(str(value) for value in values)
+
+            # Write the row
+            print(line, file=fh)
+
+# -----------------------------------------------------------------
+
 def append_line(filepath, line):
 
     """

@@ -32,4 +32,7 @@ definition.sections["plot"].optional["figsize"].default = (17,4)
 definition.add_optional("title", "string", "plot title")
 definition.add_optional("output", "string", "output plot file path")
 
+# Add flags
+definition.add_flag("write", "write", False)
+
 # -----------------------------------------------------------------

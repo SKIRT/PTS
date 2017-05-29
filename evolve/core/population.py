@@ -100,11 +100,12 @@ class PopulationBase(object):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, genome=None):
+    def __init__(self, genome=None, **kwargs):
 
         """
-        The constructor ...:
+        The constructor
         :param genome:
+        :param kwargs:
         """
 
         # Set the genome
@@ -123,11 +124,11 @@ class PopulationBase(object):
 
         # Properties
         self.sorted = False
-        self.minimax = constants.CDefPopMinimax
-        self.popSize = 0
-        self.sortType = constants.CDefPopSortType
+        self.minimax = kwargs.pop("minimax", constants.CDefPopMinimax)
+        self.popSize = kwargs.pop("size", None)
+        self.sortType = kwargs.pop("sort_type", constants.CDefPopSortType)
         self.scaleMethod = FunctionSlot("Scale Method")
-        self.scaleMethod.set(constants.CDefPopScale)
+        self.scaleMethod.set(kwargs.pop("scale_method", constants.CDefPopScale))
         self.allSlots = [self.scaleMethod]
 
     # -----------------------------------------------------------------
@@ -476,6 +477,32 @@ class PopulationBase(object):
 
     # -----------------------------------------------------------------
 
+    def check_population_size(self, size):
+
+        """
+        This function ...
+        :param size: 
+        :return: 
+        """
+
+        if self.popSize is None: raise ValueError("Population size hasn't been set yet")
+        elif self.popSize != size: raise ValueError("The population size (" + str(self.popSize) + ") doesn't match the passed population size (" + str(size) + ")")
+
+    # -----------------------------------------------------------------
+
+    def set_or_check_population_size(self, size):
+
+        """
+        This function ...
+        :param size: 
+        :return: 
+        """
+
+        if self.popSize is None: self.popSize = size
+        elif self.popSize != size: raise ValueError("The population has an incorrect number of individuals: is " + str(self.popSize) + " but should be " + str(size) + " according to genetic engine")
+
+    # -----------------------------------------------------------------
+
     def setSortType(self, sort_type):
 
         """ Sets the sort type
@@ -717,15 +744,16 @@ class NamedPopulation(PopulationBase):
     The NamedPopulation class: represents a population where each individual has a name
     """
 
-    def __init__(self, genome=None):
+    def __init__(self, genome=None, **kwargs):
 
         """
         This function ...
         :param genome: 
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(NamedPopulation, self).__init__(genome)
+        super(NamedPopulation, self).__init__(genome, **kwargs)
 
         # The containers of individuals
         self.internalPop = NamedList()
@@ -968,15 +996,16 @@ class Population(PopulationBase):
 
     """
 
-    def __init__(self, genome=None):
+    def __init__(self, genome=None, **kwargs):
 
         """
         The constructor ...
         :param genome:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(Population, self).__init__(genome)
+        super(Population, self).__init__(genome, **kwargs)
 
         # The containers of individuals
         self.internalPop = []

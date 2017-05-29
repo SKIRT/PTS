@@ -188,6 +188,22 @@ def all_equal(lst):
 
 # -----------------------------------------------------------------
 
+def equal_sizes(*lsts):
+
+    """
+    THis function ...
+    :param lsts: 
+    :return: 
+    """
+
+    size = None
+    for lst in lsts:
+        if size is None: size = len(lst)
+        elif size != len(lst): return False
+    return True
+
+# -----------------------------------------------------------------
+
 def zip_into_dict(list_a, list_b):
 
     """
