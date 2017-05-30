@@ -41,6 +41,7 @@ from ..config.parameters import default_ranges, types, parameter_descriptions
 from ...core.units.parsing import parse_unit as u
 from ..build.model import ModelBuilder
 from ..build.representation import RepresentationBuilder
+from ..build.representations import RepresentationGenerator
 from ..component.galaxy import get_galaxy_properties_path, get_data_seds_path, get_data_images_path, get_dustpedia_sed
 from ...core.tools import filesystem as fs
 from ...core.filter.filter import parse_filter
@@ -1299,10 +1300,13 @@ class GalaxyModeler(ModelerBase):
         log.info("Building the model and its representations ...")
 
         # 1. Build model
-        self.build_model()
+        if "build_model" not in self.history: self.build_model()
 
         # 2. Build representations
-        self.build_representations()
+        #self.build_representation()
+
+        # Generate the representations
+        if "generate_representations" not in self.history: self.generate_representations()
 
     # -----------------------------------------------------------------
 
@@ -1390,6 +1394,48 @@ class GalaxyModeler(ModelerBase):
 
         # Run the builder
         builder.run()
+
+        # Unset log path
+        unset_log_file()
+
+        # Mark the end and save the history file
+        self.history.mark_end()
+        self.history.save()
+
+    # -----------------------------------------------------------------
+
+    def generate_representations(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Generating the representations ...")
+
+        # Create configuration
+        config = dict()
+
+        # Set model name
+        config["model_name"] = self.model_name
+
+        # Set number of representations
+        config["nrepresentations"] = self.config.ndust_grids
+
+        # Create the builder
+        generator = RepresentationGenerator(config)
+
+        # Add an entry to the history
+        command_name = RepresentationGenerator.command_name()
+        self.history.add_entry(command_name)
+
+        # Set log path
+        log_path = fs.join(self.environment.log_path, command_name + "_" + self.timestamp + ".txt")
+        set_log_file(log_path)
+
+        # Run the generator
+        generator.run()
 
         # Unset log path
         unset_log_file()
@@ -1496,6 +1542,10 @@ class GalaxyModeler(ModelerBase):
 
         # Set the name for the fitting run
         config["name"] = self.fitting_run_name
+
+        # Set the number of wavelength grids
+        config["wg"] = dict()
+        config["wg"]["ngrids"] = self.config.nwavelength_grids
 
         # Create the fitting initializer
         initializer = GalaxyFittingInitializer(config)

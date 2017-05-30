@@ -270,7 +270,6 @@ class GenerationsTable(SmartTable):
             self.add_column_info("Launching time", str, None, "time of launching the generation simulations")
             self.add_column_info("Method", str, None, "method used for model generation")
             self.add_column_info("Wavelength grid level", int, None, "level of the wavelength gid")
-            #self.add_column_info("Dust grid level", int, None, "level of the dust grid")
             self.add_column_info("Model representation", str, None, "representation of the model")
             self.add_column_info("Number of simulations", int, None, "number of simulations (individuals) in the generation")
             self.add_column_info("Number of photon packages", int, None, "number of photon packages per wavelength")

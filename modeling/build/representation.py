@@ -70,6 +70,9 @@ class Representation(object):
         # Dust grid file path
         self.dust_grid_path = fs.join(self.grid_path, "dust_grid.dg")
 
+        # Dust grid SKIRT output path
+        self.grid_out_path = fs.create_directory_in(self.grid_path, "out")
+
     # -----------------------------------------------------------------
 
     @lazyproperty

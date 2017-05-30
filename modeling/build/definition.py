@@ -132,6 +132,18 @@ class ModelDefinition(object):
     # -----------------------------------------------------------------
 
     @property
+    def description(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.models_table.description_for_model(self.name)
+
+    # -----------------------------------------------------------------
+
+    @property
     def old_stars_map_name(self):
 
         """

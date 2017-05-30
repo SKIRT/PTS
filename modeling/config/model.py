@@ -80,4 +80,8 @@ definition.add_optional("rerun_preparation_step", "string", "rerun a certain pre
 if cache_host_id is not None: definition.add_flag("cache", "cache unimportant data to the remote host storage", False)
 else: definition.add_fixed("cache", "caching not possible since cache host ID is not set in the modeling configuration", False)
 
+# Number of dust grids (= number of model representations) and the number of wavelength grids
+definition.add_optional("nwavelength_grids", "positive_integer", "number of wavelength grids to use for the fitting", 10)
+definition.add_optional("ndust_grids", "positive_integer", "number of dust grids, or the number of model representations", 10)
+
 # -----------------------------------------------------------------
