@@ -32,6 +32,23 @@ from . import types
 
 # -----------------------------------------------------------------
 
+def integer_or_real_or_string(argument):
+
+    """
+    This function ...
+    :param argument: 
+    :return: 
+    """
+
+    # First try integer, then real, then string
+    try: return integer(argument)
+    except ValueError:
+        try: return real(argument)
+        except ValueError:
+            return string(argument)
+
+# -----------------------------------------------------------------
+
 def bit(argument):
 
     """

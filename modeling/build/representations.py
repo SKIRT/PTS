@@ -17,14 +17,19 @@ from astropy.units import dimensionless_angles
 
 # Import the relevant PTS classes and modules
 from .component import BuildComponent
+from ..component.galaxy import GalaxyModelingComponent
 from ...core.prep.dustgrids import DustGridGenerator
 from ...core.tools.logging import log
 from ...core.basics.range import QuantityRange, RealRange
 from ...core.units.parsing import parse_unit as u
+from .representation import RepresentationBuilder
+from ...core.tools import time
+from ...core.tools import tables
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-class RepresentationGenerator(BuildComponent):
+class RepresentationGenerator(BuildComponent, GalaxyModelingComponent):
     
     """
     This class...
@@ -39,13 +44,18 @@ class RepresentationGenerator(BuildComponent):
         """
 
         # Call the constructor of the base class
-        super(RepresentationGenerator, self).__init__(*args, **kwargs)
+        #super(RepresentationGenerator, self).__init__(*args, **kwargs)
+        BuildComponent.__init__(self, *args, **kwargs)
+        GalaxyModelingComponent.__init__(self, *args, **kwargs)
 
         # The model definition
         self.definition = None
 
         # The dust grid generator
         self.dg_generator = None
+
+        # A name for this representation generation event
+        self.event_name = None
 
     # -----------------------------------------------------------------
 
@@ -60,10 +70,13 @@ class RepresentationGenerator(BuildComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 6. Create the dust grids
+        # 2. Create the dust grids
         self.create_dust_grids()
 
-        # 7. Writing
+        # 3. Build the representations
+        self.build_representations()
+
+        # 4. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -77,13 +90,18 @@ class RepresentationGenerator(BuildComponent):
         """
 
         # Call the setup function of the base class
-        super(RepresentationGenerator, self).setup(**kwargs)
+        #super(RepresentationGenerator, self).setup(**kwargs)
+        BuildComponent.setup(self, **kwargs)
+        GalaxyModelingComponent.setup(self, **kwargs)
 
         # Create the model definition
         self.definition = self.get_model_definition(self.config.model_name)
 
         # Create the DustGridGenerator
         self.dg_generator = DustGridGenerator()
+
+        # Set the event name
+        self.event_name = time.unique_name("generator")
 
     # -----------------------------------------------------------------
 
@@ -99,12 +117,12 @@ class RepresentationGenerator(BuildComponent):
 
         # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
         semimajor_angular = self.truncation_ellipse.semimajor  # semimajor axis length of the sky ellipse
-        radius_physical = (semimajor_angular * self.galaxy_properties.distance).to("pc", equivalencies=dimensionless_angles())
+        radius_physical = (semimajor_angular * self.galaxy_distance).to("pc", equivalencies=dimensionless_angles())
 
         # Get the pixelscale in physical units
-        distance = self.galaxy_properties.distance
-        pixelscale_angular = self.reference_wcs.average_pixelscale.to("deg")  # in deg
-        pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
+        pixelscale_angular = self.definition.basic_maps_minimum_average_pixelscale.to("deg")
+        #pixelscale_angular = self.reference_wcs.average_pixelscale.to("deg")  # in deg
+        pixelscale = (pixelscale_angular * self.galaxy_distance).to("pc", equivalencies=dimensionless_angles())
 
         # BINTREE: (smallest_cell_pixels, min_level, max_mass_fraction)
         # Low-resolution: 10., 6, 1e-5
@@ -134,7 +152,7 @@ class RepresentationGenerator(BuildComponent):
         self.dg_generator.write = False
 
         # Generate the dust grids
-        self.dg_generator.run(scale_range=scale_range, level_range=self.config.dg.level_range, mass_fraction_range=mass_fraction_range, ngrids=10)
+        self.dg_generator.run(scale_range=scale_range, level_range=self.config.dg.level_range, mass_fraction_range=mass_fraction_range, ngrids=self.config.nrepresentations)
 
     # -----------------------------------------------------------------
 
@@ -144,6 +162,11 @@ class RepresentationGenerator(BuildComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Building the representations ...")
+
+        # Loop over the dust grids
 
     # -----------------------------------------------------------------
 
@@ -156,5 +179,26 @@ class RepresentationGenerator(BuildComponent):
 
         # Inform the user
         log.info("Writing ...")
+
+        # Write the dust grid table
+        self.write_dust_grid_table()
+
+    # -----------------------------------------------------------------
+
+    def write_dust_grid_table(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Writing the dust grid table ...")
+
+        # Determine the path
+        path = fs.join(self.representations_path, self.event_name + "_dustgrids.dat")
+
+        # Write the dust grids table
+        tables.write(self.dg_generator.table, path)
 
 # -----------------------------------------------------------------

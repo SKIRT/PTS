@@ -23,9 +23,9 @@ from ..filter.broad import BroadBandFilter
 from ...magic.tools.colours import calculate_colour
 from ...core.basics.errorbar import ErrorBar
 from ..units.parsing import parse_unit as u
-from ..tools import filesystem as fs
 from ..filter.filter import parse_filter
 from ..tools import arrays
+from ..simulation import textfile
 
 # -----------------------------------------------------------------
 
@@ -189,35 +189,7 @@ class SED(WavelengthCurve):
         # sed.table.rename_column("col2", "Flux")
 
         # Keep track of the units of the different columns
-        units = []
-
-        # Read the SED file header
-        for line in fs.read_lines(path):
-
-            # We are no longer at the header
-            if not line.startswith("#"): break
-
-            # Split the line to get the column index and the unit
-            first, second = line.split(":")
-
-            # Get column info
-            index = int(first.split("column ")[1]) - 1
-            name = second.split(";")[0].split("(")[0]
-            mathematical = second.split(";")[1].split("(")[0].strip() if len(second.split(";")) > 1 else None
-            unit_string = second.split("(")[1].split(")")[0]
-            density = mathematical.startswith("lambda*") or mathematical.startswith("nu*") if mathematical is not None else False
-
-            #print(mathematical)
-            #print(name)
-            #print(unit_string)
-            #print(density)
-
-            # Parse the unit
-            unit = u(unit_string, density=density)
-
-            # Add the unit
-            assert index == len(units)
-            units.append(unit)
+        units = textfile.get_units(path)
 
         # Define index of different columns
         contributions_index = dict()

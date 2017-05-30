@@ -205,6 +205,9 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
         # The instruments
         self.instruments = dict()
 
+        # The dust grid
+        self.dust_grid = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -230,8 +233,8 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
         # 5. Create the instruments
         self.create_instruments()
 
-        # 6. Create the dust grids
-        self.create_dust_grid()
+        # 6. Create the dust grid
+        if self.dust_grid is None: self.create_dust_grid()
 
         # 7. Writing
         self.write()
@@ -257,6 +260,9 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
         # Create the representation
         path = fs.create_directory_in(self.representations_path, self.config.name)
         self.representation = Representation(self.config.name, self.config.model_name, path)
+
+        # Get the dust grid, if passed
+        if "dust_grid" in kwargs: self.dust_grid = kwargs.pop("dust_grid")
 
     # -----------------------------------------------------------------
 
@@ -348,7 +354,7 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
 
                 # Create the deprojection
                 wcs = CoordinateSystem.from_file(filepath)
-                deprojection = self.create_deprojection_for_wcs(wcs, filepath, scale_height)
+                deprojection = self.create_deprojection_for_wcs(self.galaxy_properties, self.disk_position_angle, wcs, filepath, scale_height)
 
                 # Add to the dictionary
                 self.deprojections[(name, title)] = deprojection
@@ -401,7 +407,7 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
 
                 # Create the deprojection
                 wcs = CoordinateSystem.from_file(filepath)
-                deprojection = self.create_deprojection_for_wcs(wcs, filepath, scale_height)
+                deprojection = self.create_deprojection_for_wcs(self.galaxy_properties, self.disk_position_angle, wcs, filepath, scale_height)
 
                 # Add to the dictionary
                 self.deprojections[(name, title)] = deprojection
@@ -595,21 +601,8 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
         # Inform the user
         log.info("Writing the dust grid ...")
 
-        # Loop over the grids
-        index = 0
-        for grid in self.dg_generator.grids:
-
-            # Determine the path to the grid
-            path = fs.join(self.fitting_run.dust_grids_path, str(index) + ".dg")
-
-            # Save the dust grid
-            grid.saveto(path)
-
-            # Increment the index
-            index += 1
-
-        # Write the dust grids table
-        tables.write(self.dg_generator.table, self.fitting_run.dust_grids_table_path)
+        # Write the dust grid
+        self.dust_grid.saveto(self.representation.dust_grid_path)
 
     # -----------------------------------------------------------------
 
@@ -623,53 +616,9 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
         # Inform the user
         log.info("Writing the representations table ...")
 
+        # Open the table, add an entry, and save the table
         table = self.representations_table
         table.add_entry(self.representation_name, self.model_name)
         table.save()
-
-    # -----------------------------------------------------------------
-
-    def create_deprojection_for_wcs(self, wcs, filename, scaleheight):
-
-        """
-        This function ...
-        :param wcs:
-        :param filename:
-        :param scaleheight:
-        :return:
-        """
-
-        # Get the galaxy distance, the inclination and position angle
-        distance = self.galaxy_properties.distance
-        inclination = self.galaxy_properties.inclination
-        position_angle = self.disk_position_angle
-
-        # Get center coordinate of galaxy
-        galaxy_center = self.galaxy_properties.center
-
-        # Create deprojection
-        # wcs, galaxy_center, distance, pa, inclination, filepath, scale_height
-        deprojection = DeprojectionModel3D.from_wcs(wcs, galaxy_center, distance, position_angle, inclination, filename, scaleheight)
-
-        # Return the deprojection
-        return deprojection
-
-    # -----------------------------------------------------------------
-
-    def create_deprojection_for_map(self, map, filename, scaleheight):
-
-        """
-        This function ...
-        :param map:
-        :param filename:
-        :param scaleheight
-        :return:
-        """
-
-        # Get the WCS
-        reference_wcs = map.wcs
-
-        # Create the deprojection
-        return self.create_deprojection_for_wcs(reference_wcs, filename, scaleheight)
 
 # -----------------------------------------------------------------

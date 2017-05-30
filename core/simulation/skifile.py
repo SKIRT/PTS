@@ -2888,7 +2888,7 @@ class SkiFile:
     ## This function sets the dust grid
     def set_dust_grid(self, grid):
 
-        from .grids import BinaryTreeDustGrid, OctTreeDustGrid, CartesianDustGrid, CylindricalGrid
+        from .grids import BinaryTreeDustGrid, OctTreeDustGrid, CartesianDustGrid, CylindricalGrid, FileTreeDustGrid
 
         # Cartesian
         if isinstance(grid, CartesianDustGrid):
@@ -2904,7 +2904,7 @@ class SkiFile:
             self.set_binary_tree_dust_grid(grid.min_x, grid.max_x, grid.min_y, grid.max_y, grid.min_z, grid.max_z,
                                            grid.write, grid.min_level, grid.max_level, grid.search_method,
                                            grid.sample_count, grid.max_optical_depth, grid.max_mass_fraction,
-                                           grid.max_dens_disp_fraction, grid.direction_method)
+                                           grid.max_dens_disp_fraction, grid.direction_method, write_tree=grid.write_tree)
 
         # Octtree
         elif isinstance(grid, OctTreeDustGrid):
@@ -2913,7 +2913,7 @@ class SkiFile:
             self.set_octtree_dust_grid(grid.min_x, grid.max_x, grid.min_y, grid.max_y, grid.min_z, grid.max_z,
                                        grid.write, grid.min_level, grid.max_level, grid.search_method,
                                        grid.sample_count, grid.max_optical_depth, grid.max_mass_fraction,
-                                       grid.max_dens_disp_fraction, grid.barycentric)
+                                       grid.max_dens_disp_fraction, grid.barycentric, write_tree=grid.write_tree)
 
         # Cylindrical
         elif isinstance(grid, CylindricalGrid):
@@ -2924,6 +2924,12 @@ class SkiFile:
             self.set_cylindrical_dust_grid(grid.max_r, grid.min_z, grid.max_z, grid.nbins_r, grid.nbins_z,
                                            fraction_r=grid.central_bin_fraction_r, fraction_z=grid.central_bin_fraction_z,
                                            ratio_r=grid.ratio_r, ratio_z=grid.ratio_z, write_grid=grid.write)
+
+        # File tree grid
+        elif isinstance(grid, FileTreeDustGrid):
+
+            # Set file tree dust grid
+            self.set_filetree_dust_grid(grid.filename, grid.search_method, grid.write)
 
         # Invalid
         else: raise ValueError("Invalid grid type")
@@ -3011,7 +3017,8 @@ class SkiFile:
     ## This function sets a binary tree dust grid for the dust system
     def set_binary_tree_dust_grid(self, min_x, max_x, min_y, max_y, min_z, max_z, write_grid=True, min_level=2,
                                   max_level=10, search_method="Neighbor", sample_count=100, max_optical_depth=0,
-                                  max_mass_fraction=1e-6, max_dens_disp_fraction=0, direction_method="Alternating"):
+                                  max_mass_fraction=1e-6, max_dens_disp_fraction=0, direction_method="Alternating",
+                                  write_tree=False):
 
         parent = self.remove_dust_grid()
 
@@ -3020,7 +3027,9 @@ class SkiFile:
                  "maxZ": str(max_z), "writeGrid": str_from_bool(write_grid, lower=True), "minLevel": str(min_level),
                  "maxLevel": str(max_level), "searchMethod": search_method, "sampleCount": str(sample_count),
                  "maxOpticalDepth": str(max_optical_depth), "maxMassFraction": str(max_mass_fraction),
-                 "maxDensDispFraction": str(max_dens_disp_fraction), "directionMethod": direction_method}
+                 "maxDensDispFraction": str(max_dens_disp_fraction), "directionMethod": direction_method, "writeTree": str_from_bool(write_tree, lower=True)}
+
+        # Create and add the grid
         parent.append(parent.makeelement("BinTreeDustGrid", attrs))
 
     ## This function sets the maximal optical depth
@@ -3048,7 +3057,7 @@ class SkiFile:
     ## This function sets an octtree dust grid for the dust system
     def set_octtree_dust_grid(self, min_x, max_x, min_y, max_y, min_z, max_z, write_grid=True, min_level=2,
                               max_level=6, search_method="Neighbor", sample_count=100, max_optical_depth=0,
-                              max_mass_fraction=1e-6, max_dens_disp_fraction=0, barycentric=False):
+                              max_mass_fraction=1e-6, max_dens_disp_fraction=0, barycentric=False, write_tree=False):
 
         parent = self.remove_dust_grid()
 
@@ -3057,8 +3066,10 @@ class SkiFile:
                  "maxZ": str(max_z), "writeGrid": str_from_bool(write_grid, lower=True), "minLevel": str(min_level),
                  "maxLevel": str(max_level), "searchMethod": search_method, "sampleCount": sample_count,
                  "maxOpticalDepth": str(max_optical_depth), "maxMassFraction": str(max_mass_fraction),
-                 "maxDensDispFraction": str(max_dens_disp_fraction), "barycentric": str_from_bool(barycentric, lower=True)}
-                 #"assigner": assigner}
+                 "maxDensDispFraction": str(max_dens_disp_fraction), "barycentric": str_from_bool(barycentric, lower=True),
+                 "writeTree": str_from_bool(write_tree, lower=True)}
+
+        # Create and add the grid
         parent.append(parent.makeelement("OctTreeDustGrid", attrs))
 
     ## This function sets a cylindrical grid
@@ -3087,6 +3098,21 @@ class SkiFile:
         mesh_z_sympow = mesh_z.makeelement("SymPowMesh", {"numBins": str(nbins_z), "ratio": repr(ratio_z)})
         mesh_z.append(mesh_z_sympow)
         grid.append(mesh_z)
+
+        # Add the grid
+        parent.append(grid)
+
+    ## This function sets a file tree dust grid
+    def set_filetree_dust_grid(self, filename, search_method="Neighbor", write_grid=False):
+
+        # Remove existing grid
+        parent = self.remove_dust_grid()
+
+        # Set attributes
+        attrs = {"writeGrid": str_from_bool(write_grid, lower=True), "filename": filename, "searchMethod": search_method}
+
+        # Create new grid
+        grid = parent.makeelement("FileTreeDustGrid", attrs)
 
         # Add the grid
         parent.append(grid)

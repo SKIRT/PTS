@@ -18,10 +18,11 @@ from .dust import DustBuilder
 from .stars import StarsBuilder
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
+from ..component.galaxy import GalaxyModelingComponent
 
 # -----------------------------------------------------------------
 
-class ModelBuilder(BuildComponent):
+class ModelBuilder(BuildComponent, GalaxyModelingComponent):
     
     """
     This class...
@@ -36,7 +37,9 @@ class ModelBuilder(BuildComponent):
         """
 
         # Call the constructor of the base class
-        super(ModelBuilder, self).__init__(*args, **kwargs)
+        #super(ModelBuilder, self).__init__(*args, **kwargs)
+        ModelBuilder.__init__(self, *args, **kwargs)
+        GalaxyModelingComponent.__init__(self, *args, **kwargs)
 
         # The path for this model
         self.model_path = None
@@ -80,7 +83,9 @@ class ModelBuilder(BuildComponent):
         """
 
         # Call the setup function of the base class
-        super(ModelBuilder, self).setup(**kwargs)
+        #super(ModelBuilder, self).setup(**kwargs)
+        ModelBuilder.setup(self, **kwargs)
+        GalaxyModelingComponent.setup(self, **kwargs)
 
         # Set the model path and create it
         self.model_path = fs.create_directory_in(self.models_path, self.model_name)
@@ -174,7 +179,7 @@ class ModelBuilder(BuildComponent):
 
         # Add the model
         table = self.models_table
-        table.add_model(self.model_name, None, None, None, None, None)
+        table.add_model(self.model_name, description, old_stars_map_path, young_stars_map_path, ionizing_stars_map_path, dust_map_path)
 
         # Save the table
         table.saveto(self.models_table_path)

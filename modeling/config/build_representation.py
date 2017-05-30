@@ -17,6 +17,11 @@ modeling_path = fs.cwd()
 
 # -----------------------------------------------------------------
 
+dust_grid_types = ["cartesian", "bintree", "octtree"]
+default_dust_grid_type = "bintree"
+
+# -----------------------------------------------------------------
+
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
@@ -30,5 +35,12 @@ model_names = get_model_names(modeling_path)
 if len(model_names) == 0: raise RuntimeError("No models found: first run build_model to create a new model")
 elif len(model_names) == 1: definition.add_fixed("model_name", "name of the model", model_names[0])
 else: definition.add_required("model_name", "string", "name of the model", choices=model_names)
+
+# Dust grid properties
+definition.add_section("dg", "settings for the dust grid")
+definition.sections["dg"].add_optional("grid_type", "string", "type of dust grid", default_dust_grid_type, choices=dust_grid_types)
+definition.sections["dg"].add_optional("scale", "real", "number of image pixels to take as the minimum scale in the model (can also be a certain fraction of a pixel)", 0.5)
+definition.sections["dg"].add_optional("max_level", "integer", "maximum depth level of the tree", 9)
+definition.sections["dg"].add_optional("mass_fraction", "real", "maximum mass fraction in each cell", 0.5e-6)
 
 # -----------------------------------------------------------------

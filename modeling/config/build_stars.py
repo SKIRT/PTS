@@ -34,4 +34,20 @@ definition.add_flag("additional", "add additional stellar component(s)", True)
 # Output directory
 definition.add_optional("output", "directory_path", "output directory")
 
+# Metallicities
+definition.add_optional("default_old_bulge_metallicity", "real", "default metallicity for the old stellar bulge", 0.03)
+definition.add_optional("default_old_disk_metallicity", "real", "default metallicity for the old stellar disk", 0.03)
+definition.add_optional("default_young_metallicity", "real", "default metallicity for the young stellar component", 0.03)
+definition.add_optional("default_ionizing_metallicity", "real", "default metallicity for the ionizing stellar component", 0.03)
+
+# Ages
+definition.add_optional("default_old_bulge_age", "real", "default age of the old stellar bulge (in Gyr)", 8.)
+definition.add_optional("default_old_disk_age", "real", "default age of the old stellar disk (in Gyr)", 8.)
+
+
+# Scale height
+degeyter_ratio = 8.26
+mosenkov_ratio = None
+definition.add_optional("scalelength_to_scaleheight", "real", "ratio of scalelength to scaleheight", default=mosenkov_ratio, suggestions=[mosenkov_ratio, degeyter_ratio])
+
 # -----------------------------------------------------------------

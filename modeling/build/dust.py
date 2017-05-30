@@ -21,6 +21,13 @@ from .component import model_map_filename
 from ...core.tools import filesystem as fs
 from ...magic.core.frame import Frame
 from ..maps.component import get_dust_maps_path
+from ..component.galaxy import GalaxyModelingComponent
+
+# -----------------------------------------------------------------
+
+#basic_dust_maps_names = ["dust"]
+
+basic_dust_map_name = "dust_disk"
 
 # -----------------------------------------------------------------
 
@@ -30,7 +37,7 @@ titles["disk"] = "Dust disk"
 
 # -----------------------------------------------------------------
 
-class DustBuilder(GeneralBuilder):
+class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
     
     """
     This class...
@@ -45,19 +52,22 @@ class DustBuilder(GeneralBuilder):
         """
 
         # Call the constructor of the base class
-        super(DustBuilder, self).__init__(*args, **kwargs)
+        #super(DustBuilder, self).__init__(*args, **kwargs)
+        GeneralBuilder.__init__(self, *args, **kwargs)
+        GalaxyModelingComponent.__init__(self, *args, **kwargs)
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # Build dust
         if self.config.disk: self.build_dust_disk()
@@ -70,15 +80,18 @@ class DustBuilder(GeneralBuilder):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(DustBuilder, self).setup()
+        #super(DustBuilder, self).setup()
+        GeneralBuilder.setup(self, **kwargs)
+        GalaxyModelingComponent.setup(self, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -114,20 +127,16 @@ class DustBuilder(GeneralBuilder):
         log.info("Configuring the dust component ...")
 
         # scale_height = 260.5 * Unit("pc") # first models
-        scale_height = 200. * u("pc")  # M51
-        dust_mass = 1.5e7 * u("Msun")
-
-        hydrocarbon_pops = 25
-        enstatite_pops = 25
-        forsterite_pops = 25
+        #scale_height = 200. * u("pc")  # M51
+        #dust_mass = 1.5e7 * u("Msun")
 
         # Create definition
         definition = ConfigurationDefinition()
         definition.add_optional("scale_height", "quantity", "scale height", default=scale_height)
         definition.add_optional("mass", "quantity", "dust mass", default=dust_mass)
-        definition.add_optional("hydrocarbon_pops", "positive_integer", "number of hydrocarbon populations", default=hydrocarbon_pops)
-        definition.add_optional("enstatite_pops", "positive_integer", "number of enstatite populations", default=enstatite_pops)
-        definition.add_optional("forsterite_pops", "positive_integer", "number of forsterite populations", default=forsterite_pops)
+        definition.add_optional("hydrocarbon_pops", "positive_integer", "number of hydrocarbon populations", default=self.config.default_hydrocarbon_pops)
+        definition.add_optional("enstatite_pops", "positive_integer", "number of enstatite populations", default=self.config.default_enstatite_pops)
+        definition.add_optional("forsterite_pops", "positive_integer", "number of forsterite populations", default=self.config.default_forsterite_pops)
 
         # Prompt for settings
         setter = InteractiveConfigurationSetter("dust disk")

@@ -68,15 +68,16 @@ class GeneralBuilder(BuildComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(GeneralBuilder, self).setup()
+        super(GeneralBuilder, self).setup(**kwargs)
 
         # Create the SKIRT smile schema
         self.smile = SKIRTSmileSchema()

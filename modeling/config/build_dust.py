@@ -30,4 +30,14 @@ definition.add_flag("additional", "add additional dust component(s)", True)
 # Output directory
 definition.add_optional("output", "directory_path", "output directory")
 
+# Dust mix settings
+definition.add_optional("default_hydrocarbon_pops", "positive_integer",  "default number of hydrocarbon populations", 25)
+definition.add_optional("default_enstatite_pops", "positive_integer", "default number of enstatite populations", 25)
+definition.add_optional("forsterite_pops", "positive_integer", "default number of forsterite populations", 25)
+
+# DUST MASS
+#scale_height = 200. * u("pc")  # M51
+#dust_mass = 1.5e7 * u("Msun")
+#definition.add_optional("default_dust_mass", )
+
 # -----------------------------------------------------------------

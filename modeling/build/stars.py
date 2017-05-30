@@ -27,6 +27,16 @@ from .component import model_map_filename
 from ...core.tools import filesystem as fs
 from ...magic.core.frame import Frame
 from ..maps.component import get_old_stars_maps_path, get_young_stars_maps_path, get_ionizing_stars_maps_path
+from ..component.galaxy import GalaxyModelingComponent
+from ...core.tools import types
+
+# -----------------------------------------------------------------
+
+#basic_stellar_maps_names = ["old", "young", "ionizing"]
+
+basic_old_map_name = "old_disk"
+basic_young_map_name = "young"
+basic_ionizing_map_name = "ionizing"
 
 # -----------------------------------------------------------------
 
@@ -39,7 +49,7 @@ titles["ionizing"] = "Ionizing stars"
 
 # -----------------------------------------------------------------
 
-class StarsBuilder(GeneralBuilder):
+class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
     
     """
     This class...
@@ -54,19 +64,22 @@ class StarsBuilder(GeneralBuilder):
         """
 
         # Call the constructor of the base class
-        super(StarsBuilder, self).__init__(*args, **kwargs)
+        #super(StarsBuilder, self).__init__(*args, **kwargs)
+        GeneralBuilder.__init__(self, *args, **kwargs)
+        GalaxyModelingComponent.__init__(self, *args, **kwargs)
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Build bulge
         if self.config.bulge: self.build_bulge()
@@ -88,15 +101,18 @@ class StarsBuilder(GeneralBuilder):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(StarsBuilder, self).setup()
+        #super(StarsBuilder, self).setup()
+        GeneralBuilder.setup(self, **kwargs)
+        GalaxyModelingComponent.setup(self, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -130,8 +146,6 @@ class StarsBuilder(GeneralBuilder):
 
         # Like M31
         bulge_template = "BruzualCharlot"
-        bulge_age = 10
-        bulge_metallicity = 0.03
 
         # Get the flux density of the bulge
         fluxdensity = self.bulge2d_model.fluxdensity
@@ -139,8 +153,8 @@ class StarsBuilder(GeneralBuilder):
         # Create definition
         definition = ConfigurationDefinition()
         definition.add_optional("template", "string", "template SED family", default=bulge_template, choices=[bulge_template])
-        definition.add_optional("age", "positive_real", "age in Gyr", default=bulge_age)
-        definition.add_optional("metallicity", "positive_real", "metallicity", default=bulge_metallicity)
+        definition.add_optional("age", "positive_real", "age in Gyr", default=self.config.default_bulge_age)
+        definition.add_optional("metallicity", "positive_real", "metallicity", default=self.config.default_old_bulge_metallicity)
         definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=fluxdensity)
 
         # Prompt for the values
@@ -217,12 +231,9 @@ class StarsBuilder(GeneralBuilder):
 
         # Like M31
         disk_template = "BruzualCharlot"
-        disk_age = 8
-        # disk_metallicity = 0.02
-        disk_metallicity = 0.03
 
         # Get the scale height
-        scale_height = self.disk2d_model.scalelength / 8.26  # De Geyter et al. 2014
+        scale_height = self.disk2d_model.scalelength / self.config.scalelength_to_scaleheight
         bulge_fluxdensity = self.bulge2d_model.fluxdensity
 
         # Get the 3.6 micron flux density with the bulge subtracted
@@ -231,8 +242,8 @@ class StarsBuilder(GeneralBuilder):
         # Create definition
         definition = ConfigurationDefinition()
         definition.add_optional("template", "string", "template SED family", default=disk_template, choices=[disk_template])
-        definition.add_optional("age", "positive_real", "age in Gyr", default=disk_age)
-        definition.add_optional("metallicity", "positive_real", "metallicity", default=disk_metallicity)
+        definition.add_optional("age", "positive_real", "age in Gyr", default=self.config.default_old_disk_age)
+        definition.add_optional("metallicity", "positive_real", "metallicity", default=self.config.default_old_disk_metallicity)
         definition.add_optional("scale_height", "quantity", "scale height", default=scale_height)
         definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=fluxdensity)
 
@@ -721,8 +732,8 @@ def spectral_factor_hz_to_micron(wavelength):
     frequency_unit = "Hz"
 
     # Convert string units to Unit objects
-    if isinstance(wavelength_unit, basestring): wavelength_unit = u(wavelength_unit)
-    if isinstance(frequency_unit, basestring): frequency_unit = u(frequency_unit)
+    if types.is_string_type(wavelength_unit): wavelength_unit = u(wavelength_unit)
+    if types.is_string_type(frequency_unit): frequency_unit = u(frequency_unit)
 
     conversion_factor_unit = wavelength_unit / frequency_unit
 

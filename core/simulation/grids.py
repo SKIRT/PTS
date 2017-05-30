@@ -43,6 +43,12 @@ mesh_types = ["linear", "power", "symmetric_power", "logarithmic"]
 
 # -----------------------------------------------------------------
 
+search_methods = ["Neighbor", "TopDown", "Bookkeeping"]
+
+default_search_method = "Neighbor"
+
+# -----------------------------------------------------------------
+
 class DustGrid(SimplePropertyComposite):
 
     """
@@ -64,6 +70,30 @@ class DustGrid(SimplePropertyComposite):
 
         # Define properties
         self.add_property("write", "boolean", "write grid", True)
+
+# -----------------------------------------------------------------
+
+class FileTreeDustGrid(DustGrid):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, **kwargs):
+
+        """
+        This function ...
+        """
+
+        # Call the constructor of the base class
+        super(FileTreeDustGrid, self).__init__()
+
+        # Define properties
+        self.add_property("filename", "string", "tree grid file")
+        self.add_property("search_method", "string", "search method", default_search_method, choices=search_methods)
+
+        # Set properties
+        self.set_properties(kwargs)
 
 # -----------------------------------------------------------------
 
@@ -115,12 +145,13 @@ class BinaryTreeDustGrid(DustGrid3D):
         # Define properties
         self.add_property("min_level", "positive_integer", "minimum level", 6)
         self.add_property("max_level", "positive_integer", "maximum level", 30)
-        self.add_property("search_method", "string", "search method", "Neighbor", choices=["Neighbor", "TopDown", "Bookkeeping"])
+        self.add_property("search_method", "string", "search method", default_search_method, choices=search_methods)
         self.add_property("sample_count", "positive_integer", "number of samples", 100)
         self.add_property("max_optical_depth", "real", "maximum optical depth", 0)
         self.add_property("max_mass_fraction", "real", "maximum mass fraction", 1e-6)
         self.add_property("max_dens_disp_fraction", "real", "maximum density dispersion fraction", 0)
         self.add_property("direction_method", "string", "direction method", "Alternating", choices=["Alternating"])
+        self.add_property("write_tree", "boolean", "write tree data", False)
 
         # Set properties
         self.set_properties(kwargs)
@@ -146,12 +177,13 @@ class OctTreeDustGrid(DustGrid3D):
         # Define properties
         self.add_property("min_level", "positive_integer", "minimum level", 2)
         self.add_property("max_level", "positive_integer", "maximum level", 6)
-        self.add_property("search_method", "string", "search method", "Neighbor", choices=["Neighbor", "TopDown", "Bookkeeping"])
+        self.add_property("search_method", "string", "search method", default_search_method, choices=search_methods)
         self.add_property("sample_count", "positive_integer", "number of samples", 100)
         self.add_property("max_optical_depth", "real", "maximum optical depth", 0)
         self.add_property("max_mass_fraction", "real", "maximum mass fraction", 1e-6)
         self.add_property("max_dens_disp_fraction", "real", "maximum density dispersion fraction", 0)
         self.add_property("barycentric", "boolean", "barycentric", False)
+        self.add_property("write_tree", "boolean", "write tree data", False)
 
         # Set properties
         self.set_properties(kwargs)

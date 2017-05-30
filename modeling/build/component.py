@@ -253,6 +253,55 @@ class BuildComponent(ModelingComponent):
 
         return self.representations_table.representations_for_model(model_name)
 
+    # -----------------------------------------------------------------
+
+    def create_deprojection_for_wcs(self, galaxy_properties, disk_position_angle, wcs, filename, scaleheight):
+
+        """
+        This function ...
+        :param galaxy_properties: has to be passed since this class is GENERAL (BUT THIS FUNCTION CAN ONLY BE CALLED FOR A GALAXY MODELING ENVIRONMENT)
+        :param disk_position_angle:
+        :param wcs:
+        :param filename:
+        :param scaleheight:
+        :return:
+        """
+
+        # Get the galaxy distance, the inclination and position angle
+        distance = galaxy_properties.distance
+        inclination = galaxy_properties.inclination
+        position_angle = disk_position_angle
+
+        # Get center coordinate of galaxy
+        galaxy_center = galaxy_properties.center
+
+        # Create deprojection
+        # wcs, galaxy_center, distance, pa, inclination, filepath, scale_height
+        deprojection = DeprojectionModel3D.from_wcs(wcs, galaxy_center, distance, position_angle, inclination, filename, scaleheight)
+
+        # Return the deprojection
+        return deprojection
+
+    # -----------------------------------------------------------------
+
+    def create_deprojection_for_map(self, galaxy_properties, disk_position_angle, map, filename, scaleheight):
+
+        """
+        This function ...
+        :param galaxy_properties:
+        :param disk_position_angle:
+        :param map:
+        :param filename:
+        :param scaleheight
+        :return:
+        """
+
+        # Get the WCS
+        reference_wcs = map.wcs
+
+        # Create the deprojection
+        return self.create_deprojection_for_wcs(galaxy_properties, disk_position_angle, reference_wcs, filename, scaleheight)
+
 # -----------------------------------------------------------------
 
 def get_models_table_path(modeling_path):
@@ -302,6 +351,21 @@ def get_model_path(modeling_path, model_name):
     """
 
     return fs.join(modeling_path, "build", "models", model_name)
+
+# -----------------------------------------------------------------
+
+def get_model_definition(modeling_path, model_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param model_name:
+    :return:
+    """
+
+    path = get_model_path(modeling_path, model_name)
+    if not fs.is_directory(path): raise ValueError("Model '" + model_name + "' does not exist")
+    return ModelDefinition(model_name, path)
 
 # -----------------------------------------------------------------
 

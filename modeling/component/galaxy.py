@@ -693,6 +693,19 @@ class GalaxyModelingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def physical_truncation_ellipse(self):
+
+        """
+        This fucntion ...
+        :return: 
+        """
+
+        raise NotImplementedError("Not implemented yet")
+        #return self.truncation_area
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def truncation_area(self):
 
         """
