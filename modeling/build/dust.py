@@ -12,10 +12,12 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import astronomical modules
+from astropy.utils import lazyproperty
+
 # Import the relevant PTS classes and modules
 from ...core.basics.configuration import prompt_proceed, ConfigurationDefinition, InteractiveConfigurationSetter, prompt_string
 from ...core.tools.logging import log
-from ...core.units.parsing import parse_unit as u
 from .general import GeneralBuilder
 from .component import model_map_filename
 from ...core.tools import filesystem as fs
@@ -80,6 +82,18 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def model_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.name
+
+    # -----------------------------------------------------------------
+
     def setup(self, **kwargs):
 
         """
@@ -116,6 +130,31 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def old_scaleheight(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        definition = self.get_model_definition(self.model_name)
+        return definition.old_stars_scaleheight
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_scaleheight(self):
+
+        """
+        This fucntion ...
+        :return: 
+        """
+
+        return self.config.dust_scaleheight_ratio * self.old_scaleheight
+
+    # -----------------------------------------------------------------
+
     def get_dust_disk_parameters(self):
 
         """
@@ -126,14 +165,10 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
         # Inform the user
         log.info("Configuring the dust component ...")
 
-        # scale_height = 260.5 * Unit("pc") # first models
-        #scale_height = 200. * u("pc")  # M51
-        #dust_mass = 1.5e7 * u("Msun")
-
         # Create definition
         definition = ConfigurationDefinition()
-        definition.add_optional("scale_height", "quantity", "scale height", default=scale_height)
-        definition.add_optional("mass", "quantity", "dust mass", default=dust_mass)
+        definition.add_optional("scale_height", "quantity", "scale height", default=self.dust_scaleheight)
+        definition.add_optional("mass", "quantity", "dust mass", default=self.config.default_dust_mass)
         definition.add_optional("hydrocarbon_pops", "positive_integer", "number of hydrocarbon populations", default=self.config.default_hydrocarbon_pops)
         definition.add_optional("enstatite_pops", "positive_integer", "number of enstatite populations", default=self.config.default_enstatite_pops)
         definition.add_optional("forsterite_pops", "positive_integer", "number of forsterite populations", default=self.config.default_forsterite_pops)
@@ -186,7 +221,7 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Creating the deprojection model for the dust disk ...")
 
         # Create the deprojection model
-        deprojection = self.create_deprojection_for_map(self.maps["disk"], model_map_filename, self.parameters["disk"].scale_height)
+        deprojection = self.create_deprojection_for_map(self.galaxy_properties, self.disk_position_angle, self.maps["disk"], model_map_filename, self.parameters["disk"].scale_height)
 
         # Set the deprojection model
         self.deprojections["disk"] = deprojection

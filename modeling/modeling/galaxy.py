@@ -113,6 +113,11 @@ halpha_fluxes = {"NGC3031": 7.8e40 * u("erg/s")}
 
 # -----------------------------------------------------------------
 
+# SF rates for different galaxies
+SFRs = {"NGC3031": 0.8} # The average star formation rate # see Perez-Gonzalez 2006 (mentions Devereux et al 1995)
+
+# -----------------------------------------------------------------
+
 # Set the filters that are not necessary for making maps and therefore shouldn't be included in the preparation steps
 # that brings all data to the same resolution and pixelscale
 # We want to exclude the SPIRE images from the procedures that bring all images to the same resolution
@@ -1293,10 +1298,10 @@ class GalaxyModeler(ModelerBase):
         # Inform the user
         log.info("Building the model and its representations ...")
 
-        # Build model
+        # 1. Build model
         self.build_model()
 
-        # Build representations
+        # 2. Build representations
         self.build_representations()
 
     # -----------------------------------------------------------------
@@ -1316,6 +1321,16 @@ class GalaxyModeler(ModelerBase):
 
         # Set model name
         config["name"] = self.model_name
+
+        ###### NEW ######
+
+        # Get the estimated SFR
+        config["sfr"] = SFRs[self.hyperleda_name] if self.hyperleda_name in SFRs else 1.0
+
+        # Get the dust mass estimated by black body fitting (DustPedia)
+        config["dust_mass"] = get_mbb_dust_mass(self.hyperleda_name)
+
+        #################
 
         # Create the builder
         builder = ModelBuilder(config)

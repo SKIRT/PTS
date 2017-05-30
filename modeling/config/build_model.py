@@ -9,6 +9,8 @@
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.modeling.build.component import get_model_names
 from pts.core.tools import filesystem as fs
+from pts.modeling.config.build_stars import default_sfr
+from pts.modeling.config.build_dust import default_dust_mass
 
 # -----------------------------------------------------------------
 
@@ -23,5 +25,9 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 model_names = get_model_names(modeling_path)
 if len(model_names) == 0: definition.add_positional_optional("name", "string", "name for the model", default="standard")
 else: definition.add_required("name", "string", "name for the model", forbidden=model_names)
+
+# Settings for stellar and dust components
+definition.add_optional("sfr", "real", "average star formation rate", default_sfr)
+definition.add_optional("dust_mass", "quantity", "estimated mass of the dust disk", default_dust_mass)
 
 # -----------------------------------------------------------------

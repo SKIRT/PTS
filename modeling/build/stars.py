@@ -16,6 +16,9 @@ from __future__ import absolute_import, division, print_function
 import math
 import numpy as np
 
+# Import astronomical modules
+from astropy.utils import lazyproperty
+
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.basics.configuration import ConfigurationDefinition
@@ -29,6 +32,7 @@ from ...magic.core.frame import Frame
 from ..maps.component import get_old_stars_maps_path, get_young_stars_maps_path, get_ionizing_stars_maps_path
 from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import types
+from ...magic.tools import extinction
 
 # -----------------------------------------------------------------
 
@@ -101,6 +105,18 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def model_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.name
+
+    # -----------------------------------------------------------------
+
     def setup(self, **kwargs):
 
         """
@@ -113,6 +129,44 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         #super(StarsBuilder, self).setup()
         GeneralBuilder.setup(self, **kwargs)
         GalaxyModelingComponent.setup(self, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unattenuated_fuv_flux(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Determine unattenuated flux
+        factor = extinction.observed_to_intrinsic_factor(self.config.fuv_attenuation)
+        return self.observed_flux(self.fuv_filter, unit="Jy") * factor
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unattenuated_fuv_flux_young_stars(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.config.fuv_ionizing_contribution * self.unattenuated_fuv_flux
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def unattenuated_fuv_flux_ionizing_stars(self):
+
+        """
+        This function ....
+        :return: 
+        """
+
+        return (1. - self.config.fuv_ionizing_contribution) * self.unattenuated_fuv_flux
 
     # -----------------------------------------------------------------
 
@@ -134,6 +188,20 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def bulge_fluxdensity(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Get the flux density of the bulge
+        fluxdensity = self.bulge2d_model.fluxdensity
+        return fluxdensity
+
+    # -----------------------------------------------------------------
+
     def get_bulge_parameters(self):
 
         """
@@ -144,18 +212,12 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         # Inform the user
         log.info("Configuring the bulge component ...")
 
-        # Like M31
-        bulge_template = "BruzualCharlot"
-
-        # Get the flux density of the bulge
-        fluxdensity = self.bulge2d_model.fluxdensity
-
         # Create definition
         definition = ConfigurationDefinition()
-        definition.add_optional("template", "string", "template SED family", default=bulge_template, choices=[bulge_template])
+        definition.add_optional("template", "string", "template SED family", default=self.config.default_old_bulge_template)
         definition.add_optional("age", "positive_real", "age in Gyr", default=self.config.default_bulge_age)
         definition.add_optional("metallicity", "positive_real", "metallicity", default=self.config.default_old_bulge_metallicity)
-        definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=fluxdensity)
+        definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=self.bulge_fluxdensity)
 
         # Prompt for the values
         setter = InteractiveConfigurationSetter("bulge")
@@ -188,13 +250,8 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         # Inform the user
         log.info("Loading the bulge model ...")
 
-        # Set the parameters of the bulge
-        #self.ski_template.set_stellar_component_geometry("Evolved stellar bulge", self.bulge_model)
-        #self.ski_template.set_stellar_component_sed("Evolved stellar bulge", bulge_template, bulge_age, bulge_metallicity)  # SED
-        ## self.ski.set_stellar_component_luminosity("Evolved stellar bulge", luminosity, self.i1) # normalization by band
-        #self.ski_template.set_stellar_component_luminosity("Evolved stellar bulge", luminosity, self.i1_filter.centerwavelength() * u("micron"))
-
-        self.models["bulge"] = None
+        # Load the bulge model
+        self.models["bulge"] = self.bulge_model
 
     # -----------------------------------------------------------------
 
@@ -219,6 +276,38 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def old_scaleheight(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        scale_height = self.disk2d_model.scalelength / self.config.scalelength_to_scaleheight
+        return scale_height
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def old_fluxdensity(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Get the flux
+        bulge_fluxdensity = self.bulge2d_model.fluxdensity
+
+        # Get the 3.6 micron flux density with the bulge subtracted
+        fluxdensity = self.observed_flux(self.i1_filter, unit="Jy") - bulge_fluxdensity
+
+        # Return the flux density
+        return fluxdensity
+
+    # -----------------------------------------------------------------
+
     def get_old_parameters(self):
 
         """
@@ -229,23 +318,13 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         # Inform the user
         log.info("Configuring the old stellar disk component ...")
 
-        # Like M31
-        disk_template = "BruzualCharlot"
-
-        # Get the scale height
-        scale_height = self.disk2d_model.scalelength / self.config.scalelength_to_scaleheight
-        bulge_fluxdensity = self.bulge2d_model.fluxdensity
-
-        # Get the 3.6 micron flux density with the bulge subtracted
-        fluxdensity = self.observed_flux(self.i1_filter, unit="Jy") - bulge_fluxdensity
-
         # Create definition
         definition = ConfigurationDefinition()
-        definition.add_optional("template", "string", "template SED family", default=disk_template, choices=[disk_template])
+        definition.add_optional("template", "string", "template SED family", default=self.config.default_old_disk_template)
         definition.add_optional("age", "positive_real", "age in Gyr", default=self.config.default_old_disk_age)
         definition.add_optional("metallicity", "positive_real", "metallicity", default=self.config.default_old_disk_metallicity)
-        definition.add_optional("scale_height", "quantity", "scale height", default=scale_height)
-        definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=fluxdensity)
+        definition.add_optional("scale_height", "quantity", "scale height", default=self.old_scaleheight)
+        definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=self.old_fluxdensity)
 
         # Prompt for the values
         setter = InteractiveConfigurationSetter("old stellar disk")
@@ -334,6 +413,18 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def young_scaleheight(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.config.young_scaleheight_ratio * self.old_scaleheight
+
+    # -----------------------------------------------------------------
+
     def get_young_parameters(self):
 
         """
@@ -344,25 +435,15 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         # Inform the user
         log.info("Configuring the young stellar component ...")
 
-        # Like M31
-        young_template = "BruzualCharlot"
-        young_age = 0.1
-        # young_metallicity = 0.02
-        young_metallicity = 0.03
-
-        # Get the scale height
-        # scale_height = 150 * Unit("pc") # first models
-        scale_height = 100. * u("pc")  # M51
-
         # Get the FUV flux density
-        fluxdensity = 2. * self.observed_flux(self.fuv_filter, unit="Jy")
+        fluxdensity = self.unattenuated_fuv_flux_young_stars
 
         # Create definition
         definition = ConfigurationDefinition()
-        definition.add_optional("template", "string", "template SED family", default=young_template, choices=[young_template])
-        definition.add_optional("age", "positive_real", "age in Gyr", default=young_age)
-        definition.add_optional("metallicity", "positive_real", "metallicity", default=young_metallicity)
-        definition.add_optional("scale_height", "quantity", "scale height", default=scale_height)
+        definition.add_optional("template", "string", "template SED family", default=self.config.default_young_template)
+        definition.add_optional("age", "positive_real", "age in Gyr", default=self.config.default_young_age)
+        definition.add_optional("metallicity", "positive_real", "metallicity", default=self.config.default_young_metallicity)
+        definition.add_optional("scale_height", "quantity", "scale height", default=self.young_scaleheight)
         definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=fluxdensity)
 
         # Prompt for the values
@@ -452,6 +533,18 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def ionizing_scaleheight(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.config.ionizing_scaleheight_ratio * self.old_scaleheight
+
+    # -----------------------------------------------------------------
+
     def set_ionizing_parameters(self):
 
         """
@@ -462,38 +555,30 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         # Inform the user
         log.info("Configuring the ionizing stellar component ...")
 
-        # Like M51 and M31
-        # ionizing_metallicity = 0.02
-        ionizing_metallicity = 0.03  # XU KONG et al. 2000
-        ionizing_compactness = 6.
-        ionizing_pressure = 1e12 * u("K/m3")
-        ionizing_covering_factor = 0.2
-
-        # Get the scale height
-        # scale_height = 150 * Unit("pc") # first models
-        scale_height = 100. * u("pc")  # M51
-
-        # Convert the SFR into a FUV luminosity
-        sfr = 0.8  # The star formation rate # see Perez-Gonzalez 2006 (mentions Devereux et al 1995)
-
         # Create definition
         definition = ConfigurationDefinition()
         #definition.add_optional("template", "string", "template SED family", default=young_template, choices=[young_template])
         #definition.add_optional("age", "positive_real", "age in Gyr", default=young_age)
-        definition.add_optional("metallicity", "positive_real", "metallicity", default=ionizing_metallicity)
-        definition.add_optional("compactness", "positive_real", "compactness", default=ionizing_compactness)
-        definition.add_optional("pressure", "quantity", "pressure", default=ionizing_pressure)
-        definition.add_optional("covering_factor", "positive_real", "covering factor", default=ionizing_covering_factor)
-        definition.add_optional("scale_height", "quantity", "scale height", default=scale_height)
-        #definition.add_optional("fluxdensity", "photometric_quantity", "flux density", default=fluxdensity)
-        definition.add_optional("sfr", "positive_real", "SFR", default=sfr)
+        definition.add_optional("metallicity", "positive_real", "metallicity", default=self.config.default_ionizing_metallicity)
+        definition.add_optional("compactness", "positive_real", "compactness", default=self.config.default_ionizing_compactness)
+        definition.add_optional("pressure", "quantity", "pressure", default=self.config.default_ionizing_pressure)
+        definition.add_optional("covering_factor", "positive_real", "covering factor", default=self.config.default_covering_factor)
+        definition.add_optional("scale_height", "quantity", "scale height", default=self.ionizing_scaleheight)
+        definition.add_optional("sfr", "positive_real", "SFR", default=self.config.default_sfr)
 
         # Prompt for the values
         setter = InteractiveConfigurationSetter("ionizing stellar disk")
         config = setter.run(definition)
 
+        # Get the parameters
+        metallicity = config.metallicity
+        compactness = config.compactness
+        pressure = config.pressure
+        covering_factor = config.covering_factor
+        sfr = config.sfr
+
         # Generate Mappings template for the specified parameters
-        mappings = Mappings(ionizing_metallicity, ionizing_compactness, ionizing_pressure, ionizing_covering_factor, sfr)
+        mappings = Mappings(metallicity, compactness, pressure, covering_factor, sfr)
         # luminosity = luminosity.to(self.sun_fuv).value # for normalization by band
 
         # Get the spectral luminosity at the FUV wavelength

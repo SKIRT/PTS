@@ -123,8 +123,14 @@ class ModelBuilder(BuildComponent, GalaxyModelingComponent):
         # Create the builder
         builder = StarsBuilder(interactive=True)
 
+        # Set the model name
+        builder.config.name = self.model_name
+
         # Set the output path
         builder.config.output = self.model_stellar_path
+
+        # Set SFR estimation
+        builder.config.default_sfr = self.config.sfr
 
         # Run
         builder.run()
@@ -144,8 +150,14 @@ class ModelBuilder(BuildComponent, GalaxyModelingComponent):
         # Create the builder
         builder = DustBuilder(interactive=True)
 
+        # Set the model name
+        builder.config.name = self.model_name
+
         # Set the output path
         builder.config.output = self.model_dust_path
+
+        # Set dust mass estimation
+        builder.config.default_dust_mass = self.config.dust_mass
 
         # Run
         builder.run()
