@@ -326,6 +326,7 @@ class DustGridGenerator(Configurable):
             if self.grid_type == "cartesian": self.create_cartesian_dust_grid(scale)
             elif self.grid_type == "bintree": self.create_binary_tree_dust_grid(scale, level, mass_fraction)
             elif self.grid_type == "octtree": self.create_octtree_dust_grid(scale, level, mass_fraction)
+            else: raise ValueError("Invalid grid type: " + self.grid_type)
 
     # -----------------------------------------------------------------
 

@@ -674,6 +674,21 @@ class Configuration(Map):
 
 # -----------------------------------------------------------------
 
+def open_mapping(filepath):
+
+    """
+    This function ...
+    :param filepath: 
+    :return: 
+    """
+
+    parameters = Map()
+    with open(filepath, "r") as fh:
+        load_mapping(fh, parameters)
+    return parameters
+
+# -----------------------------------------------------------------
+
 def load_mapping(mappingfile, mapping, indent=""):
 
     """

@@ -21,6 +21,7 @@ from ...core.tools.logging import log
 from ...core.prep.smile import SKIRTSmileSchema
 from ...core.tools import filesystem as fs
 from ...core.tools.serialization import write_dict
+from .component import parameters_filename, deprojection_filename, model_map_filename, model_filename, properties_filename
 
 # -----------------------------------------------------------------
 
@@ -162,7 +163,7 @@ class GeneralBuilder(BuildComponent):
         for name in self.parameters:
 
             # Save parameters
-            path = fs.join(self.paths[name], "parameters.cfg")
+            path = fs.join(self.paths[name], parameters_filename)
             self.parameters[name].saveto(path)
 
     # -----------------------------------------------------------------
@@ -185,7 +186,7 @@ class GeneralBuilder(BuildComponent):
             if name not in self.deprojections: continue
 
             # Save
-            path = fs.join(self.paths[name], "deprojection.mod")
+            path = fs.join(self.paths[name], deprojection_filename)
             self.deprojections[name].saveto(path)
 
     # -----------------------------------------------------------------
@@ -229,7 +230,7 @@ class GeneralBuilder(BuildComponent):
             if name not in self.models: continue
 
             # Save the model
-            path = fs.join(self.paths[name], "model.mod")
+            path = fs.join(self.paths[name], model_filename)
             self.models[name].saveto(path)
 
     # -----------------------------------------------------------------
@@ -252,7 +253,7 @@ class GeneralBuilder(BuildComponent):
             if name not in self.properties: continue
 
             # Write the properties
-            path = fs.join(self.paths[name], "properties.dat")
+            path = fs.join(self.paths[name], properties_filename)
             write_dict(self.properties[name], path)
 
 # -----------------------------------------------------------------

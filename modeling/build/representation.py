@@ -28,7 +28,7 @@ from ...core.basics.configuration import prompt_string
 from ...core.units.stringify import represent_quantity
 from ...core.simulation.grids import load_grid
 from ..component.galaxy import GalaxyModelingComponent
-from ..basics.models import DeprojectionModel3D
+from ...core.prep.dustgrids import create_one_dust_grid
 
 # -----------------------------------------------------------------
 
@@ -521,7 +521,16 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
         # Inform the user
         log.info("Creating the dust grid ...")
 
-        # TODO: implement
+        #self.config.dg.grid_type
+        #self.config.dg.scale
+        #self.config.dg.max_level
+        #self.config.dg.mass_fraction
+
+
+
+        # Create the grid
+        # grid_type, scale, x_extent, y_extent, z_extent, x_min, x_max, y_min, y_max, z_min, z_max, min_level, max_mass_fraction
+        self.dust_grid = create_one_dust_grid(self.config.dg.grid_type)
 
     # -----------------------------------------------------------------
 

@@ -25,6 +25,9 @@ from ...core.basics.containers import NamedFileList
 #from .dust import basic_dust_maps_names
 from .stars import basic_old_map_name, basic_young_map_name, basic_ionizing_map_name
 from .dust import basic_dust_map_name
+from .general import parameters_filename
+from .component import load_component
+from ...core.basics.configuration import open_mapping
 
 # -----------------------------------------------------------------
 
@@ -584,6 +587,246 @@ class ModelDefinition(object):
         """
 
         return self.basic_dust_map_wcs.average_pixelscale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_stars_component_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return fs.directory_of(self.old_stars_map_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_stars_component_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return fs.directory_of(self.young_stars_map_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_stars_component_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return fs.directory_of(self.ionizing_stars_map_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_component_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return fs.directory_of(self.dust_map_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_stars_parameters_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return fs.join(self.old_stars_component_path, parameters_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_stars_parameters_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return fs.join(self.young_stars_component_path, parameters_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_stars_parameters_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return fs.join(self.ionizing_stars_component_path, parameters_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_parameters_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return fs.join(self.dust_component_path, parameters_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_stars_parameters(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return open_mapping(self.old_stars_parameters_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_stars_parameters(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return open_mapping(self.young_stars_parameters_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_stars_parameters(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return open_mapping(self.ionizing_stars_parameters_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_parameters(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return open_mapping(self.dust_parameters_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_stars_scaleheight(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.old_stars_parameters.scale_height
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_stars_scaleheight(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.young_stars_parameters.scale_height
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_stars_scaleheight(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.ionizing_stars_parameters.scale_height
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_scaleheight(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.dust_parameters.scale_height
+
+    # -----------------------------------------------------------------
+
+    def load_old_stars_component(self, add_map=False):
+
+        """
+        This function ...
+        :param add_map: 
+        :return: 
+        """
+
+        return load_component(self.old_stars_component_path, add_map=add_map)
+
+    # -----------------------------------------------------------------
+
+    def load_young_stars_component(self, add_map=False):
+
+        """
+        This function ...
+        :param add_map: 
+        :return: 
+        """
+
+        return load_component(self.young_stars_component_path, add_map=add_map)
+
+    # -----------------------------------------------------------------
+
+    def load_ionizing_stars_component(self, add_map=False):
+
+        """
+        This function ...
+        :param add_map: 
+        :return: 
+        """
+
+        return load_component(self.ionizing_stars_component_path, add_map=add_map)
+
+    # -----------------------------------------------------------------
+
+    def load_dust_component(self, add_map=False):
+
+        """
+        This function ...
+        :param add_map: 
+        :return: 
+        """
+
+        return load_component(self.dust_component_path, add_map=add_map)
 
 # -----------------------------------------------------------------
 

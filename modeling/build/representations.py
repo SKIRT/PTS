@@ -167,6 +167,13 @@ class RepresentationGenerator(BuildComponent, GalaxyModelingComponent):
         log.info("Building the representations ...")
 
         # Loop over the dust grids
+        for grid in self.dg_generator.grids:
+
+            # Create builder
+            builder = RepresentationBuilder()
+
+            # Build
+            builder.run()
 
     # -----------------------------------------------------------------
 

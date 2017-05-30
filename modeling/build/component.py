@@ -18,7 +18,7 @@ from ..component.component import ModelingComponent
 from ...core.tools import filesystem as fs
 from .tables import ModelsTable, RepresentationsTable
 from ...core.basics.map import Map
-from ...core.basics.configuration import load_mapping
+from ...core.basics.configuration import open_mapping
 from ..basics.models import DeprojectionModel3D, load_3d_model
 from ...core.tools.serialization import load_dict
 from ...magic.core.frame import Frame
@@ -26,7 +26,11 @@ from .definition import ModelDefinition
 
 # -----------------------------------------------------------------
 
+parameters_filename = "parameters.cfg"
+deprojection_filename = "deprojection.mod"
 model_map_filename = "map.fits"
+model_filename = "model.mod"
+properties_filename = "properties.dat"
 
 # -----------------------------------------------------------------
 
@@ -465,21 +469,19 @@ def load_component(path, add_map=False):
     component.name = fs.name(path)
 
     # Load the parameters
-    parameters_path = fs.join(path, "parameters.cfg")
+    parameters_path = fs.join(path, parameters_filename)
     if fs.is_file(parameters_path):
-        parameters = Map()
-        with open(parameters_path, "r") as fh:
-            load_mapping(fh, parameters)
+        parameters = open_mapping(parameters_path)
         component.parameters = parameters
 
     # Load the deprojection
-    deprojection_path = fs.join(path, "deprojection.mod")
+    deprojection_path = fs.join(path, deprojection_filename)
     if fs.is_file(deprojection_path):
         deprojection = DeprojectionModel3D.from_file(deprojection_path)
         component.deprojection = deprojection
 
     # Load the map
-    map_path = fs.join(path, "map.fits")
+    map_path = fs.join(path, model_map_filename)
     if fs.is_file(map_path):
         component.map_path = map_path
         if add_map:
@@ -487,13 +489,13 @@ def load_component(path, add_map=False):
             component.map = map
 
     # Load the model
-    model_path = fs.join(path, "model.mod")
+    model_path = fs.join(path, model_filename)
     if fs.is_file(model_path):
         model = load_3d_model(model_path)
         component.model = model
 
     # Load the properties
-    properties_path = fs.join(path, "properties.dat")
+    properties_path = fs.join(path, properties_filename)
     if fs.is_file(model_path):
         properties = load_dict(properties_path)
         component.properties = properties

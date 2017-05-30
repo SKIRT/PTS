@@ -32,11 +32,11 @@ from ...core.tools import types
 
 # -----------------------------------------------------------------
 
-#basic_stellar_maps_names = ["old", "young", "ionizing"]
-
 basic_old_map_name = "old_disk"
 basic_young_map_name = "young"
 basic_ionizing_map_name = "ionizing"
+
+basic_stellar_maps_names = [basic_old_map_name, basic_young_map_name, basic_ionizing_map_name]
 
 # -----------------------------------------------------------------
 
@@ -306,7 +306,7 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Creating the deprojection model for the old stellar disk ...")
 
         # Create the deprojection model
-        deprojection = self.create_deprojection_for_map(self.maps["old"], model_map_filename, self.parameters["old"].scale_height)
+        deprojection = self.create_deprojection_for_map(self.galaxy_properties, self.disk_position_angle, self.maps["old"], model_map_filename, self.parameters["old"].scale_height)
 
         # Set the deprojection model
         self.deprojections["old"] = deprojection
@@ -424,7 +424,7 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Creating the deprojection model for the young stellar disk ...")
 
         # Create the deprojection model
-        deprojection = self.create_deprojection_for_map(self.maps["young"], model_map_filename, self.parameters["young"].scale_height)
+        deprojection = self.create_deprojection_for_map(self.galaxy_properties, self.disk_position_angle, self.maps["young"], model_map_filename, self.parameters["young"].scale_height)
 
         # Set the deprojection model
         self.deprojections["young"] = deprojection
@@ -549,7 +549,7 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         log.info("Creating the deprojection model for the ionizing stellar disk ...")
 
         # Create the deprojection model
-        deprojection = self.create_deprojection_for_map(self.maps["ionizing"], model_map_filename, self.parameters["ionizing"].scale_height)
+        deprojection = self.create_deprojection_for_map(self.galaxy_properties, self.disk_position_angle, self.maps["ionizing"], model_map_filename, self.parameters["ionizing"].scale_height)
 
         # Set the deprojection model
         self.deprojections["ionizing"] = deprojection
