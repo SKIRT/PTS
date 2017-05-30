@@ -67,6 +67,13 @@ class GeneralBuilder(BuildComponent):
         # The SKIRT smile schema
         self.smile = None
 
+        # File paths
+        self.parameter_paths = dict()
+        self.deprojection_paths = dict()
+        self.map_paths = dict()
+        self.model_paths = dict()
+        self.properties_paths = dict()
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -166,6 +173,9 @@ class GeneralBuilder(BuildComponent):
             path = fs.join(self.paths[name], parameters_filename)
             self.parameters[name].saveto(path)
 
+            # Set path
+            self.parameter_paths[name] = path
+
     # -----------------------------------------------------------------
 
     def write_deprojections(self):
@@ -189,6 +199,9 @@ class GeneralBuilder(BuildComponent):
             path = fs.join(self.paths[name], deprojection_filename)
             self.deprojections[name].saveto(path)
 
+            # Set path
+            self.deprojection_paths[name] = path
+
     # -----------------------------------------------------------------
 
     def write_maps(self):
@@ -211,6 +224,9 @@ class GeneralBuilder(BuildComponent):
             path = fs.join(self.paths[name], model_map_filename)
             self.maps[name].saveto(path)
 
+            # Set path
+            self.map_paths[name] = path
+
     # -----------------------------------------------------------------
 
     def write_models(self):
@@ -224,6 +240,7 @@ class GeneralBuilder(BuildComponent):
         # Inform the user
         log.info("Writing the models ...")
 
+        # Loop over the names
         for name in self.parameters:
 
             # Save model
@@ -232,6 +249,9 @@ class GeneralBuilder(BuildComponent):
             # Save the model
             path = fs.join(self.paths[name], model_filename)
             self.models[name].saveto(path)
+
+            # Set path
+            self.model_paths[name] = path
 
     # -----------------------------------------------------------------
 
@@ -255,5 +275,8 @@ class GeneralBuilder(BuildComponent):
             # Write the properties
             path = fs.join(self.paths[name], properties_filename)
             write_dict(self.properties[name], path)
+
+            # Set path
+            self.properties_paths[name] = path
 
 # -----------------------------------------------------------------

@@ -53,6 +53,13 @@ titles["ionizing"] = "Ionizing stars"
 
 # -----------------------------------------------------------------
 
+component_name_for_map_name = dict()
+component_name_for_map_name["old_disk"] = "old"
+component_name_for_map_name["young"] = "young"
+component_name_for_map_name["ionizing"] = "ionizing"
+
+# -----------------------------------------------------------------
+
 class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
     
     """
@@ -794,6 +801,45 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
 
         # Change the filename in the geometry parameters
         parameters["filename"] = model_map_filename
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_stars_map_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        component_name = component_name_for_map_name[basic_old_map_name]
+        return self.map_paths[component_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_stars_map_path(self):
+
+        """
+        Thisf unction ...
+        :return: 
+        """
+
+        component_name = component_name_for_map_name[basic_young_map_name]
+        return self.map_paths[component_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_stars_map_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        component_name = component_name_for_map_name[basic_ionizing_map_name]
+        return self.map_paths[component_name]
 
 # -----------------------------------------------------------------
 

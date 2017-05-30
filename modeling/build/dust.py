@@ -39,6 +39,11 @@ titles["disk"] = "Dust disk"
 
 # -----------------------------------------------------------------
 
+component_name_for_map_name = dict()
+component_name_for_map_name["dust_disk"] = "disk"
+
+# -----------------------------------------------------------------
+
 class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
     
     """
@@ -57,6 +62,9 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
         #super(DustBuilder, self).__init__(*args, **kwargs)
         GeneralBuilder.__init__(self, *args, **kwargs)
         GalaxyModelingComponent.__init__(self, *args, **kwargs)
+
+        # The scaleheight of the old stellar population
+        self.old_scaleheight = None
 
     # -----------------------------------------------------------------
 
@@ -107,6 +115,9 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
         GeneralBuilder.setup(self, **kwargs)
         GalaxyModelingComponent.setup(self, **kwargs)
 
+        # Get the scaleheight of the old stars
+        self.old_scaleheight = kwargs.pop("old_scaleheight")
+
     # -----------------------------------------------------------------
 
     def build_dust_disk(self):
@@ -130,16 +141,18 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def old_scaleheight(self):
+    #@lazyproperty
+    #def old_scaleheight(self):
 
-        """
-        This function ...
-        :return: 
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
-        definition = self.get_model_definition(self.model_name)
-        return definition.old_stars_scaleheight
+        #
+        #definition = self.get_model_definition(self.model_name)
+        #return definition.old_stars_scaleheight
+        # NO: don't load the definition because e.g. the property old_stars_scaleheight depends on the models table to be completed, and it isn't at this point
 
     # -----------------------------------------------------------------
 
@@ -382,5 +395,18 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
 
         # Change the filename in the geometry parameters
         parameters["filename"] = model_map_filename
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_map_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        component_name = component_name_for_map_name[basic_dust_map_name]
+        return self.map_paths[component_name]
 
 # -----------------------------------------------------------------

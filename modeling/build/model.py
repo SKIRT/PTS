@@ -50,6 +50,15 @@ class ModelBuilder(BuildComponent, GalaxyModelingComponent):
         # The path for the dust components
         self.model_dust_path = None
 
+        # The scaleheight of the old stars
+        self.old_scaleheight = None
+
+        # Map paths
+        self.old_stars_map_path = None
+        self.young_stars_map_path = None
+        self.ionizing_stars_map_path = None
+        self.dust_map_path = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -135,6 +144,14 @@ class ModelBuilder(BuildComponent, GalaxyModelingComponent):
         # Run
         builder.run()
 
+        # Set the scaleheight of the old stars
+        self.old_scaleheight = builder.old_scaleheight
+
+        # Set map paths
+        self.old_stars_map_path = builder.old_stars_map_path
+        self.young_stars_map_path = builder.young_stars_map_path
+        self.ionizing_stars_map_path = builder.ionizing_stars_map_path
+
     # -----------------------------------------------------------------
 
     def build_dust(self):
@@ -160,7 +177,10 @@ class ModelBuilder(BuildComponent, GalaxyModelingComponent):
         builder.config.default_dust_mass = self.config.dust_mass
 
         # Run
-        builder.run()
+        builder.run(old_scaleheight=self.old_scaleheight)
+
+        # Set map paths
+        self.dust_map_path = builder.dust_map_path
 
     # -----------------------------------------------------------------
 
@@ -187,11 +207,11 @@ class ModelBuilder(BuildComponent, GalaxyModelingComponent):
         """
 
         # Inform the user
-        log.info("Writing the model table ...")
+        log.info("Writing the models table ...")
 
         # Add the model
         table = self.models_table
-        table.add_model(self.model_name, description, old_stars_map_path, young_stars_map_path, ionizing_stars_map_path, dust_map_path)
+        table.add_model(self.model_name, self.config.description, self.old_stars_map_path, self.young_stars_map_path, self.ionizing_stars_map_path, self.dust_map_path)
 
         # Save the table
         table.saveto(self.models_table_path)

@@ -213,6 +213,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         """
         This function ...
         :param self: 
+        :param component:
         :return: 
         """
 
@@ -228,7 +229,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
 
         """
         THis function ...
-        :param self: 
+        :param component:
         :return: 
         """
 
@@ -244,7 +245,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
 
         """
         This function ...
-        :param self: 
+        :param component:
         :return: 
         """
 
@@ -271,7 +272,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
 
         """
         THis function ...
-        :param self: 
+        :param component:
         :return: 
         """
 
@@ -306,6 +307,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         """
         This function ...
         :return: 
+        :param component:
         """
 
         # Get title
