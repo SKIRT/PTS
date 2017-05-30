@@ -15,6 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import math
 
+# Import astronomical modules
+from astropy.units import dimensionless_angles
+
 # Import the relevant PTS classes and modules
 from ..simulation.grids import BinaryTreeDustGrid, OctTreeDustGrid, CartesianDustGrid
 from ...core.tools.logging import log
@@ -320,12 +323,12 @@ class DustGridGenerator(Configurable):
         log.info("Creating the grids ...")
 
         # Loop over the different grid parameter values
-        for scale, level, mass_fraction in zip_linear(self.scale_range, self.level_range, self.mass_fraction_range, npoints=self.ngrids):
+        for scale, min_level, mass_fraction in zip_linear(self.scale_range, self.level_range, self.mass_fraction_range, npoints=self.ngrids):
 
             # Create the grid and add it to the list
             if self.grid_type == "cartesian": self.create_cartesian_dust_grid(scale)
-            elif self.grid_type == "bintree": self.create_binary_tree_dust_grid(scale, level, mass_fraction)
-            elif self.grid_type == "octtree": self.create_octtree_dust_grid(scale, level, mass_fraction)
+            elif self.grid_type == "bintree": self.create_binary_tree_dust_grid(scale, min_level, mass_fraction)
+            elif self.grid_type == "octtree": self.create_octtree_dust_grid(scale, min_level, mass_fraction)
             else: raise ValueError("Invalid grid type: " + self.grid_type)
 
     # -----------------------------------------------------------------
@@ -501,6 +504,81 @@ class DustGridGenerator(Configurable):
 
         # Inform the user
         log.info("Writing table ...")
+
+# -----------------------------------------------------------------
+
+def create_one_dust_grid_for_galaxy_from_deprojection(grid_type, deprojection, distance, sky_ellipse, min_level, max_mass_fraction, max_ndivisions_per_pixel=2, nscaleheights=10.):
+
+    """
+    This function ...
+    :param grid_type: 
+    :param deprojection:
+    :param distance:
+    :param sky_ellipse:
+    :param min_level:
+    :param max_mass_fraction:
+    :param max_ndivisions_per_pixel:
+    :param nscaleheights:
+    :return: 
+    """
+
+    # Get properties
+    average_pixelscale = deprojection.pixelscale
+    scaleheight = deprojection.scale_height
+
+    # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
+    semimajor_angular = sky_ellipse.semimajor  # semimajor axis length of the sky ellipse
+    radius_physical = (semimajor_angular * distance).to("pc", equivalencies=dimensionless_angles())
+
+    # Get the pixelscale in physical units
+    pixelscale_angular = average_pixelscale.to("deg")
+    # pixelscale_angular = self.reference_wcs.average_pixelscale.to("deg")  # in deg
+    pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
+
+    # Determine the minimum physical scale
+    min_scale = pixelscale / float(max_ndivisions_per_pixel)
+
+    # Create the dust grid
+    return create_one_dust_grid_for_galaxy(grid_type, radius_physical, scaleheight, min_scale, min_level, max_mass_fraction, nscaleheights=nscaleheights)
+
+# -----------------------------------------------------------------
+
+def create_one_dust_grid_for_galaxy(grid_type, radius, scaleheight, min_scale, min_level, max_mass_fraction, nscaleheights=10.):
+
+    """
+    This function ...
+    :param grid_type: 
+    :param radius: IN PHYSICAL COORDINATES
+    :param scaleheight: IN PHYSICAL COORDINATES
+    :param min_scale:
+    :param min_level:
+    :param max_mass_fraction:
+    :param nscaleheights: REAL NUMBER
+    :return: 
+    """
+
+    # Determine x, y and z radius
+    x_radius = radius
+    y_radius = radius
+    z_radius = scaleheight * nscaleheights
+
+    # X
+    x_min = - x_radius
+    x_max = x_radius
+    x_extent = x_max - x_min
+
+    # Y
+    y_min = - y_radius
+    y_max = y_radius
+    y_extent = y_max - y_min
+
+    # Z
+    z_min = - z_radius
+    z_max = z_radius
+    z_extent = z_max - z_min
+
+    # Create the dust grid
+    return create_one_dust_grid(grid_type, min_scale, x_extent, y_extent, z_extent, x_min, x_max, y_min, y_max, z_min, z_max, min_level, max_mass_fraction)
 
 # -----------------------------------------------------------------
 

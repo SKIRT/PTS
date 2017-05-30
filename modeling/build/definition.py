@@ -25,9 +25,10 @@ from ...core.basics.containers import NamedFileList
 #from .dust import basic_dust_maps_names
 from .stars import basic_old_map_name, basic_young_map_name, basic_ionizing_map_name
 from .dust import basic_dust_map_name
-from .general import parameters_filename
+from .general import parameters_filename, deprojection_filename
 from .component import load_component
 from ...core.basics.configuration import open_mapping
+from ..basics.models import DeprojectionModel3D
 
 # -----------------------------------------------------------------
 
@@ -779,6 +780,102 @@ class ModelDefinition(object):
         """
 
         return self.dust_parameters.scale_height
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_stars_deprojection_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return fs.join(self.old_stars_component_path, deprojection_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_stars_deprojection_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return fs.join(self.young_stars_component_path, deprojection_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_stars_deprojection_path(self):
+
+        """
+        Tihs function ...
+        :return: 
+        """
+
+        return fs.join(self.ionizing_stars_component_path, deprojection_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_deprojection_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return fs.join(self.dust_component_path, deprojection_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_stars_deprojection(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return DeprojectionModel3D.from_file(self.old_stars_deprojection_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_stars_deprojection(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return DeprojectionModel3D.from_file(self.young_stars_deprojection_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_stars_deprojection(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return DeprojectionModel3D.from_file(self.ionizing_stars_deprojection_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_deprojection(self):
+
+        """
+        THis function ...
+        :return: 
+        """
+
+        return DeprojectionModel3D.from_file(self.dust_deprojection_path)
 
     # -----------------------------------------------------------------
 

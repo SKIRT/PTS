@@ -37,8 +37,10 @@ definition.add_optional("nrepresentations", "positive_integer", "number of repre
 # Settings for the dust grid generation
 definition.add_section("dg", "settings for the dust grids")
 definition.sections["dg"].add_optional("grid_type", "string", "type of dust grid", default_dust_grid_type, choices=dust_grid_types)
-definition.sections["dg"].add_optional("scale_range", "real_range", "the range of the number of image pixels to take as the minimum scale in the model (can also be a certain fraction of a pixel)", "0.5>10.", convert_default=True)
-definition.sections["dg"].add_optional("level_range", "integer_range", "the range of the maximum depth level of the tree", "6>9", convert_default=True)
-definition.sections["dg"].add_optional("mass_fraction_range", "real_range", "the range of the maximum mass fraction in each cell", "0.5e-6>1e-5", convert_default=True)
+definition.sections["dg"].add_optional("scale_range", "real_range", "range of the number of image pixels to take as the minimum scale in the model (can also be a certain fraction of a pixel)", "0.5>10.", convert_default=True)
+definition.sections["dg"].add_optional("bintree_level_range", "integer_range", "range of the minimum depth level for binary trees", "6>9", convert_default=True)
+definition.sections["dg"].add_optional("octtree_level_range", "integer_range", "range of the minimum depth level for octtrees", "2>3", convert_default=True)
+definition.sections["dg"].add_optional("mass_fraction_range", "real_range", "range of the maximum mass fraction in each cell", "0.5e-6>1e-5", convert_default=True)
+definition.sections["dg"].add_optional("scale_heights", "real", "number of times to take the dust scale height as the vertical radius of the dust grid", 10.)
 
 # -----------------------------------------------------------------

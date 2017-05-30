@@ -28,7 +28,7 @@ from ...core.basics.configuration import prompt_string
 from ...core.units.stringify import represent_quantity
 from ...core.simulation.grids import load_grid
 from ..component.galaxy import GalaxyModelingComponent
-from ...core.prep.dustgrids import create_one_dust_grid
+from ...core.prep.dustgrids import create_one_dust_grid_for_galaxy_from_deprojection
 
 # -----------------------------------------------------------------
 
@@ -521,16 +521,23 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
         # Inform the user
         log.info("Creating the dust grid ...")
 
-        #self.config.dg.grid_type
-        #self.config.dg.scale
-        #self.config.dg.max_level
-        #self.config.dg.mass_fraction
+        # Load the dust disk deprojection
+        deprojection = self.definition.dust_deprojection
 
+        # Set minimum level
+        if self.config.dg.grid_type == "bintree": min_level = self.config.dg.bintree_max_level
+        elif self.config.dg.grid_type == "octtree": min_level = self.config.dg.octtree_max_level
+        else: min_level = None
 
+        # Set max ndivisions per pixel
+        max_ndivisions_per_pixel = 1. / self.config.dg.scale  # default 1/0.5 = 2 divisions along each direction per pixel
 
-        # Create the grid
-        # grid_type, scale, x_extent, y_extent, z_extent, x_min, x_max, y_min, y_max, z_min, z_max, min_level, max_mass_fraction
-        self.dust_grid = create_one_dust_grid(self.config.dg.grid_type)
+        # Create the dust grid
+        # grid_type, deprojection, distance, sky_ellipse, min_level, max_mass_fraction, max_ndivisions_per_pixel=2, nscaleheights=10.
+        self.dust_grid = create_one_dust_grid_for_galaxy_from_deprojection(self.config.dg.grid_type, deprojection,
+                                                                           self.galaxy_distance, self.truncation_ellipse,
+                                                                           min_level, self.config.dg.max_mass_fraction,
+                                                                           max_ndivisions_per_pixel, self.config.dg.scale_heights)
 
     # -----------------------------------------------------------------
 

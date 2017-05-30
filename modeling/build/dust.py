@@ -25,9 +25,9 @@ from ..component.galaxy import GalaxyModelingComponent
 
 # -----------------------------------------------------------------
 
-#basic_dust_maps_names = ["dust"]
-
 basic_dust_map_name = "dust_disk"
+
+basic_dust_map_names = [basic_dust_map_name]
 
 # -----------------------------------------------------------------
 

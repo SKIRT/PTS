@@ -145,14 +145,19 @@ class RepresentationGenerator(BuildComponent, GalaxyModelingComponent):
         self.dg_generator.grid_type = self.config.dg.grid_type # set grid type
         self.dg_generator.x_radius = radius_physical
         self.dg_generator.y_radius = radius_physical
-        self.dg_generator.z_radius = 3. * u("kpc")
+        self.dg_generator.z_radius = self.definition.dust_scaleheight * self.config.dg.scale_heights
 
         # Set options
         self.dg_generator.show = False
         self.dg_generator.write = False
 
+        # Set the range of the minimum tree level
+        if self.config.dg.grid_type == "bintree": level_range = self.config.dg.bintree_level_range # 6 to 9
+        elif self.config.dg.grid_type == "octtree": level_range = self.config.dg.octtree_level_range # 2 to 3
+        else: level_range = None
+
         # Generate the dust grids
-        self.dg_generator.run(scale_range=scale_range, level_range=self.config.dg.level_range, mass_fraction_range=mass_fraction_range, ngrids=self.config.nrepresentations)
+        self.dg_generator.run(scale_range=scale_range, level_range=level_range, mass_fraction_range=mass_fraction_range, ngrids=self.config.nrepresentations)
 
     # -----------------------------------------------------------------
 

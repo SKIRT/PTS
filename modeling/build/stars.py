@@ -36,7 +36,7 @@ basic_old_map_name = "old_disk"
 basic_young_map_name = "young"
 basic_ionizing_map_name = "ionizing"
 
-basic_stellar_maps_names = [basic_old_map_name, basic_young_map_name, basic_ionizing_map_name]
+basic_stellar_map_names = [basic_old_map_name, basic_young_map_name, basic_ionizing_map_name]
 
 # -----------------------------------------------------------------
 

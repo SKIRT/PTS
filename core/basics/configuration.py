@@ -683,8 +683,7 @@ def open_mapping(filepath):
     """
 
     parameters = Map()
-    with open(filepath, "r") as fh:
-        load_mapping(fh, parameters)
+    with open(filepath, "r") as fh: load_mapping(fh, parameters)
     return parameters
 
 # -----------------------------------------------------------------
