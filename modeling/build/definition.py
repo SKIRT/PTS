@@ -26,7 +26,6 @@ from ...core.basics.containers import NamedFileList
 from .stars import basic_old_map_name, basic_young_map_name, basic_ionizing_map_name
 from .dust import basic_dust_map_name
 from .general import parameters_filename, deprojection_filename
-from .component import load_component
 from ...core.basics.configuration import open_mapping
 from ..basics.models import DeprojectionModel3D
 
@@ -899,6 +898,7 @@ class ModelDefinition(object):
         :return: 
         """
 
+        from .component import load_component
         return load_component(self.old_stars_component_path, add_map=add_map)
 
     # -----------------------------------------------------------------
@@ -911,6 +911,7 @@ class ModelDefinition(object):
         :return: 
         """
 
+        from .component import load_component
         return load_component(self.young_stars_component_path, add_map=add_map)
 
     # -----------------------------------------------------------------
@@ -923,6 +924,7 @@ class ModelDefinition(object):
         :return: 
         """
 
+        from .component import load_component
         return load_component(self.ionizing_stars_component_path, add_map=add_map)
 
     # -----------------------------------------------------------------
@@ -935,6 +937,7 @@ class ModelDefinition(object):
         :return: 
         """
 
+        from .component import load_component
         return load_component(self.dust_component_path, add_map=add_map)
 
 # -----------------------------------------------------------------

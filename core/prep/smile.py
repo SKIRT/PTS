@@ -26,12 +26,14 @@ from ..tools import introspection
 from ..tools import filesystem as fs
 from ..basics.map import Map
 from ..tools import xml
-from ..basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
+from ..basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, PassiveConfigurationSetter
 from ..units.parsing import parse_unit as u
 from ..tools import parsing
 from ..tools import formatting as fmt
 from ..basics.configuration import print_mapping
 from ..tools import stringify
+from ..simulation.skifile import SkiFile
+from ..tools import types
 
 # -----------------------------------------------------------------
 
@@ -445,6 +447,7 @@ class SKIRTSmileSchema(object):
 
         properties = dict()
 
+        # Loop over the properties
         for property in self.get_properties_for_type(name):
 
             ptype = get_ptype(property.tag)
@@ -597,7 +600,7 @@ class SKIRTSmileSchema(object):
         for prop_name in simulation_items:
 
             # List of simulation items
-            if isinstance(config[prop_name], list):
+            if types.is_sequence(config[prop_name]):
 
                 item_names = config[prop_name]
 
@@ -610,6 +613,70 @@ class SKIRTSmileSchema(object):
 
                 item_name = config[prop_name]
                 child_parameters, child_children = self.prompt_parameters_for_type(item_name)
+                children[item_name] = child_parameters, child_children
+
+        # Return the parameters of this item and of its children
+        if merge: return merge_parameters(config, children)
+        else: return config, children
+
+    # -----------------------------------------------------------------
+
+    def default_parameters_for_type(self, name, merge=False):
+
+        """
+        This function ...
+        :param name: 
+        :param merge: 
+        :return: 
+        """
+
+        # Get the configuration definition
+        definition, simulation_items = self.definition_for_type(name)
+
+        # Get parameters
+        setter = PassiveConfigurationSetter("configuration of " + name + " simulation item", add_cwd=False, add_logging=False)
+        config = setter.run(definition)
+
+        children = dict()
+
+        #print(config)
+        #print(simulation_items)
+
+        # Create parameters of simulation item properties
+        for prop_name in simulation_items:
+
+            #print(type(config[prop_name]))
+
+            #print(prop_name)
+
+            # List of simulation items
+            # WE WILL PROBABLY NEVER GET HERE, BECAUSE IF THE ELEMENT IS SUPPOSED TO BE A LIST OF SIMULATION ITEMS, THEN THE DEFAULT IS GOING TO BE NONE
+            if types.is_sequence(config[prop_name]):
+
+                #print(config[prop_name])
+                item_names = config[prop_name]
+                #print(item_names)
+
+                for item_name in item_names:
+                    #print("item name", item_name)
+                    child_parameters, child_children = self.default_parameters_for_type(item_name)
+                    children[item_name] = child_parameters, child_children
+
+            # Single simulation item
+            else:
+
+                item_name = config[prop_name]
+                #print(item_name)
+
+                # If this is None, than the property is probably a list instead of a single simulation item
+                # (e.g. instruments), and the PassiveConfigurationSetter creates None in that place because there
+                # were choices but obviously no default list of elements (instruments)
+                if item_name is None:
+                    ## SET TO LIST??
+                    config[prop_name] = []
+                    continue
+
+                child_parameters, child_children = self.default_parameters_for_type(item_name)
                 children[item_name] = child_parameters, child_children
 
         # Return the parameters of this item and of its children
@@ -730,6 +797,134 @@ class SKIRTSmileSchema(object):
             units[quantity_name] = unit
 
         return units
+
+    # -----------------------------------------------------------------
+
+    @property
+    def root(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.tree.getroot()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def schema(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return xml.get_unique_element_direct(self.root, "Schema")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ski_root_name(self):
+
+        """
+        Thi function ...
+        :return: 
+        """
+
+        return self.schema.get("root")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ski_root_type(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.schema.get("type")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ski_root_format(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.schema.get("format")
+
+    # -----------------------------------------------------------------
+
+    def create_panchromatic_template(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Create comment
+        comment = u"SKIRT radiative transfer simulations - © 2012-2014 Astronomical Observatory, Ghent University"
+        comment = etree.Comment(comment)
+
+        # Construct the tree
+        root = etree.Element(self.ski_root_name)
+        tree = etree.ElementTree(root)
+
+        # DOESN'T WORK
+        #tree.insert(0, comment)
+        # WORKS
+        root.addprevious(comment)
+
+        # Add the simulation
+        #simulation = etree.Element("PanMonteCarloSimulation")
+        #root.insert(0, simulation)
+
+        # default_parameters_for_type
+        parameters = self.default_parameters_for_type("PanMonteCarloSimulation", merge=True)
+
+        # Create and return ski file
+        ski = SkiFile(tree=tree)
+
+        # Create simulation
+        simulation = ski.create_element("PanMonteCarloSimulation", parameters)
+        ski.root.append(simulation)
+
+        # Return the ski template
+        return ski
+
+    # -----------------------------------------------------------------
+
+    def create_oligochromatic_template(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Create comment
+        comment = u"SKIRT radiative transfer simulations - © 2012-2014 Astronomical Observatory, Ghent University"
+        comment = etree.Comment(comment)
+
+        # Construct the tree
+        root = etree.Element(self.ski_root_name)
+        tree = etree.ElementTree(root)
+
+        # DOESN'T WORK
+        # tree.insert(0, comment)
+        # WORKS
+        root.addprevious(comment)
+
+        # Add the simulation
+        simulation = etree.Element("OligoMonteCarloSimulation")
+        root.insert(0, simulation)
+
+        # Create and return ski file
+        return SkiFile(tree=tree)
 
 # -----------------------------------------------------------------
 

@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-from types import NoneType
-
 # Import the relevant PTS classes and modules
 from . import types
 from . import introspection
@@ -24,7 +21,7 @@ from . import numbers
 
 # -----------------------------------------------------------------
 
-def tostr(value, scientific=True, decimal_places=2, fancy=False, ndigits=None):
+def tostr(value, scientific=None, decimal_places=2, fancy=False, ndigits=None):
 
     """
     This function ...
@@ -36,6 +33,17 @@ def tostr(value, scientific=True, decimal_places=2, fancy=False, ndigits=None):
     :return: 
     """
 
+    # Set scientific flag flexibly, if scientific flag was not passed explicitly
+    if scientific is None:
+        if types.is_integer_type(value): scientific = False
+        elif types.is_real_type(value):
+            if numbers.is_integer(value):
+                scientific = False
+                value = int(value)
+            else: scientific = True
+        else: scientific = False
+
+    # Stringify
     return stringify(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits)[1].strip()
 
 # -----------------------------------------------------------------
@@ -244,7 +252,7 @@ def stringify_not_list(value, scientific=False, decimal_places=2, fancy=False, n
     elif types.is_integer_type(value): return "integer", str_from_integer(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits)
     elif types.is_real_type(value): return "real", str_from_real(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits)
     elif types.is_string_type(value): return "string", value
-    elif isinstance(value, NoneType): return "None", "None"
+    elif types.is_none(value): return "None", "None"
 
     # Special
     elif introspection.lazy_isinstance(value, "UnitBase", "astropy.units"): return introspection.lazy_call("stringify_unit", "pts.core.units.stringify", value)

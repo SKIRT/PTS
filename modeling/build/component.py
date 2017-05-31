@@ -22,7 +22,6 @@ from ...core.basics.configuration import open_mapping
 from ..basics.models import DeprojectionModel3D, load_3d_model
 from ...core.tools.serialization import load_dict
 from ...magic.core.frame import Frame
-from .definition import ModelDefinition
 
 # -----------------------------------------------------------------
 
@@ -107,6 +106,8 @@ class BuildComponent(ModelingComponent):
         :param model_name:
         :return:
         """
+
+        from .definition import ModelDefinition
 
         path = self.get_model_path(model_name)
         if not fs.is_directory(path): raise ValueError("Model does not exist")
@@ -366,6 +367,8 @@ def get_model_definition(modeling_path, model_name):
     :param model_name:
     :return:
     """
+
+    from .definition import ModelDefinition
 
     path = get_model_path(modeling_path, model_name)
     if not fs.is_directory(path): raise ValueError("Model '" + model_name + "' does not exist")

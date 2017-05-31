@@ -27,6 +27,7 @@ from ..tools import filesystem as fs
 from ..tools.stringify import str_from_bool, str_from_angle
 from ..tools import xml
 from .input import SimulationInput
+from ..tools import types
 
 # -----------------------------------------------------------------
 
@@ -56,18 +57,34 @@ class SkiFile:
     ## The constructor loads the contents of the specified ski file into a new SkiFile instance.
     # The filename \em must end with ".ski" or with "_parameters.xml".
     #
-    def __init__(self, filepath):
-        if not filepath.lower().endswith((".ski","_parameters.xml")):
-            raise ValueError("Invalid filename extension for ski file")
+    def __init__(self, filepath=None, tree=None):
 
-        # Set the path to the ski file
-        self.path = os.path.expanduser(filepath)
+        # If filepath is passed
+        if filepath is not None:
 
-        # load the XML tree (remove blank text to avoid confusing the pretty printer when saving)
-        self.tree = etree.parse(arch.opentext(self.path), parser=etree.XMLParser(remove_blank_text=True))
+            # Check
+            if tree is not None: raise ValueError("Cannot define both filepath and tree")
 
-        # Replace path by the full, absolute path
-        self.path = os.path.abspath(self.path)
+            if not filepath.lower().endswith((".ski","_parameters.xml")):
+                raise ValueError("Invalid filename extension for ski file")
+
+            # Set the path to the ski file
+            self.path = os.path.expanduser(filepath)
+
+            # load the XML tree (remove blank text to avoid confusing the pretty printer when saving)
+            self.tree = etree.parse(arch.opentext(self.path), parser=etree.XMLParser(remove_blank_text=True))
+
+            # Replace path by the full, absolute path
+            self.path = os.path.abspath(self.path)
+
+        # If tree is passed
+        elif tree is not None:
+
+            self.tree = tree
+            self.path = None
+
+        # Missing input
+        else: raise ValueError("Either filepath or tree must be passed to the constructor")
 
     ## This function converts the tree into a string
     def __str__(self):
@@ -109,6 +126,10 @@ class SkiFile:
         return etree.tostringlist(self.tree)
 
     # ---------- Retrieving information -------------------------------
+
+    @property
+    def root(self):
+        return self.tree.getroot()
 
     ## This fucntion returns the simulation element
     def get_simulation(self):
@@ -849,6 +870,7 @@ class SkiFile:
             attrs = {"wavelengths": ", ".join(map(represent_quantity, wavelengths))}
             parent.append(parent.makeelement("OligoWavelengthGrid", attrs))
 
+            # Adapt the stellar components
             components = self.get_stellar_components()
             for component in components:
 
@@ -860,18 +882,19 @@ class SkiFile:
                 for child in component.getchildren():
                     if child.tag == "sed" or child.tag == "normalization": component.remove(child)
 
+            # Adapt the dust system
             dust_system = self.get_dust_system()
             parent = dust_system.getparent()
             self.set_value(parent, "type", "OligoDustSystem")
             dust_system.tag = "OligoDustSystem"
 
+            # Remove dust system settings
             if "writeAbsorption" in dust_system.attrib: dust_system.attrib.pop("writeAbsorption")
             dust_system.attrib.pop("writeISRF")
             dust_system.attrib.pop("writeTemperature")
             dust_system.attrib.pop("writeEmissivity")
             dust_system.attrib.pop("selfAbsorption")
             dust_system.attrib.pop("emissionBoost")
-
             if "cycles" in dust_system.attrib: dust_system.attrib.pop("cycles")
             if "emissionBias" in dust_system.attrib: dust_system.attrib.pop("emissionBias")
 
@@ -1371,7 +1394,7 @@ class SkiFile:
             stellar_components_parent.append(stellar_component)
 
         # Oligochromatic simulation
-        else: pass
+        else: raise NotImplementedError("Not implemented for oligochromatic simulations")
 
     ## This function creates a new dust component
     def create_new_dust_component(self, component_id, geometry_type=None, geometry_properties=None, mix_type=None, mix_properties=None, normalization_type=None, normalization_properties=None):
@@ -3717,23 +3740,27 @@ class SkiFile:
         :return:
         """
 
-        from ..tools.stringify import stringify_not_list
+        #from ..tools.stringify import stringify_not_list
+        from ..tools.stringify import tostr
 
         children = dict()
 
         attrs = {}
 
+        #print(properties)
+
         # Loop over the properties, create the children
         for property_name in properties:
 
+            #print(property_name)
             value = properties[property_name]
 
-            if isinstance(value, tuple):
+            if types.is_tuple(value):
 
                 child = self.create_element(value[0], value[1])
                 children[property_name] = [child]
 
-            elif isinstance(value, dict):
+            elif types.is_dictionary(value):
 
                 # Create list of children
                 children[property_name] = []
@@ -3744,7 +3771,8 @@ class SkiFile:
                     children[property_name].append(child)
 
             # Regular value (string, int, float, quantity)
-            else: attrs[property_name] = stringify_not_list(value)
+            else: attrs[property_name] = tostr(value) #stringify_not_list(value)
+            #print(property_name, value, type(value))
 
         # Make element
         # example of attrs:
@@ -3754,7 +3782,9 @@ class SkiFile:
         #         "crossX": str(cross[0]), "crossY": str(cross[1]), "crossZ": str(cross[2]),
         #         "upX": str(up[0]), "upY": str(up[1]), "upZ": str(up[2]), "focal": str(focal)}
         #parent.append(parent.makeelement("PerspectiveInstrument", attrs))
-        element = self.tree.makeelement(tag, attrs)
+        #print(tag)
+        #print(attrs)
+        element = self.root.makeelement(tag, attrs)
 
         # Make children
         for property_name in children:

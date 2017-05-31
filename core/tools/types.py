@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+from types import NoneType
 import collections
 try:
     HAS_NP = True
@@ -146,7 +147,7 @@ def is_sequence(value):
     :return: 
     """
 
-    return isinstance(value, collections.Iterable)
+    return isinstance(value, collections.Iterable) and not is_string_type(value)
 
 # -----------------------------------------------------------------
 
@@ -162,5 +163,29 @@ def is_string_sequence(value):
     for element in value:
         if not is_string_type(element): return False
     return True
+
+# -----------------------------------------------------------------
+
+def is_tuple(value):
+
+    """
+    This function ...
+    :param value: 
+    :return: 
+    """
+
+    return isinstance(value, tuple)
+
+# -----------------------------------------------------------------
+
+def is_none(value):
+
+    """
+    This function ...
+    :param value: 
+    :return: 
+    """
+
+    return isinstance(value, NoneType)
 
 # -----------------------------------------------------------------

@@ -113,7 +113,20 @@ class SEDFittingInitializer(FittingInitializerBase, SEDModelingComponent):
         # Inform the user
         log.info("Setting the paths to the input maps ...")
 
-        ## Stellar
+        # Stellar
+        self.set_stellar_input_map_paths()
+
+        # Dust
+        self.set_dust_input_map_paths()
+
+    # -----------------------------------------------------------------
+
+    def set_stellar_input_map_paths(self):
+
+        """
+        This fucntion ...
+        :return: 
+        """
 
         # Loop over the stellar components
         for name in get_stellar_component_names(self.config.path, self.model_name):
@@ -139,7 +152,14 @@ class SEDFittingInitializer(FittingInitializerBase, SEDModelingComponent):
             # Add entry to the input maps dictionary
             self.input_map_paths[filename] = component.map_path
 
-        ## Dust
+    # -----------------------------------------------------------------
+
+    def set_dust_input_map_paths(self):
+
+        """
+        This function ...
+        :return: 
+        """
 
         # Loop over the dust components
         for name in get_dust_component_names(self.config.path, self.model_name):
