@@ -35,12 +35,28 @@ def tostr(value, scientific=None, decimal_places=2, fancy=False, ndigits=None):
 
     # Set scientific flag flexibly, if scientific flag was not passed explicitly
     if scientific is None:
-        if types.is_integer_type(value): scientific = False
-        elif types.is_real_type(value):
-            if numbers.is_integer(value):
-                scientific = False
-                value = int(value)
+
+        # Integer value
+        if types.is_integer_type(value) or (types.is_real_type(value) and numbers.is_integer(value)):
+
+            # Convert to be certain (if from float)
+            value = int(value)
+
+            #if -1e4 <= value <= 1e4: scientific = False
+            if -999 < value < 999: scientific = False
             else: scientific = True
+
+            # No decimals for integers
+            decimal_places = 0
+
+        # Real value
+        elif types.is_real_type(value):
+
+            #if -1e4 <= value <= 1e4: scientific = False
+            if -999.99 < value < 999.99: scientific = False
+            else: scientific = True
+
+        # Other
         else: scientific = False
 
     # Stringify

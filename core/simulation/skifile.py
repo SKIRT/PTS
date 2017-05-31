@@ -3771,8 +3771,9 @@ class SkiFile:
                     children[property_name].append(child)
 
             # Regular value (string, int, float, quantity)
-            else: attrs[property_name] = tostr(value) #stringify_not_list(value)
-            #print(property_name, value, type(value))
+            else:
+                attrs[property_name] = tostr(value) #stringify_not_list(value)
+                #print(property_name, value, type(value))
 
         # Make element
         # example of attrs:
