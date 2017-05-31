@@ -93,6 +93,28 @@ def create_configuration_passive(command_name, class_name, configuration_module_
 
 # -----------------------------------------------------------------
 
+def prompt_yn(name, description):
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Create definition
+    definition = ConfigurationDefinition(write_config=False)
+    definition.add_flag(name, description, default=None)
+
+    # Create setter
+    setter = InteractiveConfigurationSetter("proceed", add_logging=False, add_cwd=False)
+
+    # Get the answer
+    while True:
+        config = setter.run(definition, prompt_optional=True)
+        if config[name] is None: log.warning("Answer with yes (y) or no (n)")
+        else: return config[name]
+
+# -----------------------------------------------------------------
+
 def prompt_proceed():
 
     """
@@ -110,8 +132,7 @@ def prompt_proceed():
     # Get the answer
     while True:
         config = setter.run(definition, prompt_optional=True)
-        if config.proceed is None:
-            log.warning("Answer with yes (y) or no (n)")
+        if config.proceed is None: log.warning("Answer with yes (y) or no (n)")
         else: return config.proceed
 
 # -----------------------------------------------------------------
@@ -174,6 +195,22 @@ def prompt_string(name, description, choices=None, default=None, required=True):
     """
 
     return prompt_variable(name, "string", description, choices=choices, default=default, required=required)
+
+# -----------------------------------------------------------------
+
+def prompt_real(name, description, choices=None, default=None, required=True):
+
+    """
+    This function ...
+    :param name:
+    :param description:
+    :param choices:
+    :param default:
+    :param required:
+    :return:
+    """
+
+    return prompt_variable(name, "real", description, choices=choices, default=default, required=required)
 
 # -----------------------------------------------------------------
 

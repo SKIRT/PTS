@@ -12,24 +12,25 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import math
+
 # Import astronomical modules
 from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from .component import BuildComponent
-from ...core.tools import tables
 from ...core.tools import filesystem as fs
 from ..basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument
 from ...core.tools.logging import log
 from ..build.component import get_stellar_component_names, get_dust_component_names
 from ..build.component import load_stellar_component_deprojection, load_dust_component_deprojection
 from ..basics.projection import EdgeOnProjection, FaceOnProjection, GalaxyProjection
-from ...magic.basics.coordinatesystem import CoordinateSystem
-from ...core.basics.configuration import prompt_string
+from ...core.basics.configuration import prompt_string, prompt_yn, prompt_real
 from ...core.units.stringify import represent_quantity
 from ...core.simulation.grids import load_grid
 from ..component.galaxy import GalaxyModelingComponent
-from ...core.prep.dustgrids import create_one_dust_grid_for_galaxy_from_deprojection
+from ...core.prep.dustgrids import create_one_dust_grid_for_galaxy_from_deprojection, smallest_scale_for_dust_grid
 from ...core.simulation.grids import FileTreeDustGrid
 from ...core.simulation.tree import DustGridTree
 
@@ -253,9 +254,6 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
         # The deprojections
         self.deprojections = dict()
 
-        # The reference deprojection
-        self.reference_deprojection = None
-
         # The projections
         self.projections = dict()
 
@@ -281,17 +279,14 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
         # 2. Load the deprojections
         self.load_deprojections()
 
-        # 3. Prompt for the resolution of this representation
-        self.prompt_resolution()
+        # 6. Create the dust grid
+        if self.dust_grid is None: self.create_dust_grid()
 
         # 4. Create the projections
         self.create_projections()
 
         # 5. Create the instruments
         self.create_instruments()
-
-        # 6. Create the dust grid
-        if self.dust_grid is None: self.create_dust_grid()
 
         # 7. Writing
         self.write()
@@ -415,7 +410,70 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def prompt_resolution(self):
+    def create_projections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the projection systems ...")
+
+        azimuth = 0.0
+
+        # Use grid?
+        if prompt_yn("grid_resolution", "use the resolution of the dust grid for setting up the instruments?"):
+
+            # Determine smallest scale
+            smallest_scale = smallest_scale_for_dust_grid(self.dust_grid)
+
+            # Determine instrument pixelscale
+            ratio = prompt_real("pixelscale_to_grid_scale_ratio", "ratio of the instrument pixelscale to the smallest scale of the dust grid (e.g. 10)")
+            physical_pixelscale = smallest_scale * ratio
+
+            # Set number of pixels from extent
+            extent = self.dust_grid.x_extent
+
+            pixels_x = int(math.ceil(extent/physical_pixelscale))
+            pixels_y = pixels_x
+
+            x_center = 0.5 * (pixels_x - 1)
+            y_center = 0.5 * (pixels_y - 1)
+
+            # Pixel to physical
+            center_x = x_center * physical_pixelscale
+            center_y = y_center * physical_pixelscale
+
+            # Create projections
+            # distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x, field_y
+            earth_projection = GalaxyProjection(self.galaxy_distance, self.galaxy_inclination, azimuth, self.disk_position_angle, pixels_x, pixels_y, center_x, center_y, extent, extent)
+            faceon_projection = FaceOnProjection.from_projection(earth_projection)
+            edgeon_projection = EdgeOnProjection.from_projection(earth_projection)
+
+        # Use deprojections
+        else:
+
+            # Get the desired deprojection to base the instruments on
+            reference_deprojection = self.prompt_deprojection()
+
+            # Create the 'earth' projection system
+            earth_projection = GalaxyProjection.from_deprojection(reference_deprojection, self.galaxy_distance, azimuth)
+
+            # Create the face-on projection system
+            faceon_projection = FaceOnProjection.from_deprojection(reference_deprojection, self.galaxy_distance)
+
+            # Create the edge-on projection system
+            edgeon_projection = EdgeOnProjection.from_deprojection(reference_deprojection, self.galaxy_distance)
+
+        # Set the projection systems
+        self.projections["earth"] = earth_projection
+        self.projections["faceon"] = faceon_projection
+        self.projections["edgeon"] = edgeon_projection
+
+    # -----------------------------------------------------------------
+
+    def prompt_deprojection(self):
 
         """
         This function ...
@@ -453,29 +511,9 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
             if name == answer:
                 answer_title = title
                 break
-        self.reference_deprojection = self.deprojections[(answer, answer_title)]
 
-    # -----------------------------------------------------------------
-
-    def create_projections(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the projection systems ...")
-
-        # Create the 'earth' projection system
-        azimuth = 0.0
-        self.projections["earth"] = GalaxyProjection.from_deprojection(self.reference_deprojection, self.galaxy_distance, azimuth)
-
-        # Create the face-on projection system
-        self.projections["faceon"] = FaceOnProjection.from_deprojection(self.reference_deprojection, self.galaxy_distance)
-
-        # Create the edge-on projection system
-        self.projections["edgeon"] = EdgeOnProjection.from_deprojection(self.reference_deprojection, self.galaxy_distance)
+        # Return the deprojection
+        return self.deprojections[(answer, answer_title)]
 
     # -----------------------------------------------------------------
 
@@ -552,17 +590,32 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
         # Inform the user
         log.info("Writing ...")
 
+        # 3. Write the dust grids
+        self.write_dust_grid()
+
         # 1. Write the projections
         self.write_projections()
 
         # 2. Write the instruments
         self.write_instruments()
 
-        # 3. Write the dust grids
-        self.write_dust_grid()
-
         # 4. Write the representations table
         self.write_table()
+
+    # -----------------------------------------------------------------
+
+    def write_dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the dust grid ...")
+
+        # Write the dust grid
+        self.dust_grid.saveto(self.representation.dust_grid_path)
 
     # -----------------------------------------------------------------
 
@@ -605,21 +658,6 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
 
         # Write the simple instrument
         self.instruments["simple"].saveto(self.representation.simple_instrument_path)
-
-    # -----------------------------------------------------------------
-
-    def write_dust_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the dust grid ...")
-
-        # Write the dust grid
-        self.dust_grid.saveto(self.representation.dust_grid_path)
 
     # -----------------------------------------------------------------
 

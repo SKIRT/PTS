@@ -522,13 +522,13 @@ def create_one_dust_grid_for_galaxy_from_deprojection(grid_type, deprojection, d
     :return: 
     """
 
-    # Get properties
-    average_pixelscale = deprojection.pixelscale
-    scaleheight = deprojection.scale_height
-
     # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
     semimajor_angular = sky_ellipse.semimajor  # semimajor axis length of the sky ellipse
     radius_physical = (semimajor_angular * distance).to("pc", equivalencies=dimensionless_angles())
+
+    # Get properties
+    average_pixelscale = deprojection.pixelscale
+    scaleheight = deprojection.scale_height
 
     # Get the pixelscale in physical units
     pixelscale_angular = average_pixelscale.to("deg")
@@ -628,7 +628,7 @@ def create_one_cartesian_dust_grid(scale, x_extent, y_extent, z_extent, x_min, x
     """
 
     # Inform the user
-    log.info("Creating a cartesian dust grid with a smallest physical scale of " + str(scale) + " ...")
+    log.info("Creating a cartesian dust grid with a physical scale of " + str(scale) + " ...")
 
     # Calculate the number of bins in each direction
     x_bins = int(math.ceil(x_extent.to("pc").value / scale.to("pc").value))
@@ -667,7 +667,7 @@ def create_one_bintree_dust_grid(scale, x_extent, x_min, x_max, y_min, y_max, z_
     # Calculate the maximum division level that is necessary to resolve the smallest scale of the input maps
     extent_x = x_extent.to("pc").value
     smallest_scale = scale.to("pc").value
-    max_level = min_level_for_smallest_scale_bintree(extent_x, smallest_scale)
+    max_level = max_level_for_smallest_scale_bintree(extent_x, smallest_scale)
 
     # Create the dust grid
     grid = BinaryTreeDustGrid(min_x=x_min, max_x=x_max, min_y=y_min, max_y=y_max, min_z=z_min, max_z=z_max,
@@ -701,7 +701,7 @@ def create_one_octtree_dust_grid(scale, x_extent, x_min, x_max, y_min, y_max, z_
     # Calculate the minimum division level that is necessary to resolve the smallest scale of the input maps
     extent_x = x_extent.to("pc").value
     smallest_scale = scale.to("pc").value
-    max_level = min_level_for_smallest_scale_octtree(extent_x, smallest_scale)
+    max_level = max_level_for_smallest_scale_octtree(extent_x, smallest_scale)
 
     # Create the dust grid
     grid = OctTreeDustGrid(min_x=x_min, max_x=x_max, min_y=y_min, max_y=y_max, min_z=z_min, max_z=z_max,
@@ -712,7 +712,7 @@ def create_one_octtree_dust_grid(scale, x_extent, x_min, x_max, y_min, y_max, z_
 
 # -----------------------------------------------------------------
 
-def min_level_for_smallest_scale_bintree(extent, smallest_scale):
+def max_level_for_smallest_scale_bintree(extent, smallest_scale):
 
     """
     This function ...
@@ -728,7 +728,23 @@ def min_level_for_smallest_scale_bintree(extent, smallest_scale):
 
 # -----------------------------------------------------------------
 
-def min_level_for_smallest_scale_octtree(extent, smallest_scale):
+def smallest_scale_for_max_level_bintree(extent, max_level):
+
+    """
+    This function ...
+    :param extent:
+    :param max_level:
+    :return:
+    """
+
+    octtree_level = max_level / 3
+    max_ratio = 2**octtree_level
+    min_scale = extent / max_ratio
+    return min_scale
+
+# -----------------------------------------------------------------
+
+def max_level_for_smallest_scale_octtree(extent, smallest_scale):
 
     """
     This function ...
@@ -740,5 +756,57 @@ def min_level_for_smallest_scale_octtree(extent, smallest_scale):
     ratio = extent / smallest_scale
     octtree_level = int(math.ceil(math.log(ratio, 2)))
     return octtree_level
+
+# -----------------------------------------------------------------
+
+def smallest_scale_for_max_level_octtree(extent, max_level):
+
+    """
+    This function ...
+    :param extent:
+    :param max_level:
+    :return:
+    """
+
+    max_ratio = 2**max_level
+    min_scale = extent / max_ratio
+    return min_scale
+
+# -----------------------------------------------------------------
+
+def smallest_scale_for_dust_grid(grid):
+
+    """
+    This function ...
+    :param grid:
+    :return:
+    """
+
+    # Cartesian grid
+    if isinstance(grid, CartesianDustGrid):
+
+        min_x_scale = grid.x_extent / float(grid.x_bins)
+        min_y_scale = grid.y_extent / float(grid.y_bins)
+        min_z_scale = grid.z_extent / float(grid.z_bins)
+
+        # Return the minimum scale
+        return min(min_x_scale, min_y_scale, min_z_scale)
+
+    # Octtree
+    elif isinstance(grid, OctTreeDustGrid):
+
+        extent = grid.smallest_extent
+        max_level = grid.max_level
+        return smallest_scale_for_max_level_octtree(extent, max_level)
+
+    # Binary tree
+    elif isinstance(grid, BinaryTreeDustGrid):
+
+        extent = grid.smallest_extent
+        max_level = grid.max_level
+        return smallest_scale_for_max_level_bintree(extent, max_level)
+
+    # Other
+    else: raise NotImplementedError("Other dust grids not implemented")
 
 # -----------------------------------------------------------------

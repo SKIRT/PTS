@@ -124,6 +124,54 @@ class DustGrid3D(DustGrid):
         self.add_property("min_z", "quantity", "minimum z")
         self.add_property("max_z", "quantity", "maximum z")
 
+    # -----------------------------------------------------------------
+
+    @property
+    def x_extent(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.x_max - self.x_min
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_extent(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.y_max - self.y_min
+
+    # -----------------------------------------------------------------
+
+    @property
+    def z_extent(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.z_max - self.z_min
+
+    # -----------------------------------------------------------------
+
+    @property
+    def smallest_extent(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        return min(self.x_extent, self.y_extent, self.z_extent)
+
 # -----------------------------------------------------------------
 
 class BinaryTreeDustGrid(DustGrid3D):
