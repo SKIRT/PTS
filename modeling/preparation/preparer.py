@@ -391,17 +391,26 @@ class DataPreparer(PreparationComponent):
         # Loop over all images of the initial dataset
         for name in self.all_initialized_directories:
 
+            # Debugging
+            log.debug("Sorting the " + name + " image ...")
+
             # Determine preparation directory for this image
             path = self.all_initialized_directories[name]
 
             # Check
-            try: check_initialized_local(name, path)
+            try:
+                check_initialized_local(name, path)
+                log.debug("Initialized image was found locally")
             except RuntimeError:
                 check_sources_local(name, path)
                 check_initialized_remote(name, self.remote_preparation_path, self.remote)
+                log.debug("Initialized image was found on remote host " + self.remote.host_id)
 
-            # Sort
-            label, filepath = sort_image(name, path, rerun=self.config.rerun)
+            # Sort (or retrieve if necessary, if something went wrong and everything was uploaded including the last one)
+            try: label, filepath = sort_image(name, path, rerun=self.config.rerun)
+            except ValueError: label, filepath = retrieve_last_image(name, path, self.remote, self.remote_preparation_path)
+
+            # Set path
             if label == "initialized": self.initialized_paths.append(name, filepath)
             elif label == "extracted": self.extracted_paths.append(name, filepath)
             elif label == "corrected": self.corrected_paths.append(name, filepath)
@@ -892,6 +901,9 @@ class DataPreparer(PreparationComponent):
             # Pop the path
             path = self.with_errormaps_paths[name]
 
+            # Get the directory path
+            directory_path = fs.directory_of(path)
+
             # Load the image
             image = Image.from_file(path)
 
@@ -902,15 +914,25 @@ class DataPreparer(PreparationComponent):
             original_unit = str(image.unit)
 
             # Convert to Jansky, except for the Ha image
-            if name != "Ha": conversion_factor = image.convert_to("Jy")
+            if name != "Ha":
+                # CHECK WHETHER UNIT IS SET
+                if image.unit is None:
+                    log.warning("Unit of image was not set: for now it's OK, I know this was a Jansky frame from DustPedia")
+                    image.unit = "Jy"
+                conversion_factor = image.convert_to("Jy")
             else: conversion_factor = None
 
+            # Determine the new path
+            new_path = fs.join(directory_path, result_name)
+
+            # Save the image
+            image.saveto(new_path)
+
             # Pop the path and add to result paths
-            self.result_paths.append(name, path)
+            self.result_paths.append(name, new_path)
 
-            # Set statistics
+            # Set statistics info
             self.statistics[name].original_unit = original_unit
-
             if conversion_factor is not None: self.statistics[name].conversion_factor = conversion_factor
 
             # Save statistics
@@ -1095,6 +1117,7 @@ def sort_image(name, path, rerun=None, read_only=False):
     # Debugging
     log.debug("Sorting the " + name + " image ...")
 
+    # Determine the path to the initialized file
     initialized_path = fs.join(path, initialized_name)
 
     # Check if the intermediate results have already been produced for this image and saved to the
@@ -1114,11 +1137,51 @@ def sort_image(name, path, rerun=None, read_only=False):
     elif check_subtracted(name, subtracted_path, sky_path, rerun=rerun, read_only=read_only): return "subtracted", subtracted_path
     elif check_extinction_corrected(name, corrected_path, rerun=rerun, read_only=read_only): return "corrected", corrected_path
     elif check_extracted(name, extracted_path, rerun=rerun, read_only=read_only): return "extracted", extracted_path
-    else: return "initialized", initialized_path
+    elif fs.is_file(initialized_path): return "initialized", initialized_path
+    else: raise ValueError("Cannot find any FITS file for the " + name + " image")
 
 # -----------------------------------------------------------------
 
-def check_result(name, path, rerun=None, read_only=False):
+def retrieve_last_image(name, path, remote, remote_preparation_path):
+
+    """
+    This function ...
+    :param name:
+    :param path:
+    :param remote:
+    :param remote_preparation_path:
+    :return:
+    """
+
+    # Debugging
+    log.debug("Trying to retrieve the last image from remote host '" + remote.host_id + "' ...")
+
+    # Determine prep path for image on remote
+    prep_path_image = fs.join(remote_preparation_path, name)
+
+    # Determine paths
+    initialized_path = fs.join(prep_path_image, initialized_name)
+    extracted_path = fs.join(prep_path_image, extracted_name)
+    corrected_path = fs.join(prep_path_image, corrected_name)
+    subtracted_path = fs.join(prep_path_image, subtracted_name)
+    with_errors_path = fs.join(prep_path_image, with_errors_name)
+    result_path = fs.join(prep_path_image, result_name)
+
+    # Local sky directory path
+    sky_path = fs.join(path, sky_name)
+
+    # Run through the different checks
+    if check_result(name, result_path, remote=remote): return "result", remote.download_file_to(result_path, path, remove=True)
+    elif check_with_errors(name, with_errors_path, remote=remote): return "with_errors", remote.download_file_to(with_errors_path, path, remove=True)
+    elif check_subtracted(name, subtracted_path, sky_path, remote=remote): return "subtracted", remote.download_file_to(subtracted_path, path, remove=True)
+    elif check_extinction_corrected(name, corrected_path, remote=remote): return "corrected", remote.download_file_to(corrected_path, path, remove=True)
+    elif check_extracted(name, extracted_path, remote=remote): return "extracted", remote.download_file(extracted_path, path, remove=True)
+    elif remote.is_file(initialized_path): return "initialized", remote.download_file(initialized_path, path, remove=True)
+    else: raise ValueError("Cannot find any FITS file for the " + name + " image on remote host '" + remote.host_id + "' ...")
+
+# -----------------------------------------------------------------
+
+def check_result(name, path, rerun=None, read_only=False, remote=None):
 
     """
     This function ...
@@ -1129,12 +1192,12 @@ def check_result(name, path, rerun=None, read_only=False):
     :return: 
     """
 
-    if fs.is_file(path):
+    if is_file_local_or_remote(path, remote=remote):
 
         if rerun is not None and rerun in steps_before_and_including("units"):
 
             if read_only: raise RuntimeError("Cannot rerun when read_only=True")
-            fs.remove_file(path)
+            remove_file_local_or_remote(path, remote=remote)
             return False
 
         else: return True
@@ -1143,7 +1206,7 @@ def check_result(name, path, rerun=None, read_only=False):
 
 # -----------------------------------------------------------------
 
-def check_with_errors(name, path, rerun=None, read_only=False):
+def check_with_errors(name, path, rerun=None, read_only=False, remote=None):
 
     """
     This function ...
@@ -1153,12 +1216,12 @@ def check_with_errors(name, path, rerun=None, read_only=False):
     :return: 
     """
 
-    if fs.is_file(path):
+    if is_file_local_or_remote(path, remote=remote):
 
         if rerun is not None and rerun in steps_before_and_including("errormaps"):
 
             if read_only: raise RuntimeError("Cannot rerun when read_only=True")
-            fs.remove_file(path)
+            remove_file_local_or_remote(path, remote=remote)
             return False
 
         else: return True
@@ -1167,7 +1230,7 @@ def check_with_errors(name, path, rerun=None, read_only=False):
 
 # -----------------------------------------------------------------
 
-def check_subtracted(name, subtracted_path, sky_path, rerun=None, read_only=False):
+def check_subtracted(name, subtracted_path, sky_path, rerun=None, read_only=False, remote=None):
 
     """
     This fucntion ...
@@ -1180,7 +1243,7 @@ def check_subtracted(name, subtracted_path, sky_path, rerun=None, read_only=Fals
     """
 
     # Subtracted file is present
-    if fs.is_file(subtracted_path):
+    if is_file_local_or_remote(subtracted_path, remote=remote):
 
         # NO: because it's OK that for some images the sky subtraction failed and therefore they don't have the sky directory
         # Check whether the sky directory is present
@@ -1197,7 +1260,7 @@ def check_subtracted(name, subtracted_path, sky_path, rerun=None, read_only=Fals
 
             if read_only: raise RuntimeError("Cannot remove when read_only=True")
 
-            fs.remove_file(subtracted_path)
+            remove_file_local_or_remote(subtracted_path, remote=remote)
             fs.remove_directory(sky_path)
 
             return False
@@ -1207,7 +1270,7 @@ def check_subtracted(name, subtracted_path, sky_path, rerun=None, read_only=Fals
             if read_only: raise RuntimeError("Cannot remove when read_only=True")
 
             if fs.is_directory(sky_path): fs.remove_directory(sky_path)
-            fs.remove_file(subtracted_path)
+            remove_file_local_or_remote(subtracted_path, remote=remote)
 
             return False
 
@@ -1217,7 +1280,7 @@ def check_subtracted(name, subtracted_path, sky_path, rerun=None, read_only=Fals
 
 # -----------------------------------------------------------------
 
-def check_extinction_corrected(name, path, rerun=None, read_only=False):
+def check_extinction_corrected(name, path, rerun=None, read_only=False, remote=None):
 
     """
     This function ...
@@ -1225,15 +1288,16 @@ def check_extinction_corrected(name, path, rerun=None, read_only=False):
     :param path: 
     :param rerun:
     :param read_only:
+    :param remote:
     :return: 
     """
 
-    if fs.is_file(path):
+    if is_file_local_or_remote(path, remote=remote):
 
         if rerun is not None and rerun in steps_before_and_including("extinction"):
 
             if read_only: raise RuntimeError("Cannot remove when read_only=True")
-            fs.remove_file(path)
+            remove_file_local_or_remote(path, remote=remote)
             return False
 
         else: return True
@@ -1242,7 +1306,7 @@ def check_extinction_corrected(name, path, rerun=None, read_only=False):
 
 # -----------------------------------------------------------------
 
-def check_extracted(name, path, rerun=None, read_only=False):
+def check_extracted(name, path, rerun=None, read_only=False, remote=None):
 
     """
     This function ...
@@ -1250,15 +1314,16 @@ def check_extracted(name, path, rerun=None, read_only=False):
     :param path: 
     :param rerun: 
     :param read_only:
+    :param remote:
     :return: 
     """
 
-    if fs.is_file(path):
+    if is_file_local_or_remote(path, remote=remote):
 
         if rerun is not None and rerun in steps_before_and_including("extraction"):
 
             if read_only: raise RuntimeError("Cannot remove when read_only=True")
-            fs.remove_file(path)
+            remove_file_local_or_remote(path, remote=remote)
             return False
 
         else: return True
@@ -1698,5 +1763,33 @@ def get_noise_frame_from_sky_path(sky_path):
 
     path = fs.join(sky_path, "noise.fits")
     return Frame.from_file(path)
+
+# -----------------------------------------------------------------
+
+def is_file_local_or_remote(path, remote=None):
+
+    """
+    This function ...
+    :param path:
+    :param remote:
+    :return:
+    """
+
+    if remote is not None: return remote.is_file(path)
+    else: return fs.is_file(path)
+
+# -----------------------------------------------------------------
+
+def remove_file_local_or_remote(path, remote=None):
+
+    """
+    This function ...
+    :param path:
+    :param remote:
+    :return:
+    """
+
+    if remote is not None: remote.remove_file(path)
+    else: return fs.remove_file(path)
 
 # -----------------------------------------------------------------

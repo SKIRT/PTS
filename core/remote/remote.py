@@ -2806,7 +2806,7 @@ class Remote(object):
         self.debug("Removing file '" + path + "' ...")
 
         # Execute the command
-        output = self.execute("rm " + path, output=True, show_output=show_output)
+        output = self.execute("rm '" + path + "'", output=True, show_output=show_output)
 
         # Check for error
         for line in output:
@@ -3577,12 +3577,21 @@ class Remote(object):
             # Add another quotation mark to identify the end of the filepath list
             copy_command += '" '
 
+        # Invalid
         else: raise ValueError("Invalid origin: " + str(origin))
 
         # Add the destination path to the command
         #copy_command += destination.replace(" ", "\\\ ") + "/"
         #copy_command += "'" + destination.replace(" ", "\ ") + "/'"
-        copy_command += "'" + destination + "/'"
+
+        # Check whether the destination is a directory
+        if "." in fs.name(destination):
+            destination_string = "'" + destination + "'" # destination is a file
+        elif not fs.is_directory(destination): # destination should be existing directory
+            raise ValueError("Destination directory '" + destination + "' does not exist")
+        else: destination_string = "'" + destination + "/'" # existing directory
+
+        copy_command += destination_string
         if new_name is not None: copy_command += new_name
 
         # Debugging
@@ -3671,6 +3680,30 @@ class Remote(object):
 
         # Success: return True
         return True
+
+    # -----------------------------------------------------------------
+
+    def download_file_to(self, filepath, destination, remove=False):
+
+        """
+        This function ...
+        :param filepath:
+        :param destination:
+        :param remove:
+        :return:
+        """
+
+        local_path = fs.join(destination, fs.name(filepath))
+        self.download(filepath, local_path)
+
+        # Check whether present
+        if not fs.is_file(local_path): raise RuntimeError("Something went wrong downloading the file")
+
+        # Now we can safely remove the remote file if requested
+        if remove: self.remove_file(filepath)
+
+        # Return the local path
+        return local_path
 
     # -----------------------------------------------------------------
 

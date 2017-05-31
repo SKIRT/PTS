@@ -445,7 +445,7 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
             options[option] = description
 
         # name, description, choices=None, default=None
-        answer = prompt_string("reference map", "input map to use as the reference for the resolution of the model representation", choices=options, default=lowest_pixelscale_name)
+        answer = prompt_string("reference map", "input map to use as the reference for the spatial resolution (dust grid and instruments) of the model representation", choices=options, default=lowest_pixelscale_name)
 
         # Set the reference deprojection
         answer_title = None
