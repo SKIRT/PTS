@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.prep.upgradeskifile Upgrade a ski file to the latest format version
+## \package pts.core.prep.smile Contains the SKIRTSmileSchema class.
 
 # -----------------------------------------------------------------
 

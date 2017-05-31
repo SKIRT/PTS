@@ -674,6 +674,17 @@ class SkiFile:
         # Set the 'writeGrid' setting to true
         self.set_value(grid, "writeGrid", str_from_bool(value, lower=True))
 
+    def set_write_grid_tree(self, value=True):
+
+        # Get the dust grid
+        if not self.has_tree_dust_grid: raise ValueError("Cannot set this option because no tree dust grid is set")
+
+        # Get the dust grid
+        grid = self.get_dust_grid()
+
+        # Set the flag
+        self.set_value(grid, "writeTree", str_from_bool(value, lower=True))
+
     def disable_all_dust_system_writing_options(self):
 
         # Get the dust system
@@ -2818,10 +2829,16 @@ class SkiFile:
         # Return the dust grid
         return xml.get_unique_element(dust_system, "dustGrid")
 
+    @property
+    def has_tree_dust_grid(self):
+        # Get the dust grid
+        grid = self.get_dust_grid()
+        return grid.tag == "BinTreeDustGrid" or grid.tag == "OctTreeDustGrid"
+
     ## This function returns the dust grid as a DustGrid object
     def get_dust_grid_object(self):
 
-        from .grids import BinaryTreeDustGrid, OctTreeDustGrid, CartesianDustGrid
+        from .grids import BinaryTreeDustGrid, OctTreeDustGrid, CartesianDustGrid, FileTreeDustGrid, CylindricalGrid
 
         # Get the dust grid
         grid = self.get_dust_grid()
@@ -2854,6 +2871,7 @@ class SkiFile:
             return CartesianDustGrid(x_bins=xbins, y_bins=ybins, z_bins=zbins, mesh_type="symmetric_power", ratio=xratio,
                                      min_x=min_x, max_x=max_x, min_y=min_y, max_y=max_y, min_z=min_z, max_z=max_z, write=write)
 
+        # Binary tree dust grid
         elif grid.tag == "BinTreeDustGrid":
 
             write = self.get_boolean(grid, "writeGrid")
@@ -2878,8 +2896,9 @@ class SkiFile:
             return BinaryTreeDustGrid(min_x=min_x, max_x=max_x, min_y=min_y, max_y=max_y, min_z=min_z, max_z=max_z,
                                       min_level=min_level, max_level=max_level, search_method=search_method, sample_count=sample_count,
                                       max_optical_depth=maxoptdepth, max_mass_fraction=maxmassfraction, max_dens_disp_fraction=maxdensdispfraction,
-                                      direction_method=directionmethod)
+                                      direction_method=directionmethod, write=write)
 
+        # Oct tree dust grid
         elif grid.tag == "OctTreeDustGrid":
 
             write = self.get_boolean(grid, "writeGrid")
@@ -2904,8 +2923,23 @@ class SkiFile:
             return OctTreeDustGrid(min_x=min_x, max_x=max_x, min_y=min_y, max_y=max_y, min_z=min_z, max_z=max_z,
                                    min_level=min_level, max_level=max_level, search_method=search_method, sample_count=sample_count,
                                    max_optical_depth=maxoptdepth, max_mass_fraction=maxmassfraction, max_dens_disp_fraction=maxdensdispfraction,
-                                   barycentric=barycentric)
+                                   barycentric=barycentric, write=write)
 
+        # File tree dust grid
+        elif grid.tag == "FileTreeDustGrid":
+
+            write = self.get_boolean(grid, "writeGrid")
+
+            filename = grid.get("filename")
+            search_method = grid.get("searchMethod")
+
+            # Create and return the grid
+            return FileTreeDustGrid(filename=filename, search_method=search_method, write=write)
+
+        # Cylindrical grid
+        elif grid.tag == "Cylinder2DDustGrid": raise NotImplementedError("Cylindrical grid not supported yet in this function")
+
+        # Invalid
         else: raise NotImplementedError("Other grid types not yet supported")
 
     ## This function sets the dust grid

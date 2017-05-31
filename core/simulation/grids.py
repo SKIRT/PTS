@@ -35,6 +35,7 @@ def load_grid(path):
     if "BinaryTreeDustGrid" in first_line: return BinaryTreeDustGrid.from_file(path)
     elif "OctTreeDustGrid" in first_line: return OctTreeDustGrid.from_file(path)
     elif "CartesianDustGrid" in first_line: return CartesianDustGrid.from_file(path)
+    elif "FileTreeDustGrid" in first_line: return FileTreeDustGrid.from_file(path)
     else: raise ValueError("Unrecognized dust grid file")
 
 # -----------------------------------------------------------------
@@ -44,7 +45,6 @@ mesh_types = ["linear", "power", "symmetric_power", "logarithmic"]
 # -----------------------------------------------------------------
 
 search_methods = ["Neighbor", "TopDown", "Bookkeeping"]
-
 default_search_method = "Neighbor"
 
 # -----------------------------------------------------------------

@@ -1452,6 +1452,28 @@ def get_galaxy_properties_path(modeling_path):
 
 # -----------------------------------------------------------------
 
+def get_galaxy_properties(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path: 
+    :return: 
+    """
+
+    # get path
+    path = get_galaxy_properties_path(modeling_path)
+
+    # Check whether the file is present
+    if not fs.is_file(path): raise IOError("The galaxy properties file is not present. Perform 'fetch_properties' to create this file'")
+
+    # Load the properties
+    properties = GalaxyProperties.from_file(path)
+
+    # Return the property map
+    return properties
+
+# -----------------------------------------------------------------
+
 def get_data_seds_path(modeling_path):
 
     """
@@ -1558,5 +1580,28 @@ def load_image_frame(path):
 
     # Return the frame
     return frame
+
+# -----------------------------------------------------------------
+
+def get_disk_position_angle(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path: 
+    :return: 
+    """
+
+    # Determine the path to the regions file
+    components_path = fs.join(modeling_path, "components")
+    disk_region_path = fs.join(components_path, "disk.reg")
+
+    # Open the region
+    region = SkyRegionList.from_file(disk_region_path)
+
+    # Return the first and only shape
+    disk_ellipse = region[0]
+
+    # Return the orientation angle
+    return disk_ellipse.angle
 
 # -----------------------------------------------------------------

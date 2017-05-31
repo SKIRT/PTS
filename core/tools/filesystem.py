@@ -302,18 +302,22 @@ def has_file(directory, filename):
 
 # -----------------------------------------------------------------
 
-def is_empty(directory, ignore_hidden=True):
+def is_empty(directory, ignore_hidden=True, besides=None):
 
     """
     This function ...
     :param directory:
     :param ignore_hidden:
+    :param besides:
     :return:
     """
 
     items = os.listdir(directory)
     if ignore_hidden: items = [item for item in items if not item.startswith(".")]
-    return len(items) == 0
+
+    if besides is not None:
+        return len(items) == 0 or (len(items) == 1 and items[0] == besides)
+    else: return len(items) == 0
 
 # -----------------------------------------------------------------
 
@@ -993,7 +997,12 @@ def copy_file(file_path, directory_path, new_name=None):
     if new_name is not None: destination = join(directory_path, new_name)
     else: destination = directory_path
 
+    # Copy
     shutil.copy(file_path, destination)
+
+    if is_file(destination): return destination
+    elif is_directory(destination): return join(destination, name(file_path))
+    else: raise ValueError("Don't understand the destination: " + destination)
 
 # -----------------------------------------------------------------
 

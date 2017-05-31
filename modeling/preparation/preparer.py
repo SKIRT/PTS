@@ -799,27 +799,45 @@ class DataPreparer(PreparationComponent):
             # Load the image
             image = Image.from_file(path)
 
-            # Calculate calibration error frame
-            if self.properties.has_calibration_error_magnitude(fltr):
-                magnitude = self.properties.get_calibration_error_magnitude(fltr)
-                calibration_frame = get_calibration_uncertainty_frame_from_magnitude(image, magnitude)
-            else:
-
-                # Calculate calibration errors with percentage
-                fraction = self.properties.get_calibration_error_relative(fltr)
-                calibration_frame = image.primary * fraction
-
-            # Add the calibration frame
-            image.add_frame(calibration_frame, "calibration_errors")
-
             # Create a list to contain (the squares of) all the individual error contributions so that we can sum these arrays element-wise later
             error_maps = []
             error_contributions = []
 
+            # Set calibration error frame, if possible
+            if self.properties.has_filter(fltr):
+
+                # Calculate calibration error frame
+                if self.properties.has_calibration_error_magnitude(fltr):
+                    magnitude = self.properties.get_calibration_error_magnitude(fltr)
+                    calibration_frame = get_calibration_uncertainty_frame_from_magnitude(image, magnitude)
+                else:
+                    # Calculate calibration errors with percentage
+                    fraction = self.properties.get_calibration_error_relative(fltr)
+                    calibration_frame = image.primary * fraction
+
+                # Add the calibration frame
+                image.add_frame(calibration_frame, "calibration_errors")
+
+                # Add the calibration errors
+                error_maps.append(image.frames["calibration_errors"])
+                error_contributions.append("calibration")
+
             # Add the Poisson errors
             if "poisson_errors" in image.frames:
+                log.debug("Found poisson error frame in the " + name + " image under the name 'poisson_errors'")
                 error_maps.append(image.frames["poisson_errors"])
                 error_contributions.append("poisson")
+                # Remove frame now?
+                image.remove_frame("poisson_errors")
+            else: log.debug("No poisson error frame found in the " + name + " image under the name 'poisson_errors'")
+
+            # Check errors frame
+            if "errors" in image.frames:
+                log.debug("Found errors frame in the " + name + " image under the name 'errors'")
+                error_maps.append(image.frames["errors"])
+                error_contributions.append("unknown")
+                image.remove_frame("errors")
+            else: log.debug("No error frame found in the " + name + " image under the name 'errors'")
 
             # Load noise frame
             noise_frame = get_noise_frame_from_sky_path(sky_path)
@@ -827,10 +845,6 @@ class DataPreparer(PreparationComponent):
             # Add the sky errors
             error_maps.append(noise_frame)
             error_contributions.append("noise")
-
-            # Add the calibration errors
-            error_maps.append(image.frames["calibration_errors"])
-            error_contributions.append("calibration")
 
             # Add additional error frames indicated by the user
             #if self.config.error_frame_names is not None:
@@ -1510,7 +1524,8 @@ def get_calibration_uncertainty_frame_from_magnitude(image, calibration_magn):
 
     # The calibration uncertainty in AB magnitude
     #mag_error = calibration_magn.value
-    mag_error = calibration_magn
+    if hasattr(calibration_magn, "unit"): mag_error = calibration_magn.to("mag").value
+    else: mag_error = float(calibration_magn)
 
     # a = image[mag] - mag_error
     a = ab_frame - mag_error

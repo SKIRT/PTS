@@ -27,6 +27,7 @@ from .database import DustPediaDatabase
 from .sample import DustPediaSample
 from ...core.basics.table import SmartTable
 from ...magic.basics.pixelscale import Pixelscale
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -114,6 +115,19 @@ class DustPediaProperties(object):
 
             # Set properties
             self.data[fltr] = Map(pixelscale=pixelscale, fwhm=fwhm, calibration=calibration)
+
+    # -----------------------------------------------------------------
+
+    def has_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr: 
+        :return: 
+        """
+
+        if types.is_string_type(fltr): fltr = parse_filter(fltr)
+        return fltr in self.data
 
     # -----------------------------------------------------------------
 

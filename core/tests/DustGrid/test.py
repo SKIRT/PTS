@@ -101,12 +101,6 @@ class DustGridTest(TestImplementation):
 
         ski_path = fs.join(self.path, "template.ski")
 
-        #print(ski_path)
-
-        #from lxml import etree
-        #result = etree.tostring(ski.tree, encoding="UTF-8", xml_declaration=True, pretty_print=True)
-        #print(result)
-
         # Save
         ski.saveto(ski_path)
 

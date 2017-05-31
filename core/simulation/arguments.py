@@ -24,6 +24,7 @@ from ..tools import filesystem as fs
 from .definition import SingleSimulationDefinition, MultiSimulationDefinition
 from ..tools.logging import log
 from .input import SimulationInput
+from ..tools import types
 
 # -----------------------------------------------------------------
 
@@ -174,7 +175,7 @@ class SkirtArguments(object):
         simulations = []
 
         # Loop over the seperate ski files defined in the ski pattern
-        pattern = [self.ski_pattern] if isinstance(self.ski_pattern, basestring) else self.ski_pattern
+        pattern = [self.ski_pattern] if types.is_string_type(self.ski_pattern) else self.ski_pattern
         for skifile in pattern:
 
             # Determine the directory path and the actual file descriptor
@@ -231,7 +232,7 @@ class SkirtArguments(object):
 
         # If the input consists of a list of paths, check whether they represent files in the same directory
         if isinstance(self.input_path, list): input_dir_path = SimulationInput(*self.input_path).to_single_directory()
-        elif isinstance(self.input_path, basestring): input_dir_path = SimulationInput(self.input_path).to_single_directory()
+        elif types.is_string_type(self.input_path): input_dir_path = SimulationInput(self.input_path).to_single_directory()
         elif isinstance(self.input_path, SimulationInput): input_dir_path = self.input_path.to_single_directory()
         elif self.input_path is None: input_dir_path = None
         else: raise ValueError("Type of simulation input not recognized")
@@ -260,7 +261,7 @@ class SkirtArguments(object):
         # Ski file pattern
         if self.relative: arguments += ["-k"]
         if self.recursive: arguments += ["-r"]
-        if isinstance(self.ski_pattern, basestring): arguments += [self.ski_pattern]
+        if types.is_string_type(self.ski_pattern): arguments += [self.ski_pattern]
         elif isinstance(self.ski_pattern, list): arguments += self.ski_pattern
         else: raise ValueError("The ski pattern must consist of either a string or a list of strings")
 

@@ -1098,6 +1098,8 @@ class SkirtRemote(Remote):
                             if "trho" in simulation.retrieve_types: copy_paths.append(filepath)
                         elif filename.endswith("_ds_convergence.dat"):
                             if "convergence" in simulation.retrieve_types: copy_paths.append(filepath)
+                        elif "_ds_tree" in filename and filename.endswith(".dat"):
+                            if "tree" in simulation.retrieve_types: copy_paths.append(filepath)
 
                     # Debugging
                     log.debug("Retrieving files: " + str(copy_paths))

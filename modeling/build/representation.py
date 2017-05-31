@@ -21,7 +21,8 @@ from ...core.tools import tables
 from ...core.tools import filesystem as fs
 from ..basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument
 from ...core.tools.logging import log
-from ..build.component import get_stellar_component_names, get_dust_component_names, load_stellar_component, load_dust_component
+from ..build.component import get_stellar_component_names, get_dust_component_names
+from ..build.component import load_stellar_component_deprojection, load_dust_component_deprojection
 from ..basics.projection import EdgeOnProjection, FaceOnProjection, GalaxyProjection
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...core.basics.configuration import prompt_string
@@ -29,6 +30,8 @@ from ...core.units.stringify import represent_quantity
 from ...core.simulation.grids import load_grid
 from ..component.galaxy import GalaxyModelingComponent
 from ...core.prep.dustgrids import create_one_dust_grid_for_galaxy_from_deprojection
+from ...core.simulation.grids import FileTreeDustGrid
+from ...core.simulation.tree import DustGridTree
 
 # -----------------------------------------------------------------
 
@@ -72,6 +75,57 @@ class Representation(object):
 
         # Dust grid SKIRT output path
         self.grid_out_path = fs.create_directory_in(self.grid_path, "out")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_grid_tree_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        path = fs.join(self.grid_path, "tree.dat")
+        return fs.is_file(path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_grid_tree(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return DustGridTree.from_file(self.dust_grid_tree_path)
+
+    # -----------------------------------------------------------------
+
+    def create_file_tree_dust_grid(self, search_method="Neighbor", write=False):
+
+        """
+        This function ...
+        :param search_method:
+        :param write:
+        :return: 
+        """
+
+        grid = FileTreeDustGrid(filename=self.dust_grid_tree_path, search_method=search_method, write=write)
+        return grid
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_dust_grid_tree(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.dust_grid_tree_path is not None
 
     # -----------------------------------------------------------------
 
@@ -282,6 +336,18 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def representation_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.representation.path
+
+    # -----------------------------------------------------------------
+
+    @property
     def model_name(self):
 
         """
@@ -324,43 +390,9 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
         # Loop over the stellar components
         for name in get_stellar_component_names(self.config.path, self.model_name):
 
-            # Load the component
-            component = load_stellar_component(self.config.path, self.model_name, name)
-
-            # Set deprojection
-            if "deprojection" in component:
-
-                # Get title
-                title = component.parameters.title
-
-                # Add to the dictionary of deprojections
-                self.deprojections[(name, title)] = component.deprojection
-
-            # Check if this is a new component, add geometry, SED and normalization all at once
-            if "geometry" in component.parameters:
-
-                # Get title
-                title = component.parameters.title
-
-                # Check whether this is a read FITS geometry
-                geometry_type = component.parameters.geometry
-                if geometry_type != "ReadFitsGeometry": continue
-
-                # Get properties for each of the three classes
-                geometry_properties = component.properties["geometry"]
-
-                # Get the path of the input map
-                filepath = geometry_properties["filename"]
-
-                # Get the scale height
-                scale_height = geometry_properties["axialScale"]
-
-                # Create the deprojection
-                wcs = CoordinateSystem.from_file(filepath)
-                deprojection = self.create_deprojection_for_wcs(self.galaxy_properties, self.disk_position_angle, wcs, filepath, scale_height)
-
-                # Add to the dictionary
-                self.deprojections[(name, title)] = deprojection
+            # Load the deprojection of the component, if applicable
+            title, deprojection = load_stellar_component_deprojection(self.config.path, self.model_name, name)
+            if deprojection is not None: self.deprojections[(name, title)] = deprojection
 
     # -----------------------------------------------------------------
 
@@ -377,43 +409,9 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
         # Loop over the dust components
         for name in get_dust_component_names(self.config.path, self.model_name):
 
-            # Load the component
-            component = load_dust_component(self.config.path, self.model_name, name)
-
-            # Set deprojection
-            if "deprojection" in component:
-
-                # Get title
-                title = component.parameters.title
-
-                # Add to the dictionary of deprojections
-                self.deprojections[(name, title)] = component.deprojection
-
-            # Check if this is a new dust component, add geometry, mix and normalization all at once
-            if "geometry" in component.parameters:
-
-                # Get title
-                title = component.parameters.title
-
-                # Check whether this is a read FITS geometry
-                geometry_type = component.parameters.geometry
-                if geometry_type != "ReadFitsGeometry": continue
-
-                # Get properties for each of the three classes
-                geometry_properties = component.properties["geometry"]
-
-                # Get the path of the input map
-                filepath = geometry_properties["filename"]
-
-                # Get the scale height
-                scale_height = geometry_properties["axialScale"]
-
-                # Create the deprojection
-                wcs = CoordinateSystem.from_file(filepath)
-                deprojection = self.create_deprojection_for_wcs(self.galaxy_properties, self.disk_position_angle, wcs, filepath, scale_height)
-
-                # Add to the dictionary
-                self.deprojections[(name, title)] = deprojection
+            # Load the deprojection of the component, if applicable
+            title, deprojection = load_dust_component_deprojection(self.config.path, self.model_name, name)
+            if deprojection is not None: self.deprojections[(name, title)] = deprojection
 
     # -----------------------------------------------------------------
 

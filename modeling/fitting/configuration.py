@@ -210,9 +210,6 @@ class FittingConfigurer(FittingComponent):
         highest_pixelscale = None
         highest_pixelscale_name = None
 
-        #print(self.model_name)
-        #print(get_representations_for_model(self.config.path, self.model_name))
-
         # Loop over the different representations for the model
         for name in get_representations_for_model(self.config.path, self.model_name):
 

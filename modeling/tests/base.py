@@ -50,12 +50,9 @@ from pts.evolve.analyse.database import get_scores_named_individuals, load_datab
 from pts.evolve.analyse.statistics import get_best_score_for_generation, load_statistics
 from pts.do.commandline import Command
 from pts.evolve.optimize.tables import ElitismTable
+from pts.core.prep.templates import get_pan_template
 
 # -----------------------------------------------------------------
-
-# Determine the path to the template ski file for panchromatic simulations
-dat_ski_path = fs.join(introspection.pts_dat_dir("modeling"), "ski")
-pan_ski_path = fs.join(dat_ski_path, "pan.ski")
 
 # Determine the path to the dropbox path and the path of the directory with the data for M81
 m81_data_path = fs.join(introspection.get_dropbox_tests_pts_path_for_subproject("modeling"), "M81")
@@ -659,7 +656,7 @@ class M81TestBase(TestImplementation):
         log.info("Creating the ski file ...")
 
         # Load the ski file template
-        self.ski = SkiFile(pan_ski_path)
+        self.ski = get_pan_template()
 
         # Set components
         self.set_components()

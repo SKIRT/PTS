@@ -22,6 +22,7 @@ from ...core.basics.configuration import open_mapping
 from ..basics.models import DeprojectionModel3D, load_3d_model
 from ...core.tools.serialization import load_dict
 from ...magic.core.frame import Frame
+from ...magic.basics.coordinatesystem import CoordinateSystem
 
 # -----------------------------------------------------------------
 
@@ -527,6 +528,71 @@ def load_stellar_component(modeling_path, model_name, component_name, add_map=Fa
 
 # -----------------------------------------------------------------
 
+def load_stellar_component_deprojection(modeling_path, model_name, component_name):
+
+    """
+    This function ...
+    :return: 
+    """
+
+    from ..component.galaxy import get_disk_position_angle
+
+    # Load galaxy properties
+    from ..component.galaxy import get_galaxy_properties
+    properties = get_galaxy_properties(modeling_path)
+
+    # Load component
+    component = load_stellar_component(modeling_path, model_name, component_name, add_map=False)
+
+    ## Set deprojection
+    if "deprojection" in component:
+
+        # Get title
+        title = component.parameters.title
+
+        # Return
+        return title, component.deprojection
+
+    # Check if this is a new component, add geometry, SED and normalization all at once
+    if "geometry" in component.parameters:
+
+        # Get title
+        title = component.parameters.title
+
+        # Check whether this is a read FITS geometry
+        geometry_type = component.parameters.geometry
+        if geometry_type != "ReadFitsGeometry": return component.parameters.title, None
+
+        # Get properties for each of the three classes
+        geometry_properties = component.properties["geometry"]
+
+        # Get the path of the input map
+        filepath = geometry_properties["filename"]
+
+        # Get the scale height
+        scale_height = geometry_properties["axialScale"]
+
+        # Get properties
+        wcs = CoordinateSystem.from_file(filepath)
+
+        # Get the galaxy distance, the inclination and position angle
+        distance = properties.distance
+        inclination = properties.inclination
+        position_angle = get_disk_position_angle(modeling_path)
+        # Get center coordinate of galaxy
+        galaxy_center = properties.center
+
+        # Create
+        deprojection = DeprojectionModel3D.from_wcs(wcs, galaxy_center, distance, position_angle, inclination, filepath, scale_height)
+
+        # Return
+        return title, deprojection
+
+    # No deprojection
+    return component.parameters.title, None
+
+# -----------------------------------------------------------------
+
 def load_dust_component(modeling_path, model_name, component_name, add_map=False):
 
     """
@@ -543,6 +609,73 @@ def load_dust_component(modeling_path, model_name, component_name, add_map=False
 
     # Load the component
     return load_component(path, add_map=add_map)
+
+# -----------------------------------------------------------------
+
+def load_dust_component_deprojection(modeling_path, model_name, component_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param model_name:
+    :param component_name:
+    """
+
+    from ..component.galaxy import get_disk_position_angle
+
+    # Load galaxy properties
+    from ..component.galaxy import get_galaxy_properties
+    properties = get_galaxy_properties(modeling_path)
+
+    # Load the component
+    component = load_dust_component(modeling_path, model_name, component_name, add_map=False)
+
+    # Set deprojection
+    if "deprojection" in component:
+
+        # Get title
+        title = component.parameters.title
+
+        # Return
+        return title, component.deprojection
+
+    # Check if this is a new dust component, add geometry, mix and normalization all at once
+    if "geometry" in component.parameters:
+
+        # Get title
+        title = component.parameters.title
+
+        # Check whether this is a read FITS geometry
+        geometry_type = component.parameters.geometry
+        if geometry_type != "ReadFitsGeometry": return title, None
+
+        # Get properties for each of the three classes
+        geometry_properties = component.properties["geometry"]
+
+        # Get the path of the input map
+        filepath = geometry_properties["filename"]
+
+        # Get the scale height
+        scale_height = geometry_properties["axialScale"]
+
+        # Get properties
+        wcs = CoordinateSystem.from_file(filepath)
+
+        # Get the galaxy distance, the inclination and position angle
+        distance = properties.distance
+        inclination = properties.inclination
+        position_angle = get_disk_position_angle(modeling_path)
+        # Get center coordinate of galaxy
+        galaxy_center = properties.center
+
+        # Create
+        deprojection = DeprojectionModel3D.from_wcs(wcs, galaxy_center, distance, position_angle, inclination, filepath, scale_height)
+
+        # Return
+        return title, deprojection
+
+    # No deprojection for this component
+    return component.parameters.title, None
 
 # -----------------------------------------------------------------
 

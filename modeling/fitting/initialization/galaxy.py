@@ -19,6 +19,7 @@ from ...component.galaxy import GalaxyModelingComponent
 from ...build.component import get_stellar_component_names, get_dust_component_names, load_stellar_component, load_dust_component
 from ....core.filter.filter import parse_filter
 from .base import FittingInitializerBase
+from ...build.construct import add_dust_component, add_stellar_component
 
 # -----------------------------------------------------------------
 
@@ -41,7 +42,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         FittingInitializerBase.__init__(self, *args, **kwargs)
         GalaxyModelingComponent.__init__(self, *args, **kwargs)
 
-        # The initial model representation
+        # The INITIAL model representation
         self.representation = None
 
         # Solar luminosity units
@@ -113,6 +114,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         # Inform the user
         log.info("Loading the template ski file ...")
 
+        # Load the ski template
         self.ski = self.fitting_run.ski_template
 
     # -----------------------------------------------------------------
@@ -166,172 +168,11 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
             # Load the component
             component = load_stellar_component(self.config.path, self.model_name, name)
 
-            # If an input map is required
-            if "map_path" in component: self.set_input_map(name, component)
+            # Add the stellar component
+            map_filename = add_stellar_component(self.ski, name, component)
 
-            # Set geometry
-            if "model" in component: self.set_stellar_component_model(component)
-
-            # Set deprojection
-            elif "deprojection" in component: self.set_stellar_component_deprojection(component)
-
-            # Check if this is a new component, add geometry, SED and normalization all at once
-            if "geometry" in component.parameters: self.set_stellar_component_geometry(component)
-
-            # Existing component, with MAPPINGS template
-            elif "sfr" in component.parameters: self.set_stellar_component_mappings(component)
-
-            # Existing component, no MAPPINGS
-            else: self.set_stellar_component(component)
-
-    # -----------------------------------------------------------------
-
-    def set_input_map(self, name, component):
-
-        """
-        This function ...
-        :param name:
-        :param component:
-        :return: 
-        """
-
-        # Generate a filename for the map
-        filename = "stars_" + name + ".fits"
-
-        # Set the filename
-        if "deprojection" in component: component.deprojection.filename = filename
-        elif "geometry" in component.parameters: component.properties["geometry"].filename = filename
-        else: raise RuntimeError("Stellar component based on an input map should either have a deprojection or geometry properties")
-
-        # Add entry to the input maps dictionary
-        self.input_map_paths[filename] = component.map_path
-
-    # -----------------------------------------------------------------
-
-    def set_stellar_component_model(self, component):
-
-        """
-        This function ...
-        :param self: 
-        :param component:
-        :return: 
-        """
-
-        # Get title
-        title = component.parameters.title
-
-        # Set the geometry
-        self.ski.set_stellar_component_geometry(title, component.model)
-
-    # -----------------------------------------------------------------
-
-    def set_stellar_component_deprojection(self, component):
-
-        """
-        THis function ...
-        :param component:
-        :return: 
-        """
-
-        # Get title
-        title = component.parameters.title
-
-        # Set the deprojection geometry
-        self.ski.set_stellar_component_geometry(title, component.deprojection)
-
-    # -----------------------------------------------------------------
-
-    def set_stellar_component_geometry(self, component):
-
-        """
-        This function ...
-        :param component:
-        :return: 
-        """
-
-        # Get title
-        title = component.parameters.title
-
-        # Get class names
-        geometry_type = component.parameters.geometry
-        sed_type = component.parameters.sed
-        normalization_type = component.parameters.normalization
-
-        # Get properties for each of the three classes
-        geometry_properties = component.properties["geometry"]
-        sed_properties = component.properties["sed"]
-        normalization_properties = component.properties["normalization"]
-
-        # Create stellar component
-        self.ski.create_new_stellar_component(title, geometry_type, geometry_properties, sed_type, sed_properties,
-                                              normalization_type, normalization_properties)
-
-    # -----------------------------------------------------------------
-
-    def set_stellar_component_mappings(self, component):
-
-        """
-        THis function ...
-        :param component:
-        :return: 
-        """
-
-        # Get title
-        title = component.parameters.title
-
-        # Get SED properties
-        metallicity = component.parameters.metallicity
-        compactness = component.parameters.compactness
-        pressure = component.parameters.pressure
-        covering_factor = component.parameters.covering_factor
-
-        # Get normalization
-        fltr = parse_filter(component.parameters.filter)
-        luminosity = component.parameters.luminosity
-
-        # Set SED
-        self.ski.set_stellar_component_mappingssed(title, metallicity, compactness, pressure, covering_factor)  # SED
-
-        # Set center wavelength of the filter as normalization wavelength (keeps label)
-        self.ski.set_stellar_component_normalization_wavelength(title, fltr.center)
-
-        # Set spectral luminosity at that wavelength (keeps label)
-        self.ski.set_stellar_component_luminosity(title, luminosity)
-
-        # Scale height doesn't need to be set as parameter, this is already in the deprojection model
-
-    # -----------------------------------------------------------------
-
-    def set_stellar_component(self, component):
-
-        """
-        This function ...
-        :return: 
-        :param component:
-        """
-
-        # Get title
-        title = component.parameters.title
-
-        # Get SED properties
-        template = component.parameters.template
-        age = component.parameters.age
-        metallicity = component.parameters.metallicity
-
-        # Get normalization
-        fltr = parse_filter(component.parameters.filter)
-        luminosity = component.parameters.luminosity
-
-        # Set SED
-        self.ski.set_stellar_component_sed(title, template, age, metallicity)
-
-        # Set center wavelength of the filter as normalization wavelength (keeps label)
-        self.ski.set_stellar_component_normalization_wavelength(title, fltr.center)
-
-        # Set spectral luminosity at that wavelength (keeps label)
-        self.ski.set_stellar_component_luminosity(title, luminosity)
-
-        # Scale height doesn't need to be set as parameter, this is already in the deprojection model
+            # If map filename is defined, set path in dictionary
+            if map_filename is not None: self.input_map_paths[map_filename] = component.map_path
 
     # -----------------------------------------------------------------
 
@@ -351,77 +192,11 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
             # Load the component
             component = load_dust_component(self.config.path, self.model_name, name)
 
-            # If an input map is required
-            if "map_path" in component:
+            # Add the dust component
+            map_filename = add_dust_component(self.ski, name, component)
 
-                # Generate a filename for the map
-                filename = "dust_" + name + ".fits"
-
-                # Set the filename
-                if "deprojection" in component: component.deprojection.filename = filename
-                elif "geometry" in component.parameters: component.properties["geometry"].filename = filename
-                else: raise RuntimeError("Dust component based on an input map should either have a deprojection or geometry properties")
-
-                # Add entry to the input maps dictionary
-                self.input_map_paths[filename] = component.map_path
-
-            # Set geometry
-            if "model" in component:
-
-                # Get title
-                title = component.parameters.title
-
-                # Set the geometry
-                self.ski.set_dust_component_geometry(title, component.model)
-
-            # Set deprojection
-            elif "deprojection" in component:
-
-                # Get title
-                title = component.parameters.title
-
-                # Set the deprojection geometry
-                self.ski.set_dust_component_geometry(title, component.deprojection)
-
-            # Check if this is a new dust component, add geometry, mix and normalization all at once
-            if "geometry" in component.parameters:
-
-                # Get title
-                title = component.parameters.title
-
-                # Get class names
-                geometry_type = component.parameters.geometry
-                mix_type = component.parameters.sed
-                normalization_type = component.parameters.normalization
-
-                # Get properties for each of the three classes
-                geometry_properties = component.properties["geometry"]
-                mix_properties = component.properties["mix"]
-                normalization_properties = component.properties["normalization"]
-
-                # Create stellar component
-                self.ski.create_new_dust_component(title, geometry_type, geometry_properties, mix_type, mix_properties, normalization_type, normalization_properties)
-
-            # Existing component, THEMIS dust mix
-            elif "hydrocarbon_pops" in component.parameters:
-
-                # Get title
-                title = component.parameters.title
-
-                # Get parameters
-                mass = component.parameters.mass
-                hydrocarbon_pops = component.parameters.hydrocarbon_pops
-                enstatite_pops = component.parameters.enstatite_pops
-                forsterite_pops = component.parameters.forsterite_pops
-
-                # Set the dust mix
-                self.ski.set_dust_component_themis_mix(title, hydrocarbon_pops, enstatite_pops, forsterite_pops)  # dust mix
-
-                # Set the dust mass (keeps label)
-                self.ski.set_dust_component_mass(title, mass)
-
-            # Existing component, not THEMIS dust mix
-            else: raise NotImplementedError("Only THEMIS dust mixes are implemented at this moment")
+            # If map filename is defined, set path in dictionary
+            if map_filename is not None: self.input_map_paths[map_filename] = component.map_path
 
     # -----------------------------------------------------------------
 
@@ -472,7 +247,7 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         # Set the name of the wavelength grid file
         self.ski.set_file_wavelength_grid("wavelengths.txt")
 
-        # Set the dust emissivity
+        # Set the dust emissivityex
         self.set_dust_emissivity()
 
         # Set the lowest-resolution dust grid

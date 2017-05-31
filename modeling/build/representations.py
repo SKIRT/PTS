@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import astronomical modules
 from astropy.units import dimensionless_angles
 
@@ -21,11 +24,13 @@ from ..component.galaxy import GalaxyModelingComponent
 from ...core.prep.dustgrids import DustGridGenerator
 from ...core.tools.logging import log
 from ...core.basics.range import QuantityRange, RealRange
-from ...core.units.parsing import parse_unit as u
 from .representation import RepresentationBuilder
 from ...core.tools import time
 from ...core.tools import tables
 from ...core.tools import filesystem as fs
+from ...core.prep.templates import get_pan_template
+from ...core.advanced.dustgridtool import generate_grid
+from ...core.simulation.grids import load_grid
 
 # -----------------------------------------------------------------
 
@@ -57,6 +62,9 @@ class RepresentationGenerator(BuildComponent, GalaxyModelingComponent):
         # A name for this representation generation event
         self.event_name = None
 
+        # The representations
+        self.representations = OrderedDict()
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -76,7 +84,10 @@ class RepresentationGenerator(BuildComponent, GalaxyModelingComponent):
         # 3. Build the representations
         self.build_representations()
 
-        # 4. Writing
+        # 4. Generate the dust grids (can only be done now after the RepresentationBuilders have written out)
+        self.generate_dust_grids()
+
+        # 5. Writing
         self.write()
 
     # -----------------------------------------------------------------
@@ -188,6 +199,61 @@ class RepresentationGenerator(BuildComponent, GalaxyModelingComponent):
 
             # Build, passing the dust grid that has been created
             builder.run(dust_grid=grid)
+
+            # Set the path for this representation
+            #self.representation_paths[name] = builder.representation_path
+            self.representations[name] = builder.representation
+
+    # -----------------------------------------------------------------
+
+    def generate_dust_grids(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Generating the dust grids ...")
+
+        # Loop over the representations
+        for name in self.representations:
+            
+            # Get info
+            representation = self.representations[name]
+            dust_grid_path = representation.dust_grid_path
+            grid_out_path = representation.grid_out_path
+
+            # Load the dust grid
+            grid = load_grid(dust_grid_path)
+
+            # Create ski file template
+            ski = get_pan_template()
+
+            # Add the dust grid geometry
+            deprojection = self.definition.dust_deprojection
+
+            # Create list of input paths
+            input_paths = []
+
+            # Add the model input paths
+            input_paths.extend(self.definition.input_paths)
+
+            # Generate the grid
+            prefix = generate_grid(ski, grid, grid_out_path, input_paths)
+
+            # If there is a tree data file, copy it to the main grid directory of the representation
+            tree_out_path = fs.join(grid_out_path, prefix + "_ds_tree.dat")
+            if fs.is_file(tree_out_path):
+
+                # Debugging
+                log.debug("Copying dust grid tree data for representation '" + name + "' ...")
+
+                # Copy
+                new_tree_path = fs.copy_file(tree_out_path, representation.grid_path, new_name="tree.dat")
+
+            # No tree data
+            else: log.debug("No tree data for representation '" + name + "'")
 
     # -----------------------------------------------------------------
 

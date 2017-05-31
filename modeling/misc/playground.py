@@ -19,21 +19,15 @@ import matplotlib.pyplot as plt
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
-from ...core.tools import introspection
 from ...core.simulation.execute import SkirtExec
 from ...core.simulation.simulation import SkirtSimulation
 from ...core.data.sed import SED
-from ...core.simulation.skifile import SkiFile
-from ..core.mappings import Mappings
+from ...core.prep.templates import get_oneparticle_template
 
 # -----------------------------------------------------------------
 
 k = 1.3806488e-23    # Boltmann constant in J/K
 Zsun = 0.0122        # solar metallicity according to Groves et al. 2008
-
-# -----------------------------------------------------------------
-
-dat_ski_path = fs.join(introspection.pts_dat_dir("modeling"), "ski")
 
 # -----------------------------------------------------------------
 
@@ -95,11 +89,8 @@ class MappingsPlayground(object):
         # Determine the path to a temporary directory
         self.temp_path = tempfile.gettempdir()
 
-        # Determine the path to the template ski file
-        ski_path = fs.join(dat_ski_path, "oneparticle.ski")
-
         # Load the template ski file
-        self.ski = SkiFile(ski_path)
+        self.ski = get_oneparticle_template()
 
         # Set the number of wavelengths
         self.ski.set_nwavelengths(1000)
