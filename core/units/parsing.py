@@ -44,6 +44,25 @@ def parse_unit(argument, density=False, brightness=False, density_strict=False, 
 
 # -----------------------------------------------------------------
 
+def parse_photometric_unit(argument, density=False, brightness=False, density_strict=False, brightness_strict=False):
+
+    """
+    This function ...
+    :param argument:
+    :param density:
+    :param brightness:
+    :param density_strict:
+    :param brightness_strict:
+    :return:
+    """
+
+    from .unit import PhotometricUnit
+
+    unit = PhotometricUnit(argument, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
+    return unit
+
+# -----------------------------------------------------------------
+
 def parse_quantity(argument, density=False, physical_type=None, brightness=False, default_unit=None, density_strict=False, brightness_strict=False):
 
     """

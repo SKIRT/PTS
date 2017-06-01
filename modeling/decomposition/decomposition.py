@@ -405,8 +405,8 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Create the instrument
         distance = self.galaxy_properties.distance
-        #inclination = Angle(0.0, "deg")
-        inclination = 0.0
+        inclination = Angle(0.0, "deg")
+        #inclination = 0.0 # doesn't matter, also works! (thanks to intelligent parse_quantity)
         azimuth = Angle(90., "deg")
         #position_angle = self.parameters.bulge.PA + Angle(90., "deg") # + 90° because we can only do y_flattening and not x_flattening
         position_angle = self.components["bulge"].position_angle
@@ -487,7 +487,7 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Simulate the bulge image
         fluxdensity = self.components["bulge"].fluxdensity
-        self.bulge_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf, instrument_name="earth")
+        self.bulge_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf, instrument_name="earth", progress_bar=True)
 
     # -----------------------------------------------------------------
 
@@ -531,7 +531,7 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Simulate the disk image
         fluxdensity = self.components["disk"].fluxdensity
-        self.disk_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf, instrument_name="earth")
+        self.disk_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf, instrument_name="earth", progress_bar=True)
 
     # -----------------------------------------------------------------
 
@@ -579,7 +579,7 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Simulate the model image
         fluxdensity = self.components["bulge"].fluxdensity + self.components["disk"].fluxdensity  # sum of bulge and disk component flux density
-        self.model_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf, instrument_name="earth")
+        self.model_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf, instrument_name="earth", progress_bar=True)
 
     # -----------------------------------------------------------------
 
@@ -681,6 +681,7 @@ class GalaxyDecomposer(DecompositionComponent):
         # Inform the user
         log.info("Writing regions file with disk ellipse ...")
 
+        # Determine minor axis length
         minor = (1.0 - self.galaxy_properties.ellipticity) * self.galaxy_properties.major_arcsec
 
         # Ellipse radius

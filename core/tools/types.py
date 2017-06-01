@@ -189,3 +189,16 @@ def is_none(value):
     return isinstance(value, NoneType)
 
 # -----------------------------------------------------------------
+
+def is_quantity(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    from astropy.units import Quantity
+    return isinstance(value, Quantity)
+
+# -----------------------------------------------------------------

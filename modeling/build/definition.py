@@ -747,6 +747,54 @@ class ModelDefinition(object):
     # -----------------------------------------------------------------
 
     @property
+    def old_stars_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_stars_parameters.luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_stars_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_stars_parameters.luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_stars_luminosity(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ionizing_stars_parameters.luminosity
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_mass(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dust_parameters.mass
+
+    # -----------------------------------------------------------------
+
+    @property
     def old_stars_scaleheight(self):
 
         """
@@ -964,6 +1012,20 @@ def get_model_path(modeling_path, model_name):
     """
 
     return fs.join(modeling_path, "build", "models", model_name)
+
+# -----------------------------------------------------------------
+
+def get_model_definition(modeling_path, model_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param model_name:
+    :return:
+    """
+
+    path = get_model_path(modeling_path, model_name)
+    return ModelDefinition(model_name, path)
 
 # -----------------------------------------------------------------
 

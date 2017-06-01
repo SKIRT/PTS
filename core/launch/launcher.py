@@ -570,7 +570,7 @@ class SingleImageSKIRTLauncher(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, ski_path, out_path, wcs, total_flux, kernel, instrument_name=None):
+    def run(self, ski_path, out_path, wcs, total_flux, kernel, instrument_name=None, progress_bar=False):
 
         """
         This function ...
@@ -580,6 +580,7 @@ class SingleImageSKIRTLauncher(object):
         :param total_flux:
         :param kernel:
         :param instrument_name:
+        :param progress_bar:
         :return:
         """
 
@@ -598,7 +599,7 @@ class SingleImageSKIRTLauncher(object):
         log.info("Running a SKIRT simulation with " + str(fs.name(ski_path)) + " ...")
 
         # Run the simulation
-        simulation = self.skirt.run(arguments, silent=False if log.is_debug() else True)
+        simulation = self.skirt.run(arguments, silent=False if log.is_debug() else True, progress_bar=progress_bar)
 
         # Get the simulation prefix
         prefix = simulation.prefix()

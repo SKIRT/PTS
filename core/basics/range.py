@@ -43,9 +43,9 @@ def range_around(value, rel_min, rel_max):
     :return:
     """
 
-    if isinstance(value, int): return IntegerRange.around(value, rel_min, rel_max)
-    elif isinstance(value, float): return RealRange.around(value, rel_min, rel_max)
-    elif isinstance(value, Quantity): return QuantityRange.around(value, rel_min, rel_max)
+    if types.is_integer_type(value): return IntegerRange.around(value, rel_min, rel_max)
+    elif types.is_real_type(value): return RealRange.around(value, rel_min, rel_max)
+    elif types.is_quantity(value): return QuantityRange.around(value, rel_min, rel_max)
     else: raise ValueError("Value has unknown type '" + str(type(value)) + "'")
 
 # -----------------------------------------------------------------
@@ -108,6 +108,46 @@ class Range(object):
         """
 
         return cls(value * rel_min, value * rel_max, inclusive, invert)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def around_magnitudes(cls, value, min_magnitude, max_magnitude, inclusive=True, invert=False):
+
+        """
+        This function ...
+        :param value:
+        :param min_magnitude:
+        :param max_magnitude:
+        :param inclusive:
+        :param invert:
+        :return:
+        """
+
+        # Determine rel min and max
+        # -2 becomes 0.01
+        # 2 becomes 100
+        rel_min = 10**float(min_magnitude)
+        rel_max = 10**float(max_magnitude)
+
+        # Create and return
+        return cls.around(value, rel_min, rel_max, inclusive=inclusive, invert=invert)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def around_magnitude(cls, value, magnitude, inclusive=True, invert=False):
+
+        """
+        Symmetrical around -magnitude and +magnitude
+        :param value:
+        :param magnitude:
+        :param inclusive:
+        :param invert:
+        :return:
+        """
+
+        return cls.around_magnitudes(value, -magnitude, magnitude, inclusive=inclusive, invert=invert)
 
     # -----------------------------------------------------------------
 
@@ -435,6 +475,19 @@ class Range(object):
 
     # -----------------------------------------------------------------
 
+    def adjust_inwards(self, other_range):
+
+        """
+        This function ...
+        :param other_range:
+        :return:
+        """
+
+        if other_range.min > self.min: self._min = other_range.min
+        if other_range.max < self.max: self._max = other_range.max
+
+    # -----------------------------------------------------------------
+
     @property
     def span(self):
 
@@ -649,6 +702,32 @@ class QuantityRange(Range):
 
     # -----------------------------------------------------------------
 
+    @min.setter
+    def min(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self._min = value.to(self.unit).value
+
+    # -----------------------------------------------------------------
+
+    @max.setter
+    def max(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self._max = value.to(self.unit).value
+
+    # -----------------------------------------------------------------
+
     def adjust(self, value_or_range):
 
         """
@@ -669,6 +748,19 @@ class QuantityRange(Range):
             # Adjust minimal and maximal speedup
             if value_or_range < self.min: self._min = value_or_range.to(self.unit).value
             elif value_or_range > self.max: self._max = value_or_range.to(self.unit).value
+
+    # -----------------------------------------------------------------
+
+    def adjust_inwards(self, other_range):
+
+        """
+        This function ...
+        :param other_range:
+        :return:
+        """
+
+        if other_range.min > self.min: self._min = other_range.min.to(self.unit).value
+        if other_range.max < self.max: self._max = other_range.max.to(self.unit).value
 
     # -----------------------------------------------------------------
 

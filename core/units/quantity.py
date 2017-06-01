@@ -14,11 +14,61 @@ from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
 from astropy.units import Quantity
+from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
 from ..tools import types
-from .parsing import parse_quantity
+from .parsing import parse_quantity, parse_unit, parse_photometric_unit
 from .stringify import represent_quantity
+
+# -----------------------------------------------------------------
+
+def get_zero_quantity(unit, density=False, brightness=False, density_strict=False, brightness_strict=False):
+
+    """
+    This function ...
+    :param unit:
+    :return:
+    """
+
+    return 0.0 * parse_unit(unit, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
+
+# -----------------------------------------------------------------
+
+def get_zero_photometric_quantity(unit, density=False, brightness=False, density_strict=False, brightness_strict=False):
+
+    """
+    This function ...
+    :param unit:
+    :param density:
+    :param brightness:
+    :param density_strict:
+    :param brightness_strict:
+    :return:
+    """
+
+    return 0.0 * parse_photometric_unit(unit, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
+
+# -----------------------------------------------------------------
+
+zero_angle = Angle(0.0, "deg")
+
+# -----------------------------------------------------------------
+
+zero_length_quantity = 0.0 * parse_unit("m")
+
+# -----------------------------------------------------------------
+
+# NO: DOESN'T MAKE SENSE! DIFFERENT SCALES EXIST!!
+#zero_temperature_quantity = 0.0 * parse_unit("K")
+
+# -----------------------------------------------------------------
+
+zero_mass_quantity = 0.0 * parse_unit("kg")
+
+# -----------------------------------------------------------------
+
+zero_mass_density_quantity = 0.0 * parse_unit("kg/m3")
 
 # -----------------------------------------------------------------
 

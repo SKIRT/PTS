@@ -21,7 +21,6 @@ from ..data.seds import SEDFetcher
 from ..data.inspector import DataInspector
 from ..preparation.initialization import PreparationInitializer
 from ..preparation.preparer import DataPreparer
-from ..preparation.inspector import PreparationInspector
 from ..decomposition.decomposition import GalaxyDecomposer
 from ..truncation.truncation import Truncator
 from ..photometry.photometry import PhotoMeter
@@ -59,6 +58,8 @@ from ...core.plot.sed import SEDPlotter
 from ...core.tools import parsing
 from ...core.tools.logging import set_log_file, unset_log_file
 from ...dustpedia.core.database import get_mbb_dust_mass
+from ..build.definition import get_model_definition
+from ...core.units.parsing import parse_quantity
 
 # -----------------------------------------------------------------
 
@@ -76,13 +77,10 @@ free_parameters["DL14"] = ["fuv_young", "dust_mass", "fuv_ionizing"]
 
 # -----------------------------------------------------------------
 
-#free_parameter_ranges = dict()
-#free_parameter_ranges["DL14"] = {"fuv_young": QuantityRange(0.0, 1e37, unit="W/micron"),
-#                                 "dust_mass": None, #QuantityRange(0.5e7, 3.e7, unit="Msun"),
-#                                 "fuv_ionizing": QuantityRange(0.0, 1e34, unit="W/micron")}
-
-fuv_young_range = QuantityRange(0.0, 1e37, unit="W/micron")
-fuv_ionizing_range = QuantityRange(0.0, 1e34, unit="W/micron")
+# Define maximum values for the standard free parameters
+max_fuv_young = parse_quantity("1e37 W/micron")
+max_fuv_ionizing = parse_quantity("1e35 W/micron")
+max_dust_mass = parse_quantity("5.e7 Msun")
 
 # -----------------------------------------------------------------
 
@@ -1483,17 +1481,33 @@ class GalaxyModeler(ModelerBase):
 
         # Calculate ranges
         free_parameter_ranges = dict()
+
+        # Get the model definition
+        definition = get_model_definition(self.modeling_path, self.model_name)
+
+        # Get FUV young, FUV ionizing and dust mass
+        fuv_young = definition.young_stars_luminosity
+        fuv_ionizing = definition.ionizing_stars_luminosity
+        dust_mass = definition.dust_mass
+
+        # Define ranges
         for label in parameter_labels:
-            if label == "fuv_young": free_parameter_ranges[label] = fuv_young_range
-            elif label == "fuv_ionizing": free_parameter_ranges[label] = fuv_ionizing_range
+            if label == "fuv_young":
+                young_range = QuantityRange.around_magnitude(fuv_young, 3)
+                young_range.max = max_fuv_young
+                free_parameter_ranges[label] = young_range
+            elif label == "fuv_ionizing":
+                ionizing_range = QuantityRange.around_magnitude(fuv_ionizing, 3)
+                ionizing_range.max = max_fuv_ionizing
+                free_parameter_ranges[label] = ionizing_range
             elif label == "dust_mass":
-                dust_mass = get_mbb_dust_mass(self.hyperleda_name)
-                dust_mass_range = QuantityRange.around(dust_mass, 0.1, 10)
-                free_parameter_ranges[label] = dust_mass_range
+                mass_range = QuantityRange.around_magnitude(dust_mass, 2)
+                mass_range.max = max_dust_mass
+                free_parameter_ranges[label] = mass_range
             else: raise ValueError("Free parameter label not recognized: '" + label + "'")
 
         # Set ranges
-        config["ranges"] = free_parameter_ranges #free_parameter_ranges[self.modeling_config.method]
+        config["ranges"] = free_parameter_ranges  #free_parameter_ranges[self.modeling_config.method]
 
         # Set fitting filters
         config["filters"] = fitting_filter_names
