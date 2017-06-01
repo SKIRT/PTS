@@ -44,7 +44,7 @@ def parse_unit(argument, density=False, brightness=False, density_strict=False, 
 
 # -----------------------------------------------------------------
 
-def parse_quantity(argument, density=False, physical_type=None, brightness=False):
+def parse_quantity(argument, density=False, physical_type=None, brightness=False, default_unit=None, density_strict=False, brightness_strict=False):
 
     """
     This function ...
@@ -52,16 +52,21 @@ def parse_quantity(argument, density=False, physical_type=None, brightness=False
     :param density:
     :param physical_type:
     :param brightness:
+    :param default_unit: for when numerical value is zero and no unit is in the argument string
+    :param density_strict:
+    :param brightness_strict:
     :return:
     """
 
+    # Argument is a quantity (or derived type)
     if isinstance(argument, Quantity):
 
         number = argument.value
         unit = argument.unit
-        unit = parse_unit(unit, density=density, brightness=brightness)
+        unit = parse_unit(unit, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
 
-    else:
+    # Argument is a string
+    elif types.is_string_type(argument):
 
         # NEW IMPLEMENTATION
         units = ""
@@ -73,9 +78,21 @@ def parse_quantity(argument, density=False, physical_type=None, brightness=False
             except ValueError:
                 units = argument[-1:] + units
                 argument = argument[:-1]
-        if units == "": raise ValueError("Unit is not specified")
 
-        unit = parse_unit(units.strip(), density=density, brightness=brightness)
+        # Check whether unit is given
+        if units == "":
+
+            # Check whether the number is zero and default unit is specified
+            if number == 0 and default_unit is not None: unit = parse_unit(default_unit, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
+
+            # Otherwise, we cannot make a quantity
+            else: raise ValueError("Unit is not specified")
+
+        # Parse the unit
+        else: unit = parse_unit(units.strip(), density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
+
+    # Invalid input
+    else: raise ValueError("Argument must be either a string or a quantity")
 
     # Check physical type
     if physical_type is not None:
@@ -94,7 +111,7 @@ def parse_angle(argument):
     :return:
     """
 
-    quantity = parse_quantity(argument, physical_type="angle")
+    quantity = parse_quantity(argument, physical_type="angle", default_unit="deg")
     return Angle(quantity.value, quantity.unit)
 
 # -----------------------------------------------------------------

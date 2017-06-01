@@ -12,6 +12,9 @@
 # Import standard modules
 from abc import ABCMeta, abstractproperty
 
+# Import the relevant PTS classes and modules
+from ..tools import types
+
 # -----------------------------------------------------------------
 
 def parse_filter(argument, name=None):
@@ -237,7 +240,21 @@ class Filter(object):
         :return:
         """
 
+        if types.is_string_type(other): other = parse_filter(other)
         return str(other) == str(self)
+
+    # -----------------------------------------------------------------
+
+    def __ne__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        if types.is_string_type(other): other = parse_filter(other)
+        return str(other) != str(self)
 
     # -----------------------------------------------------------------
 

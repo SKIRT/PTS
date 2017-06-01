@@ -943,19 +943,7 @@ def length_unit(argument):
 def quantity(argument):
 
     """
-    An Astropy quantity.
-    >>> quantity("2GB")
-    (2.0, 'GB')
-    >>> quantity("17 ft")
-    (17.0, 'ft')
-    >>> quantity("   3.4e-27 frobnitzem ")
-    (3.4e-27, 'frobnitzem')
-    >>> quantity("9001")
-    (9001.0, '')
-    >>> quantity("spam sandwhiches")
-    (1.0, 'spam sandwhiches')
-    >>> quantity("")
-    (1.0, '')
+    An Astropy quantity
     """
 
     from ..units.parsing import parse_quantity

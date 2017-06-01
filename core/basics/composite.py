@@ -134,7 +134,10 @@ class SimplePropertyComposite(object):
             #print(value, type(value), hasattr(value, "__array__"))
             ptype, string = stringify(value)
 
+            # None value
             if string == "None": value = None
+
+            # Actual value
             else:
 
                 # Check
@@ -149,6 +152,7 @@ class SimplePropertyComposite(object):
         # Actually set the attribute
         #super(SimplePropertyComposite, self).__setattr__(name, value)
 
+        # Set the attribute
         self.__dict__[name] = value
 
     # -----------------------------------------------------------------

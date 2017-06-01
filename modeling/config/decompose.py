@@ -18,7 +18,7 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 definition.add_optional("filter", "filter", "filter for which to use the data for decomposition", default="IRAC I1", convert_default=True)
 
 # The method
-definition.add_optional("method", "string", "method for decomposition", default="s4G", choices=["s4g", "fit", "imfit"])
+definition.add_optional("method", "string", "method for decomposition", default="s4g", choices=["s4g", "fit", "imfit"])
 
 # Add optional
 choices = dict()

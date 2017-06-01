@@ -205,7 +205,7 @@ class GalaxyDecomposer(DecompositionComponent):
         elif self.config.method == "imfit": self.decompose_imfit()
 
         # Invalid
-        else: raise ValueError("Invalid option for 'method'")
+        else: raise ValueError("Invalid option for 'method': " + self.config.method)
 
     # -----------------------------------------------------------------
 
@@ -405,6 +405,7 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Create the instrument
         distance = self.galaxy_properties.distance
+        #inclination = Angle(0.0, "deg")
         inclination = 0.0
         azimuth = Angle(90., "deg")
         #position_angle = self.parameters.bulge.PA + Angle(90., "deg") # + 90° because we can only do y_flattening and not x_flattening
