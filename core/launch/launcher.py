@@ -637,7 +637,7 @@ class SingleImageSKIRTLauncher(object):
         # Debugging
         log.debug("Convolving the " + prefix + " image ...")
 
-        # Convolve the frame to the PACS 160 resolution
+        # Convolve the frame
         simulated_frame.convolve(kernel)
 
         # Return the frame

@@ -1186,13 +1186,18 @@ class Frame(NDDataArray):
         if sum < 0: raise RuntimeError("The sum of the frame is negative")
 
         # Calculate the conversion factor
-        factor = to / sum
+        if hasattr(to, "unit"): # quantity
+            factor = to.value / sum
+            unit = to.unit
+        else:
+            factor = to / sum
+            unit = None
 
         # Multiply the frame with the conversion factor
         self.__imul__(factor)
 
         # Set the unit to None
-        self.unit = None
+        self.unit = unit
 
     # -----------------------------------------------------------------
 

@@ -176,6 +176,7 @@ class SkirtExec:
         # Get the command string
         command = arguments.to_command(self._path, mpi_command, scheduler)
 
+        # Not waiting and progress_bar don't go together!
         if progress_bar and not wait: raise ValueError("Cannot show progress bar when 'wait' is False")
         if progress_bar: wait = False
 
@@ -188,7 +189,8 @@ class SkirtExec:
             self._process = None
             if silent: subprocess.call(command, stdout=open(os.devnull,'w'), stderr=open(os.devnull,'w'))
             else: subprocess.call(command)
-        else: self._process = subprocess.Popen(command, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
+        #else: self._process = subprocess.Popen(command, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
+        else: self._process = subprocess.Popen(command, subprocess.PIPE, stderr=subprocess.PIPE)
 
         # Show progress bar with progress
         if progress_bar:
@@ -202,7 +204,15 @@ class SkirtExec:
             with no_debugging(): success = status.show_progress(self._process)
 
             # Check whether not crashed
-            if not success: raise RuntimeError("The simulation crashed")
+            if not success:
+
+                # Get output and error output
+                output, err = self._process.communicate()
+
+                print(output)
+                print(err)
+
+                raise RuntimeError("The simulation crashed")
 
         # Return the list of simulations so that their results can be followed up
         simulations = arguments.simulations(simulation_names=simulation_names)

@@ -196,6 +196,8 @@ class GalaxyModeler(ModelerBase):
         :return:
         """
 
+        return True
+
         command_name = "decompose"
 
         if self.history.finished(command_name): return False

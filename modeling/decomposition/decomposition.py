@@ -34,11 +34,16 @@ from .s4g import S4GDecomposer
 #from .fitting import FittingDecomposer
 #from .imfit import ImfitDecomposer
 from ...core.launch.launcher import SingleImageSKIRTLauncher
+from ...magic.core.frame import Frame
 
 # -----------------------------------------------------------------
 
 # The path to the template ski files directory
 template_path = fs.join(introspection.pts_dat_dir("modeling"), "ski")
+
+# -----------------------------------------------------------------
+
+instrument_name = "earth"
 
 # -----------------------------------------------------------------
 
@@ -356,6 +361,142 @@ class GalaxyDecomposer(DecompositionComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def simulated_bulge2d_image_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        prefix = "bulge"
+
+        # Determine the name of the SKIRT output FITS file
+        fits_name = prefix + "_" + instrument_name + "_total.fits"
+
+        # Determine the path to the output FITS file
+        out_path = fs.join(self.images_bulge2d_path, "out")
+        fits_path = fs.join(out_path, fits_name)
+
+        # Return the path
+        return fits_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulated_bulge_image_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        prefix = "bulge"
+
+        # Determine the name of the SKIRT output FITS file
+        fits_name = prefix + "_" + instrument_name + "_total.fits"
+
+        # Determine the path to the output FITS file
+        out_path = fs.join(self.images_bulge_path, "out")
+        fits_path = fs.join(out_path, fits_name)
+
+        # Return the path
+        return fits_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulated_disk_image_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        prefix = "disk"
+
+        # Determine the name of the SKIRT output FITS file
+        fits_name = prefix + "_" + instrument_name + "_total.fits"
+
+        # Determine the path to the output FITS file
+        out_path = fs.join(self.images_disk_path, "out")
+        fits_path = fs.join(out_path, fits_name)
+
+        # Return the path
+        return fits_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulated_model_image_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        prefix = "model"
+
+        # Determine the name of the SKIRT output FITS file
+        fits_name = prefix + "_" + instrument_name + "_total.fits"
+
+        # Determine the path to the output FITS file
+        out_path = fs.join(self.images_model_path, "out")
+        fits_path = fs.join(out_path, fits_name)
+
+        # Return the path
+        return fits_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulated_bulge2d_image(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.simulated_bulge2d_image_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulated_bulge_image(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.simulated_bulge_image_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulated_disk_image(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.simulated_disk_image_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_simulated_model_image(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.simulated_model_image_path)
+
+    # -----------------------------------------------------------------
+
     def create_images(self):
 
         """
@@ -367,16 +508,144 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Creating the images of the bulge, disk and bulge+disk model ...")
 
         # Simulate the stellar bulge without deprojection
-        self.simulate_bulge2d()
+        if self.has_simulated_bulge2d_image: self.load_bulge2d()
+        else: self.simulate_bulge2d()
 
         # Simulate the stellar bulge
-        self.simulate_bulge()
+        if self.has_simulated_bulge_image: self.load_bulge()
+        else: self.simulate_bulge()
 
         # Simulate the stellar disk
-        self.simulate_disk()
+        if self.has_simulated_disk_image: self.load_disk()
+        else: self.simulate_disk()
 
         # Simulate the bulge + disk model
-        self.simulate_model()
+        if self.has_simulated_model_image: self.load_model()
+        else: self.simulate_model()
+
+    # -----------------------------------------------------------------
+
+    def load_bulge2d(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Open the simulated frame
+        simulated_frame = Frame.from_file(self.simulated_bulge2d_image_path)
+        fluxdensity = self.components["bulge"].fluxdensity
+
+        # Set the coordinate system of the disk image
+        simulated_frame.wcs = self.wcs
+
+        # Debugging
+        log.debug("Rescaling the bulge image to a flux density of " + str(fluxdensity) + " ...")
+
+        # Rescale to the 3.6um flux density
+        simulated_frame.normalize(to=fluxdensity)
+
+        # Debugging
+        log.debug("Convolving the bulge image to the resolution of the " + str(self.config.filter) + " filter ...")
+
+        # Convolve the frame
+        simulated_frame.convolve(self.psf)
+
+        # Set
+        self.bulge2d_image = simulated_frame
+
+    # -----------------------------------------------------------------
+
+    def load_bulge(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Open the simulated frame
+        simulated_frame = Frame.from_file(self.simulated_bulge_image_path)
+        fluxdensity = self.components["bulge"].fluxdensity
+
+        # Set the coordinate system of the disk image
+        simulated_frame.wcs = self.wcs
+
+        # Debugging
+        log.debug("Rescaling the bulge image to a flux density of " + str(fluxdensity) + " ...")
+
+        # Rescale to the 3.6um flux density
+        simulated_frame.normalize(to=fluxdensity)
+
+        # Debugging
+        log.debug("Convolving the bulge image to the resolution of the " + str(self.config.filter) +  " filter ...")
+
+        # Convolve the frame
+        simulated_frame.convolve(self.psf)
+
+        # Set
+        self.bulge_image = simulated_frame
+
+    # -----------------------------------------------------------------
+
+    def load_disk(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        # Open the simulated frame
+        simulated_frame = Frame.from_file(self.simulated_disk_image_path)
+        fluxdensity = self.components["disk"].fluxdensity
+
+        # Set the coordinate system of the disk image
+        simulated_frame.wcs = self.wcs
+
+        # Debugging
+        log.debug("Rescaling the disk image to a flux density of " + str(fluxdensity) + " ...")
+
+        # Rescale to the 3.6um flux density
+        simulated_frame.normalize(to=fluxdensity)
+
+        # Debugging
+        log.debug("Convolving the disk image to the resolution of the " + str(self.config.filter) + " filter ...")
+
+        # Convolve the frame
+        simulated_frame.convolve(self.psf)
+
+        # Set
+        self.disk_image = simulated_frame
+
+    # -----------------------------------------------------------------
+
+    def load_model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Open the simulated frame
+        simulated_frame = Frame.from_file(self.simulated_model_image_path)
+        fluxdensity = self.components["bulge"].fluxdensity + self.components["disk"].fluxdensity
+
+        # Set the coordinate system of the disk image
+        simulated_frame.wcs = self.wcs
+
+        # Debugging
+        log.debug("Rescaling the model image to a flux density of " + str(fluxdensity) + " ...")
+
+        # Rescale to the 3.6um flux density
+        simulated_frame.normalize(to=fluxdensity)
+
+        # Debugging
+        log.debug("Convolving the model image to the resolution of the " + self.config.filter + " filter ...")
+
+        # Convolve the frame
+        simulated_frame.convolve(self.psf)
+
+        # Set
+        self.model_image = simulated_frame
 
     # -----------------------------------------------------------------
 
@@ -427,7 +696,7 @@ class GalaxyDecomposer(DecompositionComponent):
                                 center_x=center_x, center_y=center_y)
 
         # Add the instrument
-        ski.add_instrument("earth", fake)
+        ski.add_instrument(instrument_name, fake)
 
         # Determine the path to the ski file
         ski_path = fs.join(self.images_bulge2d_path, "bulge.ski")
@@ -487,7 +756,7 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Simulate the bulge image
         fluxdensity = self.components["bulge"].fluxdensity
-        self.bulge_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf, instrument_name="earth", progress_bar=True)
+        self.bulge_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf, instrument_name=instrument_name, progress_bar=True)
 
     # -----------------------------------------------------------------
 
@@ -531,7 +800,7 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Simulate the disk image
         fluxdensity = self.components["disk"].fluxdensity
-        self.disk_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf, instrument_name="earth", progress_bar=True)
+        self.disk_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf, instrument_name=instrument_name, progress_bar=True)
 
     # -----------------------------------------------------------------
 
@@ -579,7 +848,7 @@ class GalaxyDecomposer(DecompositionComponent):
 
         # Simulate the model image
         fluxdensity = self.components["bulge"].fluxdensity + self.components["disk"].fluxdensity  # sum of bulge and disk component flux density
-        self.model_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf, instrument_name="earth", progress_bar=True)
+        self.model_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf, instrument_name=instrument_name, progress_bar=True)
 
     # -----------------------------------------------------------------
 
