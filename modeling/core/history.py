@@ -56,6 +56,62 @@ repeated_commands = ["explore", "fit_sed", "finish_exploration"]
 
 # -----------------------------------------------------------------
 
+def commands_before(command_name):
+
+    """
+    This function ...
+    :param command_name:
+    :return:
+    """
+
+    commands = []
+    for command in single_commands:
+        if command == command_name: break
+        commands.append(command)
+    return commands
+
+# -----------------------------------------------------------------
+
+def commands_after(command_name):
+
+    """
+    This function ...
+    :param command_name:
+    :return:
+    """
+
+    commands = []
+    for command in reversed(single_commands):
+        if command == command_name: break
+        commands.append(command)
+    return list(reversed(commands))
+
+# -----------------------------------------------------------------
+
+def commands_before_and_including(command_name):
+
+    """
+    This function ...
+    :param command_name:
+    :return:
+    """
+
+    return commands_before(command_name) + [command_name]
+
+# -----------------------------------------------------------------
+
+def commands_after_and_including(command_name):
+
+    """
+    This function ...
+    :param command_name:
+    :return:
+    """
+
+    return [command_name] + commands_after(command_name)
+
+# -----------------------------------------------------------------
+
 class ModelingHistory(SmartTable):
     
     """
@@ -354,6 +410,22 @@ class ModelingHistory(SmartTable):
 
         self.register_end(cls_or_instance)
         self.save()
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Clean before saving
+        self.clean()
+
+        # Call the function of the base class
+        super(ModelingHistory, self).saveto(path)
 
 # -----------------------------------------------------------------
 

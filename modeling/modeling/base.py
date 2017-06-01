@@ -16,6 +16,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 from abc import ABCMeta, abstractmethod
 
+# Import astronomical modules
+from astropy.utils import lazyproperty
+
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log, set_log_file, unset_log_file
@@ -32,6 +35,7 @@ from ...core.tools.loops import repeat_check
 from ...core.remote.remote import Remote
 from ..fitting.finisher import ExplorationFinisher
 from ...core.tools import time
+from ..core.history import commands_after_and_including
 
 # -----------------------------------------------------------------
 
@@ -365,6 +369,19 @@ class ModelerBase(Configurable):
 
         # Run the deployer
         deployer.run()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def rerun_commands(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.rerun is None: return []
+        else: return commands_after_and_including(self.config.rerun)
 
     # -----------------------------------------------------------------
 

@@ -7,6 +7,12 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
+from pts.modeling.component.component import get_cache_host_id
+from pts.core.tools import filesystem as fs
+
+# -----------------------------------------------------------------
+
+modeling_path = fs.cwd()
 
 # -----------------------------------------------------------------
 
@@ -19,5 +25,10 @@ definition.add_optional("factor_nvalues", "integer", "the number of values for t
 #definition.add_optional("best_factor", "real", "the best estimate for the value of the factor", 0.82)
 
 definition.add_optional("nbins", "positive_integer", "number of bins for signal to noise curve", 20)
+
+# Cache
+cache_host_id = get_cache_host_id(modeling_path)
+if cache_host_id is not None: definition.add_flag("cache", "cache FITS files to the remote host storage", False)
+else: definition.add_fixed("cache", "caching not possible since cache host id not defined", False)
 
 # -----------------------------------------------------------------

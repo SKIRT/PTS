@@ -224,6 +224,19 @@ class GalaxyModeler(ModelerBase):
 
     # -----------------------------------------------------------------
 
+    def directory_for_command(self, command_name):
+
+        """
+        This function ...
+        :param command_name:
+        :return:
+        """
+
+        if command_name == "truncate": return self.environment.truncation_path
+        else: raise NotImplementedError("Not implemented for " + command_name + " command")
+
+    # -----------------------------------------------------------------
+
     def check_needs_step(self, command_name):
 
         """
@@ -232,22 +245,47 @@ class GalaxyModeler(ModelerBase):
         :return:
         """
 
-        if self.history.finished(command_name): return False
+        if self.history.finished(command_name):
+
+            if command_name in self.rerun_commands:
+
+                path = self.directory_for_command(command_name)
+
+                if prompt_proceed("are you absolutely sure the output of '" + command_name + "' can be removed?"):
+
+                    log.debug("Removing the '" + path + "' directory ...")
+                    fs.remove_directory(path)
+                    return True
+
+                else:
+
+                    log.error("Cannot rerun the " + self.config.rerun + " command when the " + command_name + " cannot be rerun")
+                    exit()
+
+            else: return False
+
         elif command_name in self.history: # partial output?
 
             # Verify that the output can be removed
-            #if prompt_proceed("proceed removing the output of '" + command_name + "'?"):
-                # Remove
-                #fs.remove_directory(self.environment.components_path)
-                #return True
-            #else:
-            #    log.warning("Cannot proceed with decomposition when output is present from previous attempt. Inspect the output and remove when possible.")
-            #    exit()
+            if command_name in self.rerun_commands:
 
-            # TODO: If rerun is asked, do the above!
+                path = self.directory_for_command(command_name)
 
-            log.warning("The " + command_name + " has been started before but hasn't finished. The commmand will be launched again but partial output may already be present.")
-            return True
+                if prompt_proceed("are you absolutely sure the output of '" + command_name + "' can be removed?"):
+
+                    log.debug("Removing the '" + path + "' directory ...")
+                    fs.remove_directory(path)
+                    return True
+
+                else:
+
+                    log.error("Cannot rerun the " + self.config.rerun + " command when the " + command_name + " cannot be rerun")
+                    exit()
+
+            else:
+
+                log.warning("The " + command_name + " has been started before but hasn't finished. The commmand will be launched again but partial output may already be present.")
+                return True
 
         # Nothing in history
         else: return True
@@ -789,8 +827,12 @@ class GalaxyModeler(ModelerBase):
         # Inform the user
         log.info("Making truncation masks for the galaxy images ...")
 
+        # Create configuration
+        config = dict()
+        config["cache"] = self.config.cache
+
         # Create the truncator
-        truncator = Truncator()
+        truncator = Truncator(config)
 
         # Set the working directory
         truncator.config.path = self.modeling_path

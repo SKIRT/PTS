@@ -29,6 +29,7 @@ from ...magic.dist_ellipse import distance_ellipse
 from ...core.basics.range import RealRange
 from ...core.basics.map import Map
 from ...magic.core.mask import intersection
+from ...core.remote.remote import Remote
 
 # -----------------------------------------------------------------
 
@@ -67,6 +68,15 @@ class Truncator(TruncationComponent):
 
         # Paths
         self.paths = dict()
+
+        # The remote host (if needed)
+        self.remote = None
+
+        # The remote cache path
+        self.remote_truncation_path = None
+
+        # Cache paths
+        self.cache_paths = dict()
 
     # -----------------------------------------------------------------
 
@@ -111,6 +121,14 @@ class Truncator(TruncationComponent):
 
         # Call the setup function of the base class
         super(Truncator, self).setup(**kwargs)
+
+        # Setup the remote
+        self.remote = Remote(host_id=self.environment.cache_host_id)
+
+        # Create the cache directory
+        self.remote_truncation_path = fs.join(self.remote.home_directory, self.galaxy_name + "_truncation")
+        if self.config.cache:
+            if not self.remote.is_directory(self.remote_truncation_path): self.remote.create_directory(self.remote_truncation_path)
 
     # -----------------------------------------------------------------
 
@@ -162,6 +180,15 @@ class Truncator(TruncationComponent):
 
             # Set path
             self.paths[name] = path
+
+            # Create remote directory
+            if self.config.cache:
+
+                # Create directory
+                remote_path = self.remote.create_directory_in(self.remote_truncation_path, name)
+
+                # Set path
+                self.cache_paths[name] = remote_path
 
     # -----------------------------------------------------------------
 
@@ -425,11 +452,21 @@ class Truncator(TruncationComponent):
                 frame = self.frames[name]
                 frame[mask] = 0.0
 
-                # Determine the path
-                path = fs.join(self.paths[name], str(factor) + ".fits")
+                # Determine the local path
+                filename = str(factor) + ".fits"
+                path = fs.join(self.paths[name], filename)
 
                 # Save
                 frame.saveto(path)
+
+                # Cache
+                if self.config.cache:
+
+                    # Upload, and remove local file
+                    remote_path = self.remote.upload_file_to(path, self.cache_paths[name], remove=True)
+
+                    # Debugging
+                    log.debug("Truncated " + name + " image with factor " + str(factor) + " has been cached to '" + remote_path + "'")
 
     # -----------------------------------------------------------------
 

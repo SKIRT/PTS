@@ -3810,11 +3810,15 @@ class Remote(object):
         # Invalid argument
         else: raise ValueError("The origin must be a string or a list of strings")
 
-        # Add the host address and the destination directory
-        #copy_command += self.host.user + "@" + self.host.name + ":" + destination.replace(" ", "\\\ ") + "/"
-        #copy_command += self.host.user + "@" + self.host.name + ":'" + destination.replace(" ", "\ ") + "/'"
-        #copy_command += self.host.user + "@" + self.host.name + ":'\\\"" + destination + "/\\\"'"
-        copy_command += self.host.user + "@" + self.host.name + ":'" + destination.replace(" ", "\ ") + "/'"
+        # Set destination string depending on whether it is a file or a directory
+        if "." in fs.name(destination):
+            destination_string = "'" + destination.replace(" ", "\ ") + "'" # destination is a file
+        elif not self.is_directory(destination): # destination should be existing directory
+            raise ValueError("Destination directory '" + destination + "' does not exist on remote host '" + self.host_id + "'")
+        else: destination_string = "'" + destination.replace(" ", "\ ") + "/'" # existing directory
+
+        # Construct command
+        copy_command += self.host.user + "@" + self.host.name + ":" + destination_string
         if new_name is not None: copy_command += new_name
 
         # Debugging
@@ -3914,6 +3918,31 @@ class Remote(object):
 
         # Success: return True
         return True
+
+    # -----------------------------------------------------------------
+
+    def upload_file_to(self, filepath, destination, remove=False):
+
+        """
+        This function ...
+        :param filepath:
+        :param destination:
+        :param remove:
+        :return:
+        """
+
+        # Determine remote file path and upload
+        remote_path = fs.join(destination, fs.name(filepath))
+        self.upload(filepath, remote_path)
+
+        # Check whether present
+        if not self.is_file(remote_path): raise RuntimeError("Something went wrong uploading the file")
+
+        # Now we can safely remove the local file if requested
+        if remove: fs.remove_file(filepath)
+
+        # Return the remote file path
+        return remote_path
 
     # -----------------------------------------------------------------
 
