@@ -60,6 +60,7 @@ from ...core.tools.logging import set_log_file, unset_log_file
 from ...dustpedia.core.database import get_mbb_dust_mass
 from ..build.definition import get_model_definition
 from ...core.units.parsing import parse_quantity
+from ...core.basics.configuration import prompt_proceed
 
 # -----------------------------------------------------------------
 
@@ -187,6 +188,35 @@ class GalaxyModeler(ModelerBase):
 
     # -----------------------------------------------------------------
 
+    @property
+    def needs_decomposition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        command_name = "decompose"
+
+        if self.history.finished(command_name): return False
+        elif command_name in self.history: # partial output?
+
+            # Verify that the output can be removed
+            if prompt_proceed("proceed removing the output of '" + command_name + "'?"):
+
+                # Remove
+                fs.remove_directory(self.environment.components_path)
+                return True
+
+            else:
+                log.warning("Cannot proceed with decomposition when output is present from previous attempt. Inspect the output and remove when possible.")
+                exit()
+
+        # Nothing in history
+        else: return True
+
+    # -----------------------------------------------------------------
+
     def run(self, **kwargs):
 
         """
@@ -205,7 +235,7 @@ class GalaxyModeler(ModelerBase):
         self.prepare_data()
 
         # 4. Decomposition
-        if not self.history.finished("decompose"): self.decompose()
+        if self.needs_decomposition: self.decompose()
 
         # 5. Truncation
         if not self.history.finished("truncate"): self.truncate()
@@ -280,7 +310,7 @@ class GalaxyModeler(ModelerBase):
             else: self.get_images()
 
         # Inspect the data
-        if self.history.finished("inspect_data"): self.inspect_data()
+        if not self.history.finished("inspect_data"): self.inspect_data()
 
     # -----------------------------------------------------------------
 
@@ -322,14 +352,13 @@ class GalaxyModeler(ModelerBase):
         log.info("Setting the provided galaxy properties ...")
 
         # Add an entry to the history and save
-        self.history.add_entry(PropertyFetcher.command_name())
+        self.history.add_entry_and_save(PropertyFetcher.command_name())
 
         # Write the properties to the correct path
         self.properties.saveto(get_galaxy_properties_path(self.modeling_path))
 
         # Mark the end and save the history file
-        self.history.mark_end()
-        self.history.save()
+        self.history.mark_end_and_save()
 
     # -----------------------------------------------------------------
 
@@ -574,7 +603,7 @@ class GalaxyModeler(ModelerBase):
 
         # Add an entry to the history
         command_name = "inspect_initialization"
-        self.history.add_entry(command_name)
+        self.history.add_entry_and_save(command_name)
 
         # Loop over the directories in the data/images path
         images_path = fs.join(self.environment.data_path, "images")
@@ -614,8 +643,7 @@ class GalaxyModeler(ModelerBase):
                 raise RuntimeError("Sources directory for the " + prep_name + " image is empty. Run initialize_preparation again to fix this.")
 
         # Mark the end and save the history file
-        self.history.mark_end()
-        self.history.save()
+        self.history.mark_end_and_save()
 
     # -----------------------------------------------------------------
 
@@ -797,7 +825,7 @@ class GalaxyModeler(ModelerBase):
         log.info("Getting the DustPedia photometry for the galaxy ...")
 
         # Add an entry to the history
-        self.history.add_entry("photometry")
+        self.history.add_entry_and_save("photometry")
 
         # Get the DustPedia SED
         sed = get_dustpedia_sed(self.modeling_path)
@@ -821,8 +849,7 @@ class GalaxyModeler(ModelerBase):
         plotter.run(ouput=path, title=self.galaxy_name)
 
         # Mark the end and save the history file
-        self.history.mark_end()
-        self.history.save()
+        self.history.mark_end_and_save()
 
     # -----------------------------------------------------------------
 
@@ -855,13 +882,13 @@ class GalaxyModeler(ModelerBase):
         if not self.history.finished("make_old_stars_map"): self.make_old_stellar_maps()
 
         # Create the map of the young stellar population
-        if "make_young_stars_map" not in self.history: self.make_young_stellar_maps()
+        if not self.history.finished("make_young_stars_map"): self.make_young_stellar_maps()
 
         # Create the map of the ionizing stellar population
-        if "make_ionizing_stars_map" not in self.history: self.make_ionizing_stellar_maps()
+        if not self.history.finished("make_ionizing_stars_map"): self.make_ionizing_stellar_maps()
 
         # Calculate the significance masks
-        if "create_significance_masks" not in self.history: self.create_significance_masks()
+        if not self.history.finished("create_significance_masks"): self.create_significance_masks()
 
     # -----------------------------------------------------------------
 
@@ -878,26 +905,17 @@ class GalaxyModeler(ModelerBase):
         # Create the colour maps
         maker = ColourMapMaker()
 
-        # Add an entry to the history
-        command_name = maker.command_name()
-        self.history.add_entry(command_name)
-
         # Set log path
-        log_path = fs.join(self.environment.log_path, command_name + "_" + self.timestamp + ".txt")
-        set_log_file(log_path)
+        self.set_log_path_for_component(maker)
 
         # Set the working directory
         maker.config.path = self.modeling_path
 
         # Run maker
-        maker.run()
+        with self.history.regitet(maker): maker.run()
 
         # Unset log path
         unset_log_file()
-
-        # Mark the end and save the history file
-        self.history.mark_end()
-        self.history.save()
 
     # -----------------------------------------------------------------
 
@@ -914,26 +932,17 @@ class GalaxyModeler(ModelerBase):
         # Create the sSFR maps
         maker = SSFRMapMaker()
 
-        # Add an entry to the history
-        command_name = maker.command_name()
-        self.history.add_entry(command_name)
-
         # Set the working directory
         maker.config.path = self.modeling_path
 
         # Set log path
-        log_path = fs.join(self.environment.log_path, command_name + "_" + self.timestamp + ".txt")
-        set_log_file(log_path)
+        self.set_log_path_for_component(maker)
 
         # Run the maker
-        maker.run()
+        with self.history.register(maker): maker.run()
 
         # Unset log path
         unset_log_file()
-
-        # Mark the end and save the history file
-        self.history.mark_end()
-        self.history.save()
 
     # -----------------------------------------------------------------
 
@@ -950,26 +959,17 @@ class GalaxyModeler(ModelerBase):
         # Create the TIR map maker
         maker = TIRMapMaker()
 
-        # Add an entry to the history
-        command_name = maker.command_name()
-        self.history.add_entry(command_name)
-
         # Set the working directory
         maker.config.path = self.modeling_path
 
         # Set log path
-        log_path = fs.join(self.environment.log_path, command_name + "_" + self.timestamp + ".txt")
-        set_log_file(log_path)
+        self.set_log_path_for_component(maker)
 
         # Run the maker
-        maker.run()
+        with self.history.register(maker): maker.run()
 
         # Unset log path
         unset_log_file()
-
-        # Mark the end and save the history file
-        self.history.mark_end()
-        self.history.save()
 
     # -----------------------------------------------------------------
 
@@ -986,26 +986,17 @@ class GalaxyModeler(ModelerBase):
         # Create the attenuation map maker
         maker = AttenuationMapMaker()
 
-        # Add an entry to the history
-        command_name = maker.command_name()
-        self.history.add_entry(command_name)
-
         # Set the working directory
         maker.config.path = self.modeling_path
 
         # Set log path
-        log_path = fs.join(self.environment.log_path, command_name + "_" + self.timestamp + ".txt")
-        set_log_file(log_path)
+        self.set_log_path_for_component(maker)
 
         # Run the maker
-        maker.run()
+        with self.history.register(maker): maker.run()
 
         # Unset log path
         unset_log_file()
-
-        # Mark the end and save the history file
-        self.history.mark_end()
-        self.history.save()
 
     # -----------------------------------------------------------------
 
@@ -1027,26 +1018,17 @@ class GalaxyModeler(ModelerBase):
         # Create the dust map maker
         maker = DustMapMaker(config)
 
-        # Add an entry to the history
-        command_name = DustMapMaker.command_name()
-        self.history.add_entry(command_name)
-
         # Set the working directory
         maker.config.path = self.modeling_path
 
         # Set log path
-        log_path = fs.join(self.environment.log_path, command_name + "_" + self.timestamp + ".txt")
-        set_log_file(log_path)
+        self.set_log_path_for_component(maker)
 
         # Run the dust map maker
-        maker.run()
+        with self.history.register(maker): maker.run()
 
         # Unset log path
         unset_log_file()
-
-        # Mark the end and save the history file
-        self.history.mark_end()
-        self.history.save()
 
     # -----------------------------------------------------------------
 
@@ -1063,26 +1045,17 @@ class GalaxyModeler(ModelerBase):
         # Create the old stellar map maker
         maker = OldStellarMapMaker()
 
-        # Add an entry to the history
-        command_name = maker.command_name()
-        self.history.add_entry(command_name)
-
         # Set the working directory
         maker.config.path = self.modeling_path
 
         # Set log path
-        log_path = fs.join(self.environment.log_path, command_name + "_" + self.timestamp + ".txt")
-        set_log_file(log_path)
+        self.set_log_path_for_component(maker)
 
         # Run the maker
-        maker.run()
+        with self.history.register(maker): maker.run()
 
         # Unset log path
         unset_log_file()
-
-        # Mark the end and save the history file
-        self.history.mark_end()
-        self.history.save()
 
     # -----------------------------------------------------------------
 
@@ -1099,26 +1072,17 @@ class GalaxyModeler(ModelerBase):
         # Create the young stellar map maker
         maker = YoungStellarMapMaker()
 
-        # Add an entry to the history
-        command_name = YoungStellarMapMaker.command_name()
-        self.history.add_entry(command_name)
-
         # Set the working directory
         maker.config.path = self.modeling_path
 
         # Set log path
-        log_path = fs.join(self.environment.log_path, command_name + "_" + self.timestamp + ".txt")
-        set_log_file(log_path)
+        self.set_log_path_for_component(maker)
 
         # Run the maker
-        maker.run()
+        with self.history.register(maker): maker.run()
 
         # Unset log path
         unset_log_file()
-
-        # Mark the end and save the history
-        self.history.mark_end()
-        self.history.save()
 
     # -----------------------------------------------------------------
 
@@ -1135,26 +1099,17 @@ class GalaxyModeler(ModelerBase):
         # Create the ionizing stellar map maker
         maker = IonizingStellarMapMaker()
 
-        # Add an entry to the history
-        command_name = IonizingStellarMapMaker.command_name()
-        self.history.add_entry(command_name)
-
         # Set the working directory
         maker.config.path = self.modeling_path
 
         # Set log path
-        log_path = fs.join(self.environment.log_path, command_name + "_" + self.timestamp + ".txt")
-        set_log_file(log_path)
+        self.set_log_path_for_component(maker)
 
         # Run the ionizing stellar map maker
-        maker.run()
+        with self.history.register(maker): maker.run()
 
         # Unset log path
         unset_log_file()
-
-        # Mark the end and save the history file
-        self.history.mark_end()
-        self.history.save()
 
     # -----------------------------------------------------------------
 
@@ -1174,26 +1129,17 @@ class GalaxyModeler(ModelerBase):
         # Create the significance mask creator
         creator = SignificanceMaskCreator(config)
 
-        # Add an entry to the history
-        command_name = SignificanceMaskCreator.command_name()
-        self.history.add_entry(command_name)
-
         # Set the working directory
         creator.config.path = self.modeling_path
 
         # Set log path
-        log_path = fs.join(self.environment.log_path, command_name + "_" + self.timestamp + ".txt")
-        set_log_file(log_path)
+        self.set_log_path_for_component(creator)
 
         # Run the creator
-        creator.run()
+        with self.history.register(creator): creator.run()
 
         # Unset log path
         unset_log_file()
-
-        # Mark the end and save the history file
-        self.history.mark_end()
-        self.history.save()
 
     # -----------------------------------------------------------------
 
@@ -1208,10 +1154,10 @@ class GalaxyModeler(ModelerBase):
         log.info("Building the model and its representations ...")
 
         # 1. Build model
-        if "build_model" not in self.history: self.build_model()
+        if not self.history.finished("build_model"): self.build_model()
 
         # Generate the representations
-        if "generate_representations" not in self.history: self.generate_representations()
+        if not self.history.finished("generate_representations"): self.generate_representations()
 
     # -----------------------------------------------------------------
 
@@ -1244,26 +1190,17 @@ class GalaxyModeler(ModelerBase):
         # Create the builder
         builder = ModelBuilder(config)
 
-        # Add an entry to the history
-        command_name = ModelBuilder.command_name()
-        self.history.add_entry(command_name)
-
         # Set the working directory
         builder.config.path = self.modeling_path
 
         # Set log path
-        log_path = fs.join(self.environment.log_path, command_name + "_" + self.timestamp + ".txt")
-        set_log_file(log_path)
+        self.set_log_path_for_component(builder)
 
         # Run the model builder
-        builder.run()
+        with self.history.register(buidler): builder.run()
 
         # Unset log path
         unset_log_file()
-
-        # Mark the end and save the history file
-        self.history.mark_end()
-        self.history.save()
 
     # -----------------------------------------------------------------
 
@@ -1289,23 +1226,14 @@ class GalaxyModeler(ModelerBase):
         # Create the builder
         builder = RepresentationBuilder(config)
 
-        # Add an entry to the history
-        command_name = RepresentationBuilder.command_name()
-        self.history.add_entry(command_name)
-
         # Set log path
-        log_path = fs.join(self.environment.log_path, command_name + "_" + self.timestamp + ".txt")
-        set_log_file(log_path)
+        self.set_log_path_for_component(builder)
 
         # Run the builder
-        builder.run()
+        with self.history.register(builder): builder.run()
 
         # Unset log path
         unset_log_file()
-
-        # Mark the end and save the history file
-        self.history.mark_end()
-        self.history.save()
 
     # -----------------------------------------------------------------
 
@@ -1331,23 +1259,14 @@ class GalaxyModeler(ModelerBase):
         # Create the builder
         generator = RepresentationGenerator(config)
 
-        # Add an entry to the history
-        command_name = RepresentationGenerator.command_name()
-        self.history.add_entry(command_name)
-
         # Set log path
-        log_path = fs.join(self.environment.log_path, command_name + "_" + self.timestamp + ".txt")
-        set_log_file(log_path)
+        self.set_log_path_for_component(generator)
 
         # Run the generator
-        generator.run()
+        with self.history.register(generator): generator.run()
 
         # Unset log path
         unset_log_file()
-
-        # Mark the end and save the history file
-        self.history.mark_end()
-        self.history.save()
 
     # -----------------------------------------------------------------
 
@@ -1425,26 +1344,17 @@ class GalaxyModeler(ModelerBase):
         # Create the fitting configurer
         configurer = FittingConfigurer(config)
 
-        # Add an entry to the history
-        command_name = FittingConfigurer.command_name()
-        self.history.add_entry(command_name)
-
         # Set the working directory
         configurer.config.path = self.modeling_path
 
         # Set log path
-        log_path = fs.join(self.environment.log_path, command_name + "_" + self.timestamp + ".txt")
-        set_log_file(log_path)
+        self.set_log_path_for_component(configurer)
 
         # Run the fitting configurer
-        configurer.run(default_ranges=default_ranges, settings=self.config.fitting_settings)
+        with self.history.register(configurer): configurer.run(default_ranges=default_ranges, settings=self.config.fitting_settings)
 
         # Unset log path
         unset_log_file()
-
-        # Mark the end and save the history file
-        self.history.mark_end()
-        self.history.save()
 
     # -----------------------------------------------------------------
 
@@ -1471,26 +1381,17 @@ class GalaxyModeler(ModelerBase):
         # Create the fitting initializer
         initializer = GalaxyFittingInitializer(config)
 
-        # Add an entry to the history
-        command_name = GalaxyFittingInitializer.command_name()
-        self.history.add_entry(command_name)
-
         # Set the working directory
         initializer.config.path = self.modeling_path
 
         # Set log path
-        log_path = fs.join(self.environment.log_path, command_name + "_" + self.timestamp + ".txt")
-        set_log_file(log_path)
+        self.set_log_path_for_component(initializer)
 
         # Run the fitting initializer
-        initializer.run()
+        with self.history.register(initializer): initializer.run()
 
         # Unset log path
         unset_log_file()
-
-        # Mark the end and save the history file
-        self.history.mark_end()
-        self.history.save()
 
     # -----------------------------------------------------------------
 

@@ -31,8 +31,7 @@ def setup(command_name, cwd):
     history = load_modeling_history(cwd)
 
     # Add entry
-    history.add_entry(command_name)
-    history.save()
+    history.add_entry_and_save(command_name)
 
 # -----------------------------------------------------------------
 
@@ -52,7 +51,6 @@ def finish(command_name, cwd):
     history = load_modeling_history(cwd)
 
     # Mark end
-    history.mark_end()
-    history.save()
+    history.mark_end_and_save()
 
 # -----------------------------------------------------------------

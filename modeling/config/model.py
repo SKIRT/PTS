@@ -13,6 +13,7 @@ from pts.core.tools import filesystem as fs
 from pts.modeling.component.component import get_default_fitting_method, get_cache_host_id
 from pts.modeling.modeling.base import fitting_methods
 from pts.modeling.preparation.preparer import steps
+from pts.modeling.core.history import single_commands
 
 # -----------------------------------------------------------------
 
@@ -83,5 +84,8 @@ else: definition.add_fixed("cache", "caching not possible since cache host ID is
 # Number of dust grids (= number of model representations) and the number of wavelength grids
 definition.add_optional("nwavelength_grids", "positive_integer", "number of wavelength grids to use for the fitting", 10)
 definition.add_optional("ndust_grids", "positive_integer", "number of dust grids, or the number of model representations", 10)
+
+# NEW: RERUN FOR THE MODELING STEPS
+definition.add_optional("rerun", "string", "rerun a certain modeling step", choices=single_commands)
 
 # -----------------------------------------------------------------

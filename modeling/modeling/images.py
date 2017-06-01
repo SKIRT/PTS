@@ -144,7 +144,7 @@ class ImagesModeler(ModelerBase):
         builder = ImagesModelBuilder(config)
 
         # Run
-        builder.run()
+        with self.history.register(builder): builder.run()
 
     # -----------------------------------------------------------------
 
@@ -167,7 +167,7 @@ class ImagesModeler(ModelerBase):
         builder = ImagesRepresentationBuilder(config)
 
         # Run
-        builder.run()
+        with self.history.register(builder): builder.run()
 
     # -----------------------------------------------------------------
 
@@ -204,16 +204,15 @@ class ImagesModeler(ModelerBase):
         # Create the fitting configurer
         configurer = FittingConfigurer(config)
 
-        # Add an entry to the history
-        self.history.add_entry(FittingConfigurer.command_name())
-
         # Set the working directory
         configurer.config.path = self.modeling_path
 
         # Run the fitting configurer
-        configurer.run(descriptions_config=self.descriptions_config, types_config=self.types_config,
-                       units_config=self.units_config, ranges_config=self.ranges_config, filters_config=self.filters_config,
-                       genetic_config=self.genetic_config, grid_config=self.grid_config, settings=self.config.fitting_settings)
+        with self.history.register(configurer):
+
+            configurer.run(descriptions_config=self.descriptions_config, types_config=self.types_config,
+                           units_config=self.units_config, ranges_config=self.ranges_config, filters_config=self.filters_config,
+                           genetic_config=self.genetic_config, grid_config=self.grid_config, settings=self.config.fitting_settings)
 
         # Set the parameter ranges
         if self.ranges_config is not None:
@@ -225,10 +224,6 @@ class ImagesModeler(ModelerBase):
                 log.debug("Setting the range of the '" + parameter_name + "' parameter to '" + str(parameter_range) + "' for the parameter exploration ...")
                 # Set the range
                 self.parameter_ranges[parameter_name] = parameter_range
-
-        # Mark the end and save the history file
-        self.history.mark_end()
-        self.history.save()
 
     # -----------------------------------------------------------------
 
@@ -248,9 +243,6 @@ class ImagesModeler(ModelerBase):
 
         # Create the fitting initializer
         initializer = ImagesFittingInitializer()
-
-        # Add an entry to the history
-        self.history.add_entry(ImagesFittingInitializer.command_name())
 
         # Set the working directory
         initializer.config.path = self.modeling_path
@@ -302,11 +294,7 @@ class ImagesModeler(ModelerBase):
         # OPTIONS FOR THE DUST GRID NOT RELEVANT FOR SED MODELING (YET)
 
         # Run the fitting initializer
-        initializer.run()
-
-        # Mark the end and save the history file
-        self.history.mark_end()
-        self.history.save()
+        with self.history.register(initializer): initializer.run()
 
     # -----------------------------------------------------------------
 

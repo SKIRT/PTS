@@ -419,6 +419,7 @@ def str_from_real(real, scientific=False, decimal_places=2, fancy=False, ndigits
         else:
             if ndigits is not None: decimal_places = ndigits - 1
             return ("{:." + str(decimal_places) + "e}").format(real).replace("+", "").replace("e0", "e")
+
     else: return repr(real)
 
 # -----------------------------------------------------------------

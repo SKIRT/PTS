@@ -560,14 +560,14 @@ class ModelerBase(Configurable):
         # Create the SED fitter
         self.fitter = SEDFitter(config)
 
-        # Add an entry to the history
-        self.history.add_entry(SEDFitter.command_name())
+        # Set log path
+        self.set_log_path_for_component(self.fitter)
 
         # Run the fitter
-        self.fitter.run()
+        with self.history.register(self.fitter): self.fitter.run()
 
-        # Mark the end and save the history file
-        self.history.mark_end()
+        # Unset log path
+        unset_log_file()
 
     # -----------------------------------------------------------------
 
@@ -595,9 +595,6 @@ class ModelerBase(Configurable):
 
         # Create the parameter explorer
         self.explorer = ParameterExplorer(config, cwd=self.modeling_path)
-
-        # Add an entry to the history
-        self.history.add_entry(ParameterExplorer.command_name())
 
         # Set the working directory
         self.explorer.config.path = self.modeling_path
@@ -635,12 +632,14 @@ class ModelerBase(Configurable):
         # NEW: Add additional input (such as parameter grid scales)
         input_dict.update(kwargs)
 
-        # Run the parameter explorer
-        self.explorer.run(**input_dict)
+        # Set log path
+        self.set_log_path_for_component(self.explorer)
 
-        # Mark the end and save the history file
-        self.history.mark_end()
-        self.history.save()
+        # Run the parameter explorer
+        with self.history.register(self.explorer): self.explorer.run(**input_dict)
+
+        # Unset log path
+        unset_log_file()
 
     # -----------------------------------------------------------------
 
@@ -665,18 +664,17 @@ class ModelerBase(Configurable):
         # Create the exploration finisher
         self.finisher = ExplorationFinisher(settings)
 
-        # Add an entry to the history
-        self.history.add_entry(ExplorationFinisher.command_name())
-
         # NEW: Add additional input (such as parameter grid scales)
         input_dict.update(kwargs)
 
-        # Run the finisher
-        self.finisher.run(**input_dict)
+        # Set log path
+        self.set_log_path_for_component(self.finisher)
 
-        # Mark the end and save the history file
-        self.history.mark_end()
-        self.history.save()
+        # Run the finisher
+        with self.history.register(self.finisher): self.finisher.run(**input_dict)
+
+        # Unset log path
+        unset_log_file()
 
     # -----------------------------------------------------------------
 

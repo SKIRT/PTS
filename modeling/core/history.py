@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import copy
+
 # Import the relevant PTS classes and modules
 from ...core.basics.table import SmartTable
 from ...core.tools import time, tables
@@ -38,10 +41,14 @@ single_commands = ["fetch_properties",
                  "make_young_stars_map",
                  "make_ionizing_stars_map",
                  "create_significance_masks",
+                 "plot_sed", # only for SEDModeler
                  "build_model",
                  "generate_representations",
                  "configure_fit",
-                 "initialize_fit"]
+                 "initialize_fit_sed", # for sed modeling
+                 "initialize_fit_galaxy"] # for galaxy modeling
+
+                 #"initialize_fit"]
 
 # -----------------------------------------------------------------
 
@@ -63,13 +70,62 @@ class ModelingHistory(SmartTable):
         :param kwargs:
         """
 
+        if len(args) > 0: from_astropy = True
+        else: from_astropy = False
+
         # Call the constructor of the base class
         super(ModelingHistory, self).__init__(*args, **kwargs)
 
-        # Add column info
-        self.add_column_info("Command", str, None, "name of the modeling command")
-        self.add_column_info("Start time", str, None, "timestamp for start of command")
-        self.add_column_info("End time", str, None, "timestamp for end of command")
+        if not from_astropy:
+
+            # Add column info
+            self.add_column_info("Command", str, None, "name of the modeling command")
+            self.add_column_info("Start time", str, None, "timestamp for start of command")
+            self.add_column_info("End time", str, None, "timestamp for end of command")
+
+        # Clean
+        # DOESN'T WORK HERE: TypeError: could not convert reader output to ModelingHistory class.
+        # SO.. CLEAN() HAS TO BE CALLED EXPLICITLY
+        #self.clean()
+
+    # -----------------------------------------------------------------
+
+    def clean(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over all commands
+        for command in single_commands:
+
+            indices = tables.find_indices(self, command)
+
+            # More than one occurence?
+            if len(indices) > 0:
+
+                keep = None
+
+                # Only keep the one that finished?
+                # Loop from last
+                for index in reversed(indices):
+                    if not self["End time"].mask[index]:
+                        keep = index
+                        break
+
+                # Finished entry was found, remove all other except this
+                if keep is not None:
+                    to_remove = copy.copy(indices)
+                    to_remove.remove(keep)
+                    self.remove_rows(to_remove)
+
+                # No finished found, only keep last unfinished
+                else:
+                    keep = indices[-1]
+                    to_remove = copy.copy(indices)
+                    to_remove.remove(keep)
+                    self.remove_rows(to_remove)
 
     # -----------------------------------------------------------------
 
@@ -89,6 +145,19 @@ class ModelingHistory(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def add_entry_and_save(self, command):
+
+        """
+        Thi function ...
+        :param command:
+        :return:
+        """
+
+        self.add_entry(command)
+        self.save()
+
+    # -----------------------------------------------------------------
+
     def remove_entry(self, command):
 
         """
@@ -103,6 +172,31 @@ class ModelingHistory(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def remove_entry_and_save(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        self.remove_entry(command)
+        self.save()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def commands(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["Command"])
+
+    # -----------------------------------------------------------------
+
     def __contains__(self, command_name):
 
         """
@@ -111,7 +205,7 @@ class ModelingHistory(SmartTable):
         :return:
         """
 
-        return command_name in list(self["Command"])
+        return command_name in self.commands
 
     # -----------------------------------------------------------------
 
@@ -123,10 +217,10 @@ class ModelingHistory(SmartTable):
         :return:
         """
 
-        if command_name not in self: return False
+        if command_name not in self.commands: return False
         else:
-            index = tables.find_index(command_name, self)
-            return not self["End time"][index] # not masked
+            index = tables.find_index(self, command_name)
+            return not self["End time"].mask[index] # not masked
 
     # -----------------------------------------------------------------
 
@@ -138,7 +232,8 @@ class ModelingHistory(SmartTable):
         :return:
         """
 
-        return "configure_fit" in self
+        #return "configure_fit" in self
+        return self.finished("configure_fit")
 
     # -----------------------------------------------------------------
 
@@ -150,8 +245,12 @@ class ModelingHistory(SmartTable):
         :return:
         """
 
-        if "initialize_fit_sed" in self: return True
-        elif "initialize_fit_galaxy" in self: return True
+        #if "initialize_fit_sed" in self: return True
+        #elif "initialize_fit_galaxy" in self: return True
+        #else: return False
+
+        if self.finished("initialize_fit_sed"): return True
+        elif self.finished("initialize_fit_galaxy"): return True
         else: return False
 
     # -----------------------------------------------------------------
@@ -170,6 +269,18 @@ class ModelingHistory(SmartTable):
         # Set the value
         self["End time"].mask[-1] = False
         self["End time"][-1] = timestamp
+
+    # -----------------------------------------------------------------
+
+    def mark_end_and_save(self):
+
+        """
+        Thi function ...
+        :return:
+        """
+
+        self.mark_end()
+        self.save()
 
     # -----------------------------------------------------------------
 
@@ -201,6 +312,19 @@ class ModelingHistory(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def register_start_and_save(self, cls_or_instance):
+
+        """
+        This function ...
+        :param cls_or_instance:
+        :return:
+        """
+
+        self.register_start(cls_or_instance)
+        self.save()
+
+    # -----------------------------------------------------------------
+
     def register_end(self, cls_or_instance):
 
         """
@@ -218,6 +342,19 @@ class ModelingHistory(SmartTable):
         # Mark end
         self.mark_end()
 
+    # -----------------------------------------------------------------
+
+    def register_end_and_save(self, cls_or_instance):
+
+        """
+        This function ...
+        :param cls_or_instance:
+        :return:
+        """
+
+        self.register_end(cls_or_instance)
+        self.save()
+
 # -----------------------------------------------------------------
 
 class RegisterScope(object):
@@ -231,12 +368,13 @@ class RegisterScope(object):
         self.cls_or_instance = cls_or_instance
 
     def __enter__(self):
-        self.history.register_start(self.cls_or_instance)
+        self.history.register_start_and_save(self.cls_or_instance)
         return None
 
     def __exit__(self, exc_type, exc_value, traceback):
-        self.history.register_end(self.cls_or_instance)
-        self.history.save()
+        #print(exc_type, exc_value, traceback)
+        if exc_type is not None: return False # not succesful
+        else: self.history.register_end_and_save(self.cls_or_instance) # succesful
         return None
 
 # -----------------------------------------------------------------

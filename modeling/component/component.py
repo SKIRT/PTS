@@ -403,7 +403,9 @@ class ModelingComponent(Configurable):
         """
 
         # Open the modeling history
-        return ModelingHistory.from_file(self.history_file_path)
+        history = ModelingHistory.from_file(self.history_file_path)
+        history.clean()
+        return history
 
     # -----------------------------------------------------------------
 
@@ -671,7 +673,10 @@ def load_modeling_history(modeling_path):
         history = ModelingHistory()
         history.saveto(history_file_path)
 
-    else: history = ModelingHistory.from_file(history_file_path)
+    else:
+
+        history = ModelingHistory.from_file(history_file_path)
+        history.clean()
 
     # Return the history
     return history
