@@ -30,6 +30,11 @@ except ImportError: pass
 
 # -----------------------------------------------------------------
 
+# ?
+logging.basicConfig()
+
+# -----------------------------------------------------------------
+
 # Add the 'START' log level
 START = 24
 logging.addLevelName(START, "START")
@@ -156,7 +161,12 @@ def unset_log_file():
     """
 
     #log.removeHandler(fh)
-    log.handlers = []
+    #log.handlers = []
+
+    #log.handlers = [h for h in log.handlers if isinstance(h, logging.StreamHandler)]
+
+    # Remove all file handlers, but keep the others
+    log.handlers = [h for h in log.handlers if not isinstance(h, logging.FileHandler)]
 
 # -----------------------------------------------------------------
 
