@@ -21,6 +21,7 @@ from astropy.io import fits
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ..basics.mask import MaskBase
+from ..basics.mask import Mask as oldMask
 
 # -----------------------------------------------------------------
 
@@ -178,7 +179,17 @@ def union(*args):
     :return:
     """
 
-    arrays = [arg.data for arg in args]
+    # UNION = 0 + first + second + ... (0 is neutral element for sum)
+    # so for one mask, union = 0 + mask = mask
+
+    if len(args) == 1: return Mask(args[0])
+
+    #arrays = [arg.data for arg in args]
+    arrays = []
+    for arg in args:
+        if isinstance(arg, MaskBase): arrays.append(arg.data)
+        elif isinstance(arg, oldMask): arrays.append(arg)
+        else: arrays.append(arg)
     return Mask(np.sum(arrays, axis=0))
 
 # -----------------------------------------------------------------
@@ -191,7 +202,17 @@ def intersection(*args):
     :return:
     """
 
-    arrays = [arg.data for arg in args]
+    # INTERSECTION = 1 * first * second * ... (1 is neutral element for multiplication)
+    # so for one mask, intersection = 1 * mask = mask
+
+    if len(args) == 1: return Mask(args[0])
+
+    #arrays = [arg.data for arg in args]
+    arrays = []
+    for arg in args:
+        if isinstance(arg, MaskBase): arrays.append(arg.data)
+        elif isinstance(arg, oldMask): arrays.append(arg)
+        else: arrays.append(arg)
     return Mask(np.product(arrays, axis=0))
 
 # -----------------------------------------------------------------

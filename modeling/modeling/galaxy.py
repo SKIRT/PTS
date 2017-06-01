@@ -196,23 +196,58 @@ class GalaxyModeler(ModelerBase):
         :return:
         """
 
-        return True
+        return self.check_needs_step("decompose")
 
-        command_name = "decompose"
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_truncation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.check_needs_step("truncate")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_photometry(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.check_needs_step("photometry")
+
+    # -----------------------------------------------------------------
+
+    def check_needs_step(self, command_name):
+
+        """
+        This function ...
+        :param command_name:
+        :return:
+        """
 
         if self.history.finished(command_name): return False
         elif command_name in self.history: # partial output?
 
             # Verify that the output can be removed
-            if prompt_proceed("proceed removing the output of '" + command_name + "'?"):
-
+            #if prompt_proceed("proceed removing the output of '" + command_name + "'?"):
                 # Remove
-                fs.remove_directory(self.environment.components_path)
-                return True
+                #fs.remove_directory(self.environment.components_path)
+                #return True
+            #else:
+            #    log.warning("Cannot proceed with decomposition when output is present from previous attempt. Inspect the output and remove when possible.")
+            #    exit()
 
-            else:
-                log.warning("Cannot proceed with decomposition when output is present from previous attempt. Inspect the output and remove when possible.")
-                exit()
+            # TODO: If rerun is asked, do the above!
+
+            log.warning("The " + command_name + " has been started before but hasn't finished. The commmand will be launched again but partial output may already be present.")
+            return True
 
         # Nothing in history
         else: return True
@@ -240,10 +275,10 @@ class GalaxyModeler(ModelerBase):
         if self.needs_decomposition: self.decompose()
 
         # 5. Truncation
-        if not self.history.finished("truncate"): self.truncate()
+        if self.needs_truncation: self.truncate()
 
         # 6. Do the photometry
-        if not self.history.finished("photometry"): self.photometry()
+        if self.needs_photometry: self.photometry()
 
         # 7. Make the maps
         self.make_maps()

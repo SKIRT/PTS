@@ -28,6 +28,7 @@ from ...core.tools.logging import log
 from ...magic.dist_ellipse import distance_ellipse
 from ...core.basics.range import RealRange
 from ...core.basics.map import Map
+from ...magic.core.mask import intersection
 
 # -----------------------------------------------------------------
 
@@ -220,11 +221,16 @@ class Truncator(TruncationComponent):
                 # Get the average radius
                 radius_center = radius_range.center
 
+                above_min_mask = distance_frame >= radius_range.min
+                below_max_mask = distance_frame < radius_range.max
+
                 # Make a mask of the pixels corresponding to the current radius range
-                range_mask = radius_range.min <= distance_frame < radius_range.max
+                #range_mask = radius_range.min <= distance_frame < radius_range.max
+
+                range_mask = intersection(above_min_mask, below_max_mask)
 
                 # Calculate the mean signal to noise in the pixels
-                signal_to_noises = self.frames[name][range_mask] / self.errormaps[name][mask]
+                signal_to_noises = self.frames[name][range_mask] / self.errormaps[name][range_mask]
 
                 # Calcalute the mean signal to noise
                 signal_to_noise = np.mean(signal_to_noises)
