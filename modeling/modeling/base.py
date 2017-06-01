@@ -18,7 +18,7 @@ from abc import ABCMeta, abstractmethod
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
-from ...core.tools.logging import log
+from ...core.tools.logging import log, set_log_file, unset_log_file
 from ...core.tools import filesystem as fs
 from ..fitting.explorer import ParameterExplorer
 from ..fitting.sedfitting import SEDFitter
@@ -100,6 +100,32 @@ class ModelerBase(Configurable):
 
         # The fitting method (grid, genetic)
         self.fitting_method = None
+
+    # -----------------------------------------------------------------
+
+    def log_path_for_component(self, cls_or_instance):
+
+        """
+        This function ...
+        :param cls_or_instance:
+        :return:
+        """
+
+        command_name = cls_or_instance.command_name()
+        log_path = fs.join(self.environment.log_path, command_name + "_" + self.timestamp + ".txt")
+        return log_path
+
+    # -----------------------------------------------------------------
+
+    def set_log_path_for_component(self, cls_or_instance):
+
+        """
+        This function ...
+        :param cls_or_instance:
+        :return:
+        """
+
+        set_log_file(self.log_path_for_component(cls_or_instance))
 
     # -----------------------------------------------------------------
 
@@ -536,8 +562,6 @@ class ModelerBase(Configurable):
 
         # Add an entry to the history
         self.history.add_entry(SEDFitter.command_name())
-
-
 
         # Run the fitter
         self.fitter.run()

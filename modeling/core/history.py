@@ -18,6 +18,37 @@ from ...core.tools import time, tables
 
 # -----------------------------------------------------------------
 
+single_commands = ["fetch_properties",
+                 "fetch_seds",
+                 "fetch_images",
+                 "inspect_data",
+                 "initialize_preparation",
+                 "inspect_initialization",
+                 "prepare_data",
+                 "inspect_preparation",
+                 "decompose",
+                 "truncate",
+                 "photometry",
+                 "make_colour_maps",
+                 "make_ssfr_maps",
+                 "make_tir_maps",
+                 "make_attenuation_maps",
+                 "make_dust_map",
+                 "make_old_stars_map",
+                 "make_young_stars_map",
+                 "make_ionizing_stars_map",
+                 "create_significance_masks",
+                 "build_model",
+                 "generate_representations",
+                 "configure_fit",
+                 "initialize_fit"]
+
+# -----------------------------------------------------------------
+
+repeated_commands = ["explore", "fit_sed", "finish_exploration"]
+
+# -----------------------------------------------------------------
+
 class ModelingHistory(SmartTable):
     
     """
@@ -139,5 +170,73 @@ class ModelingHistory(SmartTable):
         # Set the value
         self["End time"].mask[-1] = False
         self["End time"][-1] = timestamp
+
+    # -----------------------------------------------------------------
+
+    def register(self, cls_or_instance):
+
+        """
+        This function ...
+        :param cls_or_instance:
+        :return:
+        """
+
+        return RegisterScope(self, cls_or_instance)
+
+    # -----------------------------------------------------------------
+
+    def register_start(self, cls_or_instance):
+
+        """
+        This function ...
+        :param cls_or_instance:
+        :return:
+        """
+
+        # Get command name
+        command_name = cls_or_instance.command_name()
+
+        # Add entry
+        self.add_entry(command_name)
+
+    # -----------------------------------------------------------------
+
+    def register_end(self, cls_or_instance):
+
+        """
+        This function ...
+        :param cls_or_instance:
+        :return:
+        """
+
+        # Get command name
+        command_name = cls_or_instance.command_name()
+
+        # Check last
+        if self["Command"][-1] != command_name: raise ValueError("Last command is '" + self["Command"][-1] + "', not '" + command_name + "'")
+
+        # Mark end
+        self.mark_end()
+
+# -----------------------------------------------------------------
+
+class RegisterScope(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, history, cls_or_instance):
+        self.history = history
+        self.cls_or_instance = cls_or_instance
+
+    def __enter__(self):
+        self.history.register_start(self.cls_or_instance)
+        return None
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.history.register_end(self.cls_or_instance)
+        self.history.save()
+        return None
 
 # -----------------------------------------------------------------

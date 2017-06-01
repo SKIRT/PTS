@@ -28,6 +28,10 @@ def get_zero_quantity(unit, density=False, brightness=False, density_strict=Fals
     """
     This function ...
     :param unit:
+    :param density:
+    :param brightness:
+    :param density_strict:
+    :param brightness_strict:
     :return:
     """
 
@@ -51,11 +55,11 @@ def get_zero_photometric_quantity(unit, density=False, brightness=False, density
 
 # -----------------------------------------------------------------
 
-zero_angle = Angle(0.0, "deg")
+def zero_angle(): return Angle(0.0, "deg")
 
 # -----------------------------------------------------------------
 
-zero_length_quantity = 0.0 * parse_unit("m")
+def zero_length_quantity(): return 0.0 * parse_unit("m")
 
 # -----------------------------------------------------------------
 
@@ -64,11 +68,11 @@ zero_length_quantity = 0.0 * parse_unit("m")
 
 # -----------------------------------------------------------------
 
-zero_mass_quantity = 0.0 * parse_unit("kg")
+def zero_mass_quantity(): return 0.0 * parse_unit("kg")
 
 # -----------------------------------------------------------------
 
-zero_mass_density_quantity = 0.0 * parse_unit("kg/m3")
+def zero_mass_density_quantity(): return 0.0 * parse_unit("kg/m3")
 
 # -----------------------------------------------------------------
 
