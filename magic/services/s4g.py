@@ -155,7 +155,7 @@ class S4G(Configurable):
         """
 
         # Inform the user
-        log.info("Getting the galaxy properties")
+        log.info("Getting the galaxy properties ...")
 
         # Name
         self.get_ngc_name()
@@ -586,7 +586,7 @@ class S4G(Configurable):
                     disk_mu0 = float(splitted[disk_1_index + 6]) * u("mag/arcsec2")
 
                     # Create the disk component
-                    disk = ExponentialDiskModel2D(relative_contribution=disk_f, fluxdensity=disk_fluxdensity, scalelength=disk_hr,
+                    disk = ExponentialDiskModel2D(rel_contribution=disk_f, fluxdensity=disk_fluxdensity, scalelength=disk_hr,
                                                   axial_ratio=disk_q, position_angle=disk_pa, mu0=disk_mu0)
 
                 else:
@@ -621,7 +621,7 @@ class S4G(Configurable):
                     disk_q = hs / rs
 
                     # Create the disk component
-                    disk = ExponentialDiskModel2D(relative_contribution=disk_f, scalelength=rs, axial_ratio=disk_q, position_angle=disk_pa, mu0=disk_mu0)
+                    disk = ExponentialDiskModel2D(rel_contribution=disk_f, scalelength=rs, axial_ratio=disk_q, position_angle=disk_pa, mu0=disk_mu0)
 
                 # Add the disk to the components dictionary
                 self.components["disk"] = disk

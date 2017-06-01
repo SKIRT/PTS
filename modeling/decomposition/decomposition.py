@@ -814,8 +814,8 @@ class GalaxyDecomposer(DecompositionComponent):
         log.info("Creating ski file to simulate the bulge+disk model image ...")
 
         # Load the disk ski file template
-        disk_template_path = fs.join(template_path, "model.ski")
-        ski = SkiFile(disk_template_path)
+        model_template_path = fs.join(template_path, "model.ski")
+        ski = SkiFile(model_template_path)
 
         # Set the number of photon packages
         ski.setpackages(self.config.disk_packages)
@@ -823,6 +823,9 @@ class GalaxyDecomposer(DecompositionComponent):
         # Change the ski file parameters
         ski.set_stellar_component_geometry(0, self.disk)
         ski.set_stellar_component_geometry(1, self.bulge)
+
+        #print("disk", [self.components["disk"].rel_contribution])
+        #print("bulge", [self.components["bulge"].rel_contribution])
 
         # Set the luminosities of the two components
         ski.set_stellar_component_luminosities(0, [self.components["disk"].rel_contribution])
