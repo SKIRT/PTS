@@ -357,6 +357,9 @@ class Truncator(TruncationComponent):
         # Write the truncated images
         self.write_images()
 
+        # Write low-res truncated image
+        self.write_lowres_images()
+
     # -----------------------------------------------------------------
 
     def write_ellipses(self):
@@ -515,6 +518,72 @@ class Truncator(TruncationComponent):
 
                         # Debugging
                         log.debug("Truncated " + name + " image with factor " + str(factor) + " has been cached to '" + remote_path + "'")
+
+    # -----------------------------------------------------------------
+
+    def write_lowres_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing low-resolution truncated images ...")
+
+        # Find the name of the image with the lowest spatial resolution
+        reference_name = self.frames.highest_pixelscale_name
+
+        # Create masks for different factors
+        masks = dict()
+        # Loop over the factors
+        for factor in self.factors:
+            # Get the pixel ellipse
+            ellipse = self.ellipses[reference_name][factor]
+            # Convert into mask
+            mask = ellipse.to_mask(self.frames[reference_name].xsize, self.frames[reference_name].ysize)
+            masks[factor] = mask
+
+        # Debugging
+        log.debug("Rebinning the maps to lowest resolution ...")
+
+        # Rebin
+        self.frames.rebin_to_name(reference_name)
+
+        # Loop over the the images
+        index = 0
+        for name in self.frames.names:
+
+            # Debugging
+            index += 1
+            progress = float(index) / float(self.nframes)
+            log.debug("Writing low-resolution truncated images for the " + name + " image (" + str(index) + " of " + str(self.nframes) + ") ...")
+
+            # Loop over the factors
+            for factor in self.factors:
+
+                # Determine the lowres path
+                lowres_path = fs.create_directory_in(self.paths[name], "lowres")
+
+                # Determine the local path
+                filename = str(factor) + ".fits"
+                path = fs.join(lowres_path, filename)
+
+                # Debugging
+                log.debug("Creating the low-resolution truncated " + name + " image with factor " + str(factor) + "...")
+
+                # Get the frame and rebin
+                frame = self.frames[name]
+                #frame.rebin(reference_wcs)
+
+                # Get the mask
+                mask = masks[factor]
+
+                # Truncate the low-res frame
+                frame[mask] = 0.0
+
+                # Save
+                frame.saveto(path)
 
     # -----------------------------------------------------------------
 

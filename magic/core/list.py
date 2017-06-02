@@ -1501,6 +1501,94 @@ class NamedFrameList(NamedList):
         # Call the append function of the base class
         super(NamedFrameList, self).append(name, frame)
 
+    # -----------------------------------------------------------------
+
+    def convolve_to_name(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get FWHM and PSF filter
+        fwhm = self[name].fwhm
+        psf_filter = self[name].psf_filter
+
+        # Convolve and replace
+        new_frames = convolve_to_fwhm(*self.values, names=self.names, fwhm=fwhm, filter=psf_filter)
+        self.remove_all()
+        for frame in new_frames: self.append(frame)
+
+    # -----------------------------------------------------------------
+
+    def rebin_to_name(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get pixelscale and wcs
+        pixelscale = self[name].average_pixelscale
+        wcs = self[name].wcs
+
+        # Rebin and replace
+        new_frames = rebin_to_pixelscale(*self.values, names=self.names, pixelscale=pixelscale, wcs=wcs)
+        self.remove_all()
+        for frame in new_frames: self.append(frame)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def highest_fwhm_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_highest_fwhm_name(*self.values, names=self.names)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def highest_pixelscale_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_highest_pixelscale_name(*self.values, names=self.names)
+
+    # -----------------------------------------------------------------
+
+    def convolve_to_highest_fwhm(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        new_frames = convolve_to_highest_fwhm(*self.values, names=self.names)
+        self.remove_all()
+        for frame in new_frames: self.append(frame)
+
+    # -----------------------------------------------------------------
+
+    def rebin_to_highest_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        new_frames = rebin_to_highest_pixelscale(*self.values, names=self.names)
+        self.remove_all()
+        for frame in new_frames: self.append(frame)
+
 # -----------------------------------------------------------------
 
 class ImageList(FilterBasedList):
@@ -1839,6 +1927,37 @@ def convert_to_same_unit(*frames, **kwargs):
 
 # -----------------------------------------------------------------
 
+def get_highest_pixelscale_name(*frames, **kwargs):
+
+    """
+    This function ...
+    :param frames:
+    :param kwargs:
+    :return:
+    """
+
+    # Get frame names
+    names = kwargs.pop("names")
+
+    highest_pixelscale = None
+    highest_pixelscale_wcs = None
+    highest_pixelscale_name = None
+
+    # Loop over the frames
+    for frame, name in zip(frames, names):
+
+        wcs = frame.wcs
+        if highest_pixelscale is None or wcs.average_pixelscale > highest_pixelscale:
+
+            highest_pixelscale = wcs.average_pixelscale
+            highest_pixelscale_wcs = wcs
+            highest_pixelscale_name = name
+
+    # Return the name
+    return highest_pixelscale_name
+
+# -----------------------------------------------------------------
+
 def rebin_to_highest_pixelscale(*frames, **kwargs):
 
     """
@@ -1865,6 +1984,25 @@ def rebin_to_highest_pixelscale(*frames, **kwargs):
 
             highest_pixelscale = wcs.average_pixelscale
             highest_pixelscale_wcs = wcs
+
+    # Rebin
+    return rebin_to_pixelscale(*frames, names=names, pixelscale=highest_pixelscale, wcs=highest_pixelscale_wcs)
+
+# -----------------------------------------------------------------
+
+def rebin_to_pixelscale(*frames, **kwargs):
+
+    """
+    THis function ...
+    :param frames:
+    :param kwargs:
+    :return:
+    """
+
+    # Get input
+    names = kwargs.pop("names")
+    highest_pixelscale = kwargs.pop("pixelscale")
+    highest_pixelscale_wcs = kwargs.pop("wcs")
 
     # Initialize list for rebinned frames
     new_frames = []
@@ -1935,6 +2073,41 @@ def rebin_to_highest_pixelscale(*frames, **kwargs):
 
 # -----------------------------------------------------------------
 
+def get_highest_fwhm_name(*frames, **kwargs):
+
+    """
+    THis function ...
+    :param frames:
+    :param kwargs:
+    :return:
+    """
+
+    # Get frame names
+    names = kwargs.pop("names")
+
+    highest_fwhm = None
+    highest_fwhm_filter = None
+    highest_fwhm_name = None
+
+    # Loop over the frames
+    for frame, name in zip(frames, names):
+
+        # Search and set frame FWHM
+        frame_fwhm = frame.fwhm
+        if frame_fwhm is None: frame_fwhm = get_fwhm(frame.filter)
+        frame.fwhm = frame_fwhm
+
+        if highest_fwhm is None or frame.fwhm > highest_fwhm:
+
+            highest_fwhm = frame.fwhm
+            highest_fwhm_filter = frame.psf_filter
+            highest_fwhm_name = name
+
+    # Return the name
+    return highest_fwhm_name
+
+# -----------------------------------------------------------------
+
 def convolve_to_highest_fwhm(*frames, **kwargs):
 
     """
@@ -1945,10 +2118,6 @@ def convolve_to_highest_fwhm(*frames, **kwargs):
 
     # Get frame names
     names = kwargs.pop("names", None)
-
-    # Get kernel services
-    aniano = AnianoKernels()
-    matching = MatchingKernels()
 
     # Inform the user
     log.info("Convolving frames to the resolution of the frame with the highest FWHM ...")
@@ -1968,6 +2137,29 @@ def convolve_to_highest_fwhm(*frames, **kwargs):
 
             highest_fwhm = frame.fwhm
             highest_fwhm_filter = frame.psf_filter
+
+    # Convolve
+    return convolve_to_fwhm(*frames, names=names, fwhm=highest_fwhm, filter=highest_fwhm_filter)
+
+# -----------------------------------------------------------------
+
+def convolve_to_fwhm(*frames, **kwargs):
+
+    """
+    This function ...
+    :param frames:
+    :param kwargs:
+    :return:
+    """
+
+    # Get input
+    names = kwargs.pop("names")
+    highest_fwhm = kwargs.pop("fwhm")
+    highest_fwhm_filter = kwargs.pop("filters")
+
+    # Get kernel services
+    aniano = AnianoKernels()
+    matching = MatchingKernels()
 
     # Initialize list for convolved frames
     new_frames = []

@@ -145,7 +145,7 @@ class ModelerBase(Configurable):
                     # Remove
                     fs.remove_directories_and_files(paths)
 
-                    # Remove from history file
+                    # Remove from history file (as if it had never been run before)
                     self.history.remove_entries(command_name)
 
                     # Return True, step needs to be performed again
@@ -177,7 +177,8 @@ class ModelerBase(Configurable):
                     # Remove
                     fs.remove_directories_and_files(paths)
 
-                    # Remove from history file
+                    # Remove from history file (as if it had never been run before)
+                    self.history.remove_entries(command_name)
 
                     # Return True, step needs to be performed again
                     return True
