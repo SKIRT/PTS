@@ -58,29 +58,23 @@ class MapsComponent(GalaxyModelingComponent):
         # The origins
         self.origins = dict()
 
+        # NEW: NOW DEFINED IN GALAXYMODELINGENVIRONMENT
         # The path to the maps/colours directory
-        self.maps_colours_path = None
-
+        #self.maps_colours_path = None
         # The path to the maps/ssfr directory
-        self.maps_ssfr_path = None
-
+        #self.maps_ssfr_path = None
         # The path to the maps/tir directory
-        self.maps_tir_path = None
-
+        #self.maps_tir_path = None
         # The path to the maps/attenuation directory
-        self.maps_attenuation_path = None
-
+        #self.maps_attenuation_path = None
         # The path to the maps/old directory
-        self.maps_old_path = None
-
+        #self.maps_old_path = None
         # The path to the maps/young directory
-        self.maps_young_path = None
-
+        #self.maps_young_path = None
         # The path to the maps/ionizing directory
-        self.maps_ionizing_path = None
-
+        #self.maps_ionizing_path = None
         # The path to the maps/dust directory
-        self.maps_dust_path = None
+        #self.maps_dust_path = None
 
     # -----------------------------------------------------------------
 
@@ -95,29 +89,119 @@ class MapsComponent(GalaxyModelingComponent):
         # Call the setup function of the base class
         super(MapsComponent, self).setup(**kwargs)
 
+        # NEW: NOW DEFINED IN GALAXYMODELINGENVIRONMENT
         # The path to the maps/colours directory
-        self.maps_colours_path = fs.create_directory_in(self.maps_path, "colours")
-
+        #self.maps_colours_path = fs.create_directory_in(self.maps_path, "colours")
         # The path to the maps/ssfr directory
-        self.maps_ssfr_path = fs.create_directory_in(self.maps_path, "ssfr")
-
+        #self.maps_ssfr_path = fs.create_directory_in(self.maps_path, "ssfr")
         # The path to the maps/TIR directory
-        self.maps_tir_path = fs.create_directory_in(self.maps_path, "tir")
-
+        #self.maps_tir_path = fs.create_directory_in(self.maps_path, "tir")
         # The path to the maps/attenuation directory
-        self.maps_attenuation_path = fs.create_directory_in(self.maps_path, "attenuation")
-
+        #self.maps_attenuation_path = fs.create_directory_in(self.maps_path, "attenuation")
         # Set the path to the maps/old directory
-        self.maps_old_path = fs.create_directory_in(self.maps_path, "old")
-
+        #self.maps_old_path = fs.create_directory_in(self.maps_path, "old")
         # Set the path to the maps/young directory
-        self.maps_young_path = fs.create_directory_in(self.maps_path, "young")
-
+        #self.maps_young_path = fs.create_directory_in(self.maps_path, "young")
         # Set the path to the maps/ionizing directory
-        self.maps_ionizing_path = fs.create_directory_in(self.maps_path, "ionizing")
-
+        #self.maps_ionizing_path = fs.create_directory_in(self.maps_path, "ionizing")
         # Set the path to the maps/dust directory
-        self.maps_dust_path = fs.create_directory_in(self.maps_path, "dust")
+        #self.maps_dust_path = fs.create_directory_in(self.maps_path, "dust")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_colours_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.maps_colours_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_ssfr_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.maps_ssfr_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_tir_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.maps_tir_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_attenuation_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.maps_attenuation_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_old_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.maps_old_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_young_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.maps_young_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_ionizing_path(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        return self.environment.map_ionizing_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_dust_path(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        return self.environment.maps_dust_path
 
     # -----------------------------------------------------------------
 

@@ -132,6 +132,18 @@ class Truncator(TruncationComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nframes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.frames)
+
+    # -----------------------------------------------------------------
+
     def load_data(self):
 
         """
@@ -437,36 +449,72 @@ class Truncator(TruncationComponent):
         log.info("Writing the truncated images ...")
 
         # Loop over the the images
+        index = 0
         for name in self.frames.names:
+
+            # Debugging
+            index += 1
+            progress = float(index) / float(self.nframes)
+            log.debug("Writing truncated images for the " + name + " image (" + str(index) + " of " + str(self.nframes) + ") ...")
 
             # Loop over the factors
             for factor in self.factors:
-
-                # Get the pixel ellipse
-                ellipse = self.ellipses[name][factor]
-
-                # Convert into mask
-                mask = ellipse.to_mask(self.frames[name].xsize, self.frames[name].ysize)
-
-                # Truncate the frame
-                frame = self.frames[name]
-                frame[mask] = 0.0
 
                 # Determine the local path
                 filename = str(factor) + ".fits"
                 path = fs.join(self.paths[name], filename)
 
-                # Save
-                frame.saveto(path)
+                # Determine the remote path
+                remote_path = fs.join(self.cache_paths[name], filename)
 
-                # Cache
-                if self.config.cache:
-
-                    # Upload, and remove local file
-                    remote_path = self.remote.upload_file_to(path, self.cache_paths[name], remove=True)
+                # Already existing
+                if fs.is_file(path):
 
                     # Debugging
-                    log.debug("Truncated " + name + " image with factor " + str(factor) + " has been cached to '" + remote_path + "'")
+                    log.debug("Truncated " + name + " image with factor " + str(factor) + "is already present: not creating it again")
+
+                    # Cache if requested
+                    if self.config.cache:
+
+                        # Upload
+                        self.remote.upload_file_to(path, self.cache_paths[name], remove=True)
+
+                        # Debugging
+                        log.debug("Truncated " + name + " image with factor " + str(factor) + " has been cached to '" + remote_path + "'")
+
+                # Already present remotely
+                elif self.remote.is_file(remote_path):
+
+                    # Debugging
+                    log.debug("Truncated " + name + " image with factor " + str(factor) + " is already present and cached on remote host '" + self.remote.host_id + "'")
+
+                # Not yet present, create truncated image (and cache)
+                else:
+
+                    # Debugging
+                    log.debug("Creating the truncated " + name + " image with factor " + str(factor) + "...")
+
+                    # Get the pixel ellipse
+                    ellipse = self.ellipses[name][factor]
+
+                    # Convert into mask
+                    mask = ellipse.to_mask(self.frames[name].xsize, self.frames[name].ysize)
+
+                    # Truncate the frame
+                    frame = self.frames[name]
+                    frame[mask] = 0.0
+
+                    # Save
+                    frame.saveto(path)
+
+                    # Cache
+                    if self.config.cache:
+
+                        # Upload, and remove local file
+                        remote_path = self.remote.upload_file_to(path, self.cache_paths[name], remove=True)
+
+                        # Debugging
+                        log.debug("Truncated " + name + " image with factor " + str(factor) + " has been cached to '" + remote_path + "'")
 
     # -----------------------------------------------------------------
 

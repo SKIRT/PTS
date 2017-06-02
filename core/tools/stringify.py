@@ -341,6 +341,27 @@ def stringify_list_fancy(lst, width=100, delimiter=", ", lines_prefix=""):
 
 # -----------------------------------------------------------------
 
+def stringify_paths(paths, base=None):
+
+    """
+    This function ...
+    :param paths:
+    :param delimiter:
+    :param base:
+    :return:
+    """
+
+    if base is None: return "path_list", stringify_list(paths)[1]
+    else:
+
+        from . import filesystem as fs
+        absolute_base = fs.absolute_path(base)
+
+        # Return the type and the relative paths as a string list
+        return "string_list", stringify_list([fs.absolute_path(path).split(absolute_base)[1] for path in paths])
+
+# -----------------------------------------------------------------
+
 def str_from_integer(integer, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False):
 
     """

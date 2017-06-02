@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.modeling.core.history import single_commands, repeated_commands
+from pts.modeling.core.steps import single_commands, repeated_commands
 from pts.core.tools import formatting as fmt
 
 # -----------------------------------------------------------------

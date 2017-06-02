@@ -60,14 +60,11 @@ class GalaxyModelingComponent(ModelingComponent):
         # Call the constructor of the base class
         super(GalaxyModelingComponent, self).__init__(*args, **kwargs)
 
-        # Attributes
-        self.galaxy_name = None
-
+        # NOW DEFINED IN GALAXY MODELING ENVIRONMENT
         # The path to the DustPedia observed SED
-        self.observed_sed_dustpedia_path = None
-
+        #self.observed_sed_dustpedia_path = None
         # The path to the galaxy properties file
-        self.galaxy_properties_path = None
+        #self.galaxy_properties_path = None
 
         # The path to the components/models directory
         self.components_models_path = None
@@ -90,14 +87,16 @@ class GalaxyModelingComponent(ModelingComponent):
         # The path to the truncation/masks directory
         #self.truncation_masks_path = None
 
+        # NOW DEFINED IN GALAXY MODELING ENVIRONMENT
         # The path to the data/seds directory
-        self.data_seds_path = None
+        #self.data_seds_path = None
 
         # The path to the DustPedia observed SED for the galaxy
         self.dustpedia_sed_path = None
 
+        # NOW DEFINED IN GALAXY MODELING ENVIRONMENT
         # The path to the data/images directory
-        self.data_images_path = None
+        #self.data_images_path = None
 
         # The path to the disk region file
         self.disk_region_path = None
@@ -125,14 +124,11 @@ class GalaxyModelingComponent(ModelingComponent):
 
         # -- Attributes --
 
-        # Get the name of the galaxy (the name of the base directory)
-        self.galaxy_name = fs.name(self.config.path)
-
+        # NOW DEFINED IN GALAXY MODELING ENVIRONMENT
         # Set the path to the DustPedia observed SED
-        self.observed_sed_dustpedia_path = fs.join(self.data_path, "fluxes.dat")
-
+        #self.observed_sed_dustpedia_path = fs.join(self.data_path, "fluxes.dat")
         # Set the path to the galaxy properties file
-        self.galaxy_properties_path = fs.join(self.data_path, "properties.dat")
+        #self.galaxy_properties_path = fs.join(self.data_path, "properties.dat")
 
         # Set the path to the components/models directory
         self.components_models_path = fs.create_directory_in(self.components_path, "models")
@@ -155,14 +151,16 @@ class GalaxyModelingComponent(ModelingComponent):
         # Set the path to the truncation/masks directory
         #self.truncation_masks_path = fs.create_directory_in(self.truncation_path, "masks")
 
+        # NOW DEFINED IN GALAXY MODELING ENVIRONMENT
         # Set ...
-        self.data_seds_path = fs.create_directory_in(self.data_path, "SEDs")
+        #self.data_seds_path = fs.create_directory_in(self.data_path, "SEDs")
 
         # The DustPedia SED path
         self.dustpedia_sed_path = fs.join(self.data_seds_path, "DustPedia.dat")
 
+        # NOW DEFINED IN GALAXY MODELING ENVIRONMENT
         # Set ...
-        self.data_images_path = fs.create_directory_in(self.data_path, "images")
+        #self.data_images_path = fs.create_directory_in(self.data_path, "images")
 
         # Set the path to the disk region file
         self.disk_region_path = fs.join(self.components_path, "disk.reg")
@@ -179,6 +177,18 @@ class GalaxyModelingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def galaxy_name(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        return self.environment.galaxy_name
+
+    # -----------------------------------------------------------------
+
+    @property
     def data_path(self):
 
         """
@@ -187,6 +197,54 @@ class GalaxyModelingComponent(ModelingComponent):
         """
 
         return self.environment.data_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def observed_sed_dustpedia_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.observed_sed_dustpedia_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def galaxy_properties_path(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        return self.environment.galaxy_properties_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def data_seds_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.data_seds_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def data_images_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.data_images_path
 
     # -----------------------------------------------------------------
 

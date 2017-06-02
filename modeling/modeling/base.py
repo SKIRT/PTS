@@ -35,7 +35,8 @@ from ...core.tools.loops import repeat_check
 from ...core.remote.remote import Remote
 from ..fitting.finisher import ExplorationFinisher
 from ...core.tools import time
-from ..core.history import commands_after_and_including
+from ..core.steps import commands_after_and_including, output_paths_for_single_command
+from ...core.basics.configuration import prompt_proceed
 
 # -----------------------------------------------------------------
 
@@ -104,6 +105,98 @@ class ModelerBase(Configurable):
 
         # The fitting method (grid, genetic)
         self.fitting_method = None
+
+    # -----------------------------------------------------------------
+
+    def output_paths_for_command(self, command_name):
+
+        """
+        This function ...
+        :param command_name:
+        :return:
+        """
+
+        return output_paths_for_single_command(self.environment, command_name)
+
+    # -----------------------------------------------------------------
+
+    def check_needs_step(self, command_name):
+
+        """
+        This function ...
+        :param command_name:
+        :return:
+        """
+
+        # Step already finished
+        if self.history.finished(command_name):
+
+            # Rerun?
+            if command_name in self.rerun_commands:
+
+                # Determine
+                paths = self.output_paths_for_command(command_name)
+
+                if prompt_proceed("are you absolutely sure the output of '" + command_name + "' can be removed?"):
+
+                    # Debugging
+                    log.debug("Removing the '" + stringify.stringify_paths(paths, base=self.modeling_path)[1] + "' directory ...")
+
+                    # Remove
+                    fs.remove_directories_and_files(paths)
+
+                    # Remove from history file
+                    self.history.remove_entries(command_name)
+
+                    # Return True, step needs to be performed again
+                    return True
+
+                # User doesn't want to proceed
+                else:
+
+                    log.error("Cannot rerun the " + self.config.rerun + " command when the " + command_name + " cannot be rerun")
+                    exit()
+
+            else: return False
+
+        # Step already started, partial output?
+        elif command_name in self.history:
+
+            # Verify that the output can be removed
+            if command_name in self.rerun_commands:
+
+                # Determine output paths
+                paths = self.output_paths_for_command(command_name)
+
+                # Ask to make sure
+                if prompt_proceed("are you absolutely sure the output of '" + command_name + "' can be removed?"):
+
+                    # Debugging
+                    log.debug("Removing the '" + stringify.stringify_paths(paths, base=self.modeling_path) + "' directory ...")
+
+                    # Remove
+                    fs.remove_directories_and_files(paths)
+
+                    # Remove from history file
+
+                    # Return True, step needs to be performed again
+                    return True
+
+                # User doesn't want to proceed
+                else:
+
+                    log.error("Cannot rerun the " + self.config.rerun + " command when the " + command_name + " cannot be rerun")
+                    exit()
+
+            # Rerun isn't enabled for this command, but start anyway because it hasn't finished before
+            else:
+
+                # Give a warning before starting
+                log.warning("The " + command_name + " has been started before but hasn't finished. The commmand will be launched again but partial output may already be present.")
+                return True
+
+        # Nothing in history
+        else: return True
 
     # -----------------------------------------------------------------
 

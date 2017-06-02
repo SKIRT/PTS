@@ -13,7 +13,7 @@ from pts.core.tools import filesystem as fs
 from pts.modeling.component.component import get_default_fitting_method, get_cache_host_id
 from pts.modeling.modeling.base import fitting_methods
 from pts.modeling.preparation.preparer import steps
-from pts.modeling.core.history import single_commands
+from pts.modeling.core.steps import single_commands
 
 # -----------------------------------------------------------------
 

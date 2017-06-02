@@ -492,6 +492,32 @@ def directorypath_list(argument):
 
 # -----------------------------------------------------------------
 
+def path(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    path = fs.absolute_path(argument)
+    if not fs.is_file(path) and not fs.is_directory(path): raise ValueError("Is not a file or directory: " + path)
+    return path
+
+# -----------------------------------------------------------------
+
+def path_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return [path(p) for p in string_list(argument)]
+
+# -----------------------------------------------------------------
+
 def file_path(argument):
 
     """

@@ -18,97 +18,7 @@ import copy
 # Import the relevant PTS classes and modules
 from ...core.basics.table import SmartTable
 from ...core.tools import time, tables
-
-# -----------------------------------------------------------------
-
-single_commands = ["fetch_properties",
-                 "fetch_seds",
-                 "fetch_images",
-                 "inspect_data",
-                 "initialize_preparation",
-                 "inspect_initialization",
-                 "prepare_data",
-                 "inspect_preparation",
-                 "decompose",
-                 "truncate",
-                 "photometry",
-                 "make_colour_maps",
-                 "make_ssfr_maps",
-                 "make_tir_maps",
-                 "make_attenuation_maps",
-                 "make_dust_map",
-                 "make_old_stars_map",
-                 "make_young_stars_map",
-                 "make_ionizing_stars_map",
-                 "create_significance_masks",
-                 "plot_sed", # only for SEDModeler
-                 "build_model",
-                 "generate_representations",
-                 "configure_fit",
-                 "initialize_fit_sed", # for sed modeling
-                 "initialize_fit_galaxy"] # for galaxy modeling
-
-                 #"initialize_fit"]
-
-# -----------------------------------------------------------------
-
-repeated_commands = ["explore", "fit_sed", "finish_exploration"]
-
-# -----------------------------------------------------------------
-
-def commands_before(command_name):
-
-    """
-    This function ...
-    :param command_name:
-    :return:
-    """
-
-    commands = []
-    for command in single_commands:
-        if command == command_name: break
-        commands.append(command)
-    return commands
-
-# -----------------------------------------------------------------
-
-def commands_after(command_name):
-
-    """
-    This function ...
-    :param command_name:
-    :return:
-    """
-
-    commands = []
-    for command in reversed(single_commands):
-        if command == command_name: break
-        commands.append(command)
-    return list(reversed(commands))
-
-# -----------------------------------------------------------------
-
-def commands_before_and_including(command_name):
-
-    """
-    This function ...
-    :param command_name:
-    :return:
-    """
-
-    return commands_before(command_name) + [command_name]
-
-# -----------------------------------------------------------------
-
-def commands_after_and_including(command_name):
-
-    """
-    This function ...
-    :param command_name:
-    :return:
-    """
-
-    return [command_name] + commands_after(command_name)
+from .steps import single_commands
 
 # -----------------------------------------------------------------
 
@@ -237,6 +147,32 @@ class ModelingHistory(SmartTable):
         """
 
         self.remove_entry(command)
+        self.save()
+
+    # -----------------------------------------------------------------
+
+    def remove_entries(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        indices = tables.find_indices(self, command)
+        self.remove_rows(indices)
+
+    # -----------------------------------------------------------------
+
+    def remove_entries_and_save(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        self.remove_entries(command)
         self.save()
 
     # -----------------------------------------------------------------

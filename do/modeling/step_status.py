@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.modeling.component.component import load_modeling_history
-from pts.modeling.core.history import single_commands, repeated_commands
+from pts.modeling.core.steps import single_commands, repeated_commands
 from pts.core.tools import formatting as fmt
 from pts.core.tools.stringify import tostr
 

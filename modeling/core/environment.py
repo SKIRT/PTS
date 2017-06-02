@@ -115,6 +115,9 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         # Call the constructor of the base class
         super(GalaxyModelingEnvironment, self).__init__(modeling_path)
 
+        # Get the name of the galaxy (the name of the base directory)
+        self.galaxy_name = fs.name(self.path)
+
         # Get the full paths to the necessary subdirectories and CREATE THEM
         self.data_path = fs.create_directory_in(self.path, "data")
         self.prep_path = fs.create_directory_in(self.path, "prep")
@@ -124,6 +127,48 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         self.maps_path = fs.create_directory_in(self.path, "maps")
         self.components_path = fs.create_directory_in(self.path, "components")
         self.deprojection_path = fs.create_directory_in(self.path, "deprojection")
+
+        ## NEW: ADD MORE AND MORE PATH DEFINITIONS HERE
+
+        # FROM DATACOMPONENT:
+
+        # Set the path to the DustPedia observed SED
+        self.observed_sed_dustpedia_path = fs.join(self.data_path, "fluxes.dat")
+
+        # Set the path to the galaxy properties file
+        self.galaxy_properties_path = fs.join(self.data_path, "properties.dat")
+
+        # Set the ...
+        self.data_seds_path = fs.create_directory_in(self.data_path, "SEDs")
+
+        # Set the ...
+        self.data_images_path = fs.create_directory_in(self.data_path, "images")
+
+        # FROM MAPSCOMPONENT:
+
+        # The path to the maps/colours directory
+        self.maps_colours_path = fs.create_directory_in(self.maps_path, "colours")
+
+        # The path to the maps/ssfr directory
+        self.maps_ssfr_path = fs.create_directory_in(self.maps_path, "ssfr")
+
+        # The path to the maps/TIR directory
+        self.maps_tir_path = fs.create_directory_in(self.maps_path, "tir")
+
+        # The path to the maps/attenuation directory
+        self.maps_attenuation_path = fs.create_directory_in(self.maps_path, "attenuation")
+
+        # Set the path to the maps/old directory
+        self.maps_old_path = fs.create_directory_in(self.maps_path, "old")
+
+        # Set the path to the maps/young directory
+        self.maps_young_path = fs.create_directory_in(self.maps_path, "young")
+
+        # Set the path to the maps/ionizing directory
+        self.maps_ionizing_path = fs.create_directory_in(self.maps_path, "ionizing")
+
+        # Set the path to the maps/dust directory
+        self.maps_dust_path = fs.create_directory_in(self.maps_path, "dust")
 
     # -----------------------------------------------------------------
 

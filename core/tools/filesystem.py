@@ -558,6 +558,23 @@ def remove_files(paths):
 
 # -----------------------------------------------------------------
 
+def remove_directories_and_files(paths):
+
+    """
+    This function ...
+    :param paths:
+    :return:
+    """
+
+    # Loop over the paths
+    for path in paths:
+
+        if is_file(path): remove_file(path)
+        elif is_directory(path): remove_directory(path)
+        else: raise ValueError("Not an existing file or directory: " + path)
+
+# -----------------------------------------------------------------
+
 def directory_size(path):
 
     """
