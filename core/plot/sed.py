@@ -33,6 +33,7 @@ from ..tools import filesystem as fs
 from ..data.sed import ObservedSED, SED
 from ..basics.range import RealRange
 from ..basics.plot import Plot
+from ..tools import types
 
 # -----------------------------------------------------------------
 
@@ -1242,9 +1243,11 @@ class SEDPlotter(Configurable):
         if self.out_path is None: self.plt.show()
         else:
 
-            if isinstance(self.out_path, basestring):
+            if types.is_string_type(self.out_path):
+
                 if fs.is_directory(self.out_path): path = fs.join(self.out_path, "seds")
                 else: path = self.out_path
+
             else: path = self.out_path
 
             # Save

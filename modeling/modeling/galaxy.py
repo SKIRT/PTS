@@ -857,7 +857,7 @@ class GalaxyModeler(ModelerBase):
             if label == "DustPedia": continue
             plotter.add_sed(seds[label], label)
         path = fs.join(self.environment.phot_path, "sed_with_references.pdf")
-        plotter.run(ouput=path, title=self.galaxy_name)
+        plotter.run(output=path, title=self.galaxy_name)
 
         # Mark the end and save the history file
         self.history.mark_end_and_save()
