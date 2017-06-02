@@ -1522,3 +1522,17 @@ def weights(argument):
     return the_weights
 
 # -----------------------------------------------------------------
+
+def pixel_shape(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ...magic.basics.vector import PixelShape
+    shape = integer_tuple(argument)
+    return PixelShape.from_tuple(shape)
+
+# -----------------------------------------------------------------

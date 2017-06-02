@@ -31,4 +31,7 @@ cache_host_id = get_cache_host_id(modeling_path)
 if cache_host_id is not None: definition.add_flag("cache", "cache FITS files to the remote host storage", False)
 else: definition.add_fixed("cache", "caching not possible since cache host id not defined", False)
 
+# Value
+definition.add_optional("truncated_value", "real", "value to replace truncated pixels with", default="nan", convert_default=True)
+
 # -----------------------------------------------------------------

@@ -1439,7 +1439,7 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def load_frames(self, path, index=None, name=None, description=None, always_call_first_primary=True, rebin_to_wcs=False, hdulist_index=0, no_filter=False):
+    def load_frames(self, path, index=None, name=None, description=None, always_call_first_primary=True, rebin_to_wcs=False, hdulist_index=0, no_filter=False, silent=False):
 
         """
         This function ...
@@ -1450,6 +1450,8 @@ class Image(object):
         :param always_call_first_primary:
         :param rebin_to_wcs:
         :param hdulist_index:
+        :param no_filter:
+        :param silent:
         :return:
         """
 
@@ -1457,7 +1459,7 @@ class Image(object):
         if not fs.is_file(path): raise IOError("File '" + path + "' does not exist")
 
         # Show which image we are importing
-        log.debug("Reading in file '" + path + "' ...")
+        if not silent: log.debug("Reading in file '" + path + "' ...")
 
         # Load frames
         from . import fits as pts_fits

@@ -1565,6 +1565,38 @@ class NamedFrameList(NamedList):
 
     # -----------------------------------------------------------------
 
+    def highest_fwhm_name_below(self, fwhm):
+
+        """
+        Thisf unction ...
+        :param fwhm:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def highest_pixelscale_below(self, pixelscale):
+
+        """
+        This function ...
+        :param pixelscale:
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def highest_pixelscale_above_npixels(self, npixels):
+
+        """
+        This function ...
+        :param npixels:
+        :return:
+        """
+
+
+
+    # -----------------------------------------------------------------
+
     def convolve_to_highest_fwhm(self):
 
         """

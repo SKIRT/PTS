@@ -44,6 +44,7 @@ from .mask import Mask as newMask
 from ..convolution.kernels import get_fwhm, has_variable_fwhm
 from ...core.tools import types
 from ...core.units.parsing import parse_unit as u
+from ..basics.vector import PixelShape
 
 # -----------------------------------------------------------------
 
@@ -115,6 +116,18 @@ class Frame(NDDataArray):
         # Set the WCS and unit
         self.wcs = wcs # go through the setter
         self.unit = unit # go through the setter
+
+    # -----------------------------------------------------------------
+
+    @property
+    def shape(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return PixelShape.from_tuple(super(Frame, self).shape)
 
     # -----------------------------------------------------------------
 
@@ -698,7 +711,7 @@ class Frame(NDDataArray):
 
     @classmethod
     def from_file(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
-                  fwhm=None, add_meta=True, extra_meta=None):
+                  fwhm=None, add_meta=True, extra_meta=None, silent=False):
 
         """
         This function ...
@@ -712,11 +725,12 @@ class Frame(NDDataArray):
         :param fwhm:
         :param add_meta:
         :param extra_meta:
+        :param silent:
         :return:
         """
 
         # Show which image we are importing
-        log.info("Reading in file " + path + " ...")
+        if not silent: log.info("Reading in file " + path + " ...")
 
         #from . import fits as pts_fits
         from ..core.fits import load_frame
@@ -955,12 +969,12 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
-    def xsize(self): return self.shape[1]
+    def xsize(self): return self.shape.x
 
     # -----------------------------------------------------------------
 
     @property
-    def ysize(self): return self.shape[0]
+    def ysize(self): return self.shape.y
 
     # -----------------------------------------------------------------
 

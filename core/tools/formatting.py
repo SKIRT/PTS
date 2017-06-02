@@ -13,9 +13,10 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from .stringify import stringify_list_fancy, stringify
+from .stringify import stringify_list_fancy, stringify, tostr
 from . import filesystem as fs
 from .logging import log
+from .sequences import equal_sizes
 
 # -----------------------------------------------------------------
 
@@ -267,5 +268,53 @@ def print_dictionary(dictionary):
     print("")
     for label in dictionary: print(" - " + label + ": " + stringify(dictionary[label])[1])
     print("")
+
+# -----------------------------------------------------------------
+
+def print_columns(*columns, **kwargs):
+
+    """
+    This function ...
+    :param columns:
+    :return:
+    """
+
+    delimiter = kwargs.pop("delimiter", "  ")
+
+    # Check sizes
+    if not equal_sizes(*columns): raise ValueError("Columns must have equal lengths")
+
+    # Convert all to strings
+    string_columns = []
+
+    max_lengths = []
+
+    for column in columns:
+
+        new_column = [tostr(entry) for entry in column]
+        lengths = [len(string) for string in new_column]
+
+        max_lengths.append(max(lengths))
+        string_columns.append(new_column)
+
+    ncolumns = len(string_columns)
+
+    for i in range(len(columns[0])):
+
+        row = ""
+
+        for j in range(ncolumns): # number of columns
+
+            part = string_columns[j][i]
+            row += part
+
+            if j != ncolumns - 1:
+
+                nextra = max_lengths[j] - len(part)
+                spaces = " " * nextra + delimiter
+
+                row += spaces
+
+        print(row)
 
 # -----------------------------------------------------------------

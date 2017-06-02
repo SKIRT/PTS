@@ -16,8 +16,13 @@ from __future__ import absolute_import, division, print_function
 from pts.core.tools import formatting as fmt
 from pts.modeling.config.parameters import possible_parameter_types, possible_parameter_types_descriptions, default_units
 from pts.core.units.stringify import represent_unit as ru
+from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
 
 # -----------------------------------------------------------------
+
+definition = ConfigurationDefinition()
+
+definition.add_positional_optional("modeling_type", "string", "modeling type")
 
 print("")
 

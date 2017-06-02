@@ -20,6 +20,7 @@ from ..component.component import get_config_file_path, load_modeling_configurat
 from .galaxy import GalaxyModeler
 from .sed import SEDModeler
 from .images import ImagesModeler
+from ..core.steps import galaxy_modeling, sed_modeling, images_modeling
 
 # -----------------------------------------------------------------
 
@@ -74,7 +75,7 @@ class Modeler(Configurable):
         :return:
         """
 
-        return self.modeling_config.modeling_type == "galaxy"
+        return self.modeling_config.modeling_type == galaxy_modeling
 
     # -----------------------------------------------------------------
 
@@ -86,7 +87,7 @@ class Modeler(Configurable):
         :return:
         """
 
-        return self.modeling_config.modeling_type == "sed"
+        return self.modeling_config.modeling_type == sed_modeling
 
     # -----------------------------------------------------------------
 
@@ -98,7 +99,7 @@ class Modeler(Configurable):
         :return:
         """
 
-        return self.modeling_config.modeling_type == "images"
+        return self.modeling_config.modeling_type == images_modeling
 
     # -----------------------------------------------------------------
 

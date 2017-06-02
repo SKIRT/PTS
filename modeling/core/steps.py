@@ -25,6 +25,7 @@ all_modeling = "all"
 galaxy_modeling = "galaxy"
 sed_modeling = "sed"
 images_modeling = "images"
+modeling_types = [galaxy_modeling, sed_modeling, images_modeling]
 
 # -----------------------------------------------------------------
 

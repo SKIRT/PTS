@@ -15,6 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import math
 
+# Import the relevant PTS classes and modules
+from ...core.tools import types
+
 # -----------------------------------------------------------------
 
 class Vector(object):
@@ -233,8 +236,8 @@ class Pixel(Vector):
         """
 
         # Check the arguments
-        if not isinstance(x, int): raise ValueError("Arguments must be integer numbers")
-        if not isinstance(y, int): raise ValueError("Arguments must be integer numbers")
+        if not types.is_integer_type(x): raise ValueError("Arguments must be integer numbers")
+        if not types.is_integer_type(y): raise ValueError("Arguments must be integer numbers")
 
         # Call the constructor of the base class
         super(Pixel, self).__init__(x, y)
@@ -267,5 +270,261 @@ class Pixel(Vector):
 
         if round_first: return cls(int(round(coordinate.x)), int(round(coordinate.y)))
         else: return cls(int(coordinate.x), int(coordinate.y))
+
+# -----------------------------------------------------------------
+
+class PixelShape(tuple):
+
+    """
+    This function ...
+    """
+
+    def __new__(cls, y, x):
+
+        """
+        This function ...
+        :param a:
+        :param b:
+        :return:
+        """
+
+        # Call the constructor of the base class
+        return super(PixelShape, cls).__new__(cls, tuple([y, x]))
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_tuple(cls, shape):
+
+        """
+        This function ...
+        :param shape:
+        :return:
+        """
+
+        return cls(x=shape[1], y=shape[0])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def x(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self[1]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nx(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.x
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ny(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.y
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nxpixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nx
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nypixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ny
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xpixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nx
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ypixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ny
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nx * self.ny
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nxy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.xy
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ntotal(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nxy
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ntotalpixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nxy
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "(nx=" + str(self.nx) + ", ny=" + str(self.ny) + ")"
+
+    # -----------------------------------------------------------------
+
+    def __repr__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "PixelShape(x=" + str(self.nx) + ", y=" + str(self.ny) + ")"
+
+    # -----------------------------------------------------------------
+
+    def __eq__(self, other):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.x == other.x and self.y == other.y
+
+    # -----------------------------------------------------------------
+
+    def __lt__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        return self.ntotal < other.ntotal
+
+    # -----------------------------------------------------------------
+
+    def __gt__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        return self.ntotal > other.ntotal
+
+    # -----------------------------------------------------------------
+
+    def __le__(self, other):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ntotal <= other.ntotal
+
+    # -----------------------------------------------------------------
+
+    def __ge__(self, other):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ntotal >= other.ntotal
 
 # -----------------------------------------------------------------

@@ -505,7 +505,7 @@ class Truncator(TruncationComponent):
 
                     # Truncate the frame
                     frame = self.frames[name]
-                    frame[mask] = 0.0
+                    frame[mask] = self.config.truncated_value
 
                     # Save
                     frame.saveto(path)
@@ -580,7 +580,7 @@ class Truncator(TruncationComponent):
                 mask = masks[factor]
 
                 # Truncate the low-res frame
-                frame[mask] = 0.0
+                frame[mask] = self.config.truncated_value
 
                 # Save
                 frame.saveto(path)
