@@ -1573,9 +1573,11 @@ class NamedFrameList(NamedList):
         :return:
         """
 
+        return get_highest_fwhm_name(*self.values, names=self.names, below=fwhm)
+
     # -----------------------------------------------------------------
 
-    def highest_pixelscale_below(self, pixelscale):
+    def highest_pixelscale_name_below(self, pixelscale):
 
         """
         This function ...
@@ -1583,9 +1585,11 @@ class NamedFrameList(NamedList):
         :return:
         """
 
+        return get_highest_pixelscale_name(*self.values, names=self.names, below=pixelscale)
+
     # -----------------------------------------------------------------
 
-    def highest_pixelscale_above_npixels(self, npixels):
+    def highest_pixelscale_name_above_npixels(self, npixels):
 
         """
         This function ...
@@ -1593,7 +1597,7 @@ class NamedFrameList(NamedList):
         :return:
         """
 
-
+        return get_highest_pixelscale_name(*self.values, names=self.names, below_npixels=npixels)
 
     # -----------------------------------------------------------------
 
@@ -1971,6 +1975,9 @@ def get_highest_pixelscale_name(*frames, **kwargs):
     # Get frame names
     names = kwargs.pop("names")
 
+    below = kwargs.pop("below", None)
+    below_npixels = kwargs.pop("below_npixels", None)
+
     highest_pixelscale = None
     highest_pixelscale_wcs = None
     highest_pixelscale_name = None
@@ -1979,6 +1986,11 @@ def get_highest_pixelscale_name(*frames, **kwargs):
     for frame, name in zip(frames, names):
 
         wcs = frame.wcs
+
+        # SKIP?
+        if below is not None and wcs.average_pixelscale > below: continue
+        if below_npixels is not None and min(frame.xsize, frame.ysize) > below_npixels: continue
+
         if highest_pixelscale is None or wcs.average_pixelscale > highest_pixelscale:
 
             highest_pixelscale = wcs.average_pixelscale
@@ -2117,6 +2129,8 @@ def get_highest_fwhm_name(*frames, **kwargs):
     # Get frame names
     names = kwargs.pop("names")
 
+    below = kwargs.pop("below", None)
+
     highest_fwhm = None
     highest_fwhm_filter = None
     highest_fwhm_name = None
@@ -2128,6 +2142,9 @@ def get_highest_fwhm_name(*frames, **kwargs):
         frame_fwhm = frame.fwhm
         if frame_fwhm is None: frame_fwhm = get_fwhm(frame.filter)
         frame.fwhm = frame_fwhm
+
+        # SKIP
+        if below is not None and frame.fwhm > below: continue
 
         if highest_fwhm is None or frame.fwhm > highest_fwhm:
 

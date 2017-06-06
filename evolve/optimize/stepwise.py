@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import copy
 from collections import OrderedDict
 
 # Import asronomical modules
@@ -27,14 +28,15 @@ from ...core.basics.configuration import Configuration
 from ..core.adapters import DBFileCSV, DBSQLite, PopulationsFile
 from .optimizer import Optimizer
 from ..core.population import NamedPopulation
-from .tables import ElitismTable
+from .tables import ElitismTable, CrossoverTable
 from ..analyse.database import load_database, get_score_for_individual
 from ...core.tools.serialization import write_dict
 from .optimizer import get_parameters_from_genome, get_binary_genome_from_parameters, round_parameters
 from ..core.engine import equal_genomes
 from ..core import constants
-from ...core.tools import numbers
 from ...core.basics.map import Map
+from ...core.basics.configurable import write_input
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -66,6 +68,9 @@ class StepWiseOptimizer(Optimizer):
         # The elitism table
         self.elitism_table = None
 
+        # The crossover table
+        self.crossover_table = None
+
         # The previous population
         self.previous_population = None
 
@@ -74,6 +79,9 @@ class StepWiseOptimizer(Optimizer):
 
         # Recurrent data
         self.recurrent = None
+
+        # The input that was passed to the run function
+        self.input = None
 
     # -----------------------------------------------------------------
 
@@ -264,6 +272,9 @@ class StepWiseOptimizer(Optimizer):
         :param kwargs:
         :return:
         """
+
+        # Get the input
+        self.input = copy.copy(kwargs)
 
         # Call the setup function of the base class
         super(StepWiseOptimizer, self).setup(**kwargs)
@@ -577,10 +588,15 @@ class StepWiseOptimizer(Optimizer):
         log.info("Generating the new population ...")
 
         # Generate the new population
-        self.engine.generate_new_population()
+        crossover_data = self.engine.generate_new_population()
 
         # Get the new population
         self.population = self.engine.new_population
+
+        # Create the crossover table
+        if crossover_data is not None: self.crossover_table = CrossoverTable.from_data(crossover_data)
+        else: raise RuntimeError("Could not get the crossover data")
+        #else: log.warning("No crossover data available")
 
     # -----------------------------------------------------------------
 
@@ -658,6 +674,9 @@ class StepWiseOptimizer(Optimizer):
         # Inform the user
         log.info("Writing ...")
 
+        # Write the input
+        self.write_input()
+
         # Save the engine
         self.write_engine()
 
@@ -685,11 +704,33 @@ class StepWiseOptimizer(Optimizer):
         # Write the parameters
         self.write_parameters()
 
+        # Write the crossover data
+        if self.crossover_table is not None: self.write_crossover()
+
         # Write the elitism data
         if self.elitism_table is not None: self.write_elitism()
 
         # Write the recurrency data
         if self.recurrent is not None: self.write_recurrent()
+
+    # -----------------------------------------------------------------
+
+    def write_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the input ...")
+
+        # Determine the path
+        if self.config.writing.input_path is not None: input_path = fs.create_absolute_or_in(self.config.writing.input_path, self.output_path)
+        else: input_path = self.output_path_directory("input")
+
+        # Save the input
+        write_input(self.input, input_path)
 
     # -----------------------------------------------------------------
 
@@ -704,11 +745,40 @@ class StepWiseOptimizer(Optimizer):
         log.info("Writing the engine ...")
 
         # Determine the path to the engine
-        if self.config.writing.engine_path is not None: engine_path = fs.absolute_or_in(self.config.writing.engine_path, self.output_path)
-        else: engine_path = self.output_path_file("engine.pickle")
+        if self.config.writing.engine_path is not None:
 
-        # Save the engine
-        self.engine.saveto(engine_path)
+            # Single path
+            if types.is_string_type(self.config.writing.engine_path):
+
+                # Get the path
+                engine_path = fs.absolute_or_in(self.config.writing.engine_path, self.output_path)
+
+                # Save the engine
+                self.engine.saveto(engine_path)
+
+            # Multiple paths
+            elif types.is_string_sequence(self.config.writing.engine_path):
+
+                # Loop over the paths
+                for path in self.config.writing.engine_path:
+
+                    # Get path
+                    engine_path = fs.absolute_or_in(path, self.output_path)
+
+                    # Save the engine
+                    self.engine.saveto(engine_path)
+
+            # Invalid
+            else: raise ValueError("Invalid type for engine_path: must be string or string sequence")
+
+        # Path not specified
+        else:
+
+            # Get the path
+            engine_path = self.output_path_file("engine.pickle")
+
+            # Save the engine
+            self.engine.saveto(engine_path)
 
     # -----------------------------------------------------------------
 
@@ -723,11 +793,39 @@ class StepWiseOptimizer(Optimizer):
         log.info("Writing the state of the random number generator ...")
 
         # Determine the path to the prng
-        if self.config.writing.prng_path is not None: prng_path = fs.absolute_or_in(self.config.writing.prng_path, self.output_path)
-        else: prng_path = self.output_path_file("prng.pickle")
+        if self.config.writing.prng_path is not None:
 
-        # Save the prng state
-        save_state(prng_path)
+            # Single path
+            if types.is_string_type(self.config.writing.prng_path):
+
+                # Determine the path
+                prng_path = fs.absolute_or_in(self.config.writing.prng_path, self.output_path)
+
+                # Save the state
+                save_state(prng_path)
+
+            # Multiple paths
+            elif types.is_string_sequence(self.config.writing.prng_path):
+
+                for path in self.config.writing.prng_path:
+
+                    # Determine the path
+                    prng_path = fs.absolute_or_in(path, self.output_path)
+
+                    # Save the state
+                    save_state(prng_path)
+
+            # Invalid
+            else: raise ValueError("Invalid type for prng_path: must be string or string sequence")
+
+        # No path specified
+        else:
+
+            # Set the path
+            prng_path = self.output_path_file("prng.pickle")
+
+            # Save the prng state
+            save_state(prng_path)
 
     # -----------------------------------------------------------------
 
@@ -742,11 +840,40 @@ class StepWiseOptimizer(Optimizer):
         log.info("Writing the configuration file ...")
 
         # Determine the path
-        if self.config.writing.config_path is not None: path = fs.absolute_or_in(self.config.writing.config_path, self.output_path)
-        else: path = self.output_path_file("optimizer.cfg")
+        if self.config.writing.config_path is not None:
 
-        # Save the configuration
-        self.config.saveto(path)
+            # Single path
+            if types.is_string_type(self.config.writing.config_path):
+
+                # Determine path
+                config_path = fs.absolute_or_in(self.config.writing.config_path, self.output_path)
+
+                # Save the configuration
+                self.config.saveto(config_path)
+
+            # Multiple paths
+            elif types.is_string_sequence(self.config.writing.config_path):
+
+                # Loop over the paths
+                for path in self.config.writing.config_path:
+
+                    # Get path
+                    config_path = fs.absolute_or_in(path, self.output_path)
+
+                    # Save the configuration
+                    self.config.saveto(config_path)
+
+            # Invalid
+            else: raise ValueError("Invalid type for config_path: must be string or string sequence")
+
+        # No path specified
+        else:
+
+            # Set the path
+            config_path = self.output_path_file("optimizer.cfg")
+
+            # Save the configuration
+            self.config.saveto(config_path)
 
     # -----------------------------------------------------------------
 
@@ -881,6 +1008,25 @@ class StepWiseOptimizer(Optimizer):
 
         # Write
         write_population(self.population, path)
+
+    # -----------------------------------------------------------------
+
+    def write_crossover(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the crossover table ...")
+
+        # Determine the path
+        if self.config.writing.crossover_table_path is not None: path = fs.absolute_or_in(self.config.writing.crossover_table_path, self.output_path)
+        else: path = self.output_path_file("crossover.dat")
+
+        # Save the table
+        self.crossover_table.saveto(path)
 
     # -----------------------------------------------------------------
 

@@ -133,6 +133,18 @@ class PopulationBase(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nindividuals(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.internalPop)
+
+    # -----------------------------------------------------------------
+
     @abstractproperty
     def keys(self):
 
@@ -599,6 +611,19 @@ class PopulationBase(object):
 
     # -----------------------------------------------------------------
 
+    @abstractmethod
+    def best_fitness_key(self, index=0):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
     def worstFitness(self):
 
         """
@@ -913,6 +938,9 @@ class NamedPopulation(PopulationBase):
         # Add to the internal population
         self.internalPop.append(name, genome)
 
+        # Return the name
+        return name
+
     # -----------------------------------------------------------------
 
     def clear(self):
@@ -956,6 +984,19 @@ class NamedPopulation(PopulationBase):
         ret += "\n"
         ret += self.stats.__repr__()
         return ret
+
+    # -----------------------------------------------------------------
+
+    def best_fitness_key(self, index=0):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        self.sort()
+        return self.names[index]
 
 # -----------------------------------------------------------------
 
@@ -1122,6 +1163,7 @@ class Population(PopulationBase):
         """
 
         self.internalPop.append(genome)
+        return self.nindividuals - 1
 
     # -----------------------------------------------------------------
 
@@ -1157,5 +1199,18 @@ class Population(PopulationBase):
         """
 
         return Population.from_population(self)
+
+    # -----------------------------------------------------------------
+
+    def best_fitness_key(self, index=0):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        self.sort()
+        return index
 
 # -----------------------------------------------------------------

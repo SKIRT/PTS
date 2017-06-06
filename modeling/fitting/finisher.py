@@ -252,8 +252,7 @@ class ExplorationFinisher(FittingComponent):
         self.set_optimizer_settings()
 
         # Set path to elitism table for the last generation
-        elitism_path = fs.join(self.fitting_run.last_genetic_or_initial_generation_path, "elitism.dat")
-        self.optimizer.config.writing.elitism_table_path = elitism_path
+        self.optimizer.config.writing.elitism_table_path = self.fitting_run.last_genetic_or_initial_generation.elitism_table_path
 
         # Set finish flag
         self.optimizer.config.finish = True

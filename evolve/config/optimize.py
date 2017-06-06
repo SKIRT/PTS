@@ -106,6 +106,7 @@ definition.add_flag("named_individuals", "use named individuals", False)
 
 # Writing options
 definition.add_section("writing", "writing options")
+definition.sections["writing"].add_optional("input_path", "string", "directory path for the input data to be saved")
 definition.sections["writing"].add_optional("engine_path", "string", "path for the genetic engine")
 definition.sections["writing"].add_optional("prng_path", "string", "path for the prng")
 definition.sections["writing"].add_optional("config_path", "string", "path for the configuration file")
@@ -113,6 +114,7 @@ definition.sections["writing"].add_optional("statistics_path", "string", "path f
 definition.sections["writing"].add_optional("database_path", "string", "path for the database")
 definition.sections["writing"].add_optional("populations_path", "string", "path for the populations data file")
 definition.sections["writing"].add_optional("population_path", "string", "path for the population data file")
+definition.sections["writing"].add_optional("crossover_table_path", "string", "path for the crossover data file")
 definition.sections["writing"].add_optional("elitism_table_path", "string", "path for the elitism table")
 definition.sections["writing"].add_optional("recurrent_path", "string", "path for the recurrency data")
 

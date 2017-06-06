@@ -22,6 +22,47 @@ from .configuration import find_command
 
 # -----------------------------------------------------------------
 
+def write_input(input_dict, path):
+
+    """
+    This function ...
+    :param input_dict:
+    :param path:
+    :return:
+    """
+
+    from ..tools.serialization import write_dict
+
+    # Dictionary for remainder input (not saved as file)
+    remainder = dict()
+
+    # Loop over the input items
+    for name in input_dict:
+
+        # Get the class
+        cls = input_dict[name].__class__
+
+        # Should be saved as a file
+        if hasattr(cls, "default_extension"):
+
+            # Determine the filename
+            filename = name + "." + input_dict[name].default_extension
+            filepath = fs.join(path, filename)  # local temporary path
+
+            # Save the object, but don't change its internal path
+            original_path = input_dict[name].path
+            input_dict[name].saveto(filepath)
+            input_dict[name].path = original_path
+
+        # Add to remainder dict
+        else: remainder[name] = input_dict[name]
+
+    # Write the remainder dictionary
+    remainder_path = fs.join(path, "input.dat")
+    write_dict(remainder, remainder_path)
+
+# -----------------------------------------------------------------
+
 class Configurable(object):
 
     """
@@ -209,6 +250,19 @@ class Configurable(object):
         """
 
         return fs.join(self.output_path, name)
+
+    # -----------------------------------------------------------------
+
+    def output_path_directory(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Create and return path
+        return fs.create_directory_in(self.output_path, name)
 
 # -----------------------------------------------------------------
 

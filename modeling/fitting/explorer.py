@@ -35,7 +35,7 @@ from .evaluate import prepare_simulation, generate_simulation_name, get_paramete
 from ...core.simulation.input import SimulationInput
 from ...core.tools import introspection
 from ...core.tools import parallelization as par
-from .generation import GenerationInfo
+from .generation import GenerationInfo, Generation
 from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
@@ -70,7 +70,10 @@ class ParameterExplorer(FittingComponent):
         self.launcher = BatchLauncher()
 
         # The generation info
-        self.generation = GenerationInfo()
+        self.generation_info = GenerationInfo()
+
+        # The generation object
+        self.generation = None
 
         # The individuals table
         self.individuals_table = None
@@ -658,11 +661,12 @@ class ParameterExplorer(FittingComponent):
 
         # Run the model generator
         self.generator.run(fitting_run=self.fitting_run, parameter_ranges=self.ranges,
-                           fixed_initial_parameters=self.fixed_initial_parameters, generation_path=self.generation_path,
-                           scales=self.scales, most_sampled_parameters=self.most_sampled_parameters, sampling_weights=self.sampling_weights)
+                           fixed_initial_parameters=self.fixed_initial_parameters, generation=self.generation,
+                           scales=self.scales, most_sampled_parameters=self.most_sampled_parameters,
+                           sampling_weights=self.sampling_weights)
 
         # Set the actual number of simulations for this generation
-        self.generation.nsimulations = self.nmodels
+        self.generation_info.nsimulations = self.nmodels
 
     # -----------------------------------------------------------------
 
@@ -705,15 +709,14 @@ class ParameterExplorer(FittingComponent):
         else: transient_heating = self.fitting_run.current_transient_heating
 
         # Set the generation info
-        self.generation.name = self.generation_name
-        self.generation.index = self.generation_index
-        self.generation.method = self.config.generation_method
-        self.generation.wavelength_grid_level = wavelength_grid_level
-        #self.generation.dust_grid_level = dust_grid_level
+        self.generation_info.name = self.generation_name
+        self.generation_info.index = self.generation_index
+        self.generation_info.method = self.config.generation_method
+        self.generation_info.wavelength_grid_level = wavelength_grid_level
         #self.generation.nsimulations = self.config.nsimulations # DON'T DO IT HERE YET, GET THE NUMBER OF ACTUAL MODELS SPITTED OUT BY THE MODELGENERATOR (RECURRENCE)
-        self.generation.npackages = npackages
-        self.generation.selfabsorption = selfabsorption
-        self.generation.transient_heating = transient_heating
+        self.generation_info.npackages = npackages
+        self.generation_info.selfabsorption = selfabsorption
+        self.generation_info.transient_heating = transient_heating
 
     # -----------------------------------------------------------------
 
@@ -738,7 +741,7 @@ class ParameterExplorer(FittingComponent):
         # TODO: DETERMINE AND SET THE PATH TO THE APPROPRIATE DUST GRID TREE FILE
 
         # Determine and set the path to the appropriate wavelength grid file
-        wavelength_grid_path = self.fitting_run.wavelength_grid_path_for_level(self.generation.wavelength_grid_level)
+        wavelength_grid_path = self.fitting_run.wavelength_grid_path_for_level(self.generation_info.wavelength_grid_level)
         #self.input_paths.append(wavelength_grid_path)
         self.simulation_input.add_file(wavelength_grid_path)
 
@@ -760,32 +763,14 @@ class ParameterExplorer(FittingComponent):
         # Inform the user
         log.info("Creating the generation directory")
 
-        # Set paths
-        self.set_generation_paths()
+        # Set the path to the generation directory
+        self.generation_info.path = fs.create_directory_in(self.fitting_run.generations_path, self.generation_name)
 
         # Initialize tables
         self.initialize_generation_tables()
 
-    # -----------------------------------------------------------------
-
-    def set_generation_paths(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        # Determine the path to the generation directory
-        self.generation.path = fs.create_directory_in(self.fitting_run.generations_path, self.generation_name)
-
-        # Determine the path to the individuals table
-        self.generation.individuals_table_path = fs.join(self.generation.path, "individuals.dat")
-
-        # Determine the path to the generation parameters table
-        self.generation.parameters_table_path = fs.join(self.generation.path, "parameters.dat")
-
-        # Determine the path to the chi squared table
-        self.generation.chi_squared_table_path = fs.join(self.generation.path, "chi_squared.dat")
+        # Create the generation object
+        self.generation = Generation(self.generation_info)
 
     # -----------------------------------------------------------------
 
@@ -842,10 +827,10 @@ class ParameterExplorer(FittingComponent):
         """
 
         # Debugging
-        log.debug("Setting the number of photon packages to " + str(self.generation.npackages) + " ...")
+        log.debug("Setting the number of photon packages to " + str(self.generation_info.npackages) + " ...")
 
         # Set the number of photon packages per wavelength
-        self.ski.setpackages(self.generation.npackages)
+        self.ski.setpackages(self.generation_info.npackages)
 
     # -----------------------------------------------------------------
 
@@ -857,10 +842,10 @@ class ParameterExplorer(FittingComponent):
         """
 
         # Debugging
-        log.debug("Enabling dust self-absorption ..." if self.generation.selfabsorption else "Disabling dust self-absorption ...")
+        log.debug("Enabling dust self-absorption ..." if self.generation_info.selfabsorption else "Disabling dust self-absorption ...")
 
         # Set dust self-absorption
-        if self.generation.selfabsorption: self.ski.enable_selfabsorption()
+        if self.generation_info.selfabsorption: self.ski.enable_selfabsorption()
         else: self.ski.disable_selfabsorption()
 
     # -----------------------------------------------------------------
@@ -873,10 +858,10 @@ class ParameterExplorer(FittingComponent):
         """
 
         # Debugging
-        log.debug("Enabling transient heating ..." if self.generation.transient_heating else "Disabling transient heating ...")
+        log.debug("Enabling transient heating ..." if self.generation_info.transient_heating else "Disabling transient heating ...")
 
         # Set transient heating
-        if self.generation.transient_heating: self.ski.set_transient_dust_emissivity()
+        if self.generation_info.transient_heating: self.ski.set_transient_dust_emissivity()
         else: self.ski.set_grey_body_dust_emissivity()
 
     # -----------------------------------------------------------------
@@ -889,10 +874,10 @@ class ParameterExplorer(FittingComponent):
         """
 
         # Debugging
-        log.debug("Setting the name of the wavelengths file to " + fs.name(self.fitting_run.wavelength_grid_path_for_level(self.generation.wavelength_grid_level)) + " (level " + str(self.generation.wavelength_grid_level) + ") ...")
+        log.debug("Setting the name of the wavelengths file to " + fs.name(self.fitting_run.wavelength_grid_path_for_level(self.generation_info.wavelength_grid_level)) + " (level " + str(self.generation.wavelength_grid_level) + ") ...")
 
         # Set the name of the wavelength grid file
-        self.ski.set_file_wavelength_grid(fs.name(self.fitting_run.wavelength_grid_path_for_level(self.generation.wavelength_grid_level)))
+        self.ski.set_file_wavelength_grid(fs.name(self.fitting_run.wavelength_grid_path_for_level(self.generation_info.wavelength_grid_level)))
 
     # -----------------------------------------------------------------
 
@@ -1070,7 +1055,7 @@ class ParameterExplorer(FittingComponent):
 
         # Set the paths to the directories to contain the launch scripts (job scripts) for the different remote hosts
         # Just use the directory created for the generation
-        for host_id in self.launcher.host_ids: self.launcher.set_script_path(host_id, self.generation.path)
+        for host_id in self.launcher.host_ids: self.launcher.set_script_path(host_id, self.generation_info.path)
 
         # Enable screen output logging for remotes without a scheduling system for jobs
         for host_id in self.launcher.no_scheduler_host_ids: self.launcher.enable_screen_output(host_id)
@@ -1083,7 +1068,7 @@ class ParameterExplorer(FittingComponent):
 
             # Prepare simulation directories, ski file, and return the simulation definition
             definition = prepare_simulation(simulation_name, self.ski, parameter_values, self.object_name,
-                                            self.simulation_input, self.generation.path, scientific=True, fancy=True,
+                                            self.simulation_input, self.generation_info.path, scientific=True, fancy=True,
                                             ndigits=self.fitting_run.ndigits_dict)
 
             # Debugging
@@ -1155,7 +1140,7 @@ class ParameterExplorer(FittingComponent):
             self.fitting_run.generations_table.save()
 
             # Remove the generation directory
-            fs.remove_directory(self.generation.path)
+            fs.remove_directory(self.generation_info.path)
 
             # Quit
             exit()
@@ -1278,7 +1263,7 @@ class ParameterExplorer(FittingComponent):
         :return: 
         """
 
-        return self.generation.path
+        return self.generation_info.path
 
     # -----------------------------------------------------------------
 
@@ -1338,7 +1323,10 @@ class ParameterExplorer(FittingComponent):
         log.info("Writing ...")
 
         # 1. Write the generation info
-        self.write_generation()
+        self.write_generation_info()
+
+        # 2. Write the generations table
+        self.write_generations_table()
 
         # 2. Write the individuals table
         self.write_individuals()
@@ -1351,7 +1339,7 @@ class ParameterExplorer(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def write_generation(self):
+    def write_generation_info(self):
 
         """
         This function ...
@@ -1359,10 +1347,25 @@ class ParameterExplorer(FittingComponent):
         """
 
         # Inform the user
-        log.info("Writing generation info ...")
+        log.info("Writing the generation info ...")
+
+        # Save as a data file
+        self.generation_info.saveto(self.generation.info_path)
+
+    # -----------------------------------------------------------------
+
+    def write_generations_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the generations table ...")
 
         # Add an entry to the generations table
-        self.fitting_run.generations_table.add_entry(self.generation, self.ranges)
+        self.fitting_run.generations_table.add_entry(self.generation_info, self.ranges)
 
         # Save the table
         self.fitting_run.generations_table.save()

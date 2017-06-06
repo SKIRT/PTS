@@ -1161,56 +1161,124 @@ class GeneticEngine(object):
         # Odd population size
         if size_iterate % 2 != 0: raise ValueError("The population size cannot be odd")
 
+        # Check whether a crossover function is set
         crossover_empty = self.select(popID=self.currentGeneration).crossover.isEmpty()
 
+        # Set the mutator arguments
         mutator_kwargs = self.mutator_kwargs
+
+        # Make a list to contain the crossover data
+        crossover_data = []
+
+        # Determine the generation index
+        current_generation_index = self.currentGeneration
+        new_generation_index = self.currentGeneration + 1
 
         # Loop over the population
         for i in xrange(0, size_iterate, 2):
 
-            genomeMom = self.select(popID=self.currentGeneration)
-            genomeDad = self.select(popID=self.currentGeneration)
+            applied = False
 
+            # Select mother and father
+            #genomeMom = self.select(popID=self.currentGeneration)
+            #genomeDad = self.select(popID=self.currentGeneration)
+
+            mother_key = self.select(popID=self.currentGeneration, return_key=True)
+            father_key = self.select(popID=self.currentGeneration, return_key=True)
+
+            # Get mother and father genome
+            genomeMom = self.internalPop[mother_key]
+            genomeDad = self.internalPop[father_key]
+
+            # Always crossover
             if not crossover_empty and self.pCrossover >= 1.0:
+
+                # Apply
                 for it in genomeMom.crossover.applyFunctions(mom=genomeMom, dad=genomeDad, count=2, **self.crossover_kwargs):
                     (sister, brother) = it
+
+                applied = True
+
+            # Crossover with some probability
             else:
+
+                # Apply crossover function(s)
                 if not crossover_empty and utils.randomFlipCoin(self.pCrossover):
+
+                    # Apply
                     for it in genomeMom.crossover.applyFunctions(mom=genomeMom, dad=genomeDad, count=2, **self.crossover_kwargs):
                         (sister, brother) = it
+
+                    applied = True
+
+                # Make clones of the mother and father
                 else:
+
                     sister = genomeMom.clone()
                     brother = genomeDad.clone()
 
-            #sister.mutate(pmut=self.pMutation, ga_engine=self)
-            #brother.mutate(pmut=self.pMutation, ga_engine=self)
+            # Mutate
             sister.mutate(**mutator_kwargs)
             brother.mutate(**mutator_kwargs)
 
-            #new_population.internalPop.append(sister)
-            #new_population.internalPop.append(brother)
-            new_population.append(sister)
-            new_population.append(brother)
+            # Add the sister and brother to the population
+            sister_key = new_population.append(sister)
+            brother_key = new_population.append(brother)
 
+            # Add entry to the crossover data
+            entry = [current_generation_index, mother_key, father_key, sister_key, brother_key, applied]
+            crossover_data.append(entry)
+
+        # Generate one more individual if the population size is not even
         if len(self.internalPop) % 2 != 0:
 
-            genomeMom = self.select(popID=self.currentGeneration)
-            genomeDad = self.select(popID=self.currentGeneration)
+            applied = False
 
+            # Select mother and father
+            #genomeMom = self.select(popID=self.currentGeneration)
+            #genomeDad = self.select(popID=self.currentGeneration)
+
+            mother_key = self.select(popID=self.currentGeneration, return_key=True)
+            father_key = self.select(popID=self.currentGeneration, return_key=True)
+
+            # Get mother and father genome
+            genomeMom = self.internalPop[mother_key]
+            genomeDad = self.internalPop[father_key]
+
+            # Apply crossover with a certain chance
             if utils.randomFlipCoin(self.pCrossover):
+
+                # Apply
                 for it in genomeMom.crossover.applyFunctions(mom=genomeMom, dad=genomeDad, count=1, **self.crossover_kwargs):
                     (sister, brother) = it
+
+                applied = True
+
+            #
             else:
+
                 sister = prng.choice([genomeMom, genomeDad])
                 sister = sister.clone()
-                #sister.mutate(pmut=self.pMutation, ga_engine=self)
-                sister.mutate(**mutator_kwargs)
 
-            #new_population.internalPop.append(sister)
-            new_population.append(sister)
+                # PREVIOUS
+                # sister.mutate(**mutator_kwargs)
+
+            # NEW: mutate here
+            sister.mutate(**mutator_kwargs)
+
+            # Add the sister to the new population
+            sister_key = new_population.append(sister)
+            brother_key = None
+
+            # Add entry to the crossover data
+            entry = [current_generation_index, mother_key, father_key, sister_key, brother_key, applied]
+            crossover_data.append(entry)
 
         # Set the new population
         self.new_population = new_population
+
+        # Return the crossover data
+        return crossover_data
 
     # -----------------------------------------------------------------
 

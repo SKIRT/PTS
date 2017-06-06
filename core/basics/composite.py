@@ -89,6 +89,66 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
+    def add_integer_property(self, name, description, default_value=None, choices=None):
+
+        """
+        This function ...
+        :param name:
+        :param description:
+        :param default_value:
+        :param choices:
+        :return:
+        """
+
+        self.add_property(name, "integer", description, default_value=default_value, choices=choices)
+
+    # -----------------------------------------------------------------
+
+    def add_real_property(self, name, description, default_value=None, choices=None):
+
+        """
+        This function ...
+        :param name:
+        :param description:
+        :param default_value:
+        :param choices:
+        :return:
+        """
+
+        self.add_property(name, "real", description, default_value=default_value, choices=choices)
+
+    # -----------------------------------------------------------------
+
+    def add_string_property(self, name, description, default_value=None, choices=None):
+
+        """
+        This function ...
+        :param name:
+        :param description:
+        :param default_value:
+        :param choices:
+        :return:
+        """
+
+        self.add_property(name, "string", description, default_value=default_value, choices=choices)
+
+    # -----------------------------------------------------------------
+
+    def add_boolean_property(self, name, description, default_value=None, choices=None):
+
+        """
+        This function ...
+        :param name:
+        :param description:
+        :param default_value:
+        :param choices:
+        :return:
+        """
+
+        self.add_property(name, "boolean", description, default_value=default_value, choices=choices)
+
+    # -----------------------------------------------------------------
+
     def add_section(self, name, description):
 
         """

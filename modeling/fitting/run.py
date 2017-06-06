@@ -35,6 +35,7 @@ from .tables import IndividualsTable
 from ...core.tools import types, numbers
 from ...evolve.analyse.database import get_best_individual_key_and_score_all_generations
 from ...evolve.optimize.optimizer import gray_binary_string_to_parameters, binary_string_to_parameters
+from .generation import GenerationInfo, Generation
 
 # -----------------------------------------------------------------
 
@@ -847,6 +848,55 @@ class FittingRun(object):
 
     # -----------------------------------------------------------------
 
+    def get_generation_info_path(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        generation_path = self.get_generation_path(generation_name)
+        return fs.join(generation_path, "info.dat")
+
+    # -----------------------------------------------------------------
+
+    def get_generation_path(self, generation_name):
+
+        """
+        Thi function ...
+        :param generation_name:
+        :return:
+        """
+
+        return fs.join(self.generations_path, generation_name)
+
+    # -----------------------------------------------------------------
+
+    def get_generation_info(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return GenerationInfo.from_file(self.get_generation_info_path(generation_name))
+
+    # -----------------------------------------------------------------
+
+    def get_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return Generation.from_path(self.get_generation_path(generation_name))
+
+    # -----------------------------------------------------------------
+
     def genetic_engine_path_for_generation(self, generation_name):
 
         """
@@ -855,7 +905,8 @@ class FittingRun(object):
         :return:
         """
 
-        return fs.join(self.generations_path, generation_name, "engine.pickle")
+        generation = self.get_generation(generation_name)
+        return generation.engine_path
 
     # -----------------------------------------------------------------
 
@@ -867,7 +918,8 @@ class FittingRun(object):
         :return:
         """
 
-        return fs.join(self.generations_path, generation_name, "prng.pickle")
+        generation = self.get_generation(generation_name)
+        return generation.prng_path
 
     # -----------------------------------------------------------------
 
@@ -879,7 +931,8 @@ class FittingRun(object):
         :return: 
         """
 
-        return fs.join(self.generations_path, generation_name, "individuals.dat")
+        generation = self.get_generation(generation_name)
+        return generation.individuals_table_path
 
     # -----------------------------------------------------------------
 
@@ -891,7 +944,8 @@ class FittingRun(object):
         :return: 
         """
 
-        return IndividualsTable.from_file(self.individuals_table_path_for_generation(generation_name))
+        generation = self.get_generation(generation_name)
+        return generation.individuals_table
 
     # -----------------------------------------------------------------
 
@@ -903,7 +957,8 @@ class FittingRun(object):
         :return:
         """
 
-        return fs.join(self.generations_path, generation_name, "chi_squared.dat")
+        generation = self.get_generation(generation_name)
+        return generation.chi_squared_table_path
 
     # -----------------------------------------------------------------
 
@@ -915,7 +970,8 @@ class FittingRun(object):
         :return:
         """
 
-        return ChiSquaredTable.from_file(self.chi_squared_table_path_for_generation(generation_name))
+        generation = self.get_generation(generation_name)
+        return generation.chi_squared_table
 
     # -----------------------------------------------------------------
 
@@ -927,7 +983,8 @@ class FittingRun(object):
         :return:
         """
 
-        return fs.join(self.generations_path, generation_name, "parameters.dat")
+        generation = self.get_generation(generation_name)
+        return generation.parameters_table_path
 
     # -----------------------------------------------------------------
 
@@ -939,7 +996,86 @@ class FittingRun(object):
         :return:
         """
 
-        return ParametersTable.from_file(self.parameters_table_path_for_generation(generation_name))
+        generation = self.get_generation(generation_name)
+        return generation.parameters_table
+
+    # -----------------------------------------------------------------
+
+    def elitism_table_path_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        generation = self.get_generation(generation_name)
+        return generation.elitism_table_path
+
+    # -----------------------------------------------------------------
+
+    def elitism_table_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        generation = self.get_generation(generation_name)
+        return generation.elitism_table
+
+    # -----------------------------------------------------------------
+
+    def recurrent_path_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        generation = self.get_generation(generation_name)
+        return generation.recurrent_path
+
+    # -----------------------------------------------------------------
+
+    def recurrent_data_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        generation = self.get_generation(generation_name)
+        return generation.recurrent_path
+
+    # -----------------------------------------------------------------
+
+    def crossover_table_path_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        generation = self.get_generation(generation_name)
+        return generation.crossover_table_path
+
+    # -----------------------------------------------------------------
+
+    def crossover_table_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        generation = self.get_generation(generation_name)
+        return generation.crossover_table
 
     # -----------------------------------------------------------------
 
@@ -1434,6 +1570,42 @@ class FittingRun(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def last_genetic_generation_info_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.last_genetic_generation_path, "info.dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def last_genetic_generation_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return GenerationInfo.from_file(self.last_genetic_generation_info_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def last_genetic_generation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Generation.from_path(self.last_genetic_generation_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def last_genetic_or_initial_generation_path(self):
 
         """
@@ -1442,6 +1614,42 @@ class FittingRun(object):
         """
 
         return fs.join(self.generations_path, self.last_genetic_or_initial_generation_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def last_genetic_or_initial_generation_info_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.last_genetic_or_initial_generation_path, "info.dat")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def last_genetic_or_initial_generation_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return GenerationInfo.from_file(self.last_genetic_or_initial_generation_info_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def last_genetic_or_initial_generation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Generation.from_path(self.last_genetic_or_initial_generation_path)
 
     # -----------------------------------------------------------------
 

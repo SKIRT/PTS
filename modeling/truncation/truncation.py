@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 from collections import defaultdict
 import matplotlib.pyplot as plt
+from scipy import interpolate
 
 # Import astronomical modules
 from astropy.utils import lazyproperty
@@ -30,6 +31,7 @@ from ...core.basics.range import RealRange
 from ...core.basics.map import Map
 from ...magic.core.mask import intersection
 from ...core.remote.remote import Remote
+from ...core.units.parsing import parse_quantity
 
 # -----------------------------------------------------------------
 
@@ -355,7 +357,7 @@ class Truncator(TruncationComponent):
         self.write_ellipses()
 
         # Write the truncated images
-        self.write_images()
+        #self.write_images()
 
         # Write low-res truncated image
         self.write_lowres_images()
@@ -531,8 +533,11 @@ class Truncator(TruncationComponent):
         # Inform the user
         log.info("Writing low-resolution truncated images ...")
 
+        max_pixelscale = parse_quantity("15 arcsec")
+
         # Find the name of the image with the lowest spatial resolution
-        reference_name = self.frames.highest_pixelscale_name
+        #reference_name = self.frames.highest_pixelscale_name
+        reference_name = self.frames.highest_pixelscale_name_below(max_pixelscale)
 
         # Create masks for different factors
         masks = dict()
@@ -569,21 +574,28 @@ class Truncator(TruncationComponent):
                 filename = str(factor) + ".fits"
                 path = fs.join(lowres_path, filename)
 
-                # Debugging
-                log.debug("Creating the low-resolution truncated " + name + " image with factor " + str(factor) + "...")
+                # Check if present
+                if fs.is_file(path):
 
-                # Get the frame and rebin
-                frame = self.frames[name]
-                #frame.rebin(reference_wcs)
+                    log.debug("Low-resolution truncated " + name + " image with factor " + str(factor) + " is already present: not creating it again")
 
-                # Get the mask
-                mask = masks[factor]
+                else:
 
-                # Truncate the low-res frame
-                frame[mask] = self.config.truncated_value
+                    # Debugging
+                    log.debug("Creating the low-resolution truncated " + name + " image with factor " + str(factor) + "...")
 
-                # Save
-                frame.saveto(path)
+                    # Get the frame and rebin
+                    frame = self.frames[name]
+                    #frame.rebin(reference_wcs)
+
+                    # Get the mask
+                    mask = masks[factor]
+
+                    # Truncate the low-res frame
+                    frame[mask] = self.config.truncated_value
+
+                    # Save
+                    frame.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -599,6 +611,9 @@ class Truncator(TruncationComponent):
 
         # Plot the curves
         self.plot_snr()
+
+        # One plot for all images
+        self.plot_snr_at_ellipses()
 
         # Plot nmasked pixels
         self.plot_nmasked()
@@ -637,6 +652,51 @@ class Truncator(TruncationComponent):
             # Save the figure
             plt.savefig(path)
             plt.close()
+
+    # -----------------------------------------------------------------
+
+    def plot_snr_at_ellipses(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        data = defaultdict(list)
+
+        # Loop over the frame names
+        for name in self.statistics:
+
+            # Get x and y
+            radii = self.statistics[name].radii
+            snr = self.statistics[name].snr
+
+            interpfunc = interpolate.interp1d(radii, snr, kind='linear')
+
+            for factor in self.ellipses[name]:
+
+                radius = self.ellipses[name][factor].major
+
+                # Get corresponding snr
+                try: snr = interpfunc(radius)
+                except ValueError: snr = 0.0 # ValueError: A value in x_new is below the interpolation range.
+
+                data[factor].append(snr)
+
+        # Create plot
+        plt.figure()
+
+        # Add the data to the plot
+        for factor in data:
+            snrs = data[factor]
+            for snr in snrs: plt.plot([factor], [snr], marker='o', markersize=3, color="red")
+
+        # Determine the path
+        path = fs.join(self.truncation_path, "snrs.pdf")
+
+        # Save the figure
+        plt.savefig(path)
+        plt.close()
 
     # -----------------------------------------------------------------
 

@@ -923,7 +923,7 @@ class GalaxyModeler(ModelerBase):
         maker.config.path = self.modeling_path
 
         # Run maker
-        with self.history.regitet(maker): maker.run()
+        with self.history.register(maker): maker.run()
 
         # Unset log path
         unset_log_file()

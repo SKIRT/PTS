@@ -118,7 +118,7 @@ class StepWiseTest(TestImplementation):
         self.scores_check = None
 
         # The generation info
-        self.generation = None
+        self.generation_info = None
 
         # The generations table
         self.generations_table = None
@@ -523,17 +523,17 @@ class StepWiseTest(TestImplementation):
             generation_name = "initial"
 
         # Create the generation info object
-        self.generation = GenerationInfo()
+        self.generation_info = GenerationInfo()
 
         # Set the generation info
-        self.generation.name = generation_name
-        self.generation.index = generation_index
-        self.generation.method = "genetic"
-        self.generation.wavelength_grid_level = None
-        #self.generation.nsimulations = self.config.nindividuals # NO: DO IT AFTER THE MODELS AR GENERATED TO GET THE ACTUAL NUMBER (recurrence)
-        self.generation.npackages = None
-        self.generation.selfabsorption = None
-        self.generation.transient_heating = None
+        self.generation_info.name = generation_name
+        self.generation_info.index = generation_index
+        self.generation_info.method = "genetic"
+        self.generation_info.wavelength_grid_level = None
+        #self.generation_info.nsimulations = self.config.nindividuals # NO: DO IT AFTER THE MODELS AR GENERATED TO GET THE ACTUAL NUMBER (recurrence)
+        self.generation_info.npackages = None
+        self.generation_info.selfabsorption = None
+        self.generation_info.transient_heating = None
 
     # -----------------------------------------------------------------
 
@@ -623,13 +623,13 @@ class StepWiseTest(TestImplementation):
         log.info("Creating the generation directory ...")
 
         # Create
-        self.generation_path = self.path_for_generation(self.generation.name)
+        self.generation_path = self.path_for_generation(self.generation_info.name)
         fs.create_directory(self.generation_path)
 
         # Set paths
-        self.individuals_table_path = self.individuals_table_path_for_generation(self.generation.name)
-        self.parameters_table_path = self.parameters_table_path_for_generation(self.generation.name)
-        self.scores_table_path = self.scores_table_path_for_generation(self.generation.name)
+        self.individuals_table_path = self.individuals_table_path_for_generation(self.generation_info.name)
+        self.parameters_table_path = self.parameters_table_path_for_generation(self.generation_info.name)
+        self.scores_table_path = self.scores_table_path_for_generation(self.generation_info.name)
 
         # Initialize the individuals table
         self.individuals_table = IndividualsTable()
@@ -980,7 +980,7 @@ class StepWiseTest(TestImplementation):
         if get_parameters: self.get_model_parameters()
 
         # Set the number of individuals for this generation
-        self.generation.nsimulations = self.nmodels
+        self.generation_info.nsimulations = self.nmodels
 
     # -----------------------------------------------------------------
 
@@ -1243,7 +1243,7 @@ class StepWiseTest(TestImplementation):
             simulation_name = self.individuals_table.get_simulation_name(name)
 
             # Find the index in the table for this generation
-            index = tables.find_index(self.generations_table, self.generation.name, "Generation name")
+            index = tables.find_index(self.generations_table, self.generation_info.name, "Generation name")
 
             # Get the number of simulations for this generation
             nsimulations = self.generations_table["Number of simulations"][index]
@@ -1270,7 +1270,7 @@ class StepWiseTest(TestImplementation):
             nfinished_simulations = len(self.scores_table)
 
             # If this is the last simulation
-            if nsimulations == nfinished_simulations + 1: self.generations_table.set_finishing_time(self.generation.name, time.timestamp())
+            if nsimulations == nfinished_simulations + 1: self.generations_table.set_finishing_time(self.generation_info.name, time.timestamp())
 
     # -----------------------------------------------------------------
 

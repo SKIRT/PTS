@@ -190,6 +190,26 @@ def absolute_or_in(path, in_path):
 
 # -----------------------------------------------------------------
 
+def create_absolute_or_in(path, in_path):
+
+    """
+    This function ...
+    :param path:
+    :param in_path:
+    :return:
+    """
+
+    absolute_path = absolute_or_in(path, in_path)
+
+    if is_file(absolute_path): return absolute_path
+    elif is_directory(absolute_path): return absolute_path
+    elif has_extension(absolute_path): return absolute_path # file
+    else: # directory
+        create_directory(absolute_path)
+        return absolute_path
+
+# -----------------------------------------------------------------
+
 def absolute_or_in_cwd(path):
 
     """
@@ -274,6 +294,19 @@ def file_or_directory(path):
     if is_file(path): return "file"
     elif is_directory(path): return "directory"
     else: return None
+
+# -----------------------------------------------------------------
+
+def has_extension(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    filename = name(path)
+    return "." in filename
 
 # -----------------------------------------------------------------
 

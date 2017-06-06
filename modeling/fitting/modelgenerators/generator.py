@@ -50,8 +50,8 @@ class ModelGenerator(FittingComponent):
         # The fitting run
         self.fitting_run = None
 
-        # The generation path
-        self.generation_path = None
+        # The generation
+        self.generation = None
 
         # The dictionary with the parameter ranges
         self.ranges = OrderedDict()
@@ -73,6 +73,18 @@ class ModelGenerator(FittingComponent):
         # Other input
         self.most_sampled_parameters = None
         self.sampling_weights = None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def generation_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.generation.path
 
     # -----------------------------------------------------------------
 
@@ -270,8 +282,8 @@ class ModelGenerator(FittingComponent):
         # Get the fitting run
         self.fitting_run = kwargs.pop("fitting_run")
 
-        # Get the generation path
-        self.generation_path = kwargs.pop("generation_path")
+        # Get the generation
+        self.generation = kwargs.pop("generation")
 
         # Get scales for different free parameters
         if "scales" in kwargs: self.scales = kwargs.pop("scales")

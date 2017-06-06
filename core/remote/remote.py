@@ -2300,6 +2300,8 @@ class Remote(object):
             input_path = fs.join(remote_temp_path, "input")
             self.create_directory(input_dict)
 
+            # TODO: use the write_input function in the configurable module instead
+
             for name in input_dict:
 
                 filename = name + "." + input_dict[name].default_extension

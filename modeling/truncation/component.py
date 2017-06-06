@@ -36,7 +36,7 @@ class TruncationComponent(GalaxyModelingComponent):
         super(TruncationComponent, self).__init__(*args, **kwargs)
 
         # The path to the truncation/images directory
-        self.truncation_images_path = None
+        #self.truncation_images_path = None
 
     # -----------------------------------------------------------------
 
@@ -52,6 +52,6 @@ class TruncationComponent(GalaxyModelingComponent):
         super(TruncationComponent, self).setup(**kwargs)
 
         # Set the path to the truncation/images directory
-        self.truncation_images_path = fs.create_directory_in(self.truncation_path, "images")
+        #self.truncation_images_path = fs.create_directory_in(self.truncation_path, "images")
 
 # -----------------------------------------------------------------

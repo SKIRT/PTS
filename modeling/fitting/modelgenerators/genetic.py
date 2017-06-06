@@ -165,22 +165,21 @@ class GeneticModelGenerator(ModelGenerator):
         # New optimizer run
         else: self.create_optimizer()
 
-        # Set generation specific paths
-
-        # Population path
-        population_path = fs.join(self.generation_path, "population.dat")
-
         # Set elitism table path -> directory of previous generation!
         if self.initial: elitism_path = None
-        else: elitism_path = fs.join(self.fitting_run.last_genetic_or_initial_generation_path, "elitism.dat")
-
-        # Recurrent path
-        recurrent_path = fs.join(self.generation_path, "recurrent.dat")
+        else: elitism_path = self.fitting_run.last_genetic_or_initial_generation.elitism_table_path # fs.join(self.fitting_run.last_genetic_or_initial_generation_path, "elitism.dat")
 
         # Set generation specific paths
-        self.optimizer.config.writing.population_path = population_path
+        self.optimizer.config.writing.input_path = self.generation.optimizer_input_path
+        self.optimizer.config.writing.population_path = self.generation.population_path
+        self.optimizer.config.writing.crossover_path = self.generation.crossover_table_path
+        self.optimizer.config.writing.recurrent_path = self.generation.recurrent_path
         self.optimizer.config.writing.elitism_table_path = elitism_path
-        self.optimizer.config.writing.recurrent_path = recurrent_path
+
+        # NEW: ADD EXTRA PATHS FOR WRITING ENGINE, PRNG AND CONFIG
+        self.optimizer.config.writing.engine_path = [self.optimizer.config.writing.engine_path, self.generation.engine_path]
+        self.optimizer.config.writing.prng_path = [self.optimizer.config.writing.prng_path, self.generation.prng_path]
+        self.optimizer.config.writing.config_path = [self.optimizer.config.writing.config_path, self.generation.optimizer_config_path]
 
     # -----------------------------------------------------------------
 
@@ -233,12 +232,18 @@ class GeneticModelGenerator(ModelGenerator):
         # Create a new optimizer and set paths
         self.optimizer = StepWiseOptimizer()
         self.optimizer.config.output = self.fitting_run.path
+
+        # Set basic paths
         self.optimizer.config.writing.engine_path = self.fitting_run.main_engine_path
         self.optimizer.config.writing.prng_path = self.fitting_run.main_prng_path
         self.optimizer.config.writing.config_path = self.fitting_run.optimizer_config_path
+
+        # Set other paths
         self.optimizer.config.writing.statistics_path = self.statistics_path
         self.optimizer.config.writing.database_path = self.database_path
         self.optimizer.config.writing.populations_path = self.populations_path
+
+        # Set fitting run ID
         self.optimizer.config.run_id = self.fitting_run.name
 
         # Set initial flag

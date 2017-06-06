@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.modeling.component.galaxy import get_data_images_path
 from pts.magic.core.frame import Frame

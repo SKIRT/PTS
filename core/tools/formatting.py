@@ -318,3 +318,74 @@ def print_columns(*columns, **kwargs):
         print(row)
 
 # -----------------------------------------------------------------
+
+class print_in_columns(object):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, ncolumns):
+
+        """
+        This function ...
+        :param ncolumns:
+        """
+
+        self.columns = [[] for _ in range(ncolumns)]
+
+    # -----------------------------------------------------------------
+
+    def __enter__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ncolumns(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.columns)
+
+    # -----------------------------------------------------------------
+
+    def __call__(self, *args):
+
+        """
+        This function ...
+        :param args:
+        :return:
+        """
+
+        if len(args) != self.ncolumns: raise ValueError("Needs " + str(self.ncolumns) + " arguments")
+
+        for index in range(self.ncolumns):
+            self.columns[index].append(args[index])
+
+    # -----------------------------------------------------------------
+
+    def __exit__(self, exc_type, exc_value, traceback):
+
+        """
+        This function ...
+        :param exc_type:
+        :param exc_value:
+        :param traceback:
+        :return:
+        """
+
+        print(self.columns)
+
+        print_columns(*self.columns)
+
+# -----------------------------------------------------------------

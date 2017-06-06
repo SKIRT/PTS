@@ -138,6 +138,8 @@ def GRouletteWheel(population, **args):
    The Roulette Wheel selector
    """
 
+   return_key = args.pop("return_key", False)
+
    psum = None
    if args["popID"] != GRouletteWheel.cachePopID:
       GRouletteWheel.cachePopID = args["popID"]
@@ -159,7 +161,9 @@ def GRouletteWheel(population, **args):
    lower = min(len(population) - 1, lower)
    lower = max(0, lower)
 
-   return population.bestFitness(lower)
+   # Return key or individual itself
+   if return_key: return population.best_fitness_key(lower)
+   else: return population.bestFitness(lower)
 
 # -----------------------------------------------------------------
 

@@ -687,6 +687,19 @@ def string_list(argument):
 
 # -----------------------------------------------------------------
 
+def string_or_string_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: return string_list(argument)
+    except ValueError: return string(argument)
+
+# -----------------------------------------------------------------
+
 def mixed_list(argument):
 
     """

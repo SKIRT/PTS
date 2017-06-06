@@ -18,6 +18,57 @@ from pts.core.tools import sequences
 
 # -----------------------------------------------------------------
 
+class CrossoverTable(SmartTable):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(CrossoverTable, self).__init__(*args, **kwargs)
+
+        # Add column information
+        self.add_column_info("Generation", int, None, "Generation index")
+        self.add_column_info("Mother", str, None, "Mother individual name")
+        self.add_column_info("Father", str, None, "Father individual name")
+        self.add_column_info("Sister", str, None, "Sister individual name")
+        self.add_column_info("Brother", str, None, "Brother individual name")
+        self.add_column_info("Crossover", bool, None, "Crossover applied?")
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_data(cls, data):
+
+        """
+        This function ...
+        :param data:
+        :return:
+        """
+
+        # Create a new table
+        table = cls()
+
+        # Setup
+        table.setup()
+
+        # Loop over the entries
+        for entry in data:
+            table.add_row(entry)
+
+        # Return the table
+        return table
+
+# -----------------------------------------------------------------
+
 class ElitismTable(SmartTable):
 
     """
