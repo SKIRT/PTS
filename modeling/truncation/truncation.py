@@ -32,6 +32,7 @@ from ...core.basics.map import Map
 from ...magic.core.mask import intersection
 from ...core.remote.remote import Remote
 from ...core.units.parsing import parse_quantity
+from ..core.steps import cached_directory_name_for_single_command
 
 # -----------------------------------------------------------------
 
@@ -128,7 +129,8 @@ class Truncator(TruncationComponent):
         self.remote = Remote(host_id=self.environment.cache_host_id)
 
         # Create the cache directory
-        self.remote_truncation_path = fs.join(self.remote.home_directory, self.galaxy_name + "_truncation")
+        directory_name = cached_directory_name_for_single_command(self.environment, self.command_name())
+        self.remote_truncation_path = fs.join(self.remote.home_directory, directory_name)
         if self.config.cache:
             if not self.remote.is_directory(self.remote_truncation_path): self.remote.create_directory(self.remote_truncation_path)
 

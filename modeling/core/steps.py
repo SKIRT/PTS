@@ -73,10 +73,10 @@ def output_paths_for_single_command(environment, command_name):
     if command_name == "fetch_properties": return [environment.galaxy_properties_path]
 
     # Fetch SEDs
-    elif command_name == "fetch_seds": return []
+    elif command_name == "fetch_seds": return [environment.data_seds_path]
 
     # Fetch images
-    elif command_name == "fetch_images": return []
+    elif command_name == "fetch_images": return [environment.data_images_path]
 
     # Inspect data
     elif command_name == "inspect_data": return []
@@ -149,6 +149,103 @@ def output_paths_for_single_command(environment, command_name):
 
     # Initialize fit for galaxy modeling
     elif command_name == "initialize_fit_galaxy": return []
+
+    # Other
+    else: raise ValueError("Invalid command: '" + command_name + "'")
+
+# -----------------------------------------------------------------
+
+def cached_directory_name_for_single_command(environment, command_name):
+
+    """
+    THis function ...
+    :param environment:
+    :param command_name:
+    :return:
+    """
+
+    galaxy_name = environment.galaxy_name
+
+    # Fetch properties
+    if command_name == "fetch_properties": return None
+
+    # Fetch SEDs
+    elif command_name == "fetch_seds": return None
+
+    # Fetch images
+    elif command_name == "fetch_images": return None
+
+    # Inspect data
+    elif command_name == "inspect_data": return None
+
+    # Initialize preparation
+    elif command_name == "initialize_preparation": return None
+
+    # Inspect initialization
+    elif command_name == "inspect_initialization": return None
+
+    # Prepare data
+    elif command_name == "prepare_data": return None
+
+    # Inspect preparation
+    elif command_name == "inspect_preparation": return None
+
+    # Decompose
+    elif command_name == "decompose": return None
+
+    # Trunate
+    elif command_name == "truncate": return galaxy_name + "_truncation"
+
+    # Photometry
+    elif command_name == "photometry": return None
+
+    # Make colour maps
+    elif command_name == "make_colour_maps": return None
+
+    # sSFR MAPS
+    elif command_name == "make_ssfr_maps": return None
+
+    # TIR maps
+    elif command_name == "make_tir_maps": return None
+
+    # Attenuation maps
+    elif command_name == "make_attenuation_maps": return None
+
+    # Dust map
+    elif command_name == "make_dust_map": return None
+
+    # Old stars
+    elif command_name == "make_old_stars_map": return None
+
+    # Young stars
+    elif command_name == "make_young_stars_map": return None
+
+    # Ionizing stars
+    elif command_name == "make_ionizing_stars_map": return None
+
+    #
+    elif command_name == "create_significance_masks": return None
+
+    # Plot SED
+    elif command_name == "plot_sed": return None
+
+    # Build model
+    elif command_name == "build_model": return None
+
+    #
+    elif command_name == "generate_representations": return None
+
+    # Build representation for SED modeling
+    elif command_name == "buildsedrepresentation": return None
+
+    # Configure fit
+    elif command_name == "configure_fit": return None
+
+    # Initialize fit for SED modeling
+    elif command_name == "initialize_fit_sed": return None
+
+    # Initialize fit for galaxy modeling
+    elif command_name == "initialize_fit_galaxy": return None
 
     # Other
     else: raise ValueError("Invalid command: '" + command_name + "'")

@@ -25,6 +25,7 @@ from pts.core.tools.parsing import real
 from pts.core.tools.introspection import pts_temp_dir
 from pts.magic.core.frame import Frame
 from pts.magic.tools import plotting
+from pts.modeling.core.steps import cached_directory_name_for_single_command
 
 # -----------------------------------------------------------------
 
@@ -55,7 +56,8 @@ remote = Remote(host_id=environment.cache_host_id)
 
 # -----------------------------------------------------------------
 
-remote_truncation_path = fs.join(remote.home_directory, environment.galaxy_name + "_truncation")
+directory_name = cached_directory_name_for_single_command(environment, "truncate")
+remote_truncation_path = fs.join(remote.home_directory, directory_name)
 
 # -----------------------------------------------------------------
 

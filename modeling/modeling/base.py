@@ -35,7 +35,7 @@ from ...core.tools.loops import repeat_check
 from ...core.remote.remote import Remote
 from ..fitting.finisher import ExplorationFinisher
 from ...core.tools import time
-from ..core.steps import commands_after_and_including, output_paths_for_single_command
+from ..core.steps import commands_after_and_including, output_paths_for_single_command, cached_directory_name_for_single_command
 from ...core.basics.configuration import prompt_proceed
 
 # -----------------------------------------------------------------
@@ -120,6 +120,42 @@ class ModelerBase(Configurable):
 
     # -----------------------------------------------------------------
 
+    def cached_directory_name_for_command(self, command_name):
+
+        """
+        This function ...
+        :param command_name:
+        :return:
+        """
+
+        return cached_directory_name_for_single_command(self.environment, command_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cache_host_id(self):
+
+        """
+        THis function ..
+        :return:
+        """
+
+        return self.modeling_config.cache_host_id
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cache_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Remote(host_id=self.cache_host_id)
+
+    # -----------------------------------------------------------------
+
     def check_needs_step(self, command_name):
 
         """
@@ -137,6 +173,7 @@ class ModelerBase(Configurable):
                 # Determine
                 paths = self.output_paths_for_command(command_name)
 
+                # Prompt to proceed
                 if prompt_proceed("are you absolutely sure the output of '" + command_name + "' can be removed?"):
 
                     # Debugging
@@ -144,6 +181,12 @@ class ModelerBase(Configurable):
 
                     # Remove
                     fs.remove_directories_and_files(paths)
+
+                    # Remove cached data remotely
+                    cached_directory_name = self.cached_directory_name_for_command(command_name)
+                    if cached_directory_name is not None:
+                        remote_path = fs.join(self.cache_remote.home_directory, cached_directory_name)
+                        self.cache_remote.remove_directory(remote_path)
 
                     # Remove from history file (as if it had never been run before)
                     self.history.remove_entries(command_name)
@@ -154,9 +197,11 @@ class ModelerBase(Configurable):
                 # User doesn't want to proceed
                 else:
 
+                    # Exit with an error
                     log.error("Cannot rerun the " + self.config.rerun + " command when the " + command_name + " cannot be rerun")
                     exit()
 
+            # No rerun
             else: return False
 
         # Step already started, partial output?
@@ -177,6 +222,12 @@ class ModelerBase(Configurable):
                     # Remove
                     fs.remove_directories_and_files(paths)
 
+                    # Remove cached data remotely
+                    cached_directory_name = self.cached_directory_name_for_command(command_name)
+                    if cached_directory_name is not None:
+                        remote_path = fs.join(self.cache_remote.home_directory, cached_directory_name)
+                        self.cache_remote.remove_directory(remote_path)
+
                     # Remove from history file (as if it had never been run before)
                     self.history.remove_entries(command_name)
 
@@ -186,6 +237,7 @@ class ModelerBase(Configurable):
                 # User doesn't want to proceed
                 else:
 
+                    # Exit with an error message
                     log.error("Cannot rerun the " + self.config.rerun + " command when the " + command_name + " cannot be rerun")
                     exit()
 

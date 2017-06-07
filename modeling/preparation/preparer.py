@@ -42,6 +42,7 @@ from ...core.basics.composite import SimplePropertyComposite
 from ...core.tools.serialization import write_dict
 from ...magic.core.mask import Mask
 from ...core.remote.remote import Remote
+from ..core.steps import cached_directory_name_for_single_command
 
 # -----------------------------------------------------------------
 
@@ -312,7 +313,8 @@ class DataPreparer(PreparationComponent):
         self.remote = Remote(host_id=self.environment.cache_host_id)
 
         # Create the cache directory
-        self.remote_preparation_path = fs.join(self.remote.home_directory, self.galaxy_name + "_preparation")
+        directory_name = cached_directory_name_for_single_command(self.environment, self.command_name())
+        self.remote_preparation_path = fs.join(self.remote.home_directory, directory_name)
         if self.config.cache:
             #self.remote_preparation_path = fs.join(self.remote.home_directory, self.galaxy_name + "_preparation")
             if not self.remote.is_directory(self.remote_preparation_path): self.remote.create_directory(self.remote_preparation_path)
