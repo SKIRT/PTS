@@ -10,9 +10,6 @@
 
 # -----------------------------------------------------------------
 
-# Import other evolve modules
-#from . import constants
-
 # Import the relevant PTS classes and modules
 from ...core.tools.random import prng
 
@@ -26,6 +23,8 @@ def GRankSelector(population, **args):
     """
 
     from . import constants
+
+    return_key = args.pop("return_key", False)
 
     count = 0
 
@@ -49,10 +48,13 @@ def GRankSelector(population, **args):
 
     else: count = GRankSelector.cacheCount
 
-    if count == 0: individual = population[0]
-    else: individual = population[prng.randint(0, count + 1)] # HERE IT SHOULD BE INCLUSIVE
+    if count == 0: index = 0 #individual = population[0]
+    else: index = prng.randint(0, count + 1) #individual = population[prng.randint(0, count + 1)] # HERE IT SHOULD BE INCLUSIVE
 
-    return individual
+    if return_key: return population.keys[index]
+    else: return population[index]
+
+    #return individual
 
 # -----------------------------------------------------------------
 
@@ -67,7 +69,12 @@ def GUniformSelector(population, **args):
    The Uniform Selector
    """
 
-   return population[prng.randint(0, len(population))]
+   return_key = args.pop("return_key", False)
+
+   random_index = prng.randint(0, len(population))
+
+   if return_key: return population.keys[random_index]
+   else: return population[random_index]
 
 # -----------------------------------------------------------------
 
@@ -86,20 +93,30 @@ def GTournamentSelector(population, **args):
 
    from . import constants
 
+   return_key = args.pop("return_key", False)
+
    choosen = None
    should_minimize = population.minimax == "minimize" #constants.minimaxType["minimize"]
    minimax_operator = min if should_minimize else max
 
    poolSize = population.getParam("tournamentPool", constants.CDefTournamentPoolSize)
-   tournament_pool = [GRouletteWheel(population, **args) for i in xrange(poolSize)]
+
+   # Pick individuals for the tournament pool
+   args["return_key"] = return_key
+   #tournament_pool = [GRouletteWheel(population, **args) for i in xrange(poolSize)]
+   tournament_keys = [GRouletteWheel(population, **args) for i in xrange(poolSize)]
 
    if population.sortType == constants.sortType["scaled"]:
-      choosen = minimax_operator(tournament_pool, key=lambda ind: ind.fitness)
+      #choosen = minimax_operator(tournament_pool, key=lambda ind: ind.fitness)
+      choosen_key = minimax_operator(tournament_keys, key=lambda key: population[key].fitness)
    else:
-      choosen = minimax_operator(tournament_pool, key=lambda ind: ind.score)
+      #choosen = minimax_operator(tournament_pool, key=lambda ind: ind.score)
+      choosen_key = minimax_operator(tournament_keys, key=lambda key: population[key].score)
 
    # Return the choosen one
-   return choosen
+   #return choosen
+   if return_key:  return choosen_key
+   else: return population[choosen_key]
 
 # -----------------------------------------------------------------
 
@@ -107,7 +124,7 @@ def GTournamentSelectorAlternative(population, **args):
 
    """
    The alternative Tournament Selector
-   This Tournament Selector don't uses the Roulette Wheel
+   This Tournament Selector doesn't use the Roulette Wheel
    It accepts the *tournamentPool* population parameter.
    .. versionadded: 0.6
       Added the GTournamentAlternative function.
@@ -115,20 +132,33 @@ def GTournamentSelectorAlternative(population, **args):
 
    from . import constants
 
+   return_key = args.pop("return_key", False)
+
    pool_size = population.getParam("tournamentPool", constants.CDefTournamentPoolSize)
    len_pop = len(population)
 
    should_minimize = population.minimax == "minimize" #constants.minimaxType["minimize"]
 
    minimax_operator = min if should_minimize else max
-   tournament_pool = [population[prng.randint(0, len_pop)] for i in xrange(pool_size)]
+
+   # Pick random individuals to form the pool
+   # Pick random indices
+   random_indices = [prng.randint(0, len_pop) for i in xrange(pool_size)]
+   tournament_pool = [population[ri] for ri in random_indices]
 
    if population.sortType == constants.sortType["scaled"]:
-      choosen = minimax_operator(tournament_pool, key=lambda ind: ind.fitness)
+      #choosen = minimax_operator(tournament_pool, key=lambda ind: ind.fitness)
+      choosen_index = minimax_operator(range(len(tournament_pool)), key=lambda index: tournament_pool[index].fitness)
    else:
-      choosen = minimax_operator(tournament_pool, key=lambda ind: ind.score)
+      #choosen = minimax_operator(tournament_pool, key=lambda ind: ind.score)
+      choosen_index = minimax_operator(range(len(tournament_pool)), key=lambda index: tournament_pool[index].score)
 
-   return choosen
+   choosen_individual_index = random_indices[choosen_index]
+
+   if return_key: return population.keys[choosen_individual_index]
+   else: return population[choosen_individual_index]
+
+   #return choosen
 
 # -----------------------------------------------------------------
 
