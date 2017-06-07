@@ -23,6 +23,8 @@ from .tables import IndividualsTable, ParametersTable, ChiSquaredTable
 from ...evolve.optimize.tables import ElitismTable, CrossoverTable
 from ...evolve.optimize.stepwise import load_population
 from ...core.tools.serialization import load_dict
+from ...core.basics.configurable import load_input
+from ...core.basics.configuration import Configuration
 
 # -----------------------------------------------------------------
 
@@ -407,7 +409,8 @@ class Generation(object):
         :return:
         """
 
-        return load_population(self.newborns_path)
+        if fs.is_file(self.newborns_path): return load_population(self.newborns_path)
+        else: return None
 
     # -----------------------------------------------------------------
 
@@ -520,6 +523,18 @@ class Generation(object):
     # -----------------------------------------------------------------
 
     @property
+    def optimizer_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return load_input(self.optimizer_input_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def engine_path(self):
 
         """
@@ -552,5 +567,17 @@ class Generation(object):
         """
 
         return fs.join(self.path, "optimizer.cfg")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def optimizer_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Configuration.from_file(self.optimizer_config_path)
 
 # -----------------------------------------------------------------

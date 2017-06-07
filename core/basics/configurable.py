@@ -32,9 +32,13 @@ def write_input(input_dict, path):
     """
 
     from ..tools.serialization import write_dict
+    from ..tools import introspection
 
     # Dictionary for remainder input (not saved as file)
     remainder = dict()
+
+    # Dictionary for the class paths
+    classes = dict()
 
     # Loop over the input items
     for name in input_dict:
@@ -54,12 +58,51 @@ def write_input(input_dict, path):
             input_dict[name].saveto(filepath)
             input_dict[name].path = original_path
 
+            subproject, relative_class_subproject = introspection.get_class_path(input_dict[name].__class__)
+            classes[name] = subproject + "." + relative_class_subproject
+
         # Add to remainder dict
         else: remainder[name] = input_dict[name]
 
     # Write the remainder dictionary
     remainder_path = fs.join(path, "input.dat")
     write_dict(remainder, remainder_path)
+
+    # Write the classes dictionary
+    classes_path = fs.join(path, "classes.dat")
+    write_dict(classes, classes_path)
+
+# -----------------------------------------------------------------
+
+def load_input(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    from ..tools.serialization import load_dict
+
+    input_dict = dict()
+
+    # Add the input.dat input
+    input_file_path = fs.join(path, "input.dat")
+    if fs.is_file(input_file_path):
+        remainder = load_dict(input_file_path)
+        for key in remainder: input_dict[key] = remainder[key]
+
+    # Load the classes data
+    classes_path = fs.join(path, "classes.dat")
+    #classes = load_dict(classes_path)
+
+    # TODO: write this!
+
+    # Loop over the files in the directory
+    #for filepath, filename in fs.files_in_path(path, exact_not_name="input"):
+
+    # Return the input
+    return input_dict
 
 # -----------------------------------------------------------------
 

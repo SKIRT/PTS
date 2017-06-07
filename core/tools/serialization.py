@@ -193,8 +193,21 @@ def load_dict_impl(dictfile, dct, indent=""):
                 #name = name.split(indent)[1]
                 #string = string.split(indent)[1]
 
-                parsing_function = getattr(parsing, ptype)
-                value = parsing_function(string)
+                if ptype == "None":
+                    value = None
+                else:
+
+                    try:
+                        parsing_function = getattr(parsing, ptype)
+                        value = parsing_function(string)
+                    except AttributeError:
+                        if ptype.endswith("list_list"):
+                            single_parsing_function = getattr(parsing, ptype.split("_list_list")[0])
+                            list_parsing_function = getattr(parsing, ptype.split("_list_list")[0] + "_list")
+                            result = []
+                            for item in string.split(", "): result.append(list_parsing_function(item))
+                            value = result
+                        else: raise AttributeError("Could not find the type '" + ptype + "'")
 
                 dct[name_value] = value
 

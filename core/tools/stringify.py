@@ -162,7 +162,8 @@ def stringify_list(value):
     elif ptype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_types)[1] + "'")
 
     # Return the type and the string
-    return ptype + "_list", ",".join(strings)
+    if ptype.endswith("list"): return ptype + "_list", ", ".join(strings)
+    else: return ptype + "_list", ",".join(strings)
 
 # -----------------------------------------------------------------
 

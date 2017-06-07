@@ -8,6 +8,7 @@
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.tools import filesystem as fs
+from pts.modeling.config.generate_genetic import default_scale, scales
 
 # -----------------------------------------------------------------
 
@@ -18,6 +19,6 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 definition.add_required("name", "string", "fitting run name")
 
 # Scale
-definition.add_optional("default_scale", "string", "default parameter scale (also for generating the initial generation manually)", default="logarithmic", choices=scales)
+definition.add_optional("default_scale", "string", "default parameter scale (also for generating the initial generation manually)", default=default_scale, choices=scales)
 
 # -----------------------------------------------------------------

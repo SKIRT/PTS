@@ -15,7 +15,10 @@ modeling_path = fs.cwd()
 
 # -----------------------------------------------------------------
 
+default_scale = "logarithmic"
 scales = ["linear", "logarithmic"]
+
+default_initial_generation_method = "random"
 methods = ["random", "grid"]
 
 # -----------------------------------------------------------------
@@ -28,9 +31,9 @@ definition.add_optional("ngenerations", "positive_integer", "number of generatio
 definition.add_optional("nmodels", "positive_integer", "number of models per generation", 80)
 
 definition.add_flag("manual_initial_generation", "generate intitial popultion manually", False)
-definition.add_optional("manual_initial_generation_method", "string", "method for generating the initial generation manually", default="random", choices=methods)
+definition.add_optional("manual_initial_generation_method", "string", "method for generating the initial generation manually", default=default_initial_generation_method, choices=methods)
 
 # Scale
-definition.add_optional("default_scale", "string", "default parameter scale (also for generating the initial generation manually)", default="logarithmic", choices=scales)
+definition.add_optional("default_scale", "string", "default parameter scale (also for generating the initial generation manually)", default=default_scale, choices=scales)
 
 # -----------------------------------------------------------------

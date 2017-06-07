@@ -312,8 +312,10 @@ class ExplorationFinisher(FittingComponent):
 
         # Load the previous population
         previous_generation_path = self.fitting_run.last_genetic_or_initial_generation_path
-        previous_population_path = fs.join(previous_generation_path, "population.dat")
-        previous_population = load_population(previous_population_path)
+        #previous_population_path = fs.join(previous_generation_path, "population.dat")
+        #previous_population = load_population(previous_population_path)
+        previous_newborns_path = fs.join(previous_generation_path, "newborns.dat")
+        previous_population = load_population(previous_newborns_path)
 
         # Load the recurrence data
         # Load the previous recurrent data

@@ -67,6 +67,54 @@ class CrossoverTable(SmartTable):
         # Return the table
         return table
 
+    # -----------------------------------------------------------------
+
+    @property
+    def ncrossovers(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(tables.find_indices(self, True, "Crossover"))
+
+    # -----------------------------------------------------------------
+
+    def get_parents(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self["Mother"][index], self["Father"][index]
+
+    # -----------------------------------------------------------------
+
+    def get_children(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self["Sister"][index], self["Brother"][index]
+
+    # -----------------------------------------------------------------
+
+    def is_crossover(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self["Crossover"][index]
+
 # -----------------------------------------------------------------
 
 class ElitismTable(SmartTable):

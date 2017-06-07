@@ -2303,3 +2303,26 @@ def lazy_call(function_name, module_name, *args, **kwargs):
     return func(*args, **kwargs)
 
 # -----------------------------------------------------------------
+
+def get_class_path(cls):
+
+    """
+    This function ...
+    :param cls:
+    :return:
+    """
+
+    class_name = cls.__name__
+
+    class_path = inspect.getfile(cls).split(".py")[0]
+
+    relative_class_path = class_path.rsplit("pts/")[1]
+
+    relative_class_pts = relative_class_path.replace("/", ".") + "." + class_name
+
+    subproject, relative_class_subproject = relative_class_pts.split(".", 1)
+
+    # Return
+    return subproject, relative_class_subproject
+
+# -----------------------------------------------------------------
