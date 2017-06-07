@@ -719,7 +719,7 @@ class GenerationsTable(SmartTable):
         method = generation_info.method
         wg_level = generation_info.wavelength_grid_level
         #dg_level = generation_info.dust_grid_level
-        representation = generation_info.model_representation
+        representation = generation_info.model_representation_name
         nsimulations = generation_info.nsimulations
         npackages = generation_info.npackages
         selfabsorption = generation_info.selfabsorption

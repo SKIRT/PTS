@@ -63,6 +63,9 @@ class ModelingHistory(SmartTable):
         :return:
         """
 
+        # Setup the table
+        self.setup()
+
         # Loop over all commands
         for command in single_commands:
 

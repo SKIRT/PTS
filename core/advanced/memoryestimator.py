@@ -17,7 +17,7 @@ from ..basics.configurable import Configurable
 from ..simulation.skifile import SkiFile
 from ..tools import introspection
 from ..tools import filesystem as fs
-from ..advanced.dustgridtool import DustGridTool
+from ..advanced.dustgridtool import get_statistics
 from ..tools import formatting as fmt
 from ..tools.logging import log
 from ..simulation.memory import MemoryRequirement
@@ -264,14 +264,11 @@ class MemoryEstimator(Configurable):
         # Inform the user
         log.info("Estimating the number of dust cells ...")
 
-        # Create the dust grid tool
-        tool = DustGridTool()
-
         # Debugging
         log.debug("Running a test simulation in the temporary directory '" + self.temp_path + "' ...")
 
         # Get the dust grid statistics
-        statistics = tool.get_statistics(self.ski, self.temp_path, self.config.input, "test")
+        statistics = get_statistics(self.ski, self.temp_path, self.config.input, "test")
 
         # Get the number of dust cells
         self.ncells = statistics.ncells

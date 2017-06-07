@@ -614,7 +614,7 @@ class StepWiseOptimizer(Optimizer):
     # -----------------------------------------------------------------
 
     @property
-    def population(self):
+    def parents(self):
 
         """
         This function ...
@@ -622,6 +622,19 @@ class StepWiseOptimizer(Optimizer):
         """
 
         return self.engine.population
+
+    # -----------------------------------------------------------------
+
+    @property
+    def population(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.newborns is not None: return self.newborns
+        else: return self.parents
 
     # -----------------------------------------------------------------
 
@@ -655,7 +668,7 @@ class StepWiseOptimizer(Optimizer):
         for name in self.individual_names:
 
             # Get the individual
-            individual = self.newborns[name]
+            individual = self.population[name]
 
             # Check recurrence
             generation_index, key = find_recurrent_individual(populations_run, individual, generation, rtol=self.config.recurrence_rtol, atol=self.config.recurrence_atol, binary_parameters=self.binary_parameters)
@@ -913,7 +926,7 @@ class StepWiseOptimizer(Optimizer):
         :return: 
         """
 
-        return self.newborns[name]
+        return self.population[name]
 
     # -----------------------------------------------------------------
 
@@ -926,7 +939,7 @@ class StepWiseOptimizer(Optimizer):
         """
 
         # Get the genome of the individual
-        genome = self.newborns[name]
+        genome = self.population[name]
 
         # Get the real parameters, unscaled
         parameters = get_parameters_from_genome(genome, self.parameter_minima_scaled, self.parameter_maxima_scaled, self.nbits, self.parameter_scales, gray=self.config.gray_code)
@@ -962,7 +975,7 @@ class StepWiseOptimizer(Optimizer):
         """
 
         if not self.is_named_population: raise ValueError("The population is not a named population")
-        return self.newborns.names
+        return self.population.names
 
     # -----------------------------------------------------------------
 
@@ -974,7 +987,7 @@ class StepWiseOptimizer(Optimizer):
         :return: 
         """
 
-        return self.newborns.keys
+        return self.population.keys
 
     # -----------------------------------------------------------------
 
@@ -1054,7 +1067,7 @@ class StepWiseOptimizer(Optimizer):
         else: path = self.output_path_file(parents_filename)
 
         # Write
-        write_population(self.population, path)
+        write_population(self.parents, path)
 
     # -----------------------------------------------------------------
 
