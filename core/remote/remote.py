@@ -2765,7 +2765,7 @@ class Remote(object):
         self.debug("Removing directory '" + path + "' ...")
 
         # Execute the command
-        output = self.execute("rm -rf " + path, output=True)
+        output = self.execute("rm -rf '" + path + "'", output=True)
 
         # Check for error
         for line in output:

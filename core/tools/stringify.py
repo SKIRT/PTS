@@ -370,7 +370,6 @@ def stringify_paths(paths, base=None):
     """
     This function ...
     :param paths:
-    :param delimiter:
     :param base:
     :return:
     """
@@ -382,7 +381,7 @@ def stringify_paths(paths, base=None):
         absolute_base = fs.absolute_path(base)
 
         # Return the type and the relative paths as a string list
-        return "string_list", stringify_list([fs.absolute_path(path).split(absolute_base)[1] for path in paths])
+        return "string_list", stringify_list([fs.absolute_path(path).split(absolute_base)[1] for path in paths])[1]
 
 # -----------------------------------------------------------------
 
