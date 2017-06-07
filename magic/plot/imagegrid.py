@@ -26,6 +26,7 @@ from matplotlib import cm
 from matplotlib.colors import LogNorm
 from collections import OrderedDict
 from textwrap import wrap
+from abc import ABCMeta
 
 from astropy.io import fits
 from astropy.visualization import SqrtStretch, LogStretch
@@ -58,6 +59,10 @@ class ImageGridPlotter(object):
     """
     This class ...
     """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
 
     def __init__(self, title=None):
 
@@ -127,16 +132,31 @@ class StandardImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
-    def run(self, output_path):
+    def run(self, **kwargs):
 
         """
         This function ...
-        :param output_path:
+        :param kwargs:
         :return:
         """
 
+        # Call the setup function
+        self.setup(**kwargs)
+
         # Make the plot
-        self.plot(output_path)
+        self.plot()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        self.output_path = kwargs.pop("output_path", None)
 
     # -----------------------------------------------------------------
 
@@ -169,11 +189,10 @@ class StandardImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
-    def plot(self, path):
+    def plot(self):
 
         """
         This function ...
-        :param path:
         :return:
         """
 
@@ -368,13 +387,13 @@ class StandardImageGridPlotter(ImageGridPlotter):
         #plt.tight_layout()
 
         # Debugging
-        if type(path).__name__ == "BytesIO": log.debug("Saving the SED plot to a buffer ...")
-        elif path is None: log.debug("Showing the SED plot ...")
-        else: log.debug("Saving the SED plot to " + str(path) + " ...")
+        if type(self.output_path).__name__ == "BytesIO": log.debug("Saving the image grid plot to a buffer ...")
+        elif self.output_path is None: log.debug("Showing the image grid plot ...")
+        else: log.debug("Saving the image grid plot to " + str(self.output_path) + " ...")
 
-        if path is not None:
+        if self.output_path is not None:
             # Save the figure
-            plt.savefig(path, bbox_inches='tight', pad_inches=0.25, transparent=self.transparent, format=self.format)
+            plt.savefig(self.output_path, bbox_inches='tight', pad_inches=0.25, transparent=self.transparent, format=self.format)
         else: plt.show()
         plt.close()
 

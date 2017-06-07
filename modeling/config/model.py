@@ -88,4 +88,7 @@ definition.add_optional("ndust_grids", "positive_integer", "number of dust grids
 # NEW: RERUN FOR THE MODELING STEPS
 definition.add_optional("rerun", "string", "rerun a certain modeling step", choices=single_commands)
 
+# VERY ADVANCED
+definition.add_optional("restart_from_generation", "string", "restart everything from this generation")
+
 # -----------------------------------------------------------------

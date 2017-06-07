@@ -102,4 +102,7 @@ definition.add_flag("plot_seds", "plot the SEDs of individual simulations", Fals
 definition.add_flag("record_timing", "record timing information in timing table", True)
 definition.add_flag("record_memory", "record memory information in memory table", True)
 
+# VERY ADVANCED
+definition.add_optional("restart_from_generation", "string", "restart everything from this generation")
+
 # -----------------------------------------------------------------

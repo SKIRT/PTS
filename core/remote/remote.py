@@ -2824,6 +2824,7 @@ class Remote(object):
         :return:
         """
 
+        # Get current working directory
         original_cwd = self.working_directory
 
         # Try to change the directory, give an error if this fails
@@ -2833,11 +2834,12 @@ class Remote(object):
         #return original_cwd
 
         # Send the command
-        self.ssh.sendline("cd " + path)
+        self.ssh.sendline("cd '" + path + "'")
         self.ssh.prompt()
         output = self.ansi_escape.sub('', self.ssh.before).replace('\x1b[K', '').split("\r\n")[1:-1]
-        if len(output) > 0 and "No such file or directory" in output[0]: raise RuntimeError("The directory does not exist")
+        if len(output) > 0 and "No such file or directory" in output[0]: raise RuntimeError("The directory '" + path + "' does not exist")
 
+        # Return the original working directory
         return original_cwd
 
     # -----------------------------------------------------------------
@@ -2859,7 +2861,7 @@ class Remote(object):
             command += 's"/"$0 }'
             command += "'"
 
-            output = self.execute(command)
+            output = self.execute(command, cwd=path)
 
             paths = output
 
@@ -2871,7 +2873,7 @@ class Remote(object):
             directories = self.execute("for i in $(ls */); do echo ${i%%/}; done")
             if "cannot access */" in directories[0]: directories = []
 
-            files = self.execute("for f in *; do [[ -d $f ]] || echo $f; done")
+            files = self.execute("for f in *; do [[ -d $f ]] || echo $f; done", cwd=path)
 
             # Get paths
             items = directories + files
@@ -3685,7 +3687,7 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def download_file_to(self, filepath, destination, remove=False):
+    def download_file_to(self, filepath, destination, remove=False, new_name=None):
 
         """
         This function ...
@@ -3695,7 +3697,11 @@ class Remote(object):
         :return:
         """
 
-        local_path = fs.join(destination, fs.name(filepath))
+        # Determine the local path
+        filename = new_name if new_name is not None else fs.name(filepath)
+        local_path = fs.join(destination, filename)
+
+        # Download
         self.download(filepath, local_path)
 
         # Check whether present
@@ -3706,6 +3712,40 @@ class Remote(object):
 
         # Return the local path
         return local_path
+
+    # -----------------------------------------------------------------
+
+    #def upload_file_buffer(self):
+
+        #"""
+        #This function ...
+        #:return:
+        #"""
+
+        # Send a file:
+        #  cat file | ssh ajw@dogmatix "cat > remote"
+        # OR: ssh ajw@dogmatix "cat > remote" < file
+
+        #pass
+
+    # -----------------------------------------------------------------
+
+    def download_file_buffer(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # receive a file:
+        # ssh ajw@dogmatix "cat remote" > copy
+
+        #output = StringIO.StringIO()
+        #output.write(binary_data_string)
+
+        #return output
+
+        pass
 
     # -----------------------------------------------------------------
 

@@ -405,7 +405,7 @@ class PixelEllipseRegion(EllipseRegion, PixelRegion):
 
     # -----------------------------------------------------------------
 
-    def to_mask(self, x_size, y_size):
+    def to_mask(self, x_size, y_size, invert=False):
 
         """
         This function ...
@@ -448,7 +448,11 @@ class PixelEllipseRegion(EllipseRegion, PixelRegion):
         #    dimension. Thus, each pixel is divided into ``subpixels ** 2``
         #    subpixels.
 
-        return Mask(fraction)
+        mask = Mask(fraction)
+
+        # Return
+        if invert: return mask.inverse()
+        else: return mask
 
     # -----------------------------------------------------------------
 

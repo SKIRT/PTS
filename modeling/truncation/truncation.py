@@ -357,7 +357,7 @@ class Truncator(TruncationComponent):
         self.write_ellipses()
 
         # Write the truncated images
-        #self.write_images()
+        self.write_images()
 
         # Write low-res truncated image
         self.write_lowres_images()
@@ -503,7 +503,7 @@ class Truncator(TruncationComponent):
                     ellipse = self.ellipses[name][factor]
 
                     # Convert into mask
-                    mask = ellipse.to_mask(self.frames[name].xsize, self.frames[name].ysize)
+                    mask = ellipse.to_mask(self.frames[name].xsize, self.frames[name].ysize, invert=True)
 
                     # Truncate the frame
                     frame = self.frames[name]
@@ -533,6 +533,7 @@ class Truncator(TruncationComponent):
         # Inform the user
         log.info("Writing low-resolution truncated images ...")
 
+        # Define maximum pixelscale (don't rebin to coordinate systems with a higher pixelscale)
         max_pixelscale = parse_quantity("15 arcsec")
 
         # Find the name of the image with the lowest spatial resolution
@@ -546,7 +547,7 @@ class Truncator(TruncationComponent):
             # Get the pixel ellipse
             ellipse = self.ellipses[reference_name][factor]
             # Convert into mask
-            mask = ellipse.to_mask(self.frames[reference_name].xsize, self.frames[reference_name].ysize)
+            mask = ellipse.to_mask(self.frames[reference_name].xsize, self.frames[reference_name].ysize, invert=True)
             masks[factor] = mask
 
         # Debugging
