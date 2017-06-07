@@ -30,6 +30,7 @@ from ...magic.core.dataset import DataSet
 from ...core.basics.plot import pretty_colors
 from ...core.tools import archive
 from ...magic.core.fits import contains_pc_and_cd, contains_pc_and_cdelt, remove_cd_keywords, remove_cdelt_keywords
+from ...core.tools import time
 
 # -----------------------------------------------------------------
 
@@ -114,6 +115,10 @@ class DataInspector(DataComponent):
         # Call the setup function of the base class
         super(DataInspector, self).setup(**kwargs)
 
+        # Set the output path
+        directory_name = time.unique_name(self.command_name())
+        self.config.output = fs.create_directory_in(self.inspect_path, directory_name)
+
     # -----------------------------------------------------------------
 
     def inspect_directories(self):
@@ -122,6 +127,9 @@ class DataInspector(DataComponent):
         This function ...
         :return: 
         """
+
+        # Inform the user
+        log.info("Inspecting directories ...")
 
         # Inspect origins
         self.inspect_origins()
@@ -532,7 +540,7 @@ class DataInspector(DataComponent):
         #plt.show()
 
         # Determine the path
-        path = fs.join(self.inspect_path, "coordinate_boxes.pdf")
+        path = self.output_path_file("coordinate_boxes.pdf")
 
         # Save the figure and close
         plt.savefig(path)

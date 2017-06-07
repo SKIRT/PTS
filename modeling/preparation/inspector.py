@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 from .component import PreparationComponent
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
+from ...core.tools import time
 
 # -----------------------------------------------------------------
 
@@ -74,6 +75,10 @@ class PreparationInspector(PreparationComponent):
         # Call the setup function of the base class
         super(PreparationInspector, self).setup(**kwargs)
 
+        # Set the output path
+        directory_name = time.unique_name(self.command_name())
+        self.config.output = fs.create_directory_in(self.inspect_path, directory_name)
+
     # -----------------------------------------------------------------
 
     def inspect_paths(self):
@@ -130,11 +135,14 @@ class PreparationInspector(PreparationComponent):
         :return:
         """
 
+        # Infomr the user
+        log.info("Writing significance maps ...")
+
         # Loop over the images
         for name in self.significance_maps:
 
             # Determine the path
-            path = fs.join(self.inspect_path, name + "_significance.fits")
+            path = self.output_path_file(name + "_significance.fits")
 
             # Save the error level map
             self.significance_maps[name].saveto(path)

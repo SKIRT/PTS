@@ -625,25 +625,31 @@ class GalaxyModeler(ModelerBase):
             # Check whether directory present in prep path
             prep_path = fs.join(self.environment.prep_path, prep_name)
 
+            # Preparation directory not found
             if not fs.is_directory(prep_path):
                 self.history.remove_entry("initialize_preparation") # ? good idea?
                 self.history.save()
                 raise RuntimeError("Preparation directory was not found for the " + prep_name + " image. Run initialize_preparation again to solve this.")
 
+            # Determine initialized file path
             initialized_path = fs.join(prep_path, "initialized.fits")
 
+            # Initialized file not found
             if not fs.is_file(initialized_path):
                 self.history.remove_entry("initialize_preparation") # ? good idea?
                 self.history.save()
                 raise RuntimeError("Initialized image was not found for the " + prep_name + " image. Run initialize_preparation again to fix this.")
 
+            # Determine sources directory path
             sources_path = fs.join(prep_path, "sources")
 
+            # Sources directory not found
             if not fs.is_directory(sources_path):
                 self.history.remove_entry("initialize_preparation") # ? good idea?
                 self.history.save()
                 raise RuntimeError("Sources directory was not found for the " + prep_name + " image. Run initialize_preparation again to fix this.")
 
+            # Empty sources directory
             if fs.is_empty(sources_path):
                 self.history.remove_entry("initialize_preparation") # ? good idea?
                 self.history.save()
