@@ -598,6 +598,18 @@ class FittingRun(object):
 
     # -----------------------------------------------------------------
 
+    def index_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return self.generations_table.index_for_generation(generation_name)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def genetic_generation_indices(self):
 
@@ -631,6 +643,18 @@ class FittingRun(object):
         """
 
         return self.generations_table.generation_names
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def grid_generations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.generations_table.grid_generations
 
     # -----------------------------------------------------------------
 

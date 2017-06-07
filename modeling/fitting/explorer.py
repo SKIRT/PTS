@@ -37,6 +37,7 @@ from ...core.tools import introspection
 from ...core.tools import parallelization as par
 from .generation import GenerationInfo, Generation
 from ...core.tools.stringify import tostr
+from ...core.basics.configuration import prompt_proceed
 
 # -----------------------------------------------------------------
 
@@ -233,6 +234,9 @@ class ParameterExplorer(FittingComponent):
 
         # Set options for the batch launcher
         self.set_launcher_options()
+
+        # Check for restarting generations
+        if self.config.restart_from_generation is not None: self.clear_for_restart()
 
         # Set the model generator
         self.set_generator()
@@ -432,6 +436,185 @@ class ParameterExplorer(FittingComponent):
         """
 
         return str("Generation" + str(index))
+
+    # -----------------------------------------------------------------
+
+    def clear_for_restart(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Clearing things for restarting from generation '" + self.config.restart_from_generation + "' ...")
+
+        # Get the gneration names
+        to_clear = self.get_to_clear_generation_names()
+
+        # Get the generations table
+        generations_table = self.fitting_run.generations_table
+        best_parameters_table = self.fitting_run.best_parameters_table
+
+        # Get the names of the original genetic generations
+        original_genetic_generation_names = generations_table.genetic_generations_with_initial
+        original_genetic_generations_with_initial_names_and_indices = generations_table.genetic_generations_with_initial_names_and_indices
+
+        # Keep track of the lowest genetic generation index
+        lowest_genetic_generation_index = None
+        removed_initial = False
+
+        to_be_removed_paths = []
+
+        # Loop over the generations to be cleared
+        for generation_name in to_clear:
+
+            # Prompt to proceed
+            if prompt_proceed("Are you absolutely sure all output from generation '" + generation_name + "' can be removed?"):
+
+                # Update the lowest genetic generation index
+                if generation_name.startswith("Generation"):
+                    index = self.fitting_run.index_for_generation(generation_name)
+                    if lowest_genetic_generation_index is None or index < lowest_genetic_generation_index: lowest_genetic_generation_index = index
+
+                if generation_name == "initial": removed_initial = True
+
+                # Remove from generations table
+                generations_table.remove_entry(generation_name)
+
+                # Remove from best_parameters table
+                best_parameters_table.remove_entry(generation_name)
+
+                # Remove from prob/generations
+                prob_generations_path = fs.create_directory_in(self.fitting_run.prob_path, "generations")
+                prob_generation_path = fs.join(prob_generations_path, generation_name + ".dat")
+                #fs.remove_file(prob_generation_path)
+                to_be_removed_paths.append(prob_generation_path)
+
+                # Remove directory from generations/
+                generation_directory_path = self.fitting_run.get_generation_path(generation_name)
+                #fs.remove_directory(generation_directory_path)
+                to_be_removed_paths.append(generation_directory_path)
+
+            # User doesn't want to proceed
+            else:
+
+                # Exit with an error
+                log.error("Cannot proceed without confirmation")
+                exit()
+
+        # IF GENETIC GENERATIONS ARE CLEARED, REPLACE THE MAIN ENGINE, MAIN PRNG AND MAIN OPTIMIZER.CFG
+        if removed_initial:
+
+            # Remove
+            fs.remove_file(self.fitting_run.main_engine_path)
+            fs.remove_file(self.fitting_run.main_prng_path)
+            fs.remove_file(self.fitting_run.optimizer_config_path)
+
+        # Some genetic generations are cleared, starting with some lowest genetic generation index
+        elif lowest_genetic_generation_index is not None:
+
+            # Search for the last remaining generation
+            last_remaining_generation = None
+
+            # Determine name of generation just before this index
+            for other_name, other_index in original_genetic_generations_with_initial_names_and_indices:
+                if other_index == lowest_genetic_generation_index - 1:
+                    last_remaining_generation = other_name
+                    break
+
+            if last_remaining_generation: raise RuntimeError("Something went wrong")
+
+            # Determine the path of this generation
+            generation = self.fitting_run.get_generation(last_remaining_generation)
+
+            # Determine the paths of the engine, prng and optimizer config
+            engine_path = generation.engine_path
+            prng_path = generation.prng_path
+            optimizer_config_path = generation.optimizer_config_path
+
+            # Replace the main engine, prng and optimizer config
+            fs.replace_file(self.fitting_run.main_engine_path, engine_path)
+            fs.replace_file(self.fitting_run.main_prng_path, prng_path)
+            fs.replace_file(self.fitting_run.optimizer_config_path, optimizer_config_path)
+
+        # Remove everything belonging the cleared generations
+        fs.remove_directories_and_files(to_be_removed_paths)
+
+        # Save the generations table
+        generations_table.save()
+
+        # Save the best parameters table
+        best_parameters_table.save()
+
+    # -----------------------------------------------------------------
+
+    def get_to_clear_generation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        generation_name = self.config.restart_from_generation
+
+        # Check whether the generation exists
+        if generation_name not in self.fitting_run.generation_names: raise ValueError("Generation '" + generation_name + "' does not exist")
+
+        # Generation names to clear
+        to_clear = []
+
+        # Grid-type generation
+        if "grid" in generation_name:
+
+            # Add to be cleared
+            to_clear.append(generation_name)
+
+            # Get the timestamp
+            generation_time = time.get_time_from_unique_name(generation_name)
+
+            # Loop over other 'grid' generations
+            for other_generation_name in self.fitting_run.grid_generations:
+
+                if other_generation_name == generation_name: continue
+
+                # Get time
+                other_generation_time = time.get_time_from_unique_name(other_generation_name)
+
+                # If the time is later, add to generation names to be cleared
+                if other_generation_time > generation_time: to_clear.append(generation_name)
+
+        # Initial genetic generation
+        elif generation_name == self.get_initial_generation_name():
+
+            # All genetic generations have to be cleared
+            to_clear = self.fitting_run.genetic_generations
+
+        # Other genetic generation
+        elif generation_name.startswith("Generation"):
+
+            # Add to be cleared
+            to_clear.append(generation_name)
+
+            # Get the index of the generation
+            index = self.fitting_run.index_for_generation(generation_name)
+
+            # Loop over the other genetic generations
+            for other_generation_name in self.fitting_run.genetic_generations:
+
+                if other_generation_name == generation_name: continue
+
+                # Get index of other
+                other_index = self.fitting_run.index_for_generation(other_generation_name)
+
+                # If the index is higher, add to be cleared
+                if other_index > index: to_clear.append(other_generation_name)
+
+        # Could not understand
+        else: raise ValueError("Could not understand the nature of generation '" + generation_name + "'")
+
+        # Retunr the list of generation names to clear
+        return to_clear
 
     # -----------------------------------------------------------------
 

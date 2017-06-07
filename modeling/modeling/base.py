@@ -186,7 +186,7 @@ class ModelerBase(Configurable):
                     cached_directory_name = self.cached_directory_name_for_command(command_name)
                     if cached_directory_name is not None:
                         remote_path = fs.join(self.cache_remote.home_directory, cached_directory_name)
-                        self.cache_remote.remove_directory(remote_path)
+                        if self.cache_remote.is_directory(remote_path): self.cache_remote.remove_directory(remote_path)
 
                     # Remove from history file (as if it had never been run before)
                     self.history.remove_entries(command_name)
@@ -226,7 +226,7 @@ class ModelerBase(Configurable):
                     cached_directory_name = self.cached_directory_name_for_command(command_name)
                     if cached_directory_name is not None:
                         remote_path = fs.join(self.cache_remote.home_directory, cached_directory_name)
-                        self.cache_remote.remove_directory(remote_path)
+                        if self.cache_remote.is_directory(remote_path): self.cache_remote.remove_directory(remote_path)
 
                     # Remove from history file (as if it had never been run before)
                     self.history.remove_entries(command_name)
@@ -784,6 +784,9 @@ class ModelerBase(Configurable):
         self.explorer.config.refine_spatial = self.config.refine_spatial
         self.explorer.config.selfabsorption = self.config.selfabsorption
         self.explorer.config.transient_heating = self.config.transient_heating
+
+        # ADVANCED SETTINGS
+        self.explorer.config.restart_from_generation = self.config.restart_from_generation
 
         # Set the input
         input_dict = dict()

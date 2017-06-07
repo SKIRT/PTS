@@ -185,7 +185,7 @@ def cached_directory_name_for_single_command(environment, command_name):
     elif command_name == "inspect_initialization": return None
 
     # Prepare data
-    elif command_name == "prepare_data": return None
+    elif command_name == "prepare_data": return "_preparation"
 
     # Inspect preparation
     elif command_name == "inspect_preparation": return None

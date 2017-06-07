@@ -608,6 +608,34 @@ def remove_directories_and_files(paths):
 
 # -----------------------------------------------------------------
 
+def replace_file(path, new_path):
+
+    """
+    This function ...
+    :param path:
+    :param new_path:
+    :return:
+    """
+
+    remove_file(path)
+    copy_file(new_path, directory_of(path), new_name=name(path))
+
+# -----------------------------------------------------------------
+
+def replace_directory(path, new_path):
+
+    """
+    This function ...
+    :param path:
+    :param new_path:
+    :return:
+    """
+
+    remove_directory(path)
+    copy_directory(new_path, directory_of(path), new_name=name(path))
+
+# -----------------------------------------------------------------
+
 def directory_size(path):
 
     """
@@ -1053,6 +1081,25 @@ def copy_file(file_path, directory_path, new_name=None):
     if is_file(destination): return destination
     elif is_directory(destination): return join(destination, name(file_path))
     else: raise ValueError("Don't understand the destination: " + destination)
+
+# -----------------------------------------------------------------
+
+def copy_directory(path, directory_path, new_name=None):
+
+    """
+    This function ...
+    :param path:
+    :param directory_path:
+    :param new_name:
+    :return:
+    """
+
+    # Create the directory
+    dirname = new_name if new_name is not None else name(path)
+    copy_path = create_directory_in(directory_path, dirname)
+
+    # Copy contents
+    copy_from_directory(path, copy_path)
 
 # -----------------------------------------------------------------
 

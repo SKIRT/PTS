@@ -3140,6 +3140,75 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def copy_file(self, file_path, directory_path, new_name=None):
+
+        """
+        This function ...
+        :param file_path:
+        :param directory_path:
+        :param new_name:
+        :return:
+        """
+
+        if new_name is not None: destination = fs.join(directory_path, new_name)
+        else: destination = directory_path
+
+        # Copy
+        self.execute("cp '" + file_path + "' '" + destination + "'")
+
+        # Return
+        if self.is_file(destination): return destination
+        elif self.is_directory(destination): return fs.join(destination, fs.name(file_path))
+        else: raise ValueError("Don't understand the destination: " + destination)
+
+    # -----------------------------------------------------------------
+
+    def copy_directory(self, path, directory_path, new_name=None):
+
+        """
+        This function ...
+        :param path:
+        :param directory_path:
+        :param new_name:
+        :return:
+        """
+
+        # Create the directory
+        dirname = new_name if new_name is not None else fs.name(path)
+        copy_path = self.create_directory_in(directory_path, dirname)
+
+        # Copy contents
+        self.copy_from_directory(path, copy_path)
+
+    # -----------------------------------------------------------------
+
+    def copy_from_directory(self, from_directory, to_directory, **kwargs):
+
+        """
+        This function ...
+        :param from_directory:
+        :param to_directory:
+        :param kwargs:
+        :return:
+        """
+
+        self.copy_files(self.files_in_path(from_directory, **kwargs), to_directory)
+
+    # -----------------------------------------------------------------
+
+    def copy_files(self, file_paths, directory_path):
+
+        """
+        This function ...
+        :param file_paths:
+        :param directory_path:
+        :return:
+        """
+
+        for file_path in file_paths: self.copy_file(file_path, directory_path)
+
+    # -----------------------------------------------------------------
+
     def directory_size(self, path):
 
         """
@@ -3150,7 +3219,7 @@ class Remote(object):
 
         from ..units.parsing import parse_quantity
 
-        command = "du -sh " + path
+        command = "du -sh '" + path + "'"
         output = self.execute(command)
 
         string = output[0].split(" ")[0].lower() + "byte"
@@ -3168,7 +3237,7 @@ class Remote(object):
 
         from ..units.parsing import parse_quantity
 
-        command = "du -sh " + path
+        command = "du -sh '" + path + "'"
         output = self.execute(command)
 
         string = output[0].split(" ")[0].lower() + "byte"

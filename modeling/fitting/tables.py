@@ -233,6 +233,19 @@ class BestParametersTable(SmartTable):
         # Add a row to the table
         self.add_row(values)
 
+    # -----------------------------------------------------------------
+
+    def remove_entry(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        index = tables.find_index(self, generation_name, "Generation name")
+        self.remove_row(index)
+
 # -----------------------------------------------------------------
 
 class GenerationsTable(SmartTable):
@@ -288,6 +301,19 @@ class GenerationsTable(SmartTable):
 
             # Add finishing time column
             self.add_column_info("Finishing time", str, None, "Time of finishing the generation")
+
+    # -----------------------------------------------------------------
+
+    def index_for_generation(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        row_index = tables.find_index(self, generation_name)
+        return self["Generation index"][row_index]
 
     # -----------------------------------------------------------------
 
@@ -349,6 +375,40 @@ class GenerationsTable(SmartTable):
     # -----------------------------------------------------------------
 
     @property
+    def grid_generations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a list to contain the generation names
+        names = []
+
+        # Loop over the rows in the table
+        for i in range(len(self)):
+
+            # Add the generation name
+            if "grid" in self["Generation name"][i]: names.append(self["Generation name"][i])
+
+        # Return the generation names
+        return names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ngrid_generations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.grid_generations)
+
+    # -----------------------------------------------------------------
+
+    @property
     def genetic_generations(self):
 
         """
@@ -398,6 +458,29 @@ class GenerationsTable(SmartTable):
 
         # Return the list of generation name
         return names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def genetic_generations_with_initial_names_and_indices(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = self.genetic_generations_with_initial
+
+        names_and_indices = []
+
+        for name in names:
+
+            if name == "initial": index = -1
+            else: index = self.index_for_generation(name)
+
+            names_and_indices.append((name, index))
+
+        return names_and_indices
 
     # -----------------------------------------------------------------
 
