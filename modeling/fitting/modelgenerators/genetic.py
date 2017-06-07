@@ -173,7 +173,7 @@ class GeneticModelGenerator(ModelGenerator):
         self.optimizer.config.writing.input_path = self.generation.optimizer_input_path
         self.optimizer.config.writing.newborns_path = self.generation.newborns_path
         self.optimizer.config.writing.parents_path = self.generation.parents_path
-        self.optimizer.config.writing.crossover_path = self.generation.crossover_table_path
+        self.optimizer.config.writing.crossover_table_path = self.generation.crossover_table_path
         self.optimizer.config.writing.recurrent_path = self.generation.recurrent_path
         self.optimizer.config.writing.elitism_table_path = elitism_path
 
@@ -210,8 +210,12 @@ class GeneticModelGenerator(ModelGenerator):
 
         # Load the previous population
         previous_generation_path = self.fitting_run.last_genetic_or_initial_generation_path
-        previous_population_path = fs.join(previous_generation_path, "population.dat")
-        self.previous_population = load_population(previous_population_path)
+        #previous_population_path = fs.join(previous_generation_path, "population.dat")
+        previous_parents_path = fs.join(previous_generation_path, "parents.dat")
+        previous_newborns_path = fs.join(previous_generation_path, "newborns.dat")
+        if fs.is_file(previous_newborns_path): self.previous_population = load_population(previous_newborns_path)
+        else: self.previous_population = load_population(previous_parents_path)
+        #self.previous_population = load_population(previous_population_path)
 
         # Load the previous recurrent data, BUT NOT WHEN THE PREVIOUS GENERATION WAS THE INTIAL ONE ?
         if not self.fitting_run.last_is_initial:

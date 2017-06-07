@@ -27,7 +27,7 @@ except ImportError: HAS_NP = False
 
 # -----------------------------------------------------------------
 
-if HAS_NP: boolean_types = [bool, np.bool]
+if HAS_NP: boolean_types = [bool, np.bool, np.bool_]
 else: boolean_types = [bool]
 
 # -----------------------------------------------------------------

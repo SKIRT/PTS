@@ -38,7 +38,7 @@ explore | -- | fitting.explorer.ParameterExplorer | arguments | Explore the para
 generate_genetic | -- | fitting.modelgenerators.genetic.GeneticModelGenerator | arguments | Generate models using genetic algorithms
 generate_grid | -- | fitting.modelgenerators.grid.GridModelGenerator | arguments | Generate models on a grid in parameter space
 fit_sed | -- | fitting.sedfitting.SEDFitter | arguments | Determine the best fit with the observed SED
-finish_exploration | -- | fitting.finisher.ExplorationFinisher  | arguments | Finish the parameter exploration
+finish_exploration | -- | fitting.finisher.ExplorationFinisher | arguments | Finish the parameter exploration
 launch_best | -- | fitting.bestmodellauncher.BestModelLauncher | interactive | Launch simulations to inspect the current best RT model for a certain generation
 launch_analysis | -- | analysis.launcher.AnalysisLauncher | arguments | Launch a simulation for analysis
 launch_heating | -- | analysis.heating.launcher.DustHeatingContributionLauncher | arguments | Launch simulations for analysing the heating contributions

@@ -86,7 +86,7 @@ def stringify(value, scientific=False, decimal_places=2, fancy=False, ndigits=No
     #elif isinstance(value, np.ndarray) and not isinstance(value, Quantity):
     #elif introspection.try_importing_module("numpy", True) and (isinstance(value, np.ndarray) and not hasattr(value, "unit")):
     # WE ALSO TEST IF THIS IS NOT A NUMPY INTEGER, FLOAT OR BOOLEAN (because they have a __array__ attribute)
-    elif hasattr(value, "__array__") and not hasattr(value, "unit") and not types.is_boolean_type(value) and not types.is_integer_type(value) and not types.is_real_type(value) and not types.is_string_type(value): return stringify_array(value)
+    elif hasattr(value, "__array__") and hasattr(value, "__getitem__") and can_get_item(value) and not hasattr(value, "unit") and not types.is_boolean_type(value) and not types.is_integer_type(value) and not types.is_real_type(value) and not types.is_string_type(value): return stringify_array(value)
 
     # Column or masked masked column
     elif type(value).__name__ == "MaskedColumn" or type(value).__name__ == "Column": return stringify_array(value)
@@ -96,6 +96,29 @@ def stringify(value, scientific=False, decimal_places=2, fancy=False, ndigits=No
 
     # All other
     else: return stringify_not_list(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits)
+
+# -----------------------------------------------------------------
+
+def can_get_item(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    #print(value, type(value))
+
+    try:
+        length = len(value)
+    except TypeError: return False
+
+    if len(value) == 0: return True
+    else:
+        try:
+            item = value[0]
+            return True
+        except IndexError: return False
 
 # -----------------------------------------------------------------
 
