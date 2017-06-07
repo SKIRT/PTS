@@ -40,6 +40,11 @@ from ...core.tools import types
 
 # -----------------------------------------------------------------
 
+newborns_filename = "newborns.dat"
+parents_filename = "parents.dat"
+
+# -----------------------------------------------------------------
+
 class StepWiseOptimizer(Optimizer):
 
     """
@@ -55,9 +60,6 @@ class StepWiseOptimizer(Optimizer):
 
         # Call the constructor of the base class
         super(StepWiseOptimizer, self).__init__(*args, **kwargs)
-
-        # The current population
-        self.population = None
 
         # The scores of the past generation
         self.scores = None
@@ -343,7 +345,7 @@ class StepWiseOptimizer(Optimizer):
         self.engine.initialize()
 
         # Get the initial population
-        self.population = self.engine.get_population()
+        #self.population = self.engine.get_population()
 
     # -----------------------------------------------------------------
 
@@ -364,7 +366,7 @@ class StepWiseOptimizer(Optimizer):
         self.set_scores()
 
         # Set the population
-        self.population = self.engine.get_population()
+        #self.population = self.engine.get_population()
 
         # Get the best individual
         self.best = self.engine.finish_evolution()
@@ -591,12 +593,35 @@ class StepWiseOptimizer(Optimizer):
         crossover_data = self.engine.generate_new_population()
 
         # Get the new population
-        self.population = self.engine.new_population
+        #self.population = self.engine.new_population
 
         # Create the crossover table
         if crossover_data is not None: self.crossover_table = CrossoverTable.from_data(crossover_data)
         else: raise RuntimeError("Could not get the crossover data")
-        #else: log.warning("No crossover data available")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def newborns(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.engine.new_population
+
+    # -----------------------------------------------------------------
+
+    @property
+    def population(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.engine.population
 
     # -----------------------------------------------------------------
 
@@ -630,7 +655,7 @@ class StepWiseOptimizer(Optimizer):
         for name in self.individual_names:
 
             # Get the individual
-            individual = self.population[name]
+            individual = self.newborns[name]
 
             # Check recurrence
             generation_index, key = find_recurrent_individual(populations_run, individual, generation, rtol=self.config.recurrence_rtol, atol=self.config.recurrence_atol, binary_parameters=self.binary_parameters)
@@ -696,7 +721,10 @@ class StepWiseOptimizer(Optimizer):
         self.write_populations()
 
         # Write the new generation
-        self.write_population()
+        if self.newborns is not None: self.write_newborns()
+
+        # Write the internal generation
+        self.write_parents()
 
         # Write the best individual
         self.write_best()
@@ -885,7 +913,7 @@ class StepWiseOptimizer(Optimizer):
         :return: 
         """
 
-        return self.population[name]
+        return self.newborns[name]
 
     # -----------------------------------------------------------------
 
@@ -898,7 +926,7 @@ class StepWiseOptimizer(Optimizer):
         """
 
         # Get the genome of the individual
-        genome = self.population[name]
+        genome = self.newborns[name]
 
         # Get the real parameters, unscaled
         parameters = get_parameters_from_genome(genome, self.parameter_minima_scaled, self.parameter_maxima_scaled, self.nbits, self.parameter_scales, gray=self.config.gray_code)
@@ -934,7 +962,7 @@ class StepWiseOptimizer(Optimizer):
         """
 
         if not self.is_named_population: raise ValueError("The population is not a named population")
-        return self.population.names
+        return self.newborns.names
 
     # -----------------------------------------------------------------
 
@@ -946,7 +974,7 @@ class StepWiseOptimizer(Optimizer):
         :return: 
         """
 
-        return self.population.keys
+        return self.newborns.keys
 
     # -----------------------------------------------------------------
 
@@ -992,7 +1020,7 @@ class StepWiseOptimizer(Optimizer):
 
     # -----------------------------------------------------------------
 
-    def write_population(self):
+    def write_newborns(self):
 
         """
         This function ...
@@ -1000,11 +1028,30 @@ class StepWiseOptimizer(Optimizer):
         """
 
         # Inform the user
-        log.info("Writing the population genomes ...")
+        log.info("Writing the newborn genomes ...")
 
         # Determine the path
-        if self.config.writing.population_path is not None: path = fs.absolute_or_in(self.config.writing.population_path, self.output_path)
-        else: path = self.output_path_file("population.dat")
+        if self.config.writing.newborns_path is not None: path = fs.absolute_or_in(self.config.writing.newborns_path, self.output_path)
+        else: path = self.output_path_file(newborns_filename)
+
+        # Write
+        write_population(self.newborns, path)
+
+    # -----------------------------------------------------------------
+
+    def write_parents(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the parent genomes ...")
+
+        # Determine the path
+        if self.config.writing.parents_path is not None: path = fs.absolute_or_in(self.config.writing.parents_path, self.output_path)
+        else: path = self.output_path_file(parents_filename)
 
         # Write
         write_population(self.population, path)

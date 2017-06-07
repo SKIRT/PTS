@@ -767,3 +767,27 @@ class NamedDirectoryList(NamedList):
         self.contents[name] = path
 
 # -----------------------------------------------------------------
+
+def equal_dictionaries(dict_a, dict_b):
+
+    """
+    This function ...
+    :param dict_a:
+    :param dict_b:
+    :return:
+    """
+
+    if len(dict_a) != len(dict_b): return False
+
+    for key in dict_a:
+
+        if key not in dict_b: return False
+
+        value_a = dict_a[key]
+        value_b = dict_b[key]
+
+        if value_a != value_b: return False
+
+    return True
+
+# -----------------------------------------------------------------

@@ -59,12 +59,6 @@ class ExplorationFinisher(FittingComponent):
         # The optimizer
         self.optimizer = None
 
-        # The (last) population
-        self.population = None
-
-        # The best individual
-        self.best = None
-
         # The scales for the different parameters
         self.scales = None
 
@@ -93,10 +87,7 @@ class ExplorationFinisher(FittingComponent):
         # 4. Set the scores to the optimizer
         self.finish_optimizer()
 
-        # 5. Get the best individual
-        self.get_best()
-
-        # 6. Show
+        # 5. Show
         self.show()
 
     # -----------------------------------------------------------------
@@ -337,21 +328,44 @@ class ExplorationFinisher(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_best(self):
+    @property
+    def population(self):
 
         """
         This function ...
-        :return: 
+        :return:
         """
 
-        # Inform the user
-        log.info("Getting the best individual ...")
+        # The (last) population
+        return self.optimizer.population
 
-        # Set the population
-        self.population = self.optimizer.population
+    # -----------------------------------------------------------------
+
+    @property
+    def best(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # The best individual
+        return self.optimizer.best
+
+    # -----------------------------------------------------------------
+
+    #def get_best(self):
+
+        #"""
+        #This function ...
+        #:return:
+        #"""
+
+        # Inform the user
+        #log.info("Getting the best individual ...")
 
         # Get the best individual
-        self.best = self.optimizer.best
+        #self.best = self.optimizer.best
 
     # -----------------------------------------------------------------
 

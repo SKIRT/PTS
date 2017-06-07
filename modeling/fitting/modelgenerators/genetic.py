@@ -171,7 +171,8 @@ class GeneticModelGenerator(ModelGenerator):
 
         # Set generation specific paths
         self.optimizer.config.writing.input_path = self.generation.optimizer_input_path
-        self.optimizer.config.writing.population_path = self.generation.population_path
+        self.optimizer.config.writing.newborns_path = self.generation.newborns_path
+        self.optimizer.config.writing.parents_path = self.generation.parents_path
         self.optimizer.config.writing.crossover_path = self.generation.crossover_table_path
         self.optimizer.config.writing.recurrent_path = self.generation.recurrent_path
         self.optimizer.config.writing.elitism_table_path = elitism_path

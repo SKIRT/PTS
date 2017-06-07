@@ -1118,6 +1118,18 @@ class GeneticEngine(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def population(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.internalPop
+
+    # -----------------------------------------------------------------
+
     def get_population(self):
 
         """ Return the internal population of GA Engine

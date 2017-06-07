@@ -24,7 +24,7 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 # The fitting run to use for analysis
 run_names = get_run_names(modeling_path)
 if len(run_names) == 0: raise RuntimeError("There are no fitting runs")
-elif len(run_names) == 1: definition.add_fixed("fitting_run", "string", "name of the fitting run to use")
+elif len(run_names) == 1: definition.add_fixed("fitting_run", "string", run_names[0])
 else: definition.add_required("fitting_run", "string", "name of the fitting run to use", choices=run_names)
 
 # Settings for the wavelength grid

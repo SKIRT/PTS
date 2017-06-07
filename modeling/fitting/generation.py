@@ -388,26 +388,50 @@ class Generation(object):
     # -----------------------------------------------------------------
 
     @property
-    def population_path(self):
+    def newborns_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.join(self.path, "population.dat")
+        return fs.join(self.path, "newborns.dat")
 
     # -----------------------------------------------------------------
 
     @property
-    def population(self):
+    def newborns(self):
 
         """
         This function ...
         :return:
         """
 
-        return load_population(self.population_path)
+        return load_population(self.newborns_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parents_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, "parents.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parents(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return load_population(self.parents_path)
 
     # -----------------------------------------------------------------
 
