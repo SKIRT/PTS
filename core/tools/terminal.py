@@ -21,6 +21,7 @@ import subprocess
 from . import filesystem as fs
 from . import introspection
 from . import strings
+from . import types
 
 # -----------------------------------------------------------------
 
@@ -202,7 +203,7 @@ def execute_lines_no_pexpect(*args, **kwargs):
     lines = []
 
     # Check if all strings
-    for line in args: assert isinstance(line, basestring)
+    for line in args: assert types.is_string_type(line)
 
     # Execute the lines
     for line in args: lines += execute_no_pexpect(line, show_output=show_output, cwd=cwd)
@@ -231,7 +232,7 @@ def execute_lines_expect_clone(*args, **kwargs):
     cwd = kwargs.pop("cwd", None)
 
     # Execute first line
-    assert isinstance(args[0], basestring)
+    assert types.is_string_type(args[0])
     child = expect.spawn(args[0], timeout=timeout, cwd=cwd)
 
     # If the output has to be shown on the console, set the 'logfile' to the standard system output stream
@@ -243,7 +244,7 @@ def execute_lines_expect_clone(*args, **kwargs):
     for line in args[1:]:
 
         # Just a command where completion is expected
-        if isinstance(line, basestring):
+        if types.is_string_type(line):
 
             # Send the command
             child = child.sendline(line)
@@ -298,7 +299,7 @@ def execute_lines(*args, **kwargs):
     cwd = kwargs.pop("cwd", None)
 
     # Execute first line
-    assert isinstance(args[0], basestring)
+    assert types.is_string_type(args[0])
     child = pexpect.spawn(args[0], timeout=timeout, cwd=cwd)
 
     # If the output has to be shown on the console, set the 'logfile' to the standard system output stream
@@ -310,13 +311,13 @@ def execute_lines(*args, **kwargs):
     for line in args[1:]:
 
         # Just a command where completion is expected
-        if isinstance(line, basestring):
+        if types.is_string_type(line):
 
             # Send the command
             child = child.sendline(line)
 
         # Tuple: something is expected and must be filled in
-        elif isinstance(line, tuple):
+        elif types.is_tuple(line):
 
             # Expect
             if len(line) == 3 and line[2]:

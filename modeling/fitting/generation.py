@@ -91,6 +91,9 @@ class Generation(object):
         # Determine info path
         info_path = fs.join(directory_path, "info.dat")
 
+        # Check if present
+        if not fs.is_file(info_path): raise IOError("The generation info file is not present at '" + info_path + "'")
+
         # Load the info
         info = GenerationInfo.from_file(info_path)
 

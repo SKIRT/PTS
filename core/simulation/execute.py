@@ -15,6 +15,7 @@
 # Import standard modules
 import os
 import subprocess
+import tempfile
 
 # Import the relevant PTS classes and modules
 from .arguments import SkirtArguments
@@ -190,7 +191,16 @@ class SkirtExec:
             if silent: subprocess.call(command, stdout=open(os.devnull,'w'), stderr=open(os.devnull,'w'))
             else: subprocess.call(command)
         #else: self._process = subprocess.Popen(command, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
-        else: self._process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1)
+
+        # CAUSES HANGING:
+        # https://thraxil.org/users/anders/posts/2008/03/13/Subprocess-Hanging-PIPE-is-your-enemy/
+        #else: self._process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1)
+
+        # PROPER:
+        else:
+            # Create a temporary file
+            output_file = tempfile.TemporaryFile()
+            self._process = subprocess.Popen(command, stdout=output_file, stderr=output_file)
 
         # Show progress bar with progress
         if progress_bar:

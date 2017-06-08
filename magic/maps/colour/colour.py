@@ -32,8 +32,10 @@ def make_map(*args, **kwargs):
     # Create the colour map maker
     maker = ColourMapsMaker()
 
+    # Create frame list
     frames = FrameList(*args) # indexed on filter
 
+    # Run the map maker
     maker.run(frames=frames)
 
     # Get the maps

@@ -2204,7 +2204,7 @@ def convolve_to_fwhm(*frames, **kwargs):
     # Get input
     names = kwargs.pop("names")
     highest_fwhm = kwargs.pop("fwhm")
-    highest_fwhm_filter = kwargs.pop("filters")
+    highest_fwhm_filter = kwargs.pop("filter")
 
     # Get kernel services
     aniano = AnianoKernels()
@@ -2235,7 +2235,7 @@ def convolve_to_fwhm(*frames, **kwargs):
             log.debug("Frame " + name + " is convolved to a PSF with FWHM = " + str(highest_fwhm) + " ...")
 
             # Get the kernel, either from aniano or from matching kernels
-            if aniano.has_kernel_for_filters(frame.psf_filter, highest_fwhm_filter): kernel = aniano.get_kernel(frame.psf_filter, highest_fwhm_filter)
+            if aniano.has_kernel_for_filters(frame.psf_filter, highest_fwhm_filter): kernel = aniano.get_kernel(frame.psf_filter, highest_fwhm_filter, from_fwhm=frame.fwhm, to_fwhm=highest_fwhm)
             else:
 
                 # Get from and to filter
