@@ -415,6 +415,8 @@ class SmartTable(Table):
         #print(len(self.colnames))
         #print(len(values))
 
+        # CHECK TYPES BEFORE RESIZE STRING COLUMNS?
+
         # Resize string columns for the new values
         self._resize_string_columns(values)
 

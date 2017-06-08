@@ -78,8 +78,10 @@ class CrossoverTable(SmartTable):
             # Convert crossover details into string
             details = tostr(entry[-1])
 
-            # Construct row
-            row = entry[:5] + [crossover, details]
+            # Construct row: cut generation index from the entry and cut before the 'crossover' flag
+            row = entry[1:5] + [crossover, details]
+
+            #print("row:", row)
 
             #rows.append(row)
             table.add_row(row)

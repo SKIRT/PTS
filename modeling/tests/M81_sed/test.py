@@ -210,6 +210,9 @@ class M81SEDTest(M81TestBase):
         elif self.config.reference_test is not None: simulation_path = fs.join(introspection.pts_tests_dir, self.config.reference_test, "ref")
         else: raise ValueError("Reference path and reference test settings are None")
 
+        # Check whether present
+        if not fs.is_directory(simulation_path): raise ValueError("The reference simulation path could not be found")
+
         # Look for simulation
         prefix, ski_path, in_path, out_path = find_one_simulation_in_path(simulation_path)
 
