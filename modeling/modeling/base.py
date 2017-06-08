@@ -217,7 +217,7 @@ class ModelerBase(Configurable):
                 if prompt_proceed("are you absolutely sure the output of '" + command_name + "' can be removed?"):
 
                     # Debugging
-                    log.debug("Removing the '" + stringify.stringify_paths(paths, base=self.modeling_path) + "' directory ...")
+                    log.debug("Removing the '" + stringify.stringify_paths(paths, base=self.modeling_path)[1] + "' directory ...")
 
                     # Remove
                     fs.remove_directories_and_files(paths)

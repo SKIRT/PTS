@@ -1190,6 +1190,7 @@ class GeneticEngine(object):
         for i in xrange(0, size_iterate, 2):
 
             applied = False
+            details = None
 
             # Select mother and father
             #genomeMom = self.select(popID=self.currentGeneration)
@@ -1206,9 +1207,16 @@ class GeneticEngine(object):
             if not crossover_empty and self.pCrossover >= 1.0:
 
                 # Apply
-                for it in genomeMom.crossover.applyFunctions(mom=genomeMom, dad=genomeDad, count=2, **self.crossover_kwargs):
-                    (sister, brother) = it
+                # DIDN'T MAKE SENSE: SISTER AND BROTHER WERE JUST OVERWRITTEN FOR EVERY NEW CROSSOVER FUNCTION THAT WAS CALLED!
+                #for it in genomeMom.crossover.applyFunctions(mom=genomeMom, dad=genomeDad, count=2, **self.crossover_kwargs):
+                #    (sister, brother) = it
 
+                # TODO: what to do with multiple crossover functions now?
+
+                # Apply the crossover
+                sister, brother, details = genomeMom.crossover.apply(0, mom=genomeMom, dad=genomeDad, count=2, return_details=True, **self.crossover_kwargs)
+
+                # Set flag
                 applied = True
 
             # Crossover with some probability
@@ -1218,9 +1226,16 @@ class GeneticEngine(object):
                 if not crossover_empty and utils.randomFlipCoin(self.pCrossover):
 
                     # Apply
-                    for it in genomeMom.crossover.applyFunctions(mom=genomeMom, dad=genomeDad, count=2, **self.crossover_kwargs):
-                        (sister, brother) = it
+                    # DIDN'T MAKE SENSE: SISTER AND BROTHER WERE JUST OVERWRITTEN FOR EVERY NEW CROSSOVER FUNCTION THAT WAS CALLED!
+                    #for it in genomeMom.crossover.applyFunctions(mom=genomeMom, dad=genomeDad, count=2, **self.crossover_kwargs):
+                    #    (sister, brother) = it
 
+                    # TODO: what to do with multiple crossover functions now?
+
+                    # Apply the crossover
+                    sister, brother, details = genomeMom.crossover.apply(0, mom=genomeMom, dad=genomeDad, count=2, return_details=True, **self.crossover_kwargs)
+
+                    # Set flag
                     applied = True
 
                 # Make clones of the mother and father
@@ -1238,13 +1253,14 @@ class GeneticEngine(object):
             brother_key = new_population.append(brother)
 
             # Add entry to the crossover data
-            entry = [current_generation_index, mother_key, father_key, sister_key, brother_key, applied]
+            entry = [current_generation_index, mother_key, father_key, sister_key, brother_key, applied, details]
             crossover_data.append(entry)
 
         # Generate one more individual if the population size is not even
         if len(self.internalPop) % 2 != 0:
 
             applied = False
+            details = None
 
             # Select mother and father
             #genomeMom = self.select(popID=self.currentGeneration)
@@ -1261,9 +1277,15 @@ class GeneticEngine(object):
             if utils.randomFlipCoin(self.pCrossover):
 
                 # Apply
-                for it in genomeMom.crossover.applyFunctions(mom=genomeMom, dad=genomeDad, count=1, **self.crossover_kwargs):
-                    (sister, brother) = it
+                #for it in genomeMom.crossover.applyFunctions(mom=genomeMom, dad=genomeDad, count=1, **self.crossover_kwargs):
+                #    (sister, brother) = it
 
+                # TODO: what to do with multiple crossover functions now?
+
+                # Apply the crossover
+                sister, brother, details = genomeMom.crossover.apply(0, mom=genomeMom, dad=genomeDad, count=1, return_details=True, **self.crossover_kwargs)
+
+                # Set flag
                 applied = True
 
             #
@@ -1283,7 +1305,7 @@ class GeneticEngine(object):
             brother_key = None
 
             # Add entry to the crossover data
-            entry = [current_generation_index, mother_key, father_key, sister_key, brother_key, applied]
+            entry = [current_generation_index, mother_key, father_key, sister_key, brother_key, applied, details]
             crossover_data.append(entry)
 
         # Set the new population

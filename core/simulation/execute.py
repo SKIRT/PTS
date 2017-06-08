@@ -190,7 +190,7 @@ class SkirtExec:
             if silent: subprocess.call(command, stdout=open(os.devnull,'w'), stderr=open(os.devnull,'w'))
             else: subprocess.call(command)
         #else: self._process = subprocess.Popen(command, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
-        else: self._process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        else: self._process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1)
 
         # Show progress bar with progress
         if progress_bar:
@@ -209,11 +209,12 @@ class SkirtExec:
                 # Show SKIRT error messages
                 log.error("SKIRT error output:")
                 log.error("------------------")
-                for line in self._process.stdout:
+                out, err = self._process.communicate()
+                for line in out:
                     if "*** Error" in line:
                         line = line.split("*** Error: ")[1].split("\n")[0]
                         log.error(line)
-                for line in self._process.stderr:
+                for line in err:
                     if "*** Error" in line:
                         line = line.split("*** Error: ")[1].split("\n")[0]
                         log.error(line)

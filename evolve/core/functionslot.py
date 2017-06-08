@@ -218,16 +218,18 @@ class FunctionSlot(object):
 
     # -----------------------------------------------------------------
 
-    def apply(self, index, obj, **args):
+    def apply(self, index, obj=None, **args):
 
-      """ Apply the index function
+      """
+      Apply the index function
       :param index: the index of the function
       :param obj: this object is passes as parameter to the function
       :param args: this args dictionary is passed to the function
       """
 
-      if len(self.funcList) <= 0:
-         raise Exception("No function defined: " + self.slotName)
+      if len(self.funcList) <= 0: raise Exception("No function defined: " + self.slotName)
+
+      # Apply and return the result
       return self.funcList[index](obj, **args)
 
     # -----------------------------------------------------------------
@@ -242,19 +244,25 @@ class FunctionSlot(object):
       if len(self.funcList) <= 0:
          utils.raiseException("No function defined: " + self.slotName)
 
-      if not self.rand_apply:
-         for f in self.funcList:
-            yield f(obj, **args)
-      else:
-         v = prng.uniform(0, 1)
-         fobj = None
-         for func, weight in zip(self.funcList, self.funcWeights):
-            fobj = func
-            if v < weight:
-               break
-            v = v - weight
+      # Apply one at random
+      if self.rand_apply:
 
-         yield fobj(obj, **args)
+          v = prng.uniform(0, 1)
+          fobj = None
+
+          for func, weight in zip(self.funcList, self.funcWeights):
+
+              fobj = func
+              if v < weight: break
+              v = v - weight
+
+          yield fobj(obj, **args)
+
+      # Yield result from all
+      else:
+
+          for f in self.funcList:
+              yield f(obj, **args)
 
     # -----------------------------------------------------------------
 

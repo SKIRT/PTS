@@ -28,6 +28,8 @@ def G1DBinaryStringXSinglePoint(genome, **args):
     .. warning:: You can't use this crossover method for binary strings with length of 1.
     """
 
+    return_details = args.pop("return_details", False)
+
     sister = None
     brother = None
     gMom = args["mom"]
@@ -48,7 +50,9 @@ def G1DBinaryStringXSinglePoint(genome, **args):
       brother.resetStats()
       brother[cut:] = gMom[cut:]
 
-    return (sister, brother)
+    # Return the sister and brother
+    if return_details: return sister, brother, cut
+    else: return sister, brother
 
 # -----------------------------------------------------------------
 
@@ -58,6 +62,8 @@ def G1DBinaryStringXTwoPoint(genome, **args):
     The 1D Binary String crossover, Two Point
     .. warning:: You can't use this crossover method for binary strings with length of 1.
     """
+
+    return_details = args.pop("return_details", False)
 
     sister = None
     brother = None
@@ -82,7 +88,9 @@ def G1DBinaryStringXTwoPoint(genome, **args):
       brother.resetStats()
       brother[cuts[0]:cuts[1]] = gMom[cuts[0]:cuts[1]]
 
-    return (sister, brother)
+    # Return the sister and brother
+    if return_details: return sister, brother, cuts
+    else: return sister, brother
 
 # -----------------------------------------------------------------
 
@@ -91,6 +99,8 @@ def G1DBinaryStringXUniform(genome, **args):
     """
     The G1DList Uniform Crossover
     """
+
+    return_details = args.pop("return_details", False)
 
     from . import constants
 
@@ -104,13 +114,20 @@ def G1DBinaryStringXUniform(genome, **args):
     sister.resetStats()
     brother.resetStats()
 
+    # Positions which were swapped between sister and brother
+    positions = []
+
     for i in xrange(len(gMom)):
+
       if utils.randomFlipCoin(constants.CDefG1DBinaryStringUniformProb):
+         positions.append(i)
          temp = sister[i]
          sister[i] = brother[i]
          brother[i] = temp
 
-    return (sister, brother)
+    # Return the sister and brother
+    if return_details: return sister, brother, positions
+    else: return sister, brother
 
 # -----------------------------------------------------------------
 
@@ -120,6 +137,8 @@ def G1DListCrossoverSinglePoint(genome, **args):
     The crossover of G1DList, Single Point
     .. warning:: You can't use this crossover method for lists with just one element.
     """
+
+    return_details = args.pop("return_details", False)
 
     sister = None
     brother = None
@@ -140,7 +159,9 @@ def G1DListCrossoverSinglePoint(genome, **args):
       brother.resetStats()
       brother[cut:] = gMom[cut:]
 
-    return (sister, brother)
+    # Return the sister and brother
+    if return_details: return sister, brother, cut
+    else: return sister, brother
 
 # -----------------------------------------------------------------
 
@@ -150,6 +171,8 @@ def G1DListCrossoverTwoPoint(genome, **args):
     The G1DList crossover, Two Point
     .. warning:: You can't use this crossover method for lists with just one element.
     """
+
+    return_details = args.pop("return_details", False)
 
     sister = None
     brother = None
@@ -173,7 +196,9 @@ def G1DListCrossoverTwoPoint(genome, **args):
       brother.resetStats()
       brother[cuts[0]:cuts[1]] = gMom[cuts[0]:cuts[1]]
 
-    return (sister, brother)
+    # Return the sister and brother
+    if return_details: return sister, brother, cuts
+    else: return sister, brother
 
 # -----------------------------------------------------------------
 
@@ -183,6 +208,8 @@ def G1DListCrossoverUniform(genome, **args):
     The G1DList Uniform Crossover
     Each gene has a 50% chance of being swapped between mom and dad
     """
+
+    return_details = args.pop("return_details", False)
 
     from . import constants
 
@@ -196,13 +223,19 @@ def G1DListCrossoverUniform(genome, **args):
     sister.resetStats()
     brother.resetStats()
 
+    # Positions at which swapping occured
+    positions = []
+
     for i in xrange(len(gMom)):
       if utils.randomFlipCoin(constants.CDefG1DListCrossUniformProb):
+         positions.append(i)
          temp = sister[i]
          sister[i] = brother[i]
          brother[i] = temp
 
-    return (sister, brother)
+    # Return the sister and brother
+    if return_details: return sister, brother, positions
+    else: return sister, brother
 
 # -----------------------------------------------------------------
 
@@ -211,6 +244,8 @@ def G1DListCrossoverMix(genome, **args):
     """
     Each gene is a random linear combination between mom and dad
     """
+
+    return_details = args.pop("return_details", False)
 
     sister = None
     brother = None
@@ -222,10 +257,16 @@ def G1DListCrossoverMix(genome, **args):
     sister.resetStats()
     brother.resetStats()
 
+    # The random numbers to make the mixes
+    randoms = []
+
     for i in xrange(len(gMom)):
 
         # Generate random uniform number between 0 and 1
         ra = prng.uniform()
+
+        # Add the random number
+        randoms.append(ra)
 
         temp_s = sister[i]
         temp_b = brother[i]
@@ -234,7 +275,8 @@ def G1DListCrossoverMix(genome, **args):
         brother[i] = (1. - ra) * temp_s + ra * temp_b
 
     # Return sister and brother
-    return (sister, brother)
+    if return_details: return sister, brother, randoms
+    else: return sister, brother
 
 # -----------------------------------------------------------------
 
@@ -244,16 +286,17 @@ def G1DListCrossoverOX(genome, **args):
     The OX Crossover for G1DList  (order crossover)
     """
 
+    return_details = args.pop("return_details", False)
+
     sister = None
     brother = None
     gMom = args["mom"]
     gDad = args["dad"]
     listSize = len(gMom)
 
-    c1, c2 = [prng.randint(1, len(gMom)), prng.randint(1, len(gMom))]
+    c1, c2 = prng.randint(1, len(gMom)), prng.randint(1, len(gMom))
 
-    while c1 == c2:
-      c2 = prng.randint(1, len(gMom))
+    while c1 == c2: c2 = prng.randint(1, len(gMom))
 
     if c1 > c2:
       h = c1
@@ -275,7 +318,9 @@ def G1DListCrossoverOX(genome, **args):
     assert listSize == len(sister)
     assert listSize == len(brother)
 
-    return (sister, brother)
+    # Return
+    if return_details: return sister, brother, (c1,c2)
+    else: return sister, brother
 
 # -----------------------------------------------------------------
 
@@ -286,13 +331,17 @@ def G1DListCrossoverEdge(genome, **args):
     Wikipedia entry.
     """
 
+    return_details = args.pop("return_details", False)
+
     gMom, sisterl = args["mom"], []
     gDad, brotherl = args["dad"], []
 
     mom_edges, dad_edges, merge_edges = utils.G1DListGetEdgesComposite(gMom, gDad)
 
     for c, u in (sisterl, set(gMom)), (brotherl, set(gDad)):
+
       curr = None
+
       for i in xrange(len(gMom)):
          curr = prng.choice(tuple(u)) if not curr else curr
          c.append(curr)
@@ -313,7 +362,9 @@ def G1DListCrossoverEdge(genome, **args):
     sister.genomeList = sisterl
     brother.genomeList = brotherl
 
-    return (sister, brother)
+    # Return the sister and brother
+    if return_details: return sister, brother, (mom_edges, dad_edges, merge_edges)
+    else: return sister, brother
 
 # -----------------------------------------------------------------
 
@@ -322,6 +373,8 @@ def G1DListCrossoverCutCrossfill(genome, **args):
     """
     The crossover of G1DList, Cut and crossfill, for permutations
     """
+
+    return_details = args.pop("return_details", False)
 
     sister = None
     brother = None
@@ -360,7 +413,9 @@ def G1DListCrossoverCutCrossfill(genome, **args):
          brother[cut + x] = v
          x += 1
 
-    return (sister, brother)
+    # Return the sister and brother
+    if return_details: return sister, brother, cut
+    else: return sister, brother
 
 # -----------------------------------------------------------------
 
@@ -373,6 +428,8 @@ def G1DListCrossoverRealSBX(genome, **args):
     .. warning:: This crossover method is Data Type Dependent, which means that
                 must be used for 1D genome of real values.
     """
+
+    return_details = args.pop("return_details", False)
 
     from . import constants
 
@@ -393,8 +450,13 @@ def G1DListCrossoverRealSBX(genome, **args):
     sister.resetStats()
     brother.resetStats()
 
+    randoms = []
+    swapped = []
+
     for i in range(0, len(gMom)):
+
       if math.fabs(gMom[i] - gDad[i]) > EPS:
+
          if gMom[i] > gDad[i]:
             #swap
             temp = gMom[i]
@@ -403,6 +465,8 @@ def G1DListCrossoverRealSBX(genome, **args):
 
          #random number betwn. 0 & 1
          u = prng.random_sample()
+
+         randoms.append(u)
 
          beta = 1.0 + 2 * (gMom[i] - lb) / (1.0 * (gDad[i] - gMom[i]))
          alpha = 2.0 - beta ** (-(eta_c + 1.0))
@@ -436,6 +500,8 @@ def G1DListCrossoverRealSBX(genome, **args):
 
          if prng.random_sample() > 0.5:
 
+            swapped.append(i)
+
             # Swap
             temp = sister[i]
             sister[i] = brother[i]
@@ -443,10 +509,14 @@ def G1DListCrossoverRealSBX(genome, **args):
 
       else:
 
+         randoms.append(None)
+
          sister[i] = gMom[i]
          brother[i] = gDad[i]
 
-    return (sister, brother)
+    # Return the sister and brother
+    if return_details: return sister, brother, (randoms, swapped)
+    else: return sister, brother
 
 # -----------------------------------------------------------------
 
@@ -455,6 +525,8 @@ def G2DListCrossoverUniform(genome, **args):
     """
     The G2DList Uniform Crossover
     """
+
+    return_details = args.pop("return_details", False)
 
     from . import constants
 
@@ -470,14 +542,22 @@ def G2DListCrossoverUniform(genome, **args):
 
     h, w = gMom.getSize()
 
+    swapped = []
+
     for i in xrange(h):
       for j in xrange(w):
+
          if utils.randomFlipCoin(constants.CDefG2DListCrossUniformProb):
+
+            swapped.append((i, j))
+
             temp = sister.getItem(i, j)
             sister.setItem(i, j, brother.getItem(i, j))
             brother.setItem(i, j, temp)
 
-    return (sister, brother)
+    # Return the sister and brother
+    if return_details: return sister, brother, swapped
+    else: return sister, brother
 
 # -----------------------------------------------------------------
 
@@ -486,6 +566,8 @@ def G2DListCrossoverSingleVPoint(genome, **args):
     """
     The crossover of G2DList, Single Vertical Point
     """
+
+    return_details = args.pop("return_details", False)
 
     sister = None
     brother = None
@@ -506,7 +588,9 @@ def G2DListCrossoverSingleVPoint(genome, **args):
       for i in xrange(brother.getHeight()):
          brother[i][cut:] = gMom[i][cut:]
 
-    return (sister, brother)
+    # Return the sister and brother
+    if return_details: return sister, brother, cut
+    else: return sister, brother
 
 # -----------------------------------------------------------------
 
@@ -515,6 +599,8 @@ def G2DListCrossoverSingleHPoint(genome, **args):
     """
     The crossover of G2DList, Single Horizontal Point
     """
+
+    return_details = args.pop("return_details", False)
 
     sister = None
     brother = None
@@ -535,7 +621,9 @@ def G2DListCrossoverSingleHPoint(genome, **args):
       for i in xrange(brother.getHeight()):
          brother[i][:] = gMom[i][:]
 
-    return (sister, brother)
+    # Return the sister and brother
+    if return_details: return sister, brother, cut
+    else: return sister, brother
 
 # -----------------------------------------------------------------
 
@@ -547,6 +635,8 @@ def G2DBinaryStringXUniform(genome, **args):
       The *G2DBinaryStringXUniform* function
     """
 
+    return_details = args.pop("return_details", False)
+
     from . import constants
 
     sister = None
@@ -561,14 +651,19 @@ def G2DBinaryStringXUniform(genome, **args):
 
     h, w = gMom.getSize()
 
+    swapped = []
+
     for i in xrange(h):
       for j in xrange(w):
          if utils.randomFlipCoin(constants.CDefG2DBinaryStringUniformProb):
+            swapped.append((i,j))
             temp = sister.getItem(i, j)
             sister.setItem(i, j, brother.getItem(i, j))
             brother.setItem(i, j, temp)
 
-    return (sister, brother)
+    # Return the sister and brother
+    if return_details: return sister, brother, swapped
+    else: return sister, brother
 
 # -----------------------------------------------------------------
 
@@ -579,6 +674,8 @@ def G2DBinaryStringXSingleVPoint(genome, **args):
     .. versionadded:: 0.6
       The *G2DBinaryStringXSingleVPoint* function
     """
+
+    return_details = args.pop("return_details", False)
 
     sister = None
     brother = None
@@ -599,7 +696,9 @@ def G2DBinaryStringXSingleVPoint(genome, **args):
       for i in xrange(brother.getHeight()):
          brother[i][cut:] = gMom[i][cut:]
 
-    return (sister, brother)
+    # Return the sister and brother
+    if return_details: return sister, brother, cut
+    else: return sister, brother
 
 # -----------------------------------------------------------------
 
@@ -610,6 +709,8 @@ def G2DBinaryStringXSingleHPoint(genome, **args):
     .. versionadded:: 0.6
       The *G2DBinaryStringXSingleHPoint* function
     """
+
+    return_details = args.pop("return_details", False)
 
     sister = None
     brother = None
@@ -630,7 +731,9 @@ def G2DBinaryStringXSingleHPoint(genome, **args):
       for i in xrange(brother.getHeight()):
          brother[i][:] = gMom[i][:]
 
-    return (sister, brother)
+    # Return the sister and brother
+    if return_details: return sister, brother, cut
+    else: return sister, brother
 
 # -----------------------------------------------------------------
 
@@ -639,6 +742,8 @@ def GTreeCrossoverSinglePoint(genome, **args):
     """
     The crossover for GTree, Single Point
     """
+
+    return_details = args.pop("return_details", False)
 
     sister = None
     brother = None
@@ -700,7 +805,9 @@ def GTreeCrossoverSinglePoint(genome, **args):
       nodeDad_parent.replaceChild(nodeDad, nodeMom)
       brother.processNodes()
 
-    return (sister, brother)
+    # Return the sister and brother
+    if return_details: return sister, brother, None # too complicated?
+    else: return sister, brother
 
 # -----------------------------------------------------------------
 
@@ -715,6 +822,9 @@ def GTreeCrossoverSinglePointStrict(genome, **args):
     of leaf selection when findin random nodes for crossover.
 
     """
+
+    return_details = args.pop("return_details", False)
+
     sister = None
     brother = None
 
@@ -800,7 +910,9 @@ def GTreeCrossoverSinglePointStrict(genome, **args):
       brother.processNodes()
       assert brother.getHeight() <= max_depth
 
-    return (sister, brother)
+    # Return the sister and brother
+    if return_details: return sister, brother, None # too complicated?
+    else: return sister, brother
 
 # -----------------------------------------------------------------
 
@@ -812,6 +924,8 @@ def GTreeGPCrossoverSinglePoint(genome, **args):
             *max_depth* parameter.
     Accepts the *max_attempt* parameter, *max_depth* (required).
     """
+
+    return_details = args.pop("return_details", False)
 
     from . import constants
 
@@ -895,6 +1009,8 @@ def GTreeGPCrossoverSinglePoint(genome, **args):
       brother.processNodes()
       assert brother.getHeight() <= max_depth
 
-    return (sister, brother)
+    # Return the sister and brother
+    if return_details: return sister, brother, None # too complicated?
+    else: return sister, brother
 
 # -----------------------------------------------------------------

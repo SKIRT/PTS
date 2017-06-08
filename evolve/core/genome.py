@@ -85,8 +85,7 @@ class GenomeBase(object):
         Returns a string representation of Genome
         """
 
-        allSlots = [self.evaluator, self.initializator, self.mutator,
-                  self.crossover]
+        allSlots = [self.evaluator, self.initializator, self.mutator, self.crossover]
 
         ret = "- GenomeBase\n"
         ret += "\tScore:\t\t\t %.6f\n" % (self.score,)

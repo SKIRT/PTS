@@ -596,7 +596,7 @@ class StepWiseOptimizer(Optimizer):
         #self.population = self.engine.new_population
 
         # Create the crossover table
-        if crossover_data is not None: self.crossover_table = CrossoverTable.from_data(crossover_data)
+        if crossover_data is not None: self.crossover_table = CrossoverTable.from_data(crossover_data, self.crossover_method)
         else: raise RuntimeError("Could not get the crossover data")
 
     # -----------------------------------------------------------------

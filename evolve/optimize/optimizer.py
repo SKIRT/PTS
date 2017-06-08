@@ -615,6 +615,20 @@ class Optimizer(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def crossover_method(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # TODO: make use of the real genomes!
+        #return self.initial_genome.crossover
+        return self.config.crossover_method
+
+    # -----------------------------------------------------------------
+
     def create_genome(self):
 
         """

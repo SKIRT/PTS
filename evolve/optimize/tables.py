@@ -15,6 +15,7 @@ import numpy as np
 from pts.core.basics.table import SmartTable
 from pts.core.tools import tables
 from pts.core.tools import sequences
+from pts.core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -36,21 +37,23 @@ class CrossoverTable(SmartTable):
         super(CrossoverTable, self).__init__(*args, **kwargs)
 
         # Add column information
-        self.add_column_info("Generation", int, None, "Generation index")
+        #self.add_column_info("Generation", int, None, "Generation index")
         self.add_column_info("Mother", str, None, "Mother individual name")
         self.add_column_info("Father", str, None, "Father individual name")
         self.add_column_info("Sister", str, None, "Sister individual name")
         self.add_column_info("Brother", str, None, "Brother individual name")
-        self.add_column_info("Crossover", bool, None, "Crossover applied?")
+        self.add_column_info("Crossover", str, None, "Crossover method (if applied)")
+        self.add_column_info("Details", str, None, "Crossover details")
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_data(cls, data):
+    def from_data(cls, data, crossover_method):
 
         """
         This function ...
         :param data:
+        :param crossover_method:
         :return:
         """
 
@@ -62,7 +65,24 @@ class CrossoverTable(SmartTable):
 
         # Loop over the entries
         for entry in data:
-            table.add_row(entry)
+
+            # If crossover applied
+            if entry[5]: crossover = crossover_method
+            else: crossover = None
+
+            # Add the last entry (the crossover details)
+            #if crossover_method == "single_point":
+            # Not impplemented
+            #else: raise NotImplementedError("Not implemented")
+
+            # Convert crossover details into string
+            details = tostr(entry[-1])
+
+            # Construct row
+            row = entry[:5] + [crossover, details]
+
+            #rows.append(row)
+            table.add_row(row)
 
         # Return the table
         return table
