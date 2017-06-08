@@ -847,6 +847,9 @@ class GalaxyModeler(ModelerBase):
         # Get the DustPedia SED
         sed = get_dustpedia_sed(self.modeling_path)
 
+        # Create phot path if not yet present
+        if not fs.is_directory(self.environment.phot_path): fs.create_directory(self.environment.phot_path)
+
         # Save
         sed.saveto(get_observed_sed_file_path(self.modeling_path))
 
