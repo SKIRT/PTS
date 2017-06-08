@@ -197,14 +197,14 @@ class Truncator(TruncationComponent):
             # Set path
             self.paths[name] = path
 
-            # Create remote directory
-            if self.config.cache:
+            # Determine remote cache path
+            remote_path = fs.join(self.remote_truncation_path, name)
 
-                # Create directory
-                remote_path = self.remote.create_directory_in(self.remote_truncation_path, name)
+            # Set path
+            self.cache_paths[name] = remote_path
 
-                # Set path
-                self.cache_paths[name] = remote_path
+            # Create directory
+            if self.config.cache and not self.remote.is_directory(remote_path): self.remote.create_directory(remote_path)
 
     # -----------------------------------------------------------------
 
