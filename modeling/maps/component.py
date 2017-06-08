@@ -28,6 +28,10 @@ from ...core.tools.serialization import load_dict, write_dict
 
 # -----------------------------------------------------------------
 
+origins_filename = "origins.txt"
+
+# -----------------------------------------------------------------
+
 class MapsComponent(GalaxyModelingComponent):
     
     """
@@ -240,7 +244,7 @@ class MapsComponent(GalaxyModelingComponent):
         # Determine path
         sub_path = fs.join(self.maps_path, name)
         if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
-        direct_origins_path = fs.join(sub_path, "origins.txt")
+        direct_origins_path = fs.join(sub_path, origins_filename)
 
         # No subdirectories
         if fs.is_file(direct_origins_path): origins = load_dict(direct_origins_path)
@@ -254,7 +258,7 @@ class MapsComponent(GalaxyModelingComponent):
             # Loop over subdirectories
             for method_path, method_path in fs.directories_in_path(sub_path):
 
-                origins_path = fs.join(method_path, "origins.txt")
+                origins_path = fs.join(method_path, origins_filename)
                 if not fs.is_file(origins_path): raise ValueError("File '" + origins_path + "' is missing")
 
                 # Load the origins
@@ -449,7 +453,7 @@ class MapsComponent(GalaxyModelingComponent):
         :return: 
         """
 
-        origins_path = fs.join(self.maps_ssfr_path, "origins.txt")
+        origins_path = fs.join(self.maps_ssfr_path, origins_filename)
         return load_dict(origins_path)
 
     # -----------------------------------------------------------------
@@ -519,7 +523,7 @@ class MapsComponent(GalaxyModelingComponent):
         :return: 
         """
 
-        path = fs.join(self.maps_tir_path, "single", "origins.txt")
+        path = fs.join(self.maps_tir_path, "single", origins_filename)
         return load_dict(path)
 
     # -----------------------------------------------------------------
@@ -531,7 +535,7 @@ class MapsComponent(GalaxyModelingComponent):
         :return: 
         """
 
-        path = fs.join(self.maps_tir_path, "multi", "origins.txt")
+        path = fs.join(self.maps_tir_path, "multi", origins_filename)
         return load_dict(path)
 
     # -----------------------------------------------------------------
@@ -602,7 +606,7 @@ class MapsComponent(GalaxyModelingComponent):
         """
 
         buat_path = fs.join(self.maps_attenuation_path, "buat")
-        table_path = fs.join(buat_path, "origins.txt")
+        table_path = fs.join(buat_path, origins_filename)
         return load_dict(table_path)
 
     # -----------------------------------------------------------------
@@ -615,7 +619,7 @@ class MapsComponent(GalaxyModelingComponent):
         """
 
         cortese_path = fs.join(self.maps_attenuation_path, "cortese")
-        table_path = fs.join(cortese_path, "origins.txt")
+        table_path = fs.join(cortese_path, origins_filename)
         return load_dict(table_path)
 
     # -----------------------------------------------------------------
@@ -655,7 +659,7 @@ class MapsComponent(GalaxyModelingComponent):
         """
 
         hot_dust_path = fs.join(self.maps_dust_path, "hot")
-        origins_path = fs.join(hot_dust_path, "origins.txt")
+        origins_path = fs.join(hot_dust_path, origins_filename)
         return load_dict(origins_path)
 
     # -----------------------------------------------------------------
@@ -674,7 +678,7 @@ class MapsComponent(GalaxyModelingComponent):
         for method in self.maps:
 
             # Depending on whether subdictionaries
-            if isinstance(self.maps[method], dict):
+            if types.is_dictionary(self.maps[method]):
 
                 # Create directory
                 path = fs.create_directory_in(self.maps_sub_path, method)
@@ -740,16 +744,25 @@ class MapsComponent(GalaxyModelingComponent):
         for method in self.origins:
 
             # Depending on whether subdictionaries
-            if isinstance(self.maps[method], dict):
+            if types.is_dictionary(self.maps[method]):
 
                 # Directory path
                 path = fs.join(self.maps_sub_path, method)
 
+                # Origins path
+                origins_path = fs.join(path, origins_filename)
+
                 # Write
-                write_dict(self.origins[method], path)
+                write_dict(self.origins[method], origins_path)
 
             # No different methods
-            else: write_dict(self.origins, self.maps_sub_path)
+            else:
+
+                # Determine the origins file path
+                origins_path = fs.join(self.maps_sub_path, origins_filename)
+
+                # Write
+                write_dict(self.origins, origins_path)
 
 # -----------------------------------------------------------------
 
