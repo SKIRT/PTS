@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+from collections import defaultdict
 from abc import ABCMeta, abstractproperty
 
 # Import the relevant PTS classes and modules
@@ -62,23 +63,11 @@ class MapsComponent(GalaxyModelingComponent):
         # The origins
         self.origins = dict()
 
-        # NEW: NOW DEFINED IN GALAXYMODELINGENVIRONMENT
-        # The path to the maps/colours directory
-        #self.maps_colours_path = None
-        # The path to the maps/ssfr directory
-        #self.maps_ssfr_path = None
-        # The path to the maps/tir directory
-        #self.maps_tir_path = None
-        # The path to the maps/attenuation directory
-        #self.maps_attenuation_path = None
-        # The path to the maps/old directory
-        #self.maps_old_path = None
-        # The path to the maps/young directory
-        #self.maps_young_path = None
-        # The path to the maps/ionizing directory
-        #self.maps_ionizing_path = None
-        # The path to the maps/dust directory
-        #self.maps_dust_path = None
+        # The paths to the maps
+        self.paths = dict()
+
+        # The current (already calculated) maps
+        self.current_maps = dict()
 
     # -----------------------------------------------------------------
 
@@ -92,24 +81,6 @@ class MapsComponent(GalaxyModelingComponent):
 
         # Call the setup function of the base class
         super(MapsComponent, self).setup(**kwargs)
-
-        # NEW: NOW DEFINED IN GALAXYMODELINGENVIRONMENT
-        # The path to the maps/colours directory
-        #self.maps_colours_path = fs.create_directory_in(self.maps_path, "colours")
-        # The path to the maps/ssfr directory
-        #self.maps_ssfr_path = fs.create_directory_in(self.maps_path, "ssfr")
-        # The path to the maps/TIR directory
-        #self.maps_tir_path = fs.create_directory_in(self.maps_path, "tir")
-        # The path to the maps/attenuation directory
-        #self.maps_attenuation_path = fs.create_directory_in(self.maps_path, "attenuation")
-        # Set the path to the maps/old directory
-        #self.maps_old_path = fs.create_directory_in(self.maps_path, "old")
-        # Set the path to the maps/young directory
-        #self.maps_young_path = fs.create_directory_in(self.maps_path, "young")
-        # Set the path to the maps/ionizing directory
-        #self.maps_ionizing_path = fs.create_directory_in(self.maps_path, "ionizing")
-        # Set the path to the maps/dust directory
-        #self.maps_dust_path = fs.create_directory_in(self.maps_path, "dust")
 
     # -----------------------------------------------------------------
 
@@ -291,6 +262,18 @@ class MapsComponent(GalaxyModelingComponent):
         """
 
         pass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_sub_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.maps_sub_path)
 
     # -----------------------------------------------------------------
 
@@ -664,6 +647,106 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_current_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_origins_sub_name(self.maps_sub_name)
+
+    # -----------------------------------------------------------------
+
+    def get_current_map_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Subdirectories
+        if fs.contains_directories(self.maps_sub_path):
+
+            paths = dict()
+
+            # Loop over the subdirectories
+            for method_path, method in fs.directories_in_path(self.maps_sub_path, returns=["path", "name"]):
+
+                # Set the map paths, as a dictionary with the filename as keys
+                paths[method] = fs.files_in_path(method_path, returns="dict")
+
+        # Files present
+        elif fs.contains_files(self.maps_sub_path): return fs.files_in_path(self.maps_sub_path, returns="dict")
+
+        # Nothing present
+        else: return dict()
+
+    # -----------------------------------------------------------------
+
+    def get_current_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize the maps dictionary
+        maps = dict()
+
+        paths = self.get_current_map_paths()
+
+        # Loop over the entries
+        for method_or_name in paths:
+
+            # Methods
+            if types.is_dictionary(paths[method_or_name]):
+
+                method = method_or_name
+                maps[method] = dict()
+
+                # Loop over the paths, load the maps and add to dictionary
+                for name in paths[method_or_name]: maps[method][name] = Frame.from_file(paths[method_or_name][name])
+
+            # Just maps
+            elif types.is_string_type(paths[method_or_name]):
+
+                name = method_or_name
+                maps[name] = Frame.from_file(paths[method_or_name])
+
+            # Something wrong
+            else: raise RuntimeError("Something went wrong")
+
+        # Return the maps
+        return maps
+
+    # -----------------------------------------------------------------
+
+    def get_path_for_map(self, name, method=None):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Subdivided into methods
+        if method is not None:
+
+            # Create directory, if necessary
+            if not fs.contains_directory(self.maps_sub_path, method): path = fs.create_directory_in(self.maps_sub_path, method)
+            else: path = fs.join(self.maps_sub_path, method)
+
+            # Determine path
+            map_path = fs.join(path, name + ".fits")
+
+        # Determine path
+        else: map_path = fs.join(self.maps_sub_path, name + ".fits")
+
+        # Return the map path
+        return map_path
+
+    # -----------------------------------------------------------------
+
     def write_maps(self):
 
         """
@@ -681,13 +764,17 @@ class MapsComponent(GalaxyModelingComponent):
             if types.is_dictionary(self.maps[method]):
 
                 # Create directory
-                path = fs.create_directory_in(self.maps_sub_path, method)
+                #path = fs.create_directory_in(self.maps_sub_path, method)
 
                 # Loop over the maps
                 for name in self.maps[method]:
 
                     # Determine path
-                    map_path = fs.join(path, name + ".fits")
+                    #map_path = fs.join(path, name + ".fits")
+
+                    map_path = self.get_path_for_map(name, method)
+
+                    if fs.is_file(map_path): continue
 
                     # Save
                     self.maps[method][name].saveto(map_path)
@@ -696,7 +783,11 @@ class MapsComponent(GalaxyModelingComponent):
             else:
 
                 # Determine path
-                map_path = fs.join(self.maps_sub_path, method + ".fits")
+                #map_path = fs.join(self.maps_sub_path, method + ".fits")
+
+                map_path = self.get_path_for_map(method)
+
+                if fs.is_file(map_path): continue
 
                 # Save
                 self.maps[method].saveto(map_path)

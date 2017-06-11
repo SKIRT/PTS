@@ -38,6 +38,7 @@ from ..core.mutators import G1DListMutatorRealGaussian, G1DListMutatorRealRange
 from ..core.mutators import HeterogeneousListMutatorRealRange, HeterogeneousListMutatorRealGaussian
 from ..core.mutators import HeterogeneousListMutatorIntegerRange, HeterogeneousListMutatorIntegerGaussian
 from ..core.mutators import G1DBinaryStringMutatorSwap, G1DBinaryStringMutatorFlip
+from ..core.crossovers import G1DBinaryStringXSinglePoint_origins
 from ..core.engine import GeneticEngine, RawScoreCriteria
 from ...core.basics.range import RealRange, IntegerRange
 from ...core.tools import formatting as fmt
@@ -53,6 +54,68 @@ from ..core.population import Population, NamedPopulation
 from ...core.tools import numbers
 from ...core.tools.stringify import tostr
 from ..core.engine import is_binary_genome, is_real_genome
+
+# -----------------------------------------------------------------
+
+list_crossovers_1d = dict()
+list_crossovers_1d["single_point"] = G1DListCrossoverSinglePoint
+list_crossovers_1d["two_point"] =  G1DListCrossoverTwoPoint
+list_crossovers_1d["uniform"] = G1DListCrossoverUniform
+list_crossovers_1d["OX"] = G1DListCrossoverOX
+list_crossovers_1d["edge"] = G1DListCrossoverEdge
+list_crossovers_1d["cut_crossfill"] = G1DListCrossoverCutCrossfill
+list_crossovers_1d["real_SBX"] = G1DListCrossoverRealSBX
+list_crossovers_1d["mix"] = G1DListCrossoverMix
+
+# -----------------------------------------------------------------
+
+list_crossovers_2d = dict()
+list_crossovers_2d["uniform"] = G2DListCrossoverUniform
+list_crossovers_2d["single_vertical_point"] = G2DListCrossoverSingleVPoint
+list_crossovers_2d["single_horizontal_point"] = G2DListCrossoverSingleHPoint
+
+# -----------------------------------------------------------------
+
+binary_string_crossovers_1d = dict()
+binary_string_crossovers_1d["single_point"] = G1DBinaryStringXSinglePoint
+binary_string_crossovers_1d["two_point"] = G1DBinaryStringXTwoPoint
+binary_string_crossovers_1d["uniform"] = G1DBinaryStringXUniform
+
+# -----------------------------------------------------------------
+
+binary_string_crossovers_2d = dict()
+binary_string_crossovers_2d["uniform"] = G2DBinaryStringXUniform
+binary_string_crossovers_2d["single_vertical_point"] = G2DBinaryStringXSingleVPoint
+binary_string_crossovers_2d["single_horizontal_point"] = G2DBinaryStringXSingleHPoint
+
+# -----------------------------------------------------------------
+
+list_crossover_origins_1d = dict()
+
+# -----------------------------------------------------------------
+
+list_crossover_origins_2d = dict()
+
+# -----------------------------------------------------------------
+
+binary_string_crossover_origins_1d = dict()
+binary_string_crossover_origins_1d["single_point"] = G1DBinaryStringXSinglePoint_origins
+
+# -----------------------------------------------------------------
+
+binary_string_crossover_origins_2d = dict()
+
+# -----------------------------------------------------------------
+
+genomes_1d = dict()
+genomes_1d["list"] = G1DList
+genomes_1d["binary_string"] = G1DBinaryString
+
+# -----------------------------------------------------------------
+
+genomes_2d = dict()
+genomes_2d["list"] = G2DList
+genomes_2d["binary_string"] = G2DBinaryString
 
 # -----------------------------------------------------------------
 
@@ -1048,29 +1111,8 @@ class Optimizer(Configurable):
             # Check whether the genome size is not zero
             elif self.genome_size == 0: raise ValueError("The genome size cannot be zero")
 
-            # Single-point crossover
-            if self.config.crossover_method == "single_point": return G1DListCrossoverSinglePoint
-
-            # Dual-point crossover
-            elif self.config.crossover_method == "two_point": return G1DListCrossoverTwoPoint
-
-            # Uniform
-            elif self.config.crossover_method == "uniform": return G1DListCrossoverUniform
-
-            # OX
-            elif self.config.crossover_method == "OX": return G1DListCrossoverOX
-
-            # Edge
-            elif self.config.crossover_method == "edge": return G1DListCrossoverEdge
-
-            # Cut crossfill
-            elif self.config.crossover_method == "cut_crossfill": return G1DListCrossoverCutCrossfill
-
-            # Real SBX
-            elif self.config.crossover_method == "real_SBX": return G1DListCrossoverRealSBX
-
-            # MIX
-            elif self.config.crossover_method == "mix": return G1DListCrossoverMix
+            # Return the crossover function
+            if self.config.crossover_method in list_crossovers_1d: return list_crossovers_1d[self.config.crossover_method]
 
             # Invalid
             else: raise ValueError("Invalid crossover method for one-dimensional genomes")
@@ -1078,14 +1120,8 @@ class Optimizer(Configurable):
         # 2D genome
         elif self.config.genome_dimension == 2:
 
-            # Uniform
-            if self.config.crossover_method == "uniform": return G2DListCrossoverUniform
-
-            # Vertical single-point
-            elif self.config.crossover_method == "single_vertical_point": return G2DListCrossoverSingleVPoint
-
-            # Horizontal single-point
-            elif self.config.crossover_method == "single_horizontal_point": return G2DListCrossoverSingleHPoint
+            # Return the crossover function
+            if self.config.crossover_method in list_crossovers_2d: return list_crossovers_2d[self.config.crossover_method]
 
             # Invalid
             else: raise ValueError("Invalid crossover method for two-dimensional genomes")
@@ -1105,14 +1141,8 @@ class Optimizer(Configurable):
         # 1D genome
         if self.config.genome_dimension == 1:
 
-            # Single-point crossover
-            if self.config.crossover_method == "single_point": return G1DBinaryStringXSinglePoint
-
-            # Dual-point crossover
-            elif self.config.crossover_method == "two_point": return G1DBinaryStringXTwoPoint
-
-            # Uniform
-            elif self.config.crossover_method == "uniform": return G1DBinaryStringXUniform
+            # Return the crossover function
+            if self.config.crossover_method in binary_string_crossovers_1d: return binary_string_crossovers_1d[self.config.crossover_method]
 
             # Invalid
             else: raise ValueError("Crossover type '" + self.config.crossover_method + "' not supported for binary string genome representations")
@@ -1120,14 +1150,8 @@ class Optimizer(Configurable):
         # 2D genome
         elif self.config.genome_dimension == 2:
 
-            # Uniform
-            if self.config.crossover_method == "uniform": return G2DBinaryStringXUniform
-
-            # Vertical single-point
-            elif self.config.crossover_method == "single_vertical_point": return G2DBinaryStringXSingleVPoint
-
-            # Horizontal single-point
-            elif self.config.crossover_method == "single_horizontal_point": return G2DBinaryStringXSingleHPoint
+            # Return the crossover function
+            if self.config.crossover_method in binary_string_crossovers_2d: return binary_string_crossovers_2d[self.config.crossover_method]
 
             # Invalid
             else: raise ValueError("Invalid crossover method for two-dimensional binary string genome representations")

@@ -262,7 +262,7 @@ class ModelerBase(Configurable):
         """
 
         command_name = cls_or_instance.command_name()
-        print(self.environment.log_path, command_name, self.timestamp)
+        #print(self.environment.log_path, command_name, self.timestamp)
         log_path = fs.join(self.environment.log_path, command_name + "_" + self.timestamp + ".txt")
         return log_path
 

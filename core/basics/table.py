@@ -373,6 +373,41 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    def get_value(self, colname, index):
+
+        """
+        This function ...
+        :param colname:
+        :param index:
+        :return:
+        """
+
+        value = self[colname][index]
+
+        if self[colname].mask[index]: value = None
+        elif self[colname].unit is not None:
+
+            # Add unit
+            value = value * self[colname].unit
+
+        # Return the value
+        return value
+
+    # -----------------------------------------------------------------
+
+    def is_masked_value(self, colname, index):
+
+        """
+        This function ...
+        :param colname:
+        :param index:
+        :return:
+        """
+
+        return self[colname].mask[index]
+
+    # -----------------------------------------------------------------
+
     def get_row(self, index):
 
         """
@@ -385,13 +420,8 @@ class SmartTable(Table):
 
         for name in self.colnames:
 
-            value = self[name][index]
-
-            if self[name].mask[index]: value = None
-            elif self[name].unit is not None:
-
-                # Add unit
-                value = value * self[name].unit
+            # Get the value
+            value = self.get_value(name, index)
 
             # Add the value
             row[name] = value

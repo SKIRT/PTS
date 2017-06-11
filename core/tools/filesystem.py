@@ -252,7 +252,20 @@ def contains_file(directory, filename):
 
 # -----------------------------------------------------------------
 
-def contains_files(directory, filenames):
+def contains_directory(directory, dirname):
+
+    """
+    This function ...
+    :param directory:
+    :param dirname:
+    :return:
+    """
+
+    return is_directory(join(directory, dirname))
+
+# -----------------------------------------------------------------
+
+def contains_files(directory, filenames=None):
 
     """
     This function ...
@@ -261,13 +274,40 @@ def contains_files(directory, filenames):
     :return:
     """
 
-    # Loop over the filenames
-    for filename in filenames:
+    if filenames is not None:
 
-        filepath = join(directory, filename)
-        if not is_file(filepath): return False
+        # Loop over the filenames
+        for filename in filenames:
 
-    return True
+            filepath = join(directory, filename)
+            if not is_file(filepath): return False
+
+        return True
+
+    else: return len(files_in_path(directory)) > 0
+
+# -----------------------------------------------------------------
+
+def contains_directories(directory, dirnames=None):
+
+    """
+    This function ...
+    :param directory:
+    :param dirnames:
+    :return:
+    """
+
+    if dirnames is not None:
+
+        # Loop over the dirnames
+        for dirname in dirnames:
+
+            dirpath = join(directory, dirname)
+            if not is_directory(dirpath): return False
+
+        return True
+
+    else: return len(directories_in_path(directory)) > 0
 
 # -----------------------------------------------------------------
 
@@ -770,6 +810,11 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
             return value
         items.sort(key=sort_function)
 
+    if returns == "dict":
+        returns = ["name", "path"]
+        return_dict = True
+    else: return_dict = False
+
     # Loop over all items; get files that match the specified conditions
     for item_path in items:
 
@@ -849,7 +894,8 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
         file_paths.append(thing)
 
     # Return the list of file paths
-    return file_paths
+    if return_dict: return dict(file_paths) # file_paths is list of tuples
+    else: return file_paths
 
 # -----------------------------------------------------------------
 
@@ -929,6 +975,11 @@ def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains
             return value
         items.sort(key=sort_function)
 
+    if returns == "dict":
+        returns = ["name", "path"]
+        return_dict = True
+    else: return_dict = False
+
     # List all items in the specified directory
     for item_path in items:
 
@@ -988,7 +1039,8 @@ def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains
         directory_paths.append(thing)
 
     # Return the list of directory paths
-    return directory_paths
+    if return_dict: return dict(directory_paths)
+    else: return directory_paths
 
 # -----------------------------------------------------------------
 

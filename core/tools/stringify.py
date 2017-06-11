@@ -21,7 +21,7 @@ from . import numbers
 
 # -----------------------------------------------------------------
 
-def tostr(value, scientific=None, decimal_places=2, fancy=False, ndigits=None):
+def tostr(value, scientific=None, decimal_places=2, fancy=False, ndigits=None, delimiter=","):
 
     """
     This function ...
@@ -30,6 +30,7 @@ def tostr(value, scientific=None, decimal_places=2, fancy=False, ndigits=None):
     :param decimal_places:
     :param fancy:
     :param ndigits:
+    :param delimiter:
     :return: 
     """
 
@@ -60,11 +61,11 @@ def tostr(value, scientific=None, decimal_places=2, fancy=False, ndigits=None):
         else: scientific = False
 
     # Stringify
-    return stringify(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits)[1].strip()
+    return stringify(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, delimiter=delimiter)[1].strip()
 
 # -----------------------------------------------------------------
 
-def stringify(value, scientific=False, decimal_places=2, fancy=False, ndigits=None):
+def stringify(value, scientific=False, decimal_places=2, fancy=False, ndigits=None, delimiter=","):
 
     """
     This function ...
@@ -73,20 +74,21 @@ def stringify(value, scientific=False, decimal_places=2, fancy=False, ndigits=No
     :param decimal_places:
     :param fancy:
     :param ndigits:
+    :param delimiter:
     :return:
     """
 
     # List or derived from list
-    if isinstance(value, list): return stringify_list(value)
+    if isinstance(value, list): return stringify_list(value, delimiter=delimiter)
 
     # Dictionary
-    if isinstance(value, dict): return stringify_dict(value)
+    if isinstance(value, dict): return stringify_dict(value, delimiter=delimiter)
 
     # Array or derived from Array, but not quantity!
     #elif isinstance(value, np.ndarray) and not isinstance(value, Quantity):
     #elif introspection.try_importing_module("numpy", True) and (isinstance(value, np.ndarray) and not hasattr(value, "unit")):
     # WE ALSO TEST IF THIS IS NOT A NUMPY INTEGER, FLOAT OR BOOLEAN (because they have a __array__ attribute)
-    elif hasattr(value, "__array__") and hasattr(value, "__getitem__") and can_get_item(value) and not hasattr(value, "unit") and not types.is_boolean_type(value) and not types.is_integer_type(value) and not types.is_real_type(value) and not types.is_string_type(value): return stringify_array(value)
+    elif hasattr(value, "__array__") and hasattr(value, "__getitem__") and can_get_item(value) and not hasattr(value, "unit") and not types.is_boolean_type(value) and not types.is_integer_type(value) and not types.is_real_type(value) and not types.is_string_type(value): return stringify_array(value, delimiter=delimiter)
 
     # Column or masked masked column
     elif type(value).__name__ == "MaskedColumn" or type(value).__name__ == "Column": return stringify_array(value)
@@ -122,11 +124,12 @@ def can_get_item(value):
 
 # -----------------------------------------------------------------
 
-def stringify_list(value):
+def stringify_list(value, delimiter=","):
 
     """
     This function ...
-    :param value: 
+    :param value:
+    :param delimiter:
     :return: 
     """
 
@@ -162,16 +165,19 @@ def stringify_list(value):
     elif ptype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_types)[1] + "'")
 
     # Return the type and the string
-    if ptype.endswith("list"): return ptype + "_list", ", ".join(strings)
-    else: return ptype + "_list", ",".join(strings)
+    if ptype.endswith("list"):
+        top_delimiter = delimiter + " "
+        return ptype + "_list", top_delimiter.join(strings)
+    else: return ptype + "_list", delimiter.join(strings)
 
 # -----------------------------------------------------------------
 
-def stringify_dict(value):
+def stringify_dict(value, delimiter=","):
 
     """
     This function ...
-    :param value: 
+    :param value:
+    :param delimiter:
     :return: 
     """
 
@@ -185,6 +191,7 @@ def stringify_dict(value):
     keytypes = set()
     ptypes = set()
 
+    # Loop over the dictionary keys
     for key in value:
 
         ktype, kstring = stringify(key)
@@ -230,31 +237,33 @@ def stringify_dict(value):
     elif ptype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_value_types)[1] + "'")
 
     # Return
-    return keytype + "_" + ptype + "_dictionary", ",".join(parts)
+    return keytype + "_" + ptype + "_dictionary", delimiter.join(parts)
 
 # -----------------------------------------------------------------
 
-def stringify_array(value):
+def stringify_array(value, delimiter=","):
 
     """
     This function ...
-    :param value: 
+    :param value:
+    :param delimiter:
     :return: 
     """
 
     ptype, val = stringify_not_list(value[0])
-    return ptype + "_array", ",".join([repr(el) for el in value])
+    return ptype + "_array", delimiter.join([repr(el) for el in value])
 
     #ptype, val = stringify_not_list(value[0])
     #return ptype + "_array", ",".join([repr(el) for el in value])
 
 # -----------------------------------------------------------------
 
-def stringify_tuple(value):
+def stringify_tuple(value, delimiter=","):
 
     """
     This function ...
-    :param value: 
+    :param value:
+    :paral delimiter:
     :return: 
     """
 
@@ -271,7 +280,7 @@ def stringify_tuple(value):
 
         strings.append(val)
 
-    return ptype + "_tuple", ",".join(strings)
+    return ptype + "_tuple", delimiter.join(strings)
 
 # -----------------------------------------------------------------
 

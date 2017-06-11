@@ -16,6 +16,7 @@ from pts.core.basics.table import SmartTable
 from pts.core.tools import tables
 from pts.core.tools import sequences
 from pts.core.tools.stringify import tostr
+from pts.core.tools import parsing
 
 # -----------------------------------------------------------------
 
@@ -37,7 +38,6 @@ class CrossoverTable(SmartTable):
         super(CrossoverTable, self).__init__(*args, **kwargs)
 
         # Add column information
-        #self.add_column_info("Generation", int, None, "Generation index")
         self.add_column_info("Mother", str, None, "Mother individual name")
         self.add_column_info("Father", str, None, "Father individual name")
         self.add_column_info("Sister", str, None, "Sister individual name")
@@ -48,11 +48,12 @@ class CrossoverTable(SmartTable):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_data(cls, data, crossover_method):
+    def from_data(cls, data, genome_type, crossover_method):
 
         """
         This function ...
         :param data:
+        :param genome_type:
         :param crossover_method:
         :return:
         """
@@ -85,6 +86,9 @@ class CrossoverTable(SmartTable):
 
             #rows.append(row)
             table.add_row(row)
+
+        # Add meta
+        table.meta["genome_type"] = genome_type
 
         # Return the table
         return table
@@ -135,7 +139,50 @@ class CrossoverTable(SmartTable):
         :return:
         """
 
-        return self["Crossover"][index]
+        return not self.is_masked_value("Crossover", index)
+
+    # -----------------------------------------------------------------
+
+    def get_crossover_method(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return self.get_value("Crossover", index)
+
+    # -----------------------------------------------------------------
+
+    def get_crossover_details(self, index):
+
+        """
+        THis function ...
+        :param index:
+        :return:
+        """
+
+        method = self.get_crossover_method(index)
+        if method is None: return None
+
+        details_string = self["Details"][index]
+
+        if method == "single_point": return parsing.integer(details_string)
+        else: return NotImplementedError("Not implemented")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def genome_type(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if "genome_type" in self.meta: return self.meta["genome_type"]
+        else: return None
 
 # -----------------------------------------------------------------
 

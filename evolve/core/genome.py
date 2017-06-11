@@ -21,6 +21,7 @@ from . import utils
 # Import the relevant PTS classes and modules
 from ...core.tools.random import prng
 from ...core.tools.logging import log
+from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -248,7 +249,7 @@ class G1DBase(GenomeBase):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, size):
+    def __init__(self, size=None, genes=None):
 
         """
         The constructor ...
@@ -258,9 +259,28 @@ class G1DBase(GenomeBase):
         # Call the constructor of the base class
         super(G1DBase, self).__init__()
 
-        # Attributes
-        self.genomeSize = size
-        self.genomeList = []
+        if genes is not None:
+
+            self.genomeSize = len(genes)
+            self.genomeList = genes
+
+        else:
+
+            # Attributes
+            self.genomeSize = size
+            self.genomeList = []
+
+    # -----------------------------------------------------------------
+
+    @property
+    def genes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.genomeList
 
     # -----------------------------------------------------------------
 
@@ -480,6 +500,17 @@ class G1DBase(GenomeBase):
         """
 
         self.genomeList = lst
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return tostr(self.genomeList)
 
 # -----------------------------------------------------------------
 

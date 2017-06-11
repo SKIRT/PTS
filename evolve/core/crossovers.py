@@ -12,12 +12,35 @@
 
 # Import standard modules
 import math
+import numpy as np
 
 # Import other evolve modules
 from . import utils
 
 # Import the relevant PTS classes and modules
 from ...core.tools.random import prng
+
+# -----------------------------------------------------------------
+
+def G1DBinaryStringXSinglePoint_origins(size, details):
+
+    """
+    This function ...
+    :param size:
+    :param details:
+    :return:
+    """
+
+    cut = details
+
+    origins_sister = np.array([True] * size)  # true means as mother
+    origins_brother = np.array([True] * size) # true means as father
+
+    origins_sister[cut:] = False
+    origins_brother[cut:] = False
+
+    # Return
+    return origins_sister, origins_brother
 
 # -----------------------------------------------------------------
 
@@ -29,16 +52,17 @@ def G1DBinaryStringXSinglePoint(genome, **args):
     """
 
     return_details = args.pop("return_details", False)
+    details = args.pop("details", None)
 
     sister = None
     brother = None
     gMom = args["mom"]
     gDad = args["dad"]
 
-    if len(gMom) == 1:
-      utils.raiseException("The Binary String have one element, can't use the Single Point Crossover method !", TypeError)
+    if len(gMom) == 1: utils.raiseException("The Binary String have one element, can't use the Single Point Crossover method !", TypeError)
 
-    cut = prng.randint(1, len(gMom))
+    if details is not None: cut = details
+    else: cut = prng.randint(1, len(gMom))
 
     if args["count"] >= 1:
       sister = gMom.clone()

@@ -43,12 +43,12 @@ class G1DBinaryString(G1DBase):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, length=10):
+    def __init__(self, length=10, genes=None):
 
         """ The initializator of G1DList representation """
 
-        super(G1DBinaryString, self).__init__(length)
-        #self.genomeList = []
+        super(G1DBinaryString, self).__init__(length, genes=genes)
+
         self.stringLength = length
         self.initializator.set(constants.CDefG1DBinaryStringInit)
         self.mutator.set(constants.CDefG1DBinaryStringMutator)

@@ -271,6 +271,64 @@ def print_dictionary(dictionary):
 
 # -----------------------------------------------------------------
 
+def get_color_code(color):
+
+    """
+    THis function ...
+    :param color:
+    :return:
+    """
+
+    #if color is not None: print(color, list(color))
+
+    if color is None: return default_text
+    elif color == "black": return black
+    elif color == "red": return red
+    elif color == "green": return green
+    elif color == "yellow": return yellow
+    elif color == "blue": return blue
+    elif color == "magenta": return magenta
+    elif color == "cyan": return cyan
+    elif color == "lightgray": return lightgray
+    elif color == "darkgray": return darkgray
+    elif color == "lightred": return lightred
+    elif color == "lightgreen": return lightgreen
+    elif color == "lightyellow": return lightyellow
+    elif color == "lightblue": return lightblue
+    elif color == "lightmagenta": return lightmagenta
+    elif color == "lightcyan": return lightcyan
+    elif color == "white": return white
+    else: raise ValueError("Invalid color: " + color)
+
+# -----------------------------------------------------------------
+
+def colored_sequence(sequence, colors, delimiter=","):
+
+    """
+    This function ...
+    :param sequence:
+    :param colors:
+    :param delimiter:
+    :return:
+    """
+
+    # Same color?
+    if isinstance(colors, basestring): colors = [colors] * len(sequence)
+    elif colors is None: colors = [None] * len(sequence)
+
+    parts = []
+
+    for item, color in zip(sequence, colors):
+
+        code = get_color_code(color)
+        part = code + tostr(item) + reset
+        parts.append(part)
+
+    # Return the color coded sequence string
+    return delimiter.join(parts)
+
+# -----------------------------------------------------------------
+
 def print_columns(*columns, **kwargs):
 
     """

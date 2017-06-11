@@ -104,6 +104,9 @@ class ColourMapsMaker(Configurable):
         self.frames = kwargs.pop("frames")
         self.colours = kwargs.pop("colours")
 
+        # Get maps that have already been created
+        if "maps" in kwargs: self.maps = kwargs.pop("maps")
+
     # -----------------------------------------------------------------
 
     def make_maps(self):
@@ -121,6 +124,14 @@ class ColourMapsMaker(Configurable):
 
             # Get the two filters
             fltr_a, fltr_b = get_filters_for_colour(colour)
+
+            # Add the origins
+            self.origins[colour] = [fltr_a, fltr_b]
+
+            # Check whether a colour map is already present
+            if colour in self.maps:
+                log.warning("The " + colour + " colour map is already calculated: not performing the calculation again")
+                continue
 
             # Create frame list
             frames = FrameList(self.frames[fltr_a], self.frames[fltr_b])
@@ -142,9 +153,6 @@ class ColourMapsMaker(Configurable):
 
             # Add the map
             self.maps[colour] = colour_map
-
-            # Add the origins
-            self.origins[colour] = [fltr_a, fltr_b]
 
     # -----------------------------------------------------------------
 

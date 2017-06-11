@@ -95,6 +95,9 @@ class ColourMapMaker(MapsComponent):
         # Call the setup fucntion of the base class
         super(ColourMapMaker, self).setup(**kwargs)
 
+        # Load the current maps
+        self.current_maps = self.get_current_maps()
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -172,7 +175,7 @@ class ColourMapMaker(MapsComponent):
         maker = ColourMapsMaker()
 
         # Run the map maker
-        maker.run(colours=self.available_colours, frames=self.frames)
+        maker.run(colours=self.available_colours, frames=self.frames, maps=self.current_maps)
 
         # Set the maps
         self.maps = maker.maps

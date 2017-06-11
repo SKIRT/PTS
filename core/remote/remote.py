@@ -2919,6 +2919,11 @@ class Remote(object):
             if "cannot access */" in output[0]: return []
             paths = [fs.join(path, name) for name in output]
 
+        if returns == "dict":
+            returns = ["name", "path"]
+            return_dict = True
+        else: return_dict = False
+
         # Filter
         result = []
 
@@ -2979,7 +2984,8 @@ class Remote(object):
             result.append(thing)
 
         # Return the result
-        return result
+        if return_dict: return dict(result)
+        else: return result
 
     # -----------------------------------------------------------------
 
@@ -3042,6 +3048,11 @@ class Remote(object):
         else:
             output = self.execute("for f in *; do [[ -d $f ]] || echo $f; done", cwd=path)
             paths = [fs.join(path, name) for name in output]
+
+        if returns == "dict":
+            returns = ["name", "path"]
+            return_dict = True
+        else: return_dict = False
 
         # Filter
         result = []
@@ -3108,7 +3119,8 @@ class Remote(object):
             result.append(thing)
 
         # Return the result
-        return result
+        if return_dict: return dict(result)
+        else: return result
 
     # -----------------------------------------------------------------
 
