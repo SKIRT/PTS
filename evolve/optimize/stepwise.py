@@ -621,7 +621,9 @@ class StepWiseOptimizer(Optimizer):
         :return:
         """
 
-        return self.engine.population
+        # NEW
+        if self.config.finish: return None
+        else: return self.engine.population
 
     # -----------------------------------------------------------------
 
@@ -737,7 +739,7 @@ class StepWiseOptimizer(Optimizer):
         if self.newborns is not None: self.write_newborns()
 
         # Write the internal generation
-        self.write_parents()
+        if self.parents is not None: self.write_parents()
 
         # Write the best individual
         self.write_best()

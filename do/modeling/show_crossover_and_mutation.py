@@ -115,6 +115,8 @@ for index in range(len(crossover)):
     # Genome
     make_genome = genomes_1d[genome_type]
 
+    print(parents)
+
     # Get genomes of parents
     mother = make_genome(genes=parents[mother_name])
     father = make_genome(genes=parents[father_name])
