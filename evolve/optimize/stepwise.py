@@ -64,6 +64,9 @@ class StepWiseOptimizer(Optimizer):
         # The scores of the past generation
         self.scores = None
 
+        # The individual names in the same order as the scores
+        self.scores_names = None
+
         # A check for the parameters of the models that are scored
         self.scores_check = None
 
@@ -72,6 +75,9 @@ class StepWiseOptimizer(Optimizer):
 
         # The crossover table
         self.crossover_table = None
+
+        # The scores table
+        self.scores_table = None
 
         # The previous population
         self.previous_population = None
@@ -287,6 +293,9 @@ class StepWiseOptimizer(Optimizer):
         # Get the scores
         if "scores" in kwargs: self.scores = kwargs.pop("scores")
 
+        # Get the scores names
+        if "scores_names" in kwargs: self.scores_names = kwargs.pop("scores_names")
+
         # Get the scores check
         if "scores_check" in kwargs: self.scores_check = kwargs.pop("scores_check")
 
@@ -450,6 +459,42 @@ class StepWiseOptimizer(Optimizer):
     # -----------------------------------------------------------------
 
     @property
+    def all_scores_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # If no names are passed, return None
+        if self.scores_names is None: return None
+
+        # No recurrency
+        if self.previous_recurrent is None: return self.scores_names
+        if len(self.previous_recurrent) == 0: return self.scores_names
+
+        # Initialize a list for the names
+        names = []
+
+        passed_names = iter(self.scores_names)
+
+        for key in self.previous_population:
+
+            if key in self.previous_recurrent: name = key
+            else: name = passed_names.next()
+
+            # Add the name
+            names.append(name)
+
+        # Check the length of the list
+        if len(names) != len(self.previous_population): raise RuntimeError("Something went wrong")
+
+        # Return the names
+        return names
+
+    # -----------------------------------------------------------------
+
+    @property
     def all_scores_check(self):
 
         """
@@ -564,14 +609,16 @@ class StepWiseOptimizer(Optimizer):
 
         # Get scores and checks
         scores = self.all_scores
+        names = self.all_scores_names
         checks = self.all_scores_check_converted
 
         # Debugging
         log.debug("All scores (with recurrent models) are: " + " ".join(str(score) for score in scores))
+        log.debug("All names (with recurrent models) are: " + " ".join(name for name in names))
         log.debug("All checks (with recurrent models) are: " + " ".join(str(check) for check in checks))
 
         # Set the scores
-        elitism_data = self.engine.set_scores(scores, checks, rtol=self.config.check_rtol, atol=self.config.check_atol, binary_parameters=self.binary_parameters)
+        elitism_data = self.engine.set_scores(scores, names, checks, rtol=self.config.check_rtol, atol=self.config.check_atol, binary_parameters=self.binary_parameters)
 
         # Create elitism table
         if elitism_data is not None: self.elitism_table = ElitismTable.from_data(elitism_data)
@@ -749,6 +796,9 @@ class StepWiseOptimizer(Optimizer):
 
         # Write the crossover data
         if self.crossover_table is not None: self.write_crossover()
+
+        # Write the scores
+        if self.scores_table is not None: self.write_scores()
 
         # Write the elitism data
         if self.elitism_table is not None: self.write_elitism()
@@ -1089,6 +1139,25 @@ class StepWiseOptimizer(Optimizer):
 
         # Save the table
         self.crossover_table.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_scores(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the scores table ...")
+
+        # Determine the path
+        if self.config.writing.scores_table_path is not None: path = fs.absolute_or_in(self.config.writing.scores_table_path, self.output_path)
+        else: path = self.output_path_file("scores.dat")
+
+        # Save the table
+        self.scores_table.saveto(path)
 
     # -----------------------------------------------------------------
 

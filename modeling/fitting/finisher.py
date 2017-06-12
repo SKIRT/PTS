@@ -19,7 +19,7 @@ from astropy.utils import lazyproperty
 from .component import FittingComponent
 from ...core.tools.logging import log
 from ...evolve.optimize.stepwise import StepWiseOptimizer
-from .modelgenerators.genetic import set_optimizer_settings, get_last_generation_scores, get_last_generation_name
+from .modelgenerators.genetic import set_optimizer_settings, get_last_generation_scores_and_check, get_last_generation_name
 from ..fitting.sedfitting import SEDFitter
 from ..fitting.run import get_ngenerations, has_unfinished_generations, has_unevaluated_generations
 from ...core.tools import filesystem as fs
@@ -222,7 +222,7 @@ class ExplorationFinisher(FittingComponent):
         log.info("Getting the scores ...")
 
         # Get the scores (set or_initial to False, because this should not happen)
-        self.scores, self.scores_check = get_last_generation_scores(self.fitting_run, or_initial=False)
+        self.scores, self.scores_check = get_last_generation_scores_and_check(self.fitting_run, or_initial=False)
 
     # -----------------------------------------------------------------
 

@@ -116,6 +116,7 @@ definition.sections["writing"].add_optional("populations_path", "string", "path 
 definition.sections["writing"].add_optional("newborns_path", "string", "path for the newborns population data file")
 definition.sections["writing"].add_optional("parents_path", "string", "path for the parents population data file")
 definition.sections["writing"].add_optional("crossover_table_path", "string", "path for the crossover data file")
+definition.sections["writing"].add_optional("scores_table_path", "string", "path for the scores table file")
 definition.sections["writing"].add_optional("elitism_table_path", "string", "path for the elitism table")
 definition.sections["writing"].add_optional("recurrent_path", "string", "path for the recurrency data")
 

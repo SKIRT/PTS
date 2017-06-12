@@ -56,6 +56,7 @@ class GeneticModelGenerator(ModelGenerator):
 
         # The scores (only if this is not the initial generation)
         self.scores = None
+        self.scores_names = None
         self.scores_check = None
 
         # The optimizer
@@ -344,6 +345,7 @@ class GeneticModelGenerator(ModelGenerator):
 
         # Run the optimizer
         self.optimizer.run(scores=self.scores, scores_check=self.scores_check, minima=self.parameter_minima_scalar,
+                           scores_names=self.scores_names,
                            maxima=self.parameter_maxima_scalar, evaluator=self.evaluator,
                            evaluator_kwargs=self.evaluator_kwargs, initial_parameters=self.initial_parameters,
                            previous_population=self.previous_population, previous_recurrent=self.previous_recurrent,
@@ -365,7 +367,8 @@ class GeneticModelGenerator(ModelGenerator):
         log.info("Setting scores from previous generation ...")
 
         # Get the scores (and check)
-        self.scores, self.scores_check = get_last_generation_scores(self.fitting_run)
+        #self.scores, self.scores_check = get_last_generation_scores_and_check(self.fitting_run)
+        self.scores, self.scores_names, self.scores_check = get_last_generation_scores_names_and_check(self.fitting_run)
 
     # -----------------------------------------------------------------
 
@@ -715,7 +718,7 @@ def get_last_generation_name(fitting_run, or_initial=True):
 
 # -----------------------------------------------------------------
 
-def get_last_generation_scores(fitting_run, or_initial=True):
+def get_last_generation_scores_and_check(fitting_run, or_initial=True):
 
     """
     This function ...
@@ -758,5 +761,111 @@ def get_last_generation_scores(fitting_run, or_initial=True):
 
     # Return
     return scores, check
+
+# -----------------------------------------------------------------
+
+def get_last_generation_scores_and_names(fitting_run, or_initial=True):
+
+    """
+    This function ...
+    :param fitting_run:
+    :param or_initial:
+    :return:
+    """
+
+    # Get the generation name
+    generation_name = get_last_generation_name(fitting_run, or_initial=or_initial)
+
+    # Load the parameters table from the previous generation
+    parameters_table = fitting_run.parameters_table_for_generation(generation_name)
+
+    # Load the chi squared table from the previous generation
+    chi_squared_table = fitting_run.chi_squared_table_for_generation(generation_name)
+
+    # Load the individuals table from the previous generation
+    individuals_table = fitting_run.individuals_table_for_generation(generation_name)
+
+    # List of chi squared values in the same ordere as the parameters table
+    chi_squared_values = []
+
+    # The names
+    names = []
+
+    # Loop over the simulations
+    for i in range(len(parameters_table)):
+
+        simulation_name = parameters_table["Simulation name"][i]
+        chi_squared = chi_squared_table.chi_squared_for(simulation_name)
+        chi_squared_values.append(chi_squared)
+
+        # Get the individual name
+        individual_name = individuals_table.get_individual_name(simulation_name)
+
+        # Add the name
+        names.append(individual_name)
+
+    # Set the scores
+    scores = chi_squared_values
+
+    # Return
+    return scores, names
+
+# -----------------------------------------------------------------
+
+def get_last_generation_scores_names_and_check(fitting_run, or_initial=True):
+
+    """
+    THis function ...
+    :param fitting_run:
+    :param or_initial:
+    :return:
+    """
+
+    # Get the generation name
+    generation_name = get_last_generation_name(fitting_run, or_initial=or_initial)
+
+    # Load the parameters table from the previous generation
+    parameters_table = fitting_run.parameters_table_for_generation(generation_name)
+
+    # Load the chi squared table from the previous generation
+    chi_squared_table = fitting_run.chi_squared_table_for_generation(generation_name)
+
+    # Load the individuals table from the previous generation
+    individuals_table = fitting_run.individuals_table_for_generation(generation_name)
+
+    # List of chi squared values in the same ordere as the parameters table
+    chi_squared_values = []
+
+    # The names
+    names = []
+
+    # The checks
+    check = []
+
+    # Loop over the simulations
+    for i in range(len(parameters_table)):
+
+        simulation_name = parameters_table["Simulation name"][i]
+        chi_squared = chi_squared_table.chi_squared_for(simulation_name)
+        chi_squared_values.append(chi_squared)
+
+        # Get the individual name
+        individual_name = individuals_table.get_individual_name(simulation_name)
+
+        # Add the name
+        names.append(individual_name)
+
+        # Check individual values with parameter table of the last generation
+        check_individual = []
+        for label in fitting_run.free_parameter_labels:
+            value = parameters_table[label][i]
+            check_individual.append(value)
+        check.append(check_individual)
+
+    # Set the scores
+    scores = chi_squared_values
+
+    # Return
+    return scores, names, check
 
 # -----------------------------------------------------------------

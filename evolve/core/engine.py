@@ -979,11 +979,12 @@ class GeneticEngine(object):
 
     # -----------------------------------------------------------------
 
-    def set_scores(self, scores, check=None, rtol=1e-5, atol=1e-8, binary_parameters=None):
+    def set_scores(self, scores, names=None, check=None, rtol=1e-5, atol=1e-8, binary_parameters=None):
 
         """
         This function ...
         :param scores:
+        :param names:
         :param check:
         :param rtol:
         :param atol:
@@ -995,13 +996,13 @@ class GeneticEngine(object):
         elitism_data = None
 
         # Set the scores for the initial population
-        if self.is_initial_generation: self.set_scores_for_population(self.internalPop, scores, check, rtol=rtol, atol=atol, binary_parameters=binary_parameters)
+        if self.is_initial_generation: self.set_scores_for_population(self.internalPop, scores, names, check, rtol=rtol, atol=atol, binary_parameters=binary_parameters)
 
         # Set the scores for the new population
         else:
 
             # Set scores
-            self.set_scores_for_population(self.new_population, scores, check, rtol=rtol, atol=atol, binary_parameters=binary_parameters)
+            self.set_scores_for_population(self.new_population, scores, names, check, rtol=rtol, atol=atol, binary_parameters=binary_parameters)
 
             # Replace
             if self.new_population is not None: elitism_data = self.replace_internal_population()
@@ -1020,12 +1021,13 @@ class GeneticEngine(object):
 
     # -----------------------------------------------------------------
 
-    def set_scores_for_population(self, population, scores, check=None, rtol=1e-5, atol=1e-8, binary_parameters=None):
+    def set_scores_for_population(self, population, scores, names=None, check=None, rtol=1e-5, atol=1e-8, binary_parameters=None):
 
         """
         This function ...
         :param population:
         :param scores:
+        :param names:
         :param check:
         :param rtol:
         :param binary_parameters:
@@ -1033,10 +1035,19 @@ class GeneticEngine(object):
         """
 
         index = 0
-        for individual in population:
+        for individual_key in population.keys:
 
-            # Check if requested
-            if check is not None:
+            # Get individual
+            individual = population[individual_key]
+
+            # Check based on name
+            if names is not None:
+
+                # Check whether the individual key corresponds to the name
+                if names[index] != individual_key: raise ValueError("Check failed: individual has name '" + individual_key + "' but name check is '" + names[index] + "'")
+
+            # Check based on genome
+            elif check is not None:
 
                 genome_a = individual.genomeList
                 genome_b = check[index]
@@ -1109,6 +1120,9 @@ class GeneticEngine(object):
 
                     # Raise error since check failed
                     raise ValueError("Check failed: individual = " + str(genome_a) + " and check = " + str(genome_b))
+
+            # No checks
+            else: pass # no checks have to be done
 
             # Set the score
             individual.score = scores[index]

@@ -826,6 +826,20 @@ class IndividualsTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def get_individual_name(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        index = tables.find_index(self, simulation_name)
+        if index is None: raise ValueError("Simulation '" + simulation_name + "' not found in this table")
+        return self["Individual name"][index]
+
+    # -----------------------------------------------------------------
+
     def add_entry(self, simulation_name, individual_name):
 
         """
