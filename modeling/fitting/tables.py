@@ -289,6 +289,7 @@ class GenerationsTable(SmartTable):
             self.add_column_info("Self-absorption", bool, None, "dust self-absorption enabled")
             self.add_column_info("Transient heating", bool, None, "transient heating enabled")
 
+            # RANGES
             # Loop over the parameters
             for label in parameters:
 
@@ -296,8 +297,12 @@ class GenerationsTable(SmartTable):
                 unit = u(units[label]) if label in units and units[label] is not None else None
 
                 # Add columns for the minimum and maximum value for this parameter
-                self.add_column_info("Minimum value for " + label, float, unit, "minimum value for " + label)
+                self.add_column_info("Minimum value for " + label, float, unit, "Minimum value for " + label)
                 self.add_column_info("Maximum value for " + label, float, unit, "Maximum value for " + label)
+
+            # SCALES
+            # Loop over the parameters
+            for label in parameters: self.add_column_info("Scale for " + label, str, None, "Scale for " + label) # Add column for the scale of this parameter
 
             # Add finishing time column
             self.add_column_info("Finishing time", str, None, "Time of finishing the generation")
@@ -701,12 +706,13 @@ class GenerationsTable(SmartTable):
 
     # -----------------------------------------------------------------
 
-    def add_entry(self, generation_info, ranges):
+    def add_entry(self, generation_info, ranges, scales):
 
         """
         This function ...
         :param generation_info:
         :param ranges:
+        :param scales:
         :return:
         """
 
@@ -718,7 +724,6 @@ class GenerationsTable(SmartTable):
         index = generation_info.index
         method = generation_info.method
         wg_level = generation_info.wavelength_grid_level
-        #dg_level = generation_info.dust_grid_level
         representation = generation_info.model_representation_name
         nsimulations = generation_info.nsimulations
         npackages = generation_info.npackages
@@ -726,12 +731,12 @@ class GenerationsTable(SmartTable):
         transientheating = generation_info.transient_heating
 
         # Call other function
-        self.add_entry_impl(name, index, timestamp, method, wg_level, representation, nsimulations, npackages, selfabsorption, transientheating, ranges)
+        self.add_entry_impl(name, index, timestamp, method, wg_level, representation, nsimulations, npackages, selfabsorption, transientheating, ranges, scales)
 
     # -----------------------------------------------------------------
 
     def add_entry_impl(self, name, index, timestamp, method, wavelength_grid_level, representation, nsimulations, npackages,
-                  selfabsorption, transientheating, ranges):
+                  selfabsorption, transientheating, ranges, scales):
 
         """
         This function ...
@@ -746,6 +751,7 @@ class GenerationsTable(SmartTable):
         :param selfabsorption:
         :param transientheating:
         :param ranges:
+        :param scales:
         :return:
         """
 
@@ -755,6 +761,10 @@ class GenerationsTable(SmartTable):
         for label in self.parameter_labels:
             values.append(ranges[label].min)
             values.append(ranges[label].max)
+
+        # Add the scale
+        for label in self.parameter_labels:
+            values.append(scales[label])
 
         # Add None for the finishing time
         values.append(None)
@@ -895,6 +905,18 @@ class ParametersTable(SmartTable):
 
                 unit = units[label] if label in units else None
                 self.add_column_info(label, float, unit, "value for " + label)
+
+    # -----------------------------------------------------------------
+
+    def unit_for(self, parameter_label):
+
+        """
+        This function ...
+        :param parameter_label:
+        :return:
+        """
+
+        return self.column_unit(parameter_label)
 
     # -----------------------------------------------------------------
 

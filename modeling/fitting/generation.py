@@ -25,6 +25,9 @@ from ...evolve.optimize.stepwise import load_population
 from ...core.tools.serialization import load_dict
 from ...core.basics.configurable import load_input
 from ...core.basics.configuration import Configuration
+from ...evolve.optimize.optimizer import genomes, crossovers, list_mutators_1d, binary_string_mutators_1d, crossover_origins
+from ...core.basics.range import IntegerRange, RealRange, QuantityRange
+from ...core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -558,6 +561,484 @@ class Generation(object):
         """
 
         return load_input(self.optimizer_input_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_minima_scalar(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.optimizer_input["minima"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_maxima_scalar(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.optimizer_input["maxima"]
+
+    # -----------------------------------------------------------------
+
+    def unit_for_parameter(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        return self.parameters_table.unit_for(label)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_labels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        ## SORTED JUST AS IN FITTINGRUN !!
+        return sorted(self.parameters_table.parameter_labels)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_units(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        units = dict()
+
+        for label in self.parameter_labels:
+
+            unit = self.unit_for_parameter(label)
+            units[label] = unit
+
+        # Return the units
+        return units
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_minima(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        minima = dict()
+
+        for minimum, label in zip(self.parameter_minima_scalar, self.parameter_labels):
+
+            unit = self.unit_for_parameter(label)
+            if unit is not None: minimum *= unit
+
+            minima[label] = minimum
+
+        # Return
+        return minima
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_maxima(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        maxima = dict()
+
+        for maximum, label in zip(self.parameter_maxima_scalar, self.parameter_labels):
+
+            unit = self.unit_for_parameter(label)
+            if unit is not None: maximum *= unit
+
+            maxima[label] = maximum
+
+        # Return
+        return maxima
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_ranges(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        ranges = dict()
+
+        minima = self.parameter_minima
+        maxima = self.parameter_maxima
+
+        for label in self.parameter_labels:
+
+            # Get min and max value
+            min_value = minima[label]
+            max_value = maxima[label]
+
+            unit = self.unit_for_parameter(label)
+
+            # Quantity
+            if unit is not None: range = QuantityRange(min_value, max_value)
+
+            # Scalar value
+            else:
+
+                base_type = self.parameter_base_types
+                if base_type == "integer": range = IntegerRange(min_value, max_value)
+                elif base_type == "real": range = RealRange(min_value, max_value)
+                else: raise ValueError("Unrecognized base type: " + base_type)
+
+            # Add the range
+            ranges[label] = range
+
+        # Return
+        return ranges
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_scales(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.optimizer_input["scales"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_ndigits(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.optimizer_input["ndigits"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_nbits(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.optimizer_input["nbits"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def elitism(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.optimizer_config.elitism
+
+    # -----------------------------------------------------------------
+
+    @property
+    def gray_code(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.optimizer_config.gray_code
+
+    # -----------------------------------------------------------------
+
+    @property
+    def genome_type(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.optimizer_config.genome_type
+
+    # -----------------------------------------------------------------
+
+    @property
+    def genome_class(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return genomes[self.genome_dimension][self.genome_type]
+
+    # -----------------------------------------------------------------
+
+    ## FIXED FOR MODELLING
+    @property
+    def genome_dimension(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 1
+
+    # -----------------------------------------------------------------
+
+    ## FIXED FOR MODELLING
+    @property
+    def min_or_max(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "minimize"
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fitting_run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .run import FittingRun
+        return FittingRun.from_path(self.fitting_run_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def parameter_base_types(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        types = dict()
+
+        ranges = self.parameter_ranges
+
+        for label in self.parameter_labels:
+
+            the_range = ranges[label]
+
+            # Check the type of range
+            if isinstance(the_range, IntegerRange): base_type = "integer"
+            elif isinstance(the_range, RealRange): base_type = "real"
+            elif isinstance(the_range, QuantityRange): base_type = "real" # quantity -> 'real' base type
+            else: raise ValueError("Invalid parameter range")
+
+            # Set the type
+            types[label] = base_type
+
+        # Return
+        return types
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def single_parameter_base_type(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        assert sequences.all_equal(self.parameter_base_types.values())
+        return self.parameter_base_types[self.parameter_base_types.keys()[0]]
+
+    # -----------------------------------------------------------------
+
+    ## FIXED FOR MODELLING
+    @property
+    def heterogeneous(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nindividuals_per_generation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.optimizer_config.nindividuals
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mutation_rate(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.optimizer_config.mutation_rate
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nparameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.optimizer_config.nparameters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def crossover_rate(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.optimizer_config.crossover_rate
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mutation_method(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.optimizer_config.mutation_method
+
+    # -----------------------------------------------------------------
+
+    @property
+    def binary_mutation_method(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        return self.optimizer_config.binary_mutation_method
+
+    # -----------------------------------------------------------------
+
+    @property
+    def mutation_function(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.genome_type == "list": return list_mutators_1d[self.single_parameter_base_type][self.mutation_method]
+        elif self.genome_type == "binary_string": return binary_string_mutators_1d[self.binary_mutation_method]
+        else: raise ValueError("Invalid genome type: " + self.genome_type)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def scaling_method(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.optimizer_config.scaling_method
+
+    # -----------------------------------------------------------------
+
+    @property
+    def scaling_function(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def crossover_method(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.optimizer_config.crossover_method
+
+    # -----------------------------------------------------------------
+
+    @property
+    def crossover_function(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return crossovers[self.genome_type][self.genome_dimension][self.crossover_method]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def crossover_origins_function(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return crossover_origins[self.genome_type][self.genome_dimension][self.crossover_method]
 
     # -----------------------------------------------------------------
 

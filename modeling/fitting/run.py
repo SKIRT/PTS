@@ -34,8 +34,10 @@ from ...core.tools.serialization import load_dict
 from .tables import IndividualsTable
 from ...core.tools import types, numbers
 from ...evolve.analyse.database import get_best_individual_key_and_score_all_generations
-from ...evolve.optimize.optimizer import gray_binary_string_to_parameters, binary_string_to_parameters
 from .generation import GenerationInfo, Generation
+from .evaluate import get_parameter_values_from_genome
+from .platform import GenerationPlatform
+from ..config.parameters import parsing_types_for_parameter_types
 
 # -----------------------------------------------------------------
 
@@ -177,6 +179,29 @@ class FittingRun(object):
 
         ## INPUT MAP PATHS FILE
         self.input_maps_file_path = fs.join(self.path, "input_maps.dat")
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_path(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        name = fs.name(path)
+        fit_path = fs.directory_of(path)
+        modeling_path = fs.directory_of(fit_path)
+
+        from .component import get_model_for_run
+
+        # Get model name
+        model_name = get_model_for_run(modeling_path, name)
+
+        # Create and return
+        return cls(modeling_path, name, model_name)
 
     # -----------------------------------------------------------------
 
@@ -544,6 +569,166 @@ class FittingRun(object):
         name = self.fitting_configuration.initial_representation
         representation_path = get_representation_path(self.modeling_path, name)
         return Representation(name, self.model_name, representation_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def parameters_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_configuration.parameters
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def descriptions_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_configuration.descriptions
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def types_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_configuration.types
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def units_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_configuration.units
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ndigits_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_configuration.ndigits
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ranges_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_configuration.ranges
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def filters_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_configuration.filters
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def genetic_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_configuration.genetic
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def grid_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_configuration.grid
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def parameter_parsing_types(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        parsing_types = dict()
+
+        # Add the options for the ranges
+        for label in self.free_parameter_labels:
+
+            # Get the parsing type
+            parsing_type = parsing_types_for_parameter_types[self.types_config[label]]
+
+            # Add to dictinoary
+            parsing_types[label] = parsing_type
+
+        # Return
+        return parsing_types
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def parameter_base_types(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        base_types = dict()
+
+        for label in self.parameter_parsing_types:
+
+            parsing_type = self.parameter_parsing_types[label]
+
+            if parsing_type.endswith("quantity"): base_type = "real"
+            elif parsing_type == "angle": base_type = "real"
+            elif parsing_type == "real": base_type = "real"
+            elif parsing_type == "integer": base_type = "integer"
+            else: raise ValueError("Type for parameter '" + label + "' not recognized: " + parsing_type)
+
+            # Set type
+            base_types[label] = base_type
+
+        # Return the base types
+        return base_types
 
     # -----------------------------------------------------------------
     # END
@@ -921,6 +1106,18 @@ class FittingRun(object):
 
     # -----------------------------------------------------------------
 
+    def get_generation_platform(self, generation_name):
+
+        """
+        This function ...
+        :param generation_name:
+        :return:
+        """
+
+        return GenerationPlatform.from_path(self.get_generation_path(generation_name))
+
+    # -----------------------------------------------------------------
+
     def genetic_engine_path_for_generation(self, generation_name):
 
         """
@@ -1228,19 +1425,21 @@ class FittingRun(object):
         genome = individuals_generation[individual_key]
 
         # Convert
-        if self.genetic_settings.gray_code: parameters = gray_binary_string_to_parameters(genome, self.parameter_minima_scalar, self.parameter_maxima_scalar, self.nbits_list)
-        else: parameters = binary_string_to_parameters(genome, self.parameter_minima_scalar, self.parameter_maxima_scalar, self.nbits_list)
+        #if self.genetic_settings.gray_code: parameters = gray_binary_string_to_parameters(genome, self.parameter_minima_scalar, self.parameter_maxima_scalar, self.nbits_list)
+        #else: parameters = binary_string_to_parameters(genome, self.parameter_minima_scalar, self.parameter_maxima_scalar, self.nbits_list)
 
-        values = dict()
+        # NEW CONVERT: GET THE PARAMETER VALUES, TAKING INTO ACCOUNT THE PARAMETER SCALES (LIN, lOG) AND GRAY CODING
+        #parameters = get_parameters_from_genome(genome, self.parameter_minima_scalar, self.parameter_maxima_scalar, self.nbits_list, parameter_scales, self.genetic_settings.gray_code)
+        #values = dict()
+        #for label_index, label in enumerate(self.free_parameter_labels):
+        #    # Add unit
+        #    if label in self.parameter_units:
+        #        value = parameters[label_index] * self.parameter_units[label]
+        #    else: value = parameters[label_index]
+        #    values[label] = value
 
-        for label_index, label in enumerate(self.free_parameter_labels):
-
-            # Add unit
-            if label in self.parameter_units:
-                value = parameters[label_index] * self.parameter_units[label]
-            else: value = parameters[label_index]
-
-            values[label] = value
+        # Get parameter values from genome
+        values = get_parameter_values_from_genome(genome, self.parameter_maxima_scalar, self.nbits_list, parameter_scales, self.genetic_settings.gray_code)
 
         # Return the dictionary
         return values, chi_squared

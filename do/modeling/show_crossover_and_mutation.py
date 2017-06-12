@@ -19,11 +19,8 @@ from pts.core.tools import filesystem as fs
 from pts.modeling.fitting.component import get_run_names
 from pts.modeling.core.environment import GalaxyModelingEnvironment
 from pts.modeling.fitting.component import load_fitting_run
-from pts.evolve.optimize.optimizer import gray_binary_string_to_parameters, binary_string_to_parameters
 from pts.core.tools import formatting as fmt
 from pts.core.tools.stringify import tostr
-from pts.evolve.optimize.optimizer import list_crossovers_1d, binary_string_crossovers_1d, genomes_1d, genomes_2d
-from pts.evolve.optimize.optimizer import list_crossover_origins_1d, list_crossover_origins_2d, binary_string_crossover_origins_1d, binary_string_crossover_origins_2d
 
 # -----------------------------------------------------------------
 
@@ -58,6 +55,8 @@ environment = GalaxyModelingEnvironment(modeling_path)
 # Load the fitting run
 fitting_run = load_fitting_run(modeling_path, config.fitting_run)
 
+print(fitting_run.parameter_base_types)
+
 # -----------------------------------------------------------------
 
 # Get generation names
@@ -75,6 +74,7 @@ for generation_name in generations:
 
     # Get the generation
     generation = fitting_run.get_generation(generation_name)
+    platform = fitting_run.get_generation_platform(generation_name)
 
     # -----------------------------------------------------------------
 
@@ -89,32 +89,6 @@ for generation_name in generations:
 
     # -----------------------------------------------------------------
 
-    # Load the optimizer input
-    optimizer_input = generation.optimizer_input
-
-    # -----------------------------------------------------------------
-
-    parameter_minima_scalar = optimizer_input["minima"]
-    parameter_maxima_scalar = optimizer_input["maxima"]
-
-    # -----------------------------------------------------------------
-
-    ndigits = optimizer_input["ndigits"]
-    nbits = optimizer_input["nbits"]
-    scales = optimizer_input["scales"]
-
-    # -----------------------------------------------------------------
-
-    # Load optimizer config
-    optimizer_config = generation.optimizer_config
-
-    # Get settings
-    elitism = optimizer_config.elitism
-    gray_code = optimizer_config.gray_code
-    genome_type = optimizer_config.genome_type
-
-    # -----------------------------------------------------------------
-
     units = fitting_run.parameter_units
 
     # -----------------------------------------------------------------
@@ -125,33 +99,16 @@ for generation_name in generations:
         mother_name, father_name = crossover.get_parents(index)
         sister_name, brother_name = crossover.get_children(index)
 
-        # Genome
-        make_genome = genomes_1d[genome_type]
+        mother = platform.make_genome(parents[mother_name])
+        father = platform.make_genome(parents[father_name])
 
-        #print(parents)
+        sister = platform.make_genome(newborns[sister_name])
+        brother = platform.make_genome(newborns[brother_name])
 
-        # Get genomes of parents
-        mother = make_genome(genes=parents[mother_name])
-        father = make_genome(genes=parents[father_name])
-
-        # Get genomes of children
-        sister = make_genome(genes=newborns[sister_name])
-        brother = make_genome(genes=newborns[brother_name])
-
-        # Convert
-        if gray_code:
-
-            mother_real = gray_binary_string_to_parameters(mother, parameter_minima_scalar, parameter_maxima_scalar, fitting_run.nbits_list)
-            father_real = gray_binary_string_to_parameters(father, parameter_minima_scalar, parameter_maxima_scalar, fitting_run.nbits_list)
-            sister_real = gray_binary_string_to_parameters(sister, parameter_minima_scalar, parameter_maxima_scalar, fitting_run.nbits_list)
-            brother_real = gray_binary_string_to_parameters(brother, parameter_minima_scalar, parameter_maxima_scalar, fitting_run.nbits_list)
-
-        else:
-
-            mother_real = binary_string_to_parameters(mother, parameter_minima_scalar, parameter_maxima_scalar, fitting_run.nbits_list)
-            father_real = binary_string_to_parameters(father, parameter_minima_scalar, parameter_maxima_scalar, fitting_run.nbits_list)
-            sister_real = binary_string_to_parameters(sister, parameter_minima_scalar, parameter_maxima_scalar, fitting_run.nbits_list)
-            brother_real = binary_string_to_parameters(brother, parameter_minima_scalar, parameter_maxima_scalar, fitting_run.nbits_list)
+        mother_parameters = platform.genome_to_parameters(mother)
+        father_parameters = platform.genome_to_parameters(father)
+        sister_parameters = platform.genome_to_parameters(sister)
+        brother_parameters = platform.genome_to_parameters(brother)
 
         # To strings
         mother_string = tostr(mother.genes, delimiter=" ")
@@ -164,29 +121,19 @@ for generation_name in generations:
             method = crossover.get_crossover_method(index)
             details = crossover.get_crossover_details(index)
 
-            # Get the correct crossover function
-            if genome_type == "list": crossover_function = list_crossovers_1d[method]
-            elif genome_type == "binary_string": crossover_function = binary_string_crossovers_1d[method]
-            else: raise ValueError("Invalid genome type")
-
             # Create crossover genomes
-            initial_sister, initial_brother = crossover_function(None, mom=mother, dad=father, details=details, count=2)
+            initial_sister, initial_brother = platform.crossover(mother, father, details)
 
             # Check where mutation happened
             sister_mutations = [initial_sister.genes[i] != sister.genes[i] for i in range(len(initial_sister))]
             brother_mutations = [initial_brother.genes[i] != brother.genes[i] for i in range(len(initial_brother))]
-
-            # Get the correct crossover origins function
-            if genome_type == "list": origins_function = list_crossover_origins_1d[method]
-            elif genome_type == "binary_string": origins_function = binary_string_crossover_origins_1d[method]
-            else: raise ValueError("Invalid genome type")
 
             # COLORED
             mother_colored = fmt.colored_sequence(mother, colors="green", delimiter=" ")
             father_colored = fmt.colored_sequence(father, colors=None, delimiter=" ")
 
             # Get the origins
-            sister_origins, brother_origins = origins_function(len(mother), details)
+            sister_origins, brother_origins = platform.crossover_origins(len(mother), details)
 
             initial_sister_colors = ["green" if flag else None for flag in sister_origins]
             initial_brother_colors = [None if flag else "green" for flag in brother_origins]
@@ -212,7 +159,6 @@ for generation_name in generations:
             print("#" + str(index+1) + " " + fmt.blue + fmt.underlined + method.title() + " Crossover:" + fmt.reset)
             print("")
             print("Parents   :   " + mother_colored + "  x  " + father_colored)
-            #print("")
             print("Crossover :   " + initial_sister_colored + "     " + initial_brother_colored)
             print("Mutation  :   " + sister_colored + "     " + brother_colored)
             print("")
@@ -258,7 +204,6 @@ for generation_name in generations:
             print("#" + str(index+1) + " " + fmt.blue + fmt.underlined + "Cloning:" + fmt.reset)
             print("")
             print("Parents  :    " + mother_colored + fmt.reset + "     " + father_colored)
-            #print("")
             print("Cloning  :    " + initial_sister_colored + "     " + initial_brother_colored)
             print("Mutation :    " + sister_colored + "     " + brother_colored)
             print("")

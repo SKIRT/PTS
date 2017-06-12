@@ -21,6 +21,7 @@ from ...core.tools.stringify import stringify
 from ...core.simulation.definition import SingleSimulationDefinition
 from ...core.tools.filelock import FileLock
 from ...core.tools.stringify import tostr
+from ...evolve.optimize.optimizer import get_parameters_from_genome
 
 # -----------------------------------------------------------------
 
@@ -134,7 +135,41 @@ def get_parameter_values_for_named_individual(parameters, name, fitting_run):
 
 # -----------------------------------------------------------------
 
-def get_parameter_values(genome, fitting_run):
+def get_parameter_values_from_genome(genome, fitting_run, minima, maxima, nbits, parameter_scales, gray=False):
+
+    """
+    This function ...
+    :param genome:
+    :param fitting_run:
+    :param minima:
+    :param maxima:
+    :param nbits:
+    :param parameter_scales:
+    :param gray:
+    :return:
+    """
+
+    # Get the raw parameter values from the genome
+    parameters = get_parameters_from_genome(genome, minima, maxima, nbits, parameter_scales, gray=gray)
+
+    values = dict()
+
+    # Loop over the parameters
+    for label_index, label in enumerate(fitting_run.free_parameter_labels):
+
+        # Add unit
+        if label in fitting_run.parameter_units: value = parameters[label_index] * self.parameter_units[label]
+        else: value = parameters[label_index]
+
+        # Set the value with unit
+        values[label] = value
+
+    # Return the parameter values
+    return values
+
+# -----------------------------------------------------------------
+
+def _get_parameter_values_old_function(genome, fitting_run):
 
     """
     This function ...
@@ -238,7 +273,7 @@ def evaluate(genome, **kwargs):
     fitting_run = kwargs.pop("fitting_run")
 
     # Get the parameter values
-    parameter_values = get_parameter_values(genome, fitting_run)
+    parameter_values = get_parameter_values_from_genome(genome, fitting_run)
 
     # Generate simulation name
     simulation_name = generate_simulation_name()

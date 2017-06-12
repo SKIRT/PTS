@@ -82,6 +82,12 @@ list_crossovers_2d["single_horizontal_point"] = G2DListCrossoverSingleHPoint
 
 # -----------------------------------------------------------------
 
+list_crossovers = dict()
+list_crossovers[1] = list_crossovers_1d
+list_crossovers[2] = list_crossovers_2d
+
+# -----------------------------------------------------------------
+
 binary_string_crossovers_1d = dict()
 binary_string_crossovers_1d["single_point"] = G1DBinaryStringXSinglePoint
 binary_string_crossovers_1d["two_point"] = G1DBinaryStringXTwoPoint
@@ -93,6 +99,18 @@ binary_string_crossovers_2d = dict()
 binary_string_crossovers_2d["uniform"] = G2DBinaryStringXUniform
 binary_string_crossovers_2d["single_vertical_point"] = G2DBinaryStringXSingleVPoint
 binary_string_crossovers_2d["single_horizontal_point"] = G2DBinaryStringXSingleHPoint
+
+# -----------------------------------------------------------------
+
+binary_string_crossovers = dict()
+binary_string_crossovers[1] = binary_string_crossovers_1d
+binary_string_crossovers[2] = binary_string_crossovers_2d
+
+# -----------------------------------------------------------------
+
+crossovers = dict()
+crossovers["list"] = list_crossovers
+crossovers["binary_string"] = binary_string_crossovers
 
 # -----------------------------------------------------------------
 
@@ -115,6 +133,12 @@ list_crossover_origins_2d["single_horizontal_point"] = G2DListCrossoverSingleHPo
 
 # -----------------------------------------------------------------
 
+list_crossover_origins = dict()
+list_crossover_origins[1] = list_crossover_origins_1d
+list_crossover_origins[2] = list_crossover_origins_2d
+
+# -----------------------------------------------------------------
+
 binary_string_crossover_origins_1d = dict()
 binary_string_crossover_origins_1d["single_point"] = G1DBinaryStringXSinglePoint_origins
 binary_string_crossover_origins_1d["two_point"] = G1DBinaryStringXTwoPoint_origins
@@ -129,6 +153,65 @@ binary_string_crossover_origins_2d["single_horizontal_point"] = G2DBinaryStringX
 
 # -----------------------------------------------------------------
 
+binary_string_crossover_origins = dict()
+binary_string_crossover_origins[1] = binary_string_crossover_origins_1d
+binary_string_crossover_origins[2] = binary_string_crossover_origins_2d
+
+# -----------------------------------------------------------------
+
+crossover_origins = dict()
+crossover_origins["list"] = list_crossover_origins
+crossover_origins["binary_string"] = binary_string_crossover_origins
+
+# -----------------------------------------------------------------
+
+list_mutators_1d_integer = dict()
+list_mutators_1d_integer["range"] = G1DListMutatorIntegerRange
+list_mutators_1d_integer["gaussian"] = G1DListMutatorIntegerGaussian
+list_mutators_1d_integer["binary"] = G1DListMutatorIntegerBinary
+
+# -----------------------------------------------------------------
+
+list_mutators_1d_integer_hetero = dict()
+list_mutators_1d_integer_hetero["range"] = HeterogeneousListMutatorIntegerRange
+list_mutators_1d_integer_hetero["gaussian"] = HeterogeneousListMutatorIntegerGaussian
+
+# -----------------------------------------------------------------
+
+list_mutators_1d_real = dict()
+list_mutators_1d_real["range"] = G1DListMutatorRealRange
+list_mutators_1d_real["gaussian"] = G1DListMutatorRealGaussian
+
+# -----------------------------------------------------------------
+
+list_mutators_1d_real_hetero = dict()
+list_mutators_1d_real_hetero["range"] = HeterogeneousListMutatorRealRange
+list_mutators_1d_real_hetero["gaussian"] = HeterogeneousListMutatorRealGaussian
+
+# -----------------------------------------------------------------
+
+list_mutators_1d = dict()
+list_mutators_1d["integer"] = list_mutators_1d_integer
+list_mutators_1d["real"] = list_mutators_1d_real
+
+# -----------------------------------------------------------------
+
+list_mutators_1d_hetero = dict()
+list_mutators_1d_hetero["integer"] = list_mutators_1d_integer_hetero
+list_mutators_1d_hetero["real"] = list_mutators_1d_real_hetero
+
+# -----------------------------------------------------------------
+
+binary_string_mutators_1d = dict()
+binary_string_mutators_1d["swap"] = G1DBinaryStringMutatorSwap
+binary_string_mutators_1d["flip"] = G1DBinaryStringMutatorFlip
+
+# -----------------------------------------------------------------
+
+binary_string_mutators_2d = dict()
+
+# -----------------------------------------------------------------
+
 genomes_1d = dict()
 genomes_1d["list"] = G1DList
 genomes_1d["binary_string"] = G1DBinaryString
@@ -138,6 +221,12 @@ genomes_1d["binary_string"] = G1DBinaryString
 genomes_2d = dict()
 genomes_2d["list"] = G2DList
 genomes_2d["binary_string"] = G2DBinaryString
+
+# -----------------------------------------------------------------
+
+genomes = dict()
+genomes[1] = genomes_1d
+genomes[2] = genomes_2d
 
 # -----------------------------------------------------------------
 
@@ -1034,49 +1123,42 @@ class Optimizer(Configurable):
         # Integer type
         if self.is_integer_parameter:
 
-            # Range-based mutator
-            if self.config.mutation_method == "range":
+            # Heterogeneous genome
+            if self.config.heterogeneous:
+
+                # Return the mutator
+                if self.config.mutation_method in list_mutators_1d_integer_hetero: return list_mutators_1d_integer_hetero[self.config.mutation_method]
 
                 # Choose class
-                if self.config.heterogeneous: return HeterogeneousListMutatorIntegerRange
-                else: return G1DListMutatorIntegerRange
+                else: raise ValueError("Cannot use binary mutation on heterogeneous genomes")
 
-            # Gaussian mutator
-            elif self.config.mutation_method == "gaussian":
+            else:
 
-                # Choose class
-                if self.config.heterogeneous: return HeterogeneousListMutatorIntegerGaussian
-                else: return G1DListMutatorIntegerGaussian
+                # Return the mutator
+                if self.config.mutation_method in list_mutators_1d_integer: return list_mutators_1d_integer[self.config.mutation_method]
 
-            # Binary mutator
-            elif self.config.mutation_method == "binary":
-
-                # Choose class
-                if self.config.heterogeneous: raise ValueError("Cannot use binary mutation on heterogeneous genomes")
-                else: return G1DListMutatorIntegerBinary
-
-            # Invalid
-            else: raise ValueError("Mutation method '" + self.config.mutation_method + "' not recognized")
+                # Invalid
+                else: raise ValueError("Mutation method '" + self.config.mutation_method + "' not recognized")
 
         # Real type
         elif self.is_real_parameter:
 
-            # Range-based mutator
-            if self.config.mutation_method == "range":
+            # Heterogeneous genome
+            if self.config.heterogeneous:
 
-                # Choose class
-                if self.config.heterogeneous: return HeterogeneousListMutatorRealRange
-                else: return G1DListMutatorRealRange
+                # Return the mutator
+                if self.config.mutation_method in list_mutators_1d_real_hetero: return list_mutators_1d_real_hetero[self.config.mutation_method]
 
-            # Gaussian mutator
-            elif self.config.mutation_method == "gaussian":
+                # Invalid
+                else: raise ValueError("Mutation method '" + self.config.mutation_method + "' not valid for genome of real values")
 
-                # Choose class
-                if self.config.heterogeneous: return HeterogeneousListMutatorRealGaussian
-                else: return G1DListMutatorRealGaussian
+            else:
 
-            # Invalid
-            else: raise ValueError("Mutation method '" + self.config.mutation_method + "' not valid for genome of real values")
+                # Return the mutator
+                if self.config.mutation_method in list_mutators_1d_real: return list_mutators_1d_real[self.config.mutation_method]
+
+                # Invalid
+                else: raise ValueError("Mutation method '" + self.config.mutation_method + "' not valid for genome of real values")
 
         # Invalid
         else: raise ValueError("Invalid parameter type")
@@ -1091,8 +1173,7 @@ class Optimizer(Configurable):
         """
 
         # Check mutation method
-        if self.config.binary_mutation_method == "swap": return G1DBinaryStringMutatorSwap
-        elif self.config.binary_mutation_method == "flip": return G1DBinaryStringMutatorFlip
+        if self.config.binary_mutation_method in binary_string_mutators_1d: return binary_string_mutators_1d[self.config.binary_mutation_method]
         else: raise ValueError("Invalid mutation method: " + self.config.binary_mutation_method)
 
     # -----------------------------------------------------------------
@@ -1944,6 +2025,9 @@ def get_parameters_from_genome(genome, minima, maxima, nbits, parameter_scales, 
     :return: 
     """
 
+    # Scale the minima and maxima!
+    minima, maxima = scale_extrema(minima, maxima, parameter_scales)
+
     # Get scaled form
     scaled = get_parameters_from_genome_scaled(genome, minima, maxima, nbits, gray=gray)
 
@@ -2047,6 +2131,64 @@ def unscale_parameters(parameters, scales):
 
 # -----------------------------------------------------------------
 
+def scale_extrema(minima, maxima, scales):
+
+    """
+    This function ...
+    :param minima:
+    :param maxima:
+    :param scales:
+    :return:
+    """
+
+    scaled_minima = []
+    scaled_maxima = []
+
+    # Loop over the values
+    for minimum, maximum, scale in zip(minima, maxima, scales):
+
+        # Convert to scale
+        scaled_minimum = numbers.to_scale(minimum, scale)
+        scaled_maximum = numbers.to_scale(maximum, scale)
+
+        # Add to the lists
+        scaled_minima.append(scaled_minimum)
+        scaled_maxima.append(scaled_maximum)
+
+    # Return the scaled values
+    return scaled_minima, scaled_maxima
+
+# -----------------------------------------------------------------
+
+def unscale_extrema(scaled_minima, scaled_maxima, scales):
+
+    """
+    This function ...
+    :param scaled_minima:
+    :param scaled_maxima:
+    :param scales:
+    :return:
+    """
+
+    minima = []
+    maxima = []
+
+    # Loop over the values
+    for scaled_minimum, scaled_maximum, scale in zip(scaled_minima, scaled_maxima, scales):
+
+        # Convert to scale
+        minimum = numbers.unscale(scaled_minima, scale)
+        maximum = numbers.unscale(scaled_maxima, scale)
+
+        # Add to the list
+        minima.append(minimum)
+        maxima.append(maximum)
+
+    # Return the unscaled values
+    return minima, maxima
+
+# -----------------------------------------------------------------
+
 def scale_parameter_sets(sets, scales):
 
     """
@@ -2096,6 +2238,56 @@ def unscale_parameter_sets(sets, scales):
 
     # Return the new parameter sets
     return parameter_sets
+
+# -----------------------------------------------------------------
+
+def scale_extrema_sets(sets, scales):
+
+    """
+    This function ...
+    :param sets:
+    :param scales:
+    :return:
+    """
+
+    extrema_sets = []
+
+    # Loop over
+    for minima, maxima in sets:
+
+        # Scale
+        scaled_minima, scaled_maxima = scale_extrema(minima, maxima, scales)
+
+        # Add the extrema
+        extrema_sets.append((scaled_minima, scaled_maxima))
+
+    # Return the new extrema
+    return extrema_sets
+
+# -----------------------------------------------------------------
+
+def unscale_extrema_sets(sets, scales):
+
+    """
+    This function ...
+    :param sets:
+    :param scales:
+    :return:
+    """
+
+    extrema_sets = []
+
+    # Loop over
+    for scaled_minima, scaled_maxima in sets:
+
+        # Unscale
+        minima, maxima = unscale_extrema(scaled_minima, scaled_maxima, scales)
+
+        # Add the extrema
+        extrema_sets.append((minima, maxima))
+
+    # Return the new extrema
+    return extrema_sets
 
 # -----------------------------------------------------------------
 

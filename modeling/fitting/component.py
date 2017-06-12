@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 from abc import ABCMeta
 
 # Import astronomical modules
-from astropy.utils import lazyproperty
 from astropy.table import Table
 
 # Import the relevant PTS classes and modules
