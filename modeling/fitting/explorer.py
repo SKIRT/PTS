@@ -367,6 +367,11 @@ class ParameterExplorer(FittingComponent):
         self.launcher.config.logging.verbose = True
         self.launcher.config.logging.memory = True
 
+        # ANALYSIS
+
+        # To create the extr, plot, misc directories relative in the simulation directory
+        self.config.analysis.relative = True
+
         ## Extraction
         self.launcher.config.analysis.extraction.path = "extr"    # name of the extraction directory
         self.launcher.config.analysis.extraction.progress = self.config.extract_progress  # extract progress information
