@@ -17,6 +17,7 @@ from pts.core.tools import tables
 from pts.core.tools import sequences
 from pts.core.tools.stringify import tostr
 from pts.core.tools import parsing
+from pts.core.tools import numbers
 
 # -----------------------------------------------------------------
 
@@ -103,7 +104,8 @@ class CrossoverTable(SmartTable):
         :return:
         """
 
-        return len(tables.find_indices(self, True, "Crossover"))
+        #return len(tables.find_indices(self, True, "Crossover"))
+        return numbers.as_integer_check(np.sum(self["Crossover"].mask))
 
     # -----------------------------------------------------------------
 

@@ -625,7 +625,7 @@ class StepWiseOptimizer(Optimizer):
         else: log.warning("No elitism has been performed in this generation")
 
         # Create the scores table
-        self.scores_table = ScoresTable.from_data(self.population_scores)
+        self.scores_table = ScoresTable.from_data(self.population_scores, min_or_max=self.min_or_max)
 
     # -----------------------------------------------------------------
 
@@ -1030,6 +1030,18 @@ class StepWiseOptimizer(Optimizer):
         """
 
         return isinstance(self.population, NamedPopulation)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_or_max(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.population.minimax
 
     # -----------------------------------------------------------------
 

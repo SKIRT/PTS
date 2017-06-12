@@ -134,4 +134,74 @@ class GenerationPlatform(object):
         sister_origins, brother_origins = self.generation.crossover_origins_function(size, details)
         return sister_origins, brother_origins
 
+    # -----------------------------------------------------------------
+
+    @property
+    def nreproductions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.generation.crossover_table)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ncrossovers(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.generation.crossover_table.ncrossovers
+
+    # -----------------------------------------------------------------
+
+    def reproduction(self, index):
+
+        """
+        This fucntion ...
+        :param index:
+        :return:
+        """
+
+        mother_name, father_name = self.generation.crossover_table.get_parents(index)
+        sister_name, brother_name = self.generation.crossover_table.get_children(index)
+
+        # Load parent and new populations
+        parents = self.generation.parents
+        newborns = self.generation.newborns
+
+        mother = self.make_genome(parents[mother_name])
+        father = self.make_genome(parents[father_name])
+
+        sister = self.make_genome(newborns[sister_name])
+        brother = self.make_genome(newborns[brother_name])
+
+        crossover = False
+
+        # Crossover happened
+        if self.generation.crossover_table.is_crossover(index):
+
+            crossover = True
+
+            # Get crossover method and details
+            #method = self.generation.crossover_table.get_crossover_method(index)
+            details = self.generation.crossover_table.get_crossover_details(index)
+
+            # Create crossover genomes
+            initial_sister, initial_brother = self.crossover(mother, father, details)
+
+            # Get the origins
+            sister_origins, brother_origins = self.crossover_origins(len(mother), details)
+
+        # Just cloned
+        else: initial_sister, initial_brother, sister_origins, brother_origins = mother, father, None, None
+
+        # Return
+        return mother, father, initial_sister, initial_brother, sister, brother, crossover, sister_origins, brother_origins
+
 # -----------------------------------------------------------------

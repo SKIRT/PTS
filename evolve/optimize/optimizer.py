@@ -453,7 +453,7 @@ class Optimizer(Configurable):
             elif not self.config.heterogeneous: raise ValueError("Parameter range must be defined for non-heterogeneous genomes")
 
         # Debugging
-        if self.parameter_range is not None: log.debug("The parameter range is " + tostr(self.parameter_range))
+        if self.parameter_range is not None: log.debug("The parameter range is " + tostr(self.parameter_range, fancy=True))
 
     # -----------------------------------------------------------------
 

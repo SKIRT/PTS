@@ -528,7 +528,7 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def crossover_table(self):
 
         """

@@ -78,33 +78,17 @@ for generation_name in generations:
 
     # -----------------------------------------------------------------
 
-    # Load the crossover table
-    crossover = generation.crossover_table
-
-    # -----------------------------------------------------------------
-
-    # Load parent and new populations
-    parents = generation.parents
-    newborns = generation.newborns
-
-    # -----------------------------------------------------------------
-
     units = fitting_run.parameter_units
 
     # -----------------------------------------------------------------
 
     print("")
-    for index in range(len(crossover)):
+    for index in range(platform.nreproductions):
 
-        mother_name, father_name = crossover.get_parents(index)
-        sister_name, brother_name = crossover.get_children(index)
+        # Enact the reproduction event
+        mother, father, initial_sister, initial_brother, sister, brother, crossover, sister_origins, brother_origins = platform.reproduction(index)
 
-        mother = platform.make_genome(parents[mother_name])
-        father = platform.make_genome(parents[father_name])
-
-        sister = platform.make_genome(newborns[sister_name])
-        brother = platform.make_genome(newborns[brother_name])
-
+        # Get actual parameter values for parents and children
         mother_parameters = platform.genome_to_parameters(mother)
         father_parameters = platform.genome_to_parameters(father)
         sister_parameters = platform.genome_to_parameters(sister)
@@ -115,14 +99,7 @@ for generation_name in generations:
         father_string = tostr(father.genes, delimiter=" ")
 
         # Crossover happened
-        if crossover.is_crossover(index):
-
-            # Get crossover method and details
-            method = crossover.get_crossover_method(index)
-            details = crossover.get_crossover_details(index)
-
-            # Create crossover genomes
-            initial_sister, initial_brother = platform.crossover(mother, father, details)
+        if crossover:
 
             # Check where mutation happened
             sister_mutations = [initial_sister.genes[i] != sister.genes[i] for i in range(len(initial_sister))]
@@ -133,7 +110,7 @@ for generation_name in generations:
             father_colored = fmt.colored_sequence(father, colors=None, delimiter=" ")
 
             # Get the origins
-            sister_origins, brother_origins = platform.crossover_origins(len(mother), details)
+            #sister_origins, brother_origins = platform.crossover_origins(len(mother), details)
 
             initial_sister_colors = ["green" if flag else None for flag in sister_origins]
             initial_brother_colors = [None if flag else "green" for flag in brother_origins]
@@ -156,7 +133,7 @@ for generation_name in generations:
 
             #print(nmutations_sister, nmutations_brother)
 
-            print("#" + str(index+1) + " " + fmt.blue + fmt.underlined + method.title() + " Crossover:" + fmt.reset)
+            print("#" + str(index+1) + " " + fmt.blue + fmt.underlined + generation.crossover_method.title() + " Crossover:" + fmt.reset)
             print("")
             print("Parents   :   " + mother_colored + "  x  " + father_colored)
             print("Crossover :   " + initial_sister_colored + "     " + initial_brother_colored)
@@ -183,8 +160,8 @@ for generation_name in generations:
             father_colored = fmt.colored_sequence(father, colors=None, delimiter=" ")
 
             # COLORED
-            initial_sister_colored = fmt.colored_sequence(mother, colors="green", delimiter=" ")
-            initial_brother_colored = fmt.colored_sequence(father, colors=None, delimiter=" ")
+            initial_sister_colored = fmt.colored_sequence(initial_sister, colors="green", delimiter=" ")
+            initial_brother_colored = fmt.colored_sequence(initial_brother, colors=None, delimiter=" ")
 
             # Check where mutation happened
             sister_mutations = [sister.genes[i] != mother.genes[i] for i in range(len(sister))]

@@ -1446,30 +1446,14 @@ class FittingRun(object):
         # Get the parameter values for the generation and individual
         individuals_generation = populations[generation_index]
 
-        # Get parameters
-        #individual_key = individual_keys[individual_index]
-        #parameters = individuals_generation[individual_key]
-
         # Get genome
         genome = individuals_generation[individual_key]
-
-        # Convert
-        #if self.genetic_settings.gray_code: parameters = gray_binary_string_to_parameters(genome, self.parameter_minima_scalar, self.parameter_maxima_scalar, self.nbits_list)
-        #else: parameters = binary_string_to_parameters(genome, self.parameter_minima_scalar, self.parameter_maxima_scalar, self.nbits_list)
-
-        # NEW CONVERT: GET THE PARAMETER VALUES, TAKING INTO ACCOUNT THE PARAMETER SCALES (LIN, lOG) AND GRAY CODING
-        #parameters = get_parameters_from_genome(genome, self.parameter_minima_scalar, self.parameter_maxima_scalar, self.nbits_list, parameter_scales, self.genetic_settings.gray_code)
-        #values = dict()
-        #for label_index, label in enumerate(self.free_parameter_labels):
-        #    # Add unit
-        #    if label in self.parameter_units:
-        #        value = parameters[label_index] * self.parameter_units[label]
-        #    else: value = parameters[label_index]
-        #    values[label] = value
 
         # Get parameter values from genome
         # genome, fitting_run, minima, maxima, nbits, parameter_scales, gray=False
         values = get_parameter_values_from_genome(genome, self, self.parameter_minima_scalar, self.parameter_maxima_scalar, self.nbits_list, generation.parameter_scales, self.genetic_settings.gray_code)
+
+        # OR: USE NEW GENERATION PLATFORM CLASS
 
         # Return the dictionary
         return values, chi_squared
@@ -1485,29 +1469,6 @@ class FittingRun(object):
         """
 
         values, chi_squared = self.best_parameter_values_and_chi_squared
-        return values
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def best_parameter_values_old_implementation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        values = None
-        chi_squared = float("inf")
-
-        # Loop over the generations
-        for generation_name in self.generation_names:
-
-            generation_values, generation_chi_squared = self.best_parameter_values_for_generation(generation_name, return_chi_squared=True, only_finished=False)
-            if generation_chi_squared < chi_squared:
-                values = generation_values
-
-        # Return the values
         return values
 
     # -----------------------------------------------------------------

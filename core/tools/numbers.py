@@ -60,6 +60,19 @@ def is_integer(value):
 
 # -----------------------------------------------------------------
 
+def as_integer_check(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    if not is_integer(value): raise ValueError("Not an integer")
+    return int(value)
+
+# -----------------------------------------------------------------
+
 def factors(n):
 
     """
