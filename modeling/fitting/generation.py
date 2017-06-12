@@ -742,6 +742,18 @@ class Generation(object):
     # -----------------------------------------------------------------
 
     @property
+    def ndigits_list(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.parameter_ndigits
+
+    # -----------------------------------------------------------------
+
+    @property
     def parameter_nbits(self):
 
         """
@@ -750,6 +762,18 @@ class Generation(object):
         """
 
         return self.optimizer_input["nbits"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nbits_list(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.parameter_nbits
 
     # -----------------------------------------------------------------
 

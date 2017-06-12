@@ -69,6 +69,18 @@ class GenerationPlatform(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def fitting_run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.generation.fitting_run
+
+    # -----------------------------------------------------------------
+
     def genome_to_parameters(self, genome):
 
         """
@@ -77,7 +89,8 @@ class GenerationPlatform(object):
         :return:
         """
 
-        return get_parameter_values_from_genome(genome, self.generation.parameter_minima_scalar, self.generation.parameter_maxima_scalar, nbits, parameter_scales, gray)
+        # genome, fitting_run, minima, maxima, nbits, parameter_scales, gray=False
+        return get_parameter_values_from_genome(genome, self.fitting_run, self.generation.parameter_minima_scalar, self.generation.parameter_maxima_scalar, self.generation.nbits_list, self.generation.parameter_scales, self.generation.gray_code)
 
     # -----------------------------------------------------------------
 

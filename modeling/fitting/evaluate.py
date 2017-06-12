@@ -158,7 +158,7 @@ def get_parameter_values_from_genome(genome, fitting_run, minima, maxima, nbits,
     for label_index, label in enumerate(fitting_run.free_parameter_labels):
 
         # Add unit
-        if label in fitting_run.parameter_units: value = parameters[label_index] * self.parameter_units[label]
+        if label in fitting_run.parameter_units: value = parameters[label_index] * fitting_run.parameter_units[label]
         else: value = parameters[label_index]
 
         # Set the value with unit
