@@ -2272,18 +2272,29 @@ def try_importing_class(name, path, in_globals=False):
 
 # -----------------------------------------------------------------
 
-def lazy_isinstance(instance, classname, path):
+def lazy_isinstance(instance, classname, path, return_false_if_fail=False):
 
     """
     This function ...
     :param instance:
     :param classname:
     :param path:
+    :param return_false_if_fail:
     :return:
     """
 
-    cls = try_importing_class(classname, path)
-    return isinstance(instance, cls)
+    if return_false_if_fail:
+
+        try:
+            cls = try_importing_class(classname, path)
+            return isinstance(instance, cls)
+        except:
+            return False
+
+    else:
+
+        cls = try_importing_class(classname, path)
+        return isinstance(instance, cls)
 
 # -----------------------------------------------------------------
 

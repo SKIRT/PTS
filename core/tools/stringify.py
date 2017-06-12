@@ -57,6 +57,27 @@ def tostr(value, scientific=None, decimal_places=2, fancy=False, ndigits=None, d
             if -999.99 < value < 999.99: scientific = False
             else: scientific = True
 
+        # Quantity
+        elif introspection.lazy_isinstance(value, "Quantity", "astropy.units", return_false_if_fail=True):
+
+            if -999.99 < value.value < 999.99: scientific = False
+            else: scientific = True
+
+        elif introspection.lazy_isinstance(value, "QuantityRange", "pts.core.basics.range", return_false_if_fail=True):
+
+            if -999.99 < value.min.value and value.max.value < 999.99: scientific = False
+            else: scientific = True
+
+        elif introspection.lazy_isinstance(value, "RealRange", "pts.core.basics.range", return_false_if_fail=True):
+
+            if -999.99 < value.min and value.max < 999.99: scientific = False
+            else: scientific = True
+
+        elif introspection.lazy_isinstance(value, "IntegerRange", "pts.core.basics.range", return_false_if_fail=True):
+
+            if -999 < value.min and value.max < 999: scientific = False
+            else: scientific = True
+
         # Other
         else: scientific = False
 
@@ -65,7 +86,7 @@ def tostr(value, scientific=None, decimal_places=2, fancy=False, ndigits=None, d
 
 # -----------------------------------------------------------------
 
-def stringify(value, scientific=False, decimal_places=2, fancy=False, ndigits=None, delimiter=","):
+def stringify(value, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False, delimiter=","):
 
     """
     This function ...
@@ -74,6 +95,7 @@ def stringify(value, scientific=False, decimal_places=2, fancy=False, ndigits=No
     :param decimal_places:
     :param fancy:
     :param ndigits:
+    :param unicode:
     :param delimiter:
     :return:
     """
@@ -97,7 +119,7 @@ def stringify(value, scientific=False, decimal_places=2, fancy=False, ndigits=No
     elif isinstance(value, tuple): return stringify_tuple(value)
 
     # All other
-    else: return stringify_not_list(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits)
+    else: return stringify_not_list(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode)
 
 # -----------------------------------------------------------------
 
@@ -263,7 +285,7 @@ def stringify_tuple(value, delimiter=","):
     """
     This function ...
     :param value:
-    :paral delimiter:
+    :param delimiter:
     :return: 
     """
 
@@ -284,7 +306,7 @@ def stringify_tuple(value, delimiter=","):
 
 # -----------------------------------------------------------------
 
-def stringify_not_list(value, scientific=False, decimal_places=2, fancy=False, ndigits=None):
+def stringify_not_list(value, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False):
 
     """
     This function does stringify, but not for iterables
@@ -293,6 +315,7 @@ def stringify_not_list(value, scientific=False, decimal_places=2, fancy=False, n
     :param decimal_places:
     :param fancy:
     :param ndigits:
+    :param unicode:
     :return:
     """
 
@@ -307,9 +330,9 @@ def stringify_not_list(value, scientific=False, decimal_places=2, fancy=False, n
     elif introspection.lazy_isinstance(value, "UnitBase", "astropy.units"): return introspection.lazy_call("stringify_unit", "pts.core.units.stringify", value)
     elif introspection.lazy_isinstance(value, "Quantity", "astropy.units"): return introspection.lazy_call("stringify_quantity", "pts.core.units.stringify", value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits)
     elif introspection.lazy_isinstance(value, "Angle", "astropy.coordinates"): return "angle", str_from_angle(value)
-    elif introspection.lazy_isinstance(value, "RealRange", "pts.core.basics.range"): return "real_range", repr(value)
-    elif introspection.lazy_isinstance(value, "IntegerRange", "pts.core.basics.range"): return "integer_range", repr(value)
-    elif introspection.lazy_isinstance(value, "QuantityRange", "pts.core.basics.range"): return "quantity_range", repr(value)
+    elif introspection.lazy_isinstance(value, "RealRange", "pts.core.basics.range"): return "real_range", str_from_real_range(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode)
+    elif introspection.lazy_isinstance(value, "IntegerRange", "pts.core.basics.range"): return "integer_range", str_from_integer_range(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode)
+    elif introspection.lazy_isinstance(value, "QuantityRange", "pts.core.basics.range"): return "quantity_range", introspection.lazy_call("str_from_quantity_range", "pts.core.units.stringify", value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode)
     elif introspection.lazy_isinstance(value, "SkyCoordinate", "pts.magic.basics.coordinate"): return "skycoordinate", repr(value.ra.value) + " " + str(value.ra.unit) + "," + repr(value.dec.value) + " " + str(value.dec.unit)
     elif introspection.lazy_isinstance(value, "SkyStretch", "pts.magic.basics.stretch"): return "skystretch", repr(value.ra.value) + " " + str(value.ra.unit) + "," + repr(value.dec.value) + " " + str(value.dec.unit)
     elif introspection.lazy_isinstance(value, "NarrowBandFilter", "pts.core.filter.narrow"): return "narrow_band_filter", str(value)
@@ -400,6 +423,7 @@ def str_from_integer(integer, scientific=False, decimal_places=2, fancy=False, n
     This function ...
     :param integer:
     :param scientific:
+    :param decimal_places:
     :param fancy:
     :param ndigits:
     :param unicode:
@@ -434,6 +458,26 @@ def str_from_integer(integer, scientific=False, decimal_places=2, fancy=False, n
 
 # -----------------------------------------------------------------
 
+def str_from_integer_range(the_range, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False):
+
+    """
+    Thi function ...
+    :param the_range:
+    :param scientific:
+    :param decimal_places:
+    :param fancy:
+    :param ndigits:
+    :param unicode:
+    :return:
+    """
+
+    min_str = str_from_integer(the_range.min, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode)
+    max_str = str_from_integer(the_range.max, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode)
+
+    return min_str + " > " + max_str
+
+# -----------------------------------------------------------------
+
 def str_from_real(real, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False):
 
     """
@@ -449,6 +493,8 @@ def str_from_real(real, scientific=False, decimal_places=2, fancy=False, ndigits
     # Check input
     if ndigits is not None and ndigits < 1: raise ValueError("Number of digits cannot be smaller than 1")
 
+    #print(real)
+
     if scientific:
         if fancy:
             if ndigits is not None:
@@ -456,9 +502,15 @@ def str_from_real(real, scientific=False, decimal_places=2, fancy=False, ndigits
                 digits = []
                 rounded = numbers.round_to_n_significant_digits(real, ndigits)
                 str_rounded = str(rounded)
+                #print(str_rounded)
+                #if "." in str_rounded: enditeration = ndigits + 1
+                #else: enditeration = ndigits
+                if "." in str_rounded: str_rounded = "".join(str_rounded.split("."))
                 for i in range(ndigits):
                     digit = str_rounded[i]
+                    #if digit == ".": continue # happens if rounded does stil contain dot
                     digits.append(digit)
+                #print("digits", digits)
                 if unicode: return digits[0].decode("utf8") + u"." + u"".join(digits[1:]) + u" " + strings.multiplication + u" 10" + strings.superscript(power).decode("utf8") # DOESN'T WORK??
                 else: return digits[0] + "." + "".join(digits[1:]) + " x 10^" + str(power)
             else:
@@ -474,6 +526,26 @@ def str_from_real(real, scientific=False, decimal_places=2, fancy=False, ndigits
             return ("{:." + str(decimal_places) + "e}").format(real).replace("+", "").replace("e0", "e")
 
     else: return repr(real)
+
+# -----------------------------------------------------------------
+
+def str_from_real_range(the_range, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False):
+
+    """
+    This function ...
+    :param the_range:
+    :param scientific:
+    :param decimal_places:
+    :param fancy:
+    :param ndigits:
+    :param unicode:
+    :return:
+    """
+
+    min_str = str_from_real(the_range.min, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode)
+    max_str = str_from_real(the_range.max, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode)
+
+    return min_str + " > " + max_str
 
 # -----------------------------------------------------------------
 

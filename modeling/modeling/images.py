@@ -25,6 +25,7 @@ from ..core.environment import ImagesModelingEnvironment
 from ..component.images import get_ski_input_path
 from ..build.images import ImagesModelBuilder
 from ..build.imagesrepresentation import ImagesRepresentationBuilder
+from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -221,7 +222,7 @@ class ImagesModeler(ModelerBase):
                 # Get the range
                 parameter_range = self.ranges_config[parameter_name + "_range"]
                 # Debugging
-                log.debug("Setting the range of the '" + parameter_name + "' parameter to '" + str(parameter_range) + "' for the parameter exploration ...")
+                log.debug("Setting the range of the '" + parameter_name + "' parameter to '" + tostr(parameter_range, fancy=True) + "' for the parameter exploration ...")
                 # Set the range
                 self.parameter_ranges[parameter_name] = parameter_range
 

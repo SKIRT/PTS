@@ -2025,14 +2025,22 @@ def get_parameters_from_genome(genome, minima, maxima, nbits, parameter_scales, 
     :return: 
     """
 
+    #print("minima", minima)
+    #print("maxima", maxima)
+
     # Scale the minima and maxima!
     minima, maxima = scale_extrema(minima, maxima, parameter_scales)
 
     # Get scaled form
     scaled = get_parameters_from_genome_scaled(genome, minima, maxima, nbits, gray=gray)
 
+    #print(scaled)
+    #print(parameter_scales)
+
     # Unscale if necessary
     parameters = unscale_parameters(scaled, parameter_scales)
+
+    #print(parameters)
 
     # Return the parameters
     return parameters

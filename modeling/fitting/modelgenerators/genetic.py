@@ -295,8 +295,8 @@ class GeneticModelGenerator(ModelGenerator):
             # Debugging
             log.debug("Parameter '" + label + "':")
             log.debug("")
-            log.debug(" - default range: " + tostr(default_parameter_range))
-            log.debug(" - range for this generation: " + tostr(parameter_range))
+            log.debug(" - default range: " + tostr(default_parameter_range, fancy=True))
+            log.debug(" - range for this generation: " + tostr(parameter_range, fancy=True))
             log.debug("")
 
             # Add the parameter

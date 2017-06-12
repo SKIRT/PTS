@@ -65,7 +65,7 @@ def represent_unit(unit):
 
 # -----------------------------------------------------------------
 
-def stringify_quantity(quantity, scientific=False, decimal_places=2, fancy=False, ndigits=None):
+def stringify_quantity(quantity, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False):
 
     """
     This function ...
@@ -74,6 +74,7 @@ def stringify_quantity(quantity, scientific=False, decimal_places=2, fancy=False
     :param decimal_places:
     :param fancy:
     :param ndigits:
+    param unicode:
     :return:
     """
 
@@ -90,7 +91,25 @@ def stringify_quantity(quantity, scientific=False, decimal_places=2, fancy=False
     from ..tools.stringify import str_from_real
 
     # Return parsing type and stringified quantity
-    return parsing_type, str_from_real(quantity.value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits) + " " + unit_string
+    return parsing_type, str_from_real(quantity.value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode) + " " + unit_string
+
+# -----------------------------------------------------------------
+
+def str_from_quantity(quantity, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False):
+
+    """
+    This function ...
+    :param quantity:
+    :param scientific:
+    :param decimal_places:
+    :param fancy:
+    :param ndigits:
+    :param unicode:
+    :return:
+    """
+
+    ptype, string = stringify_quantity(quantity, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode)
+    return string
 
 # -----------------------------------------------------------------
 
@@ -106,5 +125,25 @@ def represent_quantity(quantity, scientific=False, decimal_places=2):
 
     from ..tools.stringify import str_from_real
     return str_from_real(quantity.value, scientific=scientific, decimal_places=decimal_places) + " " + represent_unit(quantity.unit)
+
+# -----------------------------------------------------------------
+
+def str_from_quantity_range(the_range, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False):
+
+    """
+    This function ...
+    :param the_range: 
+    :param scientific: 
+    :param decimal_places: 
+    :param fancy: 
+    :param ndigits: 
+    :param unicode:
+    :return: 
+    """
+
+    min_str = str_from_quantity(the_range.min, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode)
+    max_str = str_from_quantity(the_range.max, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode)
+
+    return min_str + " > " + max_str
 
 # -----------------------------------------------------------------

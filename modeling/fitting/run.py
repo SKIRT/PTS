@@ -831,6 +831,29 @@ class FittingRun(object):
 
     # -----------------------------------------------------------------
 
+    def get_initial_generation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "initial"
+
+    # -----------------------------------------------------------------
+
+    def get_genetic_generation_name(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return str("Generation" + str(index))
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def grid_generations(self):
 
@@ -1411,6 +1434,12 @@ class FittingRun(object):
         # Get generation and individual
         generation_index, individual_key, chi_squared = get_best_individual_key_and_score_all_generations(database_path, self.name, minmax="min")
 
+        # Determine generation name
+        generation_name = self.get_genetic_generation_name(generation_index)
+
+        # Load the generation
+        generation = self.get_generation(generation_name)
+
         # Look in the populations data for the parameters, for this fitting run
         populations = get_populations(self.modeling_path)[self.name]
 
@@ -1439,7 +1468,8 @@ class FittingRun(object):
         #    values[label] = value
 
         # Get parameter values from genome
-        values = get_parameter_values_from_genome(genome, self.parameter_maxima_scalar, self.nbits_list, parameter_scales, self.genetic_settings.gray_code)
+        # genome, fitting_run, minima, maxima, nbits, parameter_scales, gray=False
+        values = get_parameter_values_from_genome(genome, self, self.parameter_minima_scalar, self.parameter_maxima_scalar, self.nbits_list, generation.parameter_scales, self.genetic_settings.gray_code)
 
         # Return the dictionary
         return values, chi_squared

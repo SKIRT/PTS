@@ -370,7 +370,7 @@ class ParameterExplorer(FittingComponent):
         # ANALYSIS
 
         # To create the extr, plot, misc directories relative in the simulation directory
-        self.config.analysis.relative = True
+        self.launcher.config.analysis.relative = True
 
         ## Extraction
         self.launcher.config.analysis.extraction.path = "extr"    # name of the extraction directory
@@ -428,7 +428,7 @@ class ParameterExplorer(FittingComponent):
         :return: 
         """
 
-        return "initial"
+        return self.fitting_run.get_initial_generation_name()
 
     # -----------------------------------------------------------------
 
@@ -440,7 +440,7 @@ class ParameterExplorer(FittingComponent):
         :return: 
         """
 
-        return str("Generation" + str(index))
+        return self.fitting_run.get_genetic_generation_name(index)
 
     # -----------------------------------------------------------------
 
@@ -1553,7 +1553,7 @@ class ParameterExplorer(FittingComponent):
         log.info("Writing the generations table ...")
 
         # Add an entry to the generations table
-        self.fitting_run.generations_table.add_entry(self.generation_info, self.ranges)
+        self.fitting_run.generations_table.add_entry(self.generation_info, self.ranges, self.scales)
 
         # Save the table
         self.fitting_run.generations_table.save()
