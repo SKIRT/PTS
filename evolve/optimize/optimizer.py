@@ -38,7 +38,13 @@ from ..core.mutators import G1DListMutatorRealGaussian, G1DListMutatorRealRange
 from ..core.mutators import HeterogeneousListMutatorRealRange, HeterogeneousListMutatorRealGaussian
 from ..core.mutators import HeterogeneousListMutatorIntegerRange, HeterogeneousListMutatorIntegerGaussian
 from ..core.mutators import G1DBinaryStringMutatorSwap, G1DBinaryStringMutatorFlip
-from ..core.crossovers import G1DBinaryStringXSinglePoint_origins
+from ..core.crossovers import G1DListCrossoverSinglePoint_origins, G1DListCrossoverTwoPoint_origins
+from ..core.crossovers import G1DListCrossoverUniform_origins, G1DListCrossoverOX_origins
+from ..core.crossovers import G1DListCrossoverEdge_origins, G1DListCrossoverCutCrossfill_origins
+from ..core.crossovers import G1DListCrossoverRealSBX_origins, G1DListCrossoverMix_origins
+from ..core.crossovers import G2DListCrossoverUniform_origins, G2DListCrossoverSingleHPoint_origins, G2DListCrossoverSingleVPoint_origins
+from ..core.crossovers import G1DBinaryStringXSinglePoint_origins, G1DBinaryStringXTwoPoint_origins, G1DBinaryStringXUniform_origins
+from ..core.crossovers import G2DBinaryStringXUniform_origins, G2DBinaryStringXSingleVPoint_origins, G2DBinaryStringXSingleHPoint_origins
 from ..core.engine import GeneticEngine, RawScoreCriteria
 from ...core.basics.range import RealRange, IntegerRange
 from ...core.tools import formatting as fmt
@@ -91,19 +97,35 @@ binary_string_crossovers_2d["single_horizontal_point"] = G2DBinaryStringXSingleH
 # -----------------------------------------------------------------
 
 list_crossover_origins_1d = dict()
+list_crossover_origins_1d["single_point"] = G1DListCrossoverSinglePoint_origins
+list_crossover_origins_1d["two_point"] = G1DListCrossoverTwoPoint_origins
+list_crossover_origins_1d["uniform"] = G1DListCrossoverUniform_origins
+list_crossover_origins_1d["OX"] = G1DListCrossoverOX_origins
+list_crossover_origins_1d["edge"] = G1DListCrossoverEdge_origins
+list_crossover_origins_1d["cut_crossfill"] = G1DListCrossoverCutCrossfill_origins
+list_crossover_origins_1d["real_SBX"] = G1DListCrossoverRealSBX_origins
+list_crossover_origins_1d["mix"] = G1DListCrossoverMix_origins
 
 # -----------------------------------------------------------------
 
 list_crossover_origins_2d = dict()
+list_crossover_origins_2d["uniform"] = G2DListCrossoverUniform_origins
+list_crossover_origins_2d["single_vertical_point"] = G2DListCrossoverSingleVPoint_origins
+list_crossover_origins_2d["single_horizontal_point"] = G2DListCrossoverSingleHPoint_origins
 
 # -----------------------------------------------------------------
 
 binary_string_crossover_origins_1d = dict()
 binary_string_crossover_origins_1d["single_point"] = G1DBinaryStringXSinglePoint_origins
+binary_string_crossover_origins_1d["two_point"] = G1DBinaryStringXTwoPoint_origins
+binary_string_crossover_origins_1d["uniform"] = G1DBinaryStringXUniform_origins
 
 # -----------------------------------------------------------------
 
 binary_string_crossover_origins_2d = dict()
+binary_string_crossover_origins_2d["uniform"] = G2DBinaryStringXUniform_origins
+binary_string_crossover_origins_2d["single_vertical_point"] = G2DBinaryStringXSingleVPoint_origins
+binary_string_crossover_origins_2d["single_horizontal_point"] = G2DBinaryStringXSingleHPoint_origins
 
 # -----------------------------------------------------------------
 

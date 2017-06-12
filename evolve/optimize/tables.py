@@ -309,14 +309,7 @@ class ScoresTable(SmartTable):
         table.setup()
 
         # Loop over the keys
-        for key in data:
-
-            # Get the score
-            score = data[key]
-
-            # Add row
-            row = [key, score]
-            table.add_row(row)
+        for key in data: table.add_entry(key, data[key])
 
         # Return the table
         return table

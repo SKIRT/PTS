@@ -265,7 +265,16 @@ def G1DListCrossoverTwoPoint_origins(size, details):
     :return:
     """
 
+    origins_sister = np.array([True] * size)  # true means as mother
+    origins_brother = np.array([True] * size)  # true means as father
 
+    cuts = details
+
+    origins_sister[cuts[0]:cuts[1]] = False
+    origins_brother[cuts[0]:cuts[1]] = False
+
+    # Return
+    return origins_sister, origins_brother
 
 # -----------------------------------------------------------------
 
@@ -306,6 +315,29 @@ def G1DListCrossoverTwoPoint(genome, **args):
 
 # -----------------------------------------------------------------
 
+def G1DListCrossoverUniform_origins(size, details):
+
+    """
+    This function ...
+    :param size:
+    :param details:
+    :return:
+    """
+
+    positions = details
+
+    origins_sister = np.array([True] * size)  # true means as mother
+    origins_brother = np.array([True] * size)  # true means as father
+
+    for position in positions:
+        origins_sister[position] = False
+        origins_brother[position] = False
+
+    # Return the origins
+    return origins_sister, origins_brother
+
+# -----------------------------------------------------------------
+
 def G1DListCrossoverUniform(genome, **args):
 
     """
@@ -340,6 +372,30 @@ def G1DListCrossoverUniform(genome, **args):
     # Return the sister and brother
     if return_details: return sister, brother, positions
     else: return sister, brother
+
+# -----------------------------------------------------------------
+
+def G1DListCrossoverMix_origins(size, details):
+
+    """
+    This function ...
+    :param size:
+    :param details:
+    :return:
+    """
+
+    randoms = details
+
+    #origins_sister = np.array([True] * size)  # true means as mother
+    #origins_brother = np.array([True] * size)  # true means as father
+
+    origins_sister = []
+    origins_brother = []
+
+    #for random in randoms:
+
+    # Return the fractions of 'from mother' for sister and 'from father' for brother as arrays
+    return np.array(randoms), np.array(randoms)
 
 # -----------------------------------------------------------------
 
@@ -381,6 +437,19 @@ def G1DListCrossoverMix(genome, **args):
     # Return sister and brother
     if return_details: return sister, brother, randoms
     else: return sister, brother
+
+# -----------------------------------------------------------------
+
+def G1DListCrossoverOX_origins(size, details):
+
+    """
+    This function ...
+    :param size:
+    :param details:
+    :return:
+    """
+
+    raise NotImplementedError("Not implemented")
 
 # -----------------------------------------------------------------
 
@@ -428,6 +497,19 @@ def G1DListCrossoverOX(genome, **args):
 
 # -----------------------------------------------------------------
 
+def G1DListCrossoverEdge_origins(size, details):
+
+    """
+    This function ...
+    :param size:
+    :param details:
+    :return:
+    """
+
+    raise NotImplementedError("Not implemented")
+
+# -----------------------------------------------------------------
+
 def G1DListCrossoverEdge(genome, **args):
 
     """ THe Edge Recombination crossover for G1DList (widely used for TSP problem)
@@ -469,6 +551,19 @@ def G1DListCrossoverEdge(genome, **args):
     # Return the sister and brother
     if return_details: return sister, brother, (mom_edges, dad_edges, merge_edges)
     else: return sister, brother
+
+# -----------------------------------------------------------------
+
+def G1DListCrossoverCutCrossfill_origins(size, details):
+
+    """
+    This function ...
+    :param size:
+    :param details:
+    :return:
+    """
+
+    raise NotImplementedError("Not implemented")
 
 # -----------------------------------------------------------------
 
@@ -520,6 +615,19 @@ def G1DListCrossoverCutCrossfill(genome, **args):
     # Return the sister and brother
     if return_details: return sister, brother, cut
     else: return sister, brother
+
+# -----------------------------------------------------------------
+
+def G1DListCrossoverRealSBX_origins(size, details):
+
+    """
+    This function ...
+    :param size:
+    :param details:
+    :return:
+    """
+
+    raise NotImplementedError("Not implemented")
 
 # -----------------------------------------------------------------
 
@@ -624,6 +732,19 @@ def G1DListCrossoverRealSBX(genome, **args):
 
 # -----------------------------------------------------------------
 
+def G2DListCrossoverUniform_origins(size, details):
+
+    """
+    This function ...
+    :param size:
+    :param details:
+    :return:
+    """
+
+    raise NotImplementedError("Not implemented")
+
+# -----------------------------------------------------------------
+
 def G2DListCrossoverUniform(genome, **args):
 
     """
@@ -665,6 +786,19 @@ def G2DListCrossoverUniform(genome, **args):
 
 # -----------------------------------------------------------------
 
+def G2DListCrossoverSingleVPoint_origins(size, details):
+
+    """
+    THis function ...
+    :param size:
+    :param details:
+    :return:
+    """
+
+    raise NotImplementedError("Not implemented")
+
+# -----------------------------------------------------------------
+
 def G2DListCrossoverSingleVPoint(genome, **args):
 
     """
@@ -698,6 +832,19 @@ def G2DListCrossoverSingleVPoint(genome, **args):
 
 # -----------------------------------------------------------------
 
+def G2DListCrossoverSingleHPoint_origins(size, details):
+
+    """
+    THis function ...
+    :param size:
+    :param details:
+    :return:
+    """
+
+    raise NotImplementedError("Not implemented")
+
+# -----------------------------------------------------------------
+
 def G2DListCrossoverSingleHPoint(genome, **args):
 
     """
@@ -728,6 +875,19 @@ def G2DListCrossoverSingleHPoint(genome, **args):
     # Return the sister and brother
     if return_details: return sister, brother, cut
     else: return sister, brother
+
+# -----------------------------------------------------------------
+
+def G2DBinaryStringXUniform_origins(size, details):
+
+    """
+    THis function ...
+    :param size:
+    :param details:
+    :return:
+    """
+
+    raise NotImplementedError("Not implemented")
 
 # -----------------------------------------------------------------
 
@@ -771,6 +931,19 @@ def G2DBinaryStringXUniform(genome, **args):
 
 # -----------------------------------------------------------------
 
+def G2DBinaryStringXSingleVPoint_origins(size, details):
+
+    """
+    This function ...
+    :param size:
+    :param details:
+    :return:
+    """
+
+    raise NotImplementedError("Not implemented")
+
+# -----------------------------------------------------------------
+
 def G2DBinaryStringXSingleVPoint(genome, **args):
 
     """
@@ -806,6 +979,19 @@ def G2DBinaryStringXSingleVPoint(genome, **args):
 
 # -----------------------------------------------------------------
 
+def G2DBinaryStringXSingleHPoint_origins(size, details):
+
+    """
+    This function ...
+    :param size:
+    :param details:
+    :return:
+    """
+
+    raise NotImplementedError("Not implemented")
+
+# -----------------------------------------------------------------
+
 def G2DBinaryStringXSingleHPoint(genome, **args):
 
     """
@@ -838,6 +1024,19 @@ def G2DBinaryStringXSingleHPoint(genome, **args):
     # Return the sister and brother
     if return_details: return sister, brother, cut
     else: return sister, brother
+
+# -----------------------------------------------------------------
+
+def GTreeCrossoverSinglePoint(size, details):
+
+    """
+    This function ...
+    :param size:
+    :param details:
+    :return:
+    """
+
+    return NotImplementedError("Not implemented")
 
 # -----------------------------------------------------------------
 
@@ -912,6 +1111,19 @@ def GTreeCrossoverSinglePoint(genome, **args):
     # Return the sister and brother
     if return_details: return sister, brother, None # too complicated?
     else: return sister, brother
+
+# -----------------------------------------------------------------
+
+def GTreeCrossoverSinglePointStrict_origins(size, details):
+
+    """
+    This function ...
+    :param size:
+    :param details:
+    :return:
+    """
+
+    raise NotImplementedError("Not implemented")
 
 # -----------------------------------------------------------------
 
@@ -1017,6 +1229,19 @@ def GTreeCrossoverSinglePointStrict(genome, **args):
     # Return the sister and brother
     if return_details: return sister, brother, None # too complicated?
     else: return sister, brother
+
+# -----------------------------------------------------------------
+
+def GTreeGPCrossoverSinglePoint_origins(size, details):
+
+    """
+    This function ...
+    :param size:
+    :param details:
+    :return:
+    """
+
+    raise NotImplementedError("Not implemented")
 
 # -----------------------------------------------------------------
 
