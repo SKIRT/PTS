@@ -1021,6 +1021,30 @@ class GeneticEngine(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def scores(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        the_scores = dict()
+
+        # Loop over the individual keys
+        for key in self.population.keys:
+
+            # Get the score
+            score = self.population[key].score
+
+            # Add to the dictionary
+            the_scores[key] = score
+
+        # Return the dictinoary
+        return the_scores
+
+    # -----------------------------------------------------------------
+
     def set_scores_for_population(self, population, scores, names=None, check=None, rtol=1e-5, atol=1e-8, binary_parameters=None):
 
         """
@@ -1046,7 +1070,7 @@ class GeneticEngine(object):
                 # Check whether the individual key corresponds to the name
                 if names[index] != individual_key: raise ValueError("Check failed: individual has name '" + individual_key + "' but name check is '" + names[index] + "'")
 
-            # Check based on genome
+            # Check based on genome, only if no name checks were available
             elif check is not None:
 
                 genome_a = individual.genomeList

@@ -20,7 +20,7 @@ from ...core.basics.composite import SimplePropertyComposite
 from ...core.tools import filesystem as fs
 from ..build.component import get_model_definition, get_representation
 from .tables import IndividualsTable, ParametersTable, ChiSquaredTable
-from ...evolve.optimize.tables import ElitismTable, CrossoverTable
+from ...evolve.optimize.tables import ElitismTable, CrossoverTable, ScoresTable
 from ...evolve.optimize.stepwise import load_population
 from ...core.tools.serialization import load_dict
 from ...core.basics.configurable import load_input
@@ -438,6 +438,30 @@ class Generation(object):
         """
 
         return load_population(self.parents_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def scores_table_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, "scores")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def scores_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return ScoresTable.from_file(self.scores_table_path)
 
     # -----------------------------------------------------------------
 

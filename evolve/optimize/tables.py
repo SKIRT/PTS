@@ -294,6 +294,35 @@ class ScoresTable(SmartTable):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_data(cls, data, **kwargs):
+
+        """
+        This function ...
+        :param data:
+        :param kwargs:
+        :return:
+        """
+
+        # Create table
+        table = cls(**kwargs)
+        table.setup()
+
+        # Loop over the keys
+        for key in data:
+
+            # Get the score
+            score = data[key]
+
+            # Add row
+            row = [key, score]
+            table.add_row(row)
+
+        # Return the table
+        return table
+
+    # -----------------------------------------------------------------
+
     @property
     def min_or_max(self):
 

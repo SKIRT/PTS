@@ -170,6 +170,10 @@ class GeneticModelGenerator(ModelGenerator):
         if self.initial: elitism_path = None
         else: elitism_path = self.fitting_run.last_genetic_or_initial_generation.elitism_table_path # fs.join(self.fitting_run.last_genetic_or_initial_generation_path, "elitism.dat")
 
+        # Set scores table path -> directory of previous generation!
+        if self.initial: scores_path = None
+        else: scores_path = self.fitting_run.last_genetic_or_initial_generation.scores_table_path
+
         # Set generation specific paths
         self.optimizer.config.writing.input_path = self.generation.optimizer_input_path
         self.optimizer.config.writing.newborns_path = self.generation.newborns_path
@@ -177,6 +181,7 @@ class GeneticModelGenerator(ModelGenerator):
         self.optimizer.config.writing.crossover_table_path = self.generation.crossover_table_path
         self.optimizer.config.writing.recurrent_path = self.generation.recurrent_path
         self.optimizer.config.writing.elitism_table_path = elitism_path
+        self.optimizer.config.writing.scores_table_path = scores_path
 
         # NEW: ADD EXTRA PATHS FOR WRITING ENGINE, PRNG AND CONFIG
         self.optimizer.config.writing.engine_path = [self.optimizer.config.writing.engine_path, self.generation.engine_path]
@@ -366,8 +371,7 @@ class GeneticModelGenerator(ModelGenerator):
         # Inform the user
         log.info("Setting scores from previous generation ...")
 
-        # Get the scores (and check)
-        #self.scores, self.scores_check = get_last_generation_scores_and_check(self.fitting_run)
+        # Get the scores (and names and check)
         self.scores, self.scores_names, self.scores_check = get_last_generation_scores_names_and_check(self.fitting_run)
 
     # -----------------------------------------------------------------

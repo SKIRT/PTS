@@ -28,7 +28,7 @@ from ...core.basics.configuration import Configuration
 from ..core.adapters import DBFileCSV, DBSQLite, PopulationsFile
 from .optimizer import Optimizer
 from ..core.population import NamedPopulation
-from .tables import ElitismTable, CrossoverTable
+from .tables import ElitismTable, CrossoverTable, ScoresTable
 from ..analyse.database import load_database, get_score_for_individual
 from ...core.tools.serialization import write_dict
 from .optimizer import get_parameters_from_genome, get_binary_genome_from_parameters, round_parameters
@@ -624,6 +624,9 @@ class StepWiseOptimizer(Optimizer):
         if elitism_data is not None: self.elitism_table = ElitismTable.from_data(elitism_data)
         else: log.warning("No elitism has been performed in this generation")
 
+        # Create the scores table
+        self.scores_table = ScoresTable.from_data(self.population_scores)
+
     # -----------------------------------------------------------------
 
     def generate_new_population(self):
@@ -684,6 +687,18 @@ class StepWiseOptimizer(Optimizer):
 
         if self.newborns is not None: return self.newborns
         else: return self.parents
+
+    # -----------------------------------------------------------------
+
+    @property
+    def population_scores(self):
+
+        """
+        This function return sthe scores of the internal population, as a dictionary
+        :return:
+        """
+
+        return self.engine.scores
 
     # -----------------------------------------------------------------
 

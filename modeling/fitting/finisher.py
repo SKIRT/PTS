@@ -19,7 +19,7 @@ from astropy.utils import lazyproperty
 from .component import FittingComponent
 from ...core.tools.logging import log
 from ...evolve.optimize.stepwise import StepWiseOptimizer
-from .modelgenerators.genetic import set_optimizer_settings, get_last_generation_scores_and_check, get_last_generation_name
+from .modelgenerators.genetic import set_optimizer_settings, get_last_generation_scores_names_and_check, get_last_generation_name
 from ..fitting.sedfitting import SEDFitter
 from ..fitting.run import get_ngenerations, has_unfinished_generations, has_unevaluated_generations
 from ...core.tools import filesystem as fs
@@ -51,6 +51,7 @@ class ExplorationFinisher(FittingComponent):
 
         # The scores (only if this is not the initial generation)
         self.scores = None
+        self.scores_names = None
         self.scores_check = None
 
         # The SED fitter
@@ -222,7 +223,7 @@ class ExplorationFinisher(FittingComponent):
         log.info("Getting the scores ...")
 
         # Get the scores (set or_initial to False, because this should not happen)
-        self.scores, self.scores_check = get_last_generation_scores_and_check(self.fitting_run, or_initial=False)
+        self.scores, self.scores_names, self.scores_check = get_last_generation_scores_names_and_check(self.fitting_run, or_initial=False)
 
     # -----------------------------------------------------------------
 
@@ -244,6 +245,9 @@ class ExplorationFinisher(FittingComponent):
 
         # Set path to elitism table for the last generation
         self.optimizer.config.writing.elitism_table_path = self.fitting_run.last_genetic_or_initial_generation.elitism_table_path
+
+        # Set path to scores table for the last generation
+        self.optimizer.config.writing.scores_table_path = self.fitting_run.last_genetic_or_initial_generation.scores_table_path
 
         # Set finish flag
         self.optimizer.config.finish = True
@@ -323,7 +327,7 @@ class ExplorationFinisher(FittingComponent):
         previous_recurrent = load_dict(previous_recurrent_path)
 
         # Run the optimizer
-        self.optimizer.run(scores=self.scores, scores_check=self.scores_check, minima=parameter_minima,
+        self.optimizer.run(scores=self.scores, scores_names=self.scores_names, scores_check=self.scores_check, minima=parameter_minima,
                            maxima=parameter_maxima, evaluator=evaluator, evaluator_kwargs=evaluator_kwargs,
                            previous_population=previous_population, previous_recurrent=previous_recurrent,
                            ndigits=self.fitting_run.ndigits_list, nbits=self.fitting_run.nbits_list, scales=self.parameter_scale_list)
