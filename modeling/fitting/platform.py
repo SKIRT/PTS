@@ -19,6 +19,7 @@ from astropy.utils import lazyproperty
 from ...core.tools import filesystem as fs
 from .generation import Generation
 from .evaluate import get_parameter_values_from_genome
+from .reproduction import ReproductionEvent
 
 # -----------------------------------------------------------------
 
@@ -160,7 +161,19 @@ class GenerationPlatform(object):
 
     # -----------------------------------------------------------------
 
-    def reproduction(self, index):
+    @property
+    def reproductions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for index in range(self.nreproductions): yield self.get_reproduction(index)
+
+    # -----------------------------------------------------------------
+
+    def get_reproduction(self, index):
 
         """
         This fucntion ...
@@ -202,6 +215,6 @@ class GenerationPlatform(object):
         else: initial_sister, initial_brother, sister_origins, brother_origins = mother, father, None, None
 
         # Return
-        return mother, father, initial_sister, initial_brother, sister, brother, crossover, sister_origins, brother_origins
+        return ReproductionEvent(index, mother, father, initial_sister, initial_brother, sister, brother, crossover, sister_origins, brother_origins)
 
 # -----------------------------------------------------------------

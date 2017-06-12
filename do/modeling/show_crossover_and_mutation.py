@@ -83,57 +83,41 @@ for generation_name in generations:
     # -----------------------------------------------------------------
 
     print("")
-    for index in range(platform.nreproductions):
-
-        # Enact the reproduction event
-        mother, father, initial_sister, initial_brother, sister, brother, crossover, sister_origins, brother_origins = platform.reproduction(index)
+    # Enact each reproduction event
+    for reproduction in platform.reproductions:
 
         # Get actual parameter values for parents and children
-        mother_parameters = platform.genome_to_parameters(mother)
-        father_parameters = platform.genome_to_parameters(father)
-        sister_parameters = platform.genome_to_parameters(sister)
-        brother_parameters = platform.genome_to_parameters(brother)
+        mother_parameters = platform.genome_to_parameters(reproduction.mother)
+        father_parameters = platform.genome_to_parameters(reproduction.father)
+        sister_parameters = platform.genome_to_parameters(reproduction.sister)
+        brother_parameters = platform.genome_to_parameters(reproduction.brother)
 
         # To strings
-        mother_string = tostr(mother.genes, delimiter=" ")
-        father_string = tostr(father.genes, delimiter=" ")
+        mother_string = tostr(reproduction.mother.genes, delimiter=" ")
+        father_string = tostr(reproduction.father.genes, delimiter=" ")
 
         # Crossover happened
-        if crossover:
-
-            # Check where mutation happened
-            sister_mutations = [initial_sister.genes[i] != sister.genes[i] for i in range(len(initial_sister))]
-            brother_mutations = [initial_brother.genes[i] != brother.genes[i] for i in range(len(initial_brother))]
+        if reproduction.crossover:
 
             # COLORED
-            mother_colored = fmt.colored_sequence(mother, colors="green", delimiter=" ")
-            father_colored = fmt.colored_sequence(father, colors=None, delimiter=" ")
+            mother_colored = fmt.colored_sequence(reproduction.mother, colors="green", delimiter=" ")
+            father_colored = fmt.colored_sequence(reproduction.father, colors=None, delimiter=" ")
 
-            # Get the origins
-            #sister_origins, brother_origins = platform.crossover_origins(len(mother), details)
-
-            initial_sister_colors = ["green" if flag else None for flag in sister_origins]
-            initial_brother_colors = [None if flag else "green" for flag in brother_origins]
+            initial_sister_colors = ["green" if flag else None for flag in reproduction.sister_origins]
+            initial_brother_colors = [None if flag else "green" for flag in reproduction.brother_origins]
 
             # COLORED
-            initial_sister_colored = fmt.colored_sequence(initial_sister.genes, colors=initial_sister_colors, delimiter=" ")
-            initial_brother_colored = fmt.colored_sequence(initial_brother.genes, colors=initial_brother_colors, delimiter=" ")
+            initial_sister_colored = fmt.colored_sequence(reproduction.initial_sister.genes, colors=initial_sister_colors, delimiter=" ")
+            initial_brother_colored = fmt.colored_sequence(reproduction.initial_brother.genes, colors=initial_brother_colors, delimiter=" ")
 
             # COLORED
-            sister_colors = [initial_sister_colors[i] if not sister_mutations[i] else "red" for i in range(len(sister))]
-            brother_colors = [initial_brother_colors[i] if not brother_mutations[i] else "red" for i in range(len(brother))]
+            sister_colors = [initial_sister_colors[i] if not reproduction.sister_mutations[i] else "red" for i in range(len(reproduction.sister))]
+            brother_colors = [initial_brother_colors[i] if not reproduction.brother_mutations[i] else "red" for i in range(len(reproduction.brother))]
 
-            sister_colored = fmt.colored_sequence(sister.genes, colors=sister_colors, delimiter=" ")
-            brother_colored = fmt.colored_sequence(brother.genes, colors=brother_colors, delimiter=" ")
+            sister_colored = fmt.colored_sequence(reproduction.sister.genes, colors=sister_colors, delimiter=" ")
+            brother_colored = fmt.colored_sequence(reproduction.brother.genes, colors=brother_colors, delimiter=" ")
 
-            nmutations_sister = sum(sister_mutations)
-            nmutations_brother = sum(brother_mutations)
-            relative_nmutations_sister = float(nmutations_sister) / len(sister)
-            relative_nmutations_brother = float(nmutations_brother) / len(brother)
-
-            #print(nmutations_sister, nmutations_brother)
-
-            print("#" + str(index+1) + " " + fmt.blue + fmt.underlined + generation.crossover_method.title() + " Crossover:" + fmt.reset)
+            print("#" + str(reproduction.index+1) + " " + fmt.blue + fmt.underlined + generation.crossover_method.title() + " Crossover:" + fmt.reset)
             print("")
             print("Parents   :   " + mother_colored + "  x  " + father_colored)
             print("Crossover :   " + initial_sister_colored + "     " + initial_brother_colored)
@@ -148,37 +132,28 @@ for generation_name in generations:
 
             print("Number of mutations:")
             print("")
-            print("  - sister: " + str(nmutations_sister) + " of " + str(len(sister)) + " (" + str(relative_nmutations_sister) + ")")
-            print("  - brother: " + str(nmutations_brother) + " of " + str(len(brother)) + " (" + str(relative_nmutations_brother) + ")")
+            print("  - sister: " + str(reproduction.nmutations_sister) + " of " + str(len(reproduction.sister)) + " (" + str(reproduction.relative_nmutations_sister) + ")")
+            print("  - brother: " + str(reproduction.nmutations_brother) + " of " + str(len(reproduction.brother)) + " (" + str(reproduction.relative_nmutations_brother) + ")")
             print("")
 
         # Just cloned
         else:
 
             # COLORED
-            mother_colored = fmt.colored_sequence(mother, colors="green", delimiter=" ")
-            father_colored = fmt.colored_sequence(father, colors=None, delimiter=" ")
+            mother_colored = fmt.colored_sequence(reproduction.mother, colors="green", delimiter=" ")
+            father_colored = fmt.colored_sequence(reproduction.father, colors=None, delimiter=" ")
 
             # COLORED
-            initial_sister_colored = fmt.colored_sequence(initial_sister, colors="green", delimiter=" ")
-            initial_brother_colored = fmt.colored_sequence(initial_brother, colors=None, delimiter=" ")
+            initial_sister_colored = fmt.colored_sequence(reproduction.initial_sister, colors="green", delimiter=" ")
+            initial_brother_colored = fmt.colored_sequence(reproduction.initial_brother, colors=None, delimiter=" ")
 
-            # Check where mutation happened
-            sister_mutations = [sister.genes[i] != mother.genes[i] for i in range(len(sister))]
-            brother_mutations = [brother.genes[i] != father.genes[i] for i in range(len(brother))]
+            sister_colors = ["green" if not reproduction.sister_mutations[i] else "red" for i in range(len(reproduction.sister))]
+            brother_colors = [None if not reproduction.brother_mutations[i] else "red" for i in range(len(reproduction.brother))]
 
-            sister_colors = ["green" if not sister_mutations[i] else "red" for i in range(len(sister))]
-            brother_colors = [None if not brother_mutations[i] else "red" for i in range(len(brother))]
+            sister_colored = fmt.colored_sequence(reproduction.sister.genes, colors=sister_colors, delimiter=" ")
+            brother_colored = fmt.colored_sequence(reproduction.brother.genes, colors=brother_colors, delimiter=" ")
 
-            sister_colored = fmt.colored_sequence(sister.genes, colors=sister_colors, delimiter=" ")
-            brother_colored = fmt.colored_sequence(brother.genes, colors=brother_colors, delimiter=" ")
-
-            nmutations_sister = sum(sister_mutations)
-            nmutations_brother = sum(brother_mutations)
-            relative_nmutations_sister = float(nmutations_sister) / len(sister)
-            relative_nmutations_brother = float(nmutations_brother) / len(brother)
-
-            print("#" + str(index+1) + " " + fmt.blue + fmt.underlined + "Cloning:" + fmt.reset)
+            print("#" + str(reproduction.index+1) + " " + fmt.blue + fmt.underlined + "Cloning:" + fmt.reset)
             print("")
             print("Parents  :    " + mother_colored + fmt.reset + "     " + father_colored)
             print("Cloning  :    " + initial_sister_colored + "     " + initial_brother_colored)
@@ -187,8 +162,8 @@ for generation_name in generations:
 
             print("Number of mutations:")
             print("")
-            print("  - sister: " + str(nmutations_sister) + " of " + str(len(sister)) + " (" + str(relative_nmutations_sister) + ")")
-            print("  - brother: " + str(nmutations_brother) + " of " + str(len(brother)) + " (" + str(relative_nmutations_brother) + ")")
+            print("  - sister: " + str(reproduction.nmutations_sister) + " of " + str(len(reproduction.sister)) + " (" + str(reproduction.relative_nmutations_sister) + ")")
+            print("  - brother: " + str(reproduction.nmutations_brother) + " of " + str(len(reproduction.brother)) + " (" + str(reproduction.relative_nmutations_brother) + ")")
             print("")
 
             #print("")
