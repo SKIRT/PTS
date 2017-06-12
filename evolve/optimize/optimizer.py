@@ -2084,6 +2084,9 @@ def get_binary_genome_from_parameters(parameters, minima, maxima, nbits, paramet
     # Scale
     scaled_parameters = scale_parameters(parameters, parameter_scales)
 
+    # Scale the minima and maxima
+    minima, maxima = scale_extrema(minima, maxima, parameter_scales)
+
     # Return the binary genome
     return get_binary_genome_from_scaled_parameters(scaled_parameters, minima, maxima, nbits, gray=gray)
 
