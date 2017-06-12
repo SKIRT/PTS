@@ -294,6 +294,32 @@ class KeyList(object):
 
     # -----------------------------------------------------------------
 
+    def get_key(self, index_or_key):
+
+        """
+        This function ...
+        :param index_or_key:
+        :return:
+        """
+
+        # Integer type 'list[i]'
+        if types.is_integer_type(index_or_key):
+
+            # Get the key
+            key = self.keys[index_or_key]
+            return key
+
+        # Assume it is a proper key
+        else:
+
+            # Check the key
+            if index_or_key not in self.keys: raise ValueError("The element with key '" + str(index_or_key) + "' does not exist")
+
+            # Return the key
+            return index_or_key
+
+    # -----------------------------------------------------------------
+
     def __getitem__(self, index_or_key):
 
         """
@@ -373,26 +399,42 @@ class KeyList(object):
 
     # -----------------------------------------------------------------
 
-    def replace(self, key, element):
+    def replace(self, index_or_key, element, new_key=None):
 
         """
         This function ...
-        :param key: 
-        :param element: 
+        :param index_or_key:
+        :param element:
+        :param new_key:
         :return: 
         """
 
-        # Check the key
-        if key not in self.keys: raise ValueError("The element with key '" + str(key) + "' does not exist")
+        # Get the key
+        key = self.get_key(index_or_key)
 
-        # Get the old value
-        old = self.contents[key]
+        # New key is given
+        if new_key is not None:
 
-        # Replace
-        self.contents[key] = element
+            # Get the old value
+            old = self.contents[key]
 
-        # Return the old value
-        return old
+            # Replace the internal ordered dictionary
+            self.contents = OrderedDict((new_key, element) if key == 0 else (key, value) for key, value in self.contents.items())
+
+            # Return the old value
+            return old
+
+        # No new key, just replace the value
+        else:
+
+            # Get the old value
+            old = self.contents[key]
+
+            # Replace
+            self.contents[key] = element
+
+            # Return the old value
+            return old
 
     # -----------------------------------------------------------------
 
@@ -679,26 +721,64 @@ class NamedList(KeyList):
 
     # -----------------------------------------------------------------
 
-    def replace(self, name, element):
+    def replace(self, index_or_name, element, new_name=None):
 
         """
         This fucntion ...
-        :param name: 
-        :param element: 
+        :param index_or_name:
+        :param element:
+        :param new_name:
         :return: 
         """
+
+        # Get the name
+        name = self.get_name(index_or_name)
 
         # Check the name
         if name not in self.names: raise ValueError("The element with name '" + name + "' does not exist")
 
-        # Get the old value
-        old = self.contents[name]
+        #return super(NamedList, self).replace(index_or_name, element, new_key=new_name)
 
-        # Replace
-        self.contents[name] = element
+        # If the element should get a new name (key)
+        if new_name is not None:
 
-        # Return the old value
-        return old
+            # Get the old value
+            old = self.contents[name]
+
+            # Replace the internal ordered dictionary
+            self.contents = OrderedDict((new_name, element) if key == 0 else (key, value) for key, value in self.contents.items())
+
+            # Return the old value
+            return old
+
+        # Don't give it a new name, just replace the value
+        else:
+
+            # Get the old value
+            old = self.contents[name]
+
+            # Replace
+            self.contents[name] = element
+
+            # Return the old value
+            return old
+
+    # -----------------------------------------------------------------
+
+    def get_name(self, index_or_name):
+
+        """
+        This function ...
+        :param index_or_name:
+        :return:
+        """
+
+        # Get name
+        if types.is_integer_type(index_or_name): name = self.names[index_or_name]
+        elif types.is_string_type(index_or_name): name = index_or_name
+        else: raise ValueError("Invalid index or name: " + str(index_or_name))
+
+        return name
 
     # -----------------------------------------------------------------
 
@@ -710,10 +790,8 @@ class NamedList(KeyList):
         :return: 
         """
 
-        # Get name
-        if types.is_integer_type(index_or_name): name = self.names[index_or_name]
-        elif types.is_string_type(index_or_name): name = index_or_name
-        else: raise ValueError("Invalid index or name: " + str(index_or_name))
+        # Get the name
+        name = self.get_name(index_or_name)
 
         # Pop with name
         return self.contents.pop(name)

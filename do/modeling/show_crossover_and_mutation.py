@@ -39,7 +39,7 @@ elif len(run_names) == 1: definition.add_fixed("fitting_run", "string", run_name
 else: definition.add_required("fitting_run", "string", "name of the fitting run to use", choices=run_names)
 
 # Generation
-definition.add_required("generation_name", "string", "name of the generation for which to show the crossover")
+definition.add_positional_optional("generations", "string_list", "name of the generations for which to show the crossover")
 
 # Create the configuration
 setter = ArgumentConfigurationSetter("show_crossover")
@@ -60,206 +60,219 @@ fitting_run = load_fitting_run(modeling_path, config.fitting_run)
 
 # -----------------------------------------------------------------
 
-# Get the generation
-generation = fitting_run.get_generation(config.generation_name)
-
-# -----------------------------------------------------------------
-
-# Load the crossover table
-crossover = generation.crossover_table
-
-# -----------------------------------------------------------------
-
-# Load parent and new populations
-parents = generation.parents
-newborns = generation.newborns
-
-# -----------------------------------------------------------------
-
-# Load the optimizer input
-optimizer_input = generation.optimizer_input
-
-# -----------------------------------------------------------------
-
-parameter_minima_scalar = optimizer_input["minima"]
-parameter_maxima_scalar = optimizer_input["maxima"]
-
-# -----------------------------------------------------------------
-
-ndigits = optimizer_input["ndigits"]
-nbits = optimizer_input["nbits"]
-scales = optimizer_input["scales"]
-
-# -----------------------------------------------------------------
-
-# Load optimizer config
-optimizer_config = generation.optimizer_config
-
-# Get settings
-elitism = optimizer_config.elitism
-gray_code = optimizer_config.gray_code
-genome_type = optimizer_config.genome_type
-
-# -----------------------------------------------------------------
-
-units = fitting_run.parameter_units
+# Get generation names
+generations = config.generations if config.generations is not None else fitting_run.genetic_generations
 
 # -----------------------------------------------------------------
 
 print("")
-for index in range(len(crossover)):
 
-    mother_name, father_name = crossover.get_parents(index)
-    sister_name, brother_name = crossover.get_children(index)
+# Loop over the generations
+for generation_name in generations:
 
-    # Genome
-    make_genome = genomes_1d[genome_type]
+    print(generation_name)
+    print("")
 
-    print(parents)
+    # Get the generation
+    generation = fitting_run.get_generation(generation_name)
 
-    # Get genomes of parents
-    mother = make_genome(genes=parents[mother_name])
-    father = make_genome(genes=parents[father_name])
+    # -----------------------------------------------------------------
 
-    # Get genomes of children
-    sister = make_genome(genes=newborns[sister_name])
-    brother = make_genome(genes=newborns[brother_name])
+    # Load the crossover table
+    crossover = generation.crossover_table
 
-    # Convert
-    if gray_code:
+    # -----------------------------------------------------------------
 
-        mother_real = gray_binary_string_to_parameters(mother, parameter_minima_scalar, parameter_maxima_scalar, fitting_run.nbits_list)
-        father_real = gray_binary_string_to_parameters(father, parameter_minima_scalar, parameter_maxima_scalar, fitting_run.nbits_list)
-        sister_real = gray_binary_string_to_parameters(sister, parameter_minima_scalar, parameter_maxima_scalar, fitting_run.nbits_list)
-        brother_real = gray_binary_string_to_parameters(brother, parameter_minima_scalar, parameter_maxima_scalar, fitting_run.nbits_list)
+    # Load parent and new populations
+    parents = generation.parents
+    newborns = generation.newborns
 
-    else:
+    # -----------------------------------------------------------------
 
-        mother_real = binary_string_to_parameters(mother, parameter_minima_scalar, parameter_maxima_scalar, fitting_run.nbits_list)
-        father_real = binary_string_to_parameters(father, parameter_minima_scalar, parameter_maxima_scalar, fitting_run.nbits_list)
-        sister_real = binary_string_to_parameters(sister, parameter_minima_scalar, parameter_maxima_scalar, fitting_run.nbits_list)
-        brother_real = binary_string_to_parameters(brother, parameter_minima_scalar, parameter_maxima_scalar, fitting_run.nbits_list)
+    # Load the optimizer input
+    optimizer_input = generation.optimizer_input
 
-    # To strings
-    mother_string = tostr(mother.genes, delimiter=" ")
-    father_string = tostr(father.genes, delimiter=" ")
+    # -----------------------------------------------------------------
 
-    # Crossover happened
-    if crossover.is_crossover(index):
+    parameter_minima_scalar = optimizer_input["minima"]
+    parameter_maxima_scalar = optimizer_input["maxima"]
 
-        # Get crossover method and details
-        method = crossover.get_crossover_method(index)
-        details = crossover.get_crossover_details(index)
+    # -----------------------------------------------------------------
 
-        # Get the correct crossover function
-        if genome_type == "list": crossover_function = list_crossovers_1d[method]
-        elif genome_type == "binary_string": crossover_function = binary_string_crossovers_1d[method]
-        else: raise ValueError("Invalid genome type")
+    ndigits = optimizer_input["ndigits"]
+    nbits = optimizer_input["nbits"]
+    scales = optimizer_input["scales"]
 
-        # Create crossover genomes
-        initial_sister, initial_brother = crossover_function(None, mom=mother, dad=father, details=details, count=2)
+    # -----------------------------------------------------------------
 
-        # Check where mutation happened
-        sister_mutations = [initial_sister.genes[i] != sister.genes[i] for i in range(len(initial_sister))]
-        brother_mutations = [initial_brother.genes[i] != brother.genes[i] for i in range(len(initial_brother))]
+    # Load optimizer config
+    optimizer_config = generation.optimizer_config
 
-        # Get the correct crossover origins function
-        if genome_type == "list": origins_function = list_crossover_origins_1d[method]
-        elif genome_type == "binary_string": origins_function = binary_string_crossover_origins_1d[method]
-        else: raise ValueError("Invalid genome type")
+    # Get settings
+    elitism = optimizer_config.elitism
+    gray_code = optimizer_config.gray_code
+    genome_type = optimizer_config.genome_type
 
-        # COLORED
-        mother_colored = fmt.colored_sequence(mother, colors="green", delimiter=" ")
-        father_colored = fmt.colored_sequence(father, colors=None, delimiter=" ")
+    # -----------------------------------------------------------------
 
-        # Get the origins
-        sister_origins, brother_origins = origins_function(len(mother), details)
+    units = fitting_run.parameter_units
 
-        initial_sister_colors = ["green" if flag else None for flag in sister_origins]
-        initial_brother_colors = [None if flag else "green" for flag in brother_origins]
+    # -----------------------------------------------------------------
 
-        # COLORED
-        initial_sister_colored = fmt.colored_sequence(initial_sister.genes, colors=initial_sister_colors, delimiter=" ")
-        initial_brother_colored = fmt.colored_sequence(initial_brother.genes, colors=initial_brother_colors, delimiter=" ")
+    print("")
+    for index in range(len(crossover)):
 
-        # COLORED
-        sister_colors = [initial_sister_colors[i] if not sister_mutations[i] else "red" for i in range(len(sister))]
-        brother_colors = [initial_brother_colors[i] if not brother_mutations[i] else "red" for i in range(len(brother))]
+        mother_name, father_name = crossover.get_parents(index)
+        sister_name, brother_name = crossover.get_children(index)
 
-        sister_colored = fmt.colored_sequence(sister.genes, colors=sister_colors, delimiter=" ")
-        brother_colored = fmt.colored_sequence(brother.genes, colors=brother_colors, delimiter=" ")
+        # Genome
+        make_genome = genomes_1d[genome_type]
 
-        nmutations_sister = sum(sister_mutations)
-        nmutations_brother = sum(brother_mutations)
-        relative_nmutations_sister = float(nmutations_sister) / len(sister)
-        relative_nmutations_brother = float(nmutations_brother) / len(brother)
+        #print(parents)
 
-        #print(nmutations_sister, nmutations_brother)
+        # Get genomes of parents
+        mother = make_genome(genes=parents[mother_name])
+        father = make_genome(genes=parents[father_name])
 
-        print(fmt.blue + fmt.underlined + method.title() + " Crossover:" + fmt.reset)
-        print("")
-        print("Parents   :   " + mother_colored + "  x  " + father_colored)
-        #print("")
-        print("Crossover :   " + initial_sister_colored + "     " + initial_brother_colored)
-        print("Mutation  :   " + sister_colored + "     " + brother_colored)
-        print("")
+        # Get genomes of children
+        sister = make_genome(genes=newborns[sister_name])
+        brother = make_genome(genes=newborns[brother_name])
 
-        #print("")
-        #print("Parents:    " + str(mother_real) + " x " + str(father_real))
-        #print("")
-        #print("Children:   " + str(sister_real) + "   " + str(brother_real))
-        #print("")
+        # Convert
+        if gray_code:
 
-        print("Number of mutations:")
-        print("")
-        print("  - sister: " + str(nmutations_sister) + " of " + str(len(sister)) + " (" + str(relative_nmutations_sister) + ")")
-        print("  - brother: " + str(nmutations_brother) + " of " + str(len(brother)) + " (" + str(relative_nmutations_brother) + ")")
-        print("")
+            mother_real = gray_binary_string_to_parameters(mother, parameter_minima_scalar, parameter_maxima_scalar, fitting_run.nbits_list)
+            father_real = gray_binary_string_to_parameters(father, parameter_minima_scalar, parameter_maxima_scalar, fitting_run.nbits_list)
+            sister_real = gray_binary_string_to_parameters(sister, parameter_minima_scalar, parameter_maxima_scalar, fitting_run.nbits_list)
+            brother_real = gray_binary_string_to_parameters(brother, parameter_minima_scalar, parameter_maxima_scalar, fitting_run.nbits_list)
 
-    # Just cloned
-    else:
+        else:
 
-        # COLORED
-        mother_colored = fmt.colored_sequence(mother, colors="green", delimiter=" ")
-        father_colored = fmt.colored_sequence(father, colors=None, delimiter=" ")
+            mother_real = binary_string_to_parameters(mother, parameter_minima_scalar, parameter_maxima_scalar, fitting_run.nbits_list)
+            father_real = binary_string_to_parameters(father, parameter_minima_scalar, parameter_maxima_scalar, fitting_run.nbits_list)
+            sister_real = binary_string_to_parameters(sister, parameter_minima_scalar, parameter_maxima_scalar, fitting_run.nbits_list)
+            brother_real = binary_string_to_parameters(brother, parameter_minima_scalar, parameter_maxima_scalar, fitting_run.nbits_list)
 
-        # COLORED
-        initial_sister_colored = fmt.colored_sequence(mother, colors="green", delimiter=" ")
-        initial_brother_colored = fmt.colored_sequence(father, colors=None, delimiter=" ")
+        # To strings
+        mother_string = tostr(mother.genes, delimiter=" ")
+        father_string = tostr(father.genes, delimiter=" ")
 
-        # Check where mutation happened
-        sister_mutations = [sister.genes[i] != mother.genes[i] for i in range(len(sister))]
-        brother_mutations = [brother.genes[i] != father.genes[i] for i in range(len(brother))]
+        # Crossover happened
+        if crossover.is_crossover(index):
 
-        sister_colors = ["green" if not sister_mutations[i] else "red" for i in range(len(sister))]
-        brother_colors = [None if not brother_mutations[i] else "red" for i in range(len(brother))]
+            # Get crossover method and details
+            method = crossover.get_crossover_method(index)
+            details = crossover.get_crossover_details(index)
 
-        sister_colored = fmt.colored_sequence(sister.genes, colors=sister_colors, delimiter=" ")
-        brother_colored = fmt.colored_sequence(brother.genes, colors=brother_colors, delimiter=" ")
+            # Get the correct crossover function
+            if genome_type == "list": crossover_function = list_crossovers_1d[method]
+            elif genome_type == "binary_string": crossover_function = binary_string_crossovers_1d[method]
+            else: raise ValueError("Invalid genome type")
 
-        nmutations_sister = sum(sister_mutations)
-        nmutations_brother = sum(brother_mutations)
-        relative_nmutations_sister = float(nmutations_sister) / len(sister)
-        relative_nmutations_brother = float(nmutations_brother) / len(brother)
+            # Create crossover genomes
+            initial_sister, initial_brother = crossover_function(None, mom=mother, dad=father, details=details, count=2)
 
-        print(fmt.blue + fmt.underlined + "Cloning:" + fmt.reset)
-        print("")
-        print("Parents  :    " + mother_colored + fmt.reset + "     " + father_colored)
-        #print("")
-        print("Cloning  :    " + initial_sister_colored + "     " + initial_brother_colored)
-        print("Mutation :    " + sister_colored + "     " + brother_colored)
-        print("")
+            # Check where mutation happened
+            sister_mutations = [initial_sister.genes[i] != sister.genes[i] for i in range(len(initial_sister))]
+            brother_mutations = [initial_brother.genes[i] != brother.genes[i] for i in range(len(initial_brother))]
 
-        print("Number of mutations:")
-        print("")
-        print("  - sister: " + str(nmutations_sister) + " of " + str(len(sister)) + " (" + str(relative_nmutations_sister) + ")")
-        print("  - brother: " + str(nmutations_brother) + " of " + str(len(brother)) + " (" + str(relative_nmutations_brother) + ")")
-        print("")
+            # Get the correct crossover origins function
+            if genome_type == "list": origins_function = list_crossover_origins_1d[method]
+            elif genome_type == "binary_string": origins_function = binary_string_crossover_origins_1d[method]
+            else: raise ValueError("Invalid genome type")
 
-        #print("")
-        #print("Parents:    " + str(mother_real) + "   " + str(father_real))
-        #print("")
-        #print("Children:   " + str(sister_real) + "   " + str(brother_real))
-        #print("")
+            # COLORED
+            mother_colored = fmt.colored_sequence(mother, colors="green", delimiter=" ")
+            father_colored = fmt.colored_sequence(father, colors=None, delimiter=" ")
+
+            # Get the origins
+            sister_origins, brother_origins = origins_function(len(mother), details)
+
+            initial_sister_colors = ["green" if flag else None for flag in sister_origins]
+            initial_brother_colors = [None if flag else "green" for flag in brother_origins]
+
+            # COLORED
+            initial_sister_colored = fmt.colored_sequence(initial_sister.genes, colors=initial_sister_colors, delimiter=" ")
+            initial_brother_colored = fmt.colored_sequence(initial_brother.genes, colors=initial_brother_colors, delimiter=" ")
+
+            # COLORED
+            sister_colors = [initial_sister_colors[i] if not sister_mutations[i] else "red" for i in range(len(sister))]
+            brother_colors = [initial_brother_colors[i] if not brother_mutations[i] else "red" for i in range(len(brother))]
+
+            sister_colored = fmt.colored_sequence(sister.genes, colors=sister_colors, delimiter=" ")
+            brother_colored = fmt.colored_sequence(brother.genes, colors=brother_colors, delimiter=" ")
+
+            nmutations_sister = sum(sister_mutations)
+            nmutations_brother = sum(brother_mutations)
+            relative_nmutations_sister = float(nmutations_sister) / len(sister)
+            relative_nmutations_brother = float(nmutations_brother) / len(brother)
+
+            #print(nmutations_sister, nmutations_brother)
+
+            print("#" + str(index+1) + " " + fmt.blue + fmt.underlined + method.title() + " Crossover:" + fmt.reset)
+            print("")
+            print("Parents   :   " + mother_colored + "  x  " + father_colored)
+            #print("")
+            print("Crossover :   " + initial_sister_colored + "     " + initial_brother_colored)
+            print("Mutation  :   " + sister_colored + "     " + brother_colored)
+            print("")
+
+            #print("")
+            #print("Parents:    " + str(mother_real) + " x " + str(father_real))
+            #print("")
+            #print("Children:   " + str(sister_real) + "   " + str(brother_real))
+            #print("")
+
+            print("Number of mutations:")
+            print("")
+            print("  - sister: " + str(nmutations_sister) + " of " + str(len(sister)) + " (" + str(relative_nmutations_sister) + ")")
+            print("  - brother: " + str(nmutations_brother) + " of " + str(len(brother)) + " (" + str(relative_nmutations_brother) + ")")
+            print("")
+
+        # Just cloned
+        else:
+
+            # COLORED
+            mother_colored = fmt.colored_sequence(mother, colors="green", delimiter=" ")
+            father_colored = fmt.colored_sequence(father, colors=None, delimiter=" ")
+
+            # COLORED
+            initial_sister_colored = fmt.colored_sequence(mother, colors="green", delimiter=" ")
+            initial_brother_colored = fmt.colored_sequence(father, colors=None, delimiter=" ")
+
+            # Check where mutation happened
+            sister_mutations = [sister.genes[i] != mother.genes[i] for i in range(len(sister))]
+            brother_mutations = [brother.genes[i] != father.genes[i] for i in range(len(brother))]
+
+            sister_colors = ["green" if not sister_mutations[i] else "red" for i in range(len(sister))]
+            brother_colors = [None if not brother_mutations[i] else "red" for i in range(len(brother))]
+
+            sister_colored = fmt.colored_sequence(sister.genes, colors=sister_colors, delimiter=" ")
+            brother_colored = fmt.colored_sequence(brother.genes, colors=brother_colors, delimiter=" ")
+
+            nmutations_sister = sum(sister_mutations)
+            nmutations_brother = sum(brother_mutations)
+            relative_nmutations_sister = float(nmutations_sister) / len(sister)
+            relative_nmutations_brother = float(nmutations_brother) / len(brother)
+
+            print("#" + str(index+1) + " " + fmt.blue + fmt.underlined + "Cloning:" + fmt.reset)
+            print("")
+            print("Parents  :    " + mother_colored + fmt.reset + "     " + father_colored)
+            #print("")
+            print("Cloning  :    " + initial_sister_colored + "     " + initial_brother_colored)
+            print("Mutation :    " + sister_colored + "     " + brother_colored)
+            print("")
+
+            print("Number of mutations:")
+            print("")
+            print("  - sister: " + str(nmutations_sister) + " of " + str(len(sister)) + " (" + str(relative_nmutations_sister) + ")")
+            print("  - brother: " + str(nmutations_brother) + " of " + str(len(brother)) + " (" + str(relative_nmutations_brother) + ")")
+            print("")
+
+            #print("")
+            #print("Parents:    " + str(mother_real) + "   " + str(father_real))
+            #print("")
+            #print("Children:   " + str(sister_real) + "   " + str(brother_real))
+            #print("")
 
 # -----------------------------------------------------------------

@@ -356,21 +356,6 @@ class ExplorationFinisher(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    #def get_best(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        # Inform the user
-        #log.info("Getting the best individual ...")
-
-        # Get the best individual
-        #self.best = self.optimizer.best
-
-    # -----------------------------------------------------------------
-
     def show(self):
 
         """

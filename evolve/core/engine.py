@@ -1422,7 +1422,12 @@ class GeneticEngine(object):
 
             # Get old and new best raw score individual
             old_best = self.internalPop.bestRaw(i)
+            old_key = self.internalPop.keys[i]
             new_best = new_population.bestRaw(i)
+
+            # Determine ID of the old individual
+            if isinstance(self.internalPop, NamedPopulation): old_id = old_key
+            else: old_id = str(old_key) # index
 
             # Get scores
             old_best_raw = old_best.score
@@ -1453,10 +1458,11 @@ class GeneticEngine(object):
                 replaced_fitness = replaced.fitness
 
                 # Debugging
-                log.debug("Replacing individual '" + individual_id + "' (raw score=" + str(replaced_raw) + ", fitness=" + str(replaced_fitness) + ") with the " + str(i) + "th individual from the old (internal) population (raw score=" + str(old_best_raw) + ", fitness=" + str(old_best_fitness) + ")...")
+                log.debug("Replacing the " + str(replacement_index) + "th individual [" + individual_id + "] (raw score=" + str(replaced_raw) + ", fitness=" + str(replaced_fitness) + ") with the " + str(i) + "th individual from the parent population [" + old_id + "] (raw score=" + str(old_best_raw) + ", fitness=" + str(old_best_fitness) + ")...")
 
                 # Replace
-                new_population[replacement_index] = old_best
+                #new_population[replacement_index] = old_best
+                new_population.replace(replacement_index, old_key, old_best) # Replace so the individual ID is changed, but the order is preserved
 
             # No replacement
             else: replaced_raw = replaced_fitness = None

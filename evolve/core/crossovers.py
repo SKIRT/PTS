@@ -80,6 +80,28 @@ def G1DBinaryStringXSinglePoint(genome, **args):
 
 # -----------------------------------------------------------------
 
+def G1DBinaryStringXTwoPoint_origins(size, details):
+
+    """
+    This function ...
+    :param size:
+    :param details:
+    :return:
+    """
+
+    cuts = details
+
+    origins_sister = np.array([True] * size)  # true means as mother
+    origins_brother = np.array([True] * size)  # true means as father
+
+    origins_sister[cuts[0]:cuts[1]] = False
+    origins_brother[cuts[0]:cuts[1]] = False
+
+    # Return the origins
+    return origins_sister, origins_brother
+
+# -----------------------------------------------------------------
+
 def G1DBinaryStringXTwoPoint(genome, **args):
 
     """
@@ -115,6 +137,29 @@ def G1DBinaryStringXTwoPoint(genome, **args):
     # Return the sister and brother
     if return_details: return sister, brother, cuts
     else: return sister, brother
+
+# -----------------------------------------------------------------
+
+def G1DBinaryStringXUniform_origins(size, details):
+
+    """
+    This function ...
+    :param size:
+    :param details:
+    :return:
+    """
+
+    positions = details
+
+    origins_sister = np.array([True] * size)  # true means as mother
+    origins_brother = np.array([True] * size)  # true means as father
+
+    for position in positions:
+        origins_sister[position] = False
+        origins_brother[position] = False
+
+    # Return the origins
+    return origins_sister, origins_brother
 
 # -----------------------------------------------------------------
 
@@ -155,6 +200,28 @@ def G1DBinaryStringXUniform(genome, **args):
 
 # -----------------------------------------------------------------
 
+def G1DListCrossoverSinglePoint_origins(size, details):
+
+    """
+    This function ...
+    :param size:
+    :param details:
+    :return:
+    """
+
+    cut = details
+
+    origins_sister = np.array([True] * size)  # true means as mother
+    origins_brother = np.array([True] * size)  # true means as father
+
+    origins_sister[cut:] = False
+    origins_brother[cut:] = False
+
+    # Return
+    return origins_sister, origins_brother
+
+# -----------------------------------------------------------------
+
 def G1DListCrossoverSinglePoint(genome, **args):
 
     """
@@ -186,6 +253,19 @@ def G1DListCrossoverSinglePoint(genome, **args):
     # Return the sister and brother
     if return_details: return sister, brother, cut
     else: return sister, brother
+
+# -----------------------------------------------------------------
+
+def G1DListCrossoverTwoPoint_origins(size, details):
+
+    """
+    This function ...
+    :param size:
+    :param details:
+    :return:
+    """
+
+
 
 # -----------------------------------------------------------------
 

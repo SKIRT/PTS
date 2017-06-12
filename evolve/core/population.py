@@ -761,6 +761,21 @@ class PopulationBase(object):
 
         pass
 
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def replace(self, key, new_key, value):
+
+        """
+        This function ...
+        :param key: index or name
+        :param new_key: index or name
+        :param value:
+        :return:
+        """
+
+        pass
+
 # -----------------------------------------------------------------
 
 class NamedPopulation(PopulationBase):
@@ -998,6 +1013,21 @@ class NamedPopulation(PopulationBase):
         self.sort()
         return self.names[index]
 
+    # -----------------------------------------------------------------
+
+    def replace(self, key, new_key, value):
+
+        """
+        This function ...
+        :param key:
+        :param new_key:
+        :param value:
+        :return:
+        """
+
+        # Replace
+        return self.internalPop.replace(key, value, new_name=new_key)
+
 # -----------------------------------------------------------------
 
 class Population(PopulationBase):
@@ -1212,5 +1242,25 @@ class Population(PopulationBase):
 
         self.sort()
         return index
+
+    # -----------------------------------------------------------------
+
+    def replace(self, key, new_key, value):
+
+        """
+        This function ...
+        :param key:
+        :param value:
+        :return
+        """
+
+        # Remove the key'th element
+        old = self.internalPop.pop(key)
+
+        # Inser in the population list
+        self.internalPop.insert(new_key, value)
+
+        # Return the old individual
+        return old
 
 # -----------------------------------------------------------------
