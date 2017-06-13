@@ -736,14 +736,8 @@ class ModelerBase(Configurable):
         # Create the SED fitter
         self.fitter = SEDFitter(config)
 
-        # Set log path
-        self.set_log_path_for_component(self.fitter)
-
         # Run the fitter
-        with self.history.register(self.fitter): self.fitter.run()
-
-        # Unset log path
-        unset_log_file()
+        with self.write_log(self.fitter), self.history.register(self.fitter): self.fitter.run()
 
     # -----------------------------------------------------------------
 
@@ -811,14 +805,8 @@ class ModelerBase(Configurable):
         # NEW: Add additional input (such as parameter grid scales)
         input_dict.update(kwargs)
 
-        # Set log path
-        self.set_log_path_for_component(self.explorer)
-
         # Run the parameter explorer
-        with self.history.register(self.explorer): self.explorer.run(**input_dict)
-
-        # Unset log path
-        unset_log_file()
+        with self.write_log(self.explorer), self.history.register(self.explorer): self.explorer.run(**input_dict)
 
     # -----------------------------------------------------------------
 
@@ -846,14 +834,8 @@ class ModelerBase(Configurable):
         # NEW: Add additional input (such as parameter grid scales)
         input_dict.update(kwargs)
 
-        # Set log path
-        self.set_log_path_for_component(self.finisher)
-
         # Run the finisher
-        with self.history.register(self.finisher): self.finisher.run(**input_dict)
-
-        # Unset log path
-        unset_log_file()
+        with self.write_log(self.finisher), self.history.register(self.finisher): self.finisher.run(**input_dict)
 
     # -----------------------------------------------------------------
 

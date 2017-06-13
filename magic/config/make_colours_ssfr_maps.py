@@ -7,6 +7,7 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
+from pts.magic.maps.ssfr.colours import ssfr_colours
 
 # -----------------------------------------------------------------
 
@@ -14,6 +15,6 @@ from pts.core.basics.configuration import ConfigurationDefinition
 definition = ConfigurationDefinition()
 
 # Add optional
-definition.add_optional("filter", "filter", "band to use")
+definition.add_positional_optional("colours", "string_list", "colours to use", default=ssfr_colours, choices=ssfr_colours)
 
 # -----------------------------------------------------------------

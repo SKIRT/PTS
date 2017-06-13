@@ -153,9 +153,15 @@ class SingleBandTIRMapMaker(Configurable):
             # Get the parameters
             a, b = self.galametz.get_parameters_single_brightness(fltr)
 
+            # Get the frame
+            frame = self.frames[fltr]
+
             # Convert to neutral intrinsic surface brightness
-            frame = self.frames[fltr].convert_to("W/kpc2", density=True, distance=self.distance, brightness=True,
+            frame = frame.converted_to("W/kpc2", density=True, distance=self.distance, brightness=True,
                                                  density_strict=True, brightness_strict=True)
+
+            # Debugging
+            #log.debug("Conversion factor: " + str(factor))
 
             # Calculate the TIR map in W/kpc2 (intrinsic surface brightness)
             logtir = a * np.log(frame.data) + b

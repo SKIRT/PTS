@@ -30,10 +30,9 @@ from .image import Image
 from .mask import Mask
 from ..basics.coordinatesystem import CoordinateSystem
 from ...core.basics.configurable import Configurable
-from ...core.tools import tables
 from ..region.list import SkyRegionList
 from ..tools import headers
-from .list import NamedImageList, NamedFrameList
+from .list import NamedImageList, NamedFrameList, FrameList, ImageList
 from ...core.tools import types
 from ...core.filter.filter import parse_filter
 from .mask import intersection, union
@@ -44,6 +43,7 @@ from ...core.basics.map import Map
 from ..tools import coordinates
 from ...core.units.parsing import parse_unit as u
 from ...core.basics.table import SmartTable
+from ...core.basics.containers import FileList, NamedFileList
 
 # -----------------------------------------------------------------
 
@@ -327,6 +327,18 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    def get_wavelength(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.get_frame(name).wavelength
+
+    # -----------------------------------------------------------------
+
     def get_header(self, name):
 
         """
@@ -372,7 +384,7 @@ class DataSet(object):
             if name in self.mask_paths:
                 mask = self.get_mask(name)
                 frame[mask] = mask_value
-            else: log.warning("No mask available for " + name + " frame")
+            #else: log.warning("No mask available for " + name + " frame")
 
         # Set the name
         frame.name = name
@@ -427,7 +439,7 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def get_frames(self, masked=True, mask_value=0.0, min_wavelength=None, max_wavelength=None, exclude=None):
+    def get_frames(self, masked=True, mask_value=0.0, min_wavelength=None, max_wavelength=None, exclude=None, returns="dict", keys="name"):
 
         """
         This function ...
@@ -436,6 +448,8 @@ class DataSet(object):
         :param min_wavelength:
         :param max_wavelength:
         :param exclude:
+        :param returns:
+        :param keys:
         :return:
         """
 
@@ -459,15 +473,76 @@ class DataSet(object):
             if min_wavelength is not None and frame.wavelength < min_wavelength: continue
             if max_wavelength is not None and frame.wavelength > max_wavelength: continue
 
+            # Set the key
+            if keys == "name": key = name
+            elif keys == "filter": key = frame.filter
+            elif keys == "wavelength": key = frame.wavelength
+            else: raise ValueError("Invalid value for 'keys'")
+
+            # Check if the key is not None
+            if key is None: raise ValueError("Cannot use '" + keys + "' as key, because it cannot be obtained for frame '" + name + "'")
+
             # Add the frame
-            frames[name] = frame
+            frames[key] = frame
 
         # Return the dictionary of frames
-        return frames
+        if returns == "dict": return frames
+        elif returns == "list": return frames.values()
+        else: raise ValueError("Invalid value for 'returns'")
 
     # -----------------------------------------------------------------
 
-    def get_errormaps(self, masked=True, mask_value=0.0, min_wavelength=None, max_wavelength=None, exclude=None):
+    def get_frame_paths(self, min_wavelength=None, max_wavelength=None, exclude=None, returns="dict", keys="name"):
+
+        """
+        This function ...
+        :param min_wavelength:
+        :param max_wavelength:
+        :param exclude:
+        :param returns:
+        :param keys: 'name' or 'filter'
+        :return:
+        """
+
+        # Make sure exclude is a list
+        if types.is_string_type(exclude): exclude = [exclude]
+        elif exclude is None: exclude = []
+
+        # Initialize a dictionary for the frames
+        paths = OrderedDict()
+
+        # Loop over the frame paths
+        for name in self.paths:
+
+            # Skip if name is in the exclude list
+            if exclude is not None and name in exclude: continue
+
+            # Skip images of wavelength smaller than the minimum or greater then the maximum
+            if min_wavelength is not None or max_wavelength is not None: wavelength = self.get_wavelength(name)
+            else: wavelength = None
+            if min_wavelength is not None and wavelength < min_wavelength: continue
+            if max_wavelength is not None and wavelength > max_wavelength: continue
+
+            # Set the key
+            if keys == "name": key = name
+            elif keys == "filter": key = self.get_filter(name)
+            elif keys == "wavelength": key = wavelength if wavelength is not None else self.get_wavelength(name)
+            else: raise ValueError("Invalid value for 'keys'")
+
+            # Check if the key is not None
+            if key is None: raise ValueError("Cannot use '" + keys + "' as key, because it cannot be obtained for frame '" + name + "'")
+
+            # Add the path
+            paths[key] = self.paths[name]
+
+        # Return the dictionary of paths
+        if returns == "dict": return paths
+        elif returns == "list": return paths.values()
+        else: raise ValueError("Invalid value for 'returns'")
+
+    # -----------------------------------------------------------------
+
+    def get_errormaps(self, masked=True, mask_value=0.0, min_wavelength=None, max_wavelength=None, exclude=None, returns="dict", keys="name"):
 
         """
         This function ...
@@ -476,6 +551,8 @@ class DataSet(object):
         :param min_wavelength:
         :param max_wavelength:
         :param exclude:
+        :param returns:
+        :param keys:
         :return:
         """
 
@@ -499,21 +576,34 @@ class DataSet(object):
             if min_wavelength is not None and errormap.wavelength < min_wavelength: continue
             if max_wavelength is not None and errormap.wavelength > max_wavelength: continue
 
+            # Set the key
+            if keys == "name": key = name
+            elif keys == "filter": key = errormap.filter
+            elif keys == "wavelength": key = errormap.wavelength
+            else: raise ValueError("Invalid value for 'keys'")
+
+            # Check if the key is not None
+            if key is None: raise ValueError("Cannot use '" + keys + "' as key, because it cannot be obtained for frame '" + name + "'")
+
             # Add the error map
-            errormaps[name] = errormap
+            errormaps[key] = errormap
 
         # Return the dictionary of error maps
-        return errormaps
+        if returns == "dict": return errormaps
+        elif returns == "list": return errormaps.values()
+        else: raise ValueError("Invalid value for 'returns'")
 
     # -----------------------------------------------------------------
 
-    def get_images(self, exclude=None, min_wavelength=None, max_wavelength=None):
+    def get_images(self, exclude=None, min_wavelength=None, max_wavelength=None, returns="dict", keys="name"):
 
         """
         This function ...
         :param exclude:
         :param min_wavelength:
         :param max_wavelength:
+        :param returns:
+        :param keys:
         :return: 
         """
 
@@ -537,15 +627,26 @@ class DataSet(object):
             if min_wavelength is not None and image.wavelength < min_wavelength: continue
             if max_wavelength is not None and image.wavelength > max_wavelength: continue
 
+            # Set the key
+            if keys == "name": key = name
+            elif keys == "filter": key = image.filter
+            elif keys == "wavelength": key = image.wavelength
+            else: raise ValueError("Invalid value for 'keys'")
+
+            # Check if the key is not None
+            if key is None: raise ValueError("Cannot use '" + keys + "' as key, because it cannot be obtained for frame '" + name + "'")
+
             # Add the image
-            images[name] = image
+            images[key] = image
 
         # Return the dictionary of images
-        return images
+        if returns == "dict": return images
+        elif returns == "list": return images.values()
+        else: raise ValueError("Invalid value for 'returns'")
 
     # -----------------------------------------------------------------
 
-    def get_framelist(self, masked=True, mask_value=0.0, min_wavelength=None, max_wavelength=None, exclude=None):
+    def get_framelist(self, masked=True, mask_value=0.0, min_wavelength=None, max_wavelength=None, exclude=None, named=True):
 
         """
         This function ...
@@ -554,14 +655,37 @@ class DataSet(object):
         :param min_wavelength:
         :param max_wavelength:
         :param exclude:
+        :param named:
         :return: 
         """
 
-        return NamedFrameList.from_dictionary(self.get_frames(masked, mask_value, min_wavelength, max_wavelength, exclude))
+        if named: return NamedFrameList.from_dictionary(self.get_frames(masked, mask_value, min_wavelength, max_wavelength, exclude))
+        else: return FrameList(*self.get_frames(masked, mask_value, min_wavelength, max_wavelength, exclude, returns="list"))
 
     # -----------------------------------------------------------------
 
-    def get_errormaplist(self, masked=True, mask_value=0.0, min_wavelength=None, max_wavelength=None, exclude=None):
+    get_frame_list = get_framelist
+
+    # -----------------------------------------------------------------
+
+    def get_frame_path_list(self, min_wavelength=None, max_wavelength=None, exclude=None, named=True):
+
+        """
+        This function ...
+        :param min_wavelength:
+        :param max_wavelength:
+        :param exclude:
+        :param named:
+        :return:
+        """
+
+        # Keyed on name or filter
+        if named: return NamedFileList(**self.get_frame_paths(min_wavelength, max_wavelength, exclude))
+        else: return FileList(**self.get_frame_paths(min_wavelength, max_wavelength, exclude, keys="filter"))
+
+    # -----------------------------------------------------------------
+
+    def get_errormaplist(self, masked=True, mask_value=0.0, min_wavelength=None, max_wavelength=None, exclude=None, named=True):
 
         """
         This function ...
@@ -570,24 +694,36 @@ class DataSet(object):
         :param min_wavelength:
         :param max_wavelength:
         :param exclude:
+        :param named:
         :return: 
         """
 
-        return NamedFrameList.from_dictionary(self.get_errormaps(masked, mask_value, min_wavelength, max_wavelength, exclude))
+        if named: return NamedFrameList.from_dictionary(self.get_errormaps(masked, mask_value, min_wavelength, max_wavelength, exclude))
+        else: return FrameList(*self.get_errormaps(masked, mask_value, min_wavelength, max_wavelength, exclude, returns="list"))
 
     # -----------------------------------------------------------------
 
-    def get_imagelist(self, exclude=None, min_wavelength=None, max_wavelength=None):
+    get_errormap_list = get_errormaplist
+
+    # -----------------------------------------------------------------
+
+    def get_imagelist(self, exclude=None, min_wavelength=None, max_wavelength=None, named=True):
 
         """
         This function ...
         :param exclude: 
         :param min_wavelength: 
-        :param max_wavelength: 
+        :param max_wavelength:
+        :param named:
         :return: 
         """
 
-        return NamedImageList.from_dictionary(self.get_images(exclude, min_wavelength, max_wavelength))
+        if named: return NamedImageList.from_dictionary(self.get_images(exclude, min_wavelength, max_wavelength))
+        else: return ImageList(*self.get_images(exclude, min_wavelength, max_wavelength, returns="list"))
+
+    # -----------------------------------------------------------------
+
+    get_image_list = get_imagelist
 
     # -----------------------------------------------------------------
 
@@ -1267,7 +1403,7 @@ class DataSet(object):
             if name in self.mask_paths:
                 mask = self.get_mask(name)
                 errors[mask] = mask_value
-            else: log.warning("No mask available for " + name + " frame")
+            #else: log.warning("No mask available for " + name + " frame")
 
         # Set the name
         errors.name = name
@@ -1307,7 +1443,7 @@ class DataSet(object):
             if name in self.mask_paths:
                 mask = self.get_mask(name)
                 rel_errors[mask] = mask_value
-            else: log.warning("No mask available for " + name + " frame")
+            #else: log.warning("No mask available for " + name + " frame")
 
         # Return the relative error map
         return rel_errors

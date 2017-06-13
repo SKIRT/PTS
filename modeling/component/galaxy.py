@@ -454,6 +454,78 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def frame_list(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dataset.get_framelist(named=False) # on filter
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def named_frame_list(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dataset.get_framelist(named=True) # on name
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def errormap_list(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dataset.get_errormap_list(named=False)  # on filter
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def named_errormap_list(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dataset.get_errormap_list(named=True) # on name
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def frame_path_list(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dataset.get_frame_path_list(named=False) # on filter
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def named_frame_path_list(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dataset.get_frame_path_list(named=True) # on name
+
+    # -----------------------------------------------------------------
+
     #@lazyproperty
     #def dataset(self):
 

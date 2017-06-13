@@ -239,6 +239,36 @@ input_replacements["TiB"] = "TB"
 
 # -----------------------------------------------------------------
 
+def get_physical_type(unit_string):
+
+    """
+    This function ...
+    :param unit_string:
+    :return:
+    """
+
+    if "[" in unit_string and "]" in unit_string: return unit_string.split("[")[1].split("]")[0].strip()
+    else: return None
+
+# -----------------------------------------------------------------
+
+def interpret_physical_type(physical_type):
+
+    """
+    This function ...
+    :param physical_type:
+    :return:
+    """
+
+    # Get
+    density = physical_type.endswith("density")
+    brightness = "surface brightness" in physical_type
+
+    # Return
+    return density, brightness
+
+# -----------------------------------------------------------------
+
 def clean_unit_string(string):
 
     """
@@ -246,6 +276,8 @@ def clean_unit_string(string):
     :param string:
     :return:
     """
+
+    if "[" in string and "]" in string: string = string.split("[")[0]
 
     for key in input_replacements:
         string = string.replace(key, input_replacements[key])

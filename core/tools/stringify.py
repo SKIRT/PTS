@@ -21,7 +21,7 @@ from . import numbers
 
 # -----------------------------------------------------------------
 
-def tostr(value, scientific=None, decimal_places=2, fancy=False, ndigits=None, delimiter=","):
+def tostr(value, scientific=None, decimal_places=2, fancy=False, ndigits=None, delimiter=", ", **kwargs):
 
     """
     This function ...
@@ -31,6 +31,7 @@ def tostr(value, scientific=None, decimal_places=2, fancy=False, ndigits=None, d
     :param fancy:
     :param ndigits:
     :param delimiter:
+    :param kwargs:
     :return: 
     """
 
@@ -82,11 +83,11 @@ def tostr(value, scientific=None, decimal_places=2, fancy=False, ndigits=None, d
         else: scientific = False
 
     # Stringify
-    return stringify(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, delimiter=delimiter)[1].strip()
+    return stringify(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, delimiter=delimiter, **kwargs)[1].strip()
 
 # -----------------------------------------------------------------
 
-def stringify(value, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False, delimiter=","):
+def stringify(value, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False, delimiter=",", **kwargs):
 
     """
     This function ...
@@ -97,29 +98,30 @@ def stringify(value, scientific=False, decimal_places=2, fancy=False, ndigits=No
     :param ndigits:
     :param unicode:
     :param delimiter:
+    :param kwargs:
     :return:
     """
 
     # List or derived from list
-    if isinstance(value, list): return stringify_list(value, delimiter=delimiter)
+    if isinstance(value, list): return stringify_list(value, delimiter=delimiter, **kwargs)
 
     # Dictionary
-    if isinstance(value, dict): return stringify_dict(value, delimiter=delimiter)
+    if isinstance(value, dict): return stringify_dict(value, delimiter=delimiter, **kwargs)
 
     # Array or derived from Array, but not quantity!
     #elif isinstance(value, np.ndarray) and not isinstance(value, Quantity):
     #elif introspection.try_importing_module("numpy", True) and (isinstance(value, np.ndarray) and not hasattr(value, "unit")):
     # WE ALSO TEST IF THIS IS NOT A NUMPY INTEGER, FLOAT OR BOOLEAN (because they have a __array__ attribute)
-    elif hasattr(value, "__array__") and hasattr(value, "__getitem__") and can_get_item(value) and not hasattr(value, "unit") and not types.is_boolean_type(value) and not types.is_integer_type(value) and not types.is_real_type(value) and not types.is_string_type(value): return stringify_array(value, delimiter=delimiter)
+    elif hasattr(value, "__array__") and hasattr(value, "__getitem__") and can_get_item(value) and not hasattr(value, "unit") and not types.is_boolean_type(value) and not types.is_integer_type(value) and not types.is_real_type(value) and not types.is_string_type(value): return stringify_array(value, delimiter=delimiter, **kwargs)
 
     # Column or masked masked column
-    elif type(value).__name__ == "MaskedColumn" or type(value).__name__ == "Column": return stringify_array(value)
+    elif type(value).__name__ == "MaskedColumn" or type(value).__name__ == "Column": return stringify_array(value, **kwargs)
 
     # Tuple or derived from tuple
-    elif isinstance(value, tuple): return stringify_tuple(value)
+    elif isinstance(value, tuple): return stringify_tuple(value, **kwargs)
 
     # All other
-    else: return stringify_not_list(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode)
+    else: return stringify_not_list(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode, **kwargs)
 
 # -----------------------------------------------------------------
 
@@ -146,12 +148,13 @@ def can_get_item(value):
 
 # -----------------------------------------------------------------
 
-def stringify_list(value, delimiter=","):
+def stringify_list(value, delimiter=",", **kwargs):
 
     """
     This function ...
     :param value:
     :param delimiter:
+    :param kwargs:
     :return: 
     """
 
@@ -164,7 +167,7 @@ def stringify_list(value, delimiter=","):
     for entry in value:
 
         #parsetype, val = stringify_not_list(entry)
-        parsetype, val = stringify(entry)
+        parsetype, val = stringify(entry, **kwargs)
 
         if ptype is None: ptype = parsetype
         elif ptype != parsetype:
@@ -194,12 +197,13 @@ def stringify_list(value, delimiter=","):
 
 # -----------------------------------------------------------------
 
-def stringify_dict(value, delimiter=","):
+def stringify_dict(value, delimiter=",", **kwargs):
 
     """
     This function ...
     :param value:
     :param delimiter:
+    :param kwargs:
     :return: 
     """
 
@@ -216,7 +220,7 @@ def stringify_dict(value, delimiter=","):
     # Loop over the dictionary keys
     for key in value:
 
-        ktype, kstring = stringify(key)
+        ktype, kstring = stringify(key, **kwargs)
 
         # Add key type
         keytypes.add(ktype)
@@ -227,7 +231,7 @@ def stringify_dict(value, delimiter=","):
 
         v = value[key]
 
-        vtype, vstring = stringify(v)
+        vtype, vstring = stringify(v, **kwargs)
 
         # Add value type
         ptypes.add(vtype)
@@ -263,16 +267,17 @@ def stringify_dict(value, delimiter=","):
 
 # -----------------------------------------------------------------
 
-def stringify_array(value, delimiter=","):
+def stringify_array(value, delimiter=",", **kwargs):
 
     """
     This function ...
     :param value:
     :param delimiter:
+    :param kwargs:
     :return: 
     """
 
-    ptype, val = stringify_not_list(value[0])
+    ptype, val = stringify_not_list(value[0], **kwargs)
     return ptype + "_array", delimiter.join([repr(el) for el in value])
 
     #ptype, val = stringify_not_list(value[0])
@@ -280,12 +285,13 @@ def stringify_array(value, delimiter=","):
 
 # -----------------------------------------------------------------
 
-def stringify_tuple(value, delimiter=","):
+def stringify_tuple(value, delimiter=",", **kwargs):
 
     """
     This function ...
     :param value:
     :param delimiter:
+    :param kwargs:
     :return: 
     """
 
@@ -293,7 +299,7 @@ def stringify_tuple(value, delimiter=","):
     ptype = None
     for entry in value:
 
-        parsetype, val = stringify_not_list(entry)
+        parsetype, val = stringify_not_list(entry, **kwargs)
 
         if ptype is None:
             ptype = parsetype
@@ -306,7 +312,7 @@ def stringify_tuple(value, delimiter=","):
 
 # -----------------------------------------------------------------
 
-def stringify_not_list(value, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False):
+def stringify_not_list(value, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False, **kwargs):
 
     """
     This function does stringify, but not for iterables
@@ -316,23 +322,24 @@ def stringify_not_list(value, scientific=False, decimal_places=2, fancy=False, n
     :param fancy:
     :param ndigits:
     :param unicode:
+    :param kwargs:
     :return:
     """
 
     # Standard
-    if types.is_boolean_type(value): return "boolean", str_from_bool(value)
-    elif types.is_integer_type(value): return "integer", str_from_integer(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits)
-    elif types.is_real_type(value): return "real", str_from_real(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits)
+    if types.is_boolean_type(value): return "boolean", str_from_bool(value, **kwargs)
+    elif types.is_integer_type(value): return "integer", str_from_integer(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, **kwargs)
+    elif types.is_real_type(value): return "real", str_from_real(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, **kwargs)
     elif types.is_string_type(value): return "string", value
     elif types.is_none(value): return "None", "None"
 
     # Special
-    elif introspection.lazy_isinstance(value, "UnitBase", "astropy.units"): return introspection.lazy_call("stringify_unit", "pts.core.units.stringify", value)
-    elif introspection.lazy_isinstance(value, "Quantity", "astropy.units"): return introspection.lazy_call("stringify_quantity", "pts.core.units.stringify", value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits)
-    elif introspection.lazy_isinstance(value, "Angle", "astropy.coordinates"): return "angle", str_from_angle(value)
-    elif introspection.lazy_isinstance(value, "RealRange", "pts.core.basics.range"): return "real_range", str_from_real_range(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode)
-    elif introspection.lazy_isinstance(value, "IntegerRange", "pts.core.basics.range"): return "integer_range", str_from_integer_range(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode)
-    elif introspection.lazy_isinstance(value, "QuantityRange", "pts.core.basics.range"): return "quantity_range", introspection.lazy_call("str_from_quantity_range", "pts.core.units.stringify", value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode)
+    elif introspection.lazy_isinstance(value, "UnitBase", "astropy.units"): return introspection.lazy_call("stringify_unit", "pts.core.units.stringify", value, **kwargs)
+    elif introspection.lazy_isinstance(value, "Quantity", "astropy.units"): return introspection.lazy_call("stringify_quantity", "pts.core.units.stringify", value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, **kwargs)
+    elif introspection.lazy_isinstance(value, "Angle", "astropy.coordinates"): return "angle", str_from_angle(value, **kwargs)
+    elif introspection.lazy_isinstance(value, "RealRange", "pts.core.basics.range"): return "real_range", str_from_real_range(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode, **kwargs)
+    elif introspection.lazy_isinstance(value, "IntegerRange", "pts.core.basics.range"): return "integer_range", str_from_integer_range(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode, **kwargs)
+    elif introspection.lazy_isinstance(value, "QuantityRange", "pts.core.basics.range"): return "quantity_range", introspection.lazy_call("str_from_quantity_range", "pts.core.units.stringify", value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode, **kwargs)
     elif introspection.lazy_isinstance(value, "SkyCoordinate", "pts.magic.basics.coordinate"): return "skycoordinate", repr(value.ra.value) + " " + str(value.ra.unit) + "," + repr(value.dec.value) + " " + str(value.dec.unit)
     elif introspection.lazy_isinstance(value, "SkyStretch", "pts.magic.basics.stretch"): return "skystretch", repr(value.ra.value) + " " + str(value.ra.unit) + "," + repr(value.dec.value) + " " + str(value.dec.unit)
     elif introspection.lazy_isinstance(value, "NarrowBandFilter", "pts.core.filter.narrow"): return "narrow_band_filter", str(value)
@@ -417,7 +424,7 @@ def stringify_paths(paths, base=None):
 
 # -----------------------------------------------------------------
 
-def str_from_integer(integer, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False):
+def str_from_integer(integer, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False, **kwargs):
 
     """
     This function ...
@@ -427,6 +434,7 @@ def str_from_integer(integer, scientific=False, decimal_places=2, fancy=False, n
     :param fancy:
     :param ndigits:
     :param unicode:
+    :param kwargs:
     :return:
     """
 
@@ -458,7 +466,7 @@ def str_from_integer(integer, scientific=False, decimal_places=2, fancy=False, n
 
 # -----------------------------------------------------------------
 
-def str_from_integer_range(the_range, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False):
+def str_from_integer_range(the_range, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False, **kwargs):
 
     """
     Thi function ...
@@ -468,17 +476,18 @@ def str_from_integer_range(the_range, scientific=False, decimal_places=2, fancy=
     :param fancy:
     :param ndigits:
     :param unicode:
+    :param kwargs:
     :return:
     """
 
-    min_str = str_from_integer(the_range.min, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode)
-    max_str = str_from_integer(the_range.max, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode)
+    min_str = str_from_integer(the_range.min, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode, **kwargs)
+    max_str = str_from_integer(the_range.max, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode, **kwargs)
 
     return min_str + " > " + max_str
 
 # -----------------------------------------------------------------
 
-def str_from_real(real, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False):
+def str_from_real(real, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False, **kwargs):
 
     """
     This function ...
@@ -487,6 +496,7 @@ def str_from_real(real, scientific=False, decimal_places=2, fancy=False, ndigits
     :param decimal_places:
     :param fancy:
     :param ndigits:
+    :param kwargs:
     :return:
     """
 
@@ -529,7 +539,7 @@ def str_from_real(real, scientific=False, decimal_places=2, fancy=False, ndigits
 
 # -----------------------------------------------------------------
 
-def str_from_real_range(the_range, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False):
+def str_from_real_range(the_range, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False, **kwargs):
 
     """
     This function ...
@@ -539,11 +549,12 @@ def str_from_real_range(the_range, scientific=False, decimal_places=2, fancy=Fal
     :param fancy:
     :param ndigits:
     :param unicode:
+    :param kwargs:
     :return:
     """
 
-    min_str = str_from_real(the_range.min, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode)
-    max_str = str_from_real(the_range.max, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode)
+    min_str = str_from_real(the_range.min, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode, **kwargs)
+    max_str = str_from_real(the_range.max, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode, **kwargs)
 
     return min_str + " > " + max_str
 
@@ -578,14 +589,15 @@ def str_from_bool(boolean, lower=False):
 
 # -----------------------------------------------------------------
 
-def str_from_angle(angle):
+def str_from_angle(angle, **kwargs):
 
     """
     This function ...
     :param angle:
+    :param kwargs:
     :return:
     """
 
-    return repr(angle.value) + " " + str(angle.unit).replace(" ", "")
+    return str_from_real(angle.value, **kwargs) + " " + str(angle.unit).replace(" ", "")
 
 # -----------------------------------------------------------------

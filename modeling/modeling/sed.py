@@ -17,7 +17,7 @@ from __future__ import absolute_import, division, print_function
 from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log, unset_log_file
+from ...core.tools.logging import log
 from ..fitting.configuration import FittingConfigurer
 from ..fitting.initialization.sed import SEDFittingInitializer
 from .base import ModelerBase
@@ -217,13 +217,7 @@ class SEDModeler(ModelerBase):
         builder = SEDModelBuilder(config=config)
 
         # Set log path
-        self.set_log_path_for_component(builder)
-
-        # Run
-        with self.history.register(builder): builder.run()
-
-        # Unset log path
-        unset_log_file()
+        with self.write_log(builder), self.history.register(builder): builder.run()
 
     # -----------------------------------------------------------------
 
@@ -246,13 +240,7 @@ class SEDModeler(ModelerBase):
         builder = SEDRepresentationBuilder(config=config)
 
         # Set log path
-        self.set_log_path_for_component(builder)
-
-        # Run
-        with self.history.register(builder): builder.run()
-
-        # Unset log path
-        unset_log_file()
+        with self.write_log(builder), self.history.register(builder): builder.run()
 
     # -----------------------------------------------------------------
 
@@ -276,17 +264,14 @@ class SEDModeler(ModelerBase):
         sed = get_observed_sed(self.modeling_path)
         plotter.add_sed(sed, "Observations")
 
-        # Run the plotter
-        plotter.run(output=get_sed_plot_path(self.modeling_path))
-
         # Set log path
-        self.set_log_path_for_component(plotter)
+        with self.write_log(plotter):
+
+            # Run the plotter
+            plotter.run(output=get_sed_plot_path(self.modeling_path))
 
         # Mark the end and save the history file
         self.history.mark_end_and_save()
-
-        # Unset log path
-        unset_log_file()
 
     # -----------------------------------------------------------------
 
@@ -354,20 +339,14 @@ class SEDModeler(ModelerBase):
         # Set the working directory
         configurer.config.path = self.modeling_path
 
-        # Set log path
-        self.set_log_path_for_component(configurer)
-
         # Run the fitting configurer
-        with self.history.register(configurer):
+        with self.write_log(configurer), self.history.register(configurer):
 
             # Run
             configurer.run(descriptions_config=self.descriptions_config, types_config=self.types_config,
             units_config=self.units_config, ndigits_config=self.ndigits_config,
             ranges_config=self.ranges_config, filters_config=self.filters_config,
             genetic_config=self.genetic_config, grid_config=self.grid_config, settings=self.config.fitting_settings)
-
-        # Unset log path
-        unset_log_file()
 
         # Set the parameter ranges
         if self.ranges_config is not None:
@@ -451,14 +430,8 @@ class SEDModeler(ModelerBase):
 
         # OPTIONS FOR THE DUST GRID NOT RELEVANT FOR SED MODELING (YET)
 
-        # Set log path
-        self.set_log_path_for_component(initializer)
-
         # Run the fitting initializer
-        with self.history.register(initializer): initializer.run()
-
-        # Unset log path
-        unset_log_file()
+        with self.write_log(initializer), self.history.register(initializer): initializer.run()
 
     # -----------------------------------------------------------------
 

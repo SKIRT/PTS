@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from .component import MapsComponent
-from ...magic.maps.ssfr.colours import ColoursSSFRMapsMaker
+from ...magic.maps.ssfr.colours import ColoursSSFRMapsMaker, ssfr_colours
 
 # -----------------------------------------------------------------
 
@@ -35,6 +35,9 @@ class SSFRMapMaker(MapsComponent):
 
         # Call the constructor of the base class
         super(SSFRMapMaker, self).__init__(*args, **kwargs)
+
+        # The colour maps
+        self.colours = dict()
 
         # THe maps
         self.maps = dict()
@@ -63,6 +66,9 @@ class SSFRMapMaker(MapsComponent):
         # 1. Call the setup function
         self.setup()
 
+        # Load the colour maps
+        self.load_colours()
+
         # 2. Make SSFR maps based on colours
         self.make_ssfr_colours()
 
@@ -84,6 +90,31 @@ class SSFRMapMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    def load_colours(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the colour maps ...")
+
+        # Loop over the possible colours for tracing sSFR
+        for colour in ssfr_colours:
+
+            colour_map = self.get_colour_map(colour)
+
+            # Check if found
+            if colour_map is None:
+                log.warning("Could not find a '" + colour + "' colour map")
+                continue
+
+            # Add the colour map
+            self.colours[colour] = colour_map
+
+    # -----------------------------------------------------------------
+
     def make_ssfr_colours(self):
 
         """
@@ -98,7 +129,7 @@ class SSFRMapMaker(MapsComponent):
         maker = ColoursSSFRMapsMaker()
 
         # Run the maker
-        maker.run()
+        maker.run(colours=self.colours)
 
         # Get the maps
         self.maps = maker.maps

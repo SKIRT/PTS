@@ -370,6 +370,19 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_colour_map(self, colour):
+
+        """
+        This function ...
+        :param colour:
+        :return:
+        """
+
+        fltr_a, fltr_b = get_filters_for_colour(colour)
+        return self.get_colour_map_for_filters(fltr_a, fltr_b)
+
+    # -----------------------------------------------------------------
+
     def has_frame_for_filter(self, fltr):
 
         """
@@ -378,7 +391,11 @@ class MapsComponent(GalaxyModelingComponent):
         :return: 
         """
 
-        return self.dataset.has_frame_for_filter(fltr)
+        # OLD
+        #return self.dataset.has_frame_for_filter(fltr)
+
+        # NEW
+        return fltr in self.frame_list.filters
 
     # -----------------------------------------------------------------
 
@@ -390,7 +407,11 @@ class MapsComponent(GalaxyModelingComponent):
         :return: 
         """
 
-        return self.dataset.get_frame_for_filter(fltr)
+        # OLD
+        #return self.dataset.get_frame_for_filter(fltr)
+
+        # NEW
+        return self.frame_list[fltr]
 
     # -----------------------------------------------------------------
 
@@ -402,7 +423,11 @@ class MapsComponent(GalaxyModelingComponent):
         :return: 
         """
 
-        return self.dataset.has_errormap_for_filter(fltr)
+        # OLD
+        #return self.dataset.has_errormap_for_filter(fltr)
+
+        # NEW
+        return fltr in self.errormap_list.filters
 
     # -----------------------------------------------------------------
 
@@ -414,7 +439,11 @@ class MapsComponent(GalaxyModelingComponent):
         :return: 
         """
 
-        return self.dataset.get_errormap_for_filter(fltr)
+        # OLD
+        #return self.dataset.get_errormap_for_filter(fltr)
+
+        # NEW
+        return self.errormap_list[fltr]
 
     # -----------------------------------------------------------------
 

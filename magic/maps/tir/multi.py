@@ -20,6 +20,7 @@ from ....magic.calibrations.galametz import GalametzTIRCalibration
 from ....core.tools import sequences
 from ....core.basics.configurable import Configurable
 from ....magic.core.list import FrameList
+from ....core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -186,12 +187,20 @@ class MultiBandTIRMapMaker(Configurable):
             # Check if the combination if possible
             if not self.galametz.has_combination_multi_brightness(*filters): continue
 
+            # Debugging
+            log.debug("Making a TIR map with the filters " + tostr(filters) + " ...")
+
             # Get the parameters
             coefficients = self.galametz.get_parameters_multi_brightness(*filters)
+
+            # Debugging
+            log.debug("The calibration coefficients are " + tostr(coefficients) + " ...")
 
             # Get the frames
             frames = []
             for fltr in filters:
+
+                #print(self.frames[fltr].unit)
 
                 # Convert the frame to neutral intrinsic surface brightness and add it to the list
                 frame = self.frames[fltr].converted_to("W/kpc2", density=True, brightness=True, density_strict=True,

@@ -862,6 +862,18 @@ class FrameList(FilterBasedList):
     # -----------------------------------------------------------------
 
     @property
+    def filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.keys
+
+    # -----------------------------------------------------------------
+
+    @property
     def frames(self): # an alias for the contents for this subclass
 
         """
@@ -1633,14 +1645,20 @@ class ImageList(FilterBasedList):
     This class ...
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
 
         """
         THe constructor ...
+        :param args:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
         super(ImageList, self).__init__()
+
+        # Add frames
+        for image in args: self.append(image)
+        for filter_name in kwargs: self.append(kwargs[filter_name], fltr=parse_filter(filter_name))
 
     # -----------------------------------------------------------------
 
@@ -1659,19 +1677,22 @@ class ImageList(FilterBasedList):
 
     # -----------------------------------------------------------------
 
-    def append(self, image):
+    def append(self, image, fltr=None):
 
         """
         This function ...
-        :param image: 
+        :param image:
+        :param fltr:
         :return: 
         """
 
+        fltr = fltr if fltr is not None else image.filter
+
         # Check keys
-        if image.fltr in self.images: raise ValueError("Already an image for the '" + str(image.filter) + "' filter")
+        if fltr in self.images: raise ValueError("Already an image for the '" + str(fltr) + "' filter")
 
         # Call the function of the base class
-        super(ImageList, self).append(image.filter, image)
+        super(ImageList, self).append(fltr, image)
 
     # -----------------------------------------------------------------
 

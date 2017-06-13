@@ -15,6 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import copy
 
+# Import astronomical modules
+from astropy.io.fits import Header
+
 # Import the relevant PTS classes and modules
 from ..basics.layers import Layers
 from ..region.list import PixelRegionList
@@ -23,7 +26,8 @@ from .mask import Mask as newMask
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from .frame import Frame, sum_frames
-from ...core.tools import types
+from ...core.tools.stringify import tostr
+from ...core.units.unit import PhotometricUnit
 
 # -----------------------------------------------------------------
 
@@ -659,7 +663,7 @@ class Image(object):
 
         # Create a header from the wcs
         if self.wcs is not None: header = self.wcs.to_header() # Create a header from the coordinate system
-        else: header = fits.Header() # Construct a new header
+        else: header = Header() # Construct a new header
 
         # Get the names of the frames
         frame_names = self.frames.keys()
@@ -1025,8 +1029,11 @@ class Image(object):
         :param brightness_strict:
         """
 
+        # Parse "to unit": VERY IMPORTANT, BECAUSE DOING SELF.UNIT = TO_UNIT WILL OTHERWISE REPARSE AND WILL BE OFTEN INCORRECT!! (NO DENSITY OR BRIGHTNESS INFO)
+        to_unit = PhotometricUnit(to_unit, density=density, brightness=brightness, brightness_strict=brightness_strict, density_strict=density_strict)
+
         # Inform the user
-        log.debug("Converting the unit of the image from " + str(self.unit) + " to " + str(to_unit) + " ...")
+        log.debug("Converting the unit of the image from " + tostr(self.unit, add_physical_type=True) + " to " + tostr(to_unit, add_physical_type=True) + " ...")
 
         # Calculate the conversion factor
         factor = self.unit.conversion_factor(to_unit, density=density, fltr=self.filter, pixelscale=self.pixelscale,

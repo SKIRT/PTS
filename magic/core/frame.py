@@ -45,6 +45,7 @@ from ..convolution.kernels import get_fwhm, has_variable_fwhm
 from ...core.tools import types
 from ...core.units.parsing import parse_unit as u
 from ..basics.vector import PixelShape
+from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -1085,8 +1086,16 @@ class Frame(NDDataArray):
         :param distance:
         :param density:
         :param brightness:
+        :param density_strict:
+        :param brightness_strict:
         :return:
         """
+
+        # Parse "to unit": VERY IMPORTANT, BECAUSE DOING SELF.UNIT = TO_UNIT WILL OTHERWISE REPARSE AND WILL BE OFTEN INCORRECT!! (NO DENSITY OR BRIGHTNESS INFO)
+        to_unit = PhotometricUnit(to_unit, density=density, brightness=brightness, brightness_strict=brightness_strict, density_strict=density_strict)
+
+        # Debugging
+        log.debug("Converting the frame from unit " + tostr(self.unit, add_physical_type=True) + " to unit " + tostr(to_unit, add_physical_type=True) + " ...")
 
         # Calculate the conversion factor
         factor = self.unit.conversion_factor(to_unit, wavelength=self.pivot_wavelength_or_wavelength, distance=distance,
@@ -2074,7 +2083,7 @@ def linear_combination(frames, coefficients):
     :return: 
     """
 
-    return sum_frames([coefficients * frame for frame in frames])
+    return sum_frames(*[coefficient * frame for coefficient, frame in zip(coefficients, frames)])
 
 # -----------------------------------------------------------------
 

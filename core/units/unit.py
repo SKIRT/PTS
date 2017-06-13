@@ -25,7 +25,7 @@ from astropy import constants
 # Import the relevant PTS classes and modules
 from ...magic.basics.pixelscale import Pixelscale
 from .quantity import PhotometricQuantity
-from .utils import analyse_unit, divide_units_reverse, clean_unit_string
+from .utils import analyse_unit, divide_units_reverse, clean_unit_string, get_physical_type, interpret_physical_type
 from .parsing import parse_unit, parse_quantity
 from ..tools import types
 from ..tools.logging import log
@@ -138,8 +138,18 @@ class PhotometricUnit(CompositeUnit):
         # Already a photometric unit
         if isinstance(unit, PhotometricUnit):
 
+            # Set flags
             self.density = unit.density
             self.brightness = unit.brightness
+
+            # Check density and brightness flag with what was passed
+            if density_strict:
+                if self.density and not density: raise ValueError("Unit passed was spectral density but density=False and density_strict=True")
+                if not self.density and density: raise ValueError("Unit passed was not spectral density but density")
+            if brightness_strict:
+                if self.brightness and not brightness: raise ValueError("Unit passed was brightness but brightness=False and brightness_strict=True")
+                if not self.brightness and brightness: raise ValueError("Unit passed was not brightness but brightness=True and brightness_strict=True")
+
             self.scale_factor = unit.scale_factor
             self.base_unit = unit.base_unit
             self.wavelength_unit = unit.wavelength_unit
@@ -152,7 +162,25 @@ class PhotometricUnit(CompositeUnit):
         else:
 
             # Clean unit string
-            if types.is_string_type(unit): unit = clean_unit_string(unit)
+            if types.is_string_type(unit):
+                physical_type = get_physical_type(unit)
+                unit = clean_unit_string(unit)
+            else: physical_type = None
+
+            # Check whether physical type string is compatible with function arguments
+            if physical_type is not None:
+                found_density, found_brightness = interpret_physical_type(physical_type)
+                if density_strict:
+                    if found_density and not density: raise ValueError("Unit string passed indicated a spectral density but density=False and density_strict=True")
+                    if not found_density and density: raise ValueError("Unit string passed indicated not a spectral density but density=True and density_strict=True")
+                if brightness_strict:
+                    if found_brightness and not brightness: raise ValueError("Unit string passed indicated a surface brightness but brightness=False and brightness_strict=True")
+                    if not found_brightness and brightness: raise ValueError("Unit string passed indicated not a surface brightness but brightness=True and brightness_strict=True")
+                # WE ARE SURE, AND CHECKS PASSED, SO ...
+                density = found_density
+                brightness = found_brightness
+                density_strict = True
+                brightness_strict = True
 
             # Parse the unit
             try: unit = Unit(unit)

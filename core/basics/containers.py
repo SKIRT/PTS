@@ -619,6 +619,84 @@ class FilterBasedList(KeyList):
 
 # -----------------------------------------------------------------
 
+class FileList(KeyList):
+
+    """
+    This class ...
+    :return:
+    """
+
+    def __init__(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(FileList, self).__init__()
+
+        # Add
+        for key in kwargs: self.append(key, kwargs[key])
+
+    # -----------------------------------------------------------------
+
+    def append(self, key, path):
+
+        """
+        This function ...
+        :param key:
+        :param path:
+        :return:
+        """
+
+        # Check whether file path
+        if not fs.is_file(path): raise ValueError("Not an existing file")
+
+        if key in self.keys: raise ValueError("Already a path with the key '" + str(key) + "'")
+        self.contents[key] = path
+
+# -----------------------------------------------------------------
+
+class DirectoryList(KeyList):
+
+    """
+    This class ...
+    :return:
+    """
+
+    def __init__(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(DirectoryList, self).__init__()
+
+        # add the paths
+        for key in kwargs: self.append(key, kwargs[key])
+
+    # -----------------------------------------------------------------
+
+    def append(self, key, path):
+
+        """
+        This function ...
+        :param key:
+        :param path:
+        :return:
+        """
+
+        # Check whether file path
+        if not fs.is_directory(path): raise ValueError("Not an existing directory")
+
+        if key in self.keys: raise ValueError("Already a path with the key '" + str(key) + "'")
+        self.contents[key] = path
+
+# -----------------------------------------------------------------
+
 class NamedList(KeyList):
 
     """
@@ -805,6 +883,21 @@ class NamedFileList(NamedList):
     :return: 
     """
 
+    def __init__(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(NamedFileList, self).__init__()
+
+        # Add the paths
+        for name in kwargs: self.append(name, kwargs[name])
+
+    # -----------------------------------------------------------------
+
     def append(self, name, path):
 
         """
@@ -828,6 +921,21 @@ class NamedDirectoryList(NamedList):
     This class ... 
     :return: 
     """
+
+    def __init__(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(NamedDirectoryList, self).__init__()
+
+        # Add the paths
+        for name in kwargs: self.append(name, kwargs[name])
+
+    # -----------------------------------------------------------------
 
     def append(self, name, path):
 
