@@ -121,7 +121,7 @@ def setup_log(level="INFO", path=None, memory=False):
 
     log.setLevel(level)
 
-    if path is not None: set_log_file(path)
+    if path is not None: add_log_file(path)
 
     # Memory logging
     if memory: pass
@@ -130,7 +130,7 @@ def setup_log(level="INFO", path=None, memory=False):
 
 # -----------------------------------------------------------------
 
-def set_log_file(path, level="DEBUG"):
+def add_log_file(path, level="DEBUG"):
 
     """
     This function ...
@@ -151,22 +151,148 @@ def set_log_file(path, level="DEBUG"):
     # Add the handler to the log instance
     log.addHandler(fh)
 
+    # Return the handler
+    return fh
+
 # -----------------------------------------------------------------
 
-def unset_log_file():
+def remove_log_file(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    fh = get_handler(path)
+    remove_filehandler(fh)
+
+# -----------------------------------------------------------------
+
+def remove_filehandler(fh):
+
+    """
+    This function ...
+    :param fh:
+    :return:
+    """
+
+    log.removeHandler(fh)
+
+# -----------------------------------------------------------------
+
+def remove_all_log_files():
 
     """
     This function ...
     :return: 
     """
 
-    #log.removeHandler(fh)
-    #log.handlers = []
-
-    #log.handlers = [h for h in log.handlers if isinstance(h, logging.StreamHandler)]
-
     # Remove all file handlers, but keep the others
     log.handlers = [h for h in log.handlers if not isinstance(h, logging.FileHandler)]
+
+# -----------------------------------------------------------------
+
+def get_filehandlers():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return [h for h in log.handlers if isinstance(h, logging.FileHandler)]
+
+# -----------------------------------------------------------------
+
+def get_handler(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    for fh in get_filehandlers():
+        if get_filepath(fh) == path: return fh
+    return None
+
+# -----------------------------------------------------------------
+
+def get_filepath(fh):
+
+    """
+    This function ...
+    :param fh:
+    :return:
+    """
+
+    return fh.baseFilename
+
+# -----------------------------------------------------------------
+
+def get_filepaths():
+
+    """
+    This function ...
+    :return:
+    """
+
+    paths = []
+
+    for fh in log.handlers:
+        if not isinstance(fh, logging.FileHandler): continue
+        paths.append(get_filepath(fh))
+
+    return paths
+
+# -----------------------------------------------------------------
+
+class write_log_to(object):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, filename, level="INFO"):
+
+        """
+        This function ...
+        :param filename:
+        :param level:
+        :return:
+        """
+
+        self.filename = filename
+        self.level = level
+        self.fh = None
+
+    # -----------------------------------------------------------------
+
+    def __enter__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Add handler
+        self.fh = add_log_file(self.filename, level=self.level)
+
+    # -----------------------------------------------------------------
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+
+        """
+        This function ...
+        :param exc_type:
+        :param exc_val:
+        :param exc_tb:
+        :return:
+        """
+
+        # Remove the handler
+        remove_filehandler(self.fh)
+        self.fh = None
 
 # -----------------------------------------------------------------
 

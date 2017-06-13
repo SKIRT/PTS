@@ -21,7 +21,7 @@ from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
-from ...core.tools.logging import log, set_log_file, unset_log_file
+from ...core.tools.logging import log, add_log_file, write_log_to
 from ...core.tools import filesystem as fs
 from ..fitting.explorer import ParameterExplorer
 from ..fitting.sedfitting import SEDFitter
@@ -268,7 +268,7 @@ class ModelerBase(Configurable):
 
     # -----------------------------------------------------------------
 
-    def set_log_path_for_component(self, cls_or_instance):
+    def add_log_path(self, cls_or_instance):
 
         """
         This function ...
@@ -276,7 +276,19 @@ class ModelerBase(Configurable):
         :return:
         """
 
-        set_log_file(self.log_path_for_component(cls_or_instance))
+        add_log_file(self.log_path_for_component(cls_or_instance))
+
+    # -----------------------------------------------------------------
+
+    def write_log(self, cls_or_instance):
+
+        """
+        This function ...
+        :param cls_or_instance:
+        :return:
+        """
+
+        return write_log_to(self.log_path_for_component(cls_or_instance))
 
     # -----------------------------------------------------------------
 
