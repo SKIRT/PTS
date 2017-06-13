@@ -2056,6 +2056,7 @@ def sum_frames(*args):
 
     #arrays = [np.array(arg) for arg in args] # how it used to be
     arrays = [arg.data for arg in args]
+    #print(arrays)
     return Frame(np.sum(arrays, axis=0))
 
 # -----------------------------------------------------------------
@@ -2083,7 +2084,8 @@ def linear_combination(frames, coefficients):
     :return: 
     """
 
-    return sum_frames(*[coefficient * frame for coefficient, frame in zip(coefficients, frames)])
+    #print(coefficients)
+    return sum_frames(*[frame*coefficient for coefficient, frame in zip(coefficients, frames)])
 
 # -----------------------------------------------------------------
 

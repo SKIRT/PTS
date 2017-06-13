@@ -134,6 +134,9 @@ class SSFRMapMaker(MapsComponent):
         # Get the maps
         self.maps = maker.maps
 
+        # Get the origins
+        self.origins = maker.origins
+
     # -----------------------------------------------------------------
 
     def write(self):

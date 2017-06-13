@@ -343,7 +343,9 @@ class KeyList(object):
             return new
 
         # Tuple 'list[a,b,c]'
-        elif isinstance(index_or_key, tuple):
+        elif isinstance(index_or_key, tuple) or isinstance(index_or_key, list):
+
+            #print("HERE")
 
             new = self.__class__()
             for i_or_k in index_or_key:
@@ -738,7 +740,7 @@ class NamedList(KeyList):
             return new
 
         # Tuple 'list[a,b,c]'
-        elif isinstance(index_or_name, tuple):
+        elif isinstance(index_or_name, tuple) or isinstance(index_or_name, list):
 
             new = self.__class__()
             for i_or_n in index_or_name:

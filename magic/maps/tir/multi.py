@@ -197,15 +197,33 @@ class MultiBandTIRMapMaker(Configurable):
             log.debug("The calibration coefficients are " + tostr(coefficients) + " ...")
 
             # Get the frames
-            frames = []
-            for fltr in filters:
-
-                #print(self.frames[fltr].unit)
-
+            #frames = []
+            #for fltr in filters:
                 # Convert the frame to neutral intrinsic surface brightness and add it to the list
-                frame = self.frames[fltr].converted_to("W/kpc2", density=True, brightness=True, density_strict=True,
-                                                       brightness_strict=True, distance=self.distance)
-                frames.append(frame)
+                #frame = self.frames[fltr].converted_to("W/kpc2", density=True, brightness=True, density_strict=True,
+                #                                       brightness_strict=True, distance=self.distance)
+                #frames.append(frame)
+
+            #print(self.frames)
+            #print("filters", filters, type(filters))
+
+            # Create frame list
+            #frames = FrameList(self.frames[fltr_a], self.frames[fltr_b])
+            frames = self.frames[filters] # get sub list
+
+            #print(frames)
+
+            # Convolve
+            frames.convolve_to_highest_fwhm()
+
+            # Rebin the frames to the same pixelgrid
+            frames.rebin_to_highest_pixelscale()
+
+            # Convert the frames to the same unit
+            frames.convert_to_same_unit(unit="W/kpc2", density=True, brightness=True, density_strict=True, brightness_strict=True, distance=self.distance)
+
+            # Get the frames
+            #frame_a, frame_b = frames[0], frames[1]
 
             # Calculate the TIR
             tir = linear_combination(frames, coefficients)
@@ -215,11 +233,14 @@ class MultiBandTIRMapMaker(Configurable):
             # Determine keys
             combination = tuple([str(fltr) for fltr in filters])
 
+            # Convert key to string
+            key = tostr(combination)
+
             # Set the TIR map
-            self.maps[combination] = tir
+            self.maps[key] = tir
 
             # Set the origins
-            self.maps[combination] = filters
+            self.maps[key] = filters
 
     # -----------------------------------------------------------------
 

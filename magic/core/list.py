@@ -2120,7 +2120,7 @@ def rebin_to_pixelscale(*frames, **kwargs):
                 ratio = highest_pixelscale_wcs.pixelarea / frame.wcs.pixelarea
 
                 # Debugging
-                log.debug("Rebinning frame " + name + " and multiplying with a factor of " + str(ratio) + " to correct for the changing pixelscale ...")
+                log.debug("Rebinning frame " + name + "and multiplying with a factor of " + str(ratio) + " to correct for the changing pixelscale ...")
 
                 # Rebin and multiply
                 rebinned = frame.rebinned(highest_pixelscale_wcs)
@@ -2244,7 +2244,7 @@ def convolve_to_fwhm(*frames, **kwargs):
         if frame.psf_filter == highest_fwhm_filter:
 
             # Debugging
-            log.debug("Frame '" + names[index] + "' has highest FWHM of " + str(highest_fwhm) + " and is not convolved")
+            log.debug("Frame " + name + "has highest FWHM of " + str(highest_fwhm) + " and will not be convolved")
 
             # Add a copy of the frame
             new_frames.append(frame.copy())
@@ -2253,7 +2253,7 @@ def convolve_to_fwhm(*frames, **kwargs):
         else:
 
             # Debugging
-            log.debug("Frame " + name + " is convolved to a PSF with FWHM = " + str(highest_fwhm) + " ...")
+            log.debug("Frame " + name + "is convolved to a PSF with FWHM = " + str(highest_fwhm) + " ...")
 
             # Get the kernel, either from aniano or from matching kernels
             if aniano.has_kernel_for_filters(frame.psf_filter, highest_fwhm_filter): kernel = aniano.get_kernel(frame.psf_filter, highest_fwhm_filter, from_fwhm=frame.fwhm, to_fwhm=highest_fwhm)

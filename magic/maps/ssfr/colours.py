@@ -60,11 +60,15 @@ class ColoursSSFRMapsMaker(Configurable):
         # Call the constructor of the base class
         super(ColoursSSFRMapsMaker, self).__init__(*args, **kwargs)
 
-        # The colour maps
+        # Input
         self.colours = dict()
+        self.colours_origins = None
 
         # The sSFR maps
         self.maps = dict()
+
+        # The origins
+        self.origins = dict()
 
     # -----------------------------------------------------------------
 
@@ -98,6 +102,21 @@ class ColoursSSFRMapsMaker(Configurable):
         # Get the colours
         self.colours = kwargs.pop("colours")
 
+        # Get origins
+        self.colours_origins = kwargs.pop("colours_origins", None)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.colours_origins is not None
+
     # -----------------------------------------------------------------
 
     def make_maps(self):
@@ -118,5 +137,13 @@ class ColoursSSFRMapsMaker(Configurable):
 
             # Set as sSFR map
             self.maps[colour] = colour_map
+
+            # Set origin
+            # Set the origins
+            if self.has_origins:
+
+                # Set the origins
+                origins = self.colours_origins[colour]
+                self.origins[colour] = origins
 
 # -----------------------------------------------------------------
