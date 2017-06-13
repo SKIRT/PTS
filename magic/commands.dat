@@ -31,9 +31,9 @@ subtract_sky | -- | sky.skysubtractor.SkySubtractor | arguments | Run automatic 
 make_colour_maps | -- | maps.colour.colour.ColourMapsMaker | arguments | Make colour maps
 
 # DUST MAPS
-make_dust_attenuation_maps | -- | maps.dust.cortese.CorteseDustMapMaker | arguments | Make dust map based on Cortese calibrations
-make_dust_emission_maps | -- | maps.dust.emission.EmissionDustMapMaker | arguments | Make dust map based on emission in a certain band
-make_dust_blackbody_maps | -- | maps.dust.blackbody.BlackBodyDustMapMaker | arguments | Make dust map based on black-body fitting
+make_dust_maps_attenuation | -- | maps.dust.cortese.CorteseDustMapMaker | arguments | Make dust map based on Cortese calibrations
+make_dust_maps_emission | -- | maps.dust.emission.EmissionDustMapMaker | arguments | Make dust map based on emission in a certain band
+make_dust_maps_blackbody | -- | maps.dust.blackbody.BlackBodyDustMapMaker | arguments | Make dust map based on black-body fitting
 make_hot_dust_maps | -- | maps.dust.hot.HotDustMapsMaker | arguments | Make map of hot dust
 
 # IONIZING STARS MAPS
@@ -48,8 +48,8 @@ make_old_total_maps | -- | maps.oldstars.total.TotalOldStellarMapMaker | argumen
 make_colours_ssfr_maps | -- | maps.ssfr.colours.ColoursSSFRMapsMaker | arguments | make sSFR maps based on colours
 
 # TIR MAPS
-make_singleband_tir | -- | maps.tir.single.SingleBandTIRMapMaker | arguments | Make TIR map based on single bands
-make_multiband_tir | -- | maps.tir.multi.MultiBandTIRMapMaker | arguments | Make TIR map based on multiple bands
+make_singleband_tir_maps | -- | maps.tir.single.SingleBandTIRMapMaker | arguments | Make TIR map based on single bands
+make_multiband_tir_maps | -- | maps.tir.multi.MultiBandTIRMapMaker | arguments | Make TIR map based on multiple bands
 
 # YOUNG STARS MAPS
 make_young_stars_maps | -- | maps.youngstars.young.YoungStellarMapsMaker | arguments | Make young stellar maps
