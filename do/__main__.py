@@ -63,7 +63,7 @@ parser.add_argument("--keep", action="store_true", help="keep the remote output"
 parser.add_argument("--input", type=str, help="the name/path of the input directory")
 parser.add_argument("--output", type=str, help="the name/path of the output directory")
 parser.add_argument("--input_files", type=parsing.string_tuple_dictionary, help="dictionary of (class_path, input_file_path) where the key is the input variable name")
-parser.add_argument("--output_files", type=parsing.string_string_dictionary, help="dictinoary of output file paths where the key is the variable (attribute) name")
+parser.add_argument("--output_files", type=parsing.string_string_dictionary, help="dictionary of output file paths where the key is the variable (attribute) name")
 parser.add_argument("options", nargs=argparse.REMAINDER, help="options for the specific do command")
 
 # -----------------------------------------------------------------

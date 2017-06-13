@@ -1,17 +1,31 @@
 # Command | Configuration | Class | Configuration method | Description
+
+# TOP-LEVEL MODELING
 setup | -- | modeling.setup.ModelingSetupTool | interactive | Setup a modeling directory for a certain galaxy
 model | -- | modeling.modeler.Modeler | arguments | Perform radiative transfer modeling
+
+# MISC
 info | -- | misc.info.InfoShower | arguments | Show information about the radiative transfer model
+
+# DATA
 fetch_properties | fetch | data.properties.PropertyFetcher | interactive | Fetch the galaxy properties
 fetch_seds | fetch_seds | data.seds.SEDFetcher | interactive | Fetch the galaxy SEDs
 fetch_images | fetch_images | data.images.ImageFetcher | interactive | Fetch the images from the DustPedia database
+inspect_data | -- | data.inspector.DataInspector | arguments | inspect the image data
+
+# PREPARATION
 initialize_preparation | -- | preparation.initialization.PreparationInitializer | interactive | Initialize the data for the radiative transfer modeling pipeline
 prepare_data | -- | preparation.preparer.DataPreparer | arguments | Do the preparation step of the SKIRT radiative transfer modeling procedure
-inspect_data | -- | data.inspector.DataInspector | arguments | inspect the image data
 inspect_preparation | -- | preparation.inspector.PreparationInspector | arguments | Inspect the prepared images
+
+# DECOMPOSITION
 decompose | -- | decomposition.decomposition.GalaxyDecomposer | arguments | Run the bulge-disk decomposition for the galaxy as part of the radiative transfer modeling
 decomposition_residuals | -- | decomposition.residuals.DecompositionResidualsCalculator | arguments | Calculate the residuals between the 3.6 micron image and the simulated bulge and disk images
+
+# TRUNCATION
 truncate | -- | truncation.truncation.Truncator | interactive | Determine the truncation region
+
+# MAPS
 make_colour_maps | -- | maps.colour.ColourMapMaker | arguments | Make colour maps
 make_ssfr_maps | -- | maps.ssfr.SSFRMapMaker | arguments | Make sSFR maps
 make_tir_maps | -- | maps.tir.TIRMapMaker | arguments | Make TIR map
@@ -21,8 +35,14 @@ make_young_stars_map | -- | maps.young.YoungStellarMapMaker | arguments | Make m
 make_ionizing_stars_map | -- | maps.ionizing.IonizingStellarMapMaker | arguments | Make map of ionizing stars
 make_dust_map | -- | maps.dust.dust.DustMapMaker | arguments | Make dust map
 create_significance_masks | -- | maps.significance.SignificanceMaskCreator | arguments | Make significance masks
+
+# PHOTOMETRY
 photometry | -- | photometry.photometry.PhotoMeter | interactive | Calculate the photometry of the different input images
+
+# DEPROJECTION
 deproject | -- | deprojection.deprojector.Deprojector | arguments | Deproject the maps
+
+# MODEL BUILDING
 build_sed | -- | build.sed.SEDModelBuilder | arguments | Build the model for SED modeling
 build_images | -- | build.images.ImagesModelBuilder | arguments | Build the model for images modeling
 build_model | -- | build.model.ModelBuilder | interactive | Build the model for galaxy modeling
@@ -31,6 +51,8 @@ build_dust | -- | build.dust.DustBuilder | interactive | Build dust components o
 build_representation | -- | build.representation.RepresentationBuilder | interactive | Build model representation
 buildsedrepresentation | -- | build.sedrepresentation.SEDRepresentationBuilder | arguments | Build model representation for SED modeling
 generate_representations | -- | build.representations.RepresentationsGenerator | interactive | Generate model representations
+
+# FITTING
 configure_fit | -- | fitting.configuration.FittingConfigurer | arguments | Configure the fitting procedure
 initialize_fit_galaxy | initialize_fit | fitting.initialization.galaxy.GalaxyFittingInitializer | arguments | Do the initialization before starting the fitting
 initialize_fit_sed | initialize_fit | fitting.initialization.sed.SEDFittingInitializer | arguments | Do the initialization before starting the fitting
@@ -40,6 +62,8 @@ generate_grid | -- | fitting.modelgenerators.grid.GridModelGenerator | arguments
 fit_sed | -- | fitting.sedfitting.SEDFitter | arguments | Determine the best fit with the observed SED
 finish_exploration | -- | fitting.finisher.ExplorationFinisher | arguments | Finish the parameter exploration
 launch_best | -- | fitting.bestmodellauncher.BestModelLauncher | interactive | Launch simulations to inspect the current best RT model for a certain generation
+
+# MODEL ANALYSIS
 launch_analysis | -- | analysis.launcher.AnalysisLauncher | arguments | Launch a simulation for analysis
 launch_heating | -- | analysis.heating.launcher.DustHeatingContributionLauncher | arguments | Launch simulations for analysing the heating contributions
 analyse_attenuation_curve | -- | analysis.attenuation.curve.AttenuationCurveAnalyser | arguments | Analyse the dust attenuation curve
@@ -48,7 +72,11 @@ analyse_cell_heating | -- | analysis.heating.cell.CellDustHeatingAnalyser | argu
 analyse_colours | -- | analysis.colours.colours.ColourAnalyser | arguments | Analyse the FIR colours
 analyse_projected_heating | -- | analysis.heating.projected.ProjectedDustHeatingAnalyser | arguments | Analyse the projected dust heating
 analyse_residuals | -- | analysis.residuals.ResidualAnalyser | arguments | Analyse the residual images
+
+# OTHER
 report | -- | reporting.reporting.Reporter | arguments | Make (a) report(s) of certain steps of the radiative transfer modeling procedure (or all steps)
+
+# PLOTTING
 plot_data | plot_data | plotting.data.DataPlotter | interactive | Make plots of the data
 plot_preparation | plot_preparation | plotting.preparation.PreparationPlotter | interactive | Make plots of the preparation step
 plot_decomposition | plot_decomposition | plotting.decomposition.DecompositionPlotter | interactive | Make plots of the decomposition step
@@ -57,9 +85,15 @@ plot_photometry | plot_photometry | plotting.photometry.PhotometryPlotter | inte
 plot_maps | plot_maps | plotting.maps.MapsPlotter | interactive | Make plots of the map making step
 plot_fitting | plot_fitting | plotting.fitting.plotter.FittingPlotter | interactive | Make plots of the fitting step
 plot_analysis | plot_analysis | plotting.analysis.AnalysisPlotter | interactive | Make plots of the analysis step
-fit_blackbody_grid | -- | maps.dust.fitter.GridBlackBodyFitter | arguments | Fit black body curve to dust SEDs for different galaxies or different pixels of a galaxy
-fit_blackbody_genetic | -- | maps.dust.fitter.GeneticBlackBodyFitter | arguments | Fit black body curve to dust SEDs for different galaxies or different pixels of a galaxy
+
+# HIDDEN
+*fit_blackbody_grid | -- | maps.dust.fitter.GridBlackBodyFitter | arguments | Fit black body curve to dust SEDs for different galaxies or different pixels of a galaxy
+*fit_blackbody_genetic | -- | maps.dust.fitter.GeneticBlackBodyFitter | arguments | Fit black body curve to dust SEDs for different galaxies or different pixels of a galaxy
+
+# SHOW
 make_movie | -- | show.movie.MovieMaker | arguments | Make a movie from the galaxy model
 make_rgb | -- | show.rgb.RGBImageMaker | arguments | Make RGB images from the galaxy model
+
+# NOT PART OF MODELING PIPELINE
 fitskirt | -- | fitting.fitskirt.FitSKIRTLauncher | arguments | Launch FitSKIRT
 analyse_mosaic | -- | data.analyser.MosaicAnalyser | arguments | Analyse mosaics and Poisson error mosaic maps

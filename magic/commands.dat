@@ -1,12 +1,21 @@
 # Command | Configuration | Class | Configuration method | Description
+
+# VARIOUS
 aperture_correction | -- | photometry.aperturecorrector.ApertureCorrector | interactive | Calculate the aperture correction factor on the extended photometry measurement of a Herschel image of a galaxy
 prepare_images | -- | prepare.preparer.ImagePreparer | arguments | Prepare a dataset of images or a single image of a galaxy
-summarize_images | -- | misc.summarizer.ImageSummarizer | arguments | Summarize the properties of a set of images
 create_dataset | -- | core.dataset.DataSetCreator | arguments | Create a dataset from a set of images
+
+# SERVICES
 list_ned | -- | services.ned.NED | arguments | List images found on NED
 get_s4g | -- | services.s4g.S4G | arguments | Get galaxy components from S4G study
-get_projections | -- | misc.project.Projector | arguments | Create projections for creating a simulation of a galaxy according to the galaxy parameters
 get_seds | -- | services.seds.SEDFetcher | arguments | Fetch reference SEDs for a certain galaxy
+
+# MISC
+summarize_images | -- | misc.summarizer.ImageSummarizer | arguments | Summarize the properties of a set of images
+get_projections | -- | misc.project.Projector | arguments | Create projections for creating a simulation of a galaxy according to the galaxy parameters
+find_unit | -- | misc.unit.UnitFinder | arguments | Find the units of an image based on published photometry
+
+# SOURCES
 mark_sources | -- | sources.marker.SourceMarker | arguments | Mark sources based on catalogs
 find_sources | -- | sources.finder.SourceFinder | arguments | Find sources for the images in a dataset or a single image
 import_catalogs | -- | catalog.importer.CatalogImporter | arguments | Import galactic and stellar catalogs
@@ -14,10 +23,33 @@ find_extended | -- | sources.extended.ExtendedSourceFinder | arguments | Find ex
 find_point | -- | sources.point.PointSourceFinder | arguments | Find point sources in an image
 find_other | -- | sources.other.OtherSourceFinder | arguments | Find other contaminating sources (not in catalogs)
 extract | -- | sources.extractor.SourceExtractor | arguments | Extract the sources from an image (based on the results of find_sources)
+
+# SKY
 subtract_sky | -- | sky.skysubtractor.SkySubtractor | arguments | Run automatic sky subtraction on an astronmical image
-find_unit | -- | misc.unit.UnitFinder | arguments | Find the units of an image based on published photometry
+
+# COLOUR MAPS
+make_colour_maps | -- | maps.colour.colour.ColourMapsMaker | arguments | Make colour maps
+
+# DUST MAPS
+make_dust_attenuation_maps | -- | maps.dust.cortese.CorteseDustMapMaker | arguments | Make dust map based on Cortese calibrations
+make_dust_emission_maps | -- | maps.dust.emission.EmissionDustMapMaker | arguments | Make dust map based on emission in a certain band
+make_dust_blackbody_maps | -- | maps.dust.blackbody.BlackBodyDustMapMaker | arguments | Make dust map based on black-body fitting
+make_hot_dust_maps | -- | maps.dust.hot.HotDustMapsMaker | arguments | Make map of hot dust
+
+# IONIZING STARS MAPS
+make_ionizing_stars_maps | -- | maps.ionizingstars.ionizing.IonizingStellarMapsMaker | arguments | Make ionizing stellar maps
+
+# OLD STARS MAPS
+make_old_disk_maps | -- | maps.oldstars.disk.DiskOldStellarMapMaker | arguments | make maps of old stellar disk
+make_old_bulge_maps | -- | maps.oldstars.bulge.BulgeOldStellarMapMaker | arguments | make maps old stellar bulge
+make_old_total_maps | -- | maps.oldstars.total.TotalOldStellarMapMaker | arguments | make maps of total old stellar population
+
+# SSFR MAPS
+make_colours_ssfr_maps | -- | maps.ssfr.colours.ColoursSSFRMapsMaker | arguments | make sSFR maps based on colours
+
+# TIR MAPS
 make_singleband_tir | -- | maps.tir.single.SingleBandTIRMapMaker | arguments | Make TIR map based on single bands
 make_multiband_tir | -- | maps.tir.multi.MultiBandTIRMapMaker | arguments | Make TIR map based on multiple bands
-make_dust_attenuation | -- | maps.dust.cortese.CorteseDustMapMaker | arguments | Make dust map based on Cortese calibrations
-make_dust_emission | -- | maps.dust.emission.EmissionDustMapMaker | arguments | Make dust map based on emission in a certain band
-make_dust_blackbody | -- | maps.dust.blackbody.BlackBodyDustMapMaker | arguments | Make dust map based on black-body fitting
+
+# YOUNG STARS MAPS
+make_young_stars_maps | -- | maps.youngstars.young.YoungStellarMapsMaker | arguments | Make young stellar maps

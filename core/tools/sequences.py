@@ -419,3 +419,27 @@ def any_in(sequence, target):
     return False
 
 # -----------------------------------------------------------------
+
+def is_empty(sequence):
+
+    """
+    This function ...
+    :param sequence:
+    :return:
+    """
+
+    return len(sequence) == 0
+
+# -----------------------------------------------------------------
+
+def any_empty(*sequences):
+
+    """
+    This function ...
+    :param sequences:
+    :return:
+    """
+
+    return any(is_empty(sequence) for sequence in sequences)
+
+# -----------------------------------------------------------------

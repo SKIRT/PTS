@@ -33,6 +33,7 @@ from importlib import import_module
 from . import filesystem as fs
 from ..basics.map import Map
 from .logging import log
+from . import types
 
 # -----------------------------------------------------------------
 
@@ -1819,31 +1820,50 @@ def get_arguments_tables():
         where = []
         method = []
         description = []
+        titles = []
 
         # Numpy-less implementation
         with open(table_path, 'r') as table:
+
+            last_title = None
+
             for line in table:
-                if line.startswith("#"): continue
+
+                if line.startswith("#"):
+                    if "|" in line: continue # header
+                    last_title = line.split("# ")[1]
+                    continue
+
                 line = line[:-1]
-                if not line: continue
+
+                # EMPTY LINE
+                if not line:
+                    last_title = None
+                    continue
+
                 splitted = line.split(" | ")
                 if len(splitted) != 5: raise SyntaxError("The following row is wrong: '" + line + "'")
+
+                # Add entry
                 commands.append(splitted[0])
                 configuration.append(splitted[1])
                 where.append(splitted[2])
                 method.append(splitted[3])
                 description.append(splitted[4])
+                titles.append(last_title)
 
         # Fix
-        if isinstance(commands, basestring):
+        if types.is_string_type(commands):
+
             commands = [commands]
             configuration = [configuration]
             where = [where]
             method = [method]
             description = [description]
+            titles = [titles]
 
         # Table
-        table = {"Command": commands, "Configuration": configuration, "Path": where, "Configuration method": method, "Description": description}
+        table = {"Command": commands, "Configuration": configuration, "Path": where, "Configuration method": method, "Description": description, "Title": titles}
         tables[subproject] = table
 
     # Return the tables

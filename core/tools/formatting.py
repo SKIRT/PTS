@@ -16,7 +16,8 @@ from __future__ import absolute_import, division, print_function
 from .stringify import stringify_list_fancy, stringify, tostr
 from . import filesystem as fs
 from .logging import log
-from .sequences import equal_sizes
+from .sequences import equal_sizes, any_empty
+from .strings import printed_length
 
 # -----------------------------------------------------------------
 
@@ -342,6 +343,8 @@ def print_columns(*columns, **kwargs):
     # Check sizes
     if not equal_sizes(*columns): raise ValueError("Columns must have equal lengths")
 
+    if any_empty(*columns): raise ValueError("One or more columns are empty")
+
     # Convert all to strings
     string_columns = []
 
@@ -350,7 +353,9 @@ def print_columns(*columns, **kwargs):
     for column in columns:
 
         new_column = [tostr(entry) for entry in column]
-        lengths = [len(string) for string in new_column]
+        lengths = [printed_length(string) for string in new_column]
+
+        #print(new_column, max(lengths))
 
         max_lengths.append(max(lengths))
         string_columns.append(new_column)
@@ -368,7 +373,7 @@ def print_columns(*columns, **kwargs):
 
             if j != ncolumns - 1:
 
-                nextra = max_lengths[j] - len(part)
+                nextra = max_lengths[j] - printed_length(part)
                 spaces = " " * nextra + delimiter
 
                 row += spaces
@@ -383,14 +388,16 @@ class print_in_columns(object):
     This function ...
     """
 
-    def __init__(self, ncolumns):
+    def __init__(self, ncolumns, delimiter=" "):
 
         """
         This function ...
         :param ncolumns:
+        :param delimiter:
         """
 
         self.columns = [[] for _ in range(ncolumns)]
+        self.delimiter = delimiter
 
     # -----------------------------------------------------------------
 
@@ -425,10 +432,14 @@ class print_in_columns(object):
         :return:
         """
 
-        if len(args) != self.ncolumns: raise ValueError("Needs " + str(self.ncolumns) + " arguments")
+        #if len(args) != self.ncolumns: raise ValueError("Needs " + str(self.ncolumns) + " arguments")
+
+        #iterate_args = iterate(args)
 
         for index in range(self.ncolumns):
-            self.columns[index].append(args[index])
+
+            arg = args[index] if len(args) > index else ""
+            self.columns[index].append(arg)
 
     # -----------------------------------------------------------------
 
@@ -442,9 +453,9 @@ class print_in_columns(object):
         :return:
         """
 
-        #print(self.columns)
+        #print(self.columns[1])
 
-        print_columns(*self.columns)
+        print_columns(*self.columns, delimiter=self.delimiter)
 
 # -----------------------------------------------------------------
 

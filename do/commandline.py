@@ -155,12 +155,15 @@ def show_all_available(scripts, tables=None):
         description = get_description(path, subproject, command[:-3])
 
         # Add entry to the info
-        info.append((subproject, command[:-3], description, "arguments"))
+        title = None
+        info.append((subproject, command[:-3], description, "arguments", title))
 
     # Tables
     for subproject in tables:
 
         table = tables[subproject]
+
+        # Loop over the entries
         for i in range(len(table["Command"])):
 
             command = table["Command"][i]
@@ -171,7 +174,8 @@ def show_all_available(scripts, tables=None):
             if hidden: continue # skip hidden
             description = table["Description"][i]
             configuration_method = table["Configuration method"][i]
-            info.append((subproject, command, description, configuration_method))
+            title = table["Title"][i]
+            info.append((subproject, command, description, configuration_method, title))
 
     # Sort on the 'do' subfolder name
     info = sorted(info, key=itemgetter(0))
@@ -179,6 +183,7 @@ def show_all_available(scripts, tables=None):
     lengths = dict()
     lengths_config_methods = dict()
     for script in info:
+
         subproject = script[0]
         command = script[1]
         if subproject not in lengths or len(command) > lengths[subproject]: lengths[subproject] = len(command)
@@ -187,27 +192,46 @@ def show_all_available(scripts, tables=None):
         if subproject not in lengths_config_methods or len(config_method) > lengths_config_methods[subproject]:
             lengths_config_methods[subproject] = len(config_method)
 
-    current_dir = None
-    for script in info:
+    # Print in columns
+    with fmt.print_in_columns(5) as print_row:
 
-        from_table = len(script) == 4
+        previous_subproject = None
+        previous_title = None
 
-        configuration_method = script[3] if from_table else ""
-        description = script[2] if from_table else ""
+        current_dir = None
+        for script in info:
 
-        nspaces = lengths[script[0]] - len(script[1]) + 3
-        pre_config_infix = " " * nspaces + "[" if from_table else ""
-        after_config_infix = "]   " + " " *(lengths_config_methods[script[0]] - len(configuration_method)) if from_table else ""
+            configuration_method = script[3]
+            description = script[2]
 
-        coloured_subproject = fmt.green + script[0] + fmt.reset
-        coloured_name = fmt.bold + fmt.underlined + fmt.red + script[1] + fmt.reset
-        coloured_config_method = fmt.yellow + pre_config_infix + configuration_method + after_config_infix + fmt.reset
+            # Get the title
+            title = script[4]
 
-        if current_dir == script[0]:
-            print(" " * len(current_dir) + "/" + coloured_name + coloured_config_method + description)
-        else:
-            print(coloured_subproject + "/" + coloured_name + coloured_config_method + description)
-            current_dir = script[0]
+            # Transform title
+            if title is None: title = ""
+
+            coloured_subproject = fmt.green + script[0] + fmt.reset
+            coloured_name = fmt.bold + fmt.underlined + fmt.red + script[1] + fmt.reset
+            #coloured_config_method = fmt.yellow + pre_config_infix + configuration_method + after_config_infix + fmt.reset
+            coloured_config_method = fmt.yellow + "[" + configuration_method + "]" + fmt.reset
+
+            coloured_title = fmt.blue + fmt.bold + title + fmt.reset
+
+            if previous_subproject is None or previous_subproject != script[0]:
+
+                previous_subproject = script[0]
+                print_row(coloured_subproject, "/")
+
+            if previous_title is None or previous_title != title:
+
+                previous_title = title
+
+                if title != "":
+                    print_row()
+                    print_row("", "", coloured_title)
+
+            # Print command
+            print_row("", "/", coloured_name, coloured_config_method, description)
 
 # -----------------------------------------------------------------
 

@@ -510,3 +510,39 @@ def startswith_any(line, patterns):
     return False
 
 # -----------------------------------------------------------------
+
+def remove_escape_characters(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    # A regular expression object that strips away special unicode characters, used on the remote console output
+    ansi_escape = re.compile(r'\x1b[^m]*m')
+
+    splitted = ansi_escape.sub('', string).replace('\x1b[K', '').split("\r\n")
+
+    for i in range(len(splitted)): splitted[i] = splitted[i].replace(" \r", "").replace("\x08", "").replace("\xe2\x80\x98", "'").replace("\xe2\x80\x99", "'")
+
+    #if splitted[-1] == "": the_output = splitted[output_start:-1]
+    #else: the_output = splitted[output_start:]
+
+    output = "".join(splitted)
+    return output
+
+# -----------------------------------------------------------------
+
+def printed_length(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    converted = remove_escape_characters(string)
+    return len(converted)
+
+# -----------------------------------------------------------------
