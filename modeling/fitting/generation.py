@@ -25,7 +25,7 @@ from ...evolve.optimize.stepwise import load_population
 from ...core.tools.serialization import load_dict
 from ...core.basics.configurable import load_input
 from ...core.basics.configuration import Configuration
-from ...evolve.optimize.optimizer import genomes, crossovers, list_mutators_1d, binary_string_mutators_1d, crossover_origins
+from ...evolve.optimize.components import get_crossover, get_crossover_origins, get_genome_class, get_mutator, get_selector, get_scaling, get_initializator
 from ...core.basics.range import IntegerRange, RealRange, QuantityRange
 from ...core.tools import sequences
 
@@ -778,6 +778,52 @@ class Generation(object):
     # -----------------------------------------------------------------
 
     @property
+    def total_nbits(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sum(self.nbits_list)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nparameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.parameter_labels)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def genome_size(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # 1D
+        if self.is_1d_genome:
+
+            # 1D
+            if self.list_genome: return self.nparameters
+            elif self.binary_string_genome: return self.total_nbits
+            else: raise ValueError("Invalid genome type")
+
+        # 2D
+        #elif self.is_2d_genome: raise ValueError("We should not get here")
+        raise ValueError("We should not get here")
+
+    # -----------------------------------------------------------------
+
+    @property
     def elitism(self):
 
         """
@@ -786,6 +832,18 @@ class Generation(object):
         """
 
         return self.optimizer_config.elitism
+
+    # -----------------------------------------------------------------
+
+    @property
+    def check_recurrence(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.optimizer_config.check_recurrence
 
     # -----------------------------------------------------------------
 
@@ -814,6 +872,30 @@ class Generation(object):
     # -----------------------------------------------------------------
 
     @property
+    def list_genome(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.genome_type == "list"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def binary_string_genome(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.genome_type == "binary_string"
+
+    # -----------------------------------------------------------------
+
+    @property
     def genome_class(self):
 
         """
@@ -821,7 +903,8 @@ class Generation(object):
         :return:
         """
 
-        return genomes[self.genome_dimension][self.genome_type]
+        #return genomes[self.genome_dimension][self.genome_type]
+        return get_genome_class(self.genome_dimension, self.genome_type)
 
     # -----------------------------------------------------------------
 
@@ -835,6 +918,32 @@ class Generation(object):
         """
 
         return 1
+
+    # -----------------------------------------------------------------
+
+    ## FIXED FOR MODELLING
+    @property
+    def is_1d_genome(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        return True
+
+    # -----------------------------------------------------------------
+
+    ## FIXED FOR MODELLING
+    @property
+    def is_2d_genome(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return False
 
     # -----------------------------------------------------------------
 
@@ -1000,9 +1109,10 @@ class Generation(object):
         :return:
         """
 
-        if self.genome_type == "list": return list_mutators_1d[self.single_parameter_base_type][self.mutation_method]
-        elif self.genome_type == "binary_string": return binary_string_mutators_1d[self.binary_mutation_method]
-        else: raise ValueError("Invalid genome type: " + self.genome_type)
+        # List or binary
+        if self.list_genome: return get_mutator(self.genome_type, self.genome_dimension, self.mutation_method, parameter_type=self.single_parameter_base_type, hetero=self.heterogeneous)
+        elif self.binary_string_genome: return get_mutator(self.genome_type, self.genome_dimension, self.binary_mutation_method)
+        else: raise ValueError("Invalid genome type")
 
     # -----------------------------------------------------------------
 
@@ -1026,7 +1136,43 @@ class Generation(object):
         :return:
         """
 
-        pass
+        return get_scaling(self.scaling_method)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def selection_method(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.optimizer_config.selector_method
+
+    # -----------------------------------------------------------------
+
+    @property
+    def selection_function(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_selector(self.selection_method)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def initializator(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_initializator(self.genome_type, parameter_type=self.single_parameter_base_type, hetero=self.heterogeneous)
 
     # -----------------------------------------------------------------
 
@@ -1050,7 +1196,7 @@ class Generation(object):
         :return:
         """
 
-        return crossovers[self.genome_type][self.genome_dimension][self.crossover_method]
+        return get_crossover(self.genome_type, self.genome_dimension, self.crossover_method, genome_size=self.genome_size)
 
     # -----------------------------------------------------------------
 
@@ -1062,7 +1208,7 @@ class Generation(object):
         :return:
         """
 
-        return crossover_origins[self.genome_type][self.genome_dimension][self.crossover_method]
+        return get_crossover_origins(self.genome_type, self.genome_dimension, self.crossover_method)
 
     # -----------------------------------------------------------------
 

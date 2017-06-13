@@ -16,10 +16,12 @@ from __future__ import absolute_import, division, print_function
 from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
-from ...core.tools import filesystem as fs
+from ...core.tools.logging import log
 from .generation import Generation
 from .evaluate import get_parameter_values_from_genome
 from .reproduction import ReproductionEvent
+from ...core.tools import formatting as fmt
+from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -105,6 +107,72 @@ class GenerationPlatform(object):
 
         genome = self.make_genome(genes)
         return self.genome_to_parameters(genome)
+
+    # -----------------------------------------------------------------
+
+    def index_for_parameter(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        return self.generation.parameter_labels.index(label)
+
+    # -----------------------------------------------------------------
+
+    def parameter_to_string(self, label, value):
+
+        """
+        This function ...
+        :param label:
+        :param value:
+        :return:
+        """
+
+        return tostr(value, scientific=True, fancy=True, ndigits=self.generation.parameter_ndigits[self.index_for_parameter(label)])
+
+    # -----------------------------------------------------------------
+
+    def parameter_values_to_strings(self, values):
+
+        """
+        This function ...
+        :param values: DICT
+        :return:
+        """
+
+        strings = dict()
+
+        for label in values:
+
+            # Add
+            string = self.parameter_to_string(label, values[label])
+            strings[label] = string
+
+        # Return
+        return strings
+
+    # -----------------------------------------------------------------
+
+    def parameter_values_to_string(self, values, delimiter=", "):
+
+        """
+        This function ...
+        :param values:
+        :param delimiter:
+        :return:
+        """
+
+        strings = self.parameter_values_to_strings(values)
+
+        parts = []
+        for label in self.generation.parameter_labels:
+            parts.append(label + " = " + strings[label])
+
+        # Make one long string
+        return delimiter.join(parts)
 
     # -----------------------------------------------------------------
 
@@ -216,5 +284,112 @@ class GenerationPlatform(object):
 
         # Return
         return ReproductionEvent(index, mother, father, initial_sister, initial_brother, sister, brother, crossover, sister_origins, brother_origins)
+
+    # -----------------------------------------------------------------
+
+    def show_reproductions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing the reproduction events ...")
+
+        print("")
+
+        # Enact each reproduction event
+        for reproduction in self.reproductions:
+
+            # Crossover happened
+            if reproduction.crossover:
+
+                # COLORED
+                mother_colored = fmt.colored_sequence(reproduction.mother, colors="green", delimiter=" ")
+                father_colored = fmt.colored_sequence(reproduction.father, colors=None, delimiter=" ")
+
+                initial_sister_colors = ["green" if flag else None for flag in reproduction.sister_origins]
+                initial_brother_colors = [None if flag else "green" for flag in reproduction.brother_origins]
+
+                # COLORED
+                initial_sister_colored = fmt.colored_sequence(reproduction.initial_sister.genes, colors=initial_sister_colors, delimiter=" ")
+                initial_brother_colored = fmt.colored_sequence(reproduction.initial_brother.genes, colors=initial_brother_colors, delimiter=" ")
+
+                # COLORED
+                sister_colors = [initial_sister_colors[i] if not reproduction.sister_mutations[i] else "red" for i in range(len(reproduction.sister))]
+                brother_colors = [initial_brother_colors[i] if not reproduction.brother_mutations[i] else "red" for i in range(len(reproduction.brother))]
+
+                sister_colored = fmt.colored_sequence(reproduction.sister.genes, colors=sister_colors, delimiter=" ")
+                brother_colored = fmt.colored_sequence(reproduction.brother.genes, colors=brother_colors, delimiter=" ")
+
+                print("#" + str(reproduction.index+1) + " " + fmt.blue + fmt.underlined + self.generation.crossover_method.title() + " Crossover:" + fmt.reset)
+                print("")
+
+                print("GENOMES:")
+                print("")
+
+                print("Parents   :   " + mother_colored + "  x  " + father_colored)
+                print("Crossover :   " + initial_sister_colored + "     " + initial_brother_colored)
+                print("Mutation  :   " + sister_colored + "     " + brother_colored)
+                print("")
+
+            # Just cloned
+            else:
+
+                # COLORED
+                mother_colored = fmt.colored_sequence(reproduction.mother, colors="green", delimiter=" ")
+                father_colored = fmt.colored_sequence(reproduction.father, colors=None, delimiter=" ")
+
+                # COLORED
+                initial_sister_colored = fmt.colored_sequence(reproduction.initial_sister, colors="green", delimiter=" ")
+                initial_brother_colored = fmt.colored_sequence(reproduction.initial_brother, colors=None, delimiter=" ")
+
+                sister_colors = ["green" if not reproduction.sister_mutations[i] else "red" for i in range(len(reproduction.sister))]
+                brother_colors = [None if not reproduction.brother_mutations[i] else "red" for i in range(len(reproduction.brother))]
+
+                sister_colored = fmt.colored_sequence(reproduction.sister.genes, colors=sister_colors, delimiter=" ")
+                brother_colored = fmt.colored_sequence(reproduction.brother.genes, colors=brother_colors, delimiter=" ")
+
+                print("#" + str(reproduction.index+1) + " " + fmt.blue + fmt.underlined + "Cloning:" + fmt.reset)
+                print("")
+
+                print("GENOMES:")
+                print("")
+
+                print("Parents  :    " + mother_colored + fmt.reset + "     " + father_colored)
+                print("Cloning  :    " + initial_sister_colored + "     " + initial_brother_colored)
+                print("Mutation :    " + sister_colored + "     " + brother_colored)
+                print("")
+
+
+            print("Number of mutations:")
+            print("")
+            print("  - sister: " + str(reproduction.nmutations_sister) + " of " + str(len(reproduction.sister)) + " (" + str(reproduction.relative_nmutations_sister) + ")")
+            print("  - brother: " + str(reproduction.nmutations_brother) + " of " + str(len(reproduction.brother)) + " (" + str(reproduction.relative_nmutations_brother) + ")")
+            print("")
+
+            # Get actual parameter values for parents and children
+            mother_parameters = self.genome_to_parameters(reproduction.mother)
+            father_parameters = self.genome_to_parameters(reproduction.father)
+            initial_sister_parameters = self.genome_to_parameters(reproduction.initial_sister)
+            initial_brother_parameters = self.genome_to_parameters(reproduction.initial_brother)
+            sister_parameters = self.genome_to_parameters(reproduction.sister)
+            brother_parameters = self.genome_to_parameters(reproduction.brother)
+
+            mother_string = self.parameter_values_to_string(mother_parameters)
+            father_string = self.parameter_values_to_string(father_parameters)
+            initial_sister_string = self.parameter_values_to_string(initial_sister_parameters)
+            initial_brother_string = self.parameter_values_to_string(initial_brother_parameters)
+            sister_string = self.parameter_values_to_string(sister_parameters)
+            brother_string = self.parameter_values_to_string(brother_parameters)
+
+            print("PARAMETERS:")
+            print("")
+
+            print("Parents           : [" + mother_string + "]     [" + father_string + "]")
+            print("Crossover/cloning : [" + initial_sister_string + "]     [" + initial_brother_string + "]")
+            print("Mutation          : [" + sister_string + "]     [" + brother_string + "]")
+            print("")
 
 # -----------------------------------------------------------------

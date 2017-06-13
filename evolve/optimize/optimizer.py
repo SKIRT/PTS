@@ -21,30 +21,7 @@ from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
-from ..genomes.list1d import G1DList
-from ..genomes.list2d import G2DList
-from ..genomes.binarystring1d import G1DBinaryString
-from ..genomes.binarystring2d import G2DBinaryString
 from ...core.tools.logging import log
-from ..core.initializators import G1DListInitializatorReal, G1DListInitializatorInteger, HeterogeneousListInitializerReal
-from ..core.initializators import G1DBinaryStringInitializator, HeterogeneousListInitializerInteger
-from ..core.crossovers import G1DListCrossoverSinglePoint, G1DListCrossoverTwoPoint, G1DListCrossoverUniform, G1DListCrossoverOX
-from ..core.crossovers import G1DListCrossoverEdge, G1DListCrossoverCutCrossfill, G1DListCrossoverRealSBX, G1DListCrossoverMix
-from ..core.crossovers import G2DListCrossoverUniform, G2DListCrossoverSingleVPoint, G2DListCrossoverSingleHPoint
-from ..core.crossovers import G1DBinaryStringXSinglePoint, G1DBinaryStringXTwoPoint, G1DBinaryStringXUniform
-from ..core.crossovers import G2DBinaryStringXSingleHPoint, G2DBinaryStringXSingleVPoint, G2DBinaryStringXUniform
-from ..core.mutators import G1DListMutatorIntegerRange, G1DListMutatorIntegerGaussian, G1DListMutatorIntegerBinary
-from ..core.mutators import G1DListMutatorRealGaussian, G1DListMutatorRealRange
-from ..core.mutators import HeterogeneousListMutatorRealRange, HeterogeneousListMutatorRealGaussian
-from ..core.mutators import HeterogeneousListMutatorIntegerRange, HeterogeneousListMutatorIntegerGaussian
-from ..core.mutators import G1DBinaryStringMutatorSwap, G1DBinaryStringMutatorFlip
-from ..core.crossovers import G1DListCrossoverSinglePoint_origins, G1DListCrossoverTwoPoint_origins
-from ..core.crossovers import G1DListCrossoverUniform_origins, G1DListCrossoverOX_origins
-from ..core.crossovers import G1DListCrossoverEdge_origins, G1DListCrossoverCutCrossfill_origins
-from ..core.crossovers import G1DListCrossoverRealSBX_origins, G1DListCrossoverMix_origins
-from ..core.crossovers import G2DListCrossoverUniform_origins, G2DListCrossoverSingleHPoint_origins, G2DListCrossoverSingleVPoint_origins
-from ..core.crossovers import G1DBinaryStringXSinglePoint_origins, G1DBinaryStringXTwoPoint_origins, G1DBinaryStringXUniform_origins
-from ..core.crossovers import G2DBinaryStringXUniform_origins, G2DBinaryStringXSingleVPoint_origins, G2DBinaryStringXSingleHPoint_origins
 from ..core.engine import GeneticEngine, RawScoreCriteria
 from ...core.basics.range import RealRange, IntegerRange
 from ...core.tools import formatting as fmt
@@ -52,181 +29,13 @@ from ...core.tools import stringify
 from ..core.adapters import DBFileCSV, DBSQLite, PopulationsFile
 from ...core.tools import filesystem as fs
 from ...core.tools import types
-from ..core.scaling import LinearScaling, SigmaTruncScaling, PowerLawScaling, BoltzmannScaling, ExponentialScaling, SaturatedScaling
-from ..core.selectors import GRankSelector, GUniformSelector, GTournamentSelector, GTournamentSelectorAlternative, GRouletteWheel
 from ...core.tools import sequences
 from ...core.tools.serialization import write_dict
 from ..core.population import Population, NamedPopulation
 from ...core.tools import numbers
 from ...core.tools.stringify import tostr
 from ..core.engine import is_binary_genome, is_real_genome
-
-# -----------------------------------------------------------------
-
-list_crossovers_1d = dict()
-list_crossovers_1d["single_point"] = G1DListCrossoverSinglePoint
-list_crossovers_1d["two_point"] =  G1DListCrossoverTwoPoint
-list_crossovers_1d["uniform"] = G1DListCrossoverUniform
-list_crossovers_1d["OX"] = G1DListCrossoverOX
-list_crossovers_1d["edge"] = G1DListCrossoverEdge
-list_crossovers_1d["cut_crossfill"] = G1DListCrossoverCutCrossfill
-list_crossovers_1d["real_SBX"] = G1DListCrossoverRealSBX
-list_crossovers_1d["mix"] = G1DListCrossoverMix
-
-# -----------------------------------------------------------------
-
-list_crossovers_2d = dict()
-list_crossovers_2d["uniform"] = G2DListCrossoverUniform
-list_crossovers_2d["single_vertical_point"] = G2DListCrossoverSingleVPoint
-list_crossovers_2d["single_horizontal_point"] = G2DListCrossoverSingleHPoint
-
-# -----------------------------------------------------------------
-
-list_crossovers = dict()
-list_crossovers[1] = list_crossovers_1d
-list_crossovers[2] = list_crossovers_2d
-
-# -----------------------------------------------------------------
-
-binary_string_crossovers_1d = dict()
-binary_string_crossovers_1d["single_point"] = G1DBinaryStringXSinglePoint
-binary_string_crossovers_1d["two_point"] = G1DBinaryStringXTwoPoint
-binary_string_crossovers_1d["uniform"] = G1DBinaryStringXUniform
-
-# -----------------------------------------------------------------
-
-binary_string_crossovers_2d = dict()
-binary_string_crossovers_2d["uniform"] = G2DBinaryStringXUniform
-binary_string_crossovers_2d["single_vertical_point"] = G2DBinaryStringXSingleVPoint
-binary_string_crossovers_2d["single_horizontal_point"] = G2DBinaryStringXSingleHPoint
-
-# -----------------------------------------------------------------
-
-binary_string_crossovers = dict()
-binary_string_crossovers[1] = binary_string_crossovers_1d
-binary_string_crossovers[2] = binary_string_crossovers_2d
-
-# -----------------------------------------------------------------
-
-crossovers = dict()
-crossovers["list"] = list_crossovers
-crossovers["binary_string"] = binary_string_crossovers
-
-# -----------------------------------------------------------------
-
-list_crossover_origins_1d = dict()
-list_crossover_origins_1d["single_point"] = G1DListCrossoverSinglePoint_origins
-list_crossover_origins_1d["two_point"] = G1DListCrossoverTwoPoint_origins
-list_crossover_origins_1d["uniform"] = G1DListCrossoverUniform_origins
-list_crossover_origins_1d["OX"] = G1DListCrossoverOX_origins
-list_crossover_origins_1d["edge"] = G1DListCrossoverEdge_origins
-list_crossover_origins_1d["cut_crossfill"] = G1DListCrossoverCutCrossfill_origins
-list_crossover_origins_1d["real_SBX"] = G1DListCrossoverRealSBX_origins
-list_crossover_origins_1d["mix"] = G1DListCrossoverMix_origins
-
-# -----------------------------------------------------------------
-
-list_crossover_origins_2d = dict()
-list_crossover_origins_2d["uniform"] = G2DListCrossoverUniform_origins
-list_crossover_origins_2d["single_vertical_point"] = G2DListCrossoverSingleVPoint_origins
-list_crossover_origins_2d["single_horizontal_point"] = G2DListCrossoverSingleHPoint_origins
-
-# -----------------------------------------------------------------
-
-list_crossover_origins = dict()
-list_crossover_origins[1] = list_crossover_origins_1d
-list_crossover_origins[2] = list_crossover_origins_2d
-
-# -----------------------------------------------------------------
-
-binary_string_crossover_origins_1d = dict()
-binary_string_crossover_origins_1d["single_point"] = G1DBinaryStringXSinglePoint_origins
-binary_string_crossover_origins_1d["two_point"] = G1DBinaryStringXTwoPoint_origins
-binary_string_crossover_origins_1d["uniform"] = G1DBinaryStringXUniform_origins
-
-# -----------------------------------------------------------------
-
-binary_string_crossover_origins_2d = dict()
-binary_string_crossover_origins_2d["uniform"] = G2DBinaryStringXUniform_origins
-binary_string_crossover_origins_2d["single_vertical_point"] = G2DBinaryStringXSingleVPoint_origins
-binary_string_crossover_origins_2d["single_horizontal_point"] = G2DBinaryStringXSingleHPoint_origins
-
-# -----------------------------------------------------------------
-
-binary_string_crossover_origins = dict()
-binary_string_crossover_origins[1] = binary_string_crossover_origins_1d
-binary_string_crossover_origins[2] = binary_string_crossover_origins_2d
-
-# -----------------------------------------------------------------
-
-crossover_origins = dict()
-crossover_origins["list"] = list_crossover_origins
-crossover_origins["binary_string"] = binary_string_crossover_origins
-
-# -----------------------------------------------------------------
-
-list_mutators_1d_integer = dict()
-list_mutators_1d_integer["range"] = G1DListMutatorIntegerRange
-list_mutators_1d_integer["gaussian"] = G1DListMutatorIntegerGaussian
-list_mutators_1d_integer["binary"] = G1DListMutatorIntegerBinary
-
-# -----------------------------------------------------------------
-
-list_mutators_1d_integer_hetero = dict()
-list_mutators_1d_integer_hetero["range"] = HeterogeneousListMutatorIntegerRange
-list_mutators_1d_integer_hetero["gaussian"] = HeterogeneousListMutatorIntegerGaussian
-
-# -----------------------------------------------------------------
-
-list_mutators_1d_real = dict()
-list_mutators_1d_real["range"] = G1DListMutatorRealRange
-list_mutators_1d_real["gaussian"] = G1DListMutatorRealGaussian
-
-# -----------------------------------------------------------------
-
-list_mutators_1d_real_hetero = dict()
-list_mutators_1d_real_hetero["range"] = HeterogeneousListMutatorRealRange
-list_mutators_1d_real_hetero["gaussian"] = HeterogeneousListMutatorRealGaussian
-
-# -----------------------------------------------------------------
-
-list_mutators_1d = dict()
-list_mutators_1d["integer"] = list_mutators_1d_integer
-list_mutators_1d["real"] = list_mutators_1d_real
-
-# -----------------------------------------------------------------
-
-list_mutators_1d_hetero = dict()
-list_mutators_1d_hetero["integer"] = list_mutators_1d_integer_hetero
-list_mutators_1d_hetero["real"] = list_mutators_1d_real_hetero
-
-# -----------------------------------------------------------------
-
-binary_string_mutators_1d = dict()
-binary_string_mutators_1d["swap"] = G1DBinaryStringMutatorSwap
-binary_string_mutators_1d["flip"] = G1DBinaryStringMutatorFlip
-
-# -----------------------------------------------------------------
-
-binary_string_mutators_2d = dict()
-
-# -----------------------------------------------------------------
-
-genomes_1d = dict()
-genomes_1d["list"] = G1DList
-genomes_1d["binary_string"] = G1DBinaryString
-
-# -----------------------------------------------------------------
-
-genomes_2d = dict()
-genomes_2d["list"] = G2DList
-genomes_2d["binary_string"] = G2DBinaryString
-
-# -----------------------------------------------------------------
-
-genomes = dict()
-genomes[1] = genomes_1d
-genomes[2] = genomes_2d
+from .components import get_genome_type, is_1d_genome, is_2d_genome, get_mutator, create_genome, get_crossover_method, get_crossover, get_selector, get_scaling, get_initializator
 
 # -----------------------------------------------------------------
 
@@ -416,6 +225,9 @@ class Optimizer(Configurable):
 
         # Check whether NBITS is given if binary_string is genome representation
         if self.binary_string_genome and self.nbits is None: raise ValueError("Number of bits must be specified for binary genomes")
+
+        # Debugging
+        if self.nbits is not None: log.debug("Number of bits for each parameter: " + " ".join(str(n) for n in self.nbits))
 
         # Get the scales
         if "scales" in kwargs: self.scales = kwargs.pop("scales")
@@ -757,11 +569,11 @@ class Optimizer(Configurable):
         :return: 
         """
 
+        # Return configured option
         if self.initial_genome is None: return self.config.genome_type
 
-        if isinstance(self.initial_genome, G1DList) or isinstance(self.initial_genome, G2DList): return "list"
-        elif isinstance(self.initial_genome, G1DBinaryString) or isinstance(self.initial_genome, G2DBinaryString): return "binary_string"
-        else: raise ValueError("Genome type not recognized: " + str(type(self.initial_genome)))
+        # Return the genome type
+        return get_genome_type(self.initial_genome)
 
     # -----------------------------------------------------------------
 
@@ -790,6 +602,19 @@ class Optimizer(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def internal_population(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.engine is None: return None
+        else: return self.engine.population
+
+    # -----------------------------------------------------------------
+
+    @property
     def crossover_method(self):
 
         """
@@ -797,9 +622,8 @@ class Optimizer(Configurable):
         :return:
         """
 
-        # TODO: make use of the real genomes!
-        #return self.initial_genome.crossover
-        return self.config.crossover_method
+        if self.initial_genome is not None: return get_crossover_method(self.initial_genome.crossover)
+        else: return self.config.crossover_method
 
     # -----------------------------------------------------------------
 
@@ -813,34 +637,11 @@ class Optimizer(Configurable):
         # Inform the user
         log.info("Creating the genome ...")
 
-        # List genome
-        if self.config.genome_type == "list": self.create_list_genome()
+        # Number of digits has to be specified
+        if self.binary_string_genome and self.ndigits is None: raise ValueError("Number of digits (in base-10) has to be specified for binary string conversion")
 
-        # Binary string genome
-        elif self.config.genome_type == "binary_string": self.create_binary_genome()
-
-        # Invalid option
-        else: raise ValueError("Genome type must be 'list' or 'binary_string")
-
-    # -----------------------------------------------------------------
-
-    def create_list_genome(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        # Inform the user
-        log.info("Creating a list genome ...")
-
-        # Create 1D genome
-        if self.config.genome_dimension == 1: genome = G1DList(self.config.nparameters)
-        elif self.config.genome_dimension == 2: genome = G2DList(self.config.nparameters, self.config.nparameters2)
-        else: raise ValueError("Dimensions > 2 are not supported")
-
-        # Set the genome
-        self.initial_genome = genome
+        # Create the genome
+        self.initial_genome = create_genome(self.genome_dimension, self.genome_type, self.config.nparameters, self.config.nparameters2, nbits=self.total_nbits)
 
     # -----------------------------------------------------------------
 
@@ -874,39 +675,6 @@ class Optimizer(Configurable):
             tempsum += nbits
 
         return slices
-
-    # -----------------------------------------------------------------
-
-    def create_binary_genome(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        # Inform the user
-        log.info("Creating the binary genome ...")
-
-        # Number of digits has to be specified
-        if self.ndigits is None: raise ValueError("Number of digits (in base-10) has to be specified for binary string conversion")
-
-        # 1D
-        if self.config.genome_dimension == 1:
-
-            # Debugging
-            log.debug("Number of bits for each parameter: " + " ".join(str(n) for n in self.nbits))
-
-            # Initialize the genome
-            genome = G1DBinaryString(self.total_nbits)
-
-        # 2D
-        elif self.config.genome_dimension == 2: raise NotImplementedError("Not implemented")
-
-        # Invalid
-        else: raise ValueError("Dimensions > 2 are not supported")
-
-        # Set the genome
-        self.initial_genome = genome
 
     # -----------------------------------------------------------------
 
@@ -1015,6 +783,30 @@ class Optimizer(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def is_1d_genome(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return is_1d_genome(self.initial_genome)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_2d_genome(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return is_2d_genome(self.initial_genome)
+
+    # -----------------------------------------------------------------
+
+    @property
     def genome_size(self):
 
         """
@@ -1024,9 +816,24 @@ class Optimizer(Configurable):
 
         # Value for 1D, tuple for 2D
 
+        # Get directly from initial genome
         if self.initial_genome is not None: return self.initial_genome.getSize()
-        elif self.config.nparameters2 is None: return self.config.nparameters
-        else: return self.config.nparameters, self.config.nparameters2
+
+        # 1D
+        elif self.config.nparameters2 is None:
+
+            # 1D
+            if self.list_genome: return self.config.nparameters
+            elif self.binary_string_genome: return self.total_nbits
+            else: raise ValueError("Invalid genome type")
+
+        # 2D
+        else:
+
+            # 2D
+            if self.list_genome: return self.config.nparameters, self.config.nparameters2
+            elif self.binary_string_genome: raise NotImplementedError("Not implemented")
+            else: raise ValueError("Invalid genome type")
 
     # -----------------------------------------------------------------
 
@@ -1052,47 +859,8 @@ class Optimizer(Configurable):
         :return:
         """
 
-        # Inform the user
-        log.info("Getting the initializator type ...")
-
-        if self.list_genome: return self.get_list_initializator()
-        elif self.binary_string_genome: return self.get_binary_string_initializator()
-        else: raise ValueError("Genome type not recognized")
-
-    # -----------------------------------------------------------------
-
-    def get_list_initializator(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        # Integer type
-        if self.is_integer_parameter:
-
-            if self.config.heterogeneous: return HeterogeneousListInitializerInteger
-            else: return G1DListInitializatorInteger
-
-        # Real type
-        elif self.is_real_parameter:
-
-            if self.config.heterogeneous: return HeterogeneousListInitializerReal
-            else: return G1DListInitializatorReal
-
-        # Invalid
-        else: raise ValueError("Invalid parameter type")
-
-    # -----------------------------------------------------------------
-
-    def get_binary_string_initializator(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        return G1DBinaryStringInitializator
+        # Get
+        return get_initializator(self.genome_type, parameter_type=self.parameter_base_type, hetero=self.config.heterogeneous)
 
     # -----------------------------------------------------------------
 
@@ -1107,74 +875,9 @@ class Optimizer(Configurable):
         # Inform the user
         log.info("Getting the mutator type ...")
 
-        if self.list_genome: return self.get_list_mutator()
-        elif self.binary_string_genome: return self.get_binary_string_mutator()
-        else: raise ValueError("Genome type not recognized")
-
-    # -----------------------------------------------------------------
-
-    def get_list_mutator(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        # Integer type
-        if self.is_integer_parameter:
-
-            # Heterogeneous genome
-            if self.config.heterogeneous:
-
-                # Return the mutator
-                if self.config.mutation_method in list_mutators_1d_integer_hetero: return list_mutators_1d_integer_hetero[self.config.mutation_method]
-
-                # Choose class
-                else: raise ValueError("Cannot use binary mutation on heterogeneous genomes")
-
-            else:
-
-                # Return the mutator
-                if self.config.mutation_method in list_mutators_1d_integer: return list_mutators_1d_integer[self.config.mutation_method]
-
-                # Invalid
-                else: raise ValueError("Mutation method '" + self.config.mutation_method + "' not recognized")
-
-        # Real type
-        elif self.is_real_parameter:
-
-            # Heterogeneous genome
-            if self.config.heterogeneous:
-
-                # Return the mutator
-                if self.config.mutation_method in list_mutators_1d_real_hetero: return list_mutators_1d_real_hetero[self.config.mutation_method]
-
-                # Invalid
-                else: raise ValueError("Mutation method '" + self.config.mutation_method + "' not valid for genome of real values")
-
-            else:
-
-                # Return the mutator
-                if self.config.mutation_method in list_mutators_1d_real: return list_mutators_1d_real[self.config.mutation_method]
-
-                # Invalid
-                else: raise ValueError("Mutation method '" + self.config.mutation_method + "' not valid for genome of real values")
-
-        # Invalid
-        else: raise ValueError("Invalid parameter type")
-
-    # -----------------------------------------------------------------
-
-    def get_binary_string_mutator(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        # Check mutation method
-        if self.config.binary_mutation_method in binary_string_mutators_1d: return binary_string_mutators_1d[self.config.binary_mutation_method]
-        else: raise ValueError("Invalid mutation method: " + self.config.binary_mutation_method)
+        # Get the mutator class
+        if self.list_genome: return get_mutator(self.genome_type, self.genome_dimension, self.config.mutation_method, parameter_type=self.parameter_base_type, hetero=self.config.heterogeneous)
+        elif self.binary_string_genome: return get_mutator(self.genome_type, self.genome_dimension, self.config.binary_mutation_method)
 
     # -----------------------------------------------------------------
 
@@ -1188,79 +891,8 @@ class Optimizer(Configurable):
         # Inform the user
         log.info("Getting the crossover type ...")
 
-        if self.list_genome: return self.get_list_crossover()
-        elif self.binary_string_genome: return self.get_binary_string_crossover()
-        else: raise ValueError("Genome type not recognized")
-
-    # -----------------------------------------------------------------
-
-    def get_list_crossover(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        # 1D genome
-        if self.config.genome_dimension == 1:
-
-            # Check whether the genome size is larger than one. In that case, always use the uniform crossover
-            if self.genome_size == 1:
-
-                # Give a warning that we are not using the user specificied option
-                log.warning("Mix crossover will be used because the genome size is only one")
-                return G1DListCrossoverMix
-
-            # Check whether the genome size is not zero
-            elif self.genome_size == 0: raise ValueError("The genome size cannot be zero")
-
-            # Return the crossover function
-            if self.config.crossover_method in list_crossovers_1d: return list_crossovers_1d[self.config.crossover_method]
-
-            # Invalid
-            else: raise ValueError("Invalid crossover method for one-dimensional genomes")
-
-        # 2D genome
-        elif self.config.genome_dimension == 2:
-
-            # Return the crossover function
-            if self.config.crossover_method in list_crossovers_2d: return list_crossovers_2d[self.config.crossover_method]
-
-            # Invalid
-            else: raise ValueError("Invalid crossover method for two-dimensional genomes")
-
-        # Not supported number of dimensions
-        else: raise ValueError("Dimensions > 2 are not supported")
-
-    # -----------------------------------------------------------------
-
-    def get_binary_string_crossover(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        # 1D genome
-        if self.config.genome_dimension == 1:
-
-            # Return the crossover function
-            if self.config.crossover_method in binary_string_crossovers_1d: return binary_string_crossovers_1d[self.config.crossover_method]
-
-            # Invalid
-            else: raise ValueError("Crossover type '" + self.config.crossover_method + "' not supported for binary string genome representations")
-
-        # 2D genome
-        elif self.config.genome_dimension == 2:
-
-            # Return the crossover function
-            if self.config.crossover_method in binary_string_crossovers_2d: return binary_string_crossovers_2d[self.config.crossover_method]
-
-            # Invalid
-            else: raise ValueError("Invalid crossover method for two-dimensional binary string genome representations")
-
-        # Not supported number of dimensions
-        else: raise ValueError("Dimensions > 2 are not supported")
+        # Get the crossover
+        return get_crossover(self.genome_type, self.genome_dimension, self.config.crossover_method, genome_size=self.genome_size)
 
     # -----------------------------------------------------------------
 
@@ -1400,23 +1032,11 @@ class Optimizer(Configurable):
         # Inform the user
         log.info("Setting the genetic engine selector ...")
 
-        # Rank selector
-        if self.config.selector_method == "rank": self.engine.selector.set(GRankSelector)
+        # Get the selector
+        selector = get_selector(self.config.selector_method)
 
-        # Uniform selector
-        elif self.config.selector_method == "uniform": self.engine.selector.set(GUniformSelector)
-
-        # Tournament selector
-        elif self.config.selector_method == "tournament": self.engine.selector.set(GTournamentSelector)
-
-        # Alternative tournament selector
-        elif self.config.selector_method == "tournament_alternative": self.engine.selector.set(GTournamentSelectorAlternative)
-
-        # Roulette wheel selector
-        elif self.config.selector_method == "roulette_wheel": self.engine.selector.set(GRouletteWheel)
-
-        # Invalid
-        else: raise ValueError("Invalid selector method")
+        # Set the selector
+        self.engine.selector.set(selector)
 
     # -----------------------------------------------------------------
 
@@ -1534,26 +1154,11 @@ class Optimizer(Configurable):
         # Inform the user
         log.info("Setting the population scaling method ...")
 
-        # Linear scaling
-        if self.config.scaling_method == "linear": self.initial_population.scaleMethod.set(LinearScaling)
+        # Get the scaling function
+        scaling = get_scaling(self.config.scaling_method)
 
-        # Sigma truncation scaling
-        elif self.config.scaling_method == "sigma_truncation": self.initial_population.scaleMethod.set(SigmaTruncScaling)
-
-        # Power law scaling
-        elif self.config.scaling_method == "power_law": self.initial_population.scaleMethod.set(PowerLawScaling)
-
-        # Boltzmann scaling
-        elif self.config.scaling_method == "boltzmann": self.initial_population.scaleMethod.set(BoltzmannScaling)
-
-        # Exponential scaling
-        elif self.config.scaling_method == "exponential": self.initial_population.scaleMethod.set(ExponentialScaling)
-
-        # Saturated scaling
-        elif self.config.scaling_method == "saturated": self.initial_population.scaleMethod.set(SaturatedScaling)
-
-        # Invalid
-        else: raise ValueError("Invalid scaling method '" + self.config.scaling_method + "'")
+        # Set scaling
+        self.initial_population.scaleMethod.set(scaling)
 
     # -----------------------------------------------------------------
 

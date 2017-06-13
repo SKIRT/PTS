@@ -1723,8 +1723,8 @@ class ConfigurationSetter(object):
             log_path = fs.absolute_or_in(self.definition.log_path, cwd_path) if self.definition.log_path is not None else cwd_path # set absolute log path
 
             self.definition.add_fixed("log_path", "the directory for the log file be written to", log_path)
-            self.definition.add_flag("debug", "enable debug output")
-            self.definition.add_flag("brief", "brief output")
+            self.definition.add_flag("debug", "enable debug output", letter="d")
+            self.definition.add_flag("brief", "brief output", letter="b")
             self.definition.add_flag("report", "write a report file")
 
         # Add config path

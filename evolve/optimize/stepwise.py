@@ -353,9 +353,6 @@ class StepWiseOptimizer(Optimizer):
         # Initialize the genetic algorithm
         self.engine.initialize()
 
-        # Get the initial population
-        #self.population = self.engine.get_population()
-
     # -----------------------------------------------------------------
 
     def finish(self):
@@ -373,9 +370,6 @@ class StepWiseOptimizer(Optimizer):
 
         # Set the scores from the previous generation
         self.set_scores()
-
-        # Set the population
-        #self.population = self.engine.get_population()
 
         # Get the best individual
         self.best = self.engine.finish_evolution()
@@ -642,9 +636,6 @@ class StepWiseOptimizer(Optimizer):
         # Generate the new population
         crossover_data = self.engine.generate_new_population()
 
-        # Get the new population
-        #self.population = self.engine.new_population
-
         # Create the crossover table
         if crossover_data is not None: self.crossover_table = CrossoverTable.from_data(crossover_data, self.genome_type, self.crossover_method)
         else: raise RuntimeError("Could not get the crossover data")
@@ -673,7 +664,7 @@ class StepWiseOptimizer(Optimizer):
 
         # NEW
         if self.config.finish: return None
-        else: return self.engine.population
+        else: return self.internal_population
 
     # -----------------------------------------------------------------
 
@@ -1029,7 +1020,7 @@ class StepWiseOptimizer(Optimizer):
         :return: 
         """
 
-        return isinstance(self.population, NamedPopulation)
+        return isinstance(self.internal_population, NamedPopulation)
 
     # -----------------------------------------------------------------
 
@@ -1041,7 +1032,7 @@ class StepWiseOptimizer(Optimizer):
         :return:
         """
 
-        return self.population.minimax
+        return self.internal_population.minimax
 
     # -----------------------------------------------------------------
 
