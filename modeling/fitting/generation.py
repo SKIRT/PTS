@@ -613,6 +613,18 @@ class Generation(object):
 
     # -----------------------------------------------------------------
 
+    def index_for_parameter(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        return self.parameter_labels.index(label)
+
+    # -----------------------------------------------------------------
+
     @property
     def parameter_units(self):
 

@@ -292,6 +292,18 @@ class FittingRun(object):
 
     # -----------------------------------------------------------------
 
+    def index_for_parameter(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        return self.free_parameter_labels.index(label)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def nfree_parameters(self):
 

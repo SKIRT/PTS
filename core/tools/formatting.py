@@ -442,8 +442,76 @@ class print_in_columns(object):
         :return:
         """
 
-        print(self.columns)
+        #print(self.columns)
 
         print_columns(*self.columns)
+
+# -----------------------------------------------------------------
+
+class itemize(object):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, bullet="-", spacing=1):
+
+        """
+        This function ...
+        :param bullet:
+        """
+
+        self.bullet = bullet
+        self.spacing = spacing
+
+    # -----------------------------------------------------------------
+
+    def __enter__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        print("")
+        return self
+
+    # -----------------------------------------------------------------
+
+    @property
+    def spaces(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return " " * self.spacing
+
+    # -----------------------------------------------------------------
+
+    def __call__(self, string):
+
+        """
+        This function ...
+        :param args:
+        :return:
+        """
+
+        print(self.spaces + self.bullet + self.spaces + string)
+
+    # -----------------------------------------------------------------
+
+    def __exit__(self, exc_type, exc_value, traceback):
+
+        """
+        This function ...
+        :param exc_type:
+        :param exc_value:
+        :param traceback:
+        :return:
+        """
+
+        print("")
 
 # -----------------------------------------------------------------
