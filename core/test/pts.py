@@ -17,7 +17,7 @@ import imp
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
-from ..tools.logging import log, set_log_file, unset_log_file
+from ..tools.logging import log, write_log_to
 from ..basics.configurable import Configurable
 from ..tools import introspection
 from ..tools import filesystem as fs
@@ -546,26 +546,25 @@ class PTSTestSuite(Configurable):
 
                 # Set log path
                 log_path = fs.join(test.output_path, "log.txt")
-                set_log_file(log_path)
 
-                # Start
-                log.start("Starting test '" + test.name + "' ...")
+                # Write log output to test log file
+                with write_log_to(log_path):
 
-                # Run the test
-                try: test.run()
-                except DetachedCalculation as detached:
+                    # Start
+                    log.start("Starting test '" + test.name + "' ...")
 
-                    # Give warning
-                    log.warning("The test '" + test.name + "' of the '" + subproject + "' subproject is being detached: progress and retrieval information are being saved into the tests table ...")
+                    # Run the test
+                    try: test.run()
+                    except DetachedCalculation as detached:
 
-                    # Save the test
-                    test.save()
+                        # Give warning
+                        log.warning("The test '" + test.name + "' of the '" + subproject + "' subproject is being detached: progress and retrieval information are being saved into the tests table ...")
 
-                    # Add an entry to the table
-                    self.table.add_test()
+                        # Save the test
+                        test.save()
 
-                # Unset the log path
-                unset_log_file()
+                        # Add an entry to the table
+                        self.table.add_test()
 
     # -----------------------------------------------------------------
 

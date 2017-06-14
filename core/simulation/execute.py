@@ -249,7 +249,7 @@ class SkirtExec:
 
     ## This function returns True if the previously started SKIRT process is still running, False otherwise
     def isrunning(self):
-        return (self._process != None and self._process.poll() == None)
+        return (self._process != None and self._process.poll() is None)
 
     ## This function waits for the previously started SKIRT process to complete, if needed
     def wait(self):

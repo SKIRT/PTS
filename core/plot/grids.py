@@ -89,7 +89,7 @@ def plotgrids(simulation, figsize=(8,8), output_path=None, silent=False, prefix=
                     path = None
                 if len(coords)==2:
                     x, y = xo+xs*float(coords[0]), yo+ys*float(coords[1])
-                    if path == None:
+                    if path is None:
                         path = fig.beginPath()
                         path.moveTo(x,y)
                     else:
@@ -131,7 +131,7 @@ def plotgrids(simulation, figsize=(8,8), output_path=None, silent=False, prefix=
                     yp = - cosphi*costheta*x - sinphi*costheta*y + sintheta*z
                     xf = xo+s*xp
                     yf = yo+s*yp
-                    if path == None:
+                    if path is None:
                         path = fig.beginPath()
                         path.moveTo(xf,yf)
                     else:

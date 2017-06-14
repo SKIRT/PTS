@@ -65,7 +65,7 @@ def plotseds_impl(sedfiles, plotfile, labels=None, fluxlabel="Flux", figsize=(10
     plt.figure(figsize=figsize)
     plt.clf()
 
-    if labels == None: labels = sedfiles
+    if labels is None: labels = sedfiles
 
     # setup the figure
     plt.grid(True)

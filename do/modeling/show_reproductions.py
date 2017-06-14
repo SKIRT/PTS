@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.evolve.show_crossover Show the crossover.
+## \package pts.do.evolve.show_reproductions Show the reproductions.
 
 # -----------------------------------------------------------------
 
@@ -34,10 +34,10 @@ elif len(run_names) == 1: definition.add_fixed("fitting_run", "string", run_name
 else: definition.add_required("fitting_run", "string", "name of the fitting run to use", choices=run_names)
 
 # Generation
-definition.add_positional_optional("generations", "string_list", "name of the generations for which to show the crossover")
+definition.add_positional_optional("generations", "string_list", "name of the generations for which to show the reproductions")
 
 # Create the configuration
-setter = ArgumentConfigurationSetter("show_crossover")
+setter = ArgumentConfigurationSetter("show_reproductions")
 config = setter.run(definition)
 
 # Set logging
