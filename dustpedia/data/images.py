@@ -103,6 +103,9 @@ class ImageFetcher(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Getting the images ...")
+
         #filters = self.database.get_image_filters(self.ngc_name)
         names_and_urls = self.database.get_image_names_and_urls(self.ngc_name)
 
@@ -110,6 +113,9 @@ class ImageFetcher(Configurable):
 
         # Create directories
         for instrument in self.config.instruments:
+
+            # Inform the user
+            log.info("Creating directory for the " + instrument + " instrument ...")
 
             # Create directory
             path = fs.create_directory_in(self.config.path, instrument)
@@ -126,6 +132,9 @@ class ImageFetcher(Configurable):
 
             # Determine image path
             path = fs.join(paths[instrument], name)
+
+            # Inform the user
+            log.info("Downloading the " + name + " image ...")
 
             # Download via database (decompressing is also done)
             self.database.download_image_from_url(url, path)

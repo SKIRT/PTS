@@ -315,10 +315,11 @@ class ElitismTable(SmartTable):
         self.add_column_info("Generation", int, None, "Generation index")
         self.add_column_info("Elitism replacement", int, None, "# elitism replacement")
         self.add_column_info("Min_or_max", str, None, "minimize or maximize")
-        self.add_column_info("Old best raw score", float, None, "raw score of best individual of old population")
-        self.add_column_info("Old best fitness", float, None, "fitness of best individual of old population")
-        self.add_column_info("New best raw score", float, None, "raw score of best individual of new population")
-        self.add_column_info("New best fitness", float, None, "fitness of best individual of new population")
+        self.add_column_info("Old best raw score", float, None, "raw score of best individual of the old population")
+        self.add_column_info("Old best fitness", float, None, "fitness of best individual of the old population")
+        self.add_column_info("Old individual ID", str, None, "ID of the best individual of the old population")
+        self.add_column_info("New best raw score", float, None, "raw score of best individual of the new population")
+        self.add_column_info("New best fitness", float, None, "fitness of best individual of the new population")
         self.add_column_info("Individual ID", str, None, "name or index of the individual that is replaced")
         self.add_column_info("Elitism performed", bool, None, "elitism condition was met")
         self.add_column_info("Replaced raw score", float, None, "raw score of the individual that was replaced")
@@ -351,6 +352,126 @@ class ElitismTable(SmartTable):
 
         # Return the table
         return table
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nelitism_attempts(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        return len(self)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nelitisms(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return numbers.as_integer_check(np.sum(self["Elitism performed"]))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def elitism_indices(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return tables.find_indices(self, True, "Elitism performed")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def elitism_individual_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [self["Individual ID"][index] for index in self.elitism_indices]
+
+    # -----------------------------------------------------------------
+
+    def get_index_for_individual(self, individual_id):
+
+        """
+        This function ...
+        :param individual_id:
+        :return:
+        """
+
+        return tables.find_index(self, individual_id, "Individual ID")
+
+    # -----------------------------------------------------------------
+
+    def get_score_for_individual(self, individual_id):
+
+        """
+        This fucntion ...
+        :param individual_id:
+        :return:
+        """
+
+        return self["Replaced raw score"][self.get_index_for_individual(individual_id)]
+
+    # -----------------------------------------------------------------
+
+    def get_fitness_for_individual(self, individual_id):
+
+        """
+        This function ...
+        :param individual_id:
+        :return:
+        """
+
+        return self["Replaced fitness"][self.get_index_for_individual(individual_id)]
+
+    # -----------------------------------------------------------------
+
+    def get_replacement_for_individual(self, individual_id):
+
+        """
+        This function ...
+        :param individual_id:
+        :return:
+        """
+
+        return self["Old individual ID"][self.get_index_for_individual(individual_id)]
+
+    # -----------------------------------------------------------------
+
+    def get_replacement_score_for_individual(self, individual_id):
+
+        """
+        This function ...
+        :param individual_id:
+        :return:
+        """
+
+        return self["Old best raw score"][self.get_index_for_individual(individual_id)]
+
+    # -----------------------------------------------------------------
+
+    def get_replacement_fitness_for_individual(self, individual_id):
+
+        """
+        This function ...
+        :param individual_id:
+        :return:
+        """
+
+        return self["Old best fitness"][self.get_index_for_individual(individual_id)]
 
     # -----------------------------------------------------------------
 

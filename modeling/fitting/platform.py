@@ -625,7 +625,7 @@ class GenerationPlatform(object):
     # -----------------------------------------------------------------
 
     @property
-    def nelitisms(self):
+    def nelitism_attempts(self):
 
         """
         This function ...
@@ -633,6 +633,18 @@ class GenerationPlatform(object):
         """
 
         return len(self.generation.elitism_table)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nelitisms(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.generation.elitism_table.nelitisms
 
     # -----------------------------------------------------------------
 
@@ -648,6 +660,18 @@ class GenerationPlatform(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def elitism_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.generation.elitism_table.elitism_individual_ids
+
+    # -----------------------------------------------------------------
+
     def get_elitism(self, index):
 
         """
@@ -656,7 +680,30 @@ class GenerationPlatform(object):
         :return:
         """
 
-        pass
+        # Get the index'th individual name
+        name = self.elitism_names[index]
+
+        # Get the score of the individual
+        score = self.generation.elitism_table.get_score_for_individual(name)
+
+        # Get the name of the replacement individual
+        replacement_name = self.generation.elitism_table.get_replacement_for_individual(name)
+
+        # Get the score of the replacement individual
+        replacement_score = self.generation.elitism_table.get_replacement_score_for_individual(name)
+
+        # Create genome for the replaced individual
+        genome = self.make_genome(self.generation.newborns[name])
+
+        # Create genome for the replacement individual
+        replacement_generation_name = self.fitting_run.get_previous_genetic_generation_name(self.generation.name)
+        population = self.fitting_run.get_population_for_generation(replacement_generation_name)
+        #replacement_genome = self.make_genome(self.population[replacement_name])
+        # OR:
+        replacement_genome = population[replacement_name]
+
+        # Create elitism
+        return Elitism(index, genome, replacement_genome, score, replacement_score)
 
     # -----------------------------------------------------------------
 
@@ -673,6 +720,20 @@ class GenerationPlatform(object):
         print("")
 
         # Loop over each elitism event
-        for elitism in self.elitisms: pass
+        for elitism in self.elitisms:
+
+            print("#" + str(elitism.index + 1) + " " + fmt.blue + fmt.underlined + "Elitism replacement:" + fmt.reset)
+            print("")
+
+            print("GENOMES:")
+            print("")
+
+            replaced_string = tostr(elitism.replaced, delimiter=" ")
+            replacement_string = tostr(elitism.replacement, delimiter=" ")
+
+            with fmt.print_in_columns(3) as print_row:
+
+                print_row("Replaced individual", ":", replaced_string)
+                print_row("Replacement individual", ":", replacement_string)
 
 # -----------------------------------------------------------------

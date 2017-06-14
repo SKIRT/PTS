@@ -1462,6 +1462,7 @@ class GeneticEngine(object):
             old_best = self.internalPop.bestRaw(i)
             old_key = self.internalPop.keys[i]
             new_best = new_population.bestRaw(i)
+            #new_key = new_population.keys[i]
 
             # Determine ID of the old individual
             if isinstance(self.internalPop, NamedPopulation): old_id = old_key
@@ -1510,6 +1511,7 @@ class GeneticEngine(object):
             data["Min_or_max"].append(self.getMinimax())
             data["Old best raw score"].append(old_best_raw)
             data["Old best fitness"].append(old_best_fitness)
+            data["Old individual ID"].append(old_id)
             data["New best raw score"].append(new_best_raw)
             data["New best fitness"].append(new_best_fitness)
             data["Individual ID"].append(individual_id)

@@ -890,6 +890,35 @@ class FittingRun(object):
 
     # -----------------------------------------------------------------
 
+    def get_previous_genetic_generation_name(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if name == self.get_initial_generation_name(): raise ValueError("There is no generation previous to the initial generation")
+        index = self.get_genetic_generation_index(name)
+        if index == 0: return self.get_initial_generation_name()
+        else: return self.get_genetic_generation_name(index-1)
+
+    # -----------------------------------------------------------------
+
+    def get_next_genetic_generation_name(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if name == self.get_initial_generation_name(): index = -1
+        else: index = self.get_genetic_generation_index(name)
+        return self.get_genetic_generation_name(index+1)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def grid_generations(self):
 
