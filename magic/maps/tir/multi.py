@@ -240,7 +240,7 @@ class MultiBandTIRMapMaker(Configurable):
             self.maps[key] = tir
 
             # Set the origins
-            self.maps[key] = filters
+            self.origins[key] = list(filters) # cannot be tuple (for serialization reasons
 
     # -----------------------------------------------------------------
 

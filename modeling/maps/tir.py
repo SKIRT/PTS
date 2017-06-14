@@ -237,6 +237,9 @@ class TIRMapMaker(MapsComponent):
         # Set the maps
         self.maps["single"] = maker.maps
 
+        # Set the origins
+        self.origins["single"] = maker.origins
+
     # -----------------------------------------------------------------
 
     def make_maps_multi(self):
@@ -258,6 +261,9 @@ class TIRMapMaker(MapsComponent):
 
         # Set the maps
         self.maps["multi"] = maker.maps
+
+        # Set the origins
+        self.origins["multi"] = maker.origins
 
     # -----------------------------------------------------------------
 

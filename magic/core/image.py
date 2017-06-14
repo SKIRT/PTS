@@ -28,6 +28,7 @@ from ...core.tools.logging import log
 from .frame import Frame, sum_frames
 from ...core.tools.stringify import tostr
 from ...core.units.unit import PhotometricUnit
+from ...core.units.stringify import represent_unit
 
 # -----------------------------------------------------------------
 
@@ -755,7 +756,9 @@ class Image(object):
             header["PTSCLS"] = last_addition  # if only one Frame or Mask or SegmentationMap has been added
 
         # Set unit, FWHM and filter description
-        if self.unit is not None: header.set("SIGUNIT", str(self.unit), "Unit of the map")
+        if self.unit is not None:
+            header.set("SIGUNIT", represent_unit(self.unit), "Unit of the map")
+            header.set("PHYSTYPE", self.unit.physical_type, "Physical type of the unit")
         if self.fwhm is not None: header.set("FWHM", self.fwhm.to("arcsec").value, "[arcsec] FWHM of the PSF")
         if self.filter is not None: header.set("FILTER", str(self.filter), "Filter used for this observation")
         if self.wcs is None and self.pixelscale is not None:

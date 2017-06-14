@@ -100,7 +100,7 @@ class AttenuationMapMaker(MapsComponent):
         self.maps["cortese"] = maker.maps
 
         # Set the origins
-        self.maps["cortese"] = maker.origins
+        self.origins["cortese"] = maker.origins
 
     # -----------------------------------------------------------------
 
@@ -130,7 +130,7 @@ class AttenuationMapMaker(MapsComponent):
         self.maps["buat"] = maker.maps
 
         # Set the origins
-        self.maps["origins"] = maker.origins
+        self.origins["buat"] = maker.origins
 
     # -----------------------------------------------------------------
 

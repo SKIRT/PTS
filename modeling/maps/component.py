@@ -13,8 +13,10 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from collections import defaultdict
 from abc import ABCMeta, abstractproperty
+
+# Import astronomical modules
+from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from ..component.galaxy import GalaxyModelingComponent
@@ -127,6 +129,8 @@ class MapsComponent(GalaxyModelingComponent):
         """
 
         return self.environment.maps_ssfr_name
+
+    # -----------------------------------------------------------------
 
     @property
     def maps_tir_path(self):
@@ -319,10 +323,12 @@ class MapsComponent(GalaxyModelingComponent):
             origins = dict()
 
             # Loop over subdirectories
-            for method_path, method_path in fs.directories_in_path(sub_path):
+            for method_path in fs.directories_in_path(sub_path):
 
                 origins_path = fs.join(method_path, origins_filename)
                 if not fs.is_file(origins_path): raise ValueError("File '" + origins_path + "' is missing")
+
+                #print(origins_path)
 
                 # Load the origins
                 origins[method_path] = load_dict(origins_path)
@@ -352,7 +358,7 @@ class MapsComponent(GalaxyModelingComponent):
         :return: 
         """
 
-        return self.get_origins_sub_name("colours")
+        return self.get_origins_sub_name(self.maps_colours_name)
 
     # -----------------------------------------------------------------
 
@@ -363,7 +369,7 @@ class MapsComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return self.get_origins_sub_name("ssfr")
+        return self.get_origins_sub_name(self.maps_ssfr_name)
 
     # -----------------------------------------------------------------
 
@@ -374,7 +380,7 @@ class MapsComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return self.get_origins_sub_name("tir")
+        return self.get_origins_sub_name(self.maps_tir_name)
 
     # -----------------------------------------------------------------
 
@@ -385,7 +391,7 @@ class MapsComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return self.get_origins_sub_name("attenuation")
+        return self.get_origins_sub_name(self.maps_attenuation_name)
 
     # -----------------------------------------------------------------
 
@@ -396,7 +402,7 @@ class MapsComponent(GalaxyModelingComponent):
         :return: 
         """
 
-        return self.get_origins_sub_name("old")
+        return self.get_origins_sub_name(self.maps_old_name)
 
     # -----------------------------------------------------------------
 
@@ -407,7 +413,7 @@ class MapsComponent(GalaxyModelingComponent):
         :return: 
         """
 
-        return self.get_origins_sub_name("young")
+        return self.get_origins_sub_name(self.maps_young_name)
 
     # -----------------------------------------------------------------
 
@@ -418,7 +424,7 @@ class MapsComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return self.get_origins_sub_name("ionizing")
+        return self.get_origins_sub_name(self.maps_ionizing_name)
 
     # -----------------------------------------------------------------
 
@@ -429,7 +435,7 @@ class MapsComponent(GalaxyModelingComponent):
         :return: 
         """
 
-        return self.get_origins_sub_name("dust")
+        return self.get_origins_sub_name(self.maps_dust_name)
 
     # -----------------------------------------------------------------
 
@@ -638,18 +644,6 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_ssfr_origins(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        origins_path = fs.join(self.maps_ssfr_path, origins_filename)
-        return load_dict(origins_path)
-
-    # -----------------------------------------------------------------
-
     def get_tir_maps(self):
 
         """
@@ -691,20 +685,20 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_tir_origins(self):
+    #def get_tir_origins(self):
 
-        """
-        This function ...
-        :return: 
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
-        single = self.get_tir_single_origins()
-        multi = self.get_tir_multi_origins()
+        #single = self.get_tir_single_origins()
+        #multi = self.get_tir_multi_origins()
 
-        origins = dict()
-        for name in single: origins["single_" + name] = single[name]
-        for name in multi: origins["multi_" + name] = multi[name]
-        return origins
+        #origins = dict()
+        #for name in single: origins["single_" + name] = single[name]
+        #for name in multi: origins["multi_" + name] = multi[name]
+        #return origins
 
     # -----------------------------------------------------------------
 
@@ -928,6 +922,18 @@ class MapsComponent(GalaxyModelingComponent):
 
         # Return the maps
         return maps
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def current_maps(self):
+
+        """
+        This function is a memoized property implementation of the get_current_maps method
+        :return:
+        """
+
+        return self.get_current_maps()
 
     # -----------------------------------------------------------------
 

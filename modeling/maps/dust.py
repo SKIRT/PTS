@@ -114,6 +114,9 @@ class DustMapMaker(MapsComponent):
         self.maps["black-body"] = maker.maps
         #self.error_maps["black-body"] = maker.error_maps
 
+        # Set origins
+        self.origins["black-body"] = maker.origins
+
     # -----------------------------------------------------------------
 
     def make_emission(self):
@@ -135,6 +138,9 @@ class DustMapMaker(MapsComponent):
         # Add the dust map to the dictionary
         self.maps["emission"] = maker.maps
 
+        # Set origins
+        self.origins["emission"] = maker.origins
+
     # -----------------------------------------------------------------
 
     def make_attenuation(self):
@@ -155,6 +161,9 @@ class DustMapMaker(MapsComponent):
 
         # Add the dust maps to the dictionary
         self.maps["attenuation"] = maker.maps
+
+        # Set origins
+        self.origins["attenuation"] = maker.origins
 
     # -----------------------------------------------------------------
 
@@ -187,6 +196,9 @@ class DustMapMaker(MapsComponent):
 
         # Add the dust maps
         self.maps["hot"] = maker.maps
+
+        # Set origins
+        self.origins["hot"] = maker.origins
 
     # -----------------------------------------------------------------
 

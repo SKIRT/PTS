@@ -111,12 +111,11 @@ def write_dict_impl(dictfile, dct, indent=""):
             write_dict_impl(dictfile, value, indent=indent+"    ")
             print(indent + "}", file=dictfile)
 
-        elif isinstance(value, tuple):
-
-            print(indent + "[" + name_ptype + "] " + name_string + " [tuple]:", file=dictfile)
-            print(indent + "{", file=dictfile)
-            write_data_tuple_impl(dictfile, value, indent=indent+"    ")
-            print(indent + "}", file=dictfile)
+        #elif isinstance(value, tuple):
+        #    print(indent + "[" + name_ptype + "] " + name_string + " [tuple]:", file=dictfile)
+        #    print(indent + "{", file=dictfile)
+        #    write_data_tuple_impl(dictfile, value, indent=indent+"    ")
+        #    print(indent + "}", file=dictfile)
 
         else:
 

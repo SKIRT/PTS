@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ....magic.core.frame import Frame
+from ....magic.core.list import NamedFrameList
 
 # -----------------------------------------------------------------
 
@@ -56,15 +57,19 @@ def make_tir_to_uv(tir, fuv):
 
     ## FUV IN W/M2
 
+    print("FUV:", fuv.unit)
+    print("TIR:", tir.unit)
+
     # Create frame list
-    frames = NamedFrameList()
+    frames = NamedFrameList(fuv=fuv.copy(), tir=tir.copy())
 
+    #fuv = fuv.copy()
+    #fuv.convert_to("W/m2")
 
-    fuv = fuv.copy()
-    fuv.convert_to("W/m2")
+    #tir = tir.copy()
+    #tir.convert_to("W/m2")
 
-    tir = tir.copy()
-    tir.convert_to("W/m2")
+    frames.convert_to_same_unit("W/m2", density=True)
 
     ## TIR IN W/M2
 

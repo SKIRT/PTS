@@ -46,6 +46,7 @@ from ...core.tools import types
 from ...core.units.parsing import parse_unit as u
 from ..basics.vector import PixelShape
 from ...core.tools.stringify import tostr
+from ...core.units.stringify import represent_unit
 
 # -----------------------------------------------------------------
 
@@ -1987,7 +1988,9 @@ class Frame(NDDataArray):
         if header is None: header = self.header
 
         # Set unit, FWHM and filter description
-        if self.unit is not None: header.set("SIGUNIT", str(self.unit), "Unit of the map")
+        if self.unit is not None:
+            header.set("SIGUNIT", represent_unit(self.unit), "Unit of the map")
+            header.set("PHYSTYPE", self.unit.physical_type, "Physical type of the unit")
         if self.fwhm is not None: header.set("FWHM", self.fwhm.to("arcsec").value, "[arcsec] FWHM of the PSF")
         if self.filter is not None: header.set("FILTER", str(self.filter), "Filter used for this observation")
         if self.wcs is None and self.pixelscale is not None:

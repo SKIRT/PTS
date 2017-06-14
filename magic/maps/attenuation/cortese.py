@@ -161,7 +161,7 @@ class CorteseAttenuationMapsMaker(Configurable):
         """
 
         # Inform the user
-        log.info("Creating the dust map ...")
+        log.info("Creating the attenuation maps ...")
 
         # Dust = FUV attenuation = function of (ratio of TIR and FUV luminosity)
 

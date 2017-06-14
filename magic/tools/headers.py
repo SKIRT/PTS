@@ -27,7 +27,7 @@ from ...core.tools.logging import log
 from ..basics.pixelscale import Pixelscale
 from ...core.units.unit import PhotometricUnit
 from ...core.units.parsing import parse_unit as u
-from ...core.units.parsing import parse_quantity
+from ...core.units.utils import interpret_physical_type
 from ...core.tools import types
 
 # -----------------------------------------------------------------
@@ -529,18 +529,30 @@ def get_unit(header):
     :return:
     """
 
+    # Check whether physical type is defined
+    if "PHYSTYPE" in header:
+        physical_type = header["PHYSTYPE"]
+        density, brightness = interpret_physical_type(physical_type)
+        density_strict = brightness_strict = True
+    else: density = brightness = density_strict = brightness_strict = False # these are the defaults
+
     unit = None
 
+    # Look for different keywords
     for keyword in ("BUNIT", "SIGUNIT", "ZUNITS"):
 
-        if keyword in header:
+        # Skip
+        if keyword not in header: continue
 
-            value = header[keyword].split("   / ")[0].rstrip()
+        value = header[keyword].split("   / ")[0].rstrip()
 
-            try:
-                unit = PhotometricUnit(value)
-                break
-            except ValueError: continue
+        try:
+            # Unit found
+            unit = PhotometricUnit(value, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
+            break
+
+        # Parsing failed
+        except ValueError: continue
 
     # Return the unit
     return unit

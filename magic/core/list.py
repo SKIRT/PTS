@@ -1463,7 +1463,7 @@ class NamedFrameList(NamedList):
         """
 
         new = cls()
-        for path, name in fs.files_in_path(path, returns=["path", "name"], extension="fits", contains=contains): new.append(name, Frame.from_file(path))
+        for path, name in fs.files_in_path(path, returns=["path", "name"], extension="fits", contains=contains): new.append(Frame.from_file(path), name=name)
         return new
 
     # -----------------------------------------------------------------
@@ -1636,6 +1636,49 @@ class NamedFrameList(NamedList):
         new_frames = rebin_to_highest_pixelscale(*self.values, names=self.names)
         self.remove_all()
         for frame in new_frames: self.append(frame)
+
+    # -----------------------------------------------------------------
+
+    def convert_to_same_unit(self, unit=None, **kwargs):
+
+        """
+        This function ...
+        :param unit:
+        :param kwargs:
+        :return:
+        """
+
+        new_frames = convert_to_same_unit(*self.values, unit=unit, names=self.names, **kwargs)
+        self.remove_all()
+        for frame in new_frames: self.append(frame)
+
+    # -----------------------------------------------------------------
+
+    def convolve_rebin_and_convert(self, unit=None, **kwargs):
+
+        """
+        This function ...
+        :param unit:
+        :param kwargs:
+        :return:
+        """
+
+        new_frames = convolve_rebin_and_convert(*self.values, unit=unit, names=self.names, **kwargs)
+        self.remove_all()
+        for frame in new_frames: self.append(frame)
+
+    # -----------------------------------------------------------------
+
+    def uniformize(self, unit=None, **kwargs):
+
+        """
+        This function is an alias for convolve_rebin_and_convert
+        :param unit:
+        :param kwargs:
+        :return:
+        """
+
+        return self.convolve_rebin_and_convert(unit=unit, **kwargs)
 
 # -----------------------------------------------------------------
 

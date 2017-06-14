@@ -796,6 +796,8 @@ class NamedList(KeyList):
         :return: 
         """
 
+        #print(name)
+        #print(self.names)
         if name in self.names: raise ValueError("Already an element with the name '" + name + "'")
         self.contents[name] = element
 
