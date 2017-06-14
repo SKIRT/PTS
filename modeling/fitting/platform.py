@@ -515,7 +515,8 @@ class GenerationPlatform(object):
         :return:
         """
 
-        return self.generation.recurrence_table.get_original_generation_and_individual_id(name)
+        generation_index, individual_name = self.generation.recurrence_table.get_original_generation_and_individual_id(name)
+        return generation_index - 1, individual_name
 
     # -----------------------------------------------------------------
 
@@ -697,10 +698,11 @@ class GenerationPlatform(object):
 
         # Create genome for the replacement individual
         replacement_generation_name = self.fitting_run.get_previous_genetic_generation_name(self.generation.name)
+        #print(self.generation.name, replacement_generation_name)
         population = self.fitting_run.get_population_for_generation(replacement_generation_name)
         #replacement_genome = self.make_genome(self.population[replacement_name])
         # OR:
-        replacement_genome = population[replacement_name]
+        replacement_genome = self.make_genome(population[replacement_name])
 
         # Create elitism
         return Elitism(index, genome, replacement_genome, score, replacement_score)
@@ -728,12 +730,28 @@ class GenerationPlatform(object):
             print("GENOMES:")
             print("")
 
-            replaced_string = tostr(elitism.replaced, delimiter=" ")
-            replacement_string = tostr(elitism.replacement, delimiter=" ")
+            replaced_string = tostr(elitism.replaced.genes, delimiter=" ")
+            replacement_string = tostr(elitism.replacement.genes, delimiter=" ")
 
             with fmt.print_in_columns(3) as print_row:
 
                 print_row("Replaced individual", ":", replaced_string)
                 print_row("Replacement individual", ":", replacement_string)
+
+            print("")
+            print("PARAMETERS:")
+            print("")
+
+            # Get actual parameter values
+            replaced_string = self.genome_to_parameters_string(elitism.replaced)
+            replacement_string = self.genome_to_parameters_string(elitism.replacement)
+
+            # Print parameters
+            with fmt.print_in_columns(3) as print_row:
+                print_row("Replaced individual", ":", "[" + replaced_string + "]")
+                print_row("Replacement individual", ":", "[" + replacement_string + "]")
+
+            print("")
+
 
 # -----------------------------------------------------------------

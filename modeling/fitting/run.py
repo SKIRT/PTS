@@ -1494,6 +1494,17 @@ class FittingRun(object):
 
     # -----------------------------------------------------------------
 
+    def get_initial_population(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.populations[0]
+
+    # -----------------------------------------------------------------
+
     def get_population_for_generation(self, generation_index_or_name):
 
         """
@@ -1502,12 +1513,14 @@ class FittingRun(object):
         :return:
         """
 
+        if generation_index_or_name == self.get_initial_generation_name(): return self.get_initial_population()
+
         if types.is_string_type(generation_index_or_name): generation_index = self.get_genetic_generation_index(generation_index_or_name)
         elif types.is_integer_type(generation_index_or_name): generation_index = generation_index_or_name
         else: raise ValueError("Argument must be generation index or name")
 
         # Return the population for this generation
-        return self.populations[generation_index]
+        return self.populations[generation_index + 1]
 
     # -----------------------------------------------------------------
 
