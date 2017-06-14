@@ -421,7 +421,7 @@ class KeyList(object):
             old = self.contents[key]
 
             # Replace the internal ordered dictionary
-            self.contents = OrderedDict((new_key, element) if key == 0 else (key, value) for key, value in self.contents.items())
+            self.contents = OrderedDict((new_key, element) if k == key else (k, value) for k, value in self.contents.items())
 
             # Return the old value
             return old
@@ -826,7 +826,7 @@ class NamedList(KeyList):
             old = self.contents[name]
 
             # Replace the internal ordered dictionary
-            self.contents = OrderedDict((new_name, element) if key == 0 else (key, value) for key, value in self.contents.items())
+            self.contents = OrderedDict((new_name, element) if key == name else (key, value) for key, value in self.contents.items())
 
             # Return the old value
             return old

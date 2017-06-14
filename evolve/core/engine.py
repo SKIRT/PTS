@@ -1499,7 +1499,6 @@ class GeneticEngine(object):
                 log.debug("Replacing the " + str(replacement_index) + "th individual [" + individual_id + "] (raw score=" + str(replaced_raw) + ", fitness=" + str(replaced_fitness) + ") with the " + str(i) + "th individual from the parent population [" + old_id + "] (raw score=" + str(old_best_raw) + ", fitness=" + str(old_best_fitness) + ")...")
 
                 # Replace
-                #new_population[replacement_index] = old_best
                 new_population.replace(replacement_index, old_key, old_best) # Replace so the individual ID is changed, but the order is preserved
 
             # No replacement
