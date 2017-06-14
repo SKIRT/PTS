@@ -166,7 +166,8 @@ class SingleBandTIRMapMaker(Configurable):
             # Calculate the TIR map in W/kpc2 (intrinsic surface brightness)
             logtir = a * np.log(frame.data) + b
             tir = Frame(10**logtir)
-            tir.unit = u("W/kpc2", density=False, brightness=True, density_strict=True, brightness_strict=True)
+            tir.unit = u("W/kpc2", density=False, brightness=True, density_strict=True, brightness_strict=True) # TIR can only be bolometric, right??
+            #tir.unit = u("W/kpc2", density=True, brightness=True, density_strict=True, brightness_strict=True)
             tir.wcs = frame.wcs
 
             # Set the name

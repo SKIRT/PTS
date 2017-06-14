@@ -206,6 +206,9 @@ class CorteseAttenuationCalibration(object):
         # Loop over all entries in the Cortese et. al
         for index in range(len(self.table)):
 
+            # Get the tau value
+            taus.append(self.taus[index])
+
             # Get the range
             ranges.append(self.get_range_for_index(ssfr_colour, index))
 
@@ -228,6 +231,10 @@ class CorteseAttenuationCalibration(object):
 
         # Get the data and iterate over the entries
         taus, ranges, parameters = self.get_data(ssfr_colour)
+        #print(taus, len(taus))
+        #print(ranges, len(ranges))
+        #print(parameters, len(parameters))
+        #print(len(self))
         for index in range(len(self)):
             yield taus[index], ranges[index], parameters[index]
 

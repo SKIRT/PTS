@@ -227,7 +227,8 @@ class MultiBandTIRMapMaker(Configurable):
 
             # Calculate the TIR
             tir = linear_combination(frames, coefficients)
-            tir.unit = u("W/kpc2", density=False, brightness=True, density_strict=True, brightness_strict=True)
+            tir.unit = u("W/kpc2", density=False, brightness=True, density_strict=True, brightness_strict=True) # TIR can only be bolometric, right??
+            #tir.unit = u("W/kpc2", density=True, brightness=True, density_strict=True, brightness_strict=True)
             tir.wcs = frames[0].wcs
 
             # Determine keys

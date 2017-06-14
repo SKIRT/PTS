@@ -1376,6 +1376,19 @@ class FrameList(FilterBasedList):
 
     # -----------------------------------------------------------------
 
+    def convolve_and_rebin(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        new_frames = convolve_and_rebin(*self.values, names=self.filter_names)
+        self.remove_all()
+        for frame in new_frames: self.append(frame)
+
+    # -----------------------------------------------------------------
+
     def convert_to_same_unit(self, unit=None, **kwargs):
 
         """
@@ -1634,6 +1647,19 @@ class NamedFrameList(NamedList):
         """
 
         new_frames = rebin_to_highest_pixelscale(*self.values, names=self.names)
+        self.remove_all()
+        for frame in new_frames: self.append(frame)
+
+    # -----------------------------------------------------------------
+
+    def convolve_and_rebin(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        new_frames = convolve_and_rebin(*self.values, names=self.names)
         self.remove_all()
         for frame in new_frames: self.append(frame)
 
@@ -1980,6 +2006,26 @@ def convolve_rebin_and_convert(*frames, **kwargs):
 
 # -----------------------------------------------------------------
 
+def convolve_and_rebin(*frames, **kwargs):
+
+    """
+    This function ...
+    :param frames:
+    :param kwargs:
+    :return:
+    """
+
+    # First rebin
+    frames = rebin_to_highest_pixelscale(*frames, **kwargs)
+
+    # Then convolve
+    frames = convolve_to_highest_fwhm(*frames, **kwargs)
+
+    # Return the frames
+    return frames
+
+# -----------------------------------------------------------------
+
 def convert_to_same_unit(*frames, **kwargs):
 
     """
@@ -2016,7 +2062,12 @@ def convert_to_same_unit(*frames, **kwargs):
 
         # Debugging
         log.debug("Converting frame " + name + "with unit '" + str(frame.unit) + "' to '" + str(unit) + "' ...")
+
+        # Create and set name
         converted = frame.converted_to(unit, **kwargs)
+        if names is not None: converted.name = names[index]
+
+        # Add to the list of new frames
         new_frames.append(converted)
 
         # Increment index
@@ -2126,7 +2177,13 @@ def rebin_to_pixelscale(*frames, **kwargs):
         if frame.wcs == highest_pixelscale_wcs:
 
             if names is not None: log.debug("Frame " + name + "has highest pixelscale of '" + str(highest_pixelscale) + "' and is not rebinned")
-            new_frames.append(frame.copy())
+
+            # Create new and set the name
+            new = frame.copy()
+            if names is not None: new.name = names[index]
+
+            # Add
+            new_frames.append(new)
 
         # The frame has a lower pixelscale, has to be rebinned
         else:
@@ -2170,6 +2227,9 @@ def rebin_to_pixelscale(*frames, **kwargs):
                 rebinned *= ratio
 
                 #print(rebinned)
+
+            # Set the name
+            if names is not None: rebinned.name = names[index]
 
             # Add the rebinned frame
             new_frames.append(rebinned)
@@ -2289,8 +2349,12 @@ def convolve_to_fwhm(*frames, **kwargs):
             # Debugging
             log.debug("Frame " + name + "has highest FWHM of " + str(highest_fwhm) + " and will not be convolved")
 
+            # Make new frame and set the name
+            new = frame.copy()
+            if names is not None: new.name = names[index]
+
             # Add a copy of the frame
-            new_frames.append(frame.copy())
+            new_frames.append(new)
 
         # Convolve
         else:
@@ -2316,6 +2380,11 @@ def convolve_to_fwhm(*frames, **kwargs):
 
             # Convolve with the kernel
             convolved = frame.convolved(kernel)
+
+            # Set the name
+            if names is not None: convolved.name = names[index]
+
+            # Add to the list
             new_frames.append(convolved)
 
         # Increment the index

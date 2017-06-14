@@ -95,6 +95,9 @@ class BuatAttenuationMapsMaker(Configurable):
         self.nuv = kwargs.pop("nuv", None)
         self.tirs = kwargs.pop("tirs")
 
+        # Get distance
+        self.distance = kwargs.pop("distance", None)
+
         # Origins
         self.tirs_origins = kwargs.pop("tirs_origins", None)
 
@@ -150,7 +153,7 @@ class BuatAttenuationMapsMaker(Configurable):
         for name in self.tirs:
 
             # Make the TIR to FUV map
-            tir_to_fuv = make_tir_to_uv(self.tirs[name], self.fuv)
+            tir_to_fuv = make_tir_to_uv(self.tirs[name], self.fuv, distance=self.distance)
             log_tir_to_fuv = Frame(np.log10(tir_to_fuv), wcs=tir_to_fuv.wcs)
 
             # Calculate FUV attenuation map
@@ -193,7 +196,7 @@ class BuatAttenuationMapsMaker(Configurable):
         for name in self.tirs:
 
             # Calculate map
-            tir_to_nuv = make_tir_to_uv(self.tirs[name], self.nuv)
+            tir_to_nuv = make_tir_to_uv(self.tirs[name], self.nuv, distance=self.distance)
             log_tir_to_nuv = Frame(np.log10(tir_to_nuv), wcs=tir_to_nuv.wcs)
 
             # Calculate attenuation map
