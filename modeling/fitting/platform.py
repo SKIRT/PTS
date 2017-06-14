@@ -20,6 +20,8 @@ from ...core.tools.logging import log
 from .generation import Generation
 from .evaluate import get_parameter_values_from_genome
 from .reproduction import ReproductionEvent
+from .recurrence import Recurrence
+from .elitism import Elitism
 from ...core.tools import formatting as fmt
 from ...core.tools.stringify import tostr
 
@@ -57,6 +59,34 @@ class GenerationPlatform(object):
 
         # Create and return platform
         return cls(generation)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def modeling_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.generation.modeling_path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def population(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .component import get_populations
+
+        # Load the populations data
+        populations = get_populations(self.modeling_path)
+        return populations[self.generation.fitting_run_name][self.generation.name]
 
     # -----------------------------------------------------------------
 
@@ -406,7 +436,7 @@ class GenerationPlatform(object):
         :return:
         """
 
-        return len(self.generation.recurrent_data)
+        return self.generation.recurrence_table.nrecurrences
 
     # -----------------------------------------------------------------
 
@@ -422,6 +452,42 @@ class GenerationPlatform(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def recurrence_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.generation.recurrence_table.individual_ids
+
+    # -----------------------------------------------------------------
+
+    def get_recurrence_score(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.generation.recurrence_table.get_score_for_individual(name)
+
+    # -----------------------------------------------------------------
+
+    def get_recurrence_generation_and_name(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.generation.recurrence_table.get_original_generation_and_individual_id(name)
+
+    # -----------------------------------------------------------------
+
     def get_recurrence(self, index):
 
         """
@@ -430,13 +496,30 @@ class GenerationPlatform(object):
         :return:
         """
 
-        # Get the key
-        individual_key = self.generation.recurrent_data.keys()[index]
+        # Get the index'th individual name
+        name = self.recurrence_names[index]
 
-        # Get the chi squared
-        chi_squared = self.generation.recurrent_data[individual_key]
+        # Get the generation index and the original name
+        generation_index, original_name = self.get_recurrence_generation_and_name(name)
 
-        return individual_key, chi_squared
+        # Get the generation name
+        generation_name = self.fitting_run.get_genetic_generation_name(generation_index)
+
+        # Get newborns
+        newborns = self.generation.newborns
+
+        # Create genome
+        genome = self.make_genome(newborns[name])
+
+        # Get score
+        score = self.get_recurrence_score(name)
+
+        # Get genome of original individual
+        population = self.fitting_run.get_population_for_generation(generation_name)
+        original_genome = population[original_name]
+
+        # Create and return the recurrence object
+        return Recurrence(index, genome, generation_name, original_genome, score)
 
     # -----------------------------------------------------------------
 
@@ -455,7 +538,7 @@ class GenerationPlatform(object):
         # Loop over each recurrence event
         for recurrence in self.recurrences:
 
-            print(recurrence)
+            print(vars(recurrence))
 
     # -----------------------------------------------------------------
 

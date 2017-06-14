@@ -23,9 +23,9 @@ from .modelgenerators.genetic import set_optimizer_settings, get_last_generation
 from ..fitting.sedfitting import SEDFitter
 from ..fitting.run import get_ngenerations, has_unfinished_generations, has_unevaluated_generations
 from ...core.tools import filesystem as fs
-from ...core.tools.serialization import load_dict
 from ...evolve.optimize.stepwise import load_population
 from .modelgenerators.genetic import statistics_name, database_name, populations_name, frequency, commit_frequency
+from ...evolve.optimize.tables import RecurrenceTable
 
 # -----------------------------------------------------------------
 
@@ -321,15 +321,14 @@ class ExplorationFinisher(FittingComponent):
         previous_newborns_path = fs.join(previous_generation_path, "newborns.dat")
         previous_population = load_population(previous_newborns_path)
 
-        # Load the recurrence data
-        # Load the previous recurrent data
-        previous_recurrent_path = fs.join(self.fitting_run.last_genetic_generation_path, "recurrent.dat")
-        previous_recurrent = load_dict(previous_recurrent_path)
+        # Load the previous recurrence data
+        previous_recurrent_path = fs.join(self.fitting_run.last_genetic_generation_path, "recurrence.dat")
+        previous_recurrence = RecurrenceTable.from_file(previous_recurrent_path)
 
         # Run the optimizer
         self.optimizer.run(scores=self.scores, scores_names=self.scores_names, scores_check=self.scores_check, minima=parameter_minima,
                            maxima=parameter_maxima, evaluator=evaluator, evaluator_kwargs=evaluator_kwargs,
-                           previous_population=previous_population, previous_recurrent=previous_recurrent,
+                           previous_population=previous_population, previous_recurrence=previous_recurrence,
                            ndigits=self.fitting_run.ndigits_list, nbits=self.fitting_run.nbits_list, scales=self.parameter_scale_list)
 
     # -----------------------------------------------------------------

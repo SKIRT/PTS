@@ -28,10 +28,9 @@ from ...core.basics.configuration import Configuration
 from ..core.adapters import DBFileCSV, DBSQLite, PopulationsFile
 from .optimizer import Optimizer
 from ..core.population import NamedPopulation
-from .tables import ElitismTable, CrossoverTable, ScoresTable
+from .tables import ElitismTable, CrossoverTable, ScoresTable, RecurrenceTable
 from ..analyse.database import load_database, get_score_for_individual
-from ...core.tools.serialization import write_dict
-from .optimizer import get_parameters_from_genome, get_binary_genome_from_parameters, round_parameters
+from .optimizer import get_parameters_from_genome, get_binary_genome_from_parameters
 from ..core.engine import equal_genomes
 from ..core import constants
 from ...core.basics.map import Map
@@ -82,11 +81,11 @@ class StepWiseOptimizer(Optimizer):
         # The previous population
         self.previous_population = None
 
-        # The previous recurrent data
-        self.previous_recurrent = None
+        # The previous recurrence table
+        self.previous_recurrence = None
 
-        # Recurrent data
-        self.recurrent = None
+        # Recurrence table
+        self.recurrence_table = None
 
         # The input that was passed to the run function
         self.input = None
@@ -305,8 +304,8 @@ class StepWiseOptimizer(Optimizer):
         # Get the previous population
         if "previous_population" in kwargs: self.previous_population = kwargs.pop("previous_population")
 
-        # Get the previous recurrent data
-        if "previous_recurrent" in kwargs: self.previous_recurrent = kwargs.pop("previous_recurrent")
+        # Get the previous recurrence data
+        if "previous_recurrence" in kwargs: self.previous_recurrence = kwargs.pop("previous_recurrence")
 
         # Set best to None: only when finish_evoluation is run, best should be set
         self.best = None
@@ -417,8 +416,8 @@ class StepWiseOptimizer(Optimizer):
         # Generate new population
         self.generate_new_population()
 
-        # Check recurrency
-        if self.check_recurrence: self.set_recurrent()
+        # Check recurrence
+        if self.check_recurrence: self.set_recurrence()
 
     # -----------------------------------------------------------------
 
@@ -430,9 +429,8 @@ class StepWiseOptimizer(Optimizer):
         :return: 
         """
 
-        if self.previous_recurrent is None: return self.scores
-
-        if len(self.previous_recurrent) == 0: return self.scores
+        if self.previous_recurrence is None: return self.scores
+        if self.previous_recurrence.nrecurrences == 0: return self.scores
 
         scores = []
 
@@ -441,7 +439,7 @@ class StepWiseOptimizer(Optimizer):
         # Loop over the names in the previous population, because the order IS IMPORTANT
         for key in self.previous_population:
 
-            if key in self.previous_recurrent: score = self.previous_recurrent[key]
+            if key in self.previous_recurrence: score = self.previous_recurrence.get_score_for_individual(key)
             else: score = passed_scores.next()
 
             # Add the score
@@ -467,8 +465,8 @@ class StepWiseOptimizer(Optimizer):
         if self.scores_names is None: return None
 
         # No recurrency
-        if self.previous_recurrent is None: return self.scores_names
-        if len(self.previous_recurrent) == 0: return self.scores_names
+        if self.previous_recurrence is None: return self.scores_names
+        if self.previous_recurrence.nrecurrences == 0: return self.scores_names
 
         # Initialize a list for the names
         names = []
@@ -477,7 +475,7 @@ class StepWiseOptimizer(Optimizer):
 
         for key in self.previous_population:
 
-            if key in self.previous_recurrent: name = key
+            if key in self.previous_recurrence: name = key
             else: name = passed_names.next()
 
             # Add the name
@@ -503,8 +501,8 @@ class StepWiseOptimizer(Optimizer):
         if self.scores_check is None: return None
 
         # No recurrency
-        if self.previous_recurrent is None: return self.scores_check
-        if len(self.previous_recurrent) == 0: return self.scores_check
+        if self.previous_recurrence is None: return self.scores_check
+        if self.previous_recurrence.nrecurrences == 0: return self.scores_check
 
         # Initialize a list for the checks
         checks = []
@@ -515,7 +513,7 @@ class StepWiseOptimizer(Optimizer):
         for key in self.previous_population:
 
             # Recurrent
-            if key in self.previous_recurrent: parameters = get_parameters_from_genome(self.previous_population[key], self.parameter_minima_scaled, self.parameter_maxima_scaled, self.nbits, self.parameter_scales, gray=self.config.gray_code)
+            if key in self.previous_recurrence: parameters = get_parameters_from_genome(self.previous_population[key], self.parameter_minima_scaled, self.parameter_maxima_scaled, self.nbits, self.parameter_scales, gray=self.config.gray_code)
 
             # Not recurrent
             else: parameters = passed_checks.next()
@@ -696,7 +694,7 @@ class StepWiseOptimizer(Optimizer):
 
     # -----------------------------------------------------------------
 
-    def set_recurrent(self):
+    def set_recurrence(self):
 
         """
         This function ...
@@ -704,10 +702,10 @@ class StepWiseOptimizer(Optimizer):
         """
 
         # Inform the user
-        log.info("Looking for recurrency of old individuals within the new population ...")
+        log.info("Looking for recurrence of old individuals within the new population ...")
 
-        # Initilaize
-        self.recurrent = dict()
+        # Initialize the recurrence table
+        self.recurrence_table = RecurrenceTable()
 
         # Get run ID
         run_id = self.populations.identify
@@ -734,6 +732,9 @@ class StepWiseOptimizer(Optimizer):
             # If not found, skip
             if generation_index is None: continue
 
+            # Determine the generation name
+            #generation_name = "Generation" + str(generation_index-1)
+
             # Debugging
             log.debug("Individual '" + name + "' is recurrent: individual '" + str(key) + "' from generation " + str(generation_index-1))
 
@@ -743,8 +744,8 @@ class StepWiseOptimizer(Optimizer):
             # Debugging
             log.debug("The score of this individual was " + str(score))
 
-            # Set the score for the recurrent individual
-            self.recurrent[name] = score
+            # Add entry to the recurrence table
+            self.recurrence_table.add_entry(name, generation_index, key, score)
 
     # -----------------------------------------------------------------
 
@@ -813,7 +814,7 @@ class StepWiseOptimizer(Optimizer):
         if self.elitism_table is not None: self.write_elitism()
 
         # Write the recurrency data
-        if self.recurrent is not None: self.write_recurrent()
+        if self.recurrence_table is not None: self.write_recurrence()
 
     # -----------------------------------------------------------------
 
@@ -1074,12 +1075,12 @@ class StepWiseOptimizer(Optimizer):
 
         if not self.is_named_population: raise ValueError("The population is not a named population")
 
-        if self.recurrent is None: return self.individual_names
+        if self.recurrence_table is None: return self.individual_names
 
         names = []
         for name in self.individual_names:
 
-            if name in self.recurrent: continue
+            if name in self.recurrence_table: continue
             names.append(name)
 
         return names
@@ -1094,12 +1095,12 @@ class StepWiseOptimizer(Optimizer):
         :return: 
         """
 
-        if self.recurrent is None: return self.individual_keys
+        if self.recurrence_table is None: return self.individual_keys
 
         keys = []
         for key in self.individual_keys:
 
-            if key in self.recurrent: continue
+            if key in self.recurrence_table: continue
             keys.append(key)
 
         return keys
@@ -1201,7 +1202,7 @@ class StepWiseOptimizer(Optimizer):
 
     # -----------------------------------------------------------------
 
-    def write_recurrent(self):
+    def write_recurrence(self):
 
         """
         This function ...
@@ -1209,14 +1210,14 @@ class StepWiseOptimizer(Optimizer):
         """
 
         # Inform the user
-        log.info("Writing the recurrent individuals ...")
+        log.info("Writing the recurrence data ...")
 
         # Determine the path
         if self.config.writing.recurrent_path is not None: path = fs.absolute_or_in(self.config.writing.recurrent_path, self.output_path)
-        else: path = self.output_path_file("recurrent.dat")
+        else: path = self.output_path_file("recurrence.dat")
 
         # Save the dictionary
-        write_dict(self.recurrent, path)
+        self.recurrence_table.saveto(path)
 
     # -----------------------------------------------------------------
 

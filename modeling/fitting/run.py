@@ -878,6 +878,18 @@ class FittingRun(object):
 
     # -----------------------------------------------------------------
 
+    def get_genetic_generation_index(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return int(name.split("Generation")[1])
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def grid_generations(self):
 
@@ -1295,7 +1307,7 @@ class FittingRun(object):
 
     # -----------------------------------------------------------------
 
-    def recurrent_path_for_generation(self, generation_name):
+    def recurrence_path_for_generation(self, generation_name):
 
         """
         This function ...
@@ -1304,11 +1316,11 @@ class FittingRun(object):
         """
 
         generation = self.get_generation(generation_name)
-        return generation.recurrent_path
+        return generation.recurrence_path
 
     # -----------------------------------------------------------------
 
-    def recurrent_data_for_generation(self, generation_name):
+    def recurrence_table_for_generation(self, generation_name):
 
         """
         This function ...
@@ -1317,7 +1329,7 @@ class FittingRun(object):
         """
 
         generation = self.get_generation(generation_name)
-        return generation.recurrent_path
+        return generation.recurrence_table
 
     # -----------------------------------------------------------------
 
@@ -1439,6 +1451,38 @@ class FittingRun(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def populations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .component import get_populations
+
+        # Load the populations data and get only for this fitting run
+        return get_populations(self.modeling_path)[self.name]
+
+    # -----------------------------------------------------------------
+
+    def get_population_for_generation(self, generation_index_or_name):
+
+        """
+        This function ...
+        :param generation_index_or_name:
+        :return:
+        """
+
+        if types.is_string_type(generation_index_or_name): generation_index = self.get_genetic_generation_index(generation_index_or_name)
+        elif types.is_integer_type(generation_index_or_name): generation_index = generation_index_or_name
+        else: raise ValueError("Argument must be generation index or name")
+
+        # Return the population for this generation
+        return self.populations[generation_index]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def best_parameter_values_and_chi_squared(self):
 
         """
@@ -1449,7 +1493,6 @@ class FittingRun(object):
         # NEW: THIS FUNCTION WAS CREATED BECAUSE RECURRENCE WAS IMPLEMENTED: THIS MEANS THAT OUR OWN TABLES
         # (THOSE WHO CONTAIN ONLY MODELS THAT HAVE TO BE SIMULATED AND HAVE NOT OCCURED AND SCORED BEFORE)
 
-        from .component import get_populations
         from .component import get_database_path
 
         # Get path
@@ -1464,11 +1507,8 @@ class FittingRun(object):
         # Load the generation
         generation = self.get_generation(generation_name)
 
-        # Look in the populations data for the parameters, for this fitting run
-        populations = get_populations(self.modeling_path)[self.name]
-
         # Get the parameter values for the generation and individual
-        individuals_generation = populations[generation_index]
+        individuals_generation = self.get_population_for_generation(generation_name)
 
         # Get genome
         genome = individuals_generation[individual_key]

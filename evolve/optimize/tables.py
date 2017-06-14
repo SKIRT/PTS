@@ -188,6 +188,112 @@ class CrossoverTable(SmartTable):
 
 # -----------------------------------------------------------------
 
+class RecurrenceTable(SmartTable):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(RecurrenceTable, self).__init__(*args, **kwargs)
+
+        # Add column information
+        self.add_column_info("Individual ID", str, None, "name or index of the individual that is recurrent")
+        self.add_column_info("Generation", int, None, "Generation index of the original individual")
+        self.add_column_info("Original individual ID", str, None, "name or index of the original individual")
+        self.add_column_info("Score", float, None, "Score of the original individual")
+
+    # -----------------------------------------------------------------
+
+    def add_entry(self, individual_id, generation, original_individual_id, score):
+
+        """
+        This function ...
+        :param individual_id:
+        :param generation:
+        :param original_individual_id:
+        :param score:
+        :return:
+        """
+
+        # Make row of values and add the row
+        row = [individual_id, generation, original_individual_id, score]
+        self.add_row(row)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nrecurrences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def individual_ids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["Individual ID"])
+
+    # -----------------------------------------------------------------
+
+    def __contains__(self, key):
+
+        """
+        This function ...
+        :param key:
+        :return:
+        """
+
+        return key in self.individual_ids
+
+    # -----------------------------------------------------------------
+
+    def get_score_for_individual(self, individual_id):
+
+        """
+        This function ...
+        :param individual_id:
+        :return:
+        """
+
+        index = tables.find_index(self, individual_id)
+        if index is None: raise ValueError("Individual " + str(individual_id) + " not found")
+        return self["Score"][index]
+
+    # -----------------------------------------------------------------
+
+    def get_original_generation_and_individual_id(self, individual_id):
+
+        """
+        This function ...
+        """
+
+        index = tables.find_index(self, individual_id)
+        if index is None: raise ValueError("Individual " + str(individual_id) + " not found")
+
+        # Return generation and original individual ID
+        return self["Generation"][index], self["Original individual ID"][index]
+
+# -----------------------------------------------------------------
+
 class ElitismTable(SmartTable):
 
     """

@@ -20,9 +20,8 @@ from ...core.basics.composite import SimplePropertyComposite
 from ...core.tools import filesystem as fs
 from ..build.component import get_model_definition, get_representation
 from .tables import IndividualsTable, ParametersTable, ChiSquaredTable
-from ...evolve.optimize.tables import ElitismTable, CrossoverTable, ScoresTable
+from ...evolve.optimize.tables import ElitismTable, CrossoverTable, ScoresTable, RecurrenceTable
 from ...evolve.optimize.stepwise import load_population
-from ...core.tools.serialization import load_dict
 from ...core.basics.configurable import load_input
 from ...core.basics.configuration import Configuration
 from ...evolve.optimize.components import get_crossover, get_crossover_origins, get_genome_class, get_mutator, get_selector, get_scaling, get_initializator
@@ -493,26 +492,26 @@ class Generation(object):
     # -----------------------------------------------------------------
 
     @property
-    def recurrent_path(self):
+    def recurrence_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.join(self.path, "recurrent.dat")
+        return fs.join(self.path, "recurrence.dat")
 
     # -----------------------------------------------------------------
 
-    @property
-    def recurrent_data(self):
+    @lazyproperty
+    def recurrence_table(self):
 
         """
         This function ...
         :return:
         """
 
-        return load_dict(self.recurrent_path, ordered=True)
+        return RecurrenceTable.from_file(self.recurrence_path)
 
     # -----------------------------------------------------------------
 
@@ -982,6 +981,18 @@ class Generation(object):
 
         from .run import FittingRun
         return FittingRun.from_path(self.fitting_run_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fitting_run_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.fitting_run_path)
 
     # -----------------------------------------------------------------
 

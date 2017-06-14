@@ -28,25 +28,21 @@ class Recurrence(object):
     This class ...
     """
 
-    def __init__(self, index, mother, father, initial_sister, initial_brother, sister, brother, crossover, sister_origins, brother_origins):
+    def __init__(self, index, individual, generation, original, score):
 
         """
         This function ...
+        :param index:
+        :param individual:
+        :param generation:
+        :param original:
+        :param score:
         """
 
         self.index = index
-        self.mother = mother
-        self.father = father
-        self.initial_sister = initial_sister
-        self.initial_brother = initial_brother
-        self.sister = sister
-        self.brother = brother
-        self.crossover = crossover
-        self.sister_origins = sister_origins
-        self.brother_origins = brother_origins
-
-    # -----------------------------------------------------------------
-
-   
+        self.individual = individual
+        self.generation = generation
+        self.original = original
+        self.score = score
 
 # -----------------------------------------------------------------

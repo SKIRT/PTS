@@ -24,8 +24,8 @@ from ....evolve.optimize.continuous import ContinuousOptimizer
 from ..evaluate import evaluate
 from ....core.tools.stringify import tostr
 from ....core.tools import sequences
-from ....core.tools.serialization import load_dict
 from ....core.tools import numbers
+from ....evolve.optimize.tables import RecurrenceTable
 
 # -----------------------------------------------------------------
 
@@ -82,7 +82,7 @@ class GeneticModelGenerator(ModelGenerator):
         self.previous_population = None
 
         # Previous recurrent
-        self.previous_recurrent = None
+        self.previous_recurrence = None
 
     # -----------------------------------------------------------------
 
@@ -179,7 +179,7 @@ class GeneticModelGenerator(ModelGenerator):
         self.optimizer.config.writing.newborns_path = self.generation.newborns_path
         self.optimizer.config.writing.parents_path = self.generation.parents_path
         self.optimizer.config.writing.crossover_table_path = self.generation.crossover_table_path
-        self.optimizer.config.writing.recurrent_path = self.generation.recurrent_path
+        self.optimizer.config.writing.recurrent_path = self.generation.recurrence_path
         self.optimizer.config.writing.elitism_table_path = elitism_path
         self.optimizer.config.writing.scores_table_path = scores_path
 
@@ -225,8 +225,8 @@ class GeneticModelGenerator(ModelGenerator):
 
         # Load the previous recurrent data, BUT NOT WHEN THE PREVIOUS GENERATION WAS THE INTIAL ONE ?
         if not self.fitting_run.last_is_initial:
-            previous_recurrent_path = fs.join(self.fitting_run.last_genetic_generation_path, "recurrent.dat")
-            self.previous_recurrent = load_dict(previous_recurrent_path)
+            previous_recurrent_path = fs.join(self.fitting_run.last_genetic_generation_path, "recurrence.dat")
+            self.previous_recurrence = RecurrenceTable.from_file(previous_recurrent_path)
 
     # -----------------------------------------------------------------
 
@@ -353,7 +353,7 @@ class GeneticModelGenerator(ModelGenerator):
                            scores_names=self.scores_names,
                            maxima=self.parameter_maxima_scalar, evaluator=self.evaluator,
                            evaluator_kwargs=self.evaluator_kwargs, initial_parameters=self.initial_parameters,
-                           previous_population=self.previous_population, previous_recurrent=self.previous_recurrent,
+                           previous_population=self.previous_population, previous_recurrence=self.previous_recurrence,
                            ndigits=self.fitting_run.ndigits_list, nbits=self.fitting_run.nbits_list, scales=self.parameter_scale_list)
 
         # Get the parameter values of the new models
