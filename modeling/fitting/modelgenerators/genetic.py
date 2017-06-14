@@ -702,6 +702,9 @@ def set_optimizer_settings(optimizer, fitting_run, ngenerations=None, nmodels=No
     # ADVANCED: GRAY CODING
     optimizer.config.gray_code = fitting_run.genetic_settings.gray_code
 
+    # ADVANCED: THE RANDOM SEED
+    optimizer.config.seed = fitting_run.random_seed
+
 # -----------------------------------------------------------------
 
 def get_last_generation_name(fitting_run, or_initial=True):

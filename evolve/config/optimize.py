@@ -7,6 +7,7 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
+from pts.core.tools.random import skirt_seed
 
 # -----------------------------------------------------------------
 
@@ -143,5 +144,8 @@ definition.add_flag("gray_code", "use Gray coding for the binary genome represen
 
 # NEW: SCALE FOR THE REAL VALUES ?
 definition.add_optional("default_scale", "string", "default scale", default_scale, scales)
+
+# ADVANCED
+definition.add_optional("seed", "positive_integer", "random seed to iniate the evolution with", skirt_seed)
 
 # -----------------------------------------------------------------

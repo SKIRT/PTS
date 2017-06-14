@@ -18,6 +18,7 @@ from ...core.tools.logging import log
 from ..optimize.continuous import ContinuousOptimizer
 from ...core.basics.configuration import ConfigurationDefinition
 from ..config.optimize import crossover_methods, mutation_methods, scaling_methods, selector_methods, genome_types
+from ...core.tools.random import skirt_seed
 
 # -----------------------------------------------------------------
 
@@ -36,6 +37,9 @@ default_selector_method = "roulette_wheel"
 
 # Create the genetic definition
 genetic_definition = ConfigurationDefinition(write_config=False)
+
+# Random seed
+genetic_definition.add_optional("seed", "positive_integer", "random seed to use for initiating the genetic algorithm", skirt_seed)
 
 # Add settings
 genetic_definition.add_optional("genome_type", "string", "genome type", default_genome_type, choices=genome_types)
@@ -252,6 +256,9 @@ class Extremizer(Configurable):
         #settings_optimize["stats_freq"] = stats_freq
         settings_optimize["mutation_method"] = self.config.genetic.mutation_method
         settings_optimize["min_or_max"] = self.config.min_or_max
+
+        # Set random seed
+        settings_optimize["seed"] = self.config.genetic.seed
 
         # Input
         input_optimize = dict()

@@ -173,6 +173,102 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
     # -----------------------------------------------------------------
 
     @property
+    def maps_colours_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.maps_colours_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_ssfr_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.maps_ssfr_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_tir_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.maps_tir_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_attenuation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.maps_attenuation_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_old_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.maps_old_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_young_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.maps_young_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_ionizing_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.maps_ionizing_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_dust_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.maps_dust_path)
+
+    #
+
+    @property
     def cache_host_id(self):
 
         """

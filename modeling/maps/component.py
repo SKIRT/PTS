@@ -97,6 +97,16 @@ class MapsComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def maps_colours_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.maps_colours_name
+
+    @property
     def maps_ssfr_path(self):
 
         """
@@ -109,6 +119,16 @@ class MapsComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def maps_ssfr_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.maps_ssfr_name
+
+    @property
     def maps_tir_path(self):
 
         """
@@ -117,6 +137,18 @@ class MapsComponent(GalaxyModelingComponent):
         """
 
         return self.environment.maps_tir_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_tir_name(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        return self.environment.maps_tir_name
 
     # -----------------------------------------------------------------
 
@@ -133,6 +165,18 @@ class MapsComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def maps_attenuation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.maps_attenuation_name
+
+    # -----------------------------------------------------------------
+
+    @property
     def maps_old_path(self):
 
         """
@@ -141,6 +185,18 @@ class MapsComponent(GalaxyModelingComponent):
         """
 
         return self.environment.maps_old_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_old_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.maps_old_name
 
     # -----------------------------------------------------------------
 
@@ -157,6 +213,18 @@ class MapsComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def maps_young_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.maps_young_name
+
+    # -----------------------------------------------------------------
+
+    @property
     def maps_ionizing_path(self):
 
         """
@@ -169,6 +237,18 @@ class MapsComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def maps_ionizing_name(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        return self.environment.maps_ionizing_name
+
+    # -----------------------------------------------------------------
+
+    @property
     def maps_dust_path(self):
 
         """
@@ -177,6 +257,18 @@ class MapsComponent(GalaxyModelingComponent):
         """
 
         return self.environment.maps_dust_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_dust_name(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        return self.environment.maps_dust_name
 
     # -----------------------------------------------------------------
 
@@ -250,6 +342,94 @@ class MapsComponent(GalaxyModelingComponent):
         origins = dict()
         for name in self.maps_sub_names: origins[name] = self.get_origins_sub_name(name)
         return origins
+
+    # -----------------------------------------------------------------
+
+    def get_colours_origins(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.get_origins_sub_name("colours")
+
+    # -----------------------------------------------------------------
+
+    def get_ssfr_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_origins_sub_name("ssfr")
+
+    # -----------------------------------------------------------------
+
+    def get_tir_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_origins_sub_name("tir")
+
+    # -----------------------------------------------------------------
+
+    def get_attenuation_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_origins_sub_name("attenuation")
+
+    # -----------------------------------------------------------------
+
+    def get_old_origins(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.get_origins_sub_name("old")
+
+    # -----------------------------------------------------------------
+
+    def get_young_origins(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.get_origins_sub_name("young")
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_origins_sub_name("ionizing")
+
+    # -----------------------------------------------------------------
+
+    def get_dust_origins(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.get_origins_sub_name("dust")
 
     # -----------------------------------------------------------------
 

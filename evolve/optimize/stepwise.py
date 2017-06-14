@@ -323,19 +323,22 @@ class StepWiseOptimizer(Optimizer):
         # Inform the user
         log.info("Initializing ...")
 
-        # Initialize the adapters
+        # 1. Initialize the random number generator
+        self.initialize_prng()
+
+        # 2. Initialize the adapters
         self.initialize_adapters()
 
-        # 4. Initialize genome
+        # 3. Initialize genome
         self.initialize_genome(**kwargs)
 
-        # 5. Initialize engine
+        # 4. Initialize engine
         self.initialize_engine(**kwargs)
 
-        # 6. Initialize the initial population
+        # 5. Initialize the initial population
         self.initialize_population()
 
-        # 7. Initialize the evolution (the initial generation)
+        # 6. Initialize the evolution (the initial generation)
         self.initialize_evolution()
 
     # -----------------------------------------------------------------

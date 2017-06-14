@@ -559,6 +559,18 @@ class FittingRun(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def random_seed(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.genetic_settings.seed
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def grid_settings(self):
 
         """

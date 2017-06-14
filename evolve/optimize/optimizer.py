@@ -36,6 +36,7 @@ from ...core.tools import numbers
 from ...core.tools.stringify import tostr
 from ..core.engine import is_binary_genome, is_real_genome
 from .components import get_genome_type, is_1d_genome, is_2d_genome, get_mutator, create_genome, get_crossover_method, get_crossover, get_selector, get_scaling, get_initializator
+from ...core.tools.random import setup_prng
 
 # -----------------------------------------------------------------
 
@@ -421,6 +422,21 @@ class Optimizer(Configurable):
 
         # Scale the initial parameter sets according to the parameter scales
         return scale_parameter_sets(self.initial_parameters, self.parameter_scales)
+
+    # -----------------------------------------------------------------
+
+    def initialize_prng(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Initializing the random number generator ...")
+
+        # Set the seed of the PRNG
+        setup_prng(self.config.seed)
 
     # -----------------------------------------------------------------
 

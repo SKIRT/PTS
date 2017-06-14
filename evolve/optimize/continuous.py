@@ -88,11 +88,11 @@ class ContinuousOptimizer(Optimizer):
         # Inform the user
         log.info("Initializing ...")
 
-        # 1. Initialize the statistics table
-        self.initialize_statistics()
+        # 1. Initialize the random number generator
+        self.initialize_prng()
 
-        # 2. Initialize the database
-        self.initialize_database()
+        # 2. Initialize the adapters
+        self.initialize_adapters()
 
         # 3. Initialize genome
         self.initialize_genome(**kwargs)
@@ -117,6 +117,9 @@ class ContinuousOptimizer(Optimizer):
 
         # Inform the user
         log.info("Evolving ...")
+
+        # Set the database adapters again # NO: NOT NECESSARY IN CONTINUOUS OPTIMIZER: INITIALIZE() HAS DONE THIS IN INITIALIZE_ENGINE, AND THIS CLASS STAYS IN CURRENT RUNTIME
+        #self.set_engine_adapters()
 
         # Let evolve
         self.engine.evolve(freq_stats=self.config.stats_freq, progress_bar=(not log.is_debug()))

@@ -129,7 +129,7 @@ class SSFRMapMaker(MapsComponent):
         maker = ColoursSSFRMapsMaker()
 
         # Run the maker
-        maker.run(colours=self.colours)
+        maker.run(colours=self.colours, colours_origins=self.get_colours_origins())
 
         # Get the maps
         self.maps = maker.maps
