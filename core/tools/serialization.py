@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import json
 import pickle
+from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from . import parsing, stringify
@@ -127,15 +128,19 @@ def write_dict_impl(dictfile, dct, indent=""):
 
 # -----------------------------------------------------------------
 
-def load_dict(path):
+def load_dict(path, ordered=False):
 
     """
     This function ...
     :param path:
+    :param ordered:
     :return:
     """
 
-    dct = dict()
+    # Initialize dictionary
+    if ordered: dct = OrderedDict()
+    else: dct = dict()
+
     with open(path, 'r') as fh: load_dict_impl(fh, dct)
     return dct
 

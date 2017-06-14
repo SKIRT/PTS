@@ -68,6 +68,10 @@ for generation_name in generations:
     print(generation_name)
     print("")
 
+    # Get the generation platform
+    platform = fitting_run.get_generation_platform(generation_name)
 
+    # Show recurrence
+    platform.show_recurrence()
 
 # -----------------------------------------------------------------

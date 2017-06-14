@@ -396,4 +396,118 @@ class GenerationPlatform(object):
 
             print("")
 
+    # -----------------------------------------------------------------
+
+    @property
+    def nrecurrences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.generation.recurrent_data)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def recurrences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for index in range(self.nrecurrences): yield self.get_recurrence(index)
+
+    # -----------------------------------------------------------------
+
+    def get_recurrence(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        # Get the key
+        individual_key = self.generation.recurrent_data.keys()[index]
+
+        # Get the chi squared
+        chi_squared = self.generation.recurrent_data[individual_key]
+
+        return individual_key, chi_squared
+
+    # -----------------------------------------------------------------
+
+    def show_recurrence(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing the recurrency ...")
+
+        print("")
+
+        # Loop over each recurrence event
+        for recurrence in self.recurrences:
+
+            print(recurrence)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nelitisms(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.generation.elitism_table)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def elitisms(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for index in range(self.nelitisms): yield self.get_elitism(index)
+
+    # -----------------------------------------------------------------
+
+    def get_elitism(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def show_elitism(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing the elitism events ...")
+
+        print("")
+
+        # Loop over each elitism event
+        for elitism in self.elitisms: pass
+
 # -----------------------------------------------------------------

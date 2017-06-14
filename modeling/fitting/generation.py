@@ -512,7 +512,7 @@ class Generation(object):
         :return:
         """
 
-        return load_dict(self.recurrent_path)
+        return load_dict(self.recurrent_path, ordered=True)
 
     # -----------------------------------------------------------------
 
