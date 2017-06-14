@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import astronomical modules
 from astropy.utils import lazyproperty
 
@@ -206,6 +209,21 @@ class GenerationPlatform(object):
 
     # -----------------------------------------------------------------
 
+    def parameter_values_to_array(self, values):
+
+        """
+        This function ...
+        :param values:
+        :return:
+        """
+
+        scalar = []
+        for label in self.generation.parameter_labels:
+            scalar.append(values[label].to(self.generation.unit_for_parameter(label)).value)
+        return np.array(scalar)
+
+    # -----------------------------------------------------------------
+
     def genome_to_parameters_string(self, genome, delimiter=", "):
 
         """
@@ -217,6 +235,19 @@ class GenerationPlatform(object):
 
         values = self.genome_to_parameters(genome)
         return self.parameter_values_to_string(values, delimiter=delimiter)
+
+    # -----------------------------------------------------------------
+
+    def genome_to_parameters_array(self, genome):
+
+        """
+        This function ...
+        :param genome:
+        :return:
+        """
+
+        values = self.genome_to_parameters(genome)
+        return self.parameter_values_to_array(values)
 
     # -----------------------------------------------------------------
 
@@ -516,7 +547,10 @@ class GenerationPlatform(object):
 
         # Get genome of original individual
         population = self.fitting_run.get_population_for_generation(generation_name)
-        original_genome = population[original_name]
+        original_genome = self.make_genome(population[original_name])
+
+        #print(genome, type(genome))
+        #print(original_genome, type(original_genome))
 
         # Create and return the recurrence object
         return Recurrence(index, genome, generation_name, original_genome, score)
@@ -531,14 +565,62 @@ class GenerationPlatform(object):
         """
 
         # Inform the user
-        log.info("Showing the recurrency ...")
+        log.info("Showing the recurrence ...")
 
         print("")
 
         # Loop over each recurrence event
         for recurrence in self.recurrences:
 
-            print(vars(recurrence))
+            # COLORED
+            #individual_colored = fmt.colored_sequence(recurrence.individual, colors="green", delimiter=" ")
+            #original_colored = fmt.colored_sequence(recurrence.original, colors=None, delimiter=" ")
+
+            # COLORED
+            colors = [None if not recurrence.differences[i] else "magenta" for i in range(recurrence.genome_size)]
+            individual_colored = fmt.colored_sequence(recurrence.individual, None, background_colors=colors, delimiter=" ")
+            original_colored = fmt.colored_sequence(recurrence.original, None, background_colors=colors, delimiter=" ")
+
+            print("#" + str(recurrence.index + 1) + " " + fmt.blue + fmt.underlined + "Recurrence:" + fmt.reset)
+            print("")
+
+            print("GENOMES:")
+            print("")
+
+            with fmt.print_in_columns(3) as print_row:
+
+                print_row("Individual", ":", individual_colored)
+                print_row("Original", ":", original_colored)
+
+            print("")
+            print("PARAMETERS:")
+            print("")
+
+            # Get actual parameter values for parents and children
+            parameters_string = self.genome_to_parameters_string(recurrence.individual)
+            original_parameters_string = self.genome_to_parameters_string(recurrence.original) # DO WE NEED TO TAKE INTO ACCOUNT THE FACT THAT THIS GENOME COMES FROM ANOTHER GENERATION FOR THE CONVERSION?
+
+            # Print parameters
+            with fmt.print_in_columns(3) as print_row:
+
+                print_row("Individual", ":", "[" + parameters_string + "]")
+                print_row("Original", ":", "[" + original_parameters_string + "]")
+
+            print("")
+
+            parameters_array = self.genome_to_parameters_array(recurrence.individual)
+            original_parameters_array = self.genome_to_parameters_array(recurrence.original)
+            ratio = parameters_array / original_parameters_array
+            absolute = abs(parameters_array - original_parameters_array)
+            relative = absolute / original_parameters_array
+
+            print("Difference:")
+            with fmt.itemize() as print_item:
+                print_item("absolute: " + tostr(absolute))
+                print_item("relative: " + tostr(relative))
+                print_item("ratio: " + tostr(ratio))
+
+            #print("")
 
     # -----------------------------------------------------------------
 

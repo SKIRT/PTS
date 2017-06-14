@@ -19,6 +19,7 @@ from pts.core.tools import filesystem as fs
 from pts.modeling.fitting.component import get_run_names
 from pts.modeling.core.environment import GalaxyModelingEnvironment
 from pts.modeling.fitting.component import load_fitting_run
+from pts.core.tools import formatting as fmt
 
 # -----------------------------------------------------------------
 
@@ -65,7 +66,8 @@ print("")
 # Loop over the generations
 for generation_name in generations:
 
-    print(generation_name)
+    # Print generation name
+    print(fmt.bold + fmt.cyan + generation_name + fmt.reset)
     print("")
 
     # Get the generation platform

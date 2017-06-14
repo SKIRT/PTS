@@ -303,13 +303,43 @@ def get_color_code(color):
 
 # -----------------------------------------------------------------
 
-def colored_sequence(sequence, colors, delimiter=","):
+def get_background_color_code(color):
+
+    """
+    This function ...
+    :param color:
+    :return:
+    """
+
+    if color is None: return default_background
+    elif color == "black": return black_background
+    elif color == "red": return red_background
+    elif color == "green": return green_background
+    elif color == "yellow": return yellow_background
+    elif color == "blue": return blue_background
+    elif color == "magenta": return magenta_background
+    elif color == "cyan": return cyan_background
+    elif color == "lightgray": return lightgray_background
+    elif color == "darkgray": return darkgray_background
+    elif color == "lightred": return lightred_background
+    elif color == "lightgreen": return lightgreen_background
+    elif color == "lightyellow": return lightyellow_background
+    elif color == "lightblue": return lightblue_background
+    elif color == "lightmagenta": return lightmagenta_background
+    elif color == "lightcyan": return lightcyan_background
+    elif color == "white": return white_background
+    else: raise ValueError("Invalid background color: " + color)
+
+# -----------------------------------------------------------------
+
+def colored_sequence(sequence, colors, delimiter=",", background_colors=None):
 
     """
     This function ...
     :param sequence:
     :param colors:
     :param delimiter:
+    :param background_colors:
     :return:
     """
 
@@ -317,12 +347,19 @@ def colored_sequence(sequence, colors, delimiter=","):
     if isinstance(colors, basestring): colors = [colors] * len(sequence)
     elif colors is None: colors = [None] * len(sequence)
 
+    # Same background color?
+    if isinstance(background_colors, basestring): background_colors = [background_colors] * len(sequence)
+    elif background_colors is None: background_colors = [None] * len(sequence)
+
     parts = []
 
-    for item, color in zip(sequence, colors):
+    for item, color, background_color in zip(sequence, colors, background_colors):
 
+        # Get codes
         code = get_color_code(color)
-        part = code + tostr(item) + reset
+        background_code = get_background_color_code(background_color)
+
+        part = background_code + code + tostr(item) + reset
         parts.append(part)
 
     # Return the color coded sequence string

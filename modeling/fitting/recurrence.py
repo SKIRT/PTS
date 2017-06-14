@@ -45,4 +45,28 @@ class Recurrence(object):
         self.original = original
         self.score = score
 
+    # -----------------------------------------------------------------
+
+    @property
+    def genome_size(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.individual)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def differences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [self.individual.genes[i] != self.original.genes[i] for i in range(self.genome_size)]
+
 # -----------------------------------------------------------------
