@@ -22,6 +22,7 @@ from ....magic.calibrations.galametz import GalametzTIRCalibration
 from ....magic.core.frame import Frame
 from ....core.basics.configurable import Configurable
 from ....magic.core.list import FrameList
+from ....core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -171,7 +172,7 @@ class SingleBandTIRMapMaker(Configurable):
             tir.wcs = frame.wcs
 
             # Set the name
-            name = str(fltr)
+            name = tostr(fltr, delimiter="_")
 
             # Set the TIR map
             self.maps[name] = tir

@@ -26,7 +26,7 @@ def parse_filter(argument, name=None):
     :return:
     """
 
-    # import subclasses
+    # Import subclasses
     from .narrow import NarrowBandFilter
     from .broad import BroadBandFilter
 
@@ -40,6 +40,39 @@ def parse_filter(argument, name=None):
 
     # Return the filter
     return fltr
+
+# -----------------------------------------------------------------
+
+def represent_filter(fltr, delimiter=" "):
+
+    """
+    This function ...
+    :param fltr:
+    :param delimiter:
+    :return:
+    """
+
+    return str(fltr).replace(" ", delimiter)
+
+# -----------------------------------------------------------------
+
+def stringify_filter(fltr, delimiter=" "):
+
+    """
+    This function ...
+    :param fltr:
+    :param delimiter:
+    :return:
+    """
+
+    # Import subclasses
+    from .narrow import NarrowBandFilter
+    from .broad import BroadBandFilter
+
+    # Stringify
+    if isinstance(fltr, NarrowBandFilter): return "narrow_band_filter", represent_filter(fltr, delimiter=delimiter)
+    elif isinstance(fltr, BroadBandFilter): return "broad_band_filter", represent_filter(fltr, delimiter=delimiter)
+    else: raise ValueError("Invalid argument: must be narrow or broad band filter")
 
 # -----------------------------------------------------------------
 

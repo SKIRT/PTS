@@ -57,11 +57,12 @@ def calculate_colour(flux_a, flux_b):
 
 # -----------------------------------------------------------------
 
-def get_filters_for_colour(colour):
+def get_filters_for_colour(colour, delimiter="-"):
 
     """
     This function ...
     :param colour:
+    :param delimiter:
     :return: 
     """
 

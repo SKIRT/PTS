@@ -571,12 +571,35 @@ def get_fwhm(header):
 
     for keyword in ["FWHM"]:
 
-        if keyword in header:
+        if keyword not in header: continue
 
-            fwhm = get_quantity(header["FWHM"], default_unit="arcsec")
+        # Get the FWHM
+        fwhm = get_quantity(header["FWHM"], default_unit="arcsec")
 
     # Return the FWHM
     return fwhm
+
+# -----------------------------------------------------------------
+
+def get_distance(header):
+    
+    """
+    This function ...
+    :param header: 
+    :return: 
+    """
+
+    distance = None
+
+    for keyword in ["DISTANCE"]:
+
+        if keyword not in header: continue
+
+        # Get the distance
+        distance = get_quantity(header["DISTANCE"], default_unit="Mpc")
+
+    # Return the distance
+    return distance
 
 # -----------------------------------------------------------------
 

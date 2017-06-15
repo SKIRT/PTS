@@ -24,8 +24,8 @@ from ...magic.core.list import FrameList
 
 # -----------------------------------------------------------------
 
-colour_strings = ["FUV-NUV", "FUV-H", "FUV-u", "FUV-g", "FUV-r", "FUV-i", "FUV-z", "Pacs 70-Pacs 100", "Pacs 100-Pacs 160",
-                  "Pacs 160-SPIRE 250", "SPIRE 250-SPIRE 350", "SPIRE 350-SPIRE 500"]
+colour_strings = ["FUV__NUV", "FUV__H", "FUV__u", "FUV__g", "FUV__r", "FUV__i", "FUV__z", "Pacs_70__Pacs_100", "Pacs_100__Pacs_160",
+                  "Pacs_160__SPIRE_250", "SPIRE_250__SPIRE_350", "SPIRE_350__SPIRE_500"]
 
 # -----------------------------------------------------------------
 
@@ -95,9 +95,6 @@ class ColourMapMaker(MapsComponent):
         # Call the setup fucntion of the base class
         super(ColourMapMaker, self).setup(**kwargs)
 
-        # Load the current maps
-        self.current_maps = self.get_current_maps()
-
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -114,7 +111,7 @@ class ColourMapMaker(MapsComponent):
         for colour in colour_strings:
 
             # Get the two filters
-            for fltr in get_filters_for_colour(colour):
+            for fltr in get_filters_for_colour(colour, delimiter="__"):
 
                 # If either one of the two images is not available, we can not calculate the colour
                 if not self.dataset.has_frame_for_filter(fltr): break
@@ -147,7 +144,7 @@ class ColourMapMaker(MapsComponent):
             log.debug("Loading frames for the '" + colour + "' colour ...")
 
             # Get the two filters, load frames
-            for fltr in get_filters_for_colour(colour):
+            for fltr in get_filters_for_colour(colour, delimiter="__"):
 
                 # Already loaded
                 if fltr in self.frames: continue

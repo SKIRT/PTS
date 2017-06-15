@@ -202,6 +202,9 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
     # Obtain the FWHM of this image
     fwhm = headers.get_fwhm(original_header)
 
+    # Obtain the distance to the object
+    distance = headers.get_distance(original_header)
+
     # Get the magnitude zero-point
     zero_point = headers.get_zero_point(original_header)
 
@@ -252,7 +255,8 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
                               source_extracted=extracted,
                               extinction_corrected=corrected,
                               fwhm=fwhm,
-                              pixelscale=pixelscale)
+                              pixelscale=pixelscale,
+                              distance=distance)
                 frames[name] = frame
 
             elif plane_type == "mask":
@@ -297,23 +301,28 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
                           sky_subtracted=sky_subtracted,
                           source_extracted=source_extracted,
                           extinction_corrected=extinction_corrected,
-                          fwhm=fwhm)
+                          fwhm=fwhm,
+                          pixelscale=pixelscale,
+                          distance=distance)
 
             # Add the primary image frame
             frames[name] = frame
 
+        # Mask
         elif plane_type == "mask":
 
             mask = Mask(hdu.data, name=name, description=description)
             # Add the mask
             masks[name] = mask
 
+        # Segmentation map
         elif plane_type == "segments":
 
             segments_map = SegmentationMap(hdu.data, wcs=wcs, name=name, description=description)
             # Add the segmentation map
             segments[name] = segments_map
 
+        # Plane type not recognized
         else: raise ValueError("Unrecognized type (must be frame or mask)")
 
     # Add meta information
@@ -328,7 +337,7 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
 # -----------------------------------------------------------------
 
 def load_frame(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
-               fwhm=None, add_meta=True, extra_meta=None):
+               fwhm=None, add_meta=True, extra_meta=None, distance=None):
 
     """
     This function ...
@@ -343,6 +352,7 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     :param fwhm:
     :param add_meta:
     :param extra_meta:
+    :param distance:
     :return:
     """
 
@@ -435,6 +445,9 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
 
     # Obtain the FWHM of this image
     if fwhm is None: fwhm = headers.get_fwhm(header)
+
+    # Obtain the distance of this image
+    if distance is None: distance = headers.get_distance(header)
 
     # Obtain the PSF filter of this image
     psf_filter = headers.get_psf_filter(header)
@@ -537,7 +550,8 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
                    meta=metadata,
                    path=path,
                    from_multiplane=True,
-                   psf_filter=psf_filter)
+                   psf_filter=psf_filter,
+                   distance=distance)
 
     else:
 
@@ -563,7 +577,8 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
                    meta=metadata,
                    path=path,
                    from_multiplane=False,
-                   psf_filter=psf_filter)
+                   psf_filter=psf_filter,
+                   distance=distance)
 
 # -----------------------------------------------------------------
 

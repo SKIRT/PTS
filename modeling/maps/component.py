@@ -68,8 +68,8 @@ class MapsComponent(GalaxyModelingComponent):
         # The paths to the maps
         self.paths = dict()
 
-        # The current (already calculated) maps
-        self.current_maps = dict()
+        # The current (already calculated) maps: NOW A PROPERTY OF THIS CLASS
+        #self.current_maps = dict()
 
     # -----------------------------------------------------------------
 

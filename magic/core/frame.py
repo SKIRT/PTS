@@ -666,7 +666,7 @@ class Frame(NDDataArray):
 
     @classmethod
     def from_url(cls, url, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
-                  fwhm=None, add_meta=True):
+                  fwhm=None, add_meta=True, distance=None):
 
         """
         This function ...
@@ -679,6 +679,7 @@ class Frame(NDDataArray):
         :param no_filter:
         :param fwhm:
         :param add_meta:
+        :param distance:
         :return:
         """
 
@@ -709,13 +710,13 @@ class Frame(NDDataArray):
             fs.remove_file(local_path)
 
         # Open the FITS file
-        return cls.from_file(fits_path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta)
+        return cls.from_file(fits_path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta, distance=distance)
 
     # -----------------------------------------------------------------
 
     @classmethod
     def from_file(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
-                  fwhm=None, add_meta=True, extra_meta=None, silent=False):
+                  fwhm=None, add_meta=True, extra_meta=None, silent=False, distance=None):
 
         """
         This function ...
@@ -730,18 +731,16 @@ class Frame(NDDataArray):
         :param add_meta:
         :param extra_meta:
         :param silent:
+        :param distance:
         :return:
         """
 
         # Show which image we are importing
         if not silent: log.info("Reading in file " + path + " ...")
 
-        #from . import fits as pts_fits
         from ..core.fits import load_frame
-
-        try:
-            # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
-            return load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta, extra_meta=extra_meta)
+        # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
+        try: return load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta, extra_meta=extra_meta, distance=distance)
         except TypeError: raise IOError("File is possibly damaged")
 
     # -----------------------------------------------------------------
@@ -1998,6 +1997,9 @@ class Frame(NDDataArray):
         if self.wcs is None and self.pixelscale is not None:
             header.set("XPIXSIZE", repr(self.pixelscale.x.to("arcsec").value), "[arcsec] Pixelscale for x axis")
             header.set("YPIXSIZE", repr(self.pixelscale.y.to("arcsec").value), "[arcsec] Pixelscale for y axis")
+
+        # Set distance
+        if self.distance is not None: header.set("DISTANCE", repr(self.distance.to("Mpc").value), "[Mpc] Distance to the object")
 
         # Set PSF FILTER
         if self.psf_filter is not None: header.set("PSFFLTR", str(self.psf_filter), "Filter to which the PSF of the frame corresponds")

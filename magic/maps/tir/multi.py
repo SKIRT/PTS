@@ -235,13 +235,13 @@ class MultiBandTIRMapMaker(Configurable):
             combination = tuple([str(fltr) for fltr in filters])
 
             # Convert key to string
-            key = tostr(combination, delimiter="_")
+            key = tostr(combination, delimiter="__", value_delimiter="_")
 
             # Set the TIR map
             self.maps[key] = tir
 
             # Set the origins
-            self.origins[key] = list(filters) # cannot be tuple (for serialization reasons
+            self.origins[key] = filters # cannot be tuple (for serialization reasons of the origins dict): OK: sequences.combinations now returns list instead of tuple
 
     # -----------------------------------------------------------------
 

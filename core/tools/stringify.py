@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import copy
+
 # Import the relevant PTS classes and modules
 from . import types
 from . import introspection
@@ -118,7 +121,7 @@ def stringify(value, scientific=False, decimal_places=2, fancy=False, ndigits=No
     elif type(value).__name__ == "MaskedColumn" or type(value).__name__ == "Column": return stringify_array(value, **kwargs)
 
     # Tuple or derived from tuple
-    elif isinstance(value, tuple): return stringify_tuple(value, **kwargs)
+    elif isinstance(value, tuple): return stringify_tuple(value, delimiter=delimiter, **kwargs)
 
     # All other
     else: return stringify_not_list(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode, **kwargs)
@@ -165,6 +168,9 @@ def stringify_list(value, delimiter=",", **kwargs):
     ptype = None
     ptypes = set()
     for entry in value:
+
+        # If delimiter is passed for stringifying the values in the list
+        if "value_delimiter" in kwargs: kwargs["delimiter"] = kwargs.pop("value_delimiter")
 
         #parsetype, val = stringify_not_list(entry)
         parsetype, val = stringify(entry, **kwargs)
@@ -217,6 +223,11 @@ def stringify_dict(value, delimiter=",", **kwargs):
     keytypes = set()
     ptypes = set()
 
+    # Only for stringifying the values
+    value_kwargs = copy.copy(kwargs)
+    # If delimiter is passed for stringifying the values in the list
+    if "value_delimiter" in value_kwargs: value_kwargs["delimiter"] = value_kwargs.pop("value_delimiter")
+
     # Loop over the dictionary keys
     for key in value:
 
@@ -231,7 +242,8 @@ def stringify_dict(value, delimiter=",", **kwargs):
 
         v = value[key]
 
-        vtype, vstring = stringify(v, **kwargs)
+        # Stringify the value
+        vtype, vstring = stringify(v, **value_kwargs)
 
         # Add value type
         ptypes.add(vtype)
@@ -295,6 +307,8 @@ def stringify_tuple(value, delimiter=",", **kwargs):
     :return: 
     """
 
+    if "value_delimiter" in kwargs: kwargs["delimiter"] = kwargs.pop("value_delimiter")
+
     strings = []
     ptype = None
     for entry in value:
@@ -342,8 +356,7 @@ def stringify_not_list(value, scientific=False, decimal_places=2, fancy=False, n
     elif introspection.lazy_isinstance(value, "QuantityRange", "pts.core.basics.range"): return "quantity_range", introspection.lazy_call("str_from_quantity_range", "pts.core.units.stringify", value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode, **kwargs)
     elif introspection.lazy_isinstance(value, "SkyCoordinate", "pts.magic.basics.coordinate"): return "skycoordinate", repr(value.ra.value) + " " + str(value.ra.unit) + "," + repr(value.dec.value) + " " + str(value.dec.unit)
     elif introspection.lazy_isinstance(value, "SkyStretch", "pts.magic.basics.stretch"): return "skystretch", repr(value.ra.value) + " " + str(value.ra.unit) + "," + repr(value.dec.value) + " " + str(value.dec.unit)
-    elif introspection.lazy_isinstance(value, "NarrowBandFilter", "pts.core.filter.narrow"): return "narrow_band_filter", str(value)
-    elif introspection.lazy_isinstance(value, "BroadBandFilter", "pts.core.filter.broad"): return "broad_band_filter", str(value)
+    elif introspection.lazy_isinstance(value, "Filter", "pts.core.filter.filter"): return introspection.lazy_call("stringify_filter", "pts.core.filter.filter", value, **kwargs)
 
     # Other
     #elif introspection.isinstance(Instrument):
