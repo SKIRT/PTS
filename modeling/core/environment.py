@@ -27,6 +27,18 @@ from ...core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
+fit_name = "fit"
+analysis_name = "analysis"
+reports_name = "reports"
+visualisation_name = "visualisation"
+plot_name = "plot"
+log_name = "log"
+config_name = "config"
+show_name = "show"
+build_name = "build"
+
+# -----------------------------------------------------------------
+
 class ModelingEnvironment(object):
 
     """
@@ -266,7 +278,7 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
         return fs.name(self.maps_dust_path)
 
-    #
+    # -----------------------------------------------------------------
 
     @property
     def cache_host_id(self):

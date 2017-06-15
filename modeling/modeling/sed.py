@@ -217,7 +217,7 @@ class SEDModeler(ModelerBase):
         builder = SEDModelBuilder(config=config)
 
         # Set log path
-        with self.write_log(builder), self.history.register(builder): builder.run()
+        with self.write_log(builder), self.history.register(builder), self.write_config(builder): builder.run()
 
     # -----------------------------------------------------------------
 
@@ -240,7 +240,7 @@ class SEDModeler(ModelerBase):
         builder = SEDRepresentationBuilder(config=config)
 
         # Set log path
-        with self.write_log(builder), self.history.register(builder): builder.run()
+        with self.write_log(builder), self.history.register(builder), self.write_config(builder): builder.run()
 
     # -----------------------------------------------------------------
 
@@ -340,7 +340,7 @@ class SEDModeler(ModelerBase):
         configurer.config.path = self.modeling_path
 
         # Run the fitting configurer
-        with self.write_log(configurer), self.history.register(configurer):
+        with self.write_log(configurer), self.history.register(configurer), self.write_config(configurer):
 
             # Run
             configurer.run(descriptions_config=self.descriptions_config, types_config=self.types_config,
@@ -431,7 +431,7 @@ class SEDModeler(ModelerBase):
         # OPTIONS FOR THE DUST GRID NOT RELEVANT FOR SED MODELING (YET)
 
         # Run the fitting initializer
-        with self.write_log(initializer), self.history.register(initializer): initializer.run()
+        with self.write_log(initializer), self.history.register(initializer), self.write_config(initializer): initializer.run()
 
     # -----------------------------------------------------------------
 

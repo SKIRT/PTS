@@ -37,6 +37,7 @@ from ..fitting.finisher import ExplorationFinisher
 from ...core.tools import time
 from ..core.steps import commands_after_and_including, output_paths_for_single_command, cached_directory_name_for_single_command
 from ...core.basics.configuration import prompt_proceed
+from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -289,6 +290,32 @@ class ModelerBase(Configurable):
         """
 
         return write_log_to(self.log_path_for_component(cls_or_instance))
+
+    # -----------------------------------------------------------------
+
+    def config_path_for_component(self, cls_or_instance):
+
+        """
+        This function ...
+        :param cls_or_instance:
+        :return:
+        """
+
+        command_name = cls_or_instance.command_name()
+        config_path = fs.join(self.environment.config_path, command_name + "_" + self.timestamp + ".cfg")
+        return config_path
+
+    # -----------------------------------------------------------------
+
+    def write_config(self, instance):
+
+        """
+        This function ...
+        :param instance:
+        :return:
+        """
+
+        return keep_latest_succesful_config(instance, self.config_path_for_component(instance))
 
     # -----------------------------------------------------------------
 
@@ -737,7 +764,7 @@ class ModelerBase(Configurable):
         self.fitter = SEDFitter(config)
 
         # Run the fitter
-        with self.write_log(self.fitter), self.history.register(self.fitter): self.fitter.run()
+        with self.write_log(self.fitter), self.history.register(self.fitter), self.write_config(self.fitter): self.fitter.run()
 
     # -----------------------------------------------------------------
 
@@ -806,7 +833,7 @@ class ModelerBase(Configurable):
         input_dict.update(kwargs)
 
         # Run the parameter explorer
-        with self.write_log(self.explorer), self.history.register(self.explorer): self.explorer.run(**input_dict)
+        with self.write_log(self.explorer), self.history.register(self.explorer), self.write_config(self.explorer): self.explorer.run(**input_dict)
 
     # -----------------------------------------------------------------
 
@@ -835,7 +862,7 @@ class ModelerBase(Configurable):
         input_dict.update(kwargs)
 
         # Run the finisher
-        with self.write_log(self.finisher), self.history.register(self.finisher): self.finisher.run(**input_dict)
+        with self.write_log(self.finisher), self.history.register(self.finisher), self.write_config(self.finisher): self.finisher.run(**input_dict)
 
     # -----------------------------------------------------------------
 
@@ -848,5 +875,112 @@ class ModelerBase(Configurable):
 
         # Inform the user
         log.info("Writing ...")
+
+# -----------------------------------------------------------------
+
+class keep_latest_succesful_config(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, instance, config_path):
+
+        """
+        This function ...
+        :param instance:
+        :param config_path:
+        """
+
+        # Set
+        self.instance = instance
+        self.config_path = config_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def command_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.instance.command_name()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def config_directory_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.directory_of(self.config_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def config_filename(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.config_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def config_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.strip_extension(self.config_filename)
+
+    # -----------------------------------------------------------------
+
+    def __enter__(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+
+        # Set the config path to the instance configuration
+        self.instance.config.write_config = True
+        self.instance.config.config_path = self.config_path
+
+    # -----------------------------------------------------------------
+        
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        
+        """
+        This function ...
+        :param exc_type: 
+        :param exc_val: 
+        :param exc_tb: 
+        :return: 
+        """
+
+        # Error occured
+        if exc_type is not None:
+
+            log.error("A " + str(exc_type) + " occured")
+            log.error("Removing configuration file [" + self.config_path + "] ...")
+            fs.remove_file(self.config_path)
+
+        # No error: remove all others
+        else:
+
+            paths, names = fs.files_in_path(self.config_directory_path, contains=self.command_name, not_contains=self.config_name, extension="cfg", returns=["path", "name"], unpack=True)
+            log.debug("Removing previous configuration files: " + tostr(names) + " ...")
+            fs.remove_files(paths)
 
 # -----------------------------------------------------------------

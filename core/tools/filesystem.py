@@ -761,7 +761,7 @@ def walk_level(some_dir, level=1):
 
 def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None,
                   extensions=False, returns="path", exact_name=None, exact_not_name=None, startswith=None, endswith=None,
-                  sort=None, contains_operator="OR", recursion_level=None):
+                  sort=None, contains_operator="OR", recursion_level=None, unpack=False):
 
     """
     This function ...
@@ -780,6 +780,7 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
     :param sort: a function which determines how the files should be sorted based on their filename. Hidden items (starting with .) are placed first.
     :param contains_operator: relevant for when 'contains' is specified as a sequence (should they be all contained or only at least one?)
     :param recursion_level:
+    :param unpack:
     :return:
     """
 
@@ -811,6 +812,7 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
         items.sort(key=sort_function)
 
     if returns == "dict":
+        if unpack: raise ValueError("Cannot do unpacking when return value is supposed to be 'dict'")
         returns = ["name", "path"]
         return_dict = True
     else: return_dict = False
@@ -895,6 +897,7 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
 
     # Return the list of file paths
     if return_dict: return dict(file_paths) # file_paths is list of tuples
+    elif unpack: return zip(*file_paths)
     else: return file_paths
 
 # -----------------------------------------------------------------

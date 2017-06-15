@@ -635,18 +635,48 @@ class Configuration(Map):
 
     # -----------------------------------------------------------------
 
-    #@property
-    def config_dir_path(self):
+    def config_file_path(self, command_name=None):
 
         """
-        The directory where the config file should be saved
+        This function ...
+        :param command_name:
         :return:
         """
 
-        if "config_path" in self:
-            if self["config_path"] is not None: return fs.absolute_or_in(self["config_path"], self["path"]) # absolute path or relative to the working directory
-            else: return self.output_path()
-        else: return None
+        # Config path specified
+        if "config_path" in self and self["config_path"] is not None:
+
+            # File or directory?
+            name = fs.name(self["config_path"])
+
+            # File, determine full path
+            if "." in name: filepath = fs.absolute_or_in(self["config_path"], self["path"])
+
+            # Directory, set file path from directory path
+            else:
+
+                dirpath = fs.absolute_or_in(self["config_path"], self["path"])
+
+                # Create directory if necessary
+                if not fs.is_directory(dirpath): fs.create_directory(dirpath)
+
+                # Determine filepath
+                filename = command_name + ".cfg" if command_name is not None else "config.cfg"
+                filepath = fs.join(dirpath, filename)
+
+            # Retrun the config file path
+            return filepath
+
+        # No config path specified
+        else:
+
+            # Determine filepath
+            dirpath = self.output_path()
+            filename = command_name + ".cfg" if command_name is not None else "config.cfg"
+            filepath = fs.join(dirpath, filename)
+
+            # Return the config file path
+            return filepath
 
     # -----------------------------------------------------------------
 

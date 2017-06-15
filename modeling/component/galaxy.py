@@ -1735,3 +1735,34 @@ def get_disk_position_angle(modeling_path):
     return disk_ellipse.angle
 
 # -----------------------------------------------------------------
+
+def get_initial_dataset_path(modeling_path):
+    
+    """
+    This function ...
+    :param modeling_path: 
+    :return: 
+    """
+
+    return fs.join(modeling_path, "prep", "initial_dataset.dat")
+
+# -----------------------------------------------------------------
+
+def get_initial_dataset(modeling_path):
+
+    """
+    This function ...
+    :return:
+    """
+
+# -----------------------------------------------------------------
+
+def get_prepared_dataset(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+# -----------------------------------------------------------------

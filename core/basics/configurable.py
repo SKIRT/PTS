@@ -200,8 +200,8 @@ class Configurable(object):
         :return:
         """
 
-        # nothing is (yet) required here
-        pass
+        # NEW: WRITE THE CONFIGURATION
+        if self.config.write_config: self.config.saveto(self.config.config_file_path(self.command_name()))
 
     # -----------------------------------------------------------------
 

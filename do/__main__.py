@@ -185,9 +185,7 @@ elif len(table_matches) == 1 and len(matches) == 0:
     config = create_configuration(definition, command_name, description, configuration_method)
 
     ## SAVE THE CONFIG if requested
-    if config.write_config:
-        config_file_path = fs.join(config.config_dir_path(), command_name + ".cfg")
-        config.saveto(config_file_path)
+    if config.write_config: config.saveto(config.config_file_path(command_name))
 
     # If this is not a re-run
     if not args.rerun:
