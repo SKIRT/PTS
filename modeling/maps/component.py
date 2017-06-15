@@ -108,6 +108,8 @@ class MapsComponent(GalaxyModelingComponent):
 
         return self.environment.maps_colours_name
 
+    # -----------------------------------------------------------------
+
     @property
     def maps_ssfr_path(self):
 
@@ -300,11 +302,12 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_origins_sub_name(self, name):
+    def get_origins_sub_name(self, name, flatten=False):
 
         """
         This function ...
         :param name:
+        :param flatten:
         :return: 
         """
 
@@ -330,112 +333,131 @@ class MapsComponent(GalaxyModelingComponent):
 
                 #print(origins_path)
 
-                # Load the origins
-                origins[method_path] = load_dict(origins_path)
+                # Determine method
+                method = fs.name(method_path)
+
+                # Load the origins for this method
+                origins_method = load_dict(origins_path)
+
+                # Flatten into a one-level dict
+                if flatten:
+                    for map_name in origins_method: origins[method + "_" + map_name] = origins_method[map_name]
+
+                # Don't flatten: get nested dict
+                else: origins[method] = origins_method
 
         # Return the origins
         return origins
 
     # -----------------------------------------------------------------
 
-    def get_origins_sub_names(self):
+    def get_origins_sub_names(self, flatten=False):
 
         """
         This function ...
-        :return: 
+        :param flatten:
+        :return:
         """
 
         origins = dict()
-        for name in self.maps_sub_names: origins[name] = self.get_origins_sub_name(name)
+        for name in self.maps_sub_names: origins[name] = self.get_origins_sub_name(name, flatten=flatten)
         return origins
 
     # -----------------------------------------------------------------
 
-    def get_colours_origins(self):
+    def get_colours_origins(self, flatten=False):
         
         """
         This function ...
+        :param flatten:
         :return: 
         """
 
-        return self.get_origins_sub_name(self.maps_colours_name)
+        return self.get_origins_sub_name(self.maps_colours_name, flatten=flatten)
 
     # -----------------------------------------------------------------
 
-    def get_ssfr_origins(self):
+    def get_ssfr_origins(self, flatten=False):
 
         """
         This function ...
+        :param flatten:
         :return:
         """
 
-        return self.get_origins_sub_name(self.maps_ssfr_name)
+        return self.get_origins_sub_name(self.maps_ssfr_name, flatten=flatten)
 
     # -----------------------------------------------------------------
 
-    def get_tir_origins(self):
+    def get_tir_origins(self, flatten=False):
 
         """
         This function ...
+        :param flatten:
         :return:
         """
 
-        return self.get_origins_sub_name(self.maps_tir_name)
+        return self.get_origins_sub_name(self.maps_tir_name, flatten=flatten)
 
     # -----------------------------------------------------------------
 
-    def get_attenuation_origins(self):
+    def get_attenuation_origins(self, flatten=False):
 
         """
         This function ...
+        :param flatten:
         :return:
         """
 
-        return self.get_origins_sub_name(self.maps_attenuation_name)
+        return self.get_origins_sub_name(self.maps_attenuation_name, flatten=flatten)
 
     # -----------------------------------------------------------------
 
-    def get_old_origins(self):
+    def get_old_origins(self, flatten=False):
 
         """
         This function ...
+        :param flatten:
         :return: 
         """
 
-        return self.get_origins_sub_name(self.maps_old_name)
+        return self.get_origins_sub_name(self.maps_old_name, flatten=flatten)
 
     # -----------------------------------------------------------------
 
-    def get_young_origins(self):
+    def get_young_origins(self, flatten=False):
 
         """
         This function ...
+        :param flatten:
         :return: 
         """
 
-        return self.get_origins_sub_name(self.maps_young_name)
+        return self.get_origins_sub_name(self.maps_young_name, flatten=flatten)
 
     # -----------------------------------------------------------------
 
-    def get_ionizing_origins(self):
+    def get_ionizing_origins(self, flatten=False):
 
         """
         This function ...
+        :param flatten:
         :return:
         """
 
-        return self.get_origins_sub_name(self.maps_ionizing_name)
+        return self.get_origins_sub_name(self.maps_ionizing_name, flatten=flatten)
 
     # -----------------------------------------------------------------
 
-    def get_dust_origins(self):
+    def get_dust_origins(self, flatten=False):
 
         """
         This function ...
+        :param flatten:
         :return: 
         """
 
-        return self.get_origins_sub_name(self.maps_dust_name)
+        return self.get_origins_sub_name(self.maps_dust_name, flatten=flatten)
 
     # -----------------------------------------------------------------
 
@@ -633,31 +655,38 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_ssfr_maps(self):
+    def get_ssfr_maps(self, flatten=False, framelist=False):
 
         """
         This function ...
+        :param flatten:
+        :param framelist:
         :return: 
         """
 
-        return NamedFrameList.from_directory(self.maps_ssfr_path).to_dictionary()
+        #return NamedFrameList.from_directory(self.maps_ssfr_path).to_dictionary()
+
+        return self.get_maps_sub_name(self.maps_ssfr_name, flatten=flatten, framelist=framelist)
 
     # -----------------------------------------------------------------
 
-    def get_tir_maps(self):
+    def get_tir_maps(self, flatten=False, framelist=False):
 
         """
         This function ...
+        :param flatten:
+        :param framelist:
         :return: 
         """
 
-        single = self.get_tir_single_maps()
-        multi = self.get_tir_multi_maps()
+        return self.get_maps_sub_name(self.maps_tir_name, flatten=flatten, framelist=framelist)
 
-        maps = dict()
-        for name in single: maps["single_" + name] = single[name]
-        for name in multi: maps["multi_" + name] = multi[name]
-        return maps
+        #single = self.get_tir_single_maps()
+        #multi = self.get_tir_multi_maps()
+
+        #maps = dict()
+        #maps["single"] = single
+        #maps["multi"] = multi
 
     # -----------------------------------------------------------------
 
@@ -685,23 +714,6 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    #def get_tir_origins(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        #single = self.get_tir_single_origins()
-        #multi = self.get_tir_multi_origins()
-
-        #origins = dict()
-        #for name in single: origins["single_" + name] = single[name]
-        #for name in multi: origins["multi_" + name] = multi[name]
-        #return origins
-
-    # -----------------------------------------------------------------
-
     def get_tir_single_origins(self):
 
         """
@@ -726,20 +738,30 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_fuv_attenuation_maps(self):
+    def get_fuv_attenuation_maps(self, flatten=False):
 
         """
         This function ...
+        :param flatten:
         :return: 
         """
 
         cortese = self.get_cortese_fuv_attenuation_maps()
         buat = self.get_buat_fuv_attenuation_maps()
 
-        maps = dict()
-        for name in cortese: maps["cortese_" + name] = cortese[name]
-        for name in buat: maps["buat_" + name] = buat[name]
-        return maps
+        if flatten:
+
+            maps = dict()
+            for name in cortese: maps["cortese_" + name] = cortese[name]
+            for name in buat: maps["buat_" + name] = buat[name]
+            return maps
+
+        else:
+
+            maps = dict()
+            maps["cortese"] = cortese
+            maps["buat"] = buat
+            return maps
 
     # -----------------------------------------------------------------
 
@@ -850,54 +872,85 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_current_origins(self):
+    def get_current_origins(self, flatten=False):
 
         """
         This function ...
+        :param flatten:
         :return:
         """
 
-        return self.get_origins_sub_name(self.maps_sub_name)
+        return self.get_origins_sub_name(self.maps_sub_name, flatten=flatten)
 
     # -----------------------------------------------------------------
 
-    def get_current_map_paths(self):
+    def get_map_paths_sub_name(self, name, flatten=False):
 
         """
         This function ...
+        :param name:
+        :param flatten:
         :return:
         """
 
+        # Determine path
+        sub_path = fs.join(self.maps_path, name)
+        if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
+        #direct_origins_path = fs.join(sub_path, origins_filename)
+        # No subdirectories
+        #if fs.is_file(direct_origins_path): origins = load_dict(direct_origins_path)
+
         # Subdirectories
-        if fs.contains_directories(self.maps_sub_path):
+        if fs.contains_directories(sub_path):
 
             paths = dict()
 
             # Loop over the subdirectories
-            for method_path, method in fs.directories_in_path(self.maps_sub_path, returns=["path", "name"]):
+            for method_path, method in fs.directories_in_path(sub_path, returns=["path", "name"]):
+
+                # Get dictionary of file paths
+                files = fs.files_in_path(method_path, returns="dict")
 
                 # Set the map paths, as a dictionary with the filename as keys
-                paths[method] = fs.files_in_path(method_path, returns="dict")
+                if flatten: paths[method] = files
+                else:
+                    for map_name in files: paths[method + "_" + map_name] = files[map_name]
 
         # Files present
-        elif fs.contains_files(self.maps_sub_path): return fs.files_in_path(self.maps_sub_path, returns="dict")
+        elif fs.contains_files(sub_path): return fs.files_in_path(sub_path, returns="dict")
 
         # Nothing present
         else: return dict()
 
     # -----------------------------------------------------------------
 
-    def get_current_maps(self):
+    def get_current_map_paths(self, flatten=False):
 
         """
         This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.get_map_paths_sub_name(self.maps_sub_name, flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_maps_sub_name(self, name, flatten=False, framelist=False):
+
+        """
+        This function ...
+        :param name:
+        :param flatten:
+        :param framelist:
         :return:
         """
 
         # Initialize the maps dictionary
         maps = dict()
 
-        paths = self.get_current_map_paths()
+        # Get map paths
+        paths = self.get_map_paths_sub_name(name, flatten=flatten)
 
         # Loop over the entries
         for method_or_name in paths:
@@ -921,7 +974,21 @@ class MapsComponent(GalaxyModelingComponent):
             else: raise RuntimeError("Something went wrong")
 
         # Return the maps
-        return maps
+        if framelist: return NamedFrameList(**maps)
+        else: return maps
+
+    # -----------------------------------------------------------------
+
+    def get_current_maps(self, flatten=False, framelist=False):
+
+        """
+        This function ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.get_maps_sub_name(self.maps_sub_name, flatten=flatten, framelist=framelist)
 
     # -----------------------------------------------------------------
 

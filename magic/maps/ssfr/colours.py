@@ -105,6 +105,9 @@ class ColoursSSFRMapsMaker(Configurable):
         # Get origins
         self.colours_origins = kwargs.pop("colours_origins", None)
 
+        # Get maps that have already been created
+        if "maps" in kwargs: self.maps = kwargs.pop("maps")
+
     # -----------------------------------------------------------------
 
     @property
@@ -132,12 +135,6 @@ class ColoursSSFRMapsMaker(Configurable):
         # Loop over the colour maps
         for colour in self.colours:
 
-            # Get the map
-            colour_map = self.colours[colour]
-
-            # Set as sSFR map
-            self.maps[colour] = colour_map
-
             # Set origin
             # Set the origins
             if self.has_origins:
@@ -145,5 +142,16 @@ class ColoursSSFRMapsMaker(Configurable):
                 # Set the origins
                 origins = self.colours_origins[colour]
                 self.origins[colour] = origins
+
+            # Check whether a colour map is already present
+            if colour in self.maps:
+                log.warning("The " + colour + " sSFR map is already created: not creating again")
+                continue
+
+            # Get the map
+            colour_map = self.colours[colour]
+
+            # Set as sSFR map
+            self.maps[colour] = colour_map
 
 # -----------------------------------------------------------------

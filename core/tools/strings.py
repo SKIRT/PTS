@@ -19,7 +19,7 @@ from string import ascii_lowercase
 import itertools
 
 # Import the relevant PTS classes and modules
-from .sequences import interleave
+from .sequences import interleave, find_indices, find_closest_index
 from . import types
 
 # -----------------------------------------------------------------
@@ -544,5 +544,180 @@ def printed_length(string):
 
     converted = remove_escape_characters(string)
     return len(converted)
+
+# -----------------------------------------------------------------
+
+def find_substring_indices(string, substring, allow_repeat=True):
+
+    """
+    This function ...
+    :param string:
+    :param substring:
+    :param allow_repeat:
+    :return:
+    """
+
+    ncharacters = len(substring)
+
+    indices = []
+
+    # Loop over the string
+    for index in range(len(string)):
+
+        endindex = index + ncharacters
+
+        if string[index:endindex] != substring: continue
+
+        if not allow_repeat:
+
+            # Previous is also the same character
+            if index > 0 and string[index - 1:endindex - 1] == substring: continue
+
+            # Shifted one to the right is also the same substring
+            if endindex < len(string) - 1 and string[index + 1:endindex + 1] == substring: continue
+
+        # Add to count
+        #count += 1
+
+        # Add index
+        indices.append(index)
+
+    # Return the count
+    #return count
+
+    # Return the indices
+    return indices
+
+# -----------------------------------------------------------------
+
+def get_noccurences(string, substring, allow_repeat=True):
+
+    """
+    This function ...
+    :param string: 
+    :param substring:
+    :param allow_repeat: 
+    :return: 
+    """
+
+    if allow_repeat: return string.count(substring)
+    else:
+
+        #characters = list(string)
+        ncharacters = len(substring)
+
+        count = 0
+
+        # Loop over the string
+        for index in range(len(string)):
+
+            endindex = index + ncharacters
+
+            if string[index:endindex] != substring: continue
+
+            # Previous is also the same character
+            if index > 0 and string[index-1:endindex-1] == substring: continue
+
+            # Shifted one to the right is also the same substring
+            if endindex < len(string) - 1 and string[index+1:endindex+1] == substring: continue
+
+            # Add to count
+            count += 1
+
+        # Return the count
+        return count
+
+# -----------------------------------------------------------------
+
+def split_at_indices(string, indices, ncharacters=1):
+
+    """
+    This function ...
+    :param string:
+    :param indices:
+    :param ncharacters:
+    :return:
+    """
+
+    parts = []
+
+    last = ""
+    for index in indices:
+
+        endindex = index + ncharacters
+        first = string[index:endindex]
+        last = string[endindex:]
+
+        parts.append(first)
+
+    parts.append(last)
+    return parts
+
+# -----------------------------------------------------------------
+
+def split(string, substring, allow_repeat=True):
+
+    """
+    This function ...
+    :param string:
+    :param substring:
+    :param allow_repeat:
+    :return:
+    """
+
+    if allow_repeat: return string.split(substring)
+    else:
+
+        indices = find_substring_indices(string, substring, allow_repeat=allow_repeat)
+        ncharacters = len(substring)
+        return split_at_indices(string, indices, ncharacters)
+
+# -----------------------------------------------------------------
+
+def find_delimiter(string, noccurences, delimiters=("-", "_", ".", "__", " ")):
+
+    """
+    This function ...
+    :param string:
+    :param noccurences:
+    :param delimiters:
+    :return:
+    """
+
+    counts = []
+    for delimiter in delimiters: counts.append(get_noccurences(string, delimiter, allow_repeat=False))
+
+    # Find the delimiters with the specified number of occurences
+    indices = find_indices(counts, noccurences)
+
+    # No delimiter
+    if len(indices) == 0: raise ValueError("None of the delimiters are present " + str(noccurences) + " time(s)")
+
+    # Just one: FINE!
+    elif len(indices) == 1: return delimiters[indices[0]]
+
+    # More than one
+    else:
+
+        # Find the delimiter which splits up the string most evenly
+        possible_delimiters = [delimiters[index] for index in indices]
+
+        ratios = []
+
+        for delimiter in possible_delimiters:
+
+            #parts = string.split(delimiter)
+            parts = split(string, delimiter, allow_repeat=False)
+            assert len(parts) == noccurences + 1
+
+            ratio = float(len(parts[0])) / float(len(parts[1])) # TODO: now, we only compare the lengths of the first and second part
+
+            ratios.append(ratio)
+
+        # Find index of delimiter giving a division ratio closest to one
+        the_index = find_closest_index(ratios, 1.)
+
+        # Return the delimiter
+        return possible_delimiters[the_index]
 
 # -----------------------------------------------------------------

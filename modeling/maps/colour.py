@@ -18,14 +18,9 @@ from astropy.utils import lazyproperty
 # Import standard modules
 from .component import MapsComponent
 from ...core.tools.logging import log
-from ...magic.maps.colour.colour import ColourMapsMaker
+from ...magic.maps.colour.colour import ColourMapsMaker, colour_strings
 from ...magic.tools.colours import get_filters_for_colour
 from ...magic.core.list import FrameList
-
-# -----------------------------------------------------------------
-
-colour_strings = ["FUV__NUV", "FUV__H", "FUV__u", "FUV__g", "FUV__r", "FUV__i", "FUV__z", "Pacs_70__Pacs_100", "Pacs_100__Pacs_160",
-                  "Pacs_160__SPIRE_250", "SPIRE_250__SPIRE_350", "SPIRE_350__SPIRE_500"]
 
 # -----------------------------------------------------------------
 
@@ -111,7 +106,7 @@ class ColourMapMaker(MapsComponent):
         for colour in colour_strings:
 
             # Get the two filters
-            for fltr in get_filters_for_colour(colour, delimiter="__"):
+            for fltr in get_filters_for_colour(colour):
 
                 # If either one of the two images is not available, we can not calculate the colour
                 if not self.dataset.has_frame_for_filter(fltr): break
@@ -144,7 +139,7 @@ class ColourMapMaker(MapsComponent):
             log.debug("Loading frames for the '" + colour + "' colour ...")
 
             # Get the two filters, load frames
-            for fltr in get_filters_for_colour(colour, delimiter="__"):
+            for fltr in get_filters_for_colour(colour):
 
                 # Already loaded
                 if fltr in self.frames: continue

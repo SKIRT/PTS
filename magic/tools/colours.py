@@ -18,6 +18,7 @@ import numpy as np
 # Import the relevant PTS classes and modules
 from ..core.frame import Frame
 from ...core.filter.filter import parse_filter
+from ...core.tools import strings
 
 # -----------------------------------------------------------------
 
@@ -57,7 +58,7 @@ def calculate_colour(flux_a, flux_b):
 
 # -----------------------------------------------------------------
 
-def get_filters_for_colour(colour, delimiter="-"):
+def get_filters_for_colour(colour, delimiter="auto"):
 
     """
     This function ...
@@ -66,7 +67,9 @@ def get_filters_for_colour(colour, delimiter="-"):
     :return: 
     """
 
-    str_a, str_b = colour.split("-")
+    if delimiter == "auto": delimiter = find_delimiter(colour)
+
+    str_a, str_b = colour.split(delimiter)
     fltr_a, fltr_b = parse_filter(str_a), parse_filter(str_b)
     return fltr_a, fltr_b
 
@@ -82,5 +85,18 @@ def make_colour_map(frame_a, frame_b):
     """
 
     return Frame(-2.5 * np.log10(frame_a / frame_b), wcs=frame_a.wcs)
+
+# -----------------------------------------------------------------
+
+def find_delimiter(colour):
+
+    """
+    This function ...
+    :param colour:
+    :return:
+    """
+
+    # Find the delimiter for the colour string, so the string has to contain exact one of this delimiter!
+    return strings.find_delimiter(colour, 1)
 
 # -----------------------------------------------------------------

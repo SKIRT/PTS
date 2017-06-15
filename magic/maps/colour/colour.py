@@ -20,6 +20,11 @@ from ...core.list import FrameList
 
 # -----------------------------------------------------------------
 
+colour_strings = ["FUV__NUV", "FUV__H", "FUV__u", "FUV__g", "FUV__r", "FUV__i", "FUV__z", "Pacs_70__Pacs_100", "Pacs_100__Pacs_160",
+                  "Pacs_160__SPIRE_250", "SPIRE_250__SPIRE_350", "SPIRE_350__SPIRE_500"]
+
+# -----------------------------------------------------------------
+
 def make_map(*args, **kwargs):
 
     """
@@ -130,7 +135,7 @@ class ColourMapsMaker(Configurable):
 
             # Check whether a colour map is already present
             if colour in self.maps:
-                log.warning("The " + colour + " colour map is already calculated: not performing the calculation again")
+                log.warning("The " + colour + " colour map is already created: not creating it again")
                 continue
 
             # Create frame list

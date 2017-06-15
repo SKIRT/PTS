@@ -88,10 +88,12 @@ class AttenuationMapMaker(MapsComponent):
 
         # Get the input
         fuv = self.get_frame_for_filter(self.fuv_filter)
-        tirs = self.get_tir_maps()
-        ssfrs = self.get_ssfr_maps()
-        tirs_origins = self.get_tir_origins()
-        ssfrs_origins = self.get_ssfr_origins()
+
+        # Get maps and origins
+        tirs = self.get_tir_maps(flatten=True)
+        ssfrs = self.get_ssfr_maps(flatten=True)
+        tirs_origins = self.get_tir_origins(flatten=True)
+        ssfrs_origins = self.get_ssfr_origins(flatten=True)
 
         # Run the map maker
         maker.run(fuv=fuv, tirs=tirs, ssfrs=ssfrs, tirs_origins=tirs_origins, ssfrs_origins=ssfrs_origins, distance=self.galaxy_distance)

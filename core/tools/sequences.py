@@ -443,3 +443,32 @@ def any_empty(*sequences):
     return any(is_empty(sequence) for sequence in sequences)
 
 # -----------------------------------------------------------------
+
+def find_indices(sequence, element):
+
+    """
+    This function ...
+    :param sequence:
+    :param element:
+    :return:
+    """
+
+    return [index for index, value in enumerate(sequence) if value == element]
+
+# -----------------------------------------------------------------
+
+def find_unique(sequence, element):
+
+    """
+    This function ...
+    :param sequence:
+    :param element:
+    :return:
+    """
+
+    indices = find_indices(sequence, element)
+    if len(indices) == 0: raise ValueError("Not found")
+    elif len(indices) > 1: raise ValueError("Not unique")
+    else: return indices[0]
+
+# -----------------------------------------------------------------
