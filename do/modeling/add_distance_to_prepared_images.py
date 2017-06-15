@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
 from pts.core.tools.logging import log
-from pts.modeling.component.galaxy import get_galaxy_properties
+from pts.modeling.component.galaxy import get_galaxy_properties, get_prepared_dataset
 
 # -----------------------------------------------------------------
 
@@ -35,6 +35,23 @@ distance = properties.distance
 # -----------------------------------------------------------------
 
 # Loop over all prepared images
+dataset = get_prepared_dataset(modeling_path)
 
+# -----------------------------------------------------------------
+
+# Loop over the images
+for name in dataset.names:
+
+    # Inform
+    log.info("Adding the distance to the " + name + " image ...")
+    
+    # Load the image
+    image = dataset.get_image(name)
+    
+    # Set the distance
+    image.distance = distance
+    
+    # Save
+    image.save()
 
 # -----------------------------------------------------------------

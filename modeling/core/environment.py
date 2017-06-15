@@ -27,6 +27,11 @@ from ...core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
+config_filename = "modeling.cfg"
+history_filename = "history.dat"
+
+# -----------------------------------------------------------------
+
 fit_name = "fit"
 analysis_name = "analysis"
 reports_name = "reports"
@@ -60,10 +65,10 @@ class ModelingEnvironment(object):
         self.path = modeling_path
 
         # Determine the path to the modeling configuration file
-        self.config_file_path = fs.join(self.path, "modeling.cfg")
+        self.config_file_path = fs.join(self.path, config_filename)
 
         # Determine the path to the modeling history file
-        self.history_file_path = fs.join(self.path, "history.dat")
+        self.history_file_path = fs.join(self.path, history_filename)
 
         # Initialize the history file
         if not fs.is_file(self.history_file_path):
@@ -71,15 +76,15 @@ class ModelingEnvironment(object):
             history.saveto(self.history_file_path)
 
         # Get the full paths to the necessary subdirectories and CREATE THEM
-        self.fit_path = fs.create_directory_in(self.path, "fit")
-        self.analysis_path = fs.create_directory_in(self.path, "analysis")
-        self.reports_path = fs.create_directory_in(self.path, "reports")
-        self.visualisation_path = fs.create_directory_in(self.path, "visualisation")
-        self.plot_path = fs.create_directory_in(self.path, "plot")
-        self.log_path = fs.create_directory_in(self.path, "log")
-        self.config_path = fs.create_directory_in(self.path, "config")
-        self.show_path = fs.create_directory_in(self.path, "show")
-        self.build_path = fs.create_directory_in(self.path, "build")
+        self.fit_path = fs.create_directory_in(self.path, fit_name)
+        self.analysis_path = fs.create_directory_in(self.path, analysis_name)
+        self.reports_path = fs.create_directory_in(self.path, reports_name)
+        self.visualisation_path = fs.create_directory_in(self.path, visualisation_name)
+        self.plot_path = fs.create_directory_in(self.path, plot_name)
+        self.log_path = fs.create_directory_in(self.path, log_name)
+        self.config_path = fs.create_directory_in(self.path, config_name)
+        self.show_path = fs.create_directory_in(self.path, show_name)
+        self.build_path = fs.create_directory_in(self.path, build_name)
 
     # -----------------------------------------------------------------
 
@@ -111,6 +116,17 @@ class ModelingEnvironment(object):
 
 # -----------------------------------------------------------------
 
+data_name = "data"
+prep_name = "prep"
+inspect_name = "inspect"
+truncated_name = "truncated"
+phot_name = "phot"
+maps_name = "maps"
+components_name = "components"
+deprojection_name = "deprojection"
+
+# -----------------------------------------------------------------
+
 class GalaxyModelingEnvironment(ModelingEnvironment):
 
     """
@@ -131,14 +147,14 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         self.galaxy_name = fs.name(self.path)
 
         # Get the full paths to the necessary subdirectories and CREATE THEM
-        self.data_path = fs.create_directory_in(self.path, "data")
-        self.prep_path = fs.create_directory_in(self.path, "prep")
-        self.inspect_path = fs.create_directory_in(self.path, "inspect")
-        self.truncation_path = fs.create_directory_in(self.path, "truncated")
-        self.phot_path = fs.create_directory_in(self.path, "phot")
-        self.maps_path = fs.create_directory_in(self.path, "maps")
-        self.components_path = fs.create_directory_in(self.path, "components")
-        self.deprojection_path = fs.create_directory_in(self.path, "deprojection")
+        self.data_path = fs.create_directory_in(self.path, data_name)
+        self.prep_path = fs.create_directory_in(self.path, prep_name)
+        self.inspect_path = fs.create_directory_in(self.path, inspect_name)
+        self.truncation_path = fs.create_directory_in(self.path, truncated_name)
+        self.phot_path = fs.create_directory_in(self.path, phot_name)
+        self.maps_path = fs.create_directory_in(self.path, maps_name)
+        self.components_path = fs.create_directory_in(self.path, components_name)
+        self.deprojection_path = fs.create_directory_in(self.path, deprojection_name)
 
         ## NEW: ADD MORE AND MORE PATH DEFINITIONS HERE
 
@@ -292,6 +308,10 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
 # -----------------------------------------------------------------
 
+input_name = "input"
+
+# -----------------------------------------------------------------
+
 class SEDModelingEnvironment(ModelingEnvironment):
 
     """
@@ -318,7 +338,7 @@ class SEDModelingEnvironment(ModelingEnvironment):
         self.ski_path = fs.join(self.path, "template.ski")
 
         # Set the ski input path
-        self.ski_input_path = fs.create_directory_in(self.path, "input")
+        self.ski_input_path = fs.create_directory_in(self.path, input_name)
 
     # -----------------------------------------------------------------
 
