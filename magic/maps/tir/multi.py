@@ -235,7 +235,7 @@ class MultiBandTIRMapMaker(Configurable):
             combination = tuple([str(fltr) for fltr in filters])
 
             # Convert key to string
-            key = tostr(combination)
+            key = tostr(combination, delimiter="_")
 
             # Set the TIR map
             self.maps[key] = tir

@@ -403,6 +403,31 @@ class Image(object):
     # -----------------------------------------------------------------
 
     @property
+    def distance(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.primary.distance if self.has_frames else None
+
+    # -----------------------------------------------------------------
+
+    @distance.setter
+    def distance(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        for frame_name in self.frames: self.frames[frame_name].distance = value
+
+    # -----------------------------------------------------------------
+
+    @property
     def pixelscale(self):
 
         """

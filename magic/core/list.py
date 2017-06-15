@@ -2189,7 +2189,7 @@ def rebin_to_pixelscale(*frames, **kwargs):
         else:
 
             # Is per pixelsize
-            if frame.unit.is_per_pixelsize:
+            if frame.unit is not None and frame.unit.is_per_pixelsize:
 
                 # Debugging
                 log.debug("Frame " + name + "is expressed in units per angular or intrinsic area (pixelsize squared)")

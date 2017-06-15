@@ -91,6 +91,7 @@ class Frame(NDDataArray):
 
         wcs = kwargs.pop("wcs", None)
         unit = kwargs.pop("unit", None)
+
         self.name = kwargs.pop("name", None)
         self.description = kwargs.pop("description", None)
         self.zero_point = kwargs.pop("zero_point", None)
@@ -103,7 +104,8 @@ class Frame(NDDataArray):
         self._wavelength = kwargs.pop("wavelength", None)
         self.metadata = kwargs.pop("meta", dict())
 
-        #print(self._meta)
+        # Distance
+        self.distance = kwargs.pop("distance", None)
 
         # PSF FILTER
         self._psf_filter = kwargs.pop("psf_filter", None)

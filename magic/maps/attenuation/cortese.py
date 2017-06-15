@@ -23,6 +23,7 @@ from ...calibrations.cortese import CorteseAttenuationCalibration
 from .tir_to_uv import make_tir_to_uv
 from ....core.filter.filter import parse_filter
 from ....core.tools import sequences
+from ...core.list import NamedFrameList
 
 # -----------------------------------------------------------------
 
@@ -83,6 +84,9 @@ class CorteseAttenuationMapsMaker(Configurable):
         # Origins
         self.tirs_origins = None
         self.ssfrs_origins = None
+
+        # The distance
+        self.distance = None
 
         # The table describing the calibration parameters from Cortese et. al 2008
         # Title of table: Relations to convert the TIR/FUV ratio in A(FUV) for different values of tau and
@@ -173,7 +177,7 @@ class CorteseAttenuationMapsMaker(Configurable):
 
             # Make the TIR to FUV map
             tir_to_fuv = make_tir_to_uv(self.tirs[name], self.fuv, distance=self.distance)
-            log_tir_to_fuv = Frame(np.log10(tir_to_fuv), wcs=tir_to_fuv.wcs)
+            #log_tir_to_fuv = Frame(np.log10(tir_to_fuv), wcs=tir_to_fuv.wcs) # unit is lost: cannot do rebinning because 'frame.unit.is_per_pixelsize' is not accessible ...
 
             # Loop over the different colour options
             for ssfr_colour in self.ssfrs:
@@ -181,11 +185,18 @@ class CorteseAttenuationMapsMaker(Configurable):
                 # Get the ssfr map
                 ssfr = self.ssfrs[ssfr_colour]
 
+                # Rebin and convolve the TIR-to-FUV, FUV and the sSFR maps
+                frames = NamedFrameList(fuv=self.fuv, ssfr=ssfr, tirtofuv=tir_to_fuv)
+                frames.convolve_and_rebin()
+
+                # Get frames
+                log_tir_to_fuv = Frame(np.log10(frames["tirtofuv"]), wcs=frames["tirtofuv"].wcs)
+
                 # Create the FUV attenuation map according to the calibration in Cortese et. al 2008
-                fuv_attenuation = make_fuv_attenuation_map(self.cortese, ssfr_colour, log_tir_to_fuv, ssfr)
+                fuv_attenuation = make_fuv_attenuation_map(self.cortese, ssfr_colour, log_tir_to_fuv, frames["ssfr"])
 
                 # Set attenuation to zero where the original FUV map is smaller than zero
-                fuv_attenuation[self.fuv < 0.0] = 0.0
+                fuv_attenuation[frames["fuv"] < 0.0] = 0.0
 
                 # Determine name
                 key = name + "_" + ssfr_colour
@@ -236,9 +247,9 @@ def make_fuv_attenuation_map(cortese, ssfr_colour, log_tir_to_fuv, ssfr):
     log.info("Creating the A(FUV) map according to the relation to the TIR/FUV ratio as described in Cortese et. al 2008 ...")
 
     # Calculate powers of log(tir_to_fuv)
-    tir_to_fuv2 = np.power(log_tir_to_fuv.data, 2.0)
-    tir_to_fuv3 = np.power(log_tir_to_fuv.data, 3.0)
-    tir_to_fuv4 = np.power(log_tir_to_fuv.data, 4.0)
+    log_tir_to_fuv2 = np.power(log_tir_to_fuv.data, 2.0)
+    log_tir_to_fuv3 = np.power(log_tir_to_fuv.data, 3.0)
+    log_tir_to_fuv4 = np.power(log_tir_to_fuv.data, 4.0)
 
     # Create an empty image
     a_fuv_cortese = Frame.zeros_like(log_tir_to_fuv)
@@ -253,11 +264,11 @@ def make_fuv_attenuation_map(cortese, ssfr_colour, log_tir_to_fuv, ssfr):
         where = (ssfr >= colour_range.min) * (ssfr < colour_range.max)
 
         # Set the appropriate pixels
-        a_fuv_cortese[where] = parameters[0] + parameters[1] * log_tir_to_fuv[where] + parameters[2] * tir_to_fuv2[where] + \
-                               parameters[3] * tir_to_fuv3[where] + parameters[4] * tir_to_fuv4[where]
+        a_fuv_cortese[where] = parameters[0] + parameters[1] * log_tir_to_fuv[where] + parameters[2] * log_tir_to_fuv2[where] + \
+                               parameters[3] * log_tir_to_fuv3[where] + parameters[4] * log_tir_to_fuv4[where]
 
     # Get absolute upper limit
-    absolute_upper_limit = cortese.upper_limit(ssfr_colour)
+    absolute_upper_limit = cortese.get_upper_limit(ssfr_colour)
 
     # Set attenuation to zero where tir_to_fuv is NaN
     a_fuv_cortese[np.isnan(log_tir_to_fuv)] = 0.0
