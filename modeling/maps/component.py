@@ -28,6 +28,9 @@ from ...core.tools import types
 from ...core.filter.filter import parse_filter
 from ...magic.core.list import NamedFrameList
 from ...core.tools.serialization import load_dict, write_dict
+from ...core.tools import sequences
+from ...core.basics.configuration import prompt_proceed
+from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -36,6 +39,64 @@ origins_filename = "origins.txt"
 # -----------------------------------------------------------------
 
 maps_commands = ["make_colour_maps", "make_ssfr_maps", "make_tir_maps", "make_attenuation_maps", "make_old_stars_map", "make_young_stars_map", "make_ionizing_stars_map", "make_dust_map"]
+
+# -----------------------------------------------------------------
+
+def maps_commands_before(command):
+
+    """
+    This function ...
+    :param command:
+    :return:
+    """
+
+    # FInd index of command
+    index = sequences.find_unique(maps_commands, command)
+
+    # Return
+    if index == 0: return []
+    else: return maps_commands[:index]
+
+# -----------------------------------------------------------------
+
+def maps_commands_after(command):
+
+    """
+    This function ...
+    :param command:
+    :return:
+    """
+
+    # Find index of command
+    index = sequences.find_unique(maps_commands, command)
+
+    # Return
+    if index == len(maps_commands) - 1: return []
+    else: return maps_commands[index+1:]
+
+# -----------------------------------------------------------------
+
+def maps_commands_before_and_including(command):
+
+    """
+    This function ...
+    :param command:
+    :return:
+    """
+
+    return maps_commands_before(command) + [command]
+
+# -----------------------------------------------------------------
+
+def maps_commands_after_and_including(command):
+
+    """
+    This function ...
+    :param command:
+    :return:
+    """
+
+    return [command] + maps_commands_after(command)
 
 # -----------------------------------------------------------------
 
@@ -109,17 +170,62 @@ class MapsComponent(GalaxyModelingComponent):
 
             # Check whether teh path is present and not empty
             if not fs.is_directory(path):
+
+                # Warning
                 log.error("The " + name + " directory does not exist from the '" + command_name + "' output")
-                #raise IOError("The " + name + " directory does not exist from the '" + command_name + "' output")
-                log.warning("Removing the '" + command_name + "' from the history ...")
-                self.history.remove_entries_and_save(command_name)
-                exit()
+
+                # Remove
+                self.remove_output_and_history_after_and_including(command_name)
+
             if fs.is_empty(path):
-                #raise IOError("The " + name + " directory from the '" + command_name + "' output is empty")
+
+                # Warning
                 log.error("The " + name + " directory from the '" + command_name + "' output is empty")
-                log.warning("Removing the '" + command_name + "' from the history ...")
-                self.history.remove_entries_and_save(command_name)
-                exit()
+
+                # Remove
+                self.remove_output_and_history_after_and_including(command_name)
+
+    # -----------------------------------------------------------------
+
+    def remove_output_and_history_after_and_including(self, command_name):
+
+        """
+        This function ...
+        :param command_name:
+        :return:
+        """
+
+        log.warning("Removing the '" + command_name + "' and successive commands from the history ...")
+        commands = maps_commands_after_and_including(command_name)
+        yn = prompt_proceed("Remove the history and output of the following commands: " + tostr(commands) + "?")
+        if yn:
+
+            # Remove from history
+            for command in commands:
+
+                # Debugging
+                log.debug("Removing the '" + command + "' command from the modeling history ...")
+
+                # Remove
+                self.history.remove_entries(command)
+
+            self.history.save()
+
+            # Remove output
+            for command in commands:
+
+                path = self.sub_path_for_command(command)
+
+                # Debugging
+                log.debug("Removing the output path [" + path + "] for the '" + command + "' command ...")
+
+                # Remove
+                fs.remove_directory(path)
+
+            # Exit
+            exit()
+
+        else: raise RuntimeError("Cannot proceed")
 
     # -----------------------------------------------------------------
 

@@ -29,7 +29,7 @@ from ...core.tools import filesystem as fs
 from ..convolution.aniano import AnianoKernels
 from ..convolution.matching import MatchingKernels
 from ..convolution.kernels import get_fwhm
-from ...core.tools import types
+from ...core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -2392,5 +2392,48 @@ def convolve_to_fwhm(*frames, **kwargs):
 
     # Return the convolved frames
     return new_frames
+
+# -----------------------------------------------------------------
+
+def check_uniformity(*frames):
+
+    """
+    This function ...
+    :param frames:
+    :return:
+    """
+
+    # Check units
+    units = [frame.unit for frame in frames]
+    if not sequences.all_equal(units, ignore_none=True): raise ValueError("Frames have to be in the same unit")
+    unit = sequences.find_first_not_none(units)
+
+    # Get WCS
+    wcss = [frame.wcs for frame in frames]
+    if not sequences.all_equal(wcss, ignore_none=True): raise ValueError("Frames have to be transformed to same pixel grid")
+    wcs = sequences.find_first_not_none(wcss)
+
+    # Get pixelscale
+    pixelscales = [frame.average_pixelscale for frame in frames]
+    if not sequences.all_close(pixelscales, ignore_none=True): raise ValueError("Frames must have the same pixelscale")
+    pixelscale = sequences.find_first_not_none(pixelscales)
+
+    # Get PSF filter
+    psf_filters = [frame.psf_filter for frame in frames]
+    if not sequences.all_equal(psf_filters): raise ValueError("Frames have to be convolved to the same resolution")
+    psf_filter = sequences.find_first_not_none(psf_filters)
+
+    # Get FWHM
+    fwhms = [frame.fwhm for frame in frames]
+    if not sequences.all_close(fwhms, ignore_none=True): raise ValueError("Frames have to have the same FWHM")
+    fwhm = sequences.find_first_not_none(fwhms)
+
+    # Get distance
+    distances = [frame.distance for frame in frames],
+    if not sequences.all_close(distances, ignore_none=True): raise ValueError("Frames have to have the same distance to the object")
+    distance = sequences.find_first_not_none(distances)
+
+    # Return the common properties
+    return unit, wcs, pixelscale, psf_filter, fwhm, distance
 
 # -----------------------------------------------------------------

@@ -171,7 +171,68 @@ def find_exact_index(seq, value):
 
 # -----------------------------------------------------------------
 
-def all_equal(lst):
+def all_equal(lst, ignore_none=False):
+
+    """
+    This function ...
+    :param lst:
+    :param ignore_none:
+    :return:
+    """
+
+    if len(lst) == 0: raise ValueError("Cannot use empty list")
+
+    first = lst[0]
+
+    if first is None and ignore_none:
+        try: first = find_first_not_none(lst)
+        except: raise ValueError("Cannot use empty list (except for Nones)") #return True # ALL NONE, SO ALL EQUAL
+
+    for index in range(len(lst)):
+
+        # Ignore None?
+        if ignore_none and lst[index] is None: continue
+
+        if lst[index] != first: return False
+
+    return True
+
+# -----------------------------------------------------------------
+
+def all_close(lst, ignore_none=False, rtol=1.e-5, atol=1.e-8):
+
+    """
+    This fnction ...
+    :param lst:
+    :param ignore_none:
+    :param rtol:
+    :param atol:
+    :return:
+    """
+
+    import numpy as np
+
+    if len(lst) == 0: raise ValueError("Cannot use empty list")
+
+    first = lst[0]
+
+    if first is None and ignore_none:
+        try: first = find_first_not_none(lst)
+        except: raise ValueError("Cannot use empty list (except for Nones)")
+
+    for index in range(len(lst)):
+
+        # Ignore None?
+        if ignore_none and lst[index] is None: continue
+
+        if not np.isclose(lst[index], first, rtol=rtol, atol=atol): return False
+
+    # Return
+    return True
+
+# -----------------------------------------------------------------
+
+def find_first_not_none(lst):
 
     """
     This function ...
@@ -179,12 +240,11 @@ def all_equal(lst):
     :return:
     """
 
-    first = lst[0]
+    for item in lst:
+        if item is not None: return item
 
-    for index in range(1,len(lst)):
-        if lst[index] != first: return False
-
-    return True
+    # Shouldn't get here
+    raise ValueError("No not-None values")
 
 # -----------------------------------------------------------------
 

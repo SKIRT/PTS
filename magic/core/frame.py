@@ -47,6 +47,7 @@ from ...core.units.parsing import parse_unit as u
 from ..basics.vector import PixelShape
 from ...core.tools.stringify import tostr
 from ...core.units.stringify import represent_unit
+from ..basics.pixelscale import Pixelscale
 
 # -----------------------------------------------------------------
 
@@ -92,16 +93,28 @@ class Frame(NDDataArray):
         wcs = kwargs.pop("wcs", None)
         unit = kwargs.pop("unit", None)
 
+        # Set general properties and flags
         self.name = kwargs.pop("name", None)
         self.description = kwargs.pop("description", None)
         self.zero_point = kwargs.pop("zero_point", None)
-        self.filter = kwargs.pop("filter", None)
         self.source_extracted = kwargs.pop("source_extracted", False)
         self.extinction_corrected = kwargs.pop("extinction_corrected", False)
         self.sky_subtracted = kwargs.pop("sky_subtracted", False)
+
+        # Set filter
+        self.filter = kwargs.pop("filter", None)
+
+        # Set FWHM
         self._fwhm = kwargs.pop("fwhm", None)
+
+        # Set pixelscale
         self._pixelscale = kwargs.pop("pixelscale", None)
+        if self._pixelscale is not None and not isinstance(self._pixelscale, Pixelscale): self._pixelscale = Pixelscale(self._pixelscale)
+
+        # Set wavelength
         self._wavelength = kwargs.pop("wavelength", None)
+
+        # Set meta data
         self.metadata = kwargs.pop("meta", dict())
 
         # Distance
@@ -2085,14 +2098,20 @@ def sum_frames_quadratically(*args):
 
 # -----------------------------------------------------------------
 
-def linear_combination(frames, coefficients):
+def linear_combination(frames, coefficients, checks=True):
 
     """
     This function ...
     :param frames: 
-    :param coefficients: 
+    :param coefficients:
+    :param checks:
     :return: 
     """
+
+    if checks:
+        from .list import check_uniformity
+        unit, wcs, pixelscale, psf_filter, fwhm, distance = check_uniformity(*frames)
+    else: unit = wcs = pixelscale = psf_filter = fwhm = distance = None
 
     #print(coefficients)
     return sum_frames(*[frame*coefficient for coefficient, frame in zip(coefficients, frames)])

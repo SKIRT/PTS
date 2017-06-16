@@ -19,6 +19,7 @@ import numpy as np
 from ..core.frame import Frame
 from ...core.filter.filter import parse_filter
 from ...core.tools import strings
+from ..core.list import check_uniformity
 
 # -----------------------------------------------------------------
 
@@ -84,7 +85,11 @@ def make_colour_map(frame_a, frame_b):
     :return:
     """
 
-    return Frame(-2.5 * np.log10(frame_a / frame_b), wcs=frame_a.wcs)
+    # Check uniformity
+    unit, wcs, pixelscale, psf_filter, fwhm, distance = check_uniformity(frame_a, frame_b)
+
+    # Make the colour map and return it
+    return Frame(-2.5 * np.log10(frame_a / frame_b), unit=unit, wcs=wcs, pixelscale=pixelscale, psf_filter=psf_filter, fwhm=fwhm, distance=distance)
 
 # -----------------------------------------------------------------
 

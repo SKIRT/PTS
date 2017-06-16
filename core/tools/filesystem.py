@@ -591,6 +591,10 @@ def remove_directory(path):
     :return:
     """
 
+    # Test
+    if not is_directory(path): raise ValueError("Is not a directory: '" + path + "'")
+
+    # Remove
     shutil.rmtree(path)
 
 # -----------------------------------------------------------------
