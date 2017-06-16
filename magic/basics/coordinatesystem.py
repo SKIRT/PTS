@@ -556,7 +556,7 @@ class CoordinateSystem(wcs.WCS):
             # If all of the above tests succeeded, the coordinate systems may be considered equal
             #return True
 
-            print(sequences.all_true(comparisons))
+            #print(sequences.all_true(comparisons))
             return sequences.all_true(comparisons)
 
         # Error occured

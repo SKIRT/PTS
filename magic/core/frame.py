@@ -2145,12 +2145,12 @@ def linear_combination(frames, coefficients, checks=True):
         unit, wcs, pixelscale, psf_filter, fwhm, distance = check_uniformity(*frames)
     else: unit = wcs = pixelscale = psf_filter = fwhm = distance = None
 
-    print("unit", unit)
-    print("wcs", wcs)
-    print("pixelscale", pixelscale)
-    print("psf_filter", psf_filter)
-    print("fwhm", fwhm)
-    print("distance", distance)
+    #print("unit", unit)
+    #print("wcs", wcs)
+    #print("pixelscale", pixelscale)
+    #print("psf_filter", psf_filter)
+    #print("fwhm", fwhm)
+    #print("distance", distance)
 
     #print(coefficients)
     return sum_frames(*[frame*coefficient for coefficient, frame in zip(coefficients, frames)], unit=unit, wcs=wcs, pixelscale=pixelscale, psf_filter=psf_filter, fwhm=fwhm, distance=distance)

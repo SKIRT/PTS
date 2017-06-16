@@ -239,7 +239,7 @@ class MultiBandTIRMapMaker(Configurable):
             #tir.unit = u("W/kpc2", density=True, brightness=True, density_strict=True, brightness_strict=True)
             tir.wcs = frames[0].wcs
 
-            print("test", tir.distance, tir.pixelscale, tir.psf_filter, tir.fwhm)
+            #print("test", tir.distance, tir.pixelscale, tir.psf_filter, tir.fwhm)
 
             # Set other properties
             tir.distance = frames.distance
