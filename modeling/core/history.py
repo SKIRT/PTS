@@ -220,6 +220,24 @@ class ModelingHistory(SmartTable):
     # -----------------------------------------------------------------
 
     @property
+    def finished_maps_commmands(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..maps.component import maps_commands
+
+        finished = []
+        for command in maps_commands:
+            if self.finished(command): finished.append(command)
+
+        return finished
+
+    # -----------------------------------------------------------------
+
+    @property
     def has_configured_fit(self):
 
         """

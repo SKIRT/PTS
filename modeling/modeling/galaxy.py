@@ -700,8 +700,13 @@ class GalaxyModeler(ModelerBase):
         # Set the working directory
         decomposer.config.path = self.modeling_path
 
+        # Set input dict
+        input_dict = dict()
+        input_dict["disk"] = self.disk_model
+        input_dict["bulge"] = self.bulge_model
+
         # Set log path
-        with self.write_log(decomposer), self.history.register(decomposer), self.write_config(decomposer): decomposer.run(disk=self.disk_model, bulge=self.bulge_model)
+        with self.write_log(decomposer), self.history.register(decomposer), self.write_config(decomposer), self.write_input(decomposer, **input_dict): decomposer.run(**input_dict) #decomposer.run(disk=self.disk_model, bulge=self.bulge_model)
 
     # -----------------------------------------------------------------
 
@@ -1233,8 +1238,13 @@ class GalaxyModeler(ModelerBase):
         # Set the working directory
         configurer.config.path = self.modeling_path
 
+        # Set the input dict
+        input_dict = dict()
+        input_dict["default_ranges"] = default_ranges
+        input_dict["settings"] = self.config.fitting_settings
+
         # Run the fitting configurer
-        with self.write_log(configurer), self.history.register(configurer), self.write_config(configurer): configurer.run(default_ranges=default_ranges, settings=self.config.fitting_settings)
+        with self.write_log(configurer), self.history.register(configurer), self.write_config(configurer), self.write_input(configurer, **input_dict): configurer.run(**input_dict)
 
     # -----------------------------------------------------------------
 

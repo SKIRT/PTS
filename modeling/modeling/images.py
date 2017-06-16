@@ -208,12 +208,23 @@ class ImagesModeler(ModelerBase):
         # Set the working directory
         configurer.config.path = self.modeling_path
 
-        # Run the fitting configurer
-        with self.write_log(configurer), self.history.register(configurer), self.write_config(configurer):
+        # Set the input dictionary
+        input_dict = dict()
+        input_dict["descriptions_config"] = self.descriptions_config
+        input_dict["types_config"] = self.types_config
+        input_dict["units_config"] = self.units_config
+        input_dict["ranges_config"] = self.ranges_config
+        input_dict["filters_config"] = self.filters_config
+        input_dict["genetic_config"] = self.genetic_config
+        input_dict["grid_config"] = self.grid_config
+        input_dict["settings"] = self.config.fitting_settings
 
-            configurer.run(descriptions_config=self.descriptions_config, types_config=self.types_config,
-                           units_config=self.units_config, ranges_config=self.ranges_config, filters_config=self.filters_config,
-                           genetic_config=self.genetic_config, grid_config=self.grid_config, settings=self.config.fitting_settings)
+        # Run the fitting configurer
+        with self.write_log(configurer), self.history.register(configurer), self.write_config(configurer), self.write_input(configurer, **input_dict): configurer.run(**input_dict)
+
+            #configurer.run(descriptions_config=self.descriptions_config, types_config=self.types_config,
+            #               units_config=self.units_config, ranges_config=self.ranges_config, filters_config=self.filters_config,
+            #               genetic_config=self.genetic_config, grid_config=self.grid_config, settings=self.config.fitting_settings)
 
         # Set the parameter ranges
         if self.ranges_config is not None:

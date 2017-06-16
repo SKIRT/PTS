@@ -25,6 +25,10 @@ from ...magic.core.list import FrameList
 
 # -----------------------------------------------------------------
 
+methods = ["single", "multi"]
+
+# -----------------------------------------------------------------
+
 singleband_filter_names = ["IRAC I4", "MIPS 24mu", "Pacs 70", "Pacs 100", "Pacs 160", "SPIRE 250"]
 multiband_filter_names = ["MIPS 24mu", "Pacs blue", "Pacs green", "Pacs red", "SPIRE 250"]
 
@@ -232,7 +236,8 @@ class TIRMapMaker(MapsComponent):
 
         # Run
         frames, errors = self.load_data_singleband()
-        maker.run(frames=frames, errors=errors, distance=self.galaxy_distance)
+        current = self.get_current_maps_method("single")
+        maker.run(frames=frames, errors=errors, maps=current)
 
         # Set the maps
         self.maps["single"] = maker.maps
@@ -257,7 +262,8 @@ class TIRMapMaker(MapsComponent):
 
         # Run
         frames, errors = self.load_data_multiband()
-        maker.run(frames=frames, errors=errors, distance=self.galaxy_distance)
+        current = self.get_current_maps_method("multi")
+        maker.run(frames=frames, errors=errors, maps=current)
 
         # Set the maps
         self.maps["multi"] = maker.maps

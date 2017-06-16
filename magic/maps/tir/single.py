@@ -85,9 +85,6 @@ class SingleBandTIRMapMaker(Configurable):
         # The Galametz TIR calibration object
         self.galametz = GalametzTIRCalibration()
 
-        # The distance
-        self.distance = None
-
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -119,7 +116,9 @@ class SingleBandTIRMapMaker(Configurable):
         # Get the input
         self.frames = kwargs.pop("frames")
         self.errors = kwargs.pop("errors", None)
-        self.distance = kwargs.pop("distance")
+
+        # Get maps that have already been created
+        if "maps" in kwargs: self.maps = kwargs.pop("maps")
 
     # -----------------------------------------------------------------
 
@@ -148,6 +147,17 @@ class SingleBandTIRMapMaker(Configurable):
         # Loop over the frames
         for fltr in self.filters:
 
+            # Set the name
+            name = tostr(fltr, delimiter="_")
+
+            # Set the origins, also when already created map
+            self.origins[name] = [fltr]
+
+            # Check whether a TIR map is already present
+            if name in self.maps:
+                log.warning("The " + name + " TIR map is already created: not creating it again")
+                continue
+
             # Debugging
             log.debug("Making TIR map from the '" + str(fltr) + "' frame ...")
 
@@ -158,8 +168,7 @@ class SingleBandTIRMapMaker(Configurable):
             frame = self.frames[fltr]
 
             # Convert to neutral intrinsic surface brightness
-            frame = frame.converted_to("W/kpc2", density=True, distance=self.distance, brightness=True,
-                                                 density_strict=True, brightness_strict=True)
+            frame = frame.converted_to("W/kpc2", density=True, brightness=True, density_strict=True, brightness_strict=True)
 
             # Debugging
             #log.debug("Conversion factor: " + str(factor))
@@ -171,14 +180,8 @@ class SingleBandTIRMapMaker(Configurable):
             #tir.unit = u("W/kpc2", density=True, brightness=True, density_strict=True, brightness_strict=True)
             tir.wcs = frame.wcs
 
-            # Set the name
-            name = tostr(fltr, delimiter="_")
-
             # Set the TIR map
             self.maps[name] = tir
-
-            # Set the origins
-            self.origins[name] = [fltr]
 
     # -----------------------------------------------------------------
 

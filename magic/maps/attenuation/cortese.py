@@ -169,7 +169,7 @@ class CorteseAttenuationMapsMaker(Configurable):
         # Loop over the different TIR maps
         for name in self.tirs:
 
-            print(name, self.tirs[name])
+            #print(name, self.tirs[name])
 
             # Make the TIR to FUV map
             tir_to_fuv = make_tir_to_uv(self.tirs[name], self.fuv)

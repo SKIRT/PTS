@@ -112,9 +112,6 @@ class MultiBandTIRMapMaker(Configurable):
         # The galametz calibration object
         self.galametz = GalametzTIRCalibration()
 
-        # The distance
-        self.distance = None
-
         # Lengths
         self.lengths = None
 
@@ -151,8 +148,8 @@ class MultiBandTIRMapMaker(Configurable):
         self.frames = kwargs.pop("frames")
         self.errors = kwargs.pop("errors", None)
 
-        # Get distance
-        self.distance = kwargs.pop("distance")
+        # Get maps that have already been created
+        if "maps" in kwargs: self.maps = kwargs.pop("maps")
 
         # The number of filters to consider as combinations
         self.lengths = kwargs.pop("lengths", [2,3])
@@ -187,6 +184,17 @@ class MultiBandTIRMapMaker(Configurable):
             # Check if the combination if possible
             if not self.galametz.has_combination_multi_brightness(*filters): continue
 
+            # Convert filter combination to string
+            key = tostr(filters, delimiter="__", value_delimiter="_")
+
+            # Set the origins (also when the map is already present)
+            self.origins[key] = filters  # cannot be tuple (for serialization reasons of the origins dict): OK: sequences.combinations now returns list instead of tuple
+
+            # Check whether a TIR map is already present
+            if key in self.maps:
+                log.warning("The " + key + " TIR map is already created: not creating it again")
+                continue
+
             # Debugging
             log.debug("Making a TIR map with the filters " + tostr(filters) + " ...")
 
@@ -216,11 +224,11 @@ class MultiBandTIRMapMaker(Configurable):
             # Convolve
             frames.convolve_to_highest_fwhm()
 
-            # Rebin the frames to the same pixelgrid
+            # Rebin the frames to the same pixelgridt
             frames.rebin_to_highest_pixelscale()
 
             # Convert the frames to the same unit
-            frames.convert_to_same_unit(unit="W/kpc2", density=True, brightness=True, density_strict=True, brightness_strict=True, distance=self.distance)
+            frames.convert_to_same_unit(unit="W/kpc2", density=True, brightness=True, density_strict=True, brightness_strict=True)
 
             # Get the frames
             #frame_a, frame_b = frames[0], frames[1]
@@ -234,14 +242,8 @@ class MultiBandTIRMapMaker(Configurable):
             # Determine keys
             #combination = tuple([fltr for fltr in filters])
 
-            # Convert key to string
-            key = tostr(filters, delimiter="__", value_delimiter="_")
-
             # Set the TIR map
             self.maps[key] = tir
-
-            # Set the origins
-            self.origins[key] = filters # cannot be tuple (for serialization reasons of the origins dict): OK: sequences.combinations now returns list instead of tuple
 
     # -----------------------------------------------------------------
 

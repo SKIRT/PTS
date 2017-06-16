@@ -20,7 +20,7 @@ from abc import ABCMeta, abstractmethod
 from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
-from ...core.basics.configurable import Configurable
+from ...core.basics.configurable import Configurable, write_input
 from ...core.tools.logging import log, add_log_file, write_log_to
 from ...core.tools import filesystem as fs
 from ..fitting.explorer import ParameterExplorer
@@ -316,6 +316,34 @@ class ModelerBase(Configurable):
         """
 
         return keep_latest_succesful_config(instance, self.config_path_for_component(instance))
+
+    # -----------------------------------------------------------------
+
+    def input_path_for_component(self, cls_or_instance):
+
+        """
+        This function ...
+        :param cls_or_instance:
+        :return:
+        """
+
+        command_name = cls_or_instance.command_name()
+        #in_path = fs.create_directory_in(self.environment.in_path, command_name + "_" + self.timestamp)
+        in_path = fs.join(self.environment.in_path, command_name)
+        return in_path
+
+    # -----------------------------------------------------------------
+
+    def write_input(self, instance, **kwargs):
+
+        """
+        This function ...
+        :param instance:
+        :param kwargs:
+        :return:
+        """
+
+        return keep_last_succesful_input(instance, self.input_path_for_component(instance), **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -833,7 +861,7 @@ class ModelerBase(Configurable):
         input_dict.update(kwargs)
 
         # Run the parameter explorer
-        with self.write_log(self.explorer), self.history.register(self.explorer), self.write_config(self.explorer): self.explorer.run(**input_dict)
+        with self.write_log(self.explorer), self.history.register(self.explorer), self.write_config(self.explorer), self.write_input(self.explorer, **input_dict): self.explorer.run(**input_dict)
 
     # -----------------------------------------------------------------
 
@@ -862,7 +890,7 @@ class ModelerBase(Configurable):
         input_dict.update(kwargs)
 
         # Run the finisher
-        with self.write_log(self.finisher), self.history.register(self.finisher), self.write_config(self.finisher): self.finisher.run(**input_dict)
+        with self.write_log(self.finisher), self.history.register(self.finisher), self.write_config(self.finisher), self.write_input(self.finisher, **input_dict): self.finisher.run(**input_dict)
 
     # -----------------------------------------------------------------
 
@@ -982,5 +1010,103 @@ class keep_latest_succesful_config(object):
             paths, names = fs.files_in_path(self.config_directory_path, contains=self.command_name, not_contains=self.config_name, extension="cfg", returns=["path", "name"], unpack=True)
             log.debug("Removing previous configuration files: " + tostr(names) + " ...")
             fs.remove_files(paths)
+
+# -----------------------------------------------------------------
+
+class keep_last_succesful_input(object):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, instance, input_path, **kwargs):
+
+        """
+        This function ...
+        :param instance:
+        :param input_path:
+        """
+
+        # Set
+        self.instance = instance
+        self.input_path = input_path
+        self.input = kwargs
+
+    # -----------------------------------------------------------------
+
+    @property
+    def command_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.instance.command_name()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def input_directory_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.directory_of(self.input_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def input_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.input_path)
+
+    # -----------------------------------------------------------------
+
+    def __enter__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write the input directory
+        fs.create_directory(self.input_path)
+
+        # Save the input
+        write_input(self.input, self.input_path, light=True)
+
+    # -----------------------------------------------------------------
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+
+        """
+        This function ...
+        :param exc_type:
+        :param exc_val:
+        :param exc_tb:
+        :return:
+        """
+
+        # Error occured
+        if exc_type is not None:
+
+            log.error("A " + str(exc_type.__name__) + " occured")
+            log.error("Removing input path [" + self.input_path + "] ...")
+            fs.remove_directory(self.input_path)
+
+        # No error: remove all previous directories
+        else:
+
+            paths, names = fs.directories_in_path(self.input_directory_path, contains=self.command_name, not_contains=self.input_name, returns=["path", "name"], unpack=True)
+            log.debug("Removing previous input directories: " + tostr(names) + " ...")
+            fs.remove_directories(paths)
 
 # -----------------------------------------------------------------

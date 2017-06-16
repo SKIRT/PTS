@@ -41,6 +41,7 @@ log_name = "log"
 config_name = "config"
 show_name = "show"
 build_name = "build"
+in_name = "in"
 
 # -----------------------------------------------------------------
 
@@ -83,6 +84,7 @@ class ModelingEnvironment(object):
         self.plot_path = fs.create_directory_in(self.path, plot_name)
         self.log_path = fs.create_directory_in(self.path, log_name)
         self.config_path = fs.create_directory_in(self.path, config_name)
+        self.in_path = fs.create_directory_in(self.path, in_name)
         self.show_path = fs.create_directory_in(self.path, show_name)
         self.build_path = fs.create_directory_in(self.path, build_name)
 

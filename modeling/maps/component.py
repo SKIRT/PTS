@@ -35,6 +35,10 @@ origins_filename = "origins.txt"
 
 # -----------------------------------------------------------------
 
+maps_commands = ["make_colour_maps", "make_ssfr_maps", "make_tir_maps", "make_attenuation_maps", "make_old_stars_map", "make_young_stars_map", "make_ionizing_stars_map", "make_dust_map"]
+
+# -----------------------------------------------------------------
+
 class MapsComponent(GalaxyModelingComponent):
     
     """
@@ -80,6 +84,42 @@ class MapsComponent(GalaxyModelingComponent):
 
         # Call the setup function of the base class
         super(MapsComponent, self).setup(**kwargs)
+
+        # Perform some checks to see whether previous output is present
+        self.perform_checks()
+
+    # -----------------------------------------------------------------
+
+    def perform_checks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Checking existing maps ...")
+
+        # Loop over the finished maps commands
+        for command_name in self.history.finished_maps_commmands:
+
+            # Get sub path for command
+            path = self.sub_path_for_command(command_name)
+            name = fs.name(path)
+
+            # Check whether teh path is present and not empty
+            if not fs.is_directory(path):
+                log.error("The " + name + " directory does not exist from the '" + command_name + "' output")
+                #raise IOError("The " + name + " directory does not exist from the '" + command_name + "' output")
+                log.warning("Removing the '" + command_name + "' from the history ...")
+                self.history.remove_entries_and_save(command_name)
+                exit()
+            if fs.is_empty(path):
+                #raise IOError("The " + name + " directory from the '" + command_name + "' output is empty")
+                log.error("The " + name + " directory from the '" + command_name + "' output is empty")
+                log.warning("Removing the '" + command_name + "' from the history ...")
+                self.history.remove_entries_and_save(command_name)
+                exit()
 
     # -----------------------------------------------------------------
 
@@ -1028,10 +1068,12 @@ class MapsComponent(GalaxyModelingComponent):
                 # Get dictionary of file paths, but only FITS files
                 files = fs.files_in_path(method_path, returns="dict", extension="fits")
 
-                # Set the map paths, as a dictionary with the filename as keys
-                if flatten: paths[method] = files
-                else:
+                # Flatten into a one-level dict
+                if flatten:
                     for map_name in files: paths[method + "_" + map_name] = files[map_name]
+
+                # Don't flatten
+                else: paths[method] = files
 
             # Return the paths
             return paths
@@ -1125,6 +1167,22 @@ class MapsComponent(GalaxyModelingComponent):
         """
 
         return self.get_maps_sub_name(self.maps_sub_name, flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
+    def get_current_maps_method(self, method):
+
+        """
+        This
+        :param method:
+        :return:
+        """
+
+        maps = self.get_current_maps()
+        if maps is None: return None
+
+        if method not in maps: return dict()
+        else: return maps[method]
 
     # -----------------------------------------------------------------
 
