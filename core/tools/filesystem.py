@@ -877,6 +877,8 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
         # Create the return value
         if types.is_string_type(returns):
 
+            if unpack: raise ValueError("Cannot unpack with only one return value")
+
             if returns == "path": thing = item_path
             elif returns == "name": thing = item_name + "." + item_extension if extensions else item_name
             elif returns == "directory": thing = directory
@@ -897,7 +899,7 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
 
     # Return the list of file paths
     if return_dict: return dict(file_paths) # file_paths is list of tuples
-    elif unpack: return zip(*file_paths)
+    elif unpack: return sequences.unpack(file_paths, default_size=len(returns))
     else: return file_paths
 
 # -----------------------------------------------------------------
@@ -932,7 +934,7 @@ def find_file_in_path(path, recursive=False, ignore_hidden=True, extension=None,
 
 def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains=None, not_contains=None,
                         returns="path", exact_name=None, exact_not_name=None, startswith=None, endswith=None, sort=None,
-                        recursion_level=None):
+                        recursion_level=None, unpack=False):
 
     """
     This function ...
@@ -948,6 +950,7 @@ def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains
     :param endswith:
     :param sort: a function which determines how the directories should be sorted based on their name. Hidden items (starting with .) are placed first.
     :param recursion_level:
+    :param unpack:
     :return:
     """
 
@@ -979,6 +982,7 @@ def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains
         items.sort(key=sort_function)
 
     if returns == "dict":
+        if unpack: raise ValueError("Cannot unpack when return type is 'dict'")
         returns = ["name", "path"]
         return_dict = True
     else: return_dict = False
@@ -1023,6 +1027,8 @@ def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains
         # Create the return value
         if types.is_string_type(returns):
 
+            if unpack: raise ValueError("Cannot unpack with only one return value")
+
             if returns == "path": thing = item_path
             elif returns == "name": thing = item
             elif returns == "directory": thing = directory
@@ -1043,6 +1049,7 @@ def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains
 
     # Return the list of directory paths
     if return_dict: return dict(directory_paths)
+    elif unpack: return sequences.unpack(directory_paths, default_size=len(returns))
     else: return directory_paths
 
 # -----------------------------------------------------------------
@@ -1596,5 +1603,24 @@ def reverse_read_line_impl(fh, buf_size=8192):
     # Don't yield None if the file was empty
     if segment is not None:
         yield segment
+
+# -----------------------------------------------------------------
+
+def relative_to(path, base_path):
+
+    """
+    This function ...
+    :param path:
+    :param base_path:
+    :return:
+    """
+
+    # Both absolute
+    path = absolute_path(path)
+    base_path = absolute_path(base_path)
+
+    relative = path.split(base_path)[1]
+    if relative.startswith("/"): return relative[1:]
+    else: return relative
 
 # -----------------------------------------------------------------

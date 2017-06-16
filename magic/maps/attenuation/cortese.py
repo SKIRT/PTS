@@ -85,9 +85,6 @@ class CorteseAttenuationMapsMaker(Configurable):
         self.tirs_origins = None
         self.ssfrs_origins = None
 
-        # The distance
-        self.distance = None
-
         # The table describing the calibration parameters from Cortese et. al 2008
         # Title of table: Relations to convert the TIR/FUV ratio in A(FUV) for different values of tau and
         # FUV − NIR/optical colours.
@@ -140,9 +137,6 @@ class CorteseAttenuationMapsMaker(Configurable):
         self.tirs_origins = kwargs.pop("tirs_origins", None)
         self.ssfrs_origins = kwargs.pop("ssfrs_origins", None)
 
-        # Get distance
-        self.distance = kwargs.pop("distance", None)
-
         # Create the Cortese instance
         self.cortese = CorteseAttenuationCalibration()
 
@@ -175,8 +169,10 @@ class CorteseAttenuationMapsMaker(Configurable):
         # Loop over the different TIR maps
         for name in self.tirs:
 
+            print(name, self.tirs[name])
+
             # Make the TIR to FUV map
-            tir_to_fuv = make_tir_to_uv(self.tirs[name], self.fuv, distance=self.distance)
+            tir_to_fuv = make_tir_to_uv(self.tirs[name], self.fuv)
             #log_tir_to_fuv = Frame(np.log10(tir_to_fuv), wcs=tir_to_fuv.wcs) # unit is lost: cannot do rebinning because 'frame.unit.is_per_pixelsize' is not accessible ...
 
             # Loop over the different colour options

@@ -22,15 +22,17 @@ from .configuration import find_command
 
 # -----------------------------------------------------------------
 
-def write_input(input_dict, path):
+def write_input(input_dict, path, light=False):
 
     """
     This function ...
     :param input_dict:
     :param path:
+    :param light:
     :return:
     """
 
+    # Import things
     from ..tools.serialization import write_dict
     from ..tools import introspection
 
@@ -53,10 +55,13 @@ def write_input(input_dict, path):
             filename = name + "." + input_dict[name].default_extension
             filepath = fs.join(path, filename)  # local temporary path
 
-            # Save the object, but don't change its internal path
-            original_path = input_dict[name].path
-            input_dict[name].saveto(filepath)
-            input_dict[name].path = original_path
+            # If 'light' is enabled, don't write out files that can't get stringifyied
+            if not light:
+
+                # Save the object, but don't change its internal path
+                original_path = input_dict[name].path
+                input_dict[name].saveto(filepath)
+                input_dict[name].path = original_path
 
             subproject, relative_class_subproject = introspection.get_class_path(input_dict[name].__class__)
             classes[name] = subproject + "." + relative_class_subproject

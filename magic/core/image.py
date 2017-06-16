@@ -1066,6 +1066,9 @@ class Image(object):
         # Inform the user
         log.debug("Converting the unit of the image from " + tostr(self.unit, add_physical_type=True) + " to " + tostr(to_unit, add_physical_type=True) + " ...")
 
+        # Set the distance
+        if distance is None: distance = self.distance
+
         # Calculate the conversion factor
         factor = self.unit.conversion_factor(to_unit, density=density, fltr=self.filter, pixelscale=self.pixelscale,
                                              distance=distance, brightness=brightness, density_strict=density_strict,

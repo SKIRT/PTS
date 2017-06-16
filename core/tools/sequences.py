@@ -472,3 +472,39 @@ def find_unique(sequence, element):
     else: return indices[0]
 
 # -----------------------------------------------------------------
+
+def pack(*sequences):
+
+    """
+    This function ...
+    :param sequences:
+    :return:
+    """
+
+    return [list(element) for element in zip(*sequences)]
+
+# -----------------------------------------------------------------
+
+def unpack(zipped, default_size=None):
+
+    """
+    This function ...
+    :param zipped:
+    :param default_size:
+    :return:
+    """
+
+    if len(zipped) == 0:
+        if default_size is None: raise ValueError("Empty input")
+        else: return [[] for _ in range(default_size)]
+
+    first_element = zipped[0]
+    sequences = [[] for _ in range(len(first_element))]
+
+    for element in zipped:
+        for index in range(len(element)): sequences[index].append(element[index])
+
+    # Return the sequences
+    return sequences
+
+# -----------------------------------------------------------------

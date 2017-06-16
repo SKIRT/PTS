@@ -103,7 +103,8 @@ class SSFRMapMaker(MapsComponent):
         # Loop over the possible colours for tracing sSFR
         for colour in ssfr_colours:
 
-            colour_map = self.get_colour_map(colour)
+            # Get colour map and the name
+            colour_map, colour_name = self.get_colour_map_and_name(colour)
 
             # Check if found
             if colour_map is None:
@@ -111,7 +112,7 @@ class SSFRMapMaker(MapsComponent):
                 continue
 
             # Add the colour map
-            self.colours[colour] = colour_map
+            self.colours[colour_name] = colour_map
 
     # -----------------------------------------------------------------
 

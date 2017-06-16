@@ -232,10 +232,10 @@ class MultiBandTIRMapMaker(Configurable):
             tir.wcs = frames[0].wcs
 
             # Determine keys
-            combination = tuple([str(fltr) for fltr in filters])
+            #combination = tuple([fltr for fltr in filters])
 
             # Convert key to string
-            key = tostr(combination, delimiter="__", value_delimiter="_")
+            key = tostr(filters, delimiter="__", value_delimiter="_")
 
             # Set the TIR map
             self.maps[key] = tir

@@ -378,6 +378,10 @@ class SEDModelingEnvironment(ModelingEnvironment):
 
 # -----------------------------------------------------------------
 
+images_name = "images"
+
+# -----------------------------------------------------------------
+
 class ImagesModelingEnvironment(ModelingEnvironment):
 
     """
@@ -404,7 +408,7 @@ class ImagesModelingEnvironment(ModelingEnvironment):
         self.ski_path = fs.join(self.path, "template.ski")
 
         # Set the ski input path
-        self.ski_input_path = fs.create_directory_in(self.path, "input")
+        self.ski_input_path = fs.create_directory_in(self.path, input_name)
 
     # -----------------------------------------------------------------
 

@@ -69,6 +69,8 @@ def stringify_filter(fltr, delimiter=" "):
     from .narrow import NarrowBandFilter
     from .broad import BroadBandFilter
 
+    #print(delimiter)
+
     # Stringify
     if isinstance(fltr, NarrowBandFilter): return "narrow_band_filter", represent_filter(fltr, delimiter=delimiter)
     elif isinstance(fltr, BroadBandFilter): return "broad_band_filter", represent_filter(fltr, delimiter=delimiter)

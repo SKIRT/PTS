@@ -972,7 +972,7 @@ class keep_latest_succesful_config(object):
         # Error occured
         if exc_type is not None:
 
-            log.error("A " + str(exc_type) + " occured")
+            log.error("A " + str(exc_type.__name__) + " occured")
             log.error("Removing configuration file [" + self.config_path + "] ...")
             fs.remove_file(self.config_path)
 

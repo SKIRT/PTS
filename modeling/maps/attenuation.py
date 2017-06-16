@@ -96,7 +96,7 @@ class AttenuationMapMaker(MapsComponent):
         ssfrs_origins = self.get_ssfr_origins(flatten=True)
 
         # Run the map maker
-        maker.run(fuv=fuv, tirs=tirs, ssfrs=ssfrs, tirs_origins=tirs_origins, ssfrs_origins=ssfrs_origins, distance=self.galaxy_distance)
+        maker.run(fuv=fuv, tirs=tirs, ssfrs=ssfrs, tirs_origins=tirs_origins, ssfrs_origins=ssfrs_origins)
 
         # Set the maps
         self.maps["cortese"] = maker.maps

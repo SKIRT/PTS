@@ -105,6 +105,8 @@ def stringify(value, scientific=False, decimal_places=2, fancy=False, ndigits=No
     :return:
     """
 
+    #print(kwargs)
+
     # List or derived from list
     if isinstance(value, list): return stringify_list(value, delimiter=delimiter, **kwargs)
 
@@ -309,6 +311,8 @@ def stringify_tuple(value, delimiter=",", **kwargs):
 
     if "value_delimiter" in kwargs: kwargs["delimiter"] = kwargs.pop("value_delimiter")
 
+    #print("kwargs", kwargs)
+
     strings = []
     ptype = None
     for entry in value:
@@ -339,6 +343,8 @@ def stringify_not_list(value, scientific=False, decimal_places=2, fancy=False, n
     :param kwargs:
     :return:
     """
+
+    #print("okwargs", kwargs)
 
     # Standard
     if types.is_boolean_type(value): return "boolean", str_from_bool(value, **kwargs)

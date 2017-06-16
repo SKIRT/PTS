@@ -202,15 +202,38 @@ def load_dict_impl(dictfile, dct, indent=""):
                 else:
 
                     try:
+
                         parsing_function = getattr(parsing, ptype)
                         value = parsing_function(string)
+
                     except AttributeError:
+
+                        # Special case: list of lists of something
                         if ptype.endswith("list_list"):
+
                             single_parsing_function = getattr(parsing, ptype.split("_list_list")[0])
                             list_parsing_function = getattr(parsing, ptype.split("_list_list")[0] + "_list")
                             result = []
                             for item in string.split(", "): result.append(list_parsing_function(item))
                             value = result
+
+                        # List
+                        elif ptype.endswith("_list"):
+
+                            single_parsing_function = getattr(parsing, ptype.split("_list")[0])
+                            result = []
+                            for item in string.split(","): result.append(single_parsing_function(item))
+                            value = result
+
+                        # Tuple
+                        elif ptype.endswith("_tuple"):
+
+                            single_parsing_function = getattr(parsing, ptype.split("_tuple")[0])
+                            result = []
+                            for item in string.split(","): result.append(single_parsing_function(item))
+                            value = tuple(result)
+
+                        # Don't know what to do
                         else: raise AttributeError("Could not find the type '" + ptype + "'")
 
                 dct[name_value] = value
@@ -230,6 +253,7 @@ def load_dict_impl(dictfile, dct, indent=""):
 
                 if map_or_dict == "dict": dct[name_value] = dict()
                 elif map_or_dict == "Map": dct[name_value] = Map()
+                else: raise ValueError("Don't know how to proceed with '" + map_or_dict + "'")
 
                 load_dict_impl(dictfile, dct[name_value], new_indent)
 

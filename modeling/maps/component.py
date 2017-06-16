@@ -68,9 +68,6 @@ class MapsComponent(GalaxyModelingComponent):
         # The paths to the maps
         self.paths = dict()
 
-        # The current (already calculated) maps: NOW A PROPERTY OF THIS CLASS
-        #self.current_maps = dict()
-
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -83,6 +80,72 @@ class MapsComponent(GalaxyModelingComponent):
 
         # Call the setup function of the base class
         super(MapsComponent, self).setup(**kwargs)
+
+    # -----------------------------------------------------------------
+
+    def sub_path_for_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        name = self.sub_name_for_command(command)
+        return fs.join(self.maps_path, name)
+
+    # -----------------------------------------------------------------
+
+    def sub_name_for_command(self, command):
+
+        """
+        This function ...
+        :param command:
+        :return:
+        """
+
+        if command == "make_colour_maps": return self.maps_colours_name
+        elif command == "make_ssfr_maps": return self.maps_ssfr_name
+        elif command == "make_tir_maps": return self.maps_tir_name
+        elif command == "make_attenuation_maps": return self.maps_attenuation_path
+        elif command == "make_old_stars_map": return self.maps_old_name
+        elif command == "make_young_stars_map": return self.maps_young_name
+        elif command == "make_ionizing_stars_map": return self.maps_ionizing_name
+        elif command == "make_dust_map": return self.maps_dust_name
+        else: raise ValueError("Invalid commands: " + command)
+
+    # -----------------------------------------------------------------
+
+    def command_for_sub_name(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        if name == self.maps_colours_name: return "make_colour_maps"
+        elif name == self.maps_ssfr_name: return "make_ssfr_maps"
+        elif name == self.maps_tir_name: return "make_tir_maps"
+        elif name == self.maps_attenuation_name: return "make_attenuation_maps"
+        elif name == self.maps_old_name: return "make_old_stars_map"
+        elif name == self.maps_young_name: return "make_young_stars_map"
+        elif name == self.maps_ionizing_name: return "make_ionizing_stars_map"
+        elif name == self.maps_dust_name: return "make_dust_map"
+        else: raise ValueError("Invalid sub name: " + name)
+
+    # -----------------------------------------------------------------
+
+    def command_for_sub_path(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        name = fs.relative_to(path, self.maps_path).split("/")[0]
+        return self.command_for_sub_name(name)
 
     # -----------------------------------------------------------------
 
@@ -553,6 +616,34 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_colour_map_and_name_for_filters(self, fltr_a, fltr_b):
+
+        """
+        This function ...
+        :param fltr_a:
+        :param fltr_b:
+        :return:
+        """
+
+        # Loop over the existing colour maps
+        filters = self.colour_map_filters_and_paths
+        for fltr_ai, fltr_bi in filters:
+
+            # Get the path
+            path = filters[(fltr_ai, fltr_bi)]
+
+            # Determine the name
+            name = fs.strip_extension(fs.name(path))
+
+            # Check colours
+            if (fltr_ai, fltr_bi) == (fltr_a, fltr_b): return Frame.from_file(path), name
+            if (fltr_bi, fltr_ai) == (fltr_a, fltr_b): return -1. * Frame.from_file(path), name
+
+        # No colour map encountered
+        return None, None
+
+    # -----------------------------------------------------------------
+
     def get_colour_map_for_filters(self, fltr_a, fltr_b):
 
         """
@@ -588,6 +679,19 @@ class MapsComponent(GalaxyModelingComponent):
 
         fltr_a, fltr_b = get_filters_for_colour(colour)
         return self.get_colour_map_for_filters(fltr_a, fltr_b)
+
+    # -----------------------------------------------------------------
+
+    def get_colour_map_and_name(self, colour):
+
+        """
+        This function ...
+        :param colour:
+        :return:
+        """
+
+        fltr_a, fltr_b = get_filters_for_colour(colour)
+        return self.get_colour_map_and_name_for_filters(fltr_a, fltr_b)
 
     # -----------------------------------------------------------------
 
@@ -652,6 +756,19 @@ class MapsComponent(GalaxyModelingComponent):
 
         # NEW
         return self.errormap_list[fltr]
+
+    # -----------------------------------------------------------------
+
+    def get_colour_maps(self, flatten=False, framelist=False):
+
+        """
+        This function ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.get_maps_sub_name(self.maps_colours_name, flatten=flatten, framelist=framelist)
 
     # -----------------------------------------------------------------
 
@@ -908,16 +1025,19 @@ class MapsComponent(GalaxyModelingComponent):
             # Loop over the subdirectories
             for method_path, method in fs.directories_in_path(sub_path, returns=["path", "name"]):
 
-                # Get dictionary of file paths
-                files = fs.files_in_path(method_path, returns="dict")
+                # Get dictionary of file paths, but only FITS files
+                files = fs.files_in_path(method_path, returns="dict", extension="fits")
 
                 # Set the map paths, as a dictionary with the filename as keys
                 if flatten: paths[method] = files
                 else:
                     for map_name in files: paths[method + "_" + map_name] = files[map_name]
 
+            # Return the paths
+            return paths
+
         # Files present
-        elif fs.contains_files(sub_path): return fs.files_in_path(sub_path, returns="dict")
+        elif fs.contains_files(sub_path): return fs.files_in_path(sub_path, returns="dict", extension="fits")
 
         # Nothing present
         else: return dict()
@@ -962,13 +1082,29 @@ class MapsComponent(GalaxyModelingComponent):
                 maps[method] = dict()
 
                 # Loop over the paths, load the maps and add to dictionary
-                for name in paths[method_or_name]: maps[method][name] = Frame.from_file(paths[method_or_name][name])
+                for name in paths[method_or_name]:
+
+                    map_path = paths[method_or_name][name]
+                    try: maps[method][name] = Frame.from_file(map_path)
+                    except IOError:
+                        command = self.command_for_sub_name(name)
+                        log.warning("The " + method + "/" + name + " map is probably damaged. Run the '" + command + "' command again.")
+                        log.warning("Removing the " + map_path + " map ...")
+                        fs.remove_file(map_path)
+                        self.history.remove_entries_and_save(command)
 
             # Just maps
             elif types.is_string_type(paths[method_or_name]):
 
                 name = method_or_name
-                maps[name] = Frame.from_file(paths[method_or_name])
+                map_path = paths[method_or_name]
+                try: maps[name] = Frame.from_file(map_path)
+                except IOError:
+                    command = self.command_for_sub_name(name)
+                    log.warning("The " + name + " map is probably damaged. Run the '" + command + "' command again.")
+                    log.warning("Removing the " + map_path + " map ...")
+                    fs.remove_file(map_path)
+                    self.history.remove_entries_and_save(command)
 
             # Something wrong
             else: raise RuntimeError("Something went wrong")

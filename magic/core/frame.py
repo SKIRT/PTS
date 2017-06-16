@@ -1099,6 +1099,9 @@ class Frame(NDDataArray):
         # Debugging
         log.debug("Converting the frame from unit " + tostr(self.unit, add_physical_type=True) + " to unit " + tostr(to_unit, add_physical_type=True) + " ...")
 
+        # Set the distance
+        if distance is None: distance = self.distance
+
         # Calculate the conversion factor
         factor = self.unit.conversion_factor(to_unit, wavelength=self.pivot_wavelength_or_wavelength, distance=distance,
                                              pixelscale=self.pixelscale, density=density, brightness=brightness,
