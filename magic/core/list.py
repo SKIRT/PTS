@@ -1430,6 +1430,79 @@ class FrameList(FilterBasedList):
 
         return self.convolve_rebin_and_convert(unit=unit, **kwargs)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def uniform_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        unit, wcs, pixelscale, psf_filter, fwhm, distance = check_uniformity(*self.values)
+        return unit, wcs, pixelscale, psf_filter, fwhm, distance
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return check_pixelscale(*self.values)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return check_unit(*self.values)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def psf_filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return check_psf_filter(*self.values)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fwhm(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return check_fwhm(*self.values)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def distance(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return check_distance(*self.values)
+
 # -----------------------------------------------------------------
 
 class NamedFrameList(NamedList):
@@ -1705,6 +1778,79 @@ class NamedFrameList(NamedList):
         """
 
         return self.convolve_rebin_and_convert(unit=unit, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def uniform_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        unit, wcs, pixelscale, psf_filter, fwhm, distance = check_uniformity(*self.values)
+        return unit, wcs, pixelscale, psf_filter, fwhm, distance
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return check_pixelscale(*self.values)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return check_unit(*self.values)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def psf_filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return check_psf_filter(*self.values)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fwhm(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return check_fwhm(*self.values)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def distance(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return check_distance(*self.values)
 
 # -----------------------------------------------------------------
 
@@ -2403,10 +2549,41 @@ def check_uniformity(*frames):
     :return:
     """
 
+    # Get unit
+    unit = check_unit(*frames)
+
+    # Get the wcs
+    wcs = check_wcs(*frames)
+
+    # Get the pixelscale
+    pixelscale = check_pixelscale(*frames)
+
+    # Get the PSF filter
+    psf_filter = check_psf_filter(*frames)
+
+    # Get the FWHM
+    fwhm = check_fwhm(*frames)
+
+    # Get the distance
+    distance = check_distance(*frames)
+
+    # Return the common properties
+    return unit, wcs, pixelscale, psf_filter, fwhm, distance
+
+# -----------------------------------------------------------------
+
+def check_unit(*frames):
+
+    """
+    This function ...
+    :param frames:
+    :return:
+    """
+
     # Check units
     units = [frame.unit for frame in frames]
     if not sequences.all_equal(units, ignore_none=True):
-        #raise ValueError("Frames have to be in the same unit")
+        # raise ValueError("Frames have to be in the same unit")
         log.error("Frames have to be in the same unit")
         log.error("Units:")
         print("")
@@ -2414,12 +2591,23 @@ def check_uniformity(*frames):
         print("")
         exit()
     unit = sequences.find_first_not_none(units)
+    return unit
+
+# -----------------------------------------------------------------
+
+def check_wcs(*frames):
+
+    """
+    This function ...
+    :param frames:
+    :return:
+    """
 
     # Get WCS
     wcss = [frame.wcs for frame in frames]
-    #print(wcss)
+    # print(wcss)
     if not sequences.all_equal(wcss, ignore_none=True):
-        #raise ValueError("Frames have to be transformed to same pixel grid")
+        # raise ValueError("Frames have to be transformed to same pixel grid")
         log.error("Frames have to be transformed to the same pixel grid")
         log.error("Coordinate systems:")
         print("")
@@ -2427,11 +2615,22 @@ def check_uniformity(*frames):
         print("")
         exit()
     wcs = sequences.find_first_not_none(wcss)
+    return wcs
+
+# -----------------------------------------------------------------
+
+def check_pixelscale(*frames):
+
+    """
+    This function ...
+    :param frames:
+    :return:
+    """
 
     # Get pixelscale
     pixelscales = [frame.average_pixelscale for frame in frames]
     if not sequences.all_close(pixelscales, ignore_none=True):
-        #raise ValueError("Frames must have the same pixelscale")
+        # raise ValueError("Frames must have the same pixelscale")
         log.error("Frames must have the same pixelscale")
         log.error("Pixelscales:")
         print("")
@@ -2439,11 +2638,22 @@ def check_uniformity(*frames):
         print("")
         exit()
     pixelscale = sequences.find_first_not_none(pixelscales)
+    return pixelscale
+
+# -----------------------------------------------------------------
+
+def check_psf_filter(*frames):
+
+    """
+    This function ...
+    :param frames:
+    :return:
+    """
 
     # Get PSF filter
     psf_filters = [frame.psf_filter for frame in frames]
     if not sequences.all_equal(psf_filters):
-        #raise ValueError("Frames have to be convolved to the same resolution")
+        # raise ValueError("Frames have to be convolved to the same resolution")
         log.error("Frames have to be convolved to the same resolution")
         log.error("PSF filters:")
         print("")
@@ -2451,11 +2661,22 @@ def check_uniformity(*frames):
         print("")
         exit()
     psf_filter = sequences.find_first_not_none(psf_filters)
+    return psf_filter
+
+# -----------------------------------------------------------------
+
+def check_fwhm(*frames):
+
+    """
+    This function ...
+    :param frames:
+    :return:
+    """
 
     # Get FWHM
     fwhms = [frame.fwhm for frame in frames]
     if not sequences.all_close(fwhms, ignore_none=True):
-        #raise ValueError("Frames have to have the same FWHM")
+        # raise ValueError("Frames have to have the same FWHM")
         log.error("Frames have to have the same FWHM")
         log.error("FWHMs:")
         print("")
@@ -2463,12 +2684,23 @@ def check_uniformity(*frames):
         print("")
         exit()
     fwhm = sequences.find_first_not_none(fwhms)
+    return fwhm
+
+# -----------------------------------------------------------------
+
+def check_distance(*frames):
+
+    """
+    This function ...
+    :param frames:
+    :return:
+    """
 
     # Get distance
     distances = [frame.distance for frame in frames]
-    #print(distances)
+    # print(distances)
     if not sequences.all_close(distances, ignore_none=True):
-        #raise ValueError("Frames have to have the same distance to the object")
+        # raise ValueError("Frames have to have the same distance to the object")
         log.error("Frames have to have the same distance to the object")
         log.error("Distances:")
         print("")
@@ -2476,8 +2708,6 @@ def check_uniformity(*frames):
         print("")
         exit()
     distance = sequences.find_first_not_none(distances)
-
-    # Return the common properties
-    return unit, wcs, pixelscale, psf_filter, fwhm, distance
+    return distance
 
 # -----------------------------------------------------------------

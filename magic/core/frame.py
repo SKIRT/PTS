@@ -176,6 +176,20 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    @psf_filter.setter
+    def psf_filter(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        if types.is_string_type(value): value = parse_filter(value)
+        self._psf_filter = value
+
+    # -----------------------------------------------------------------
+
     @property
     def psf_filter_name(self):
 
@@ -816,6 +830,20 @@ class Frame(NDDataArray):
         # Return the pixelscale of the WCS is WCS is defined
         if self.wcs is not None: return self.wcs.pixelscale
         else: return self._pixelscale  # return the pixelscale
+
+    # -----------------------------------------------------------------
+
+    @pixelscale.setter
+    def pixelscale(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        if not isinstance(value, Pixelscale): value = Pixelscale(value)
+        self._pixelscale = value
 
     # -----------------------------------------------------------------
 
@@ -2009,7 +2037,12 @@ class Frame(NDDataArray):
             header.set("SIGUNIT", represent_unit(self.unit), "Unit of the map")
             header.set("PHYSTYPE", self.unit.physical_type, "Physical type of the unit")
         if self.fwhm is not None: header.set("FWHM", self.fwhm.to("arcsec").value, "[arcsec] FWHM of the PSF")
+
+        # Set filter
         if self.filter is not None: header.set("FILTER", str(self.filter), "Filter used for this observation")
+        else: header.set("FILTER", "n/a", "This image does not correspond to a certain observational filter")
+
+        # Set pixelscale
         if self.wcs is None and self.pixelscale is not None:
             header.set("XPIXSIZE", repr(self.pixelscale.x.to("arcsec").value), "[arcsec] Pixelscale for x axis")
             header.set("YPIXSIZE", repr(self.pixelscale.y.to("arcsec").value), "[arcsec] Pixelscale for y axis")
@@ -2111,6 +2144,13 @@ def linear_combination(frames, coefficients, checks=True):
         from .list import check_uniformity
         unit, wcs, pixelscale, psf_filter, fwhm, distance = check_uniformity(*frames)
     else: unit = wcs = pixelscale = psf_filter = fwhm = distance = None
+
+    print("unit", unit)
+    print("wcs", wcs)
+    print("pixelscale", pixelscale)
+    print("psf_filter", psf_filter)
+    print("fwhm", fwhm)
+    print("distance", distance)
 
     #print(coefficients)
     return sum_frames(*[frame*coefficient for coefficient, frame in zip(coefficients, frames)], unit=unit, wcs=wcs, pixelscale=pixelscale, psf_filter=psf_filter, fwhm=fwhm, distance=distance)

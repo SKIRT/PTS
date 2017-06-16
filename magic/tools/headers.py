@@ -170,6 +170,7 @@ def get_filter(name, header=None):
     filterid = name.lower()
     channel = None
     wavelength = None
+    frequency = None
 
     if "kernel" in filterid:
         log.debug("The image represents a kernel, so no filter will be set")
@@ -177,6 +178,9 @@ def get_filter(name, header=None):
 
     # Get information from the header
     if header is not None:
+
+        # HEADER EXPLICITLY SAYS THAT THERE IS NO FILTER!
+        if "FILTER" in header and header["FILTER"] == "n/a": return None
 
         # Get information regarding the telescope and instrument
         if "TELESCOP" in header: filterid += " " + get_string(header["TELESCOP"]).lower()

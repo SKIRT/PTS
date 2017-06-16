@@ -180,6 +180,12 @@ class SingleBandTIRMapMaker(Configurable):
             #tir.unit = u("W/kpc2", density=True, brightness=True, density_strict=True, brightness_strict=True)
             tir.wcs = frame.wcs
 
+            # Set other properties
+            tir.distance = frame.distance
+            tir.pixelscale = frame.pixelscale
+            tir.psf_filter = frame.psf_filter
+            tir.fwhm = frame.fwhm
+
             # Set the TIR map
             self.maps[name] = tir
 

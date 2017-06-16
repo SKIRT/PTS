@@ -785,7 +785,12 @@ class Image(object):
             header.set("SIGUNIT", represent_unit(self.unit), "Unit of the map")
             header.set("PHYSTYPE", self.unit.physical_type, "Physical type of the unit")
         if self.fwhm is not None: header.set("FWHM", self.fwhm.to("arcsec").value, "[arcsec] FWHM of the PSF")
+
+        # Set filter
         if self.filter is not None: header.set("FILTER", str(self.filter), "Filter used for this observation")
+        else: header.set("FILTER", "n/a", "This image does not correspond to a certain observational filter")
+
+        # Pixelscale
         if self.wcs is None and self.pixelscale is not None:
             header.set("XPIXSIZE", repr(self.pixelscale.x.to("arcsec").value), "[arcsec] Pixelscale for x axis")
             header.set("YPIXSIZE", repr(self.pixelscale.y.to("arcsec").value), "[arcsec] Pixelscale for y axis")
