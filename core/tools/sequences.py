@@ -188,12 +188,21 @@ def all_equal(lst, ignore_none=False):
         try: first = find_first_not_none(lst)
         except: raise ValueError("Cannot use empty list (except for Nones)") #return True # ALL NONE, SO ALL EQUAL
 
+    #print(first)
+
     for index in range(len(lst)):
 
         # Ignore None?
         if ignore_none and lst[index] is None: continue
 
-        if lst[index] != first: return False
+        #print("comparing:")
+        #print(first)
+        #print(lst[index])
+
+        #if not (lst[index] == first):
+        if lst[index] != first:
+            #print("HEERE")
+            return False
 
     return True
 
@@ -220,14 +229,47 @@ def all_close(lst, ignore_none=False, rtol=1.e-5, atol=1.e-8):
         try: first = find_first_not_none(lst)
         except: raise ValueError("Cannot use empty list (except for Nones)")
 
+    # Get first value
+    if hasattr(first, "unit"): first_value = first.to(first.unit).value
+    else: first_value = first
+
     for index in range(len(lst)):
 
         # Ignore None?
         if ignore_none and lst[index] is None: continue
 
-        if not np.isclose(lst[index], first, rtol=rtol, atol=atol): return False
+        # If quantities, get scalar value
+        if hasattr(lst[index], "unit"): value = lst[index].to(first.unit).value
+        else: value = lst[index]
+
+        #print("comparing:")
+        #print(value)
+        #print(first_value)
+
+        if not np.isclose(value, first_value, rtol=rtol, atol=atol): return False
 
     # Return
+    return True
+
+# -----------------------------------------------------------------
+
+def all_true(lst, ignore_none=False):
+
+    """
+    This function ...
+    :param lst:
+    :param ignore_none:
+    :return:
+    """
+
+    if len(lst) == 0: raise ValueError("Cannot use empty list")
+
+    indices = not_none_indices(lst) if ignore_none else range(len(lst))
+
+    if len(lst) == 0: raise ValueError("List only contains None values")
+
+    for index in indices:
+        if not lst[index]: return False
     return True
 
 # -----------------------------------------------------------------
@@ -245,6 +287,21 @@ def find_first_not_none(lst):
 
     # Shouldn't get here
     raise ValueError("No not-None values")
+
+# -----------------------------------------------------------------
+
+def not_none_indices(lst):
+
+    """
+    This function ...
+    :param lst:
+    :return:
+    """
+
+    indices = []
+    for index in range(len(lst)):
+        if lst[index] is not None: indices.append(index)
+    return indices
 
 # -----------------------------------------------------------------
 

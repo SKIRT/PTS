@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import math
+import traceback
 import copy
 import numpy as np
 import warnings
@@ -35,6 +36,7 @@ from ...core.units.parsing import parse_unit as u
 from ...core.basics.range import QuantityRange
 from pts.magic.basics.stretch import PixelStretch
 from ...core.tools.logging import log
+from ...core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -538,30 +540,115 @@ class CoordinateSystem(wcs.WCS):
 
         try:
 
-            # Check whether the CRPIX is equal
-            if not self.wcs.crpix[0] == other_wcs.wcs.crpix[0]: return False
-            if not self.wcs.crpix[1] == other_wcs.wcs.crpix[1]: return False
+            #print(self.wcs.crpix[0], other_wcs.wcs.crpix[0])
+            #print(self.wcs.crpix[1], other_wcs.wcs.crpix[1])
+            #print(self.pixel_scale_matrix.flatten(), other_wcs.pixel_scale_matrix.flatten())
+            #print(self.wcs.crval[0], other_wcs.wcs.crval[0])
+            #print(self.wcs.crval[1], other_wcs.wcs.crval[1])
+            #print(self.naxis, other_wcs.naxis)
+            #print(self.naxis1, other_wcs.naxis1)
+            #print(self.naxis2, other_wcs.naxis2)
 
-            # Check whether the pixel scale is equal
-            for element_self, element_other in zip(list(self.pixel_scale_matrix.flatten()), list(other_wcs.pixel_scale_matrix.flatten())):
-                #print(element_self, element_other)
-                if not element_self == element_other: return False
-
-            # Check whether the CRVAL is equal
-            if not self.wcs.crval[0] == other_wcs.wcs.crval[0]: return False
-            if not self.wcs.crval[1] == other_wcs.wcs.crval[1]: return False
-
-            # Check whether the number of axis is equal
-            if not self.naxis == other_wcs.naxis: return False
-
-            # Check whether the axis sizes are equal
-            if not self.naxis1 == other_wcs.naxis1: return False
-            if not self.naxis2 == other_wcs.naxis2: return False
+            comparisons = self.make_comparisons(other_wcs)
+            #print(comparisons)
+            #exit()
 
             # If all of the above tests succeeded, the coordinate systems may be considered equal
-            return True
+            #return True
 
-        except AttributeError: return False
+            print(sequences.all_true(comparisons))
+            return sequences.all_true(comparisons)
+
+        # Error occured
+        except AttributeError as e:
+
+            log.warning("Problem occurred while comparing coordinate systems:")
+            print(e)
+            traceback.print_exc()
+            return False
+
+    # -----------------------------------------------------------------
+
+    def make_comparisons(self, other_wcs):
+
+        """
+        This function ...
+        :param other_wcs:
+        :return:
+        """
+
+        result = []
+
+        # Check whether the CRPIX is equal
+        if not self.wcs.crpix[0] == other_wcs.wcs.crpix[0]:
+            #print("1")
+            #return False
+            result.append(False)
+        else: result.append(True)
+
+        if not self.wcs.crpix[1] == other_wcs.wcs.crpix[1]:
+            #print("2")
+            #return False
+            result.append(False)
+        else: result.append(True)
+
+        # Check whether the pixel scale is equal
+        for element_self, element_other in zip(list(self.pixel_scale_matrix.flatten()),
+                                               list(other_wcs.pixel_scale_matrix.flatten())):
+            # print(element_self, element_other)
+            if element_self != element_other:
+                #print("3")
+                #return False
+                result.append(False)
+            else: result.append(True)
+
+        # Check whether the CRVAL is equal
+        if not self.wcs.crval[0] == other_wcs.wcs.crval[0]:
+            #print("4")
+            #return False
+            result.append(False)
+        else: result.append(True)
+
+        if not self.wcs.crval[1] == other_wcs.wcs.crval[1]:
+            #print("5")
+            #return False
+            result.append(False)
+        else: result.append(True)
+
+        # Check whether the number of axis is equal
+        if not self.naxis == other_wcs.naxis:
+            #print("6")
+            #return False
+            result.append(False)
+        else: result.append(True)
+
+        # Check whether the axis sizes are equal
+        if not self.naxis1 == other_wcs.naxis1:
+            #print("7")
+            #return False
+            result.append(False)
+        else: result.append(True)
+
+        if not self.naxis2 == other_wcs.naxis2:
+            #print("8")
+            #return False
+            result.append(False)
+        else: result.append(True)
+
+        # Return the comparison results
+        return result
+
+    # -----------------------------------------------------------------
+
+    def __ne__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        return not self.__eq__(other)
 
     # -----------------------------------------------------------------
 

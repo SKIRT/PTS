@@ -2069,7 +2069,7 @@ class Frame(NDDataArray):
 
 # -----------------------------------------------------------------
 
-def sum_frames(*args):
+def sum_frames(*args, **kwargs):
 
     """
     This function ...
@@ -2079,8 +2079,7 @@ def sum_frames(*args):
 
     #arrays = [np.array(arg) for arg in args] # how it used to be
     arrays = [arg.data for arg in args]
-    #print(arrays)
-    return Frame(np.sum(arrays, axis=0))
+    return Frame(np.sum(arrays, axis=0), **kwargs)
 
 # -----------------------------------------------------------------
 
@@ -2114,7 +2113,7 @@ def linear_combination(frames, coefficients, checks=True):
     else: unit = wcs = pixelscale = psf_filter = fwhm = distance = None
 
     #print(coefficients)
-    return sum_frames(*[frame*coefficient for coefficient, frame in zip(coefficients, frames)])
+    return sum_frames(*[frame*coefficient for coefficient, frame in zip(coefficients, frames)], unit=unit, wcs=wcs, pixelscale=pixelscale, psf_filter=psf_filter, fwhm=fwhm, distance=distance)
 
 # -----------------------------------------------------------------
 
