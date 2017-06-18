@@ -31,6 +31,7 @@ from ...core.tools.serialization import load_dict, write_dict
 from ...core.tools import sequences
 from ...core.basics.configuration import prompt_proceed
 from ...core.tools.stringify import tostr
+from ..core.environment import colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name
 
 # -----------------------------------------------------------------
 
@@ -177,6 +178,7 @@ class MapsComponent(GalaxyModelingComponent):
                 # Remove
                 self.remove_output_and_history_after_and_including(command_name)
 
+            # If the directory is empty
             if fs.is_empty(path):
 
                 # Warning
@@ -255,7 +257,7 @@ class MapsComponent(GalaxyModelingComponent):
         if command == "make_colour_maps": return self.maps_colours_name
         elif command == "make_ssfr_maps": return self.maps_ssfr_name
         elif command == "make_tir_maps": return self.maps_tir_name
-        elif command == "make_attenuation_maps": return self.maps_attenuation_path
+        elif command == "make_attenuation_maps": return self.maps_attenuation_name
         elif command == "make_old_stars_map": return self.maps_old_name
         elif command == "make_young_stars_map": return self.maps_young_name
         elif command == "make_ionizing_stars_map": return self.maps_ionizing_name
@@ -573,6 +575,20 @@ class MapsComponent(GalaxyModelingComponent):
         origins = dict()
         for name in self.maps_sub_names: origins[name] = self.get_origins_sub_name(name, flatten=flatten)
         return origins
+
+    # -----------------------------------------------------------------
+
+    def get_maps_sub_names(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        maps = dict()
+        for name in self.maps_sub_names: maps[name] = self.get_maps_sub_name(name, flatten=flatten)
+        return maps
 
     # -----------------------------------------------------------------
 
@@ -1191,132 +1207,59 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_map_paths_sub_name(self, name, flatten=False):
+    def get_map_paths_sub_name(self, name, flatten=False, method=None):
 
         """
         This function ...
         :param name:
         :param flatten:
+        :param method:
         :return:
         """
 
-        # Determine path
-        sub_path = fs.join(self.maps_path, name)
-        if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
-        #direct_origins_path = fs.join(sub_path, origins_filename)
-        # No subdirectories
-        #if fs.is_file(direct_origins_path): origins = load_dict(direct_origins_path)
-
-        # Subdirectories
-        if fs.contains_directories(sub_path):
-
-            paths = dict()
-
-            # Loop over the subdirectories
-            for method_path, method in fs.directories_in_path(sub_path, returns=["path", "name"]):
-
-                # Get dictionary of file paths, but only FITS files
-                files = fs.files_in_path(method_path, returns="dict", extension="fits")
-
-                # Flatten into a one-level dict
-                if flatten:
-                    for map_name in files: paths[method + "_" + map_name] = files[map_name]
-
-                # Don't flatten
-                else: paths[method] = files
-
-            # Return the paths
-            return paths
-
-        # Files present
-        elif fs.contains_files(sub_path): return fs.files_in_path(sub_path, returns="dict", extension="fits")
-
-        # Nothing present
-        else: return dict()
+        return get_map_paths_sub_name(self.environment, name, flatten=flatten, method=method)
 
     # -----------------------------------------------------------------
 
-    def get_current_map_paths(self, flatten=False):
+    def get_current_map_paths(self, flatten=False, method=None):
 
         """
         This function ...
         :param flatten:
+        :param method:
         :return:
         """
 
-        return self.get_map_paths_sub_name(self.maps_sub_name, flatten=flatten)
+        return self.get_map_paths_sub_name(self.maps_sub_name, flatten=flatten, method=method)
 
     # -----------------------------------------------------------------
 
-    def get_maps_sub_name(self, name, flatten=False, framelist=False):
+    def get_maps_sub_name(self, name, flatten=False, framelist=False, method=None):
 
         """
         This function ...
         :param name:
         :param flatten:
         :param framelist:
+        :param method:
         :return:
         """
 
-        # Initialize the maps dictionary
-        maps = dict()
-
-        # Get map paths
-        paths = self.get_map_paths_sub_name(name, flatten=flatten)
-
-        # Loop over the entries
-        for method_or_name in paths:
-
-            # Methods
-            if types.is_dictionary(paths[method_or_name]):
-
-                method = method_or_name
-                maps[method] = dict()
-
-                # Loop over the paths, load the maps and add to dictionary
-                for name in paths[method_or_name]:
-
-                    map_path = paths[method_or_name][name]
-                    try: maps[method][name] = Frame.from_file(map_path)
-                    except IOError:
-                        command = self.command_for_sub_name(name)
-                        log.warning("The " + method + "/" + name + " map is probably damaged. Run the '" + command + "' command again.")
-                        log.warning("Removing the " + map_path + " map ...")
-                        fs.remove_file(map_path)
-                        self.history.remove_entries_and_save(command)
-
-            # Just maps
-            elif types.is_string_type(paths[method_or_name]):
-
-                name = method_or_name
-                map_path = paths[method_or_name]
-                try: maps[name] = Frame.from_file(map_path)
-                except IOError:
-                    command = self.command_for_sub_name(name)
-                    log.warning("The " + name + " map is probably damaged. Run the '" + command + "' command again.")
-                    log.warning("Removing the " + map_path + " map ...")
-                    fs.remove_file(map_path)
-                    self.history.remove_entries_and_save(command)
-
-            # Something wrong
-            else: raise RuntimeError("Something went wrong")
-
-        # Return the maps
-        if framelist: return NamedFrameList(**maps)
-        else: return maps
+        return get_maps_sub_name(self.environment, self.history, name, flatten=flatten, framelist=framelist, method=method)
 
     # -----------------------------------------------------------------
 
-    def get_current_maps(self, flatten=False, framelist=False):
+    def get_current_maps(self, flatten=False, framelist=False, method=None):
 
         """
         This function ...
         :param flatten:
         :param framelist:
+        :param method:
         :return:
         """
 
-        return self.get_maps_sub_name(self.maps_sub_name, flatten=flatten, framelist=framelist)
+        return self.get_maps_sub_name(self.maps_sub_name, flatten=flatten, framelist=framelist, method=method)
 
     # -----------------------------------------------------------------
 
@@ -1576,5 +1519,177 @@ def get_ionizing_stellar_map_names(modeling_path):
     """
 
     return fs.files_in_path(get_ionizing_stars_maps_path(modeling_path), extension="fits", returns="name")
+
+# -----------------------------------------------------------------
+
+def get_map_paths_sub_name(environment, name, flatten=False, method=None):
+
+    """
+    This function ...
+    :param environment:
+    :param name:
+    :param flatten:
+    :param method:
+    :return:
+    """
+
+    # Determine path
+    sub_path = fs.join(environment.maps_path, name)
+    if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
+    # direct_origins_path = fs.join(sub_path, origins_filename)
+    # No subdirectories
+    # if fs.is_file(direct_origins_path): origins = load_dict(direct_origins_path)
+
+    # Subdirectories
+    if fs.contains_directories(sub_path):
+
+        # One method is specified
+        if method is not None:
+
+            # Check whether valid method
+            method_path = fs.join(sub_path, method)
+            if not fs.is_directory(method_path): raise ValueError("Directory not found for method '" + method + "'")
+
+            # Return the file paths
+            return fs.files_in_path(method_path, returns="dict", extension="fits")
+
+        # Method not specified
+        else:
+
+            paths = dict()
+
+            # Loop over the subdirectories
+            for method_path, method_name in fs.directories_in_path(sub_path, returns=["path", "name"]):
+
+                # Skip other method if method is defined
+                if method is not None and method_name != method: continue
+
+                # Get dictionary of file paths, but only FITS files
+                files = fs.files_in_path(method_path, returns="dict", extension="fits")
+
+                # Flatten into a one-level dict
+                if flatten:
+                    for map_name in files: paths[method_name + "_" + map_name] = files[map_name]
+
+                # Don't flatten
+                else: paths[method_name] = files
+
+            # Return the paths
+            return paths
+
+    # Files present
+    elif fs.contains_files(sub_path):
+
+        # Method cannot be defined
+        if method is not None: raise ValueError("Specified method '" + method + "', but all maps are in one directory")
+
+        # Return the file paths
+        return fs.files_in_path(sub_path, returns="dict", extension="fits")
+
+    # Nothing present
+    else: return dict()
+
+# -----------------------------------------------------------------
+
+def get_maps_sub_name(environment, history, name, flatten=False, framelist=False, method=None):
+
+    """
+    This function ...
+    :param environment:
+    :param history:
+    :param name:
+    :param flatten:
+    :param framelist:
+    :param method:
+    :return:
+    """
+
+    # Initialize the maps dictionary
+    maps = dict()
+
+    # Get map paths
+    paths = get_map_paths_sub_name(environment, name, flatten=flatten, method=method)
+
+    # Loop over the entries
+    for method_or_name in paths:
+
+        # Methods
+        if types.is_dictionary(paths[method_or_name]):
+
+            method_name = method_or_name
+            maps[method_name] = dict()
+
+            # Loop over the paths, load the maps and add to dictionary
+            for name in paths[method_or_name]:
+
+                map_path = paths[method_or_name][name]
+                try: maps[method_name][name] = Frame.from_file(map_path)
+                except IOError:
+                    command = command_for_sub_name(name)
+                    log.warning("The " + method_name + "/" + name + " map is probably damaged. Run the '" + command + "' command again.")
+                    log.warning("Removing the " + map_path + " map ...")
+                    fs.remove_file(map_path)
+                    history.remove_entries_and_save(command)
+
+        # Just maps
+        elif types.is_string_type(paths[method_or_name]):
+
+            name = method_or_name
+            map_path = paths[method_or_name]
+            try:
+                maps[name] = Frame.from_file(map_path)
+            except IOError:
+                command = command_for_sub_name(name)
+                log.warning("The " + name + " map is probably damaged. Run the '" + command + "' command again.")
+                log.warning("Removing the " + map_path + " map ...")
+                fs.remove_file(map_path)
+                history.remove_entries_and_save(command)
+
+        # Something wrong
+        else: raise RuntimeError("Something went wrong")
+
+    # Return the maps
+    if framelist: return NamedFrameList(**maps)
+    else: return maps
+
+# -----------------------------------------------------------------
+
+def sub_name_for_command(command):
+
+    """
+    This function ...
+    :param command:
+    :return:
+    """
+
+    if command == "make_colour_maps": return colours_name
+    elif command == "make_ssfr_maps": return ssfr_name
+    elif command == "make_tir_maps": return tir_name
+    elif command == "make_attenuation_maps": return attenuation_name
+    elif command == "make_old_stars_map": return old_name
+    elif command == "make_young_stars_map": return young_name
+    elif command == "make_ionizing_stars_map": return ionizing_name
+    elif command == "make_dust_map": return dust_name
+    else: raise ValueError("Invalid commands: " + command)
+
+# -----------------------------------------------------------------
+
+def command_for_sub_name(name):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    if name == colours_name: return "make_colour_maps"
+    elif name == ssfr_name: return "make_ssfr_maps"
+    elif name == tir_name: return "make_tir_maps"
+    elif name == attenuation_name: return "make_attenuation_maps"
+    elif name == old_name: return "make_old_stars_map"
+    elif name == young_name: return "make_young_stars_map"
+    elif name == ionizing_name: return "make_ionizing_stars_map"
+    elif name == dust_name: return "make_dust_map"
+    else: raise ValueError("Invalid sub name: " + name)
 
 # -----------------------------------------------------------------
