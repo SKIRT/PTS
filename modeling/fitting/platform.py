@@ -168,6 +168,32 @@ class GenerationPlatform(object):
 
     # -----------------------------------------------------------------
 
+    def parameter_list_to_values_dict(self, parameters):
+
+        """
+        This function ...
+        :param parameters:
+        :return:
+        """
+
+        values = dict()
+        for index, label in enumerate(self.generation.parameter_labels):
+
+            # Get the unit
+            unit = self.generation.unit_for_parameter(label)
+
+            # Add the unit
+            if unit is not None: value = parameters[index] * unit
+            else: value = parameters[index]
+
+            # Set the value
+            values[label] = value
+
+        # Return the dictionary
+        return values
+
+    # -----------------------------------------------------------------
+
     def parameter_values_to_strings(self, values):
 
         """
@@ -186,6 +212,20 @@ class GenerationPlatform(object):
 
         # Return
         return strings
+
+    # -----------------------------------------------------------------
+
+    def parameter_list_to_string(self, parameters, delimiter=", "):
+
+        """
+        This function ...
+        :param parameters:
+        :param delimiter:
+        :return:
+        """
+
+        values = self.parameter_list_to_values_dict(parameters)
+        return self.parameter_values_to_string(values, delimiter=delimiter)
 
     # -----------------------------------------------------------------
 
@@ -507,6 +547,21 @@ class GenerationPlatform(object):
 
     # -----------------------------------------------------------------
 
+    def get_recurrence_parameters(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        parameters = self.generation.recurrence_table.get_individual(name)
+        original_parameters = self.generation.recurrence_table.get_original_individual(name)
+        #print(parameters, original_parameters)
+        return parameters, original_parameters
+
+    # -----------------------------------------------------------------
+
     def get_recurrence_generation_and_name(self, name):
 
         """
@@ -534,6 +589,9 @@ class GenerationPlatform(object):
         # Get the generation index and the original name
         generation_index, original_name = self.get_recurrence_generation_and_name(name)
 
+        # Get the parameters and the original parameters
+        parameters, original_parameters = self.get_recurrence_parameters(name)
+
         # Get the generation name
         generation_name = self.fitting_run.get_genetic_generation_name(generation_index)
 
@@ -554,7 +612,7 @@ class GenerationPlatform(object):
         #print(original_genome, type(original_genome))
 
         # Create and return the recurrence object
-        return Recurrence(index, genome, generation_name, original_genome, score)
+        return Recurrence(index, genome, generation_name, original_genome, score, parameters, original_parameters)
 
     # -----------------------------------------------------------------
 
@@ -592,6 +650,26 @@ class GenerationPlatform(object):
 
                 print_row("Individual", ":", individual_colored)
                 print_row("Original", ":", original_colored)
+
+            print("")
+            print("COMPARISON:")
+            print("")
+
+            parameters = recurrence.parameters
+            original_parameters = recurrence.original_parameters
+
+            # To strings
+            #par_string = self.parameter_values_to_string(parameters)
+            #original_par_string = self.parameter_values_to_string(original_parameters)
+            par_string = self.parameter_list_to_string(parameters)
+            original_par_string = self.parameter_list_to_string(original_parameters)
+
+            with fmt.print_in_columns(3) as print_row:
+
+                print_row("Individual", ":", "[" + par_string + "]")
+                print_row("Original", ":", "[" + original_par_string + "]")
+
+            print("")
 
             print("")
             print("PARAMETERS:")

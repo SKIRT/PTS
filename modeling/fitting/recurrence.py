@@ -28,7 +28,7 @@ class Recurrence(object):
     This class ...
     """
 
-    def __init__(self, index, individual, generation, original, score):
+    def __init__(self, index, individual, generation, original, score, parameters, original_parameters):
 
         """
         This function ...
@@ -37,6 +37,8 @@ class Recurrence(object):
         :param generation:
         :param original:
         :param score:
+        :param parameters:
+        :param original_parameters:
         """
 
         self.index = index
@@ -44,6 +46,8 @@ class Recurrence(object):
         self.generation = generation
         self.original = original
         self.score = score
+        self.parameters = parameters
+        self.original_parameters = original_parameters
 
     # -----------------------------------------------------------------
 

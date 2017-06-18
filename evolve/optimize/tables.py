@@ -309,8 +309,13 @@ class RecurrenceTable(SmartTable):
         index = tables.find_index(self, individual_id)
         representation = self["Individual"][index]
 
+        #print(representation)
+
         # Return as binary genome, or as list of quantities or real values
-        try: return parsing.binary(representation)
+        try:
+            individual = parsing.binary(representation)
+            print(individual)
+            return individual
         except ValueError: return parsing.real_list_or_quantity_list(representation)
 
     # -----------------------------------------------------------------
@@ -326,8 +331,13 @@ class RecurrenceTable(SmartTable):
         index = tables.find_index(self, individual_id)
         representation = self["Original individual"][index]
 
+        #print(representation)
+
         # Return as binary genome, or as list of quantites or real values
-        try: return parsing.binary(representation)
+        try:
+            individual = parsing.binary(representation)
+            print(individual)
+            return individual
         except ValueError: return parsing.real_list_or_quantity_list(representation)
 
 # -----------------------------------------------------------------

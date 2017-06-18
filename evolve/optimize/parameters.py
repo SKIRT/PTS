@@ -118,6 +118,7 @@ def equal_genomes(genome_a, genome_b, rtol=1e-5, atol=1e-8, binary_parameters=No
             ndigits = binary_parameters.ndigits
             scales = binary_parameters.scales
 
+            # Compare the binary genomes with conversion to real parameters
             return equal_binary_genomes_with_conversion(genome_a, genome_b, minima, maxima, nbits, gray, ndigits, scales, return_comparison=return_comparison)
 
         # Check whether the binary genomes are

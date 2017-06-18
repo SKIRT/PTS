@@ -70,7 +70,7 @@ def real_list_or_quantity_list(argument):
     :return:
     """
 
-    try: real_list(argument)
+    try: return real_list(argument)
     except ValueError: return quantity_list(argument)
 
 # -----------------------------------------------------------------
