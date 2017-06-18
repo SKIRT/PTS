@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
 from ....core.basics.configurable import Configurable
-from ...core.list import FrameList
+from ....core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -119,7 +119,7 @@ class TotalOldStellarMapMaker(Configurable):
         for fltr in self.filters:
 
             # Set name
-            name = str(fltr)
+            name = tostr(fltr, delimiter="_")
 
             # Set map
             total = self.frames[fltr]

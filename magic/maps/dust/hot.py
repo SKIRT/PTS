@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
 from ....core.basics.configurable import Configurable
+from ...core.list import NamedFrameList
 
 # -----------------------------------------------------------------
 
@@ -214,14 +215,27 @@ class HotDustMapsMaker(Configurable):
         # Loop over the different old stellar maps
         for old_name in self.old:
 
+            # Debugging
+            log.debug("Creating maps of hot dust based on the '" + old_name + "' old stellar map ...")
+
             # Normalize the old map
-            normalized_old = self.old.normalized()
+            normalized_old = self.old[old_name].normalized()
+
+            # Uniformize the MIPS 24 micron image and the old disk map
+            frames = NamedFrameList(old=normalized_old, mips24=self.mips24)
+            frames.convolve_and_rebin()
 
             # Loop over the different factors
             for factor in self.factors:
 
+                # Debugging
+                log.debug("Creating maps of host dust with a MIPS 24mu correction factor of " + str(factor) + " ...")
+
                 # Determine name
                 name = old_name + "__" + str(factor)
+
+                # Debugging
+                log.debug("Name for the map: " + name)
 
                 # Set origin
                 if self.has_origins:
@@ -238,7 +252,7 @@ class HotDustMapsMaker(Configurable):
                     continue
 
                 # Calculate the corrected 24 micron image
-                corrected = make_corrected_24mu_map(self.mips24, normalized_old, factor)
+                corrected = make_corrected_24mu_map(frames["mips24"], frames["old"], factor)
 
                 # Add the dust map to the dictionary
                 self.maps[name] = corrected

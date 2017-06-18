@@ -838,11 +838,11 @@ class GalaxyModeler(ModelerBase):
         # Create the attenuation map(s)
         if not self.history.finished("make_attenuation_maps"): self.make_attenuation_maps()
 
-        # Create the dust map
-        if not self.history.finished("make_dust_map"): self.make_dust_maps()
-
         # Create the map of the old stellar disk
         if not self.history.finished("make_old_stars_map"): self.make_old_stellar_maps()
+
+        # Create the dust map
+        if not self.history.finished("make_dust_map"): self.make_dust_maps()
 
         # Create the map of the young stellar population
         if not self.history.finished("make_young_stars_map"): self.make_young_stellar_maps()
@@ -939,6 +939,27 @@ class GalaxyModeler(ModelerBase):
 
     # -----------------------------------------------------------------
 
+    def make_old_stellar_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making the maps of old stars ...")
+
+        # Create the old stellar map maker
+        maker = OldStellarMapMaker()
+
+        # Set the working directory
+        maker.config.path = self.modeling_path
+
+        # Set log path
+        with self.write_log(maker), self.history.register(maker), self.write_config(maker): maker.run()
+
+    # -----------------------------------------------------------------
+
     def make_dust_maps(self):
 
         """
@@ -961,27 +982,6 @@ class GalaxyModeler(ModelerBase):
 
         # Create the dust map maker
         maker = DustMapMaker(config)
-
-        # Set the working directory
-        maker.config.path = self.modeling_path
-
-        # Set log path
-        with self.write_log(maker), self.history.register(maker), self.write_config(maker): maker.run()
-
-    # -----------------------------------------------------------------
-
-    def make_old_stellar_maps(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making the maps of old stars ...")
-
-        # Create the old stellar map maker
-        maker = OldStellarMapMaker()
 
         # Set the working directory
         maker.config.path = self.modeling_path

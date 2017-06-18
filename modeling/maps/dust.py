@@ -191,8 +191,8 @@ class DustMapMaker(MapsComponent):
         #old = self.get_old_stellar_disk_map(self.i1_filter)
 
         # Get maps of old stars
-        old = self.get_old_maps(flatten=True)
-        old_origins = self.get_old_origins(flatten=True)
+        old = self.get_old_stellar_disk_maps()
+        old_origins = self.get_old_stellar_disk_origins()
 
         # Create the hot dust map maker
         maker = HotDustMapsMaker()
@@ -205,8 +205,12 @@ class DustMapMaker(MapsComponent):
         # from 0.2 to 0.7
         factors = self.config.hot_factor_range.linear(self.config.factor_nvalues, as_list=True)
 
+        #print(factors)
+
         # Get already created maps
         current = self.get_current_maps_method("hot")
+
+        #print("old", old)
 
         # Run the maker
         #maker.run(mips24=mips24, mips24_errors=mips24_errors, old=old, factors=factors)
@@ -230,7 +234,7 @@ class DustMapMaker(MapsComponent):
         # Inform the user
         log.info("Writing ...")
 
-        print(self.maps)
+        #print(self.maps)
 
         # Write the maps
         self.write_maps()

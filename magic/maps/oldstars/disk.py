@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ....core.tools.logging import log
 from ....core.basics.configurable import Configurable
 from ...core.list import FrameList
+from ....core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -172,7 +173,7 @@ class DiskOldStellarMapMaker(Configurable):
             minus_bulge.normalize()
 
             # Set name
-            name = str(fltr)
+            name = tostr(fltr, delimiter="_")
 
             # Add
             self.maps[name] = minus_bulge

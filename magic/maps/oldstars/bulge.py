@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ....core.tools.logging import log
 from ....core.basics.configurable import Configurable
 from ....magic.core.list import FrameList
+from ....core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -157,7 +158,7 @@ class BulgeOldStellarMapMaker(Configurable):
             bulge.normalize()
 
             # Set name
-            name = str(fltr)
+            name = tostr(fltr, delimiter="_")
 
             # Add
             self.maps[name] = bulge

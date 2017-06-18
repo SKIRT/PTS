@@ -39,7 +39,7 @@ origins_filename = "origins.txt"
 
 # -----------------------------------------------------------------
 
-maps_commands = ["make_colour_maps", "make_ssfr_maps", "make_tir_maps", "make_attenuation_maps", "make_old_stars_map", "make_young_stars_map", "make_ionizing_stars_map", "make_dust_map"]
+maps_commands = ["make_colour_maps", "make_ssfr_maps", "make_tir_maps", "make_attenuation_maps", "make_old_stars_map", "make_dust_map", "make_young_stars_map", "make_ionizing_stars_map"]
 
 # -----------------------------------------------------------------
 
@@ -173,7 +173,7 @@ class MapsComponent(GalaxyModelingComponent):
             if not fs.is_directory(path):
 
                 # Warning
-                log.error("The " + name + " directory does not exist from the '" + command_name + "' output")
+                log.error("The '" + name + "' directory does not exist from the '" + command_name + "' output")
 
                 # Remove
                 self.remove_output_and_history_after_and_including(command_name)
@@ -182,7 +182,7 @@ class MapsComponent(GalaxyModelingComponent):
             if fs.is_empty(path):
 
                 # Warning
-                log.error("The " + name + " directory from the '" + command_name + "' output is empty")
+                log.error("The '" + name + "' directory from the '" + command_name + "' output is empty")
 
                 # Remove
                 self.remove_output_and_history_after_and_including(command_name)
@@ -515,12 +515,13 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_origins_sub_name(self, name, flatten=False):
+    def get_origins_sub_name(self, name, flatten=False, method=None):
 
         """
         This function ...
         :param name:
         :param flatten:
+        :param method:
         :return: 
         """
 
@@ -535,29 +536,42 @@ class MapsComponent(GalaxyModelingComponent):
         # Subdirectories
         else:
 
-            # Initialize
-            origins = dict()
+            if method is not None:
 
-            # Loop over subdirectories
-            for method_path in fs.directories_in_path(sub_path):
-
+                # Check whether valid method
+                method_path = fs.join(sub_path, method)
+                if not fs.is_directory(method_path): raise ValueError("Could not find a directory for the '" + method + "' method")
                 origins_path = fs.join(method_path, origins_filename)
                 if not fs.is_file(origins_path): raise ValueError("File '" + origins_path + "' is missing")
 
-                #print(origins_path)
+                # Load the origins
+                origins = load_dict(origins_path)
 
-                # Determine method
-                method = fs.name(method_path)
+            else:
 
-                # Load the origins for this method
-                origins_method = load_dict(origins_path)
+                # Initialize
+                origins = dict()
 
-                # Flatten into a one-level dict
-                if flatten:
-                    for map_name in origins_method: origins[method + "_" + map_name] = origins_method[map_name]
+                # Loop over subdirectories
+                for method_path in fs.directories_in_path(sub_path):
 
-                # Don't flatten: get nested dict
-                else: origins[method] = origins_method
+                    origins_path = fs.join(method_path, origins_filename)
+                    if not fs.is_file(origins_path): raise ValueError("File '" + origins_path + "' is missing")
+
+                    #print(origins_path)
+
+                    # Determine method
+                    method_name = fs.name(method_path)
+
+                    # Load the origins for this method
+                    origins_method = load_dict(origins_path)
+
+                    # Flatten into a one-level dict
+                    if flatten:
+                        for map_name in origins_method: origins[method_name + "_" + map_name] = origins_method[map_name]
+
+                    # Don't flatten: get nested dict
+                    else: origins[method_name] = origins_method
 
         # Return the origins
         return origins
@@ -1167,6 +1181,29 @@ class MapsComponent(GalaxyModelingComponent):
 
         path = fs.join(self.maps_old_path, "disk", str(fltr) + ".fits")
         return Frame.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    def get_old_stellar_disk_maps(self, framelist=False):
+
+        """
+        This function ...
+        :param framelist:
+        :return:
+        """
+
+        return self.get_maps_sub_name(self.maps_old_name, framelist=framelist, method="disk")
+
+    # -----------------------------------------------------------------
+
+    def get_old_stellar_disk_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_origins_sub_name(self.maps_old_name, method="disk")
 
     # -----------------------------------------------------------------
 
