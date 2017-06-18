@@ -21,6 +21,7 @@ from ...core.tools import introspection
 from ...core.tools import tables
 from ...core.filter.filter import parse_filter
 from ...core.basics.range import RealRange
+from ..tools import colours
 
 # -----------------------------------------------------------------
 
@@ -112,6 +113,20 @@ class CorteseAttenuationCalibration(object):
 
     # -----------------------------------------------------------------
 
+    def get_standard_color_name(self, ssfr_colour):
+
+        """
+        This function ...
+        :param ssfr_colour:
+        :return:
+        """
+
+        # Convert color to standard format
+        ssfr_colour = colours.get_colour_name_for_colour(ssfr_colour, short=True, delimiter="-")
+        return ssfr_colour
+
+    # -----------------------------------------------------------------
+
     def get_range_for_tau(self, ssfr_colour, tau):
 
         """
@@ -120,6 +135,8 @@ class CorteseAttenuationCalibration(object):
         :param tau: 
         :return: 
         """
+
+        #ssfr_colour = self.get_standard_color_name(ssfr_colour)
 
         index = tables.find_index(self.table, tau)
         return self.get_range_for_index(ssfr_colour, index)
@@ -134,6 +151,8 @@ class CorteseAttenuationCalibration(object):
         :param index: 
         :return: 
         """
+
+        ssfr_colour = self.get_standard_color_name(ssfr_colour)
 
         # Get the upper and lower limit
         upper = self.table[ssfr_colour][index]

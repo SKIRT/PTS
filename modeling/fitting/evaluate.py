@@ -21,7 +21,7 @@ from ...core.tools.stringify import stringify
 from ...core.simulation.definition import SingleSimulationDefinition
 from ...core.tools.filelock import FileLock
 from ...core.tools.stringify import tostr
-from ...evolve.optimize.optimizer import get_parameters_from_genome
+from ...evolve.optimize.parameters import get_parameters_from_genome
 
 # -----------------------------------------------------------------
 
@@ -166,41 +166,6 @@ def get_parameter_values_from_genome(genome, fitting_run, minima, maxima, nbits,
 
     # Return the parameter values
     return values
-
-# -----------------------------------------------------------------
-
-def _get_parameter_values_old_function(genome, fitting_run):
-
-    """
-    This function ...
-    :param genome:
-    :param fitting_run:
-    :return:
-    """
-
-    # Initialize a dictionary for the parameter values
-    parameter_values = dict()
-
-    # Loop over all the genes (parameters)
-    for index in range(len(genome)):
-
-        # Get the parameter value
-        value = genome[index]
-
-        # Get the label of the parameter
-        label = fitting_run.free_parameter_labels[index]
-
-        # Get the unit for the parameter
-        unit = get_parameter_unit(label, fitting_run)
-
-        # Get the unit for the parameter
-        if unit is not None: parameter_values[label] = value * unit
-
-        # Scalar parameter
-        else: parameter_values[label] = value
-
-    # Return the parameter values
-    return parameter_values
 
 # -----------------------------------------------------------------
 

@@ -105,4 +105,9 @@ definition.add_flag("record_memory", "record memory information in memory table"
 # VERY ADVANCED
 definition.add_optional("restart_from_generation", "string", "restart everything from this generation")
 
+# Check recurrence
+definition.add_flag("check_recurrence", "check for recurrence of models that have been simulated previously", True)
+definition.add_optional("recurrence_rtol", "positive_real", "relative tolerance for recurrence checking", 1e-5)
+definition.add_optional("recurrence_atol", "positive_real", "absolute tolerance for recurrence checking", 1e-8)
+
 # -----------------------------------------------------------------

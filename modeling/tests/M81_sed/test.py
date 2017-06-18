@@ -731,6 +731,11 @@ class M81SEDTest(M81TestBase):
         # Set the random seed
         settings_model["seed"] = self.config.seed
 
+        # RECURRENCE SETTINGS
+        settings_model["check_recurrence"] = self.config.check_recurrence
+        settings_model["recurrence_rtol"] = self.config.recurrence_rtol
+        settings_model["recurrence_atol"] = self.config.recurrence_atol
+
         # Input
         input_model = dict()
 

@@ -179,7 +179,9 @@ class MultiBandTIRMapMaker(Configurable):
         log.info("Making the TIR maps ...")
 
         # Loop over each combination of 2 or 3 filters
-        for filters in sequences.combinations(self.filters, self.lengths):
+        for filters in sequences.combinations(self.filters, self.lengths): # returns lists, not tuples, now
+
+            #print(filters, type(filters))
 
             # Check if the combination if possible
             if not self.galametz.has_combination_multi_brightness(*filters): continue

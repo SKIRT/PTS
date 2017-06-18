@@ -818,6 +818,11 @@ class ModelerBase(Configurable):
             config["record_timing"] = True
             config["record_memory"] = True
 
+        # Set recurrence settings
+        config["check_recurrence"] = self.config.check_recurrence
+        config["recurrence_rtol"] = self.config.recurrence_rtol
+        config["recurrence_atol"] = self.config.recurrence_atol
+
         # Create the parameter explorer
         self.explorer = ParameterExplorer(config, cwd=self.modeling_path)
 

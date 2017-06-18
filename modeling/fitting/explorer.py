@@ -693,6 +693,11 @@ class ParameterExplorer(FittingComponent):
         # Create the generator
         self.generator = GeneticModelGenerator()
 
+        # Set recurrence settings
+        self.generator.config.check_recurrence = self.config.check_recurrence
+        self.generator.config.recurrence_rtol = self.config.recurrence_rtol
+        self.generator.config.recurrence_atol = self.config.recurrence_atol
+
     # -----------------------------------------------------------------
 
     def set_generator_options(self):

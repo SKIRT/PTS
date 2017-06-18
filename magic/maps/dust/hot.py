@@ -78,16 +78,22 @@ class HotDustMapsMaker(Configurable):
 
         # THe mips 24 frame and error map
         self.mips24 = None
-        self.mips24_errors = None
+        #self.mips24_errors = None
 
-        # THe map of the old stellar disk
+        # THe maps of the old stellar disk
         self.old = None
+
+        # THe origins
+        self.old_origins = None
 
         # Factors
         self.factors = None
 
         # The maps
         self.maps = dict()
+
+        # The origins
+        self.origins = dict()
 
     # -----------------------------------------------------------------
 
@@ -120,11 +126,26 @@ class HotDustMapsMaker(Configurable):
 
         # Get the input
         self.mips24 = kwargs.pop("mips24")
-        self.mips24_errors = kwargs.pop("mips24_errors")
+        #self.mips24_errors = kwargs.pop("mips24_errors")
+
+        # Maps of old stars and their origins
         self.old = kwargs.pop("old")
+        self.old_origins = kwargs.pop("old_origins", None)
 
         # Set factors
         self.factors = kwargs.pop("factors")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_origins is not None
 
     # -----------------------------------------------------------------
 
@@ -145,7 +166,8 @@ class HotDustMapsMaker(Configurable):
         ## CONVERT TO LSUN
 
         # Get the galaxy distance
-        distance = self.galaxy_properties.distance
+        #distance = self.galaxy_properties.distance
+        distance = self.mips24.distance
 
         # Get pixelscale and wavelength
         pixelscale = self.mips24.average_pixelscale
@@ -175,7 +197,7 @@ class HotDustMapsMaker(Configurable):
         ## DO THE CONVERSION
 
         self.mips24 *= conversion_factor
-        self.mips24_errors *= conversion_factor
+        #self.mips24_errors *= conversion_factor
 
     # -----------------------------------------------------------------
 
@@ -186,37 +208,52 @@ class HotDustMapsMaker(Configurable):
         :return:
         """
 
-        # H-ALPHA HAS BEEN CONVERTED TO LSUN (ABOVE)
-
         # Inform the user
         log.info("Making the maps of hot dust ...")
 
-        # Normalize the old map
-        normalized_old = self.old.normalized()
+        # Loop over the different old stellar maps
+        for old_name in self.old:
 
-        # Loop over the different factors
-        for factor in self.factors:
+            # Normalize the old map
+            normalized_old = self.old.normalized()
 
-            # Calculate the corrected 24 micron image
-            corrected = make_corrected_24mu_map(self.mips24, normalized_old, factor)
+            # Loop over the different factors
+            for factor in self.factors:
 
-            # Determine name
-            name = str(factor)
+                # Determine name
+                name = old_name + "__" + str(factor)
 
-            # Add the attenuation map to the dictionary
-            self.maps[name] = corrected
+                # Set origin
+                if self.has_origins:
+
+                    # Get old origin
+                    old_origin = self.old_origins[old_name]
+
+                    # Add the origins
+                    self.origins[name] = [self.mips24.filter, old_origin]
+
+                # Check whether a map is already present
+                if name in self.maps:
+                    log.warning("The " + name + " hot dust map is already created: not creating it again")
+                    continue
+
+                # Calculate the corrected 24 micron image
+                corrected = make_corrected_24mu_map(self.mips24, normalized_old, factor)
+
+                # Add the dust map to the dictionary
+                self.maps[name] = corrected
 
     # -----------------------------------------------------------------
 
-    def make_distributions(self):
+    #def make_distributions(self):
 
-        """
-        This function ...
-        :return:
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
         # Inform the user
-        log.info("Making distributions of the pixel values of the corrected 24 micron maps ...")
+        #log.info("Making distributions of the pixel values of the corrected 24 micron maps ...")
 
         # Create mask
         #mask = self.distribution_region.to_mask(self.map.xsize, self.map.ysize)
@@ -224,16 +261,16 @@ class HotDustMapsMaker(Configurable):
         # NEW: TODO
 
         # Loop over the different maps
-        for factor in self.corrected_24mu_maps:
+        #for factor in self.corrected_24mu_maps:
 
             # Get the values
-            values = self.corrected_24mu_maps[factor][mask]
+            #values = self.corrected_24mu_maps[factor][mask]
 
             # Make a distribution of the pixel values indicated by the mask
-            distribution = Distribution.from_values(values, bins=self.config.histograms_nbins)
+            #distribution = Distribution.from_values(values, bins=self.config.histograms_nbins)
 
             # Add the distribution to the dictionary
-            self.corrected_24mu_distributions[factor] = distribution
+            #self.corrected_24mu_distributions[factor] = distribution
 
     # -----------------------------------------------------------------
 

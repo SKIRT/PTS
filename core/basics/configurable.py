@@ -138,6 +138,9 @@ class Configurable(object):
         # Find the corresponding command
         command_name, class_name, configuration_module_path, description = find_command(cls)
 
+        # Check if found
+        if command_name is None: raise ValueError("Could not find the command name for the " + cls.__name__ + " class")
+
         # Set the command name
         cls._command_name = command_name
 

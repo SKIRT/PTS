@@ -86,8 +86,18 @@ def make_tir_to_uv(tir, fuv, **kwargs):
     # The ratio of TIR and FUV
     tir_to_fuv = frames["tir"] / frames["fuv"]
 
+    # Check unit and WCS
     tir_to_fuv.unit = None
     assert tir_to_fuv.wcs is not None
+
+    # Check filter
+    tir_to_fuv.filter = None
+
+    # Set other properties than unit and wcs
+    tir_to_fuv.pixelscale = frames.pixelscale
+    tir_to_fuv.psf_filter = frames.psf_filter
+    tir_to_fuv.fwhm = frames.fwhm
+    tir_to_fuv.distance = frames.distance
 
     # Return a frame
     return tir_to_fuv

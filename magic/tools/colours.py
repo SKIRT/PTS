@@ -20,6 +20,7 @@ from ..core.frame import Frame
 from ...core.filter.filter import parse_filter
 from ...core.tools import strings
 from ..core.list import check_uniformity
+from ...core.filter.filter import represent_filter
 
 # -----------------------------------------------------------------
 
@@ -73,6 +74,40 @@ def get_filters_for_colour(colour, delimiter="auto"):
     str_a, str_b = colour.split(delimiter)
     fltr_a, fltr_b = parse_filter(str_a), parse_filter(str_b)
     return fltr_a, fltr_b
+
+# -----------------------------------------------------------------
+
+def get_colour_name_for_filters(filter_a, filter_b, delimiter="-", filter_delimiter=" ", short=False):
+
+    """
+    This function ...
+    :param filter_a:
+    :param filter_b:
+    :param delimiter:
+    :param filter_delimiter:
+    :param short:
+    :return:
+    """
+
+    name_a = represent_filter(filter_a, delimiter=filter_delimiter, short=short)
+    name_b = represent_filter(filter_b, delimiter=filter_delimiter, short=short)
+    return name_a + delimiter + name_b
+
+# -----------------------------------------------------------------
+
+def get_colour_name_for_colour(colour, delimiter="-", filter_delimiter=" ", short=False):
+
+    """
+    Thisf unction ...
+    :param colour:
+    :param delimiter:
+    :param filter_delimiter:
+    :param short:
+    :return:
+    """
+
+    fltr_a, fltr_b = get_filters_for_colour(colour)
+    return get_colour_name_for_filters(fltr_a, fltr_b, delimiter=delimiter, filter_delimiter=filter_delimiter, short=short)
 
 # -----------------------------------------------------------------
 

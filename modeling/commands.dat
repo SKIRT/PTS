@@ -33,7 +33,7 @@ make_attenuation_maps | -- | maps.attenuation.AttenuationMapMaker | arguments | 
 make_old_stars_map | -- | maps.old.OldStellarMapMaker | arguments | Make map of old stars
 make_young_stars_map | -- | maps.young.YoungStellarMapMaker | arguments | Make map of young stars
 make_ionizing_stars_map | -- | maps.ionizing.IonizingStellarMapMaker | arguments | Make map of ionizing stars
-make_dust_map | -- | maps.dust.dust.DustMapMaker | arguments | Make dust map
+make_dust_map | -- | maps.dust.DustMapMaker | arguments | Make dust map
 create_significance_masks | -- | maps.significance.SignificanceMaskCreator | arguments | Make significance masks
 
 # PHOTOMETRY

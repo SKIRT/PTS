@@ -50,12 +50,16 @@ def combinations(lst, lengths, repeat=False):
 
     combination_function = itertools.combinations_with_replacement if repeat else itertools.combinations
 
-    if isinstance(lengths, int): return list(combination_function(lst, r=lengths)) # list instead of tuple
+    if isinstance(lengths, int): result = combination_function(lst, r=lengths) # tuples
     elif isinstance(lengths, list):
         result = []
-        for length in lengths: result.extend(list(combination_function(lst, r=length))) # list instead of tuple
-        return result
+        for length in lengths: result.extend(combination_function(lst, r=length)) # tuples
     else: raise ValueError("Invalid value for 'lengths")
+
+    # Convert tuples to lists
+    lists = []
+    for item in result: lists.append(list(item)) # CONVERT FROM TUPLE TO LIST
+    return lists
 
 # -----------------------------------------------------------------
 

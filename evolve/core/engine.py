@@ -59,7 +59,6 @@ from ...core.tools.logging import log
 from ...core.tools import serialization
 from ...core.tools.random import prng
 from ...core.basics.containers import DefaultOrderedDict
-from ...core.tools import types, numbers
 
 # -----------------------------------------------------------------
 
@@ -1054,6 +1053,7 @@ class GeneticEngine(object):
         :param names:
         :param check:
         :param rtol:
+        :param atol:
         :param binary_parameters:
         :return:
         """
@@ -1073,74 +1073,20 @@ class GeneticEngine(object):
             # Check based on genome, only if no name checks were available
             elif check is not None:
 
+                # Import functions
+                from pts.evolve.optimize.parameters import equal_genomes, show_genome_differences
+
                 genome_a = individual.genomeList
                 genome_b = check[index]
 
                 # Check
                 if not equal_genomes(genome_a, genome_b, rtol=rtol, atol=atol, binary_parameters=binary_parameters):
 
-                    # Convert into arrays
-                    genome_a = np.array(genome_a)
-                    genome_b = np.array(genome_b)
-
                     # Show error message
                     log.error("Failed check for individual " + str(index) + ":")
 
-                    # Binary: check exact
-                    if is_binary_values(genome_a):
-
-                        # Parameters are specified for doing binary to real conversion
-                        if binary_parameters is not None:
-
-                            minima = binary_parameters.minima
-                            maxima = binary_parameters.maxima
-                            nbits = binary_parameters.nbits
-                            gray = binary_parameters.gray
-                            ndigits = binary_parameters.ndigits
-
-                            parameter_index = 0
-                            for value_a, value_b in get_parameters_from_genomes(genome_a, genome_b, minima, maxima, nbits, gray):
-
-                                # Round both values
-                                value_a_rounded = numbers.round_to_n_significant_digits(value_a, ndigits[parameter_index])
-                                value_b_rounded = numbers.round_to_n_significant_digits(value_b, ndigits[parameter_index])
-
-                                adiff = abs(value_a_rounded - value_b_rounded)
-                                rdiff = adiff / value_a_rounded
-
-                                if adiff > atol or rdiff > rtol:
-
-                                    log.error("Different (rounded) values for parameter #" + str(parameter_index) + ":")
-                                    log.error(" - value_a: " + str(value_a))
-                                    log.error(" - value_b: " + str(value_b))
-                                    log.error(" - value_a_rounded: " + str(value_a_rounded))
-                                    log.error(" - value_b_rounded: " + str(value_b_rounded))
-                                    log.error(" - absolute difference: " + str(adiff))
-                                    log.error(" - relative difference: " + str(rdiff * 100.) + "%")
-                                    log.error(" - absolute tolerance: " + str(atol))
-                                    log.error(" - relative tolerance: " + str(rtol * 100.) + "%")
-
-                                parameter_index += 1
-
-                        else:
-
-                            # Show the positions for which there is a mismatch
-                            indices = np.where(genome_a != genome_b)
-                            log.error(" - different bits: " + ",".join(str(index) for index in indices))
-
-                    # Real: check with certain tolerance
-                    elif is_real_values(genome_b):
-
-                        adiff = abs(genome_a - genome_b) # numpy arrays
-                        rdiff = adiff / genome_a
-
-                        log.error(" - absolute differences: " + str(adiff))
-                        log.error(" - relative differences: " + str(rdiff * 100.) + "%")
-                        log.error(" - absolute tolerance: " + str(atol))
-                        log.error(" - relative tolerance: " + str(rtol * 100.) + "%")
-
-                    # Unrecognized 1D genome list
-                    else: raise ValueError("Genome list not recognized: " + str(genome_a))
+                    # Show the differences between the genomes
+                    show_genome_differences(genome_a, genome_b, rtol=rtol, atol=atol, binary_parameters=binary_parameters)
 
                     # Raise error since check failed
                     raise ValueError("Check failed: individual = " + str(genome_a) + " and check = " + str(genome_b))
@@ -1227,60 +1173,8 @@ class GeneticEngine(object):
         # Loop over the population
         for i in xrange(0, size_iterate, 2):
 
-            applied = False
-            details = None
-
-            # Select mother and father
-            #genomeMom = self.select(popID=self.currentGeneration)
-            #genomeDad = self.select(popID=self.currentGeneration)
-
-            mother_key = self.select(popID=self.currentGeneration, return_key=True)
-            father_key = self.select(popID=self.currentGeneration, return_key=True)
-
-            # Get mother and father genome
-            genomeMom = self.internalPop[mother_key]
-            genomeDad = self.internalPop[father_key]
-
-            # Always crossover
-            if not crossover_empty and self.pCrossover >= 1.0:
-
-                # Apply
-                # DIDN'T MAKE SENSE: SISTER AND BROTHER WERE JUST OVERWRITTEN FOR EVERY NEW CROSSOVER FUNCTION THAT WAS CALLED!
-                #for it in genomeMom.crossover.applyFunctions(mom=genomeMom, dad=genomeDad, count=2, **self.crossover_kwargs):
-                #    (sister, brother) = it
-
-                # TODO: what to do with multiple crossover functions now?
-
-                # Apply the crossover
-                sister, brother, details = genomeMom.crossover.apply(0, mom=genomeMom, dad=genomeDad, count=2, return_details=True, **self.crossover_kwargs)
-
-                # Set flag
-                applied = True
-
-            # Crossover with some probability
-            else:
-
-                # Apply crossover function(s)
-                if not crossover_empty and utils.randomFlipCoin(self.pCrossover):
-
-                    # Apply
-                    # DIDN'T MAKE SENSE: SISTER AND BROTHER WERE JUST OVERWRITTEN FOR EVERY NEW CROSSOVER FUNCTION THAT WAS CALLED!
-                    #for it in genomeMom.crossover.applyFunctions(mom=genomeMom, dad=genomeDad, count=2, **self.crossover_kwargs):
-                    #    (sister, brother) = it
-
-                    # TODO: what to do with multiple crossover functions now?
-
-                    # Apply the crossover
-                    sister, brother, details = genomeMom.crossover.apply(0, mom=genomeMom, dad=genomeDad, count=2, return_details=True, **self.crossover_kwargs)
-
-                    # Set flag
-                    applied = True
-
-                # Make clones of the mother and father
-                else:
-
-                    sister = genomeMom.clone()
-                    brother = genomeDad.clone()
+            # Perform crossover
+            mother_key, father_key, sister, brother, applied, details = self.perform_crossover(crossover_empty=crossover_empty)
 
             # Mutate
             sister.mutate(**mutator_kwargs)
@@ -1297,49 +1191,17 @@ class GeneticEngine(object):
         # Generate one more individual if the population size is not even
         if len(self.internalPop) % 2 != 0:
 
-            applied = False
-            details = None
+            # Perform crossover
+            mother_key, father_key, sister, brother, applied, details = self.perform_crossover(crossover_empty=crossover_empty)
 
-            # Select mother and father
-            #genomeMom = self.select(popID=self.currentGeneration)
-            #genomeDad = self.select(popID=self.currentGeneration)
-
-            mother_key = self.select(popID=self.currentGeneration, return_key=True)
-            father_key = self.select(popID=self.currentGeneration, return_key=True)
-
-            # Get mother and father genome
-            genomeMom = self.internalPop[mother_key]
-            genomeDad = self.internalPop[father_key]
-
-            # Apply crossover with a certain chance
-            if utils.randomFlipCoin(self.pCrossover):
-
-                # Apply
-                #for it in genomeMom.crossover.applyFunctions(mom=genomeMom, dad=genomeDad, count=1, **self.crossover_kwargs):
-                #    (sister, brother) = it
-
-                # TODO: what to do with multiple crossover functions now?
-
-                # Apply the crossover
-                sister, brother, details = genomeMom.crossover.apply(0, mom=genomeMom, dad=genomeDad, count=1, return_details=True, **self.crossover_kwargs)
-
-                # Set flag
-                applied = True
-
-            #
-            else:
-
-                sister = prng.choice([genomeMom, genomeDad])
-                sister = sister.clone()
-
-                # PREVIOUS
-                # sister.mutate(**mutator_kwargs)
+            # CHoose one child
+            child = prng.choice([sister, brother])
 
             # NEW: mutate here
-            sister.mutate(**mutator_kwargs)
+            child.mutate(**mutator_kwargs)
 
             # Add the sister to the new population
-            sister_key = new_population.append(sister)
+            sister_key = new_population.append(child)
             brother_key = None
 
             # Add entry to the crossover data
@@ -1814,238 +1676,71 @@ class GeneticEngine(object):
         for it in self.selector.applyFunctions(self.internalPop, **args):
             return it
 
-# -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
-def is_binary_values(sequence):
+    def perform_crossover(self, crossover_empty=False):
 
-    """
-    This function ...
-    :param sequence: 
-    :return: 
-    """
+        """
+        This function ...
+        :return:
+        """
 
-    for element in sequence:
-        if element != 0 and element != 1: return False
-    return True
+        applied = False
+        details = None
 
-# -----------------------------------------------------------------
+        # Select mother and father
+        #genomeMom = self.select(popID=self.currentGeneration)
+        #genomeDad = self.select(popID=self.currentGeneration)
 
-def is_binary_genome(genome):
+        mother_key = self.select(popID=self.currentGeneration, return_key=True)
+        father_key = self.select(popID=self.currentGeneration, return_key=True)
 
-    """
-    This function ...
-    :param genome: 
-    :return: 
-    """
+        # Get mother and father genome
+        genomeMom = self.internalPop[mother_key]
+        genomeDad = self.internalPop[father_key]
 
-    return is_binary_values(genome)
+        # Always crossover
+        if not crossover_empty and self.pCrossover >= 1.0:
 
-# -----------------------------------------------------------------
+            # Apply
+            # DIDN'T MAKE SENSE: SISTER AND BROTHER WERE JUST OVERWRITTEN FOR EVERY NEW CROSSOVER FUNCTION THAT WAS CALLED!
+            #for it in genomeMom.crossover.applyFunctions(mom=genomeMom, dad=genomeDad, count=2, **self.crossover_kwargs):
+            #    (sister, brother) = it
 
-def is_real_values(sequence):
+            # TODO: what to do with multiple crossover functions now?
 
-    """
-    This function ...
-    :param sequence:
-    :return: 
-    """
+            # Apply the crossover
+            sister, brother, details = genomeMom.crossover.apply(0, mom=genomeMom, dad=genomeDad, count=2, return_details=True, **self.crossover_kwargs)
 
-    for element in sequence:
-        if not types.is_real_type(element): return False
-    return True
+            # Set flag
+            applied = True
 
-# -----------------------------------------------------------------
-
-def is_real_genome(genome):
-
-    """
-    This function ...
-    :param genome: 
-    :return: 
-    """
-
-    return is_real_values(genome)
-
-# -----------------------------------------------------------------
-
-def equal_individuals(individual_a, individual_b, rtol=1e-5, atol=1e-8):
-
-    """
-    This function ...
-    :param individual_a: 
-    :param individual_b: 
-    :param rtol: 
-    :param atol: 
-    :return: 
-    """
-
-    return equal_genomes(individual_a.genomeList, individual_b.genomeList, rtol=rtol, atol=atol)
-
-# -----------------------------------------------------------------
-
-def equal_genomes(genome_a, genome_b, rtol=1e-5, atol=1e-8, binary_parameters=None):
-
-    """
-    This function ...
-    :param genome_a: 
-    :param genome_b: 
-    :param rtol:
-    :param atol:
-    :param binary_parameters:
-    :return: 
-    """
-
-    # Convert into arrays
-    genome_a = np.array(genome_a)
-    genome_b = np.array(genome_b)
-
-    # Binary: check exact
-    if is_binary_values(genome_a):
-
-        # Parameters are specified for doing binary to real conversion
-        if binary_parameters is not None:
-
-            minima = binary_parameters.minima
-            maxima = binary_parameters.maxima
-            nbits = binary_parameters.nbits
-            gray = binary_parameters.gray
-            ndigits = binary_parameters.ndigits
-
-            # Test
-            if not equal_binary_genomes_with_conversion(genome_a, genome_b, minima, maxima, nbits, gray, ndigits): return False
-            else: return True
-
-        # Check whether the binary genomes are
-        else: return equal_binary_genomes_exact(genome_a, genome_b)
-
-    # Real: check with certain tolerance
-    elif is_real_values(genome_b): return np.isclose(genome_a, genome_b, rtol=rtol, atol=atol)
-
-    # Unrecognized 1D genome list
-    else: raise ValueError("Genome list not recognized: " + str(genome_a))
-
-# -----------------------------------------------------------------
-
-def equal_binary_genomes_exact(genome_a, genome_b):
-
-    """
-    This fucntion ...
-    :param genome_a: 
-    :param genome_b: 
-    :return: 
-    """
-
-    return np.all(genome_a == genome_b)
-
-# -----------------------------------------------------------------
-
-def equal_binary_genomes_with_conversion(genome_a, genome_b, minima, maxima, nbits, gray, ndigits):
-
-    """
-    This function ...
-    :param genome_a: 
-    :param genome_b: 
-    :param minima:
-    :param maxima:
-    :param nbits:
-    :param gray:
-    :param ndigits:
-    :return: 
-    """
-
-    # Loop over the parameters
-    for value_a_rounded, value_b_rounded in get_parameters_from_genomes_rounded(genome_a, genome_b, minima, maxima, nbits, gray, ndigits):
-
-        # Fail!
-        if value_a_rounded != value_b_rounded: return False
-
-    # All checks passed
-    return True
-
-# -----------------------------------------------------------------
-
-def get_parameters_from_genomes(genome_a, genome_b, minima, maxima, nbits, gray):
-
-    """
-    This function ...
-    :param genome_a: 
-    :param genome_b: 
-    :param minima: 
-    :param maxima: 
-    :param nbits: 
-    :param gray: 
-    :return: 
-    """
-
-    nparameters = len(minima)
-
-    bit_slices = numbers.generate_bit_slices(nbits)
-
-    pairs = []
-
-    # Loop over the parameters
-    for index in range(nparameters):
-
-        # Get the first n bits
-        bits_a = genome_a[bit_slices[index]]
-        bits_b = genome_b[bit_slices[index]]
-
-        # Convert into real value
-        if gray:
-            value_a = numbers.gray_binary_string_to_float(bits_a, low=minima[index], high=maxima[index], nbits=nbits[index])
-            value_b = numbers.gray_binary_string_to_float(bits_b, low=minima[index], high=maxima[index], nbits=nbits[index])
+        # Crossover with some probability
         else:
-            value_a = numbers.binary_string_to_float(bits_a, low=minima[index], high=maxima[index], nbits=nbits[index])
-            value_b = numbers.binary_string_to_float(bits_b, low=minima[index], high=maxima[index], nbits=nbits[index])
 
-        pairs.append((value_a, value_b))
+            # Apply crossover function(s)
+            if not crossover_empty and utils.randomFlipCoin(self.pCrossover):
 
-    # Return the pairs
-    return pairs
+                # Apply
+                # DIDN'T MAKE SENSE: SISTER AND BROTHER WERE JUST OVERWRITTEN FOR EVERY NEW CROSSOVER FUNCTION THAT WAS CALLED!
+                #for it in genomeMom.crossover.applyFunctions(mom=genomeMom, dad=genomeDad, count=2, **self.crossover_kwargs):
+                #    (sister, brother) = it
 
-# -----------------------------------------------------------------
+                # TODO: what to do with multiple crossover functions now?
 
-def get_parameters_from_genomes_rounded(genome_a, genome_b, minima, maxima, nbits, gray, ndigits):
+                # Apply the crossover
+                sister, brother, details = genomeMom.crossover.apply(0, mom=genomeMom, dad=genomeDad, count=2, return_details=True, **self.crossover_kwargs)
 
-    """
-    This function ...
-    :param genome_a: 
-    :param genome_b:
-    :param minima:
-    :param maxima:
-    :param nbits:
-    :param gray:
-    :param ndigits:
-    :return: 
-    """
+                # Set flag
+                applied = True
 
-    nparameters = len(minima)
+            # Make clones of the mother and father
+            else:
 
-    bit_slices = numbers.generate_bit_slices(nbits)
+                sister = genomeMom.clone()
+                brother = genomeDad.clone()
 
-    pairs = []
-
-    # Loop over the parameters
-    for index in range(nparameters):
-
-        # Get the first n bits
-        bits_a = genome_a[bit_slices[index]]
-        bits_b = genome_b[bit_slices[index]]
-
-        # Convert into real value
-        if gray:
-            value_a = numbers.gray_binary_string_to_float(bits_a, low=minima[index], high=maxima[index], nbits=nbits[index])
-            value_b = numbers.gray_binary_string_to_float(bits_b, low=minima[index], high=maxima[index], nbits=nbits[index])
-        else:
-            value_a = numbers.binary_string_to_float(bits_a, low=minima[index], high=maxima[index], nbits=nbits[index])
-            value_b = numbers.binary_string_to_float(bits_b, low=minima[index], high=maxima[index], nbits=nbits[index])
-
-        value_a_rounded = numbers.round_to_n_significant_digits(value_a, ndigits[index])
-        value_b_rounded = numbers.round_to_n_significant_digits(value_b, ndigits[index])
-
-        pairs.append((value_a_rounded, value_b_rounded))
-
-    # Return the pairs
-    return pairs
+        # Return
+        return mother_key, father_key, sister, brother, applied, details
 
 # -----------------------------------------------------------------

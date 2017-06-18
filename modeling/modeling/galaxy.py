@@ -954,6 +954,11 @@ class GalaxyModeler(ModelerBase):
         config["black_body"] = dict()
         config["black_body"]["remote"] = self.moderator.host_id_for_single("other")
 
+        # make_black_body
+        # make_emission
+        config["make_black_body"] = False
+        config["make_emission"] = False
+
         # Create the dust map maker
         maker = DustMapMaker(config)
 

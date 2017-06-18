@@ -30,12 +30,13 @@ from .optimizer import Optimizer
 from ..core.population import NamedPopulation
 from .tables import ElitismTable, CrossoverTable, ScoresTable, RecurrenceTable
 from ..analyse.database import load_database, get_score_for_individual
-from .optimizer import get_parameters_from_genome, get_binary_genome_from_parameters
-from ..core.engine import equal_genomes
+from .parameters import get_parameters_from_genome, get_binary_genome_from_parameters
+from .parameters import equal_genomes
 from ..core import constants
 from ...core.basics.map import Map
 from ...core.basics.configurable import write_input
 from ...core.tools import types
+from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -575,11 +576,14 @@ class StepWiseOptimizer(Optimizer):
 
         # Create binary parameters map
         binary_parameters = Map()
-        binary_parameters.minima = self.parameter_minima_scaled
-        binary_parameters.maxima = self.parameter_maxima_scaled
-        binary_parameters.ndigits = self.ndigits
-        binary_parameters.nbits = self.nbits
+        #binary_parameters.minima = self.parameter_minima_scaled
+        #binary_parameters.maxima = self.parameter_maxima_scaled
+        binary_parameters.minima = self.parameter_minima
+        binary_parameters.maxima = self.parameter_maxima
+        binary_parameters.ndigits = self.ndigits # list
+        binary_parameters.nbits = self.nbits # list
         binary_parameters.gray = self.config.gray_code
+        binary_parameters.scales = self.parameter_scales
 
         # Return
         return binary_parameters
@@ -727,7 +731,7 @@ class StepWiseOptimizer(Optimizer):
             individual = self.population[name]
 
             # Check recurrence
-            generation_index, key = find_recurrent_individual(populations_run, individual, generation, rtol=self.config.recurrence_rtol, atol=self.config.recurrence_atol, binary_parameters=self.binary_parameters)
+            generation_index, key, parameters, original_parameters = find_recurrent_individual(populations_run, individual, generation, rtol=self.config.recurrence_rtol, atol=self.config.recurrence_atol, binary_parameters=self.binary_parameters, return_comparison=True)
 
             # If not found, skip
             if generation_index is None: continue
@@ -744,8 +748,12 @@ class StepWiseOptimizer(Optimizer):
             # Debugging
             log.debug("The score of this individual was " + str(score))
 
+            # Convert parameters to strings
+            parameters_string = tostr(parameters)
+            original_parameters_string = tostr(original_parameters)
+
             # Add entry to the recurrence table
-            self.recurrence_table.add_entry(name, generation_index, key, score)
+            self.recurrence_table.add_entry(name, generation_index, key, score, parameters_string, original_parameters_string)
 
     # -----------------------------------------------------------------
 
@@ -1325,7 +1333,7 @@ def load_populations(path):
 
 # -----------------------------------------------------------------
 
-def find_recurrent_individual(populations, individual, current_generation, rtol=1e-5, atol=1e-8, binary_parameters=None):
+def find_recurrent_individual(populations, individual, current_generation, rtol=1e-5, atol=1e-8, binary_parameters=None, return_comparison=False):
 
     """
     This function ...
@@ -1335,13 +1343,14 @@ def find_recurrent_individual(populations, individual, current_generation, rtol=
     :param rtol:
     :param atol:
     :param binary_parameters:
+    :param return_comparison:
     :return: 
     """
 
     # Look for a match with previous generations (populations) of the same run
     # Loop over the previous generations
     generation_indices = range(current_generation)
-    for generation_index in reversed(generation_indices):
+    for generation_index in reversed(generation_indices): # look from the last to the first generations
 
         # Loop over the individuals in this generation
         for key in populations[generation_index]:
@@ -1349,10 +1358,21 @@ def find_recurrent_individual(populations, individual, current_generation, rtol=
             # Get the genome
             genome = populations[generation_index][key]
 
-            # If the genomes are equal, return the generation index and the individual key
-            if equal_genomes(individual.genomeList, genome, rtol=rtol, atol=atol, binary_parameters=binary_parameters): return generation_index, key
+            # If comparison values have to be returned
+            if return_comparison:
+
+                # If equal, return
+                equal, parameters, original_parameters = equal_genomes(individual.genomeList, genome, rtol=rtol, atol=atol, binary_parameters=binary_parameters, return_comparison=True)
+                if equal: return generation_index, key, parameters, original_parameters
+
+            # Just return generation index and individual key
+            else:
+
+                # If the genomes are equal, return the generation index and the individual key
+                if equal_genomes(individual.genomeList, genome, rtol=rtol, atol=atol, binary_parameters=binary_parameters): return generation_index, key
 
     # Nothing found
-    return None, None
+    if return_comparison: return None, None, None, None
+    else: return None, None
 
 # -----------------------------------------------------------------

@@ -40,6 +40,9 @@ class EmissionDustMapsMaker(Configurable):
         # The dust map
         self.maps = dict()
 
+        # The origins
+        self.origins = dict()
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):

@@ -43,31 +43,36 @@ def parse_filter(argument, name=None):
 
 # -----------------------------------------------------------------
 
-def represent_filter(fltr, delimiter=" "):
+def represent_filter(fltr, delimiter=" ", short=False):
 
     """
     This function ...
     :param fltr:
     :param delimiter:
+    :param short:
     :return:
     """
 
-    return str(fltr).replace(" ", delimiter)
+    if short: return fltr.band
+    else: return str(fltr).replace(" ", delimiter)
 
 # -----------------------------------------------------------------
 
-def stringify_filter(fltr, delimiter=" "):
+def stringify_filter(fltr, **kwargs):
 
     """
     This function ...
     :param fltr:
-    :param delimiter:
+    :param kwargs:
     :return:
     """
 
     # Import subclasses
     from .narrow import NarrowBandFilter
     from .broad import BroadBandFilter
+
+    # Get delimiter
+    delimiter = kwargs.pop("delimiter", " ")
 
     #print(delimiter)
 

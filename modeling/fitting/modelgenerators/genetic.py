@@ -188,6 +188,11 @@ class GeneticModelGenerator(ModelGenerator):
         self.optimizer.config.writing.prng_path = [self.optimizer.config.writing.prng_path, self.generation.prng_path]
         self.optimizer.config.writing.config_path = [self.optimizer.config.writing.config_path, self.generation.optimizer_config_path]
 
+        # Set recurrence settings
+        self.optimizer.config.check_recurrence = self.config.check_recurrence
+        self.optimizer.config.recurrence_rtol = self.config.recurrence_rtol
+        self.optimizer.config.recurrence_atol = self.config.recurrence_atol
+
     # -----------------------------------------------------------------
 
     def load_optimizer(self):
@@ -695,9 +700,9 @@ def set_optimizer_settings(optimizer, fitting_run, ngenerations=None, nmodels=No
     optimizer.config.named_individuals = True
 
     # Recurrency checking
-    optimizer.config.check_recurrence = True
-    optimizer.config.recurrence_rtol = 1e-5
-    optimizer.config.recurrence_atol = 1e-8
+    #optimizer.config.check_recurrence = True
+    #optimizer.config.recurrence_rtol = 1e-5
+    #optimizer.config.recurrence_atol = 1e-8
 
     # ADVANCED: GRAY CODING
     optimizer.config.gray_code = fitting_run.genetic_settings.gray_code

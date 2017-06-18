@@ -95,11 +95,11 @@ class BuatAttenuationMapsMaker(Configurable):
         self.nuv = kwargs.pop("nuv", None)
         self.tirs = kwargs.pop("tirs")
 
-        # Get distance
-        self.distance = kwargs.pop("distance", None)
-
         # Origins
         self.tirs_origins = kwargs.pop("tirs_origins", None)
+
+        # Get already created maps
+        self.maps = kwargs.pop("maps", dict())
 
         # Create the Cortese instance
         self.buat = BuatAttenuationCalibration()
@@ -152,15 +152,37 @@ class BuatAttenuationMapsMaker(Configurable):
         # Loop over the different TIR maps
         for name in self.tirs:
 
+            # Determine name
+            key = "FUV__" + name
+
+            # Set origin
+            if self.has_origins:
+
+                # Add FUV as an origin
+                origins = self.tirs_origins[name]
+                origins.append(parse_filter("FUV"))
+                self.origins[key] = origins
+
+            # Check whether a map is already present
+            if key in self.maps:
+                log.warning("The " + name + " attenuation map is already created: not creating it again")
+                continue
+
             # Make the TIR to FUV map
-            tir_to_fuv = make_tir_to_uv(self.tirs[name], self.fuv, distance=self.distance)
+            tir_to_fuv = make_tir_to_uv(self.tirs[name], self.fuv)
             log_tir_to_fuv = Frame(np.log10(tir_to_fuv), wcs=tir_to_fuv.wcs)
 
             # Calculate FUV attenuation map
             attenuation = parameters[0] * log_tir_to_fuv**3 + parameters[1] * log_tir_to_fuv**2 + parameters[2] * log_tir_to_fuv + parameters[3]
 
-            # Determine name
-            key = name + "_FUV"
+            # Set properties
+            attenuation.unit = None # no unit for attenuation
+            attenuation.filter = None  # no filter for attenuation
+            attenuation.wcs = tir_to_fuv.wcs
+            attenuation.distance = tir_to_fuv.distance
+            attenuation.pixelscale = tir_to_fuv.pixelscale
+            attenuation.psf_filter = tir_to_fuv.psf_filter
+            attenuation.fwhm = tir_to_fuv.fwhm
 
             # Make positive: replace NaNs and negative pixels by zeros
             # Set negatives and NaNs to zero
@@ -169,13 +191,6 @@ class BuatAttenuationMapsMaker(Configurable):
 
             # Set
             self.maps[key] = attenuation
-
-            # Set origin
-            if self.has_origins:
-
-                origins = self.tirs_origins[name]
-                origins.add(parse_filter("FUV"))
-                self.origins[key] = origins
 
     # -----------------------------------------------------------------
 
@@ -192,18 +207,40 @@ class BuatAttenuationMapsMaker(Configurable):
         # Get parameters
         parameters = self.buat.get_nuv_parameters()
 
-        # Loop over thed ifferent TIR maps
+        # Loop over the different TIR maps
         for name in self.tirs:
 
+            # Determine name
+            key = "NUV__" + name
+
+            # Set origin
+            if self.has_origins:
+
+                # Add NUV as origin
+                origins = self.tirs_origins[name]
+                origins.append(parse_filter("NUV"))
+                self.origins[key] = origins
+
+            # Check whether a map is already present
+            if key in self.maps:
+                log.warning("The " + name + " attenuation map is already created: not creating it again")
+                continue
+
             # Calculate map
-            tir_to_nuv = make_tir_to_uv(self.tirs[name], self.nuv, distance=self.distance)
+            tir_to_nuv = make_tir_to_uv(self.tirs[name], self.nuv)
             log_tir_to_nuv = Frame(np.log10(tir_to_nuv), wcs=tir_to_nuv.wcs)
 
             # Calculate attenuation map
             attenuation = parameters[0] * log_tir_to_nuv**3 + parameters[1] * log_tir_to_nuv**2 + parameters[2] * log_tir_to_nuv + parameters[3]
 
-            # Determine name
-            key = name + "_NUV"
+            # Set properties
+            attenuation.unit = None # no unit for attenuation
+            attenuation.filter = None # no filter for attenuation
+            attenuation.wcs = tir_to_nuv.wcs
+            attenuation.distance = tir_to_nuv.distance
+            attenuation.pixelscale = tir_to_nuv.pixelscale
+            attenuation.psf_filter = tir_to_nuv.psf_filter
+            attenuation.fwhm = tir_to_nuv.fwhm
 
             # Make positive: replace NaNs and negative pixels by zeros
             # Set negatives and NaNs to zero
@@ -212,13 +249,6 @@ class BuatAttenuationMapsMaker(Configurable):
 
             # Set
             self.maps[key] = attenuation
-
-            # Set origin
-            if self.has_origins:
-
-                origins = self.tirs_origins[name]
-                origins.add(parse_filter("NUV"))
-                self.origins[key] = origins
 
     # -----------------------------------------------------------------
 

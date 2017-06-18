@@ -210,10 +210,12 @@ class RecurrenceTable(SmartTable):
         self.add_column_info("Generation", int, None, "Generation index of the original individual")
         self.add_column_info("Original individual ID", str, None, "name or index of the original individual")
         self.add_column_info("Score", float, None, "Score of the original individual")
+        self.add_column_info("Individual", str, None, "representation of the individual")
+        self.add_column_info("Original individual", str, None, "representation of the original individual")
 
     # -----------------------------------------------------------------
 
-    def add_entry(self, individual_id, generation, original_individual_id, score):
+    def add_entry(self, individual_id, generation, original_individual_id, score, individual=None, original_individual=None):
 
         """
         This function ...
@@ -221,11 +223,13 @@ class RecurrenceTable(SmartTable):
         :param generation:
         :param original_individual_id:
         :param score:
+        :param individual:
+        :param original_individual:
         :return:
         """
 
         # Make row of values and add the row
-        row = [individual_id, generation, original_individual_id, score]
+        row = [individual_id, generation, original_individual_id, score, individual, original_individual]
         self.add_row(row)
 
     # -----------------------------------------------------------------
@@ -291,6 +295,40 @@ class RecurrenceTable(SmartTable):
 
         # Return generation and original individual ID
         return self["Generation"][index], self["Original individual ID"][index]
+
+    # -----------------------------------------------------------------
+
+    def get_individual(self, individual_id):
+
+        """
+        This function ...
+        :param individual_id:
+        :return:
+        """
+
+        index = tables.find_index(self, individual_id)
+        representation = self["Individual"][index]
+
+        # Return as binary genome, or as list of quantities or real values
+        try: return parsing.binary(representation)
+        except ValueError: return parsing.real_list_or_quantity_list(representation)
+
+    # -----------------------------------------------------------------
+
+    def get_original_individual(self, individual_id):
+
+        """
+        This function ...
+        :param individual_id:
+        :return:
+        """
+
+        index = tables.find_index(self, individual_id)
+        representation = self["Original individual"][index]
+
+        # Return as binary genome, or as list of quantites or real values
+        try: return parsing.binary(representation)
+        except ValueError: return parsing.real_list_or_quantity_list(representation)
 
 # -----------------------------------------------------------------
 

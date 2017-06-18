@@ -137,6 +137,9 @@ class CorteseAttenuationMapsMaker(Configurable):
         self.tirs_origins = kwargs.pop("tirs_origins", None)
         self.ssfrs_origins = kwargs.pop("ssfrs_origins", None)
 
+        # Get already calculated maps
+        self.maps = kwargs.pop("maps", dict())
+
         # Create the Cortese instance
         self.cortese = CorteseAttenuationCalibration()
 
@@ -178,6 +181,23 @@ class CorteseAttenuationMapsMaker(Configurable):
             # Loop over the different colour options
             for ssfr_colour in self.ssfrs:
 
+                # Determine name
+                key = name + "_" + ssfr_colour
+
+                # Set origins
+                if self.has_origins:
+
+                    # print(self.tirs_origins)
+                    origins = self.tirs_origins[name]
+                    sequences.extend_unique(origins, self.ssfrs_origins[ssfr_colour])
+                    sequences.append_unique(origins, parse_filter("FUV"))
+                    self.origins[key] = origins
+
+                # Check whether a map is already present
+                if key in self.maps:
+                    log.warning("The " + name + " attenuation map is already created: not creating it again")
+                    continue
+
                 # Get the ssfr map
                 ssfr = self.ssfrs[ssfr_colour]
 
@@ -191,11 +211,17 @@ class CorteseAttenuationMapsMaker(Configurable):
                 # Create the FUV attenuation map according to the calibration in Cortese et. al 2008
                 fuv_attenuation = make_fuv_attenuation_map(self.cortese, ssfr_colour, log_tir_to_fuv, frames["ssfr"])
 
+                # Set properties
+                fuv_attenuation.unit = None # no unit for attenuation
+                fuv_attenuation.filter = None # no filter for attenuation
+                fuv_attenuation.wcs = frames.wcs
+                fuv_attenuation.distance = frames.distance
+                fuv_attenuation.pixelscale = frames.pixelscale
+                fuv_attenuation.psf_filter = frames.psf_filter
+                fuv_attenuation.fwhm = frames.fwhm
+
                 # Set attenuation to zero where the original FUV map is smaller than zero
                 fuv_attenuation[frames["fuv"] < 0.0] = 0.0
-
-                # Determine name
-                key = name + "_" + ssfr_colour
 
                 # Make positive: replace NaNs and negative pixels by zeros
                 # Set negatives and NaNs to zero
@@ -204,15 +230,6 @@ class CorteseAttenuationMapsMaker(Configurable):
 
                 # Add the attenuation map to the dictionary
                 self.maps[key] = fuv_attenuation
-
-                # Set origins
-                if self.has_origins:
-
-                    #print(self.tirs_origins)
-                    origins = self.tirs_origins[name]
-                    sequences.extend_unique(origins, self.ssfrs_origins[ssfr_colour])
-                    sequences.append_unique(origins, parse_filter("FUV"))
-                    self.origins[key] = origins
 
     # -----------------------------------------------------------------
 

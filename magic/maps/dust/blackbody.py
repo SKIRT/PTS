@@ -92,8 +92,9 @@ class BlackBodyDustMapsMaker(Configurable):
         # The pixel seds
         self.seds = []
 
-        # The dust map
-        self.maps = None
+        # The dust maps
+        self.maps = dict()
+        self.origins = dict()
 
         # The dust mass error map
         self.error_map = None

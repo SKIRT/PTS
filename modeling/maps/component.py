@@ -197,11 +197,12 @@ class MapsComponent(GalaxyModelingComponent):
 
         log.warning("Removing the '" + command_name + "' and successive commands from the history ...")
         commands = maps_commands_after_and_including(command_name)
-        yn = prompt_proceed("Remove the history and output of the following commands: " + tostr(commands) + "?")
+        existing_commands = [command for command in commands if command in self.history.commands]
+        yn = prompt_proceed("Remove the history and output of the following commands: " + tostr(existing_commands) + "?")
         if yn:
 
             # Remove from history
-            for command in commands:
+            for command in existing_commands:
 
                 # Debugging
                 log.debug("Removing the '" + command + "' command from the modeling history ...")
@@ -212,7 +213,7 @@ class MapsComponent(GalaxyModelingComponent):
             self.history.save()
 
             # Remove output
-            for command in commands:
+            for command in existing_commands:
 
                 path = self.sub_path_for_command(command)
 
@@ -225,6 +226,7 @@ class MapsComponent(GalaxyModelingComponent):
             # Exit
             exit()
 
+        # User answered no
         else: raise RuntimeError("Cannot proceed")
 
     # -----------------------------------------------------------------
@@ -873,6 +875,22 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_frame(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        # Parse filter
+        fltr = parse_filter(fltr)
+
+        # Get frame
+        return self.get_frame_for_filter(fltr)
+
+    # -----------------------------------------------------------------
+
     def has_errormap_for_filter(self, fltr):
 
         """
@@ -950,6 +968,32 @@ class MapsComponent(GalaxyModelingComponent):
         #maps = dict()
         #maps["single"] = single
         #maps["multi"] = multi
+
+    # -----------------------------------------------------------------
+
+    def get_old_maps(self, flatten=False, framelist=False):
+
+        """
+        This function ...
+        :param flatten:
+        :param framelist:
+        :return:
+        """
+
+        return self.get_maps_sub_name(self.maps_old_name, flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
+    def get_attenuation_maps(self, flatten=False, framelist=False):
+
+        """
+        This function ...
+        :param flatten:
+        :param framelist::
+        :return:
+        """
+
+        return self.get_maps_sub_name(self.maps_attenuation_name, flatten=flatten, framelist=framelist)
 
     # -----------------------------------------------------------------
 
@@ -1411,7 +1455,7 @@ class MapsComponent(GalaxyModelingComponent):
         """
 
         # Inform the user
-        log.info("Writing the maps ...")
+        log.info("Writing the map origins ...")
 
         # Loop over the methods
         for method in self.origins:

@@ -36,4 +36,9 @@ definition.add_optional("manual_initial_generation_method", "string", "method fo
 # Scale
 definition.add_optional("default_scale", "string", "default parameter scale (also for generating the initial generation manually)", default=default_scale, choices=scales)
 
+# Check recurrence
+definition.add_flag("check_recurrence", "check for recurrence of models that have been simulated previously", True)
+definition.add_optional("recurrence_rtol", "positive_real", "relative tolerance for recurrence checking", 1e-5)
+definition.add_optional("recurrence_atol", "positive_real", "absolute tolerance for recurrence checking", 1e-8)
+
 # -----------------------------------------------------------------

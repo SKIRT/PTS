@@ -560,7 +560,7 @@ class FilterBasedList(KeyList):
             return new
 
         # Tuple 'list[a,b,c]'
-        elif isinstance(index_or_filter, tuple):
+        elif isinstance(index_or_filter, tuple) or isinstance(index_or_filter, list):
 
             # Initialize new
             new = self.__class__()

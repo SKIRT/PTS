@@ -156,8 +156,13 @@ class DustMapMaker(MapsComponent):
         # Create the Attenuation dust map maker
         maker = AttenuationDustMapsMaker()
 
+        # Get input
+        attenuation_maps = self.get_attenuation_maps(flatten=True)
+        attenuation_origins = self.get_attenuation_origins(flatten=True)
+        current = self.get_current_maps_method("attenuation")
+
         # Run the maker
-        maker.run()
+        maker.run(attenuation=attenuation_maps, attenuation_origins=attenuation_origins, maps=current)
 
         # Add the dust maps to the dictionary
         self.maps["attenuation"] = maker.maps
@@ -178,21 +183,34 @@ class DustMapMaker(MapsComponent):
         log.info("Making a map of the hot dust ...")
 
         # Get MIPS 24 micron frame and error map
-        mips24 = self.dataset.get_frame("MIPS 24mu")  # in original MJy/sr units
-        mips24_errors = self.dataset.get_errormap("MIPS 24mu")  # in original MJy/sr units
+        #mips24 = self.dataset.get_frame("MIPS 24mu")  # in original MJy/sr units
+        #mips24_errors = self.dataset.get_errormap("MIPS 24mu")  # in original MJy/sr units
+        mips24 = self.get_frame("MIPS 24mu")
 
         # Get the map of old stars
-        old = self.get_old_stellar_disk_map(self.i1_filter)
+        #old = self.get_old_stellar_disk_map(self.i1_filter)
+
+        # Get maps of old stars
+        old = self.get_old_maps(flatten=True)
+        old_origins = self.get_old_origins(flatten=True)
 
         # Create the hot dust map maker
         maker = HotDustMapsMaker()
 
+        #print(self.config.hot_factor_range)
+        #print(self.config.hot_factor_range._min)
+        #print(self.config.hot_factor_range._max)
+
         # Set the factors
         # from 0.2 to 0.7
-        factors = self.config.factor_range.linear(self.config.factor_nvalues, as_list=True)
+        factors = self.config.hot_factor_range.linear(self.config.factor_nvalues, as_list=True)
+
+        # Get already created maps
+        current = self.get_current_maps_method("hot")
 
         # Run the maker
-        maker.run(mips24=mips24, mips24_errors=mips24_errors, old=old, factors=factors)
+        #maker.run(mips24=mips24, mips24_errors=mips24_errors, old=old, factors=factors)
+        maker.run(mips24=mips24, old=old, old_origins=old_origins, factors=factors, maps=current)
 
         # Add the dust maps
         self.maps["hot"] = maker.maps
@@ -211,6 +229,8 @@ class DustMapMaker(MapsComponent):
 
         # Inform the user
         log.info("Writing ...")
+
+        print(self.maps)
 
         # Write the maps
         self.write_maps()

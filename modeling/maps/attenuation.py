@@ -95,8 +95,11 @@ class AttenuationMapMaker(MapsComponent):
         tirs_origins = self.get_tir_origins(flatten=True)
         ssfrs_origins = self.get_ssfr_origins(flatten=True)
 
+        # Get current maps
+        current = self.get_current_maps_method("cortese")
+
         # Run the map maker
-        maker.run(fuv=fuv, tirs=tirs, ssfrs=ssfrs, tirs_origins=tirs_origins, ssfrs_origins=ssfrs_origins)
+        maker.run(fuv=fuv, tirs=tirs, ssfrs=ssfrs, tirs_origins=tirs_origins, ssfrs_origins=ssfrs_origins, maps=current)
 
         # Set the maps
         self.maps["cortese"] = maker.maps
@@ -122,11 +125,14 @@ class AttenuationMapMaker(MapsComponent):
         # Get the input
         fuv = self.get_frame_for_filter(self.fuv_filter)
         nuv = self.get_frame_for_filter(self.nuv_filter)
-        tirs = self.get_tir_maps()
-        tirs_origins = self.get_tir_origins()
+        tirs = self.get_tir_maps(flatten=True)
+        tirs_origins = self.get_tir_origins(flatten=True)
+
+        # Get current maps
+        current = self.get_current_maps_method("buat")
 
         # Run the map maker
-        maker.run(fuv=fuv, nuv=nuv, tirs=tirs, tirs_origins=tirs_origins, distance=self.galaxy_distance)
+        maker.run(fuv=fuv, nuv=nuv, tirs=tirs, tirs_origins=tirs_origins, maps=current)
 
         # Set the maps
         self.maps["buat"] = maker.maps

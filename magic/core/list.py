@@ -1446,6 +1446,18 @@ class FrameList(FilterBasedList):
     # -----------------------------------------------------------------
 
     @property
+    def wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return check_wcs(*self.values)
+
+    # -----------------------------------------------------------------
+
+    @property
     def pixelscale(self):
 
         """
@@ -1791,6 +1803,18 @@ class NamedFrameList(NamedList):
 
         unit, wcs, pixelscale, psf_filter, fwhm, distance = check_uniformity(*self.values)
         return unit, wcs, pixelscale, psf_filter, fwhm, distance
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return check_wcs(*self.values)
 
     # -----------------------------------------------------------------
 
