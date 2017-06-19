@@ -20,6 +20,10 @@ from ...magic.maps.attenuation.buat import BuatAttenuationMapsMaker
 
 # -----------------------------------------------------------------
 
+methods = ["cortese", "buat"]
+
+# -----------------------------------------------------------------
+
 class AttenuationMapMaker(MapsComponent):
 
     """

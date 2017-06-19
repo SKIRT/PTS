@@ -41,7 +41,7 @@ single_commands["inspect_preparation"] = galaxy_modeling
 single_commands["decompose"] = galaxy_modeling
 single_commands["truncate"] = galaxy_modeling
 single_commands["photometry"] = galaxy_modeling
-single_commands["make_colour_maps"] = galaxy_modeling
+single_commands["make_colours_maps"] = galaxy_modeling
 single_commands["make_ssfr_maps"] = galaxy_modeling
 single_commands["make_tir_maps"] = galaxy_modeling
 single_commands["make_attenuation_maps"] = galaxy_modeling
@@ -103,7 +103,7 @@ def output_paths_for_single_command(environment, command_name):
     elif command_name == "photometry": return [environment.phot_path]
 
     # Make colour maps
-    elif command_name == "make_colour_maps": return [environment.maps_colours_path]
+    elif command_name == "make_colours_maps": return [environment.maps_colours_path]
 
     # sSFR MAPS
     elif command_name == "make_ssfr_maps": return [environment.maps_ssfr_path]
@@ -200,7 +200,7 @@ def cached_directory_name_for_single_command(environment, command_name):
     elif command_name == "photometry": return None
 
     # Make colour maps
-    elif command_name == "make_colour_maps": return None
+    elif command_name == "make_colours_maps": return None
 
     # sSFR MAPS
     elif command_name == "make_ssfr_maps": return None

@@ -17,6 +17,7 @@ from ....core.tools.logging import log
 from ....core.basics.configurable import Configurable
 from ....core.filter.filter import parse_filter
 from ....core.tools import sequences
+from ...core.frame import Frame
 
 # -----------------------------------------------------------------
 
@@ -202,7 +203,15 @@ class YoungStellarMapsMaker(Configurable):
 
             # Calculate the transparent FUV flux
             exponent = attenuation / 2.5
-            transparent = self.fuv * 10**exponent
+            transparent = Frame(self.fuv * 10**exponent.data)
+
+            # Set properties
+            transparent.unit = self.fuv.unit
+            transparent.wcs = self.fuv.wcs
+            transparent.pixelscale = self.fuv.pixelscale
+            transparent.distance = self.fuv.distance
+            transparent.psf_filter = self.fuv.psf_filter
+            transparent.fwhm = self.fuv.fwhm
 
             # Set the corrected map
             self.transparent[name] = transparent

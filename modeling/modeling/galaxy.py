@@ -28,7 +28,7 @@ from ..maps.old import OldStellarMapMaker
 from ..maps.young import YoungStellarMapMaker
 from ..maps.ionizing import IonizingStellarMapMaker
 from ..maps.dust import DustMapMaker
-from ..maps.colour import ColourMapMaker
+from ..maps.colour import ColoursMapMaker
 from ..maps.attenuation import AttenuationMapMaker
 from ..maps.tir import TIRMapMaker
 from ..fitting.configuration import FittingConfigurer
@@ -827,7 +827,7 @@ class GalaxyModeler(ModelerBase):
         log.info("Making the maps describing the model geometries ...")
 
         # Create colour maps
-        if not self.history.finished("make_colour_maps"): self.make_colour_maps()
+        if not self.history.finished("make_colours_maps"): self.make_colour_maps()
 
         # Create sSFR maps
         if not self.history.finished("make_ssfr_maps"): self.make_ssfr_maps()
@@ -866,7 +866,7 @@ class GalaxyModeler(ModelerBase):
         log.info("Making the colour maps ...")
 
         # Create the colour maps
-        maker = ColourMapMaker()
+        maker = ColoursMapMaker()
 
         # Set the working directory
         maker.config.path = self.modeling_path

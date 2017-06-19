@@ -26,7 +26,7 @@ decomposition_residuals | -- | decomposition.residuals.DecompositionResidualsCal
 truncate | -- | truncation.truncation.Truncator | interactive | Determine the truncation region
 
 # MAPS
-make_colour_maps | -- | maps.colour.ColourMapMaker | arguments | Make colour maps
+make_colours_maps | -- | maps.colour.ColoursMapMaker | arguments | Make colour maps
 make_ssfr_maps | -- | maps.ssfr.SSFRMapMaker | arguments | Make sSFR maps
 make_tir_maps | -- | maps.tir.TIRMapMaker | arguments | Make TIR map
 make_attenuation_maps | -- | maps.attenuation.AttenuationMapMaker | arguments | Make attenuation maps

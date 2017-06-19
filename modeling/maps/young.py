@@ -22,6 +22,10 @@ from ...magic.maps.youngstars.young import YoungStellarMapsMaker
 
 # -----------------------------------------------------------------
 
+methods = None
+
+# -----------------------------------------------------------------
+
 class YoungStellarMapMaker(MapsComponent):
 
     """
@@ -148,10 +152,10 @@ class YoungStellarMapMaker(MapsComponent):
         log.info("Loading the maps of the FUV attenuation ...")
 
         # Get the FUV attenuation maps
-        self.fuv_attenuations = self.get_fuv_attenuation_maps()
+        self.fuv_attenuations = self.get_fuv_attenuation_maps(flatten=True)
 
         # Get the FUV attenuation maps origins
-        self.fuv_attenuations_origins = self.get_fuv_attenuation_origins()
+        self.fuv_attenuations_origins = self.get_fuv_attenuation_origins(flatten=True)
 
     # -----------------------------------------------------------------
 

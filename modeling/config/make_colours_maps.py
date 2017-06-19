@@ -7,7 +7,7 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.modeling.maps.colour.colour import colour_strings
+from pts.modeling.maps.colour import colour_strings
 
 # -----------------------------------------------------------------
 

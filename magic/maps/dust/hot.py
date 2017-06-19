@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ....core.tools.logging import log
 from ....core.basics.configurable import Configurable
 from ...core.list import NamedFrameList
+from ....core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -240,11 +241,13 @@ class HotDustMapsMaker(Configurable):
                 # Set origin
                 if self.has_origins:
 
-                    # Get old origin
-                    old_origin = self.old_origins[old_name]
+                    origins = [self.mips24.filter]
+
+                    # Add old origins
+                    sequences.extend_unique(origins, self.old_origins[old_name])
 
                     # Add the origins
-                    self.origins[name] = [self.mips24.filter, old_origin]
+                    self.origins[name] = origins
 
                 # Check whether a map is already present
                 if name in self.maps:

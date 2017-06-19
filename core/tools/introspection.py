@@ -2264,6 +2264,32 @@ def try_importing_module(path, in_globals=False):
 
 # -----------------------------------------------------------------
 
+def try_importing_variable(path, variable_name, in_globals=False):
+
+    """
+    This function ...
+    :param path:
+    :param variable_name:
+    :param in_globals:
+    :return:
+    """
+
+    #print("module path", path)
+
+    # Import the module
+    module = try_importing_module(path)
+
+    # Get the variable
+    variable = getattr(module, variable_name)
+
+    # Add the class to the globals
+    if in_globals: globals()[variable_name] = variable
+
+    # Return the variable
+    return variable
+
+# -----------------------------------------------------------------
+
 def try_importing_class(name, path, in_globals=False):
 
     """

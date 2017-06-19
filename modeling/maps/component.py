@@ -32,6 +32,8 @@ from ...core.tools import sequences
 from ...core.basics.configuration import prompt_proceed
 from ...core.tools.stringify import tostr
 from ..core.environment import colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name
+from ...core.launch.pts import find_match
+from ...core.tools import introspection
 
 # -----------------------------------------------------------------
 
@@ -39,7 +41,7 @@ origins_filename = "origins.txt"
 
 # -----------------------------------------------------------------
 
-maps_commands = ["make_colour_maps", "make_ssfr_maps", "make_tir_maps", "make_attenuation_maps", "make_old_stars_map", "make_dust_map", "make_young_stars_map", "make_ionizing_stars_map"]
+maps_commands = ["make_colours_maps", "make_ssfr_maps", "make_tir_maps", "make_attenuation_maps", "make_old_stars_map", "make_dust_map", "make_young_stars_map", "make_ionizing_stars_map"]
 
 # -----------------------------------------------------------------
 
@@ -179,13 +181,43 @@ class MapsComponent(GalaxyModelingComponent):
                 self.remove_output_and_history_after_and_including(command_name)
 
             # If the directory is empty
-            if fs.is_empty(path):
+            elif fs.is_empty(path):
 
                 # Warning
                 log.error("The '" + name + "' directory from the '" + command_name + "' output is empty")
 
                 # Remove
                 self.remove_output_and_history_after_and_including(command_name)
+
+            # Directory present and not empty, loop over the methods
+            else:
+
+                methods = self.methods_for_sub_name(name)
+                if methods is None: continue
+                for method in methods:
+
+                    # Determine the path
+                    method_path = fs.join(path, method)
+
+                    #print(method_path)
+
+                    # NO: WE DON'T DO ALL METHODS (E.G. DUST->BLACK-BODY)
+                    # Check if the path if present
+                    #if not fs.is_directory(method_path):
+                        # Warning
+                        #log.error("The '" + name + "/" + method + "' directory does not exist from the '" + command_name + "' output")
+                        # Remove
+                        #self.remove_output_and_history_after_and_including(command_name)
+
+                    # If the directory is empty
+                    #elif fs.is_empty(method_path):
+                    if fs.is_directory(method_path) and fs.is_empty(method_path):
+
+                        # Warning
+                        log.error("The '" + name + "/" + method + "' directory from the '" + command_name + "' output is empty")
+
+                        # Remove
+                        self.remove_output_and_history_after_and_including(command_name)
 
     # -----------------------------------------------------------------
 
@@ -254,7 +286,7 @@ class MapsComponent(GalaxyModelingComponent):
         :return:
         """
 
-        if command == "make_colour_maps": return self.maps_colours_name
+        if command == "make_colours_maps": return self.maps_colours_name
         elif command == "make_ssfr_maps": return self.maps_ssfr_name
         elif command == "make_tir_maps": return self.maps_tir_name
         elif command == "make_attenuation_maps": return self.maps_attenuation_name
@@ -274,7 +306,7 @@ class MapsComponent(GalaxyModelingComponent):
         :return:
         """
 
-        if name == self.maps_colours_name: return "make_colour_maps"
+        if name == self.maps_colours_name: return "make_colours_maps"
         elif name == self.maps_ssfr_name: return "make_ssfr_maps"
         elif name == self.maps_tir_name: return "make_tir_maps"
         elif name == self.maps_attenuation_name: return "make_attenuation_maps"
@@ -296,6 +328,50 @@ class MapsComponent(GalaxyModelingComponent):
 
         name = fs.relative_to(path, self.maps_path).split("/")[0]
         return self.command_for_sub_name(name)
+
+    # -----------------------------------------------------------------
+
+    def class_for_sub_name(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get the command
+        command = self.command_for_sub_name(name)
+
+        # Resolve the PTS command
+        subproject, command_name, description, class_name, class_module_path, configuration_module_path, configuration_method = find_match(command)
+
+        # Return the class
+        cls = introspection.get_class(class_module_path, class_name)
+
+        # Return the class
+        return cls
+
+    # -----------------------------------------------------------------
+
+    def methods_for_sub_name(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get the command
+        command = self.command_for_sub_name(name)
+
+        # Resolve the PTS command
+        subproject, command_name, description, class_name, class_module_path, configuration_module_path, configuration_method = find_match(command)
+
+        # Try to get the methods
+        methods = introspection.try_importing_variable(class_module_path, "methods")
+
+        # Return the methods
+        return methods
 
     # -----------------------------------------------------------------
 
@@ -1102,20 +1178,30 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_fuv_attenuation_origins(self):
+    def get_fuv_attenuation_origins(self, flatten=False):
 
         """
         This function ...
+        :param flatten:
         :return: 
         """
 
         cortese = self.get_cortese_fuv_attenuation_origins()
         buat = self.get_buat_fuv_attenuation_origins()
 
-        origins = dict()
-        for name in cortese: origins["cortese_" + name] = cortese[name]
-        for name in buat: origins["cortese_" + name] = buat[name]
-        return origins
+        if flatten:
+
+            origins = dict()
+            for name in cortese: origins["cortese_" + name] = cortese[name]
+            for name in buat: origins["cortese_" + name] = buat[name]
+            return origins
+
+        else:
+
+            origins = dict()
+            origins["cortese"] = cortese
+            origins["buat"] = buat
+            return origins
 
     # -----------------------------------------------------------------
 
@@ -1169,6 +1255,33 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_old_stellar_bulge_map(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        if types.is_string_type(fltr): fltr = parse_filter(fltr)
+
+        path = fs.join(self.maps_old_path, "bulge", tostr(fltr, delimiter="_") + ".fits")
+        return Frame.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    def get_old_stellar_bulge_maps(self, framelist=False):
+
+        """
+        This function ...
+        :param framelist:
+        :return:
+        """
+
+        return self.get_maps_sub_name(self.maps_old_name, )
+
+    # -----------------------------------------------------------------
+
     def get_old_stellar_disk_map(self, fltr):
 
         """
@@ -1179,7 +1292,7 @@ class MapsComponent(GalaxyModelingComponent):
 
         if types.is_string_type(fltr): fltr = parse_filter(fltr)
 
-        path = fs.join(self.maps_old_path, "disk", str(fltr) + ".fits")
+        path = fs.join(self.maps_old_path, "disk", tostr(fltr, delimiter="_") + ".fits")
         return Frame.from_file(path)
 
     # -----------------------------------------------------------------
@@ -1699,7 +1812,7 @@ def sub_name_for_command(command):
     :return:
     """
 
-    if command == "make_colour_maps": return colours_name
+    if command == "make_colours_maps": return colours_name
     elif command == "make_ssfr_maps": return ssfr_name
     elif command == "make_tir_maps": return tir_name
     elif command == "make_attenuation_maps": return attenuation_name
@@ -1719,7 +1832,7 @@ def command_for_sub_name(name):
     :return:
     """
 
-    if name == colours_name: return "make_colour_maps"
+    if name == colours_name: return "make_colours_maps"
     elif name == ssfr_name: return "make_ssfr_maps"
     elif name == tir_name: return "make_tir_maps"
     elif name == attenuation_name: return "make_attenuation_maps"

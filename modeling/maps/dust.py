@@ -22,6 +22,10 @@ from ...magic.maps.dust.hot import HotDustMapsMaker
 
 # -----------------------------------------------------------------
 
+methods = ["black-body", "emission", "attenuation", "hot"]
+
+# -----------------------------------------------------------------
+
 class DustMapMaker(MapsComponent):
 
     """

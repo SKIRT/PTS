@@ -22,6 +22,10 @@ from ...magic.core.list import FrameList
 
 # -----------------------------------------------------------------
 
+methods = ["disk", "bulge", "total"]
+
+# -----------------------------------------------------------------
+
 class OldStellarMapMaker(MapsComponent):
 
     """

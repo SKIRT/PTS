@@ -19,6 +19,10 @@ from ...magic.maps.ssfr.colours import ColoursSSFRMapsMaker, ssfr_colours
 
 # -----------------------------------------------------------------
 
+methods = None
+
+# -----------------------------------------------------------------
+
 class SSFRMapMaker(MapsComponent):
 
     """

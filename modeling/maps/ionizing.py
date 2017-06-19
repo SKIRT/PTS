@@ -20,6 +20,10 @@ from ...core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
+methods = None
+
+# -----------------------------------------------------------------
+
 class IonizingStellarMapMaker(MapsComponent):
 
     """
