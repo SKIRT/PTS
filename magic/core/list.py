@@ -907,6 +907,19 @@ class FrameList(FilterBasedList):
 
     # -----------------------------------------------------------------
 
+    def append_from_file(self, path, fltr=None):
+
+        """
+        This function ...
+        :param path:
+        :param fltr:
+        :return:
+        """
+
+        self.append(Frame.from_file(path), fltr=fltr)
+
+    # -----------------------------------------------------------------
+
     @property
     def min_fwhm(self):
 

@@ -168,6 +168,7 @@ class ColourMapsMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
     def single_map(self):
 
         """

@@ -9,6 +9,12 @@
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.remote.host import find_host_ids
 from pts.magic.config.find_sources import definition as sources_definition
+from pts.core.tools import filesystem as fs
+from pts.modeling.component.component import get_cache_host_id
+
+# -----------------------------------------------------------------
+
+modeling_path = fs.cwd()
 
 # -----------------------------------------------------------------
 
@@ -34,5 +40,10 @@ definition.add_optional("catalogs", "string_list", "catalogs for point sources",
 definition.add_flag("catalog_overlapping", "only fetch catalog data in the area where all images are overlapping", True)
 
 definition.add_flag("manual", "don't find sources, but mark them from the catalog, and let the selection be done manually", False)
+
+# Cache
+cache_host_id = get_cache_host_id(modeling_path)
+if cache_host_id is not None: definition.add_flag("cache", "cache image data for which the initialized image has been created", False)
+else: definition.add_fixed("cache", "caching not possible since cache host id not defined", False)
 
 # -----------------------------------------------------------------

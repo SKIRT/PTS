@@ -36,6 +36,10 @@ from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
+# TODO: cache the data when initialized
+
+# -----------------------------------------------------------------
+
 class PreparationInitializer(PreparationComponent):
     
     """

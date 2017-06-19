@@ -40,11 +40,10 @@ def make_map(*args, **kwargs):
     frames = FrameList(*args)
     errors = kwargs.pop("errors", None)
     if errors is not None: errors = FrameList(*errors)
-    distance = kwargs.pop("distance")
     lengths = [len(args)]
 
     # Run the maker
-    maker.run(frames=frames, errors=errors, lengths=lengths, distance=distance)
+    maker.run(frames=frames, errors=errors, lengths=lengths)
 
     # Return the single map
     return maker.single_map
@@ -67,10 +66,9 @@ def make_maps(*args, **kwargs):
     frames = FrameList(*args)
     errors = kwargs.pop("errors", None)
     if errors is not None: errors = FrameList(**errors)
-    distance = kwargs.pop("distance")
 
     # Run the maker
-    maker.run(frames=frames, errors=errors, distance=distance)
+    maker.run(frames=frames, errors=errors)
 
     # Return the maps
     return maker.maps

@@ -18,6 +18,7 @@ import numpy as np
 # Import astronomical modules
 from astropy.table import Table
 from astroquery.vizier import Vizier
+from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
 from ...core.tools import introspection
@@ -102,6 +103,19 @@ properties_table_path = fs.join(dustpedia_data_path, "DustPedia_HyperLEDA_Hersch
 
 # -----------------------------------------------------------------
 
+def get_center(galaxy_name):
+
+    """
+    This function ...
+    :param galaxy_name:
+    :return:
+    """
+
+    sample = DustPediaSample()
+    return sample.get_position(galaxy_name)
+
+# -----------------------------------------------------------------
+
 def get_distance(galaxy_name):
 
     """
@@ -120,6 +134,27 @@ def get_distance(galaxy_name):
 
     # Return the distance
     return properties["dist_best"][index] * u("Mpc")
+
+# -----------------------------------------------------------------
+
+def get_inclination(galaxy_name):
+
+    """
+    This function ...
+    :param galaxy_name:
+    :return:
+    """
+
+    name = resolve_name(galaxy_name)
+
+    # Load the table
+    properties = Table.read(properties_table_path)
+
+    # Find galaxy
+    index = tables.find_index(properties, name)
+
+    # Return the inclination
+    return Angle(properties["incl"][index], "deg")
 
 # -----------------------------------------------------------------
 

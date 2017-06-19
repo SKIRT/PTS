@@ -351,6 +351,9 @@ class AnianoKernels(Kernels):
         :return:
         """
 
+        # Parse filter
+        if types.is_string_type(fltr): fltr = parse_filter(fltr)
+
         # Get the local path to the PSF file (will be downloaded if necessary)
         psf_path, psf_name = self.get_psf_path(fltr, return_name=True)
 

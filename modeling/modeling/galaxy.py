@@ -551,6 +551,9 @@ class GalaxyModeler(ModelerBase):
         config["sources"]["nprocesses"] = self.config.nprocesses
         config["manual"] = self.config.sources_manual
 
+        # CACHE DATA/IMAGES
+        config["cache"] = self.config.cache
+
         # Create the initializer
         initializer = PreparationInitializer(config)
 
