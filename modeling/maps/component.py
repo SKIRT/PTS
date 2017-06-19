@@ -1165,8 +1165,8 @@ class MapsComponent(GalaxyModelingComponent):
         if flatten:
 
             maps = dict()
-            for name in cortese: maps["cortese_" + name] = cortese[name]
-            for name in buat: maps["buat_" + name] = buat[name]
+            for name in cortese: maps["cortese__" + name] = cortese[name]
+            for name in buat: maps["buat__" + name] = buat[name]
             return maps
 
         else:
@@ -1192,8 +1192,8 @@ class MapsComponent(GalaxyModelingComponent):
         if flatten:
 
             origins = dict()
-            for name in cortese: origins["cortese_" + name] = cortese[name]
-            for name in buat: origins["cortese_" + name] = buat[name]
+            for name in cortese: origins["cortese__" + name] = cortese[name]
+            for name in buat: origins["buat__" + name] = buat[name]
             return origins
 
         else:
@@ -1202,6 +1202,46 @@ class MapsComponent(GalaxyModelingComponent):
             origins["cortese"] = cortese
             origins["buat"] = buat
             return origins
+
+    # -----------------------------------------------------------------
+
+    def get_fuv_attenuation_maps_and_origins(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        maps = self.get_fuv_attenuation_maps(flatten=flatten)
+        origins = self.get_fuv_attenuation_origins(flatten=flatten)
+
+        # Check
+        if not sequences.same_contents(maps.keys(), origins.keys()):
+
+            log.error("Mismatch between FUV attenuation maps and their origins:")
+            #raise ValueError("Mismatch between FUV attenuation maps names and their origins")
+
+            sorted_keys_maps = sorted(maps.keys())
+            sorted_keys_origins = sorted(origins.keys())
+
+            if len(sorted_keys_maps) != len(sorted_keys_origins): log.error("Number of maps: " + str(len(sorted_keys_maps)) + " vs Number of origins: " + str(len(sorted_keys_origins)))
+
+            indices = sequences.find_differences(sorted_keys_maps, sorted_keys_origins)
+
+            log.error("Number of mismatches: " + str(len(indices)))
+
+            #for index in indices: log.error(" - " + sorted_keys_maps[index] + " vs " + sorted_keys_origins[index])
+
+            for index in range(min(len(sorted_keys_maps), len(sorted_keys_origins))):
+
+                if sorted_keys_maps[index] == sorted_keys_origins[index]: log.success(" - " + sorted_keys_maps[index] + " = " + sorted_keys_origins[index])
+                else: log.error(" - " + sorted_keys_maps[index] + " != " + sorted_keys_origins[index])
+
+        #exit()
+
+        # Return
+        return maps, origins
 
     # -----------------------------------------------------------------
 
@@ -1238,7 +1278,34 @@ class MapsComponent(GalaxyModelingComponent):
 
         buat_path = fs.join(self.maps_attenuation_path, "buat")
         table_path = fs.join(buat_path, origins_filename)
-        return load_dict(table_path)
+        origins = load_dict(table_path)
+
+        # ONLY KEEP FUV
+        for name in list(origins.keys()):
+            if not name.startswith("FUV"): del origins[name]
+
+        # Return
+        return origins
+
+    # -----------------------------------------------------------------
+
+    def get_buat_nuv_attenuation_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        buat_path = fs.join(self.maps_attenuation_path, "buat")
+        table_path = fs.join(buat_path, origins_filename)
+        origins = load_dict(table_path)
+
+        # ONLY KEEP NUV
+        for name in list(origins.keys()):
+            if not name.startswith("NUV"): del origins[name]
+
+        # Return
+        return origins
 
     # -----------------------------------------------------------------
 

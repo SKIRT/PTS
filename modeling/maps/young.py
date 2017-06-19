@@ -15,10 +15,8 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from .component import MapsComponent
-from ...core.tools import filesystem as fs
-from ...core.plot.distribution import DistributionPlotter
-from ...magic.core.image import Image
 from ...magic.maps.youngstars.young import YoungStellarMapsMaker
+from ...core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -152,10 +150,7 @@ class YoungStellarMapMaker(MapsComponent):
         log.info("Loading the maps of the FUV attenuation ...")
 
         # Get the FUV attenuation maps
-        self.fuv_attenuations = self.get_fuv_attenuation_maps(flatten=True)
-
-        # Get the FUV attenuation maps origins
-        self.fuv_attenuations_origins = self.get_fuv_attenuation_origins(flatten=True)
+        self.fuv_attenuations, self.fuv_attenuations_origins = self.get_fuv_attenuation_maps_and_origins(flatten=True)
 
     # -----------------------------------------------------------------
 

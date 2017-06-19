@@ -1522,6 +1522,8 @@ def get_modules(import_statement, script_path, return_unresolved=False, debug=Fa
     :return:
     """
 
+    #print("IMPORT STATEMENT", import_statement)
+
     unresolved = []
 
     multiple = None
@@ -1618,6 +1620,7 @@ def get_modules(import_statement, script_path, return_unresolved=False, debug=Fa
                     else:
                         if name == "*": name = None
                         if name == "__version__": name = None
+                        #print(module_path)
                         which[module_path].add(name)
                 else: unresolved.append((subpackage_path, name))
 

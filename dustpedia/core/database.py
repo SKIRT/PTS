@@ -1207,7 +1207,7 @@ class DustPediaDatabase(object):
         log.info("Downloading the photometry cutouts for galaxy '" + galaxy_name + "' ...")
 
         url = self.get_photometry_cutouts_url(galaxy_name)
-        network.download_file(url, dir_path, session=self.session, progress_bar=log.is_debug())
+        return network.download_file(url, dir_path, session=self.session, progress_bar=log.is_debug())
 
     # -----------------------------------------------------------------
 

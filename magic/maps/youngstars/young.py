@@ -90,7 +90,7 @@ class YoungStellarMapsMaker(Configurable):
 
         # The input FUV and FUV error maps
         self.fuv = None
-        self.fuv_errors = None
+        #self.fuv_errors = None
 
         # Other input
         self.old = None
@@ -141,13 +141,16 @@ class YoungStellarMapsMaker(Configurable):
 
         # Get input
         self.fuv = kwargs.pop("fuv")
-        self.fuv_errors = kwargs.pop("fuv_errors", None)
+        #self.fuv_errors = kwargs.pop("fuv_errors", None)
         self.old = kwargs.pop("old")
         self.fuv_attenuations = kwargs.pop("fuv_attenuations")
 
         # Get origins
         self.old_origin = kwargs.pop("old_origin", None)
         self.fuv_attenuations_origins = kwargs.pop("fuv_attenuations_origins", None)
+
+        # Get already calculated maps
+        self.maps = kwargs.pop("maps", dict())
 
         # Set factors
         self.factors = kwargs.pop("factors")
@@ -242,15 +245,25 @@ class YoungStellarMapsMaker(Configurable):
             # Get the transparent map
             transparent = self.transparent[name]
 
-            # Uniformize the transparent FUV map and the old stellar disk map: NO SHOULD BE DONE IN THE MAKE_CORRECTED_FUV_MAP function
-            #frames = NamedFrameList(transparent=transparent, old=normalized_old)
-            #frames.convolve_and_rebin()
-
             # Loop over the different factors
             for factor in self.factors:
 
                 # Determine name
                 key = name + "_" + repr(factor)
+
+                # Set the origins
+                if self.has_origins:
+
+                    # Set the origins
+                    origins = self.fuv_attenuations_origins[name]
+                    sequences.append_unique(origins, parse_filter("FUV"))
+                    sequences.append_unique(origins, self.old_origin)
+                    self.origins[key] = origins
+
+                # Check whether a map is already present
+                if key in self.maps:
+                    log.warning("The " + key + " young stars map is already created: not creating it again")
+                    continue
 
                 # Calculate the non ionizing young stars map from the FUV data
                 young_stars = make_corrected_fuv_map(transparent, normalized_old, factor)
@@ -261,15 +274,6 @@ class YoungStellarMapsMaker(Configurable):
 
                 # Add the attenuation map to the dictionary
                 self.maps[key] = young_stars
-
-                # Set the origins
-                if self.has_origins:
-
-                    # Set the origins
-                    origins = self.fuv_attenuations_origins[name]
-                    sequences.append_unique(origins, parse_filter("FUV"))
-                    sequences.append_unique(origins, self.old_origin)
-                    self.origins[key] = origins
 
     # -----------------------------------------------------------------
 

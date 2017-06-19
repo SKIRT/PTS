@@ -847,16 +847,17 @@ class FrameList(FilterBasedList):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_directory(cls, path):
+    def from_directory(cls, path, recursive=False):
 
         """
         This function ...
-        :param path: 
+        :param path:
+        :param recursive:
         :return: 
         """
 
         new = cls()
-        for path in fs.files_in_path(path, extension="fits"): new.append(Frame.from_file(path))
+        for path in fs.files_in_path(path, extension="fits", recursive=recursive): new.append(Frame.from_file(path))
         return new
 
     # -----------------------------------------------------------------

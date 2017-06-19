@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from .stringify import stringify_list_fancy, stringify, tostr
+from . import stringify
 from . import filesystem as fs
 from .logging import log
 from .sequences import equal_sizes, any_empty
@@ -193,7 +193,7 @@ def print_files_in_path(path):
     else:
         log.debug(str(len(in_path)) + " files in '" + path + "':")
         print("")
-        print(stringify_list_fancy(in_path, lines_prefix="  ")[1])
+        print(stringify.stringify_list_fancy(in_path, lines_prefix="  ")[1])
         print("")
 
 # -----------------------------------------------------------------
@@ -215,7 +215,7 @@ def print_files_in_list(lst, name, only_name=False):
         print("")
         if only_name: strings = [fs.name(path) for path in lst]
         else: strings = lst
-        print(stringify_list_fancy(strings, lines_prefix="  ")[1])
+        print(stringify.stringify_list_fancy(strings, lines_prefix="  ")[1])
         print("")
 
 # -----------------------------------------------------------------
@@ -234,7 +234,7 @@ def print_directories_in_path(path):
     else:
         log.debug(str(len(in_path)) + " directories in '" + path + "':")
         print("")
-        print(stringify_list_fancy(in_path, lines_prefix="  ")[1])
+        print(stringify.stringify_list_fancy(in_path, lines_prefix="  ")[1])
         print("")
 
 # -----------------------------------------------------------------
@@ -253,7 +253,7 @@ def print_directories_in_list(lst, name):
     else:
         log.debug(str(len(lst)) + " directories in '" + name +"':")
         print("")
-        print(stringify_list_fancy(lst, lines_prefix="  ")[1])
+        print(stringify.stringify_list_fancy(lst, lines_prefix="  ")[1])
         print("")
 
 # -----------------------------------------------------------------
@@ -267,7 +267,7 @@ def print_dictionary(dictionary):
     """
 
     print("")
-    for label in dictionary: print(" - " + label + ": " + stringify(dictionary[label])[1])
+    for label in dictionary: print(" - " + label + ": " + stringify.stringify(dictionary[label])[1])
     print("")
 
 # -----------------------------------------------------------------
@@ -359,7 +359,7 @@ def colored_sequence(sequence, colors, delimiter=",", background_colors=None):
         code = get_color_code(color)
         background_code = get_background_color_code(background_color)
 
-        part = background_code + code + tostr(item) + reset
+        part = background_code + code + stringify.tostr(item) + reset
         parts.append(part)
 
     # Return the color coded sequence string
@@ -389,7 +389,7 @@ def print_columns(*columns, **kwargs):
 
     for column in columns:
 
-        new_column = [tostr(entry) for entry in column]
+        new_column = [stringify.tostr(entry) for entry in column]
         lengths = [printed_length(string) for string in new_column]
 
         #print(new_column, max(lengths))

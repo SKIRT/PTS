@@ -83,6 +83,20 @@ filter_names = {"GALEX FUV": "GALEX_FUV",
 
 # -----------------------------------------------------------------
 
+def resolve_name(galaxy_name):
+
+    """
+    This function ...
+    :param galaxy_name:
+    :return:
+    """
+
+    sample = DustPediaSample()
+    name = sample.get_name(galaxy_name)
+    return name
+
+# -----------------------------------------------------------------
+
 class DustPediaSample(object):
 
     """
