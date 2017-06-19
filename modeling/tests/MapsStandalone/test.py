@@ -20,9 +20,11 @@ from pts.magic.maps.ionizingstars.ionizing import make_map as make_ionizing_stel
 from pts.magic.maps.dust.attenuation import make_map
 from pts.core.test.implementation import TestImplementation
 from pts.dustpedia.core.database import DustPediaDatabase, get_account
-from pts.dustpedia.core.sample import resolve_name
+from pts.dustpedia.core.sample import resolve_name, get_distance
 from pts.core.tools import introspection
 from pts.magic.core.list import FrameList
+from pts.core.tools import types
+from pts.core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
@@ -49,6 +51,9 @@ class MapsStandaloneTest(TestImplementation):
 
         # Call the constructor of the base class
         super(MapsStandaloneTest, self).__init__(*args, **kwargs)
+
+        # The galaxy distance
+        self.distance = None
 
         # The data path
         self.data_path = None
@@ -124,6 +129,9 @@ class MapsStandaloneTest(TestImplementation):
         username, password = get_account()
         self.database.login(username, password)
 
+        # Get the distance
+        self.distance = get_distance(self.config.galaxy)
+
     # -----------------------------------------------------------------
 
     @property
@@ -152,7 +160,7 @@ class MapsStandaloneTest(TestImplementation):
         galaxy_name = resolve_name(self.config.galaxy)
 
         # Download the images
-        self.database.download_images(galaxy_name, self.data_path, error_maps=False)
+        self.database.download_images(galaxy_name, self.data_path, error_maps=False, not_instruments=["DSS"])
 
     # -----------------------------------------------------------------
 
@@ -194,7 +202,23 @@ class MapsStandaloneTest(TestImplementation):
         log.info("Loading the frames ...")
 
         # Load as frame list
-        self.frames = FrameList.from_directory(self.data_path, recursive=True)
+        self.frames = FrameList.from_directory(self.data_path, recursive=True, not_contains="_DSS")
+
+        # Set the distance (to each frame)
+        self.frames.distance = self.distance
+
+    # -----------------------------------------------------------------
+
+    def get_frame(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        if types.is_string_type(fltr): fltr = parse_filter(fltr)
+        return self.frames[fltr]
 
     # -----------------------------------------------------------------
 
@@ -207,6 +231,11 @@ class MapsStandaloneTest(TestImplementation):
 
         # Inform the user
         log.info("Making colour maps ...")
+
+        # Make FUV-H
+        fuv_h = make_colour_map(self.get_frame("FUV"), self.get_frame("H"))
+
+        print(fuv_h)
 
     # -----------------------------------------------------------------
 

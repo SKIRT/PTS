@@ -40,6 +40,7 @@ subtypes["real"] = ["fraction", "positive_real", "negative_real"]
 subtypes["string"] = ["file_path"]
 subtypes["quantity"] = ["photometric_quantity", "photometric_density_quantity"]
 subtypes["unit"] = ["photometric_unit", "photometric_density_unit"]
+subtypes["filter"] = ["broad_band_filter", "narrow_band_filter"]
 
 related_types = []
 related_types.append(["integer", "positive_integer", "negative_integer", "even_integer", "even_positive_integer", "even_negative_integer", "odd_integer", "odd_positive_integer", "odd_negative_integer"])

@@ -847,17 +847,19 @@ class FrameList(FilterBasedList):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_directory(cls, path, recursive=False):
+    def from_directory(cls, path, recursive=False, contains=None, not_contains=None):
 
         """
         This function ...
         :param path:
         :param recursive:
+        :param contains:
+        :param not_contains:
         :return: 
         """
 
         new = cls()
-        for path in fs.files_in_path(path, extension="fits", recursive=recursive): new.append(Frame.from_file(path))
+        for path in fs.files_in_path(path, extension="fits", recursive=recursive, contains=contains, not_contains=not_contains): new.append(Frame.from_file(path))
         return new
 
     # -----------------------------------------------------------------
@@ -1458,6 +1460,19 @@ class FrameList(FilterBasedList):
 
     # -----------------------------------------------------------------
 
+    @wcs.setter
+    def wcs(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        for key in self.keys: self[key].wcs = value
+
+    # -----------------------------------------------------------------
+
     @property
     def pixelscale(self):
 
@@ -1467,6 +1482,18 @@ class FrameList(FilterBasedList):
         """
 
         return check_pixelscale(*self.values)
+
+    # -----------------------------------------------------------------
+
+    @pixelscale.setter
+    def pixelscale(self, value):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for key in self.keys: self[key].pixelscale = value
 
     # -----------------------------------------------------------------
 
@@ -1482,6 +1509,19 @@ class FrameList(FilterBasedList):
 
     # -----------------------------------------------------------------
 
+    @unit.setter
+    def unit(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        for key in self.keys: self[key].unit = value
+
+    # -----------------------------------------------------------------
+
     @property
     def psf_filter(self):
 
@@ -1491,6 +1531,19 @@ class FrameList(FilterBasedList):
         """
 
         return check_psf_filter(*self.values)
+
+    # -----------------------------------------------------------------
+
+    @psf_filter.setter
+    def psf_filter(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        for key in self.keys: self[key].psf_filter = value
 
     # -----------------------------------------------------------------
 
@@ -1506,6 +1559,19 @@ class FrameList(FilterBasedList):
 
     # -----------------------------------------------------------------
 
+    @fwhm.setter
+    def fwhm(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        for key in self.keys: self[key].fwhm = value
+
+    # -----------------------------------------------------------------
+
     @property
     def distance(self):
 
@@ -1515,6 +1581,19 @@ class FrameList(FilterBasedList):
         """
 
         return check_distance(*self.values)
+
+    # -----------------------------------------------------------------
+
+    @distance.setter
+    def distance(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        for key in self.keys: self[key].distance = value
 
 # -----------------------------------------------------------------
 

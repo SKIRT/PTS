@@ -25,6 +25,7 @@ from ...core.tools import filesystem as fs
 from ...magic.basics.coordinate import SkyCoordinate
 from ...magic.tools import catalogs
 from ...core.units.parsing import parse_unit as u
+from ...core.tools import tables
 
 # -----------------------------------------------------------------
 
@@ -94,6 +95,31 @@ def resolve_name(galaxy_name):
     sample = DustPediaSample()
     name = sample.get_name(galaxy_name)
     return name
+
+# -----------------------------------------------------------------
+
+properties_table_path = fs.join(dustpedia_data_path, "DustPedia_HyperLEDA_Herschel.csv")
+
+# -----------------------------------------------------------------
+
+def get_distance(galaxy_name):
+
+    """
+    This fucntion ...
+    :param galaxy_name:
+    :return:
+    """
+
+    name = resolve_name(galaxy_name)
+
+    # Load the table
+    properties = Table.read(properties_table_path)
+
+    # Find galaxy
+    index = tables.find_index(properties, name)
+
+    # Return the distance
+    return properties["dist_best"][index] * u("Mpc")
 
 # -----------------------------------------------------------------
 
