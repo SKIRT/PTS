@@ -41,7 +41,7 @@ origins_filename = "origins.txt"
 
 # -----------------------------------------------------------------
 
-maps_commands = ["make_colours_maps", "make_ssfr_maps", "make_tir_maps", "make_attenuation_maps", "make_old_stars_map", "make_dust_map", "make_young_stars_map", "make_ionizing_stars_map"]
+maps_commands = ["make_colours_maps", "make_ssfr_maps", "make_tir_maps", "make_attenuation_maps", "make_old_stellar_maps", "make_dust_map", "make_young_stellar_maps", "make_ionizing_stellar_maps"]
 
 # -----------------------------------------------------------------
 
@@ -290,9 +290,9 @@ class MapsComponent(GalaxyModelingComponent):
         elif command == "make_ssfr_maps": return self.maps_ssfr_name
         elif command == "make_tir_maps": return self.maps_tir_name
         elif command == "make_attenuation_maps": return self.maps_attenuation_name
-        elif command == "make_old_stars_map": return self.maps_old_name
-        elif command == "make_young_stars_map": return self.maps_young_name
-        elif command == "make_ionizing_stars_map": return self.maps_ionizing_name
+        elif command == "make_old_stellar_maps": return self.maps_old_name
+        elif command == "make_young_stellar_maps": return self.maps_young_name
+        elif command == "make_ionizing_stellar_maps": return self.maps_ionizing_name
         elif command == "make_dust_map": return self.maps_dust_name
         else: raise ValueError("Invalid commands: " + command)
 
@@ -310,9 +310,9 @@ class MapsComponent(GalaxyModelingComponent):
         elif name == self.maps_ssfr_name: return "make_ssfr_maps"
         elif name == self.maps_tir_name: return "make_tir_maps"
         elif name == self.maps_attenuation_name: return "make_attenuation_maps"
-        elif name == self.maps_old_name: return "make_old_stars_map"
-        elif name == self.maps_young_name: return "make_young_stars_map"
-        elif name == self.maps_ionizing_name: return "make_ionizing_stars_map"
+        elif name == self.maps_old_name: return "make_old_stellar_maps"
+        elif name == self.maps_young_name: return "make_young_stellar_maps"
+        elif name == self.maps_ionizing_name: return "make_ionizing_stellar_maps"
         elif name == self.maps_dust_name: return "make_dust_map"
         else: raise ValueError("Invalid sub name: " + name)
 
@@ -1883,9 +1883,9 @@ def sub_name_for_command(command):
     elif command == "make_ssfr_maps": return ssfr_name
     elif command == "make_tir_maps": return tir_name
     elif command == "make_attenuation_maps": return attenuation_name
-    elif command == "make_old_stars_map": return old_name
-    elif command == "make_young_stars_map": return young_name
-    elif command == "make_ionizing_stars_map": return ionizing_name
+    elif command == "make_old_stellar_maps": return old_name
+    elif command == "make_young_stellar_maps": return young_name
+    elif command == "make_ionizing_stellar_maps": return ionizing_name
     elif command == "make_dust_map": return dust_name
     else: raise ValueError("Invalid commands: " + command)
 
@@ -1903,9 +1903,9 @@ def command_for_sub_name(name):
     elif name == ssfr_name: return "make_ssfr_maps"
     elif name == tir_name: return "make_tir_maps"
     elif name == attenuation_name: return "make_attenuation_maps"
-    elif name == old_name: return "make_old_stars_map"
-    elif name == young_name: return "make_young_stars_map"
-    elif name == ionizing_name: return "make_ionizing_stars_map"
+    elif name == old_name: return "make_old_stellar_maps"
+    elif name == young_name: return "make_young_stellar_maps"
+    elif name == ionizing_name: return "make_ionizing_stellar_maps"
     elif name == dust_name: return "make_dust_map"
     else: raise ValueError("Invalid sub name: " + name)
 

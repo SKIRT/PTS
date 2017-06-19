@@ -842,16 +842,16 @@ class GalaxyModeler(ModelerBase):
         if not self.history.finished("make_attenuation_maps"): self.make_attenuation_maps()
 
         # Create the map of the old stellar disk
-        if not self.history.finished("make_old_stars_map"): self.make_old_stellar_maps()
+        if not self.history.finished("make_old_stellar_maps"): self.make_old_stellar_maps()
 
         # Create the dust map
         if not self.history.finished("make_dust_map"): self.make_dust_maps()
 
         # Create the map of the young stellar population
-        if not self.history.finished("make_young_stars_map"): self.make_young_stellar_maps()
+        if not self.history.finished("make_young_stellar_maps"): self.make_young_stellar_maps()
 
         # Create the map of the ionizing stellar population
-        if not self.history.finished("make_ionizing_stars_map"): self.make_ionizing_stellar_maps()
+        if not self.history.finished("make_ionizing_stellar_maps"): self.make_ionizing_stellar_maps()
 
         # Calculate the significance masks
         if not self.history.finished("create_significance_masks"): self.create_significance_masks()

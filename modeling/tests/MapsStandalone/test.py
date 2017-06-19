@@ -46,7 +46,7 @@ description = "testing the map making for a certain galaxy"
 
 # -----------------------------------------------------------------
 
-maps_commands = ["make_colours_maps", "make_ssfr_maps", "make_tir_maps", "make_attenuation_maps", "make_old_stars_map", "make_dust_map", "make_young_stars_map", "make_ionizing_stars_map"]
+maps_commands = ["make_colours_maps", "make_ssfr_maps", "make_tir_maps", "make_attenuation_maps", "make_old_stellar_maps", "make_dust_map", "make_young_stellar_maps", "make_ionizing_stellar_maps"]
 
 # -----------------------------------------------------------------
 
@@ -406,7 +406,7 @@ class MapsStandaloneTest(TestImplementation):
         log.info("Making TIR maps based on single bands ...")
 
         # Make TIR map
-        tir = make_tir_map_single(self.get_map("Pacs blue"))
+        tir = make_tir_map_single(self.get_frame("Pacs blue"))
 
         # Determine path
         path = fs.join(self.maps_path, tir_single_filename)
@@ -427,7 +427,7 @@ class MapsStandaloneTest(TestImplementation):
         log.info("Making TIR maps based on multiple bands ...")
 
         # Make TIR map
-        tir = make_tir_map_multi(self.get_map("MIPS 24mu"), self.get_map("Pacs blue"), self.get_map("Pacs red"))
+        tir = make_tir_map_multi(self.get_frame("MIPS 24mu"), self.get_frame("Pacs blue"), self.get_frame("Pacs red"))
 
         # Determine path
         path = fs.join(self.maps_path, tir_multi_filename)
@@ -541,13 +541,16 @@ class MapsStandaloneTest(TestImplementation):
 
         # Create a Sersic model for the bulge
         bulge_deprojection_method = "tilt"
-        bulge = SersicModel3D.from_2d(self.components["bulge"], self.inclination, disk_pa, azimuth_or_tilt=bulge_deprojection_method)
+        print("axial ratio:", components["bulge"].axial_ratio)
+        print("inclination:", self.inclination)
+        components["bulge"].axial_ratio = 1./components["bulge"].axial_ratio
+        bulge = SersicModel3D.from_2d(components["bulge"], self.inclination, disk_pa, azimuth_or_tilt=bulge_deprojection_method)
 
         # CREATE INSTRUMENT
 
         # Create the 'earth' projection system
         azimuth = 0.0
-        projection = GalaxyProjection.from_wcs(self.get_wcs("I1"), self.galaxy_center, self.distance, self.inclination, azimuth, disk_pa)
+        projection = GalaxyProjection.from_wcs(self.get_wcs("I2"), self.galaxy_center, self.distance, self.inclination, azimuth, disk_pa)
 
         # Create instrument from projection
         instrument = SimpleInstrument.from_projection(projection)
@@ -591,12 +594,12 @@ class MapsStandaloneTest(TestImplementation):
 
         # Load the PSF kernel and prepare
         aniano = AnianoKernels()
-        psf = aniano.get_psf("I1")
-        psf.prepare_for(self.get_wcs("I1"))
+        psf = aniano.get_psf("I2")
+        psf.prepare_for(self.get_wcs("I2"))
 
         # Simulate the bulge image
         fluxdensity = components["bulge"].fluxdensity
-        bulge_image = launcher.run(ski_path, out_path, self.get_wcs("I1"), fluxdensity, psf, instrument_name=instrument_name, progress_bar=True)
+        bulge_image = launcher.run(ski_path, out_path, self.get_wcs("I2"), fluxdensity, psf, instrument_name=instrument_name, progress_bar=True)
 
         # Determine path for the bulge map
         path = fs.join(self.maps_path, old_bulge_filename)
@@ -617,7 +620,7 @@ class MapsStandaloneTest(TestImplementation):
         log.info("Making map of old stellar disk ...")
 
         # Get input
-        total = self.get_frame("I1")
+        total = self.get_frame("I2")
         bulge = self.get_map(old_bulge_filename)
 
         # Make the map

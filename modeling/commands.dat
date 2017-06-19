@@ -30,9 +30,9 @@ make_colours_maps | -- | maps.colour.ColoursMapMaker | arguments | Make colour m
 make_ssfr_maps | -- | maps.ssfr.SSFRMapMaker | arguments | Make sSFR maps
 make_tir_maps | -- | maps.tir.TIRMapMaker | arguments | Make TIR map
 make_attenuation_maps | -- | maps.attenuation.AttenuationMapMaker | arguments | Make attenuation maps
-make_old_stars_map | -- | maps.old.OldStellarMapMaker | arguments | Make map of old stars
-make_young_stars_map | -- | maps.young.YoungStellarMapMaker | arguments | Make map of young stars
-make_ionizing_stars_map | -- | maps.ionizing.IonizingStellarMapMaker | arguments | Make map of ionizing stars
+make_old_stellar_maps | -- | maps.old.OldStellarMapMaker | arguments | Make map of old stars
+make_young_stellar_maps | -- | maps.young.YoungStellarMapMaker | arguments | Make map of young stars
+make_ionizing_stellar_maps | -- | maps.ionizing.IonizingStellarMapMaker | arguments | Make map of ionizing stars
 make_dust_map | -- | maps.dust.DustMapMaker | arguments | Make dust map
 create_significance_masks | -- | maps.significance.SignificanceMaskCreator | arguments | Make significance masks
 

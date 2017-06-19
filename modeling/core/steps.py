@@ -46,9 +46,9 @@ single_commands["make_ssfr_maps"] = galaxy_modeling
 single_commands["make_tir_maps"] = galaxy_modeling
 single_commands["make_attenuation_maps"] = galaxy_modeling
 single_commands["make_dust_map"] = galaxy_modeling
-single_commands["make_old_stars_map"] = galaxy_modeling
-single_commands["make_young_stars_map"] = galaxy_modeling
-single_commands["make_ionizing_stars_map"] = galaxy_modeling
+single_commands["make_old_stellar_maps"] = galaxy_modeling
+single_commands["make_young_stellar_maps"] = galaxy_modeling
+single_commands["make_ionizing_stellar_maps"] = galaxy_modeling
 single_commands["create_significance_masks"] = galaxy_modeling
 single_commands["plot_sed"] = sed_modeling # only for SEDModeler
 single_commands["build_model"] = all_modeling
@@ -118,13 +118,13 @@ def output_paths_for_single_command(environment, command_name):
     elif command_name == "make_dust_map": return [environment.maps_dust_path]
 
     # Old stars
-    elif command_name == "make_old_stars_map": return [environment.maps_old_path]
+    elif command_name == "make_old_stellar_maps": return [environment.maps_old_path]
 
     # Young stars
-    elif command_name == "make_young_stars_map": return [environment.maps_young_path]
+    elif command_name == "make_young_stellar_maps": return [environment.maps_young_path]
 
     # Ionizing stars
-    elif command_name == "make_ionizing_stars_map": return [environment.maps_ionizing_path]
+    elif command_name == "make_ionizing_stellar_maps": return [environment.maps_ionizing_path]
 
     #
     elif command_name == "create_significance_masks": return []
@@ -215,13 +215,13 @@ def cached_directory_name_for_single_command(environment, command_name):
     elif command_name == "make_dust_map": return None
 
     # Old stars
-    elif command_name == "make_old_stars_map": return None
+    elif command_name == "make_old_stellar_maps": return None
 
     # Young stars
-    elif command_name == "make_young_stars_map": return None
+    elif command_name == "make_young_stellar_maps": return None
 
     # Ionizing stars
-    elif command_name == "make_ionizing_stars_map": return None
+    elif command_name == "make_ionizing_stellar_maps": return None
 
     #
     elif command_name == "create_significance_masks": return None
