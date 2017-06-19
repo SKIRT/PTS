@@ -1320,11 +1320,19 @@ class GeneticEngine(object):
             ##re-evaluate before being sure this is the best
             # self.internalPop.bestRaw(i).evaluate(**self.evaluator_kwargs) # IS THIS REALLY NECESSARY ?
 
-            # Get old and new best raw score individual
+            # Get best individual (raw score) of old population
             old_best = self.internalPop.bestRaw(i)
             old_key = self.internalPop.keys[i]
+
+            # Check if sorted
+            self.internalPop.check_sorted()
+
+            # Get best individual (raw score) of new population
             new_best = new_population.bestRaw(i)
             #new_key = new_population.keys[i]
+
+            # Check if sorted
+            new_population.check_sorted()
 
             # Determine ID of the old individual
             if isinstance(self.internalPop, NamedPopulation): old_id = old_key

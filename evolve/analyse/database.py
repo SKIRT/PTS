@@ -105,6 +105,9 @@ def get_individual(database, run_id, generation, individual_key):
     :return: 
     """
 
+    # Check generation argument
+    if not types.is_integer_type(generation): raise ValueError("Generation must be integer number")
+
     # Get the cursor
     if types.is_string_type(database): database = load_database(database)
 
@@ -136,6 +139,9 @@ def get_individuals(database, run_id, generation, individual_range=None):
     :return: 
     """
 
+    # Check generation argument
+    if not types.is_integer_type(generation): raise ValueError("Generation must be integer number")
+
     # Get the cursor
     if types.is_string_type(database): database = load_database(database)
 
@@ -158,6 +164,21 @@ def get_individuals(database, run_id, generation, individual_range=None):
     if len(ret_fetch) == 0: raise RuntimeError("No individuals found in the range")
 
     return ret_fetch
+
+# -----------------------------------------------------------------
+
+def get_individuals_scores(database, run_id, generation, individual_range=None):
+
+    """
+    This function ...
+    :param database:
+    :param run_id:
+    :param generation:
+    :param individual_range:
+    :return:
+    """
+
+    return [ind["raw"] for ind in get_individuals(database, run_id, generation, individual_range=individual_range)]
 
 # -----------------------------------------------------------------
 

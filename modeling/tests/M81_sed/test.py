@@ -844,12 +844,12 @@ class M81SEDTest(M81TestBase):
         log.info("Testing ...")
 
         # Check the best value
-        #self.check_best() # CANNOT CHECK ANYMORE TEMPORARILY BECAUSE OF CONCURRENCE
+        #self.check_best() # CANNOT CHECK ANYMORE TEMPORARILY BECAUSE OF RECURRENCE
 
         # Check the database
         self.check_database()
 
         # Check the statistics
-        #self.check_statistics() # CANNOT CHECK ANYMORE TEMPORARILY BECAUSE OF CONCURRENCE
+        #self.check_statistics() # CANNOT CHECK ANYMORE TEMPORARILY BECAUSE OF RECURRENCE
 
 # -----------------------------------------------------------------

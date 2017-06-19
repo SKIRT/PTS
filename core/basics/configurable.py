@@ -73,9 +73,10 @@ def write_input(input_dict, path, light=False):
     remainder_path = fs.join(path, "input.dat")
     write_dict(remainder, remainder_path)
 
-    # Write the classes dictionary
-    classes_path = fs.join(path, "classes.dat")
-    write_dict(classes, classes_path)
+    # Write the classes dictionary, if necessary
+    if len(classes) > 0:
+        classes_path = fs.join(path, "classes.dat")
+        write_dict(classes, classes_path)
 
 # -----------------------------------------------------------------
 

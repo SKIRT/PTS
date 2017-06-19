@@ -253,7 +253,7 @@ class write_log_to(object):
     This function ...
     """
 
-    def __init__(self, filename, level="INFO"):
+    def __init__(self, filename, level="DEBUG"):
 
         """
         This function ...

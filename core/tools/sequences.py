@@ -629,3 +629,47 @@ def unpack(zipped, default_size=None):
     return sequences
 
 # -----------------------------------------------------------------
+
+def is_sorted(sequence, invert=False):
+
+    """
+    This function ...
+    :param sequence:
+    :param invert:
+    :return:
+    """
+
+    if invert: return all(sequence[i] >= sequence[i+1] for i in xrange(len(sequence)-1))
+    else: return all(sequence[i] <= sequence[i+1] for i in xrange(len(sequence)-1))
+
+# -----------------------------------------------------------------
+
+def is_minimum(sequence, value):
+
+    """
+    This function ...
+    :param sequence:
+    :param value:
+    :return:
+    """
+
+    for item in sequence:
+        if item < value: return False
+    else: return True
+
+# -----------------------------------------------------------------
+
+def is_maximum(sequence, value):
+
+    """
+    This function ...
+    :param sequence:
+    :param value:
+    :return:
+    """
+
+    for item in sequence:
+        if item > value: return False
+    else: return True
+
+# -----------------------------------------------------------------

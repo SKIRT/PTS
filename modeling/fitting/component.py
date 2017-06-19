@@ -289,6 +289,19 @@ def get_statistics_path(modeling_path):
 
 # -----------------------------------------------------------------
 
+def get_statistics(modeling_path):
+
+    """
+    Thisf ucntion ...
+    :param modeling_path:
+    :return:
+    """
+
+    from ...evolve.analyse.statistics import load_statistics
+    return load_statistics(get_statistics_path(modeling_path))
+
+# -----------------------------------------------------------------
+
 def get_database_path(modeling_path):
 
     """
@@ -298,6 +311,19 @@ def get_database_path(modeling_path):
     """
 
     return fs.join(get_fit_path(modeling_path), "database.db")
+
+# -----------------------------------------------------------------
+
+def get_database(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    from ...evolve.analyse.database import load_database
+    return load_database(get_database_path(modeling_path))
 
 # -----------------------------------------------------------------
 

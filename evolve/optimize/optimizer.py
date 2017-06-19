@@ -991,6 +991,9 @@ class Optimizer(Configurable):
             # Make a new genome by cloning the initial genome
             genome = self.initial_genome.clone()
 
+            # Clear the genes
+            genome.clear()
+
             # Set the genes
             if self.list_genome: genome.set_genes(parameters)
             elif self.binary_string_genome:

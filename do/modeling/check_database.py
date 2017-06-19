@@ -32,21 +32,17 @@ log = setup_log("DEBUG")
 
 # -----------------------------------------------------------------
 
-database = load_database(config.database)
+# Load the modeling environment
+environment = GalaxyModelingEnvironment(modeling_path)
 
-runs = get_runs(database)
+# -----------------------------------------------------------------
 
-print("runs:", runs)
+# Load the fitting run
+fitting_run = load_fitting_run(modeling_path, config.fitting_run)
 
-for run in runs:
+# -----------------------------------------------------------------
 
-    generations = get_generations(database, run)
-
-    print(run)
-    print("generations:", generations)
-
-    populations = get_populations(database, run)
-
-    print("populations:", populations)
+# Get generation names
+generations = config.generations if config.generations is not None else fitting_run.genetic_generations
 
 # -----------------------------------------------------------------

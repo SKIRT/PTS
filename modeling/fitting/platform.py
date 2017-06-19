@@ -27,6 +27,9 @@ from .recurrence import Recurrence
 from .elitism import Elitism
 from ...core.tools import formatting as fmt
 from ...core.tools.stringify import tostr
+from ...core.tools import filesystem as fs
+from ...evolve.analyse.database import get_scores_named_individuals, get_individual, get_individuals_scores
+from ...core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -66,6 +69,114 @@ class GenerationPlatform(object):
     # -----------------------------------------------------------------
 
     @property
+    def generation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.generation.name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def generation_index(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.get_genetic_generation_index(self.generation_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def generation_index_database(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.generation_index + 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def previous_generation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.get_previous_genetic_generation_name(self.generation_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def previous_generation_index(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.generation_index - 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def previous_generation_index_database(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.previous_generation_index + 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def next_generation_name(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.fitting_run.get_next_genetic_generation_name(self.generation_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def next_generation_index(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.generation_index + 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def next_generation_index(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.next_generation_index + 1
+
+    # -----------------------------------------------------------------
+
+    @property
     def modeling_path(self):
 
         """
@@ -93,6 +204,32 @@ class GenerationPlatform(object):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def database(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .component import get_database
+        return get_database(self.modeling_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def statistics(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .component import get_statistics
+        return get_statistics(self.modeling_path)
+
+    # -----------------------------------------------------------------
+
     def make_genome(self, genes):
 
         """
@@ -114,6 +251,18 @@ class GenerationPlatform(object):
         """
 
         return self.generation.fitting_run
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_run_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.name
 
     # -----------------------------------------------------------------
 
@@ -783,7 +932,7 @@ class GenerationPlatform(object):
         replacement_genome = self.make_genome(population[replacement_name])
 
         # Create elitism
-        return Elitism(index, genome, replacement_genome, score, replacement_score)
+        return Elitism(index, genome, replacement_genome, score, replacement_score, name, replacement_name)
 
     # -----------------------------------------------------------------
 
@@ -805,6 +954,15 @@ class GenerationPlatform(object):
             print("#" + str(elitism.index + 1) + " " + fmt.blue + fmt.underlined + "Elitism replacement:" + fmt.reset)
             print("")
 
+            print("NAMES:")
+            print("")
+
+            with fmt.print_in_columns(3) as print_row:
+
+                print_row("Replaced name", ":", elitism.name)
+                print_row("Replacement name", ":", elitism.replacement_name)
+
+            print("")
             print("GENOMES:")
             print("")
 
@@ -830,6 +988,162 @@ class GenerationPlatform(object):
                 print_row("Replacement individual", ":", "[" + replacement_string + "]")
 
             print("")
+            print("SCORES:")
+            print("")
 
+            # Get the scores
+            score = elitism.replaced_score
+            replacement_score = elitism.replacement_score
+
+            if replacement_score > score: log.warning("Replacement score is higher than original score")
+
+            # Print scores
+            with fmt.print_in_columns(3) as print_row:
+                print_row("Replaced score", ":", str(score))
+                print_row("Replacement score", ":", str(replacement_score))
+
+            # MAKE SURE THAT THE REPLACED INDIVIDUALS ARE PRESENT IN THE DATABASE (AND THE LOWEST SCORE IN THE STATISTICS)
+
+            print("")
+            try:
+                individual_key = elitism.replacement_name
+                #print("looking for", individual_key)
+                individual = get_individual(self.database, self.fitting_run_name, self.generation_index_database, individual_key)
+                #print(individual)
+                # Get the score
+                #score = individual["raw"]
+                #fitness = individual["fitness"]
+                #print(score, fitness)
+                print(fmt.green + "Individual found in the database: elitism executed correctly" + fmt.reset)
+            except RuntimeError: print(fmt.red + "Individual not found in the database: elitism has not been executed!" + fmt.reset)
+
+            print("")
+
+            #individuals = get_individuals(self.database, self.fitting_run_name, self.generation_index_database)
+
+            scores = get_individuals_scores(self.database, self.fitting_run_name, self.generation_index_database)
+            if not sequences.is_minimum(scores, replacement_score): raise print(fmt.red + "Replacement score " + str(replacement_score) + " is not a minimum of the scores: [" + tostr(scores) + "] of the generation" + fmt.reset)
+
+            scores_previous = get_individuals_scores(self.database, self.fitting_run_name, self.previous_generation_index_database)
+            if not sequences.is_minimum(scores_previous, replacement_score): print(fmt.red + "Replacement score " + str(replacement_score) + " is not a minimum of the scores: [" + tostr(scores_previous) + "] of the previous generation (parents)" + fmt.reset)
+
+            print("")
+
+    # -----------------------------------------------------------------
+
+    def check_database(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the database ...")
+
+        # TODO: check whether the individuals are sorted on score
+
+        # Load the elitism table
+        if fs.is_file(self.generation.elitism_table_path): elitism_table = self.generation.elitism_table
+        else:
+            elitism_table = None
+            log.warning("No elitism data found for generation '" + self.generation_name + "'")
+
+        # Load the scores table
+        scores_table = self.generation.chi_squared_table
+
+        # Load the individuals table
+        individuals_table = self.generation.individuals_table
+
+        # Get the scores from the database
+        scores_database = get_scores_named_individuals(self.database, self.fitting_run_name, self.generation_index_database)
+
+        # Keep track of the number of elitisms
+        nelitisms = 0
+
+        # Keep track of the mismatches
+        mismatches = []
+
+        # Loop over the individual names
+        for name in scores_database:
+
+            # Check whether name in elitism table as replaced individual, in this case don't check the score
+            if elitism_table is not None and name in elitism_table.replaced_names:
+                nelitisms += 1
+                continue
+
+            # Get the score from the database
+            score_database = scores_database[name]
+
+            # Get the simulation name
+            if individuals_table.has_individual(name):
+
+                # Get simulation name
+                simulation_name = individuals_table.get_simulation_name(name)
+
+                # Get the chi squared value
+                score = scores_table.chi_squared_for(simulation_name)
+
+                # Check if equal
+                equal = np.isclose(score, score_database, rtol=1.e-4)
+                if not equal: mismatches.append((score, score_database))
+
+            # Recurrent
+            else: log.debug("Individual '" + name + "' is recurrent, so not present in the individuals table of generation '" + self.generation_name + "'")
+
+        # Report
+        if len(mismatches) == 0: log.success(self.generation_name + ": OK")
+        else:
+            log.error(self.generation_name + ": " + str(len(mismatches)) + " mismatch(es):")
+            for score, score_database in mismatches: log.error("   " + str(score) + " , " + str(score_database))
+        log.info("Number of elitism replacements: " + str(nelitisms))
+
+    # -----------------------------------------------------------------
+
+    def check_statistics(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the statistics table ...")
+
+        # Determine the generation name
+        #generation_name = self.get_generation_name(index)
+
+        # Debugging
+        #log.debug("Checking generation '" + generation_name + "' ...")
+
+        # Get the best score from the statistics
+        statistics_index = index + 1
+        score_statistics = get_best_score_for_generation(self.statistics_path, self.fitting_run_name, statistics_index, minmax="min")
+
+        # Get the best score from the scores table
+        score_table = self.get_best_score_for_generation(generation_name)
+
+        # Rel diff
+        rel_diff = abs(score_table - score_statistics) / score_statistics
+
+        print(generation_name + ":")
+        print("")
+
+        print(" - Best score from statistics: " + tostr(score_statistics))
+        print(" - Best score from scores table: " + tostr(score_table))
+        print(" - Relative difference: " + tostr(rel_diff) + " (" + tostr(rel_diff * 100) + "%)")
+
+        print("")
+
+    # -----------------------------------------------------------------
+
+    def check_populations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
 # -----------------------------------------------------------------
