@@ -15,7 +15,7 @@ from astropy.units import spectral
 # Import the relevant PTS classes and modules
 from .filter import Filter
 from ..basics.map import Map
-from ..tools import strings
+from ..tools import strings, types
 
 # -----------------------------------------------------------------
 
@@ -220,7 +220,7 @@ class NarrowBandFilter(Filter):
         instrument = None
 
         # String is passed
-        if isinstance(filterspec, basestring):
+        if types.is_string_type(filterspec):
 
             # Find exact match
             if filterspec not in identifiers:
@@ -245,7 +245,7 @@ class NarrowBandFilter(Filter):
                     else:  raise ValueError("Could not recognize the filter: " + filterspec)
 
         # String is converted to a valid filterspec
-        if isinstance(filterspec, basestring):
+        if types.is_string_type(filterspec):
 
             identifier = identifiers[filterspec]
             wavelength = identifier.wavelength

@@ -29,7 +29,7 @@ from ...core.tools import filesystem as fs
 from ..convolution.aniano import AnianoKernels
 from ..convolution.matching import MatchingKernels
 from ..convolution.kernels import get_fwhm
-from ...core.tools import sequences
+from ...core.tools import sequences, types
 
 # -----------------------------------------------------------------
 
@@ -899,6 +899,12 @@ class FrameList(FilterBasedList):
 
         if fltr is None: fltr = frame.filter
 
+        # Check if not None
+        if fltr is None: raise ValueError("Filter cannot be determined")
+
+        # Parse filter
+        if types.is_string_type(fltr): fltr = parse_filter(fltr)
+
         # Check keys
         if fltr in self.frames: raise ValueError("Already a frame for the '" + str(fltr) + "' filter")
 
@@ -1605,7 +1611,7 @@ class FrameList(FilterBasedList):
         :param value:
         :return:
         """
-
+        #print(self.keys)
         for key in self.keys: self[key].distance = value
 
 # -----------------------------------------------------------------
