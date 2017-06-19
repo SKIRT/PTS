@@ -20,10 +20,11 @@ from ..component.sed import get_ski_template, get_ski_input_path
 from ...core.tools.serialization import write_dict
 from ...magic.core.frame import Frame
 from .component import model_map_filename
+from .model import ModelBuilderBase
 
 # -----------------------------------------------------------------
 
-class SEDModelBuilder(BuildComponent):
+class SEDModelBuilder(ModelBuilderBase):
     
     """
     This class...
@@ -39,15 +40,6 @@ class SEDModelBuilder(BuildComponent):
 
         # Call the constructor of the base class
         super(SEDModelBuilder, self).__init__(*args, **kwargs)
-
-        # The path for this model
-        self.model_path = None
-
-        # The path for the stellar components
-        self.model_stellar_path = None
-
-        # The path for the dust components
-        self.model_dust_path = None
 
         # The path for the other input files
         self.model_input_path = None
@@ -129,15 +121,6 @@ class SEDModelBuilder(BuildComponent):
 
         # Call the setup function of the base class
         super(SEDModelBuilder, self).setup(**kwargs)
-
-        # Set the model path and create it
-        self.model_path = fs.create_directory_in(self.models_path, self.model_name)
-
-        # Set the path of the directory for the stellar components
-        self.model_stellar_path = fs.create_directory_in(self.model_path, "stellar")
-
-        # Set the path of the directory for the dust components
-        self.model_dust_path = fs.create_directory_in(self.model_path, "dust")
 
         # Set the path of the input directory
         self.model_input_path = fs.create_directory_in(self.model_path, "input")

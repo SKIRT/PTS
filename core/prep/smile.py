@@ -326,6 +326,40 @@ class SKIRTSmileSchema(object):
 
     # -----------------------------------------------------------------
 
+    def get_concrete_dust_grids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [grid for grid in self.get_concrete_types() if grid.attrib["name"].endswith("DustGrid")]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def concrete_dust_grids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        grids = dict()
+
+        for grid in self.get_concrete_dust_grids():
+
+            name = grid.attrib["name"]
+            description = grid.attrib["title"]
+
+            # Add to dictionary
+            grids[name] = description
+
+        # Return the dictionary
+        return grids
+
+    # -----------------------------------------------------------------
+
     def get_concrete_stellar_seds(self):
 
         """
@@ -925,6 +959,99 @@ class SKIRTSmileSchema(object):
 
         # Create and return ski file
         return SkiFile(tree=tree)
+
+    # -----------------------------------------------------------------
+
+    def has_property(self, name, property_name):
+        
+        """
+        This function ...
+        :param name: 
+        :param property_name: 
+        :return: 
+        """
+
+        properties = self.properties_for_type(name)
+        return property_name in properties
+
+    # -----------------------------------------------------------------
+
+    def has_type(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.concrete_types
+
+    # -----------------------------------------------------------------
+
+    def has_dust_grid_type(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.concrete_dust_grids
+
+    # -----------------------------------------------------------------
+
+    def has_dust_normalization_type(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.concrete_dust_normalizations
+
+    # -----------------------------------------------------------------
+
+    def has_dust_mix_type(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.concrete_dust_mixes
+
+    # -----------------------------------------------------------------
+
+    def has_stellar_sed_type(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.concrete_stellar_seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def supports_file_tree_grids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check #1
+        if not self.has_dust_grid_type("FileTreeDustGrid"): return False
+
+        # Check #2
+        if not self.has_property("TreeDustGrid", "writeTree"): return False
+
+        # 2 checks passed
+        return True
 
 # -----------------------------------------------------------------
 

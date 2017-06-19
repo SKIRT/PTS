@@ -226,7 +226,70 @@ class Representation(object):
 
 # -----------------------------------------------------------------
 
-class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
+class RepresentationBuilderBase(BuildComponent):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(RepresentationBuilderBase).__init__(*args, **kwargs)
+
+        # The model definition
+        self.definition = None
+
+        # The representation
+        self.representation = None
+
+        # The projections
+        self.projections = dict()
+
+        # The instruments
+        self.instruments = dict()
+
+        # The dust grid
+        self.dust_grid = None
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(RepresentationBuilderBase, self).setup(**kwargs)
+
+        # Create the model definition
+        self.definition = self.get_model_definition(self.config.model_name)
+
+        # Create the representation
+        path = fs.create_directory_in(self.representations_path, self.config.name)
+        self.representation = Representation(self.config.name, self.config.model_name, path)
+
+    # -----------------------------------------------------------------
+
+    def build_dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+# -----------------------------------------------------------------
+
+class RepresentationBuilder(RepresentationBuilderBase, GalaxyModelingComponent):
     
     """
     This class...
@@ -242,26 +305,11 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
 
         # Call the constructor of the base class
         #super(RepresentationBuilder, self).__init__(*args, **kwargs)
-        BuildComponent.__init__(self, *args, **kwargs)
+        RepresentationBuilderBase.__init__(self, *args, **kwargs)
         GalaxyModelingComponent.__init__(self, *args, **kwargs)
-
-        # The model definition
-        self.definition = None
-
-        # The representation
-        self.representation = None
 
         # The deprojections
         self.deprojections = dict()
-
-        # The projections
-        self.projections = dict()
-
-        # The instruments
-        self.instruments = dict()
-
-        # The dust grid
-        self.dust_grid = None
 
     # -----------------------------------------------------------------
 
@@ -288,6 +336,9 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
         # 5. Create the instruments
         self.create_instruments()
 
+        # Build the dust grid
+        self.build_dust_grid()
+
         # 7. Writing
         self.write()
 
@@ -303,15 +354,8 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
 
         # Call the setup function of the base class
         #super(RepresentationBuilder, self).setup(**kwargs)
-        BuildComponent.setup(self, **kwargs)
+        RepresentationBuilderBase.setup(self, **kwargs)
         GalaxyModelingComponent.setup(self, **kwargs)
-
-        # Create the model definition
-        self.definition = self.get_model_definition(self.config.model_name)
-
-        # Create the representation
-        path = fs.create_directory_in(self.representations_path, self.config.name)
-        self.representation = Representation(self.config.name, self.config.model_name, path)
 
         # Get the dust grid, if passed
         if "dust_grid" in kwargs: self.dust_grid = kwargs.pop("dust_grid")

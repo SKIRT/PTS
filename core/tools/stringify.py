@@ -205,7 +205,7 @@ def stringify_list(value, **kwargs):
     parent_types = [parent_type(type_name) for type_name in ptypes]
     # Check
     for i in range(len(parent_types)):
-        if parent_types[i] is None: log.warning("Could not determine the parent type for '" + ptypes[i] + "'. All parent types: " + tostr(parent_types))
+        if parent_types[i] is None: log.warning("Could not determine the parent type for '" + ptypes[i] + "'. All parent types: " + str(parent_types))
     #print("Parent types:", parent_types)
     if sequences.all_equal(parent_types) and parent_types[0] is not None: ptype = parent_types[0]
     elif ptype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_types)[1] + "'")
@@ -287,7 +287,7 @@ def stringify_dict(value, **kwargs):
     #print("Parent key types:", parent_key_types)
     # Check
     for i in range(len(parent_key_types)):
-        if parent_key_types[i] is None: log.warning("Could not determine the parent type for '" + keytypes[i] + "'. All parent types: " + tostr(parent_key_types))
+        if parent_key_types[i] is None: log.warning("Could not determine the parent type for '" + keytypes[i] + "'. All parent types: " + str(parent_key_types))
     if sequences.all_equal(parent_key_types) and parent_key_types[0] is not None: ptype = parent_key_types[0]
     elif keytype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_key_types)[1] + "'")
 
@@ -295,7 +295,7 @@ def stringify_dict(value, **kwargs):
     parent_value_types = [parent_type(type_name) for type_name in ptypes]
     # Check
     for i in range(len(parent_value_types)):
-        if parent_value_types[i] is None: log.warning("Could not determine the parent type for '" + ptypes[i] + "'. All parent types: " + tostr(parent_value_types))
+        if parent_value_types[i] is None: log.warning("Could not determine the parent type for '" + ptypes[i] + "'. All parent types: " + str(parent_value_types))
     #print("Parent value types:", parent_value_types)
     if sequences.all_equal(parent_value_types) and parent_value_types[0] is not None: ptype = parent_value_types[0]
     elif ptype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_value_types)[1] + "'")

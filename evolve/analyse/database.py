@@ -182,6 +182,21 @@ def get_individuals_scores(database, run_id, generation, individual_range=None):
 
 # -----------------------------------------------------------------
 
+def get_individual_fitnesses(database, run_id, generation, individual_range=None):
+
+    """
+    This function ...
+    :param database:
+    :param run_id:
+    :param generation:
+    :param individual_range:
+    :return:
+    """
+
+    return [ind["fitness"] for ind in get_individuals(database, run_id, generation, individual_range=individual_range)]
+
+# -----------------------------------------------------------------
+
 def get_scores_named_individuals(database, run_id, generation):
 
     """

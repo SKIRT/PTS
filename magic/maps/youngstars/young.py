@@ -18,6 +18,7 @@ from ....core.basics.configurable import Configurable
 from ....core.filter.filter import parse_filter
 from ....core.tools import sequences
 from ...core.frame import Frame
+from ...core.list import NamedFrameList
 
 # -----------------------------------------------------------------
 
@@ -201,17 +202,21 @@ class YoungStellarMapsMaker(Configurable):
             # Get the attenuation map
             attenuation = self.fuv_attenuations[name]
 
+            # Uniformize the attenuation and FUV map
+            frames = NamedFrameList(attenuation=attenuation, fuv=self.fuv)
+            frames.convolve_and_rebin() # convolve and rebin
+
             # Calculate the transparent FUV flux
-            exponent = attenuation / 2.5
-            transparent = Frame(self.fuv * 10**exponent.data)
+            exponent = frames["attenuation"] / 2.5
+            transparent = Frame(frames["fuv"] * 10**exponent.data)
 
             # Set properties
             transparent.unit = self.fuv.unit
-            transparent.wcs = self.fuv.wcs
-            transparent.pixelscale = self.fuv.pixelscale
-            transparent.distance = self.fuv.distance
-            transparent.psf_filter = self.fuv.psf_filter
-            transparent.fwhm = self.fuv.fwhm
+            transparent.wcs = frames.wcs
+            transparent.pixelscale = frames.pixelscale
+            transparent.distance = frames.distance
+            transparent.psf_filter = frames.psf_filter
+            transparent.fwhm = frames.fwhm
 
             # Set the corrected map
             self.transparent[name] = transparent
@@ -237,14 +242,18 @@ class YoungStellarMapsMaker(Configurable):
             # Get the transparent map
             transparent = self.transparent[name]
 
+            # Uniformize the transparent FUV map and the old stellar disk map: NO SHOULD BE DONE IN THE MAKE_CORRECTED_FUV_MAP function
+            #frames = NamedFrameList(transparent=transparent, old=normalized_old)
+            #frames.convolve_and_rebin()
+
             # Loop over the different factors
             for factor in self.factors:
 
-                # Calculate the non ionizing young stars map from the FUV data
-                young_stars = make_corrected_fuv_map(transparent, normalized_old, factor)
-
                 # Determine name
                 key = name + "_" + repr(factor)
+
+                # Calculate the non ionizing young stars map from the FUV data
+                young_stars = make_corrected_fuv_map(transparent, normalized_old, factor)
 
                 # Normalize
                 young_stars.normalize()
@@ -296,6 +305,13 @@ def make_corrected_fuv_map(fuv, old, factor):
     # for this we typically use an exponential disk
     # (scale length determined by GALFIT)
 
+    # Convert to same pixelscale and convolve to same resolution
+    frames = NamedFrameList(fuv=fuv, old=old)
+    frames.convolve_and_rebin()
+
+    fuv = frames["fuv"]
+    old = frames["old"]
+
     flux_fuv = fuv.sum()
 
     # typisch 20% en 35% respectievelijk
@@ -310,6 +326,19 @@ def make_corrected_fuv_map(fuv, old, factor):
 
     # Set zero where low signal-to-noise ratio
     # new_fuv[self.fuv < self.config.non_ionizing_stars.fuv_snr_level*self.fuv_errors] = 0.0
+
+    # Check unit and WCS
+    new_fuv.unit = fuv.unit
+    new_fuv.wcs = fuv.wcs
+
+    # Check filter
+    new_fuv.filter = "FUV"
+
+    # Set other properties than unit and wcs
+    new_fuv.pixelscale = frames.pixelscale
+    new_fuv.psf_filter = frames.psf_filter
+    new_fuv.fwhm = frames.fwhm
+    new_fuv.distance = frames.distance
 
     # Return the new FUV frame
     return new_fuv

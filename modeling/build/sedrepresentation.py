@@ -20,10 +20,11 @@ from ...core.tools.logging import log
 from .representation import Representation
 from ..component.sed import get_ski_template
 from ..basics.projection import GalaxyProjection, FaceOnProjection, EdgeOnProjection
+from .representation import RepresentationBuilderBase
 
 # -----------------------------------------------------------------
 
-class SEDRepresentationBuilder(BuildComponent):
+class SEDRepresentationBuilder(RepresentationBuilderBase):
     
     """
     This class...
@@ -40,23 +41,8 @@ class SEDRepresentationBuilder(BuildComponent):
         # Call the constructor of the base class
         super(SEDRepresentationBuilder, self).__init__(*args, **kwargs)
 
-        # The model definition
-        self.definition = None
-
-        # The representation
-        self.representation = None
-
         # The ski file template
         self.ski = None
-
-        # The projections
-        self.projections = dict()
-
-        # The instruments
-        self.instruments = dict()
-
-        # The dust grid
-        self.dust_grid = None
 
     # -----------------------------------------------------------------
 
@@ -85,6 +71,9 @@ class SEDRepresentationBuilder(BuildComponent):
 
         # 6. Create the dust grids
         self.create_dust_grid()
+
+        # Build the dust grid
+        self.build_dust_grid()
 
         # 7. Writing
         self.write()
