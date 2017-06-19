@@ -761,7 +761,7 @@ class GenerationPlatform(object):
         #print(original_genome, type(original_genome))
 
         # Create and return the recurrence object
-        return Recurrence(index, genome, generation_name, original_genome, score, parameters, original_parameters)
+        return Recurrence(index, genome, generation_name, original_genome, score, parameters, original_parameters, name, original_name)
 
     # -----------------------------------------------------------------
 
@@ -792,6 +792,15 @@ class GenerationPlatform(object):
             print("#" + str(recurrence.index + 1) + " " + fmt.blue + fmt.underlined + "Recurrence:" + fmt.reset)
             print("")
 
+            print("NAMES:")
+            print("")
+
+            with fmt.print_in_columns(4) as print_row:
+
+                print_row("Individual", ":", recurrence.name, "[" + self.generation_name + "]")
+                print_row("Original", ":", recurrence.original_name, "[" + recurrence.generation + "]")
+
+            print("")
             print("GENOMES:")
             print("")
 
@@ -957,10 +966,10 @@ class GenerationPlatform(object):
             print("NAMES:")
             print("")
 
-            with fmt.print_in_columns(3) as print_row:
+            with fmt.print_in_columns(4) as print_row:
 
-                print_row("Replaced name", ":", elitism.name)
-                print_row("Replacement name", ":", elitism.replacement_name)
+                print_row("Replaced name", ":", elitism.name, "[" + self.generation_name + "]")
+                print_row("Replacement name", ":", elitism.replacement_name, "[" + self.previous_generation_name + "]")
 
             print("")
             print("GENOMES:")
