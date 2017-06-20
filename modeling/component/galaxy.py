@@ -39,6 +39,20 @@ from ...core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
+def needs_poisson_errors(fltr):
+
+    """
+    This function ...
+    :param fltr:
+    :return:
+    """
+
+    if types.is_string_type(fltr): fltr = parse_filter(fltr)
+    filter_string = str(fltr)
+    return "GALEX" in filter_string or "SDSS" in filter_string
+
+# -----------------------------------------------------------------
+
 class GalaxyModelingComponent(ModelingComponent):
     
     """
@@ -1437,21 +1451,6 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    @staticmethod
-    def needs_poisson_errors(fltr):
-
-        """
-        This function ...
-        :param fltr: 
-        :return: 
-        """
-
-        if types.is_string_type(fltr): fltr = parse_filter(fltr)
-        filter_string = str(fltr)
-        return "GALEX" in filter_string or "SDSS" in filter_string
-
-    # -----------------------------------------------------------------
-
     def get_data_image_and_error_paths(self):
 
         """
@@ -1459,43 +1458,7 @@ class GalaxyModelingComponent(ModelingComponent):
         :return: 
         """
 
-        paths = dict()
-        error_paths = dict()
-
-        # Loop over the images
-        for image_path, image_name in fs.files_in_path(self.data_images_path, extension="fits", not_contains="poisson",
-                                                       returns=["path", "name"], recursive=True, recursion_level=1):
-
-            # Determine directory path
-            path = fs.directory_of(image_path)
-
-            # Load the primary image frame
-            frame = load_image_frame(image_path)
-
-            # Determine name
-            name = frame.filter_name
-
-            # Add the image path
-            paths[name] = image_path
-
-            # Determine path to poisson error map
-            poisson_path = fs.join(path, image_name + "_poisson.fits")
-
-            # Set the path to the poisson error map
-            if fs.is_file(poisson_path):
-
-                # Debugging
-                log.debug("Poisson error frame found for '" + name + "' image ...")
-                error_paths[name] = poisson_path
-
-            # Poisson frame not present
-            elif self.needs_poisson_errors(frame.filter): raise RuntimeError("Poisson error frame not found for the " + name + " image. Run the appropriate command to create the mosaics and poisson frames.")
-
-            # Free memory
-            gc.collect()
-
-        # Return the paths and error paths
-        return paths, error_paths
+        return get_data_image_and_error_paths(self.config.path)
 
     # -----------------------------------------------------------------
 
@@ -1780,5 +1743,54 @@ def get_prepared_dataset(modeling_path):
     """
 
     return DataSet.from_file(get_prepared_dataset_path(modeling_path))
+
+# -----------------------------------------------------------------
+
+def get_data_image_and_error_paths(modeling_path):
+
+    """
+    This function ...
+    :return: 
+    """
+
+    data_images_path = get_data_images_path(modeling_path)
+
+    paths = dict()
+    error_paths = dict()
+
+    # Loop over the images
+    for image_path, image_name in fs.files_in_path(data_images_path, extension="fits", not_contains="poisson",
+                                                   returns=["path", "name"], recursive=True, recursion_level=1):
+
+        # Determine directory path
+        path = fs.directory_of(image_path)
+
+        # Load the primary image frame
+        frame = load_image_frame(image_path)
+
+        # Determine name
+        name = frame.filter_name
+
+        # Add the image path
+        paths[name] = image_path
+
+        # Determine path to poisson error map
+        poisson_path = fs.join(path, image_name + "_poisson.fits")
+
+        # Set the path to the poisson error map
+        if fs.is_file(poisson_path):
+
+            # Debugging
+            log.debug("Poisson error frame found for '" + name + "' image ...")
+            error_paths[name] = poisson_path
+
+        # Poisson frame not present
+        elif needs_poisson_errors(frame.filter): raise RuntimeError("Poisson error frame not found for the " + name + " image. Run the appropriate command to create the mosaics and poisson frames.")
+
+        # Free memory
+        gc.collect()
+
+    # Return the paths and error paths
+    return paths, error_paths
 
 # -----------------------------------------------------------------

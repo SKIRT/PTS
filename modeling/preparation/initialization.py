@@ -195,6 +195,9 @@ class PreparationInitializer(PreparationComponent):
             # Get the image path
             image_path = self.paths[prep_name]
 
+            # Determine error path
+            error_path = self.error_paths[prep_name] if prep_name in self.error_paths else None
+
             # Determine the output path for this image
             output_path = self.get_prep_path(prep_name)
 
@@ -222,7 +225,7 @@ class PreparationInitializer(PreparationComponent):
                     self.set.save() # Save
 
                 # Cache
-                self.cache_image(prep_name, image_path)
+                self.cache_image(prep_name, image_path, error_path)
 
                 # Now skip the rest
                 continue
@@ -282,16 +285,17 @@ class PreparationInitializer(PreparationComponent):
             self.set.add_path(prep_name, initialized_path)
 
             # Cache the original image
-            self.cache_image(prep_name, image_path)
+            self.cache_image(prep_name, image_path, error_path)
 
     # -----------------------------------------------------------------
 
-    def cache_image(self, prep_name, image_path):
+    def cache_image(self, prep_name, image_path, error_path=None):
 
         """
         This function ...
         :param prep_name:
         :param image_path:
+        :param error_path:
         :return:
         """
 
@@ -322,6 +326,21 @@ class PreparationInitializer(PreparationComponent):
 
         # Remove the file
         fs.remove_file(image_path)
+
+        # Cache the error map
+        if error_path is not None:
+
+            # Debugging
+            log.debug("Caching the " + prep_name + " error map ...")
+
+            # Upload
+            self.remote.upload(error_path, remote_directory_path)
+
+            # Debugging
+            log.debug("Removing the local file (" + error_path + ") ...")
+
+            # Remove the file
+            fs.remove_file(error_path)
 
     # -----------------------------------------------------------------
 
