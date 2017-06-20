@@ -459,20 +459,9 @@ class PTSTestSuite(Configurable):
                 # Determine the test path
                 test_path = fs.join(tests_path, name)
 
-                # If remove_previous is enabled, remove previous output directories of the same test
-                if self.config.remove_previous:
-
-                    # Find
-                    previous_paths = fs.directories_in_path(introspection.pts_tests_dir, startswith=name)
-
-                    # Debugging
-                    if len(previous_paths) > 0: log.debug("Removing output directories of previous test runs: " + stringify.stringify(previous_paths)[1] + " ...")
-
-                    # Remove
-                    fs.remove_directories(previous_paths)
-
                 # Determine an output path for the test
-                temp_path = fs.create_directory_in(introspection.pts_tests_dir, time.unique_name(name))
+                unique_name = time.unique_name(name)
+                temp_path = fs.create_directory_in(introspection.pts_tests_dir, unique_name)
 
                 # Debugging
                 log.debug("Creating temporary directory '" + temp_path + "' for the test '" + name + "' ...")
@@ -495,6 +484,29 @@ class PTSTestSuite(Configurable):
 
                 # Create the test configuration
                 config = create_configuration_flexible(name, definition, self.config.settings, self.config.default)
+
+                ### REMOVE PREVIOUS
+
+                # If remove_previous is enabled, remove previous output directories of the same test
+                if self.config.remove_previous:
+
+                    # Determine which directories to avoid
+                    if "reference_test" in config: exact_not_name = [unique_name, config.reference_test]
+                    else: exact_not_name = unique_name
+
+                    # Find
+                    previous_paths = fs.directories_in_path(introspection.pts_tests_dir, startswith=name, exact_not_name=exact_not_name)
+
+                    # Debugging
+                    if len(previous_paths) > 0: log.debug("Removing output directories of previous test runs: " + stringify.stringify(previous_paths)[1] + " ...")
+
+                    # Remove
+                    if "reference_path" in config and config.reference_path is not None:
+                        log.debug("Except for when it contains the reference path [" + config.reference_path + "]")
+                        fs.remove_directories_but_keep(previous_paths, config.reference_path)
+                    else: fs.remove_directories(previous_paths)
+
+                ###
 
                 # Load the test module
                 test_module = imp.load_source(name, filepath)

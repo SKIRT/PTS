@@ -562,8 +562,10 @@ class MapsStandaloneTest(TestImplementation):
         bulge_template_path = fs.join(template_path, "bulge.ski")
         ski = SkiFile(bulge_template_path)
 
+        npackages = 1e7
+
         # Set the number of photon packages
-        ski.setpackages(self.config.bulge_packages)
+        ski.setpackages(npackages)
 
         # Set the bulge geometry
         ski.set_stellar_component_geometry(0, bulge)

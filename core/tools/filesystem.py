@@ -311,6 +311,24 @@ def contains_directories(directory, dirnames=None):
 
 # -----------------------------------------------------------------
 
+def contains_path(directory, path):
+
+    """
+    This function ...
+    :param directory:
+    :param path:
+    :return:
+    """
+
+    # Set absolute paths
+    directory = absolute_path(directory)
+    path = absolute_path(path)
+
+    # Check whether directory path is contained within the other path
+    return directory in path
+
+# -----------------------------------------------------------------
+
 def join(*args):
 
     """
@@ -611,6 +629,25 @@ def remove_directories(paths):
 
 # -----------------------------------------------------------------
 
+def remove_directories_but_keep(paths, keep_path):
+
+    """
+    This function ...
+    :param paths:
+    :param keep_path:
+    :return:
+    """
+
+    for path in paths:
+
+        # Don't remove if it contains the keep_path (looks recursively)
+        if contains_path(path, keep_path): continue
+
+        # Remove the
+        remove_directory(path)
+
+# -----------------------------------------------------------------
+
 def remove_file(path):
 
     """
@@ -866,14 +903,55 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
             else: raise ValueError("contains should be string or sequence")
 
         # Ignore filenames that do not match the exact filename, if specified
-        if exact_name is not None and exact_name != item_name: continue
+        if exact_name is not None:
+
+            # One name
+            if types.is_string_type(exact_name):
+                if exact_name != item_name: continue
+
+            # Sequence of names
+            elif types.is_sequence(exact_name):
+                if item_name not in exact_name: continue
+
+            # Invalid
+            else: raise ValueError("Invalid value for 'exact_name'")
 
         # If the filename matches the 'exact not name', skip it
-        if exact_not_name is not None and exact_not_name == item_name: continue
+        if exact_not_name is not None:
+
+            # One name
+            if types.is_string_type(exact_not_name):
+                if exact_not_name == item_name: continue
+
+            # Sequence
+            elif types.is_sequence(exact_not_name):
+                if item_name in exact_not_name: continue
+
+            # Invalid
+            else: raise ValueError("Invalid value for 'exact_not_name'")
 
         # Ignore filenames that do not start or end with the specified strings
-        if startswith is not None and not item_name.startswith(startswith): continue
-        if endswith is not None and not item_name.endswith(endswith): continue
+        if startswith is not None:
+
+            if types.is_string_type(startswith):
+                if not item_name.startswith(startswith): continue
+            elif types.is_sequence(startswith):
+                for sw in startswith:
+                    if item_name.startswith(sw): break
+                else: # break not encountered
+                    continue
+            else: raise ValueError("Invalid value for 'startswith'")
+
+        # Ignore filenames that do not end wwith the specified string
+        if endswith is not None:
+
+            if types.is_string_type(endswith):
+                if not item_name.endswith(endswith): continue
+            elif types.is_sequence(endswith):
+                for ew in endswith:
+                    if item_name.endswith(ew): break
+                else: # break not encountered
+                    continue
 
         # Check if the current item is a file; if not skip it
         if not os.path.isfile(item_path): continue
@@ -899,6 +977,7 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
                 elif return_value == "directory": thing.append(directory)
                 else: raise ValueError("Invalid option for 'returns': should be (a list of) 'path', 'name' or 'directory'")
 
+        # Add to the list
         file_paths.append(thing)
 
     # Return the list of file paths
@@ -1010,14 +1089,20 @@ def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains
         if not_contains is not None and not_contains in item: continue
 
         # If the directory name does not match the exact name, skip it
-        if exact_name is not None and exact_name != item: continue
+        if exact_name is not None:
+
+            if types.is_string_type(exact_name):
+                if exact_name != item: continue
+            elif types.is_sequence(exact_name):
+                if item not in exact_name: continue
+            else: raise ValueError("Invalid option for 'exact_name': must be string or list")
 
         # If the directory name matches the 'exact not name', skip it
         if exact_not_name is not None:
 
             if types.is_string_type(exact_not_name):
                 if exact_not_name == item: continue
-            elif isinstance(exact_not_name, list):
+            elif types.is_sequence(exact_not_name):
                 if item in exact_not_name: continue
             else: raise ValueError("Invalid option for 'exact_not_name': must be string or list")
 
