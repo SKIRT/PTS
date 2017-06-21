@@ -139,7 +139,10 @@ class SkirtExec:
         return self.run(arguments, wait=wait, silent=silent)
 
     ## This function does the same as the execute function, but obtains its arguments from a SkirtArguments object
-    def run(self, definition_or_arguments, logging_options=None, parallelization=None, emulate=False, wait=True, silent=False, progress_bar=False):
+    def run(self, definition_or_arguments, logging_options=None, parallelization=None, emulate=False, wait=True,
+            silent=False, progress_bar=False, finish_at=None, finish_after=None):
+
+        if finish_at is not None or finish_after is not None: progress_bar = True
 
         # The simulation names for different ski paths
         simulation_names = dict()
@@ -185,9 +188,15 @@ class SkirtExec:
         command_string = " ".join(command)
         log.debug("The command to launch SKIRT is: '" + command_string + "'")
 
+        #print(command)
+
         # Create a temporary file
         output_file = tempfile.TemporaryFile()
         error_file = tempfile.TemporaryFile()
+
+        #import sys
+        #output_file = sys.stdout
+        #error_file = sys.stderr
 
         # Launch the SKIRT command
         if wait:
@@ -211,8 +220,10 @@ class SkirtExec:
             log_path = fs.join(out_path, prefix + "_log.txt")
             status = SimulationStatus(log_path)
 
+            #print("HERE", finish_at, finish_after)
+
             # Show the simulation progress
-            with no_debugging(): success = status.show_progress(self._process)
+            with no_debugging(): success = status.show_progress(self._process, finish_at=finish_at, finish_after=finish_after)
 
             # Check whether not crashed
             if not success:

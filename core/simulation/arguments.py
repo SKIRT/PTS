@@ -232,16 +232,15 @@ class SkirtArguments(object):
 
         #print("INPUT PATH", self.input_path)
 
+        if isinstance(self.input_path, SimulationInput): input_dir_path = self.input_path.to_single_directory()
+
         # If the input consists of a list of paths, check whether they represent files in the same directory
-        if types.is_sequence(self.input_path):
+        elif types.is_sequence(self.input_path):
             #print(1)
             input_dir_path = SimulationInput(*self.input_path).to_single_directory()
         elif types.is_string_type(self.input_path):
             #print(2)
             input_dir_path = SimulationInput(self.input_path).to_single_directory()
-        elif isinstance(self.input_path, SimulationInput):
-            #print(3)
-            input_dir_path = self.input_path.to_single_directory()
         elif types.is_dictionary(self.input_path):
             #print("HERE")
             #exit()
@@ -266,8 +265,10 @@ class SkirtArguments(object):
         if self.logging.allocation: arguments += ["-l", str(self.logging.allocation_limit)]
 
         # Options for input and output
-        if input_dir_path is not None: arguments += ["-i", "'" + input_dir_path + "'"]
-        if self.output_path is not None: arguments += ["-o", "'" + self.output_path + "'"]
+        #if input_dir_path is not None: arguments += ["-i", "'" + input_dir_path + "'"]
+        #if self.output_path is not None: arguments += ["-o", "'" + self.output_path + "'"]
+        if input_dir_path is not None: arguments += ["-i", input_dir_path]
+        if self.output_path is not None: arguments += ["-o", self.output_path]
 
         # Other options
         if self.emulate: arguments += ["-e"]

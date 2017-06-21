@@ -211,6 +211,9 @@ class DustGridBuilder(Configurable):
         # Remove the existing instruments
         self.ski.remove_all_instruments()
 
+        # Remove the stellar system
+        self.ski.remove_stellar_system()
+
         # Add the instrument
         #self.ski.add_instrument("earth", self.representation.sed_instrument)
 
@@ -238,6 +241,9 @@ class DustGridBuilder(Configurable):
 
         # Enable writing options
         self.ski.enable_all_writing_options()
+
+        # Disable writing stellar density (we don't have a stellar system)
+        self.ski.set_write_stellar_density(False)
 
     # -----------------------------------------------------------------
 
@@ -281,7 +287,7 @@ class DustGridBuilder(Configurable):
 
         fs.replace_strings(self.ski_path, replacements)
 
-        fs.open_file(self.ski_path)
+        #fs.open_file(self.ski_path)
 
     # -----------------------------------------------------------------
 
@@ -295,18 +301,19 @@ class DustGridBuilder(Configurable):
         # Inform the user
         log.info("Launching ...")
 
-        print(self.input_map_paths)
-
-        # Create definition
+        # Create simulation definition
         definition = SingleSimulationDefinition(self.ski_path, self.out_path, self.input_map_paths)
 
-        # Determine parallelization scheme
+        # Determine parallelization scheme (do singleprocessing-
         ncores = 2
         nthreads_per_core = 2
         nprocesses = 1
         parallelization = Parallelization(ncores, nthreads_per_core, nprocesses)
 
+        # Set settings
         self.launcher.config.progress_bar = True
+        self.launcher.config.finish_after = "Writing dust cell properties"
+        #self.launcher.config.finish_at = ""
 
         # Run
         self.launcher.run(definition=definition, parallelization=parallelization)

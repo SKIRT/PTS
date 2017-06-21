@@ -1085,6 +1085,12 @@ class SkiFile:
         parent = dust_system.getparent()
         parent.getparent().remove(parent)
 
+    ## THis function removes the complete stellar system
+    def remove_stellar_system(self):
+        stellar_system = self.get_stellar_system()
+        parent = stellar_system.getparent()
+        parent.getparent().remove(parent)
+
     ## This property returns the number of stellar components
     @property
     def nstellar_components(self):

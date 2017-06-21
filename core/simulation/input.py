@@ -42,6 +42,7 @@ class SimulationInput(object):
         # Add args
         for arg in args:
 
+            #print("ARG", arg)
             if fs.is_file(arg): self.add_file(arg)
             elif fs.is_directory(arg): self.add_directory(arg)
             else: self.add_relative_directory(arg) # probably a relative directory (e.g. 'in')  #raise IOError("The file or directory '" + arg + "' does not exist")
@@ -64,9 +65,9 @@ class SimulationInput(object):
         :return:
         """
 
-        if types.is_sequence(argument): return cls(*argument)
+        if isinstance(argument, cls): return argument
+        elif types.is_sequence(argument): return cls(*argument)
         elif types.is_string_type(argument): return cls(argument)
-        elif isinstance(argument, cls): return argument
         else: raise ValueError("Invalid input specification: should be list, string or SimulationInput object")
 
     # -----------------------------------------------------------------

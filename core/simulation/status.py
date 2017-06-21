@@ -19,6 +19,7 @@ from ..tools.progress import Bar, BAR_FILLED_CHAR, BAR_EMPTY_CHAR
 from ..tools.logging import log
 from .logfile import get_last_phase, get_nprocesses, get_simulation_phase
 from ..basics.handle import ExecutionHandle
+from ..tools import terminal
 
 # -----------------------------------------------------------------
 
@@ -164,12 +165,14 @@ class SimulationStatus(object):
 
     # -----------------------------------------------------------------
 
-    def show_progress(self, process_or_handle, refresh_time=3):
+    def show_progress(self, process_or_handle, refresh_time=3, finish_at=None, finish_after=None):
 
         """
         This function ...
         :param process_or_handle:
         :param refresh_time: time in seconds
+        :param finish_at:
+        :param finish_after:
         :return:
         """
 
@@ -223,7 +226,7 @@ class SimulationStatus(object):
 
                 log.info("Waiting for simulation to start ...")
                 time.wait(refresh_time)
-                self.refresh(process_or_handle)
+                self.refresh(process_or_handle, finish_at=finish_at, finish_after=finish_after)
                 continue
 
             # Finished: break loop
@@ -247,7 +250,7 @@ class SimulationStatus(object):
                 last_phase = self.phase
                 if last_phase is None:
                     time.wait(refresh_time)
-                    self.refresh(process_or_handle)
+                    self.refresh(process_or_handle, finish_at=finish_at, finish_after=finish_after)
                     continue
                 else:
                     if self.simulation_phase is not None: log.info("Starting " + phase_descriptions[last_phase] + " in " + self.simulation_phase.lower() + " phase ...")
@@ -259,7 +262,7 @@ class SimulationStatus(object):
                 total_length = 100
 
                 if self.stage is None:
-                    self.refresh_after(1)
+                    self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
                     continue
 
                 if last_stage is None or self.stage != last_stage:
@@ -267,7 +270,7 @@ class SimulationStatus(object):
                     last_stage = self.stage
 
                 if self.cycle is None:
-                    self.refresh_after(1)
+                    self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
                     continue
 
                 if last_cycle is None or self.cycle != last_cycle:
@@ -290,11 +293,11 @@ class SimulationStatus(object):
                                 break
                             if self.progress is None: bar.show(100)
                             else: bar.show(int(self.progress))
-                            self.refresh_after(1)
+                            self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
 
-                    self.refresh_after(refresh_time)
+                    self.refresh_after(refresh_time, finish_at=finish_at, finish_after=finish_after)
 
-                else: self.refresh_after(refresh_time)
+                else: self.refresh_after(refresh_time, finish_at=finish_at, finish_after=finish_after)
 
             # Stellar emission: show progress bar
             elif self.phase == "stellar" or self.phase == "spectra" or self.phase == "dust":
@@ -312,7 +315,7 @@ class SimulationStatus(object):
                         if self.progress is None:
                             bar.show(100)
                         else: bar.show(int(self.progress))
-                        self.refresh_after(1)
+                        self.refresh_after(1, finish_at=finish_at, finish_after=finish_after)
 
             # Still the same phase
             else:
@@ -320,30 +323,34 @@ class SimulationStatus(object):
                     if last_extra is None or last_extra != self.extra:
                         log.info(self.extra)
                     last_extra = self.extra
-                self.refresh_after(refresh_time)
+                self.refresh_after(refresh_time, finish_at=finish_at, finish_after=finish_after)
 
     # -----------------------------------------------------------------
 
-    def refresh_after(self, seconds, process_or_handle=None):
+    def refresh_after(self, seconds, process_or_handle=None, finish_after=None, finish_at=None):
 
         """
         This function ...
         :param seconds:
         :param process_or_handle:
+        :param finish_after:
+        :param finish_at:
         :return:
         """
 
         # Wait and refresh
         time.wait(seconds)
-        self.refresh(process_or_handle)
+        self.refresh(process_or_handle, finish_after=finish_after, finish_at=finish_at)
 
     # -----------------------------------------------------------------
 
-    def refresh(self, process_or_handle=None):
+    def refresh(self, process_or_handle=None, finish_at=None, finish_after=None):
 
         """
         This function ...
         :param process_or_handle:
+        :param finish_at:
+        :param finish_after:
         :return:
         """
 
@@ -378,6 +385,34 @@ class SimulationStatus(object):
         if len(lines) == 1: last = lines[0]
         elif " Available memory: " in last_two_lines[1]: last = last_two_lines[0]
         else: last = last_two_lines[1]
+
+        #print("FINISH AFTER", finish_after)
+
+        # NEW: CHECK WHETHER USER WANTS TO FINISH AFTER A SPECIFIC LINE
+        #if "finish_after" in kwargs:
+        if finish_after is not None:
+            #finish_after_line = kwargs["finish_after"]
+            #is_last = finish_after_line in lines[-1]
+            for i, line in enumerate(reversed(lines)):
+                if i != 0 and finish_after in line: # if it is not the last line (i = 0), meaning there is at least one line after it
+                    self.status = "finished"
+                    # KILL THE PROCESS
+                    if process_or_handle is not None and not isinstance(process_or_handle, ExecutionHandle):
+                        terminal.kill(process_or_handle.pid) # KILL
+                    return
+
+        #print("FINISH AT", finish_at)
+
+        #if "finish_at" in kwargs:
+        if finish_at is not None:
+            #finish_at_line = kwargs["finish_at"]
+            for line in reversed(lines):
+                if finish_at in line:
+                    self.status = "finished"
+                    # KILL THE PROCESS
+                    if process_or_handle is not None and not isinstance(process_or_handle, ExecutionHandle):
+                        terminal.kill(process_or_handle.pid) # KILL
+                    return
 
         # Interpret the content of the last line
         if " Finished simulation " in last:

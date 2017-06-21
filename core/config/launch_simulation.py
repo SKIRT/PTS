@@ -33,3 +33,8 @@ definition.add_optional("walltime", "duration", "an estimate for the walltime of
 definition.add_flag("data_parallel", "enable data parallelization", None)
 
 # -----------------------------------------------------------------
+
+definition.add_optional("finish_at", "string", "finish when this is encountered")
+definition.add_optional("finish_after", "string", "finish after this is encountered")
+
+# -----------------------------------------------------------------
