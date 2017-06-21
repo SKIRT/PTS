@@ -1757,7 +1757,7 @@ def replace_strings(path, replacement_dict):
 
             if 'components type=""' in line:
                 if which_system == "dust": line = line.replace('components type=""', 'components type="DustComp"')
-                elif which_system == "stellar": line = line.replace('components type=""', 'components type="OligoStellarComp"')
+                elif which_system == "stellar": line = line.replace('components type=""', 'components type="StellarComp"')
                 else: raise RuntimeError("Something went wrong")
 
         # Add the line

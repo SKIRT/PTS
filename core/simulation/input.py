@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ..tools import filesystem as fs
 from ..tools import introspection, time
+from ..tools import types
 
 # -----------------------------------------------------------------
 
@@ -63,8 +64,8 @@ class SimulationInput(object):
         :return:
         """
 
-        if isinstance(argument, list): return cls(*argument)
-        elif isinstance(argument, basestring): return cls(argument)
+        if types.is_sequence(argument): return cls(*argument)
+        elif types.is_string_type(argument): return cls(argument)
         elif isinstance(argument, cls): return argument
         else: raise ValueError("Invalid input specification: should be list, string or SimulationInput object")
 

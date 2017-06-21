@@ -31,6 +31,7 @@ from ..advanced.memoryestimator import MemoryEstimator
 from ..simulation.parallelization import Parallelization
 from .options import AnalysisOptions
 from ..tools import filesystem as fs
+from ..tools import parallelization
 
 # -----------------------------------------------------------------
 
@@ -95,7 +96,8 @@ class SKIRTLauncher(Configurable):
 
         # Check whether the number of processes and the number of threads are both defined
         #return self.config.arguments.parallel.processes is not None and self.config.arguments.parallel.threads is not None
-        return False
+        #return False
+        return self.parallelization is not None
 
     # -----------------------------------------------------------------
 
@@ -161,6 +163,9 @@ class SKIRTLauncher(Configurable):
 
         # Get the definition
         if "definition" in kwargs: self.definition = kwargs.pop("definition")
+
+        # Get the parallelization
+        if "parallelization" in kwargs: self.parallelization = kwargs.pop("parallelization")
 
     # -----------------------------------------------------------------
 
@@ -391,6 +396,22 @@ class SKIRTLauncher(Configurable):
         Returns:
         """
 
+        # Check locally or remotely
+        if self.config.remote: self.check_parallelization_remote()
+        else: self.check_parallelization_local()
+
+    # -----------------------------------------------------------------
+
+    def check_parallelization_remote(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the parallelization scheme ...")
+
         # If the remote host uses a scheduling system, check whether the parallelization options are possible
         # based on the cluster properties defined in the configuration
         if self.remote.scheduler:
@@ -430,6 +451,30 @@ class SKIRTLauncher(Configurable):
             # an error
             if requested_threads > hardware_threads: raise RuntimeError("The requested number of processes and threads "
                                                                         "exceeds the total number of hardware threads")
+
+    # -----------------------------------------------------------------
+
+    def check_parallelization_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the parallelization scheme ...")
+
+        # Determine the total number of requested threads
+        requested_threads = self.parallelization.nthreads
+
+        # Determine the total number of hardware threads that can be used on the remote host
+        hardware_threads = parallelization.ncores()
+        if parallelization.has_hyperthreading(): hardware_threads *= parallelization.nthreads_per_core()
+
+        # If the number of requested threads is greater than the allowed number of hardware threads, raise
+        # an error
+        if requested_threads > hardware_threads: raise RuntimeError("The requested number of processes and threads "
+                                                                    "exceeds the total number of hardware threads")
 
     # -----------------------------------------------------------------
 

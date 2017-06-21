@@ -37,6 +37,8 @@ def tostr(value, **kwargs):
     # Get the 'scientific' flag
     scientific = kwargs.get("scientific", None)
 
+    scientific_int = kwargs.pop("scientific_int", True) # also represent integers in scientific notation
+
     # Set default number of decimal places
     decimal_places = 2
 
@@ -44,7 +46,7 @@ def tostr(value, **kwargs):
     if scientific is None:
 
         # Integer value
-        if types.is_integer_type(value) or (types.is_real_type(value) and numbers.is_integer(value)):
+        if (scientific_int and types.is_integer_type(value)) or (types.is_real_type(value) and numbers.is_integer(value)):
 
             # Convert to be certain (if from float)
             value = int(value)
@@ -90,6 +92,10 @@ def tostr(value, **kwargs):
         # Set the options
         kwargs["scientific"] = scientific
         kwargs["decimal_places"] = decimal_places
+
+    # Set scientific for integers
+    elif types.is_integer_type(value):
+        kwargs["scientific"] = scientific_int
 
     # Stringify
     #return stringify(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, delimiter=delimiter, **kwargs)[1].strip()

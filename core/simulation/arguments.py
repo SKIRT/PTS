@@ -230,11 +230,25 @@ class SkirtArguments(object):
         :return:
         """
 
+        #print("INPUT PATH", self.input_path)
+
         # If the input consists of a list of paths, check whether they represent files in the same directory
-        if isinstance(self.input_path, list): input_dir_path = SimulationInput(*self.input_path).to_single_directory()
-        elif types.is_string_type(self.input_path): input_dir_path = SimulationInput(self.input_path).to_single_directory()
-        elif isinstance(self.input_path, SimulationInput): input_dir_path = self.input_path.to_single_directory()
-        elif self.input_path is None: input_dir_path = None
+        if types.is_sequence(self.input_path):
+            #print(1)
+            input_dir_path = SimulationInput(*self.input_path).to_single_directory()
+        elif types.is_string_type(self.input_path):
+            #print(2)
+            input_dir_path = SimulationInput(self.input_path).to_single_directory()
+        elif isinstance(self.input_path, SimulationInput):
+            #print(3)
+            input_dir_path = self.input_path.to_single_directory()
+        elif types.is_dictionary(self.input_path):
+            #print("HERE")
+            #exit()
+            input_dir_path = SimulationInput(**self.input_path).to_single_directory()
+        elif self.input_path is None:
+            #print(4)
+            input_dir_path = None
         else: raise ValueError("Type of simulation input not recognized")
 
         # Create the argument list
@@ -252,8 +266,8 @@ class SkirtArguments(object):
         if self.logging.allocation: arguments += ["-l", str(self.logging.allocation_limit)]
 
         # Options for input and output
-        if input_dir_path is not None: arguments += ["-i", input_dir_path]
-        if self.output_path is not None: arguments += ["-o", self.output_path]
+        if input_dir_path is not None: arguments += ["-i", "'" + input_dir_path + "'"]
+        if self.output_path is not None: arguments += ["-o", "'" + self.output_path + "'"]
 
         # Other options
         if self.emulate: arguments += ["-e"]

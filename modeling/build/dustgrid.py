@@ -20,6 +20,7 @@ from ...core.launch.launcher import SKIRTLauncher
 from .construct import add_dust_component
 from ...core.simulation.definition import SingleSimulationDefinition
 from ...core.prep.smile import expected_types
+from ...core.simulation.parallelization import Parallelization
 
 # -----------------------------------------------------------------
 
@@ -58,7 +59,9 @@ class DustGridBuilder(Configurable):
         self.definition = None
 
         # THe model representation
-        self.representation = None
+        #self.representation = None
+        # The dust grid
+        self.dust_grid = None
 
         # The dictionary of input map paths
         self.input_map_paths = dict()
@@ -110,7 +113,8 @@ class DustGridBuilder(Configurable):
 
         # Get model definition and representation
         self.definition = kwargs.pop("definition")
-        self.representation = kwargs.pop("representation")
+        #self.representation = kwargs.pop("representation")
+        self.dust_grid = kwargs.pop("dust_grid")
 
     # -----------------------------------------------------------------
 
@@ -132,6 +136,9 @@ class DustGridBuilder(Configurable):
         self.set_components()
 
         #self.set_instruments()
+
+        # Set other settings
+        self.adjust_ski()
 
     # -----------------------------------------------------------------
 
@@ -218,7 +225,7 @@ class DustGridBuilder(Configurable):
         #self.set_dust_emissivity()
 
         # Set the dust grid
-        self.ski.set_dust_grid(self.representation.dust_grid)
+        self.ski.set_dust_grid(self.dust_grid)
 
         # Set all-cells dust library
         #self.ski.set_allcells_dust_lib()
@@ -288,10 +295,20 @@ class DustGridBuilder(Configurable):
         # Inform the user
         log.info("Launching ...")
 
+        print(self.input_map_paths)
+
         # Create definition
         definition = SingleSimulationDefinition(self.ski_path, self.out_path, self.input_map_paths)
 
+        # Determine parallelization scheme
+        ncores = 2
+        nthreads_per_core = 2
+        nprocesses = 1
+        parallelization = Parallelization(ncores, nthreads_per_core, nprocesses)
+
+        self.launcher.config.progress_bar = True
+
         # Run
-        self.launcher.run(definition=definition)
+        self.launcher.run(definition=definition, parallelization=parallelization)
 
 # -----------------------------------------------------------------

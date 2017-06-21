@@ -185,10 +185,14 @@ class SkirtExec:
         command_string = " ".join(command)
         log.debug("The command to launch SKIRT is: '" + command_string + "'")
 
+        # Create a temporary file
+        output_file = tempfile.TemporaryFile()
+        error_file = tempfile.TemporaryFile()
+
         # Launch the SKIRT command
         if wait:
             self._process = None
-            if silent: subprocess.call(command, stdout=open(os.devnull,'w'), stderr=open(os.devnull,'w'))
+            if silent: subprocess.call(command, stdout=output_file, stderr=error_file)
             else: subprocess.call(command)
         #else: self._process = subprocess.Popen(command, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
 
@@ -197,10 +201,7 @@ class SkirtExec:
         #else: self._process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1)
 
         # PROPER:
-        else:
-            # Create a temporary file
-            output_file = tempfile.TemporaryFile()
-            self._process = subprocess.Popen(command, stdout=output_file, stderr=output_file)
+        else: self._process = subprocess.Popen(command, stdout=output_file, stderr=error_file)
 
         # Show progress bar with progress
         if progress_bar:
@@ -220,14 +221,34 @@ class SkirtExec:
                 log.error("SKIRT error output:")
                 log.error("------------------")
                 out, err = self._process.communicate()
-                for line in out:
-                    if "*** Error" in line:
-                        line = line.split("*** Error: ")[1].split("\n")[0]
-                        log.error(line)
-                for line in err:
-                    if "*** Error" in line:
-                        line = line.split("*** Error: ")[1].split("\n")[0]
-                        log.error(line)
+                #print("OUT", out)
+                #print("ERR", err)
+
+                if out is None:
+
+                    #for line in fs.read_lines(output_file):
+
+                    if output_file is not None:
+                        for line in output_file: log.error(line)
+
+                else:
+
+                    for line in out:
+                        if "*** Error" in line:
+                            line = line.split("*** Error: ")[1].split("\n")[0]
+                            log.error(line)
+
+                if err is None:
+
+                    if error_file is not None:
+                        for line in error_file: log.error(line)
+
+                else:
+
+                    for line in err:
+                        if "*** Error" in line:
+                            line = line.split("*** Error: ")[1].split("\n")[0]
+                            log.error(line)
                 raise RuntimeError("The simulation crashed")
 
         # Return the list of simulations so that their results can be followed up

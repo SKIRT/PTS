@@ -1697,7 +1697,7 @@ class SkiFile:
         parent.append(parent.makeelement("ThemisDustMix", attrs))
 
     ## This function sets a Zubko dust mix model for the dust component with the specified id
-    def set_dust_component_zubko_mix(self, component_id, graphite_populations=7, silicate_populations=7, pah_poulations=5, write_mix=True, write_mean_mix=True, write_size=True):
+    def set_dust_component_zubko_mix(self, component_id, graphite_populations=7, silicate_populations=7, pah_populations=5, write_mix=True, write_mean_mix=True, write_size=True):
         # writeMix="false" writeMeanMix="false" writeSize="false" graphitePops="7" silicatePops="7" PAHPops="5"
 
         # Remove current mix, return the parent
@@ -3796,6 +3796,8 @@ class SkiFile:
         #from ..tools.stringify import stringify_not_list
         from ..tools.stringify import tostr
 
+        direct_children = []
+
         children = dict()
         children_types = dict()
 
@@ -3803,18 +3805,41 @@ class SkiFile:
 
         #print(properties)
 
+        if "children" in properties:
+
+            # Loop over the children
+            for property_name in properties["children"]:
+
+                #print("PROPERTY NAME:", property_name)
+                #print("PARAMETERS:", properties["children"][property_name])
+
+                element = self.create_element(property_name, properties["children"][property_name])
+
+                # Add child
+                direct_children.append(element)
+
         # Loop over the properties, create the children
         for property_name in properties:
 
-            if property_name == "children":
+            # Children are defined now
+            if property_name == "children": continue
 
-                for child_name in properties["children"]:
+                # Loop over the child properties
+                #for child_property in properties["children"]: # e.g. geometry, mix, etc.
+                #for child_name in properties["children"]:
+                #    child_element = self.create_element(child_name, properties["children"][child_name])
+                #    children[child_name] = child_element
+                #    if "type" in properties["children"][child_name]: children_types[child_name] = properties["children"][child_name]["type"]
+                #    children[child_property] = children
+                #continue
 
-                    child_element = self.create_element(child_name, properties["children"][child_name])
-                    children[child_name] = child_element
-                    if "type" in properties["children"][child_name]: children_types[child_name] = properties["children"][child_name]["type"]
+                # Loop over
+                #for child_property_name in properties["children"]
 
-                continue
+                #print("PROPERTY NAME:", property_name)
+                #print("PARAMETERS:", properties["children"][property_name])
+
+                #element = self.create_element(property_name, properties["children"][property_name])
 
             #print(property_name)
             value = properties[property_name]
@@ -3840,7 +3865,7 @@ class SkiFile:
 
             # Regular value (string, int, float, quantity)
             else:
-                attrs[property_name] = tostr(value) #stringify_not_list(value) # can also be 'type'
+                attrs[property_name] = tostr(value, scientific_int=False) #stringify_not_list(value) # can also be 'type'
                 #print(property_name, value, type(value))
 
         # Make element
@@ -3855,8 +3880,8 @@ class SkiFile:
         #print(attrs)
         element = self.root.makeelement(tag, attrs)
 
-        print(children)
-        print(children_types)
+        #print(children)
+        #print(children_types)
 
         # Make children
         for property_name in children:
@@ -3874,6 +3899,9 @@ class SkiFile:
 
             # Add the list element to the base element
             element.append(list_element)
+
+        # Add direct children
+        for child in direct_children: element.append(child)
 
         # Return the new element
         return element
@@ -3893,6 +3921,7 @@ class SkiFile:
         #element = self.create_element(tag, properties)
         element = self.create_element(tag, properties)
 
+        # Add the component
         components = self.get_stellar_components_object()
         components.append(element)
 
@@ -3911,6 +3940,7 @@ class SkiFile:
         #element = self.create_element(tag, properties)
         element = self.create_element(tag, properties)
 
+        # Add the component
         components = self.get_dust_components_object()
         components.append(element)
 

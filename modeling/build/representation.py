@@ -334,7 +334,7 @@ class RepresentationBuilderBase(BuildComponent):
         builder.config.output = self.representation.grid_out_path
 
         # Run the builder
-        builder.run(definition=self.definition, representation=self.representation)
+        builder.run(definition=self.definition, dust_grid=self.dust_grid)
 
 # -----------------------------------------------------------------
 
