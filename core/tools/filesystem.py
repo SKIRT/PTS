@@ -176,6 +176,18 @@ def absolute_path(path):
 
 # -----------------------------------------------------------------
 
+def is_absolute(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    return os.path.isabs(path)
+
+# -----------------------------------------------------------------
+
 def absolute_or_in(path, in_path):
 
     """
@@ -185,7 +197,7 @@ def absolute_or_in(path, in_path):
     :return:
     """
 
-    if os.path.isabs(path): return path
+    if is_absolute(path): return path
     else: return join(in_path, path)
 
 # -----------------------------------------------------------------

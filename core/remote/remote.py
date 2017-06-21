@@ -3047,7 +3047,7 @@ class Remote(object):
             output = self.execute(command, cwd=path)
             #print(output)
             paths = [line for line in output if not line.startswith(">")]
-            paths = [filepath for filepath in paths if not self.is_file(filepath)]
+            paths = [filepath for filepath in paths if self.is_file(filepath)]
         else:
             output = self.execute("for f in *; do [[ -d $f ]] || echo $f; done", cwd=path)
             paths = [fs.join(path, name) for name in output]
@@ -3056,6 +3056,8 @@ class Remote(object):
             returns = ["name", "path"]
             return_dict = True
         else: return_dict = False
+
+        #print(paths)
 
         # Filter
         result = []
@@ -4709,6 +4711,32 @@ class Remote(object):
         if path.startswith("~"): return fs.join(self.home_directory, path.split("~/")[1])
         elif path.startswith("/"): return path
         else: return fs.join(self.working_directory, path)
+
+    # -----------------------------------------------------------------
+
+    def absolute_or_in(self, path, in_path):
+
+        """
+        This function ...
+        :param path:
+        :param in_path:
+        :return:
+        """
+
+        if fs.is_absolute(path): return path
+        else: return fs.join(in_path, path)
+
+    # -----------------------------------------------------------------
+
+    def absolute_or_in_home(self, path):
+        
+        """
+        This function ...
+        :param path: 
+        :return: 
+        """
+
+        return self.absolute_or_in(path, self.home_directory)
 
     # -----------------------------------------------------------------
 

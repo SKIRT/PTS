@@ -147,14 +147,16 @@ for name in paths:
     # Get filename
     filename = fs.strip_extension(fs.name(path))
 
+    #print(filename)
+
     # Determine origin from filename
-    origin = instrument_to_origin(filename.split("_")[1])
+    #origin = instrument_to_origin(filename.split("_")[1])
 
     # Other way
-    origin_alt = fs.name(fs.directory_of(path))
+    origin = fs.name(fs.directory_of(path))
 
     # CHeck
-    if origin != origin_alt: raise ValueError(origin + " != " + origin_alt)
+    #if origin != origin_alt: raise ValueError(origin + " != " + origin_alt)
 
     # Create remote directory
     remote_image_directory = fs.join(remote_data_path, origin)
