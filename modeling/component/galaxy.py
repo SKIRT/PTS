@@ -1711,14 +1711,15 @@ def get_initial_dataset_path(modeling_path):
 
 # -----------------------------------------------------------------
 
-def get_initial_dataset(modeling_path):
+def get_initial_dataset(modeling_path, check=True):
 
     """
     This function ...
+    :param check:
     :return:
     """
 
-    return DataSet.from_file(get_initial_dataset_path(modeling_path))
+    return DataSet.from_file(get_initial_dataset_path(modeling_path), check=check)
 
 # -----------------------------------------------------------------
 

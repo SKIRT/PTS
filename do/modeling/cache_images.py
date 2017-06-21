@@ -17,7 +17,7 @@ from pts.core.tools.logging import log
 from pts.core.tools import filesystem as fs
 from pts.modeling.core.environment import GalaxyModelingEnvironment
 from pts.core.remote.remote import Remote
-from pts.modeling.core.steps import cached_directory_name_for_single_command
+from pts.modeling.core.steps import cached_directory_path_for_single_command
 from pts.modeling.component.galaxy import get_data_image_and_error_paths, get_initial_dataset
 
 # -----------------------------------------------------------------
@@ -36,8 +36,7 @@ remote = Remote(host_id=environment.cache_host_id)
 
 # -----------------------------------------------------------------
 
-directory_name = cached_directory_name_for_single_command(environment, "initialize_preparation")
-remote_data_path = fs.join(remote.home_directory, directory_name)
+remote_data_path = cached_directory_path_for_single_command(environment, "initialize_preparation", remote)
 if not remote.is_directory(remote_data_path): remote.create_directory(remote_data_path)
 
 # -----------------------------------------------------------------
@@ -48,7 +47,7 @@ paths, error_paths = get_data_image_and_error_paths(modeling_path)
 # -----------------------------------------------------------------
 
 # Get the initial dataset
-dataset = get_initial_dataset(modeling_path)
+dataset = get_initial_dataset(modeling_path, check=False)
 
 # -----------------------------------------------------------------
 
@@ -69,8 +68,15 @@ for name in paths:
             continue
         initialized_path = fs.join(prep_path, "initialized.fits")
         if not fs.is_file(initialized_path):
-            log.warning("The initialized '" + name + "' image is not found, skipping ...")
-            continue
+            # Check whether cached image is present
+            remote_prep_path = cached_directory_path_for_single_command(environment, "prepare_data", remote)
+            #print(remote_prep_path)
+            remote_image_directory_path = fs.join(remote_prep_path, name)
+            #print(remote_image_directory_path)
+            remote_initialized_path = fs.join(remote_image_directory_path, "initialized.fits")
+            if not remote.is_directory(remote_prep_path) or not remote.is_directory(remote_image_directory_path) or not remote.is_file(remote_initialized_path):
+                log.warning("The initialized '" + name + "' image is not found, skipping ...")
+                continue
 
     # Cache
 

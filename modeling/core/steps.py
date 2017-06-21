@@ -16,8 +16,7 @@ from __future__ import absolute_import, division, print_function
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
-from ...core.basics.table import SmartTable
-from ...core.tools import time, tables
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -249,6 +248,22 @@ def cached_directory_name_for_single_command(environment, command_name):
 
     # Other
     else: raise ValueError("Invalid command: '" + command_name + "'")
+
+# -----------------------------------------------------------------
+
+def cached_directory_path_for_single_command(environment, command_name, remote):
+
+    """
+    This function ...
+    :param environment:
+    :param command_name:
+    :param remote:
+    :return:
+    """
+
+    name = cached_directory_name_for_single_command(environment, command_name)
+    if name is None: return None
+    else: return fs.join(remote.home_directory, name)
 
 # -----------------------------------------------------------------
 
