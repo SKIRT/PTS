@@ -721,3 +721,18 @@ def find_delimiter(string, noccurences, delimiters=("-", "_", ".", "__", " ")):
         return possible_delimiters[the_index]
 
 # -----------------------------------------------------------------
+
+def find_any_case(string, sequence):
+
+    """
+    This function ...
+    :param string:
+    :param sequence:
+    :return:
+    """
+
+    for s in sequence:
+        if s.lower() == string.lower(): return s
+    return None # not found
+
+# -----------------------------------------------------------------
