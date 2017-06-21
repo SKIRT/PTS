@@ -836,6 +836,30 @@ class GeneticEngine(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def minimize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.minimax == "minimize"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maximize(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.minimax == "maximize"
+
+    # -----------------------------------------------------------------
+
     def setMinimax(self, mtype):
 
         """
@@ -1342,17 +1366,37 @@ class GeneticEngine(object):
             old_best_raw = old_best.score
             new_best_raw = new_best.score
 
+            # NEW: VERIFY THAT HE BEST RAW SCORES ARE INDEED THE MINIMUM OR MAXIMUM OF ALL THE SCORES IN THEIR GENERATION (DEBUGGING)
+            if self.nElitismReplacement == 1:
+
+                if self.minimize:
+                    if old_best_raw != min(self.internalPop.scores): raise RuntimeError("Something went wrong picking the best individual of the old (internal) population: score of " + str(old_best_raw) + " but lowest score is " + min(self.internalPop.scores))
+                    if new_best_raw != min(new_population.scores): raise RuntimeError("Something went wrong picking the best individual of the new population: score of " + str(new_best_raw) + " but lowest score is " + min(new_population.scores))
+                elif self.maximize:
+                    if old_best_raw != max(self.internalPop.scores): raise RuntimeError("Something went wrong picking the best individual of the old (internal) population: score of " + str(old_best_raw) + " but highest score is " + max(self.internalPop.scores))
+                    if new_best_raw != max(new_population.scores): raise RuntimeError("Something went wrong picking the best individual of the new population: score of " + str(new_best_raw) + " but highest score is " + max(new_population.score))
+                else: raise ValueError("Invalid state of 'minimax': must be 'maximize' or 'minimize")
+
             # Get fitness
             old_best_fitness = old_best.fitness
             new_best_fitness = new_best.fitness
 
             # Check condition, depending on the min max type
-            if self.getMinimax() == "maximize": condition = old_best_raw > new_best_raw
-            elif self.getMinimax() == "minimize": condition = old_best_raw < new_best_raw
+            if self.minimize: condition = old_best_raw < new_best_raw # old_best_raw > new_best_raw WAS WRONG?!
+            elif self.maximize: condition = old_best_raw > new_best_raw #old_best_raw < new_best_raw WAS WRONG?!
             else: raise ValueError("Invalid state of 'minimax': must be 'maximize' or 'minimize'")
 
             # Determine the index of the individual to be replaced
             replacement_index = len(new_population) - 1 - i
+
+            # NEW: VERIFY THAT THE RAW SCORE OF THE REPLACEMENT INDIVIDUAL IS INDEED THE WORST
+            if self.nElitismReplacement == 1:
+
+                replaced = new_population[replacement_index]
+                if self.minimize:
+                    if replaced.score != max(new_population.scores): raise RuntimeError("Something went wrong picking the worst individual of the new population: score of " + str(replaced.score) + " but highest score is " + max(new_population.scores))
+                elif self.maximize:
+                    if replaced.score != min(new_population.scores): raise RuntimeError("Something went wrong picking the worst individual of the new population: score of " + str(replaced.score) + " but lowest score is " + min(new_population.scores))
 
             # Determine the individual ID
             if isinstance(new_population, NamedPopulation): individual_id = new_population.names[replacement_index]

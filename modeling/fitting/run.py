@@ -874,6 +874,7 @@ class FittingRun(object):
         :return:
         """
 
+        if index == -1: return self.get_initial_generation_name()
         return str("Generation" + str(index))
 
     # -----------------------------------------------------------------

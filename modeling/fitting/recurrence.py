@@ -75,4 +75,16 @@ class Recurrence(object):
 
         return [self.individual.genes[i] != self.original.genes[i] for i in range(self.genome_size)]
 
+    # -----------------------------------------------------------------
+
+    @property
+    def ndifferences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sum(self.differences)
+
 # -----------------------------------------------------------------

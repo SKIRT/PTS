@@ -304,6 +304,32 @@ class GenerationPlatform(object):
 
     # -----------------------------------------------------------------
 
+    def ndigits_for_parameter(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        return self.generation.parameter_ndigits[self.index_for_parameter(label)]
+
+    # -----------------------------------------------------------------
+
+    def add_unit(self, value, label):
+
+        """
+        This function ...
+        :param value:
+        :param label:
+        :return:
+        """
+
+        if not self.has_unit(label): return value
+        else: return value * self.unit_for_parameter(label)
+
+    # -----------------------------------------------------------------
+
     def parameter_to_string(self, label, value):
 
         """
@@ -313,7 +339,55 @@ class GenerationPlatform(object):
         :return:
         """
 
-        return tostr(value, scientific=True, fancy=True, ndigits=self.generation.parameter_ndigits[self.index_for_parameter(label)])
+        return tostr(value, scientific=True, fancy=True, ndigits=self.ndigits_for_parameter(label))
+
+    # -----------------------------------------------------------------
+
+    def unit_for_parameter(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        return self.generation.unit_for_parameter(label)
+
+    # -----------------------------------------------------------------
+
+    def has_unit(self, label):
+
+        """
+        This function ...
+        :param label:
+        :return:
+        """
+
+        return self.unit_for_parameter(label) is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_units(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.parameter_units
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_labels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.generation.parameter_labels
 
     # -----------------------------------------------------------------
 
@@ -326,13 +400,10 @@ class GenerationPlatform(object):
         """
 
         values = dict()
-        for index, label in enumerate(self.generation.parameter_labels):
-
-            # Get the unit
-            unit = self.generation.unit_for_parameter(label)
+        for index, label in enumerate(self.parameter_labels):
 
             # Add the unit
-            if unit is not None: value = parameters[index] * unit
+            if self.has_unit(label) is not None: value = parameters[index] * self.unit_for_parameter(label)
             else: value = parameters[index]
 
             # Set the value
@@ -390,7 +461,7 @@ class GenerationPlatform(object):
         strings = self.parameter_values_to_strings(values)
 
         parts = []
-        for label in self.generation.parameter_labels:
+        for label in self.parameter_labels:
             parts.append(label + " = " + strings[label])
 
         # Make one long string
@@ -407,7 +478,7 @@ class GenerationPlatform(object):
         """
 
         scalar = []
-        for label in self.generation.parameter_labels:
+        for label in self.parameter_labels:
             scalar.append(values[label].to(self.generation.unit_for_parameter(label)).value)
         return np.array(scalar)
 
@@ -810,6 +881,9 @@ class GenerationPlatform(object):
                 print_row("Original", ":", original_colored)
 
             print("")
+            print(" - number of differences:" + tostr(recurrence.ndifferences))
+
+            print("")
             print("COMPARISON:")
             print("")
 
@@ -827,7 +901,7 @@ class GenerationPlatform(object):
                 print_row("Individual", ":", "[" + par_string + "]")
                 print_row("Original", ":", "[" + original_par_string + "]")
 
-            print("")
+            #print("")
 
             print("")
             print("PARAMETERS:")
@@ -851,11 +925,18 @@ class GenerationPlatform(object):
             absolute = abs(parameters_array - original_parameters_array)
             relative = absolute / original_parameters_array
 
+            # Add unit for absolute al values
+            absolute = [self.add_unit(value, label) for value, label in zip(absolute, self.parameter_labels)]
+            absolute_strings = [self.parameter_to_string(label, value) for value, label in zip(absolute, self.parameter_labels)]
+
             print("Difference:")
             with fmt.itemize() as print_item:
-                print_item("absolute: " + tostr(absolute))
+                print_item("absolute: " + tostr(absolute_strings))
                 print_item("relative: " + tostr(relative))
                 print_item("ratio: " + tostr(ratio))
+
+            # Check if the values are close enough
+            if not np.isclose(ratio, 1., rtol=5e-3): log.warning("Values are not close")
 
             #print("")
 

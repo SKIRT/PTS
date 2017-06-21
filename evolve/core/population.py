@@ -421,6 +421,30 @@ class PopulationBase(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def raw_sorting(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sortType == constants.sortType["raw"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def scaled_sorting(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.sortType == constants.sortType["scaled"]
+
+    # -----------------------------------------------------------------
+
     def sort(self):
 
         """
@@ -437,13 +461,15 @@ class PopulationBase(object):
         elif self.minimax == "maximize": rev = True
         else: raise ValueError("Wrong minimax type: must be 'maximize' or 'minimize'")
 
-        if self.sortType == constants.sortType["raw"]: self.internalPop.sort(cmp=utils.cmp_individual_raw, reverse=rev)
-        else:
+        if self.raw_sorting: self.internalPop.sort(cmp=utils.cmp_individual_raw, reverse=rev)
+        elif self.scaled_sorting:
 
             self.scale()
             self.internalPop.sort(cmp=utils.cmp_individual_scaled, reverse=rev)
             self.set_raw_from_internal()
             self.internalPopRaw.sort(cmp=utils.cmp_individual_raw, reverse=rev)
+
+        else: raise ValueError("Invalid state of the sort type")
 
         # Set sorted flag
         self.sorted = True
@@ -774,6 +800,8 @@ class PopulationBase(object):
         :return: 
         """
 
+        pass
+
     # -----------------------------------------------------------------
 
     @abstractmethod
@@ -800,6 +828,30 @@ class PopulationBase(object):
         """
 
         pass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def scores(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [ind.score for ind in self]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitnesses(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [ind.fitness for ind in self]
 
 # -----------------------------------------------------------------
 
