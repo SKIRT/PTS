@@ -1543,6 +1543,7 @@ class FittingRun(object):
 
         # Get generation and individual
         generation_index, individual_key, chi_squared = get_best_individual_key_and_score_all_generations(database_path, self.name, minmax="min")
+        generation_index -= 1
 
         # Determine generation name
         generation_name = self.get_genetic_generation_name(generation_index)

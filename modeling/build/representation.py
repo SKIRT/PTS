@@ -33,6 +33,7 @@ from ..component.galaxy import GalaxyModelingComponent
 from ...core.prep.dustgrids import create_one_dust_grid_for_galaxy_from_deprojection, smallest_scale_for_dust_grid
 from ...core.simulation.grids import FileTreeDustGrid
 from ...core.simulation.tree import DustGridTree
+from .dustgrid import DustGridBuilder
 
 # -----------------------------------------------------------------
 
@@ -88,7 +89,7 @@ class Representation(object):
         """
 
         path = fs.join(self.grid_path, "tree.dat")
-        return fs.is_file(path)
+        return path #fs.is_file(path)
 
     # -----------------------------------------------------------------
 
@@ -126,7 +127,7 @@ class Representation(object):
         :return: 
         """
 
-        return self.dust_grid_tree_path is not None
+        return fs.is_file(self.dust_grid_tree_path)
 
     # -----------------------------------------------------------------
 
@@ -241,7 +242,7 @@ class RepresentationBuilderBase(BuildComponent):
         """
 
         # Call the constructor of the base class
-        super(RepresentationBuilderBase).__init__(*args, **kwargs)
+        super(RepresentationBuilderBase, self).__init__(*args, **kwargs)
 
         # The model definition
         self.definition = None
@@ -280,12 +281,60 @@ class RepresentationBuilderBase(BuildComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def representation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.representation.name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def representation_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.representation.path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.representation.model_name
+
+    # -----------------------------------------------------------------
+
     def build_dust_grid(self):
 
         """
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Building the dust grid ...")
+
+        # Create the builder
+        builder = DustGridBuilder()
+
+        # Set output path
+        builder.config.output = self.representation.grid_out_path
+
+        # Run the builder
+        builder.run(definition=self.definition, representation=self.representation)
 
 # -----------------------------------------------------------------
 
@@ -359,42 +408,6 @@ class RepresentationBuilder(RepresentationBuilderBase, GalaxyModelingComponent):
 
         # Get the dust grid, if passed
         if "dust_grid" in kwargs: self.dust_grid = kwargs.pop("dust_grid")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def representation_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.representation.name
-
-    # -----------------------------------------------------------------
-
-    @property
-    def representation_path(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        return self.representation.path
-
-    # -----------------------------------------------------------------
-
-    @property
-    def model_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.representation.model_name
 
     # -----------------------------------------------------------------
 

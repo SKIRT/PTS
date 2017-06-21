@@ -66,7 +66,7 @@ log = None
 
 def handle_exception(exc_type, exc_value, exc_traceback):
 
-    if issubclass(exc_type, KeyboardInterrupt):
+    if issubclass(exc_type, KeyboardInterrupt) or issubclass(exc_type, SystemExit):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
     #log.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))

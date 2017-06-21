@@ -120,6 +120,7 @@ def write_dict_impl(dictfile, dct, indent=""):
         else:
 
             ptype, string = stringify.stringify(dct[name])
+            if ":" in string: string = string.replace(":", "*colon*")
             print(indent + "[" + name_ptype + "] " + name_string + " [" + ptype + "]: " + string, file=dictfile)
 
         if index != length - 1: print("", file=dictfile)
@@ -190,6 +191,9 @@ def load_dict_impl(dictfile, dct, indent=""):
 
                 ptype = line.split(name_string + " [")[1].split("]")[0]
                 string = line.split(":")[1].strip()
+
+                # Replace
+                string = string.replace("*colon*", ":")
 
                 #print(string)
                 #print(list(name))

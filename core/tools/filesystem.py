@@ -1725,3 +1725,49 @@ def relative_to(path, base_path):
     else: return relative
 
 # -----------------------------------------------------------------
+
+def replace_strings(path, replacement_dict):
+
+    """
+    This function ...
+    :param path:
+    :param replacement_dict:
+    :return:
+    """
+
+    new_lines = []
+
+    which_system = None
+
+    # Read the lines
+    for line in read_lines(path):
+
+        if "<dustSystem" in line: which_system = "dust"
+        elif "/dustSystem" in line: which_system = None
+
+        if "<stellarSystem" in line: which_system = "stellar"
+        elif "/stellarSystem" in line: which_system = None
+
+        # Loop over the replacements
+        for from_string in replacement_dict:
+            to_string = replacement_dict[from_string]
+
+            # Determine the new line
+            if from_string in line: line = line.replace(from_string, to_string)
+
+            if 'components type=""' in line:
+                if which_system == "dust": line = line.replace('components type=""', 'components type="DustComp"')
+                elif which_system == "stellar": line = line.replace('components type=""', 'components type="OligoStellarComp"')
+                else: raise RuntimeError("Something went wrong")
+
+        # Add the line
+        new_lines.append(line)
+
+    # Remove the file
+    remove_file(path)
+
+    # Write lines
+    write_lines(path, new_lines)
+
+
+# -----------------------------------------------------------------

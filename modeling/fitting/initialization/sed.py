@@ -128,6 +128,9 @@ class SEDFittingInitializer(FittingInitializerBase, SEDModelingComponent):
         :return: 
         """
 
+        # Inform the user
+        log.info("Configuring input maps for stellar components ...")
+
         # Loop over the stellar components
         for name in get_stellar_component_names(self.config.path, self.model_name):
 
@@ -160,6 +163,9 @@ class SEDFittingInitializer(FittingInitializerBase, SEDModelingComponent):
         This function ...
         :return: 
         """
+
+        # Inform the user
+        log.info("Configuring input maps for dust components ...")
 
         # Loop over the dust components
         for name in get_dust_component_names(self.config.path, self.model_name):
