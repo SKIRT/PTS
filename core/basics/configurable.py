@@ -80,6 +80,23 @@ def write_input(input_dict, path, light=False):
 
 # -----------------------------------------------------------------
 
+class NotSavedPlaceHolder(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, filepath):
+
+        """
+        This function ...
+        :param filepath:
+        """
+
+        self.filepath = filepath
+
+# -----------------------------------------------------------------
+
 def load_input(path):
 
     """
@@ -125,7 +142,7 @@ def load_input(path):
 
             # Check whether present, and load
             if fs.is_file(filepath): input_dict[name] = cls.from_file(filepath)
-            else: print("Input file '" + filepath + "' not present")
+            else: input_dict[name] = NotSavedPlaceHolder(filepath) # print("Input file '" + filepath + "' not present")
 
     # Return the input
     return input_dict

@@ -770,6 +770,7 @@ def integer_list(argument):
     if "-" in argument and "," in argument:
 
         parts = argument.split(",")
+        #print("PARTS", parts)
         total_int_list = []
         for part in parts: total_int_list += integer_list(part)
         return total_int_list
@@ -777,17 +778,22 @@ def integer_list(argument):
     # Split the string
     splitted = argument.split('-')
 
+    #print("SPLITTED", splitted)
+
     if len(splitted) == 0: raise ValueError("No range given")
     elif len(splitted) == 1:
 
         splitted = splitted[0].split(",")
 
+        #print("SPLITTED 2", splitted)
+
         # Check if the values are valid
         for value in splitted:
             if not value.isdigit(): raise ValueError("Argument contains unvalid characters")
 
-        # Only leave unique values
-        return list(set([int(value) for value in splitted]))
+        # Only leave unique values: NO!!!!!!??? WHY WAS THIS EVER HERE???
+        #return list(set([int(value) for value in splitted]))
+        return [integer(value) for value in splitted]
 
     elif len(splitted) == 2:
 
