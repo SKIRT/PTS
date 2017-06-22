@@ -41,7 +41,6 @@ from __future__ import division, print_function
 
 # Import standard modules
 from copy import deepcopy
-import numpy as np
 from time import time
 from types import BooleanType
 from sys import stdout as sys_stdout
@@ -58,6 +57,7 @@ import pts.evolve.core.utils as utils
 from ...core.tools.logging import log
 from ...core.tools import serialization
 from ...core.tools.random import prng
+from ...core.tools.stringify import tostr
 from ...core.basics.containers import DefaultOrderedDict
 
 # -----------------------------------------------------------------
@@ -1376,20 +1376,28 @@ class GeneticEngine(object):
                 if self.minimize:
                     if old_best_raw != min(self.internalPop.scores):
                         log.error("Something went wrong picking the best individual of the old (internal) population: score of " + str(old_best_raw) + " but lowest score is " + str(min(self.internalPop.scores)))
+                        log.error("All scores: " + tostr(self.internalPop.scores))
                         log.error("Fitness: " + str(old_best_fitness) + " and lowest fitness is " + str(min(self.internalPop.fitnesses)))
+                        log.error("All fitnesses: " + tostr(self.internalPop.fitnesses))
                         exit()
                     if new_best_raw != min(new_population.scores):
                         log.error("Something went wrong picking the best individual of the new population: score of " + str(new_best_raw) + " but lowest score is " + str(min(new_population.scores)))
+                        log.error("All scores: " + tostr(new_population.scores))
                         log.error("Fitness: " + str(new_best_fitness) + " and lowest fitness is " + str(min(new_population.fitnesses)))
+                        log.error("All fitnesses: " + tostr(new_population.fitnesses))
                         exit()
                 elif self.maximize:
                     if old_best_raw != max(self.internalPop.scores):
                         log.error("Something went wrong picking the best individual of the old (internal) population: score of " + str(old_best_raw) + " but highest score is " + str(max(self.internalPop.scores)))
+                        log.error("All scores: " + tostr(self.internalPop.scores))
                         log.error("Fitness: " + str(old_best_fitness) + " and highest fitness is " + str(max(self.internalPop.fitnesses)))
+                        log.error("All fitnesses: " + tostr(self.internalPop.fitnesses))
                         exit()
                     if new_best_raw != max(new_population.scores):
                         log.error("Something went wrong picking the best individual of the new population: score of " + str(new_best_raw) + " but highest score is " + str(max(new_population.score)))
+                        log.error("All scores: " + tostr(new_population.scores))
                         log.error("Fitness: " + str(new_best_fitness) + " and highest fitness is " + str(max(new_population.fitnesses)))
+                        log.error("All fitnesses: " + tostr(new_population.fitnesses))
                         exit()
                 else: raise ValueError("Invalid state of 'minimax': must be 'maximize' or 'minimize")
 
@@ -1450,6 +1458,10 @@ class GeneticEngine(object):
             data["Elitism performed"].append(condition)
             data["Replaced raw score"].append(replaced_raw)
             data["Replaced fitness"].append(replaced_fitness)
+
+        # RECALCULATE THE FITNESSES AND/OR RESORT?????!!
+        new_population.scale()
+        new_population.sort()
 
         # Return the elitism data
         return data

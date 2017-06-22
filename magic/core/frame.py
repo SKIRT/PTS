@@ -819,6 +819,18 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def where(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return Mask(self._data == value)
+
+    # -----------------------------------------------------------------
+
     @property
     def pixelscale(self):
 

@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.basics.configurable import Configurable
@@ -19,8 +22,9 @@ from ...core.prep.smile import SKIRTSmileSchema
 from ...core.launch.launcher import SKIRTLauncher
 from .construct import add_dust_component
 from ...core.simulation.definition import SingleSimulationDefinition
-from ...core.prep.smile import expected_types
 from ...core.simulation.parallelization import Parallelization
+from ...core.tools import filesystem as fs
+from ...magic.core.frame import Frame
 
 # -----------------------------------------------------------------
 
@@ -91,6 +95,9 @@ class DustGridBuilder(Configurable):
 
         # Lauch the simulation
         self.launch()
+
+        # Check
+        self.check()
 
     # -----------------------------------------------------------------
 
@@ -273,21 +280,7 @@ class DustGridBuilder(Configurable):
         log.info("Writing the ski file ...")
 
         # Save
-        self.ski.saveto(self.ski_path)
-
-        from ...core.tools import filesystem as fs
-        #fs.open_file(self.ski_path)
-
-        replacements = dict()
-
-        for a, b in expected_types.items():
-            from_string = a + ' type=""'
-            to_string = a + ' type="' + b + '"'
-            replacements[from_string] = to_string
-
-        fs.replace_strings(self.ski_path, replacements)
-
-        #fs.open_file(self.ski_path)
+        self.ski.saveto(self.ski_path, fix=True)
 
     # -----------------------------------------------------------------
 
@@ -317,5 +310,46 @@ class DustGridBuilder(Configurable):
 
         # Run
         self.launcher.run(definition=definition, parallelization=parallelization)
+
+    # -----------------------------------------------------------------
+
+    def check(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the dust grid ...")
+
+        gridxy_filename = simulation_prefix + "_ds_grhoxy.fits"
+        geometryxy_filename = simulation_prefix + "_ds_trhoxy.fits"
+
+        # Determine paths
+        gridxy_filepath = fs.join(self.out_path, gridxy_filename)
+        geometryxy_filepath = fs.join(self.out_path, geometryxy_filename)
+
+        # Load both maps
+        gridxy = Frame.from_file(gridxy_filepath)
+        geometryxy = Frame.from_file(geometryxy_filepath)
+
+        # Loop over the unique values in the gridded data
+        values = np.unique(gridxy.data)
+        for value in values:
+
+            # Check in which pixels this value (get patch each time)
+            where = gridxy.where(gridxy) # returns mask
+
+            # Get original values
+            original = geometryxy.data[where]
+
+            # Caculate average
+            mean = np.mean(original)
+            median = np.median(original)
+            std = np.std(original)
+
+            # Print check
+            print(value, mean, median, std)
 
 # -----------------------------------------------------------------

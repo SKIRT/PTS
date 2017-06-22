@@ -93,7 +93,7 @@ class SkiFile:
     ## This function saves the (possibly updated) contents of the SkiFile instance into the specified file.
     # The filename \em must end with ".ski". Saving to and thus replacing the ski file from which this
     # SkiFile instance was originally constructed is allowed, but often not the intention.
-    def saveto(self, filepath, update_path=True):
+    def saveto(self, filepath, update_path=True, fix=False):
         if not filepath.lower().endswith(".ski"):
             raise ValueError("Invalid filename extension for ski file")
         # update the producer and time attributes on the root element
@@ -108,8 +108,11 @@ class SkiFile:
         # Update the ski file path
         if update_path: self.path = filepath
 
+        # Fix, if requested
+        if fix: fix_ski_file(filepath)
+
     ## This function saves the ski file to the original path
-    def save(self): self.saveto(self.path)
+    def save(self, fix=False): self.saveto(self.path, fix=fix)
 
     ## This function returns a copy (a deep copy) of this ski file
     def copy(self):
@@ -4430,5 +4433,72 @@ class LabeledSkiFile(SkiFile):
 
         # Set the value
         self.set_value(element, name, string)
+
+# -----------------------------------------------------------------
+
+def fix_ski_file(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    from ...core.prep.smile import expected_types
+
+    # Set replacement dictionary
+    replacements = dict()
+    for a, b in expected_types.items():
+        from_string = a + ' type=""'
+        to_string = a + ' type="' + b + '"'
+        replacements[from_string] = to_string
+
+    # Replace lines
+    replace_ski_file_lines(path, replacements)
+
+# -----------------------------------------------------------------
+
+def replace_ski_file_lines(path, replacement_dict):
+
+    """
+    This function ...
+    :param path:
+    :param replacement_dict:
+    :return:
+    """
+
+    new_lines = []
+
+    which_system = None
+
+    # Read the lines
+    for line in fs.read_lines(path):
+
+        if "<dustSystem" in line: which_system = "dust"
+        elif "/dustSystem" in line: which_system = None
+
+        if "<stellarSystem" in line: which_system = "stellar"
+        elif "/stellarSystem" in line: which_system = None
+
+        # Loop over the replacements
+        for from_string in replacement_dict:
+            to_string = replacement_dict[from_string]
+
+            # Determine the new line
+            if from_string in line: line = line.replace(from_string, to_string)
+
+            if 'components type=""' in line:
+                if which_system == "dust": line = line.replace('components type=""', 'components type="DustComp"')
+                elif which_system == "stellar": line = line.replace('components type=""', 'components type="StellarComp"')
+                else: raise RuntimeError("Something went wrong")
+
+        # Add the line
+        new_lines.append(line)
+
+    # Remove the file
+    fs.remove_file(path)
+
+    # Write lines
+    fs.write_lines(path, new_lines)
 
 # -----------------------------------------------------------------
