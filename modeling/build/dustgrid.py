@@ -81,9 +81,6 @@ class DustGridBuilder(Configurable):
         # The model
         self.definition = None
 
-        # The simulation
-        self.simulation = None
-
         # THe model representation
         #self.representation = None
         # The dust grid
@@ -320,7 +317,19 @@ class DustGridBuilder(Configurable):
         #self.launcher.config.finish_at = ""
 
         # Run
-        self.simulation = self.launcher.run(definition=definition, parallelization=parallelization)
+        self.launcher.run(definition=definition, parallelization=parallelization)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.launcher.simulation
 
     # -----------------------------------------------------------------
 
@@ -823,7 +832,10 @@ class DustGridBuilder(Configurable):
         path = self.output_path_file("tree.dat")
 
         # Save the tree
-        self.tree.saveto(path)
+        #self.tree.saveto(path) # THIS CAN TAKE MUCH TOO LONG
+
+        # MUCH QUICKER:
+        fs.copy_file(self.tree_path, path)
 
     # -----------------------------------------------------------------
 

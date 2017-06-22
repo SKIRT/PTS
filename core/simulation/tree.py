@@ -332,7 +332,7 @@ class DustGridTree(object):
             parent_id_column.append(parent_id)
 
             # Children
-            if len(node.chilren) > 0:
+            if len(node.children) > 0:
                 child0_column.append(node.children[0])
                 child1_column.append(node.children[1])
             else:
