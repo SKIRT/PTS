@@ -1107,7 +1107,15 @@ class ParameterExplorer(FittingComponent):
         log.debug("Setting the model representation ...")
 
         # GET DUST GRID
-        if self.use_file_tree_dust_grid: dust_grid = self.representation.create_file_tree_dust_grid(write=False)
+        if self.use_file_tree_dust_grid:
+
+            # Get the file tree dust grid object
+            dust_grid = self.representation.create_file_tree_dust_grid(write=False)
+
+            # Make sure it is only the file name, not a complete path
+            dust_grid.filename = fs.name(dust_grid.filename)
+
+        # REGULAR DUST GRID OBJECT
         else: dust_grid = self.representation.dust_grid
 
         # Set the dust grid

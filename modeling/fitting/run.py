@@ -584,6 +584,18 @@ class FittingRun(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def initial_representation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_configuration.initial_representation
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def initial_representation(self):
 
         """
@@ -591,7 +603,7 @@ class FittingRun(object):
         :return:
         """
 
-        name = self.fitting_configuration.initial_representation
+        name = self.initial_representation_name
         representation_path = get_representation_path(self.modeling_path, name)
         return Representation(name, self.model_name, representation_path)
 
@@ -2137,7 +2149,7 @@ class FittingRun(object):
         """
 
         if len(self.generations_table) > 0: return self.generations_table["Model representation"][-1]
-        else: return self.initial_representation #return None
+        else: return self.initial_representation_name #return None
 
     # -----------------------------------------------------------------
 

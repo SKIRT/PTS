@@ -129,6 +129,9 @@ class FittingInitializerBase(FittingComponent):
             # Create file tree dust grid
             dust_grid = self.representation.create_file_tree_dust_grid(write=False)
 
+            # Make sure it is only the file name, not a complete path
+            dust_grid.filename = fs.name(dust_grid.filename)
+
         # Just take the real dust grid object
         else: dust_grid = self.representation.dust_grid
 
