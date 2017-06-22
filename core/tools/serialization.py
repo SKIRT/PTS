@@ -213,7 +213,7 @@ def load_dict_impl(dictfile, dct, indent=""):
                     except AttributeError:
 
                         # Special case: list of lists of something
-                        if ptype.endswith("list_list"):
+                        if ptype.endswith("_list_list"):
 
                             single_parsing_function = getattr(parsing, ptype.split("_list_list")[0])
                             list_parsing_function = getattr(parsing, ptype.split("_list_list")[0] + "_list")
@@ -224,7 +224,8 @@ def load_dict_impl(dictfile, dct, indent=""):
                         # List
                         elif ptype.endswith("_list"):
 
-                            single_parsing_function = getattr(parsing, ptype.split("_list")[0])
+                            base_type = ptype.split("_list")[0]
+                            single_parsing_function = getattr(parsing, base_type)
                             result = []
                             for item in string.split(","): result.append(single_parsing_function(item))
                             value = result

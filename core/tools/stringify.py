@@ -205,19 +205,27 @@ def stringify_list(value, **kwargs):
     from ..basics.configuration import parent_type
     from .logging import log
 
+    #print("PTYPES", ptypes)
+
     ptypes = list(ptypes)
 
-    # Investigate the different ptypes
-    parent_types = [parent_type(type_name) for type_name in ptypes]
-    # Check
-    for i in range(len(parent_types)):
-        if parent_types[i] is None: log.warning("Could not determine the parent type for '" + ptypes[i] + "'. All parent types: " + str(parent_types))
-    #print("Parent types:", parent_types)
-    if sequences.all_equal(parent_types) and parent_types[0] is not None: ptype = parent_types[0]
-    elif ptype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_types)[1] + "'")
+    if len(ptypes) == 1: ptype = ptypes[0]
+    elif sequences.all_equal(ptypes): ptype = ptypes[0]
+    else:
+
+        # Investigate the different ptypes
+        parent_types = [parent_type(type_name) for type_name in ptypes]
+        # Check
+        for i in range(len(parent_types)):
+            if parent_types[i] is None: log.warning("Could not determine the parent type for '" + ptypes[i] + "'. All parent types: " + str(parent_types))
+        #print("Parent types:", parent_types)
+        if sequences.all_equal(parent_types) and parent_types[0] is not None: ptype = parent_types[0]
+        elif ptype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_types)[1] + "'")
 
     # Get delimiter for list
     delimiter = kwargs.pop("delimiter", ",")
+
+    #print("PTYPE", ptype)
 
     # Return the type and the string
     if ptype.endswith("list"):

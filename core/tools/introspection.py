@@ -2387,3 +2387,19 @@ def get_class_path(cls):
     return subproject, relative_class_subproject
 
 # -----------------------------------------------------------------
+
+def get_class_from_path(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    class_module_path = "pts." + path.rsplit(".", 1)[0]
+    class_name = path.rsplit(".", 1)[1]
+
+    # Import and return the class
+    return try_importing_class(class_name, class_module_path)
+
+# -----------------------------------------------------------------

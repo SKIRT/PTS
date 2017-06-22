@@ -88,7 +88,9 @@ def load_input(path):
     :return:
     """
 
+    # Import things
     from ..tools.serialization import load_dict
+    from ..tools import introspection
 
     input_dict = dict()
 
@@ -102,10 +104,28 @@ def load_input(path):
     classes_path = fs.join(path, "classes.dat")
     #classes = load_dict(classes_path)
 
-    # TODO: write this!
+    if fs.is_file(classes_path):
 
-    # Loop over the files in the directory
-    #for filepath, filename in fs.files_in_path(path, exact_not_name="input"):
+        classes = load_dict(classes_path)
+
+        # Loop over the names
+        for name in classes:
+
+            # Get the class path
+            class_path = classes[name]
+
+            # Get the class
+            cls = introspection.get_class_from_path(class_path)
+
+            # Get the default extension
+            filename = name + "." + cls.default_extension
+
+            # Determine the full file path
+            filepath = fs.join(path, filename)
+
+            # Check whether present, and load
+            if fs.is_file(filepath): input_dict[name] = cls.from_file(filepath)
+            else: print("Input file '" + filepath + "' not present")
 
     # Return the input
     return input_dict
