@@ -25,4 +25,6 @@ definition.add_flag("write", "do writing", True)
 #definition.add_section("writing", "writing options")
 #definition.sections["writing"].add_optional("tree_file_path", "string", "path for the dust grid tree file")
 
+definition.add_flag("plot", "do plotting", True)
+
 # -----------------------------------------------------------------

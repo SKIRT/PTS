@@ -84,9 +84,6 @@ class RepresentationGenerator(BuildComponent, GalaxyModelingComponent):
         # 3. Build the representations
         self.build_representations()
 
-        # 4. Generate the dust grids (can only be done now after the RepresentationBuilders have written out)
-        #self.generate_dust_grids()
-
         # 5. Writing
         self.write()
 

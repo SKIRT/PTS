@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.build.imagesrepresentation Contains the ImagesRepresentationBuilder class.
+## \package pts.modeling.build.dustgrid Contains the DustGridBuilder class.
 
 # -----------------------------------------------------------------
 
@@ -14,6 +14,9 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+
+# Import astronomical modules
+from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
@@ -25,6 +28,12 @@ from ...core.simulation.definition import SingleSimulationDefinition
 from ...core.simulation.parallelization import Parallelization
 from ...core.tools import filesystem as fs
 from ...magic.core.frame import Frame
+from ...core.simulation.tree import DustGridTree
+from ...core.simulation.logfile import LogFile
+from ...core.tools import parsing
+from ...core.basics.map import Map
+from ...core.basics.configuration import save_mapping
+from ...core.plot.grids import plotgrids
 
 # -----------------------------------------------------------------
 
@@ -36,6 +45,10 @@ skifilename = simulation_prefix + ".ski"
 gridxy_filename = simulation_prefix + "_ds_grhoxy.fits"
 geometryxy_filename = simulation_prefix + "_ds_trhoxy.fits"
 tree_filename = simulation_prefix + "_ds_tree.dat"
+cell_properties_filename = simulation_prefix + "_ds_cellprops.dat"
+convergence_filename = simulation_prefix + "_ds_convergence.dat"
+quality_filename = simulation_prefix + "_ds_quality.dat"
+log_filename = simulation_prefix + "_log.txt"
 
 # -----------------------------------------------------------------
 
@@ -68,6 +81,9 @@ class DustGridBuilder(Configurable):
         # The model
         self.definition = None
 
+        # The simulation
+        self.simulation = None
+
         # THe model representation
         #self.representation = None
         # The dust grid
@@ -85,6 +101,10 @@ class DustGridBuilder(Configurable):
         self.mean_ratio = None
         self.median_ratio = None
         self.std = None
+
+
+        # Quality measures
+        self.quality = dict()
 
     # -----------------------------------------------------------------
 
@@ -106,10 +126,13 @@ class DustGridBuilder(Configurable):
         self.launch()
 
         # Check
-        self.check()
+        self.get_quality()
 
         # 7. Writing
         if self.config.write: self.write()
+
+        # Plotting
+        if self.config.plot: self.plot()
 
     # -----------------------------------------------------------------
 
@@ -297,7 +320,7 @@ class DustGridBuilder(Configurable):
         #self.launcher.config.finish_at = ""
 
         # Run
-        self.launcher.run(definition=definition, parallelization=parallelization)
+        self.simulation = self.launcher.run(definition=definition, parallelization=parallelization)
 
     # -----------------------------------------------------------------
 
@@ -340,7 +363,7 @@ class DustGridBuilder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def check(self):
+    def get_quality(self):
 
         """
         This function ...
@@ -348,7 +371,31 @@ class DustGridBuilder(Configurable):
         """
 
         # Inform the user
-        log.info("Checking the dust grid ...")
+        log.info("Getting the quality of the dust grid ...")
+
+        # Get the projected quality
+        self.get_projected_quality()
+
+        # Get the optical depth quality
+        self.get_optical_depth_quality()
+
+        # Density
+        self.get_density_quality()
+
+        # Mass
+        self.get_dust_mass_quality()
+
+    # -----------------------------------------------------------------
+
+    def get_projected_quality(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the projected quality of the dust grid ...")
 
         # Load both maps
         gridxy = Frame.from_file(self.grid_xy_path)
@@ -356,18 +403,12 @@ class DustGridBuilder(Configurable):
 
         # Determine ratio
         self.ratio = Frame(gridxy / geometryxy)
-
         self.mean_ratio = Frame.zeros_like(gridxy)
         self.median_ratio = Frame.zeros_like(gridxy)
-
         self.std = Frame.zeros_like(gridxy)
 
-        # Loop over the unique values in the gridded data
-        values = np.unique(gridxy.data)
-        for value in values:
-
-            # Check in which pixels this value (get patch each time)
-            where = gridxy.where(gridxy) # returns mask
+        # Loop over the unique values and their corresponding patches (masks)
+        for value, where in gridxy.unique_values_and_masks:
 
             # Get original values
             original = geometryxy.data[where]
@@ -383,6 +424,330 @@ class DustGridBuilder(Configurable):
             self.mean_ratio[where] = mean / value
             self.median_ratio[where] = median / value
             self.std[where] = std
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cell_properties_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Determine the path to the cell properties file
+        cellprops_path = fs.join(self.out_path, cell_properties_filename)
+        return cellprops_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def optical_depth_90(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the optical depth for which 90% of the cells have a smaller value
+        optical_depth = None
+        for line in reversed(open(self.cell_properties_path).readlines()):
+            if "of the cells have optical depth smaller than" in line:
+                optical_depth = float(line.split("than: ")[1])
+                break
+
+        # Return the optical depth
+        return optical_depth
+
+    # -----------------------------------------------------------------
+
+    def get_optical_depth_quality(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the optical depth quality ...")
+
+        # Debugging
+        log.debug("90% of the cells have an optical depth smaller than " + str(self.optical_depth_90))
+
+        # RERUNNING:
+
+        # Adapt the maximal optical depth criterion
+        #grid.max_optical_depth = optical_depth
+
+        # Inform the user
+        #log.info("Generating the high-resolution grid data ...")
+
+        # Rerun the simulation
+        #prefix = generate_grid(grid, out_path)
+        #optical_depth = get_optical_depth_criterium(out_path, prefix)
+
+        # Debugging
+        #log.debug("90% of the cells have an optical depth smaller than " + str(optical_depth))
+
+        # Create
+        self.quality["optical_depth"] = Map()
+        self.quality["optical_depth"]["tau90"] = self.optical_depth_90
+        self.quality["optical_depth"]["mean"] = self.optical_depth_quality[0]
+        self.quality["optical_depth"]["stddev"] = self.optical_depth_quality[1]
+
+    # -----------------------------------------------------------------
+
+    def get_density_quality(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform theuser
+        log.info("Getting the density quality ...")
+
+        self.quality["density"] = Map()
+
+        self.quality["density"]["mean"] = self.density_quality[0]
+        self.quality["density"]["stddev"] = self.density_quality[1]
+        self.quality["density"]["surface"] = Map()
+        self.quality["density"]["surface"].x = Map()
+        self.quality["density"]["surface"].x.expected = self.surface_density_convergence[0]
+        self.quality["density"]["surface"].x.actual = self.surface_density_convergence[1]
+        self.quality["density"]["surface"].y = Map()
+        self.quality["density"]["surface"].y.expected = self.surface_density_convergence[2]
+        self.quality["density"]["surface"].y.actual = self.surface_density_convergence[3]
+        self.quality["density"]["surface"].z = Map()
+        self.quality["density"]["surface"].z.expected = self.surface_density_convergence[4]
+        self.quality["density"]["surface"].z.actual = self.surface_density_convergence[5]
+
+    # -----------------------------------------------------------------
+
+    def get_dust_mass_quality(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the dust mass quality ...")
+
+        self.quality["mass"] = Map()
+        self.quality["mass"].expected = self.dust_mass_convergence[0]
+        self.quality["mass"].actual = self.dust_mass_convergence[1]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def convergence_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.out_path, convergence_filename)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def surface_density_convergence(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        direction = None
+
+        x_expected = x_actual = None
+        y_expected = y_actual = None
+        z_expected = z_actual = None
+
+        for line in fs.read_lines(self.convergence_path):
+
+            if "X-axis surface density" in line: direction = "x"
+            elif "Y-axis surface density" in line: direction = "y"
+            elif "Z-axis surface density" in line: direction = "z"
+            elif "total dust mass" in line: direction = None # important
+
+            if direction == "x":
+
+                if "expected value" in line: x_expected = parsing.mass_surface_density_quantity(line.split("= ")[1])
+                elif "actual value" in line: x_actual = parsing.mass_surface_density_quantity(line.split("= ")[1])
+
+            elif direction == "y":
+
+                if "expected value" in line: y_expected = parsing.mass_surface_density_quantity(line.split("= ")[1])
+                elif "actual value" in line: y_actual = parsing.mass_surface_density_quantity(line.split("= ")[1])
+
+            elif direction == "z":
+
+                if "expected value" in line: z_expected = parsing.mass_surface_density_quantity(line.split("= ")[1])
+                elif "actual value" in line: z_actual = parsing.mass_surface_density_quantity(line.split("= ")[1])
+
+        # Return
+        return x_expected, x_actual, y_expected, y_actual, z_expected, z_actual
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_mass_convergence(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        triggered = False
+
+        expected = actual = None
+
+        for line in fs.read_lines(self.convergence_path):
+
+            if "X-axis surface density" in line: continue
+            elif "Y-axis surface density" in line: continue
+            elif "Z-axis surface density" in line: continue
+            elif "total dust mass" in line: triggered = True
+
+            if triggered and "expected value" in line:
+                expected = parsing.mass_quantity(line.split("= ")[1])
+
+            elif triggered and "actual value" in line:
+                actual = parsing.mass_quantity(line.split("= ")[1])
+
+        # Return
+        return expected, actual
+
+    # -----------------------------------------------------------------
+
+    @property
+    def quality_path(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        return fs.join(self.out_path, quality_filename)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def optical_depth_quality(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        mean = None
+        stddev = None
+
+        # Search in the lines
+        for line in fs.read_lines(self.quality_path):
+
+            if "Mean value of optical depth delta" in line: mean = parsing.real(line.split(": ")[1])
+            elif "Standard deviation of optical depth delta" in line: stddev = parsing.real(line.split(": ")[1])
+
+        # Return
+        return mean, stddev
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def density_quality(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        mean = None
+        stddev = None
+
+        # Search in the lines
+        for line in fs.read_lines(self.quality_path):
+
+            if "Mean value of density delta" in line: mean = parsing.mass_density_quantity(line.split(": ")[1])
+            elif "Standard deviation of density delta" in line: stddev = parsing.mass_density_quantity(line.split(": ")[1])
+
+        # Return
+        return mean, stddev
+
+    # -----------------------------------------------------------------
+
+    @property
+    def log_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.out_path, log_filename)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def log_file(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return LogFile(self.log_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ncells(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.log_file.dust_cells_tree
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ntree_nodes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.log_file.tree_nodes
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def tree_leaf_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.log_file.tree_leaf_distribution
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tree_levels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.log_file.tree_levels
 
     # -----------------------------------------------------------------
 
@@ -410,6 +775,19 @@ class DustGridBuilder(Configurable):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def tree(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if not self.has_tree: return None
+        return DustGridTree.from_file(self.tree_path)
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -423,7 +801,11 @@ class DustGridBuilder(Configurable):
         # Write tree
         if self.has_tree: self.write_tree()
 
-        self.write_ratios()
+        # Write the ratios
+        self.write_quality()
+
+        # Write the cell distribution
+        self.write_cell_distribution()
 
     # -----------------------------------------------------------------
 
@@ -437,12 +819,15 @@ class DustGridBuilder(Configurable):
         # Inform the user
         log.info("Writing the dust grid tree data ...")
 
-        # Copy
-        fs.copy_file(self.tree_path, self.output_path_file("tree.dat"))
+        # Determine path
+        path = self.output_path_file("tree.dat")
+
+        # Save the tree
+        self.tree.saveto(path)
 
     # -----------------------------------------------------------------
 
-    def write_ratios(self):
+    def write_quality(self):
 
         """
         This function ...
@@ -450,18 +835,171 @@ class DustGridBuilder(Configurable):
         """
 
         # Inform the user
-        log.info("Writing the ratio (quality?) maps ...")
+        log.info("Writing the quality measures ...")
 
+        # Write projected quality
+        self.write_projected_quality()
+
+        # Optical depth
+        self.write_optical_depth_quality()
+
+        # Density
+        self.write_density_quality()
+
+        # Dust mass
+        self.write_dust_mass_quality()
+
+    # -----------------------------------------------------------------
+
+    def write_projected_quality(self):
+
+        """
+        This function ...
+        :param self:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the quality maps ...")
+
+        # Ratio
         path = self.output_path_file("ratio.fits")
         self.ratio.saveto(path)
 
+        # Ratio of mean in each projected dust cell
         mean_path = self.output_path_file("ratio_mean.fits")
         self.mean_ratio.saveto(mean_path)
 
+        # Ratio of median in each projected dust cell
         median_path = self.output_path_file("ratio_median.fits")
         self.median_ratio.saveto(median_path)
 
+        # Standard deviation of theoretical density in each dust cell
         std_path = self.output_path_file("std.fits")
         self.std.saveto(std_path)
+
+    # -----------------------------------------------------------------
+
+    def write_optical_depth_quality(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the optical depth quality ...")
+
+        # Determine path
+        path = self.output_path_file("optical_depth_quality.dat")
+
+        # Save
+        save_mapping(path, self.quality["optical_depth"])
+
+    # -----------------------------------------------------------------
+
+    def write_density_quality(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the density quality ...")
+
+        # Determine path
+        path = self.output_path_file("density_quality.dat")
+
+        # Save
+        save_mapping(path, self.quality["density"])
+
+    # -----------------------------------------------------------------
+
+    def write_cell_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the cell tree distribution ...")
+
+        # Determine path
+        path = self.output_path_file("tree_distribution.dat")
+
+        # Save the distribution
+        self.tree_leaf_distribution.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_dust_mass_quality(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the dust mass quality ...")
+
+        # Determine path
+        path = self.output_path_file("mass_quality.dat")
+
+        # Save
+        save_mapping(path, self.quality["mass"])
+
+    # -----------------------------------------------------------------
+
+    def plot(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        # Plot the grid
+        self.plot_grid()
+
+        # Plot
+        self.plot_dust_cell_distribution()
+
+    # -----------------------------------------------------------------
+
+    def plot_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the grid ...")
+
+        # Plot the dust grid for the simulation
+        plotgrids(self.simulation, output_path=self.config.output_path(), silent=(not log.is_debug()))
+
+    # -----------------------------------------------------------------
+
+    def plot_dust_cell_distribution(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the dust cell distribution ...")
+
+        # Determine title and path
+        title = "Dust cells in each tree level"
+        path = self.output_path_file("cells_tree.pdf")
+
+        # Plot
+        self.tree_leaf_distribution.plot(title=title, path=path)
 
 # -----------------------------------------------------------------

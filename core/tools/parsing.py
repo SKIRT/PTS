@@ -1108,6 +1108,26 @@ def mass_density_quantity(argument):
 
 # -----------------------------------------------------------------
 
+def mass_surface_density_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..units.parsing import parse_quantity
+    qty = parse_quantity(argument)
+
+    # Check
+    b = qty.unit / "m"
+    if b.physical_type != "mass density": raise ValueError("Not a mass surface density")
+
+    # Return
+    return qty
+
+# -----------------------------------------------------------------
+
 def angle(argument):
 
     """
