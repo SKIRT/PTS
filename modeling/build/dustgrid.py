@@ -33,6 +33,12 @@ skifilename = simulation_prefix + ".ski"
 
 # -----------------------------------------------------------------
 
+gridxy_filename = simulation_prefix + "_ds_grhoxy.fits"
+geometryxy_filename = simulation_prefix + "_ds_trhoxy.fits"
+tree_filename = simulation_prefix + "_ds_tree.dat"
+
+# -----------------------------------------------------------------
+
 class DustGridBuilder(Configurable):
     
     """
@@ -74,6 +80,12 @@ class DustGridBuilder(Configurable):
         self.ski_path = None
         self.out_path = None
 
+        # ...
+        self.ratio = None
+        self.mean_ratio = None
+        self.median_ratio = None
+        self.std = None
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -90,14 +102,14 @@ class DustGridBuilder(Configurable):
         # 2. Create the ski file
         self.create_ski()
 
-        # 7. Writing
-        self.write()
-
         # Lauch the simulation
         self.launch()
 
         # Check
         self.check()
+
+        # 7. Writing
+        if self.config.write: self.write()
 
     # -----------------------------------------------------------------
 
@@ -113,10 +125,13 @@ class DustGridBuilder(Configurable):
         super(DustGridBuilder, self).setup(**kwargs)
 
         # Determine path
-        self.ski_path = self.output_path_file(skifilename)
-
+        #self.ski_path = self.output_path_file(skifilename)
         # Determine output path
-        self.out_path = self.output_path #self.output_path_directory("out")
+        #self.out_path = self.output_path #self.output_path_directory("out")
+
+        # Determine paths
+        self.ski_path = fs.join(self.config.simulation_path, skifilename)
+        self.out_path = self.config.simulation_path
 
         # Get model definition and representation
         self.definition = kwargs.pop("definition")
@@ -254,7 +269,7 @@ class DustGridBuilder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def write(self):
+    def launch(self):
 
         """
         This function ...
@@ -262,10 +277,27 @@ class DustGridBuilder(Configurable):
         """
 
         # Inform the user
-        log.info("Writing ...")
+        log.info("Launching ...")
 
         # Write the ski file
         self.write_ski()
+
+        # Create simulation definition
+        definition = SingleSimulationDefinition(self.ski_path, self.out_path, self.input_map_paths)
+
+        # Determine parallelization scheme (do singleprocessing-
+        ncores = 2
+        nthreads_per_core = 2
+        nprocesses = 1
+        parallelization = Parallelization(ncores, nthreads_per_core, nprocesses)
+
+        # Set settings
+        self.launcher.config.progress_bar = True
+        self.launcher.config.finish_after = "Writing dust cell properties" # finish after this line has been printed (when the next one comes)
+        #self.launcher.config.finish_at = ""
+
+        # Run
+        self.launcher.run(definition=definition, parallelization=parallelization)
 
     # -----------------------------------------------------------------
 
@@ -284,32 +316,27 @@ class DustGridBuilder(Configurable):
 
     # -----------------------------------------------------------------
 
-    def launch(self):
+    @property
+    def grid_xy_path(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Launching ...")
+        return fs.join(self.out_path, gridxy_filename)
 
-        # Create simulation definition
-        definition = SingleSimulationDefinition(self.ski_path, self.out_path, self.input_map_paths)
+    # -----------------------------------------------------------------
 
-        # Determine parallelization scheme (do singleprocessing-
-        ncores = 2
-        nthreads_per_core = 2
-        nprocesses = 1
-        parallelization = Parallelization(ncores, nthreads_per_core, nprocesses)
+    @property
+    def geometry_xy_path(self):
+        
+        """
+        This function ...
+        :return: 
+        """
 
-        # Set settings
-        self.launcher.config.progress_bar = True
-        self.launcher.config.finish_after = "Writing dust cell properties"
-        #self.launcher.config.finish_at = ""
-
-        # Run
-        self.launcher.run(definition=definition, parallelization=parallelization)
+        return fs.join(self.out_path, geometryxy_filename)
 
     # -----------------------------------------------------------------
 
@@ -323,16 +350,17 @@ class DustGridBuilder(Configurable):
         # Inform the user
         log.info("Checking the dust grid ...")
 
-        gridxy_filename = simulation_prefix + "_ds_grhoxy.fits"
-        geometryxy_filename = simulation_prefix + "_ds_trhoxy.fits"
-
-        # Determine paths
-        gridxy_filepath = fs.join(self.out_path, gridxy_filename)
-        geometryxy_filepath = fs.join(self.out_path, geometryxy_filename)
-
         # Load both maps
-        gridxy = Frame.from_file(gridxy_filepath)
-        geometryxy = Frame.from_file(geometryxy_filepath)
+        gridxy = Frame.from_file(self.grid_xy_path)
+        geometryxy = Frame.from_file(self.geometry_xy_path)
+
+        # Determine ratio
+        self.ratio = Frame(gridxy / geometryxy)
+
+        self.mean_ratio = Frame.zeros_like(gridxy)
+        self.median_ratio = Frame.zeros_like(gridxy)
+
+        self.std = Frame.zeros_like(gridxy)
 
         # Loop over the unique values in the gridded data
         values = np.unique(gridxy.data)
@@ -350,6 +378,90 @@ class DustGridBuilder(Configurable):
             std = np.std(original)
 
             # Print check
-            print(value, mean, median, std)
+            #print(value, mean, median, std)
+
+            self.mean_ratio[where] = mean / value
+            self.median_ratio[where] = median / value
+            self.std[where] = std
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tree_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.out_path, tree_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_tree(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.tree_path)
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write tree
+        if self.has_tree: self.write_tree()
+
+        self.write_ratios()
+
+    # -----------------------------------------------------------------
+
+    def write_tree(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the dust grid tree data ...")
+
+        # Copy
+        fs.copy_file(self.tree_path, self.output_path_file("tree.dat"))
+
+    # -----------------------------------------------------------------
+
+    def write_ratios(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the ratio (quality?) maps ...")
+
+        path = self.output_path_file("ratio.fits")
+        self.ratio.saveto(path)
+
+        mean_path = self.output_path_file("ratio_mean.fits")
+        self.mean_ratio.saveto(mean_path)
+
+        median_path = self.output_path_file("ratio_median.fits")
+        self.median_ratio.saveto(median_path)
+
+        std_path = self.output_path_file("std.fits")
+        self.std.saveto(std_path)
 
 # -----------------------------------------------------------------

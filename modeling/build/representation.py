@@ -78,18 +78,8 @@ class Representation(object):
         # Dust grid SKIRT output path
         self.grid_out_path = fs.create_directory_in(self.grid_path, "out")
 
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def dust_grid_tree_path(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        path = fs.join(self.grid_path, "tree.dat")
-        return path #fs.is_file(path)
+        # Dust grid tree path
+        self.dust_grid_tree_path = fs.join(self.grid_path, "tree.dat")
 
     # -----------------------------------------------------------------
 
@@ -331,7 +321,10 @@ class RepresentationBuilderBase(BuildComponent):
         builder = DustGridBuilder()
 
         # Set output path
-        builder.config.output = self.representation.grid_out_path
+        builder.config.output = self.representation.grid_path
+
+        # Set simulation path
+        builder.config.simulation_path = self.representation.grid_out_path
 
         # Run the builder
         builder.run(definition=self.definition, dust_grid=self.dust_grid)
