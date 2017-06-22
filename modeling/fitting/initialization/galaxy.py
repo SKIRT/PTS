@@ -19,7 +19,6 @@ from ...component.galaxy import GalaxyModelingComponent
 from ...build.component import get_stellar_component_names, get_dust_component_names, load_stellar_component, load_dust_component
 from .base import FittingInitializerBase
 from ...build.construct import add_dust_component, add_stellar_component
-from ....core.prep.smile import SKIRTSmileSchema
 
 # -----------------------------------------------------------------
 
@@ -41,9 +40,6 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         # Call the constructors of the base classes
         FittingInitializerBase.__init__(self, *args, **kwargs)
         GalaxyModelingComponent.__init__(self, *args, **kwargs)
-
-        # The INITIAL model representation
-        self.representation = None
 
         # Solar luminosity units
         self.sun_fuv = None
@@ -116,21 +112,6 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
 
         # Load the ski template
         self.ski = self.fitting_run.ski_template
-
-    # -----------------------------------------------------------------
-
-    def load_representation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the model representation ...")
-
-        # Load the initial representation
-        self.representation = self.fitting_run.initial_representation
 
     # -----------------------------------------------------------------
 
@@ -280,31 +261,6 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
             # Enable or disable
             if self.config.transient_heating: self.ski.set_transient_dust_emissivity()
             else: self.ski.set_grey_body_dust_emissivity()
-
-    # -----------------------------------------------------------------
-
-    def set_dust_grid(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Setting the dust grid ...")
-
-        # Check whether we can use the file tree dust grid
-        smile = SKIRTSmileSchema()
-        if smile.supports_file_tree_grids and self.representation.has_dust_grid_tree:
-
-            # Create file tree dust grid
-            dust_grid = self.representation.create_file_tree_dust_grid(write=False)
-
-        # Just take the real dust grid object
-        else: dust_grid = self.representation.dust_grid
-
-        # Set the lowest-resolution dust grid
-        self.ski.set_dust_grid(dust_grid)
 
     # -----------------------------------------------------------------
 

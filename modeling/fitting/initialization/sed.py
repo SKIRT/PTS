@@ -57,6 +57,9 @@ class SEDFittingInitializer(FittingInitializerBase, SEDModelingComponent):
         # 2. Load the ski template
         self.load_ski_template()
 
+        # 3. Load the model representation
+        self.load_representation()
+
         # 3. Set the input map paths (in the dictionary and in the ski file template)
         self.set_input_map_paths()
 
@@ -217,6 +220,9 @@ class SEDFittingInitializer(FittingInitializerBase, SEDModelingComponent):
 
         # 5. Set dust emissivity
         self.set_dust_emissivity()
+
+        # Set the dust grid
+        self.set_dust_grid()
 
         # 6. Set all-cells dust library
         self.ski.set_allcells_dust_lib()
