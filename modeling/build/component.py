@@ -210,6 +210,7 @@ class BuildComponent(ModelingComponent):
 
         path = self.get_representation_path(representation_name)
         if not fs.is_directory(path): raise ValueError("Representation does not exist")
+        else: return get_representation(self.config.path, representation_name)
 
     # -----------------------------------------------------------------
 

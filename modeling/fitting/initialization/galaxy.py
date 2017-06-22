@@ -17,9 +17,9 @@ from ....core.data.sun import Sun
 from ....core.tools.logging import log
 from ...component.galaxy import GalaxyModelingComponent
 from ...build.component import get_stellar_component_names, get_dust_component_names, load_stellar_component, load_dust_component
-from ....core.filter.filter import parse_filter
 from .base import FittingInitializerBase
 from ...build.construct import add_dust_component, add_stellar_component
+from ....core.prep.smile import SKIRTSmileSchema
 
 # -----------------------------------------------------------------
 
@@ -250,8 +250,8 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         # Set the dust emissivityex
         self.set_dust_emissivity()
 
-        # Set the lowest-resolution dust grid
-        self.ski.set_dust_grid(self.representation.dust_grid)
+        # Set the dust grid
+        self.set_dust_grid()
 
         # Set all-cells dust library
         self.ski.set_allcells_dust_lib()
@@ -280,6 +280,31 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
             # Enable or disable
             if self.config.transient_heating: self.ski.set_transient_dust_emissivity()
             else: self.ski.set_grey_body_dust_emissivity()
+
+    # -----------------------------------------------------------------
+
+    def set_dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the dust grid ...")
+
+        # Check whether we can use the file tree dust grid
+        smile = SKIRTSmileSchema()
+        if smile.supports_file_tree_grids and self.representation.has_dust_grid_tree:
+
+            # Create file tree dust grid
+            dust_grid = self.representation.create_file_tree_dust_grid(write=False)
+
+        # Just take the real dust grid object
+        else: dust_grid = self.representation.dust_grid
+
+        # Set the lowest-resolution dust grid
+        self.ski.set_dust_grid(dust_grid)
 
     # -----------------------------------------------------------------
 

@@ -38,6 +38,7 @@ from .generation import GenerationInfo, Generation
 from .evaluate import get_parameter_values_from_genome
 from .platform import GenerationPlatform
 from ..config.parameters import parsing_types_for_parameter_types
+from ..build.component import get_representation
 
 # -----------------------------------------------------------------
 
@@ -2128,7 +2129,7 @@ class FittingRun(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def current_model_representation(self):
+    def current_model_representation_name(self):
 
         """
         This function ...
@@ -2136,7 +2137,131 @@ class FittingRun(object):
         """
 
         if len(self.generations_table) > 0: return self.generations_table["Model representation"][-1]
-        else: return None
+        else: return self.initial_representation #return None
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def current_model_representation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #name = self.current_model_representation_name
+        #if name is None: return self.initial_representation
+        #else: return get_representation(self.modeling_path, name)
+
+        return get_representation(self.modeling_path, self.current_model_representation_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def current_model_representation_index(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_representation_index_for_name(self.current_model_representation_name)
+
+    # -----------------------------------------------------------------
+
+    def model_representation_index_for_name(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return int(name.split("grid")[1])
+
+    # -----------------------------------------------------------------
+
+    def model_representation_name_for_index(self, index):
+
+        """
+        This function ...
+        :param index:
+        :return:
+        """
+
+        return "grid" + str(index)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def previous_model_representation_index(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.current_model_representation_index - 1
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def previous_model_representation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_representation_name_for_index(self.previous_model_representation_index)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def previous_model_representation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_representation(self.modeling_path, self.previous_model_representation_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def next_model_representation_index(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.current_model_representation_index + 1
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def next_model_representation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_representation_name_for_index(self.next_model_representation_index)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def next_model_representation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_representation(self.modeling_path, self.next_model_representation_name)
 
     # -----------------------------------------------------------------
 
