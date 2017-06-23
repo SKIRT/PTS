@@ -18,7 +18,7 @@ import numpy as np
 from skimage.measure import compare_ssim
 
 # Import the relevant PTS classes and modules
-from pts.core.tools.logging import log
+from pts.core.tools.logging import setup_log
 from pts.core.tools import filesystem as fs
 from pts.core.tools import introspection
 from pts.modeling.core.environment import GalaxyModelingEnvironment
@@ -46,6 +46,12 @@ definition.add_optional("maps", "string_list", "maps for which to show the simil
 # Create the configuration
 setter = ArgumentConfigurationSetter("maps_similarity")
 config = setter.run(definition)
+
+# -----------------------------------------------------------------
+
+log = setup_log(level="DEBUG")
+
+# -----------------------------------------------------------------
 
 # Create the modeling environment
 environment = GalaxyModelingEnvironment(modeling_path)
@@ -108,6 +114,9 @@ for which_map in config.maps:
 
     # Load the map
     the_map = Frame.from_file(path)
+
+    # Set psf filter
+    the_map.psf_filter = "Pacs red"
 
     #print("REFERENCE WCS:", the_map.wcs)
 
@@ -175,10 +184,16 @@ for which_map in config.maps:
     # Ordered names, sorted on SSIM
     ordered_names = sorted(similarities.keys(), key=lambda name: similarities[name][1])
 
+    print("")
+    print(fmt.green + fmt.underlined + which_map + " maps:" + fmt.reset)
+    print("")
+
     # Show
-    with fmt.print_in_columns(4) as print_row:
+    with fmt.print_in_columns(4, indent="  ") as print_row:
 
         # Print
         for name in ordered_names: print_row(name, ":", str(similarities[name][0]), str(similarities[name][1]))
+
+    print("")
 
 # -----------------------------------------------------------------

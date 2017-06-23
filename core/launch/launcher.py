@@ -676,9 +676,8 @@ class SingleImageSKIRTLauncher(object):
         # Debugging
         log.debug("Rescaling the " + prefix + " image to a flux density of " + str(total_flux) + " ...")
 
-        # Rescale to the 3.6um flux density
-        simulated_frame *= total_flux.value / simulated_frame.sum()
-        simulated_frame.unit = total_flux.unit
+        # Rescale to the flux density
+        simulated_frame.normalize(to=total_flux)
 
         # Debugging
         log.debug("Convolving the " + prefix + " image ...")

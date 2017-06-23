@@ -94,6 +94,7 @@ class GalaxyModelingComponent(ModelingComponent):
         self.components_images_path = None
 
         # The paths to the final bulge, disk and model images
+        self.bulge2d_image_path = None
         self.bulge_image_path = None
         self.disk_image_path = None
         self.model_image_path = None
@@ -158,6 +159,7 @@ class GalaxyModelingComponent(ModelingComponent):
         self.components_images_path = fs.create_directory_in(self.components_path, "images")
 
         # Set the path to the final bulge, disk and model images
+        self.bulge2d_image_path = fs.join(self.components_images_path, "bulge2d.fits")
         self.bulge_image_path = fs.join(self.components_images_path, "bulge.fits")
         self.disk_image_path = fs.join(self.components_images_path, "disk.fits")
         self.model_image_path = fs.join(self.components_images_path, "model.fits")

@@ -2536,6 +2536,9 @@ def get_highest_pixelscale_name(*frames, **kwargs):
             highest_pixelscale_wcs = wcs
             highest_pixelscale_name = name
 
+    # Debugging
+    log.debug("The frame with the highest FWHM is the '" + highest_pixelscale_name + "' frame ...")
+
     # Return the name
     return highest_pixelscale_name
 
@@ -2558,15 +2561,20 @@ def rebin_to_highest_pixelscale(*frames, **kwargs):
 
     highest_pixelscale = None
     highest_pixelscale_wcs = None
+    highest_pixelscale_index = None
 
     # Loop over the frames
-    for frame in frames:
+    for index, frame in enumerate(frames):
 
         wcs = frame.wcs
         if highest_pixelscale is None or wcs.average_pixelscale > highest_pixelscale:
 
             highest_pixelscale = wcs.average_pixelscale
             highest_pixelscale_wcs = wcs
+            highest_pixelscale_index = index
+
+    # Debugging
+    if names is not None: log.debug("The frame with the highest pixelscale is the '" + names[highest_pixelscale_index] + "' frame ...")
 
     # Rebin
     return rebin_to_pixelscale(*frames, names=names, pixelscale=highest_pixelscale, wcs=highest_pixelscale_wcs)
@@ -2707,6 +2715,9 @@ def get_highest_fwhm_name(*frames, **kwargs):
             highest_fwhm_filter = frame.psf_filter
             highest_fwhm_name = name
 
+    # Debugging
+    log.debug("The frame with the highest FWHM is the '" + highest_fwhm_name + "' frame ...")
+
     # Return the name
     return highest_fwhm_name
 
@@ -2728,9 +2739,10 @@ def convolve_to_highest_fwhm(*frames, **kwargs):
 
     highest_fwhm = None
     highest_fwhm_filter = None
+    highest_fwhm_index = None
 
     # Loop over the frames
-    for frame in frames:
+    for index, frame in enumerate(frames):
 
         # Search and set frame FWHM
         frame_fwhm = frame.fwhm
@@ -2741,6 +2753,10 @@ def convolve_to_highest_fwhm(*frames, **kwargs):
 
             highest_fwhm = frame.fwhm
             highest_fwhm_filter = frame.psf_filter
+            highest_fwhm_index = index
+
+    # Debugging
+    if names is not None: log.debug("The frame with the highest FWHM is the '" + names[highest_fwhm_index] + "' frame ...")
 
     # Convolve
     return convolve_to_fwhm(*frames, names=names, fwhm=highest_fwhm, filter=highest_fwhm_filter)

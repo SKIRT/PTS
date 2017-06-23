@@ -376,6 +376,7 @@ def print_columns(*columns, **kwargs):
     """
 
     delimiter = kwargs.pop("delimiter", "  ")
+    indent = kwargs.pop("indent", "")
 
     # Check sizes
     if not equal_sizes(*columns): raise ValueError("Columns must have equal lengths")
@@ -415,7 +416,8 @@ def print_columns(*columns, **kwargs):
 
                 row += spaces
 
-        print(row)
+        # Print
+        print(indent + row)
 
 # -----------------------------------------------------------------
 
@@ -425,7 +427,7 @@ class print_in_columns(object):
     This function ...
     """
 
-    def __init__(self, ncolumns, delimiter=" "):
+    def __init__(self, ncolumns, delimiter=" ", indent=""):
 
         """
         This function ...
@@ -435,6 +437,7 @@ class print_in_columns(object):
 
         self.columns = [[] for _ in range(ncolumns)]
         self.delimiter = delimiter
+        self.indent = indent
 
     # -----------------------------------------------------------------
 
@@ -492,7 +495,7 @@ class print_in_columns(object):
 
         #print(self.columns[1])
 
-        print_columns(*self.columns, delimiter=self.delimiter)
+        print_columns(*self.columns, delimiter=self.delimiter, indent=self.indent)
 
 # -----------------------------------------------------------------
 
