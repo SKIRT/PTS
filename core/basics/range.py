@@ -498,6 +498,18 @@ class Range(object):
 
         return self.max - self.min
 
+    # -----------------------------------------------------------------
+
+    def __contains__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.min <= value <= self.max
+
 # -----------------------------------------------------------------
 
 class IntegerRange(Range):

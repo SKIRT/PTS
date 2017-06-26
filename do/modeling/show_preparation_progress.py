@@ -18,10 +18,10 @@ from collections import defaultdict
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
 from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
-from pts.do.commandline import initialize_log
 from pts.modeling.preparation.preparer import sort_image, status_to_steps, steps
 from pts.core.filter.filter import parse_filter
 from pts.core.tools import formatting as fmt
+from pts.core.basics.configuration import initialize_log
 
 # -----------------------------------------------------------------
 

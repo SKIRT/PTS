@@ -22,7 +22,7 @@ import types
 import numpy as np
 from scipy.interpolate import interp1d
 from lxml import etree
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 
 # Import the relevant PTS classes and modules
 from ..basics.map import Map
@@ -170,6 +170,137 @@ alma_ranges[7] = (800, 1090)
 alma_ranges[8] = (600, 780)
 alma_ranges[9] = (420, 500)
 alma_ranges[10] = (320, 380)
+
+# -----------------------------------------------------------------
+
+def get_filters_for_regime(regime, subregime=None, categorize=False):
+    
+    """
+    This function ...
+    :param regime: 
+    :param subregime:
+    :param categorize:
+    :return: 
+    """
+
+    from ...magic.tools.wavelengths import wavelength_range_for_regime
+    wavelength_range = wavelength_range_for_regime(regime, subregime=subregime)
+    return get_filters(wavelength_range.min, wavelength_range.max, categorize=categorize)
+
+# -----------------------------------------------------------------
+
+def get_filters_for_regimes(*regimes, **kwargs):
+
+    """
+    This function ...
+    :param regimes:
+    :param kwargs:
+    :return:
+    """
+
+    categorize = kwargs.pop("categorize", False)
+    from ...magic.tools.wavelengths import wavelength_range_for_regimes
+    wavelength_range = wavelength_range_for_regimes(*regimes)
+    return get_filters(wavelength_range.min, wavelength_range.max, categorize=categorize)
+
+# -----------------------------------------------------------------
+
+def get_filters(min_wavelength=None, max_wavelength=None, categorize=False):
+
+    """
+    This function ...
+    :param min_wavelength:
+    :param max_wavelength:
+    :param categorize:
+    :return:
+    """
+
+    filters = []
+
+    specs = categorize_filters()
+    for label in categorized_filters_sorted_labels(specs):
+
+        filters_label = []
+
+        filter_names = specs[label]
+
+        # Loop over the names
+        for name in filter_names:
+
+            # Parse filter
+            fltr = BroadBandFilter(name)
+
+            # Skip if falls beyond range
+            if min_wavelength is not None and fltr.wavelength < min_wavelength: continue
+            if max_wavelength is not None and fltr.wavelength > max_wavelength: continue
+
+            # Add filter to the list
+            filters_label.append(fltr)
+
+        # Add to complete list
+        if categorize:
+
+            if len(filters_label) == 0: continue
+
+            # Sort the list based on wavelength
+            filters_label = sorted(filters_label, key=lambda x: x.wavelength)
+            filters.append((label, filters_label))
+
+        # List: don't sort yet, we sort everything at the end
+        else: filters.extend(filters_label)
+
+    # As dictionary
+    if categorize:
+
+        #print(filters)
+
+        # Sort on min wavelength for each label
+        filters = sorted(filters, key=lambda x: x[1][0].wavelength)
+
+        # Create dictionary
+        return OrderedDict(filters)
+
+    # As list
+    else: return sorted(filters, key=lambda x: x.wavelength)
+
+# -----------------------------------------------------------------
+
+def categorize_filters():
+
+    """
+    This function ...
+    :return:
+    """
+
+    broad = defaultdict(list)
+
+    # Categorize
+    for spec in identifiers:
+
+        identifier = identifiers[spec]
+        if "instruments" in identifier:
+            if "observatories" in identifier:
+                broad[identifier.observatories[0] + " " + identifier.instruments[0]].append(spec)
+            else: broad[identifier.instruments[0]].append(spec)
+        elif "observatories" in identifier: broad[identifier.observatories[0]].append(spec)
+        elif "system" in identifier: broad[identifier.system].append(spec)
+        else: broad[spec].append(spec)
+
+    # Return
+    return broad
+
+# -----------------------------------------------------------------
+
+def categorized_filters_sorted_labels(broad):
+
+    """
+    This function ...
+    :return:
+    """
+
+    #for label in sorted(broad.keys(), key=lambda x: identifiers.keys().index(broad[x][0])) #: yield label
+
+    return sorted(broad.keys(), key=lambda x: identifiers.keys().index(broad[x][0]))
 
 # -----------------------------------------------------------------
 

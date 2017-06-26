@@ -2117,6 +2117,18 @@ class NamedFrameList(NamedList):
 
     # -----------------------------------------------------------------
 
+    def replace_nans(self, value):
+
+        """
+        THis function ...
+        :param value:
+        :return:
+        """
+
+        for key in self.keys: self[key].replace_nans(value)
+
+    # -----------------------------------------------------------------
+
     def show_coordinate_systems(self):
 
         """
@@ -2526,6 +2538,8 @@ def get_highest_pixelscale_name(*frames, **kwargs):
 
         wcs = frame.wcs
 
+        if wcs is None: raise ValueError("Coordinate system of the " + name + " image is not defined")
+
         # SKIP?
         if below is not None and wcs.average_pixelscale > below: continue
         if below_npixels is not None and min(frame.xsize, frame.ysize) > below_npixels: continue
@@ -2567,6 +2581,9 @@ def rebin_to_highest_pixelscale(*frames, **kwargs):
     for index, frame in enumerate(frames):
 
         wcs = frame.wcs
+        if wcs is None:
+            if names is not None: raise ValueError("Coordinate system of the " + names[index] + " image is not defined")
+            else: raise ValueError("Coordinate system of the image is not defined")
         if highest_pixelscale is None or wcs.average_pixelscale > highest_pixelscale:
 
             highest_pixelscale = wcs.average_pixelscale
@@ -2706,6 +2723,9 @@ def get_highest_fwhm_name(*frames, **kwargs):
         if frame_fwhm is None: frame_fwhm = get_fwhm(frame.filter)
         frame.fwhm = frame_fwhm
 
+        # Check again
+        if frame.fwhm is None: raise ValueError("FWHM of the " + name + " image cannot be determined")
+
         # SKIP
         if below is not None and frame.fwhm > below: continue
 
@@ -2748,6 +2768,11 @@ def convolve_to_highest_fwhm(*frames, **kwargs):
         frame_fwhm = frame.fwhm
         if frame_fwhm is None: frame_fwhm = get_fwhm(frame.filter)
         frame.fwhm = frame_fwhm
+
+        # Check again
+        if frame.fwhm is None:
+            if names is not None: raise ValueError("FWHM of the " + names[index] + " image cannot be determined")
+            else: raise ValueError("FWHM of the image cannot be determined")
 
         if highest_fwhm is None or frame.fwhm > highest_fwhm:
 

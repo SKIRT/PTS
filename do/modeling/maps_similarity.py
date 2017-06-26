@@ -136,6 +136,11 @@ for which_map in config.maps:
 
     similarities = dict()
 
+    # No maps
+    if len(maps) == 0:
+        log.error("No " + which_map + " maps (yet)")
+        continue
+
     # Loop over the maps
     for name in maps:
 
@@ -163,6 +168,9 @@ for which_map in config.maps:
         # Normalize both frames
         frames.normalize()
 
+        # REplace nans
+        frames.replace_nans(0.0)
+
         # Get the data
         # SAME DTYPE
         reference = frames["reference"].data.astype("float")
@@ -182,7 +190,7 @@ for which_map in config.maps:
         similarities[name] = (mean_sq, struct_sim)
 
     # Ordered names, sorted on SSIM
-    ordered_names = sorted(similarities.keys(), key=lambda name: similarities[name][1])
+    ordered_names = sorted(similarities.keys(), key=lambda name: similarities[name][1], reverse=True)
 
     print("")
     print(fmt.green + fmt.underlined + which_map + " maps:" + fmt.reset)

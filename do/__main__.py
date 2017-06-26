@@ -40,13 +40,12 @@ from pts.modeling.welcome import welcome as welcome_modeling
 from pts.magic.welcome import welcome as welcome_magic
 from pts.evolve.welcome import welcome as welcome_evolve
 from pts.dustpedia.welcome import welcome as welcome_dustpedia
-from pts.core.basics.configuration import create_configuration
+from pts.core.basics.configuration import create_configuration, initialize_log
 from pts.modeling.setup import setup as setup_modeling, finish as finish_modeling
 from pts.magic.setup import setup as setup_magic, finish as finish_magic
 from pts.evolve.setup import setup as setup_evolve, finish as finish_evolve
 from pts.dustpedia.setup import setup as setup_dustpedia, finish as finish_dustpedia
 from pts.do.run import run_locally, run_remotely
-from pts.do.commandline import initialize_log
 
 # -----------------------------------------------------------------
 

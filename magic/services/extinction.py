@@ -16,10 +16,13 @@ from __future__ import absolute_import, division, print_function
 from astroquery.irsa_dust import IrsaDust
 
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
 from ...core.tools import introspection
 from ...core.tools import tables
+from ...core.tools import types
+from ...core.basics.curve import FilterCurve
+from ...core.filter.filter import parse_filter
+from ..tools import wavelengths
 
 # -----------------------------------------------------------------
 
@@ -45,7 +48,52 @@ irsa_names = {"SDSS u": "SDSS u",
 
 # -----------------------------------------------------------------
 
-class GalacticExtinction(object):
+# Determine the path to the Extinction data directory
+extinction_data_path = fs.join(introspection.pts_dat_dir("magic"), "Extinction")
+
+# Determine thbe path to the RV=3.1 curve file
+rv31_path = fs.join(extinction_data_path, "al_av3_1.dat")
+
+# -----------------------------------------------------------------
+
+def calculate_factor(fltr):
+
+    """
+    This function ...
+    :param fltr:
+    :return:
+    """
+
+    # lees de RV=3.1 curve in van Sinopsis
+    #file_RV3_1 = '/Users/idelooze/OtherProjects/SWIFT/SINOPSISv1.6.1/data/extinction_curves/al_av3_1.dat'
+    #readcol, file_RV3_1, wave_RV3_1, ext_RV3_1, format = 'F,F'
+
+    # interpol:
+    filtFUV2 = INTERPOL(filtFUV, waveFUV, wave_RV3_1)
+
+    #j = where(filtFUV2 LT 0.)
+    #filtFUV2[j] = 0.
+
+    sumFUV = 0
+    sum2FUV = 0
+
+    nwave = n_elements(wave_RV3_1)
+
+    #for i=0, nwave-2 do begin
+
+        #FUV
+        sumFUV = sumFUV + (ext_RV3_1[i]*filtFUV2[i]*(wave_RV3_1[i+1]-wave_RV3_1[i]))
+        sum2FUV = sum2FUV + (filtFUV2[i]*(wave_RV3_1[i+1]-wave_RV3_1[i]))
+
+    #print,sumFUV,sum2FUV
+
+    #print, 'FUV'
+    #print, sumFUV / sum2FUV
+
+
+# -----------------------------------------------------------------
+
+class IRSAGalacticExtinction(object):
 
     """
     This class ...
@@ -63,7 +111,7 @@ class GalacticExtinction(object):
         if not fs.is_directory(extinction_path): fs.create_directory(extinction_path)
 
         # Get query
-        if isinstance(coordinate_or_galaxy, basestring): query = coordinate_or_galaxy
+        if types.is_string_type(coordinate_or_galaxy): query = coordinate_or_galaxy
         else: query = coordinate_or_galaxy.to_astropy()
 
         # Determine the path to the local extinction table
@@ -107,7 +155,7 @@ class GalacticExtinction(object):
             elif "W2" in filter_name: factor = 8.81867
             elif "M2" in filter_name: factor = 9.28435
             elif "W1" in filter_name: factor = 6.59213
-            else: raise ValueError("Unsure which GALEX or Swift UVOT band this is")
+            else: raise ValueError("Unsure which GALEX or Swift UVOT band this is: " + filter_name)
 
             # Calculate the attenuation
             attenuation = factor * attenuation_v / av_ebv_ratio
@@ -127,7 +175,9 @@ class GalacticExtinction(object):
             attenuation = self.table["A_SandF"][index]
 
         # All other bands: set attenuation to zero
-        else: attenuation = 0.0
+        #else: #attenuation = 0.0
+        # NO: RAISE AND ERROR
+        else: raise ValueError("Cannot determine the extinction for the '"+  filter_name + "' filter")
 
         # Return the galactic attenuation coefficient
         return attenuation
@@ -142,8 +192,75 @@ class GalacticExtinction(object):
         :return:
         """
 
+        # No extinction for this filter
+        if not wavelengths.wavelength_in_regimes(fltr.wavelength, ["FUV-NIR"]): return 0.0
+
         filter_name = str(fltr)
         return self.extinction_for_filter_name(filter_name)
+
+    # -----------------------------------------------------------------
+
+    def extinction_for_filters(self, filters):
+
+        """
+        This function ...
+        :param filters:
+        :return:
+        """
+
+        extinctions = []
+
+        # Loop over the filters
+        for fltr in filters:
+
+            # Parse the filter
+            if types.is_string_type(fltr): fltr = parse_filter(fltr)
+
+            # Get the extinction
+            extinction = self.extinction_for_filter(fltr)
+
+            # Add to the list
+            extinctions.append(extinction)
+
+        # Return the list
+        return extinctions
+
+    # -----------------------------------------------------------------
+
+    def extinction_curve(self, filters, ignore_errors=False):
+
+        """
+        This function ...
+        :param filters:
+        :param ignore_errors:
+        :return:
+        """
+
+        kwargs = dict()
+        kwargs["y_name"] = "Extinction"
+        kwargs["y_description"] = "Extinction value"
+        kwargs["y_unit"] = None
+
+        curve = FilterCurve(**kwargs)
+
+        # Loop over the filter
+        for fltr in filters:
+
+            # Parse the filter
+            if types.is_string_type(fltr): fltr = parse_filter(fltr)
+
+            # Get the extinction
+            try:
+                extinction = self.extinction_for_filter(fltr)
+                # Add extinction point
+                curve.add_point(fltr, extinction)
+
+            except ValueError:
+                if ignore_errors: pass
+                else: raise ValueError("Could not determine the extinction for the " + str(fltr) + "filter")
+
+        # Return the curve
+        return curve
 
     # -----------------------------------------------------------------
 

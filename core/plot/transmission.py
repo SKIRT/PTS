@@ -543,17 +543,14 @@ class TransmissionPlotter(Configurable):
         # Set the borders
         set_borders(ax, self.config.plot)
 
-        # Labels
-        plt.xlabel('$\lambda [\mu m]$', fontsize=self.config.plot.label_fontsize)
-        plt.ylabel('$T_\lambda$', fontsize=self.config.plot.label_fontsize)
+        # Set the labels
+        self.plt.set_labels('$\lambda [\mu m]$', '$T_\lambda$', fontsize=self.config.plot.label_fontsize)
 
         # Add the legend
         add_legend(ax, self.config.plot, "Filters")
 
-        # Save the plot
-        if self.output is None: self.plt.show()
-        else: self.plt.saveto(self.output)
-        self.plt.close()
+        # Finish
+        self.plt.finish(self.output)
 
 # -----------------------------------------------------------------
 

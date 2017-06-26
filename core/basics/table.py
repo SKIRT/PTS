@@ -300,6 +300,8 @@ class SmartTable(Table):
             # If this value has a unit, we have to make sure it is converted into the proper column unit
             if hasattr(value, "unit"):
 
+                #print(self.column_info)
+
                 column_unit = self.column_info[i][2]
                 assert column_unit is not None
 

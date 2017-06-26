@@ -249,7 +249,7 @@ class YoungStellarMapsMaker(Configurable):
             for factor in self.factors:
 
                 # Determine name
-                key = name + "_" + repr(factor)
+                key = name + "__" + repr(factor)
 
                 # Set the origins
                 if self.has_origins:

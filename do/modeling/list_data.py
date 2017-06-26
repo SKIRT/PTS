@@ -19,8 +19,7 @@ import sys
 from telarchive import archive_search
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
-from pts.do.commandline import initialize_log
+from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter, initialize_log
 
 # -----------------------------------------------------------------
 
