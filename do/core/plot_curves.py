@@ -46,6 +46,8 @@ if config.loglog:
     plot.set_x_log_scale()
     plot.set_y_log_scale()
 
+# -----------------------------------------------------------------
+
 # Plot
 plot.finish()
 

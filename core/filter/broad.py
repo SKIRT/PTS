@@ -1042,6 +1042,32 @@ class BroadBandFilter(Filter):
         if self._PhotonCounter: return np.trapz(x=w, y=w * F * T)
         else: return np.trapz(x=w, y=F * T)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def transmissions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self._Transmission
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self._Wavelengths
+
+    # -----------------------------------------------------------------
+
 ## This private helper function returns the natural logarithm for positive values, and a large negative number
 # (but not infinity) for zero or negative values.
 def _log(X):

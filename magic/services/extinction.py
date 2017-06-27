@@ -12,17 +12,23 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from scipy.interpolate import interp1d
+import numpy as np
+
 # Import astronomical modules
 from astroquery.irsa_dust import IrsaDust
+from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from ...core.tools import introspection
 from ...core.tools import tables
 from ...core.tools import types
-from ...core.basics.curve import FilterCurve
+from ...core.basics.curve import FilterCurve, Curve
 from ...core.filter.filter import parse_filter
 from ..tools import wavelengths
+from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -69,7 +75,20 @@ def calculate_factor(fltr):
     #readcol, file_RV3_1, wave_RV3_1, ext_RV3_1, format = 'F,F'
 
     # interpol:
-    filtFUV2 = INTERPOL(filtFUV, waveFUV, wave_RV3_1)
+    #filtFUV2 = INTERPOL(filtFUV, waveFUV, wave_RV3_1)
+
+    log.info("Calculating R(V) for the " + str(fltr) + " filter ...")
+
+    transmissionfun = interp1d(fltr.wavelengths, fltr.transmissions)
+
+    rv31_curve = Curve.from_data_file(rv31_path, x_name="Wavelength", y_name="R(V)")
+
+    # To micron from Angstrom
+    wavelengths = np.array(rv31_curve.x_data) * 0.0001
+    rvs = rv31_curve.y_data
+
+    # Calculate interpolated transmissions
+    interpolated = transmissionfun(wavelengths)
 
     #j = where(filtFUV2 LT 0.)
     #filtFUV2[j] = 0.
@@ -77,23 +96,30 @@ def calculate_factor(fltr):
     sumFUV = 0
     sum2FUV = 0
 
-    nwave = n_elements(wave_RV3_1)
+    #nwave = n_elements(wave_RV3_1)
+    nwave = len(wavelengths)
 
     #for i=0, nwave-2 do begin
 
+    for i in range(nwave-1):
+
+        wave_delta = wavelengths[i+1] - wavelengths[i]
+
         #FUV
-        sumFUV = sumFUV + (ext_RV3_1[i]*filtFUV2[i]*(wave_RV3_1[i+1]-wave_RV3_1[i]))
-        sum2FUV = sum2FUV + (filtFUV2[i]*(wave_RV3_1[i+1]-wave_RV3_1[i]))
+        sumFUV += (rvs[i] * interpolated[i] * wave_delta)
+        sum2FUV += interpolated[i] * wave_delta
 
     #print,sumFUV,sum2FUV
 
     #print, 'FUV'
     #print, sumFUV / sum2FUV
 
+    # Return the result
+    return sumFUV / sum2FUV
 
 # -----------------------------------------------------------------
 
-class IRSAGalacticExtinction(object):
+class GalacticExtinction(object):
 
     """
     This class ...
@@ -131,59 +157,6 @@ class IRSAGalacticExtinction(object):
 
     # -----------------------------------------------------------------
 
-    def extinction_for_filter_name(self, filter_name):
-
-        """
-        This function ...
-        :param filter_name:
-        :return:
-        """
-
-        # GALEX bands
-        if "GALEX" in filter_name or "UVOT" in filter_name:
-
-            # Get the A(V) / E(B-V) ratio
-            v_band_index = tables.find_index(self.table, "CTIO V")
-            av_ebv_ratio = self.table["A_over_E_B_V_SandF"][v_band_index]
-
-            # Get the attenuation of the V band A(V)
-            attenuation_v = self.table["A_SandF"][v_band_index]
-
-            # Determine the factor
-            if "NUV" in filter_name: factor = 8.0
-            elif "FUV" in filter_name: factor = 7.9
-            elif "W2" in filter_name: factor = 8.81867
-            elif "M2" in filter_name: factor = 9.28435
-            elif "W1" in filter_name: factor = 6.59213
-            else: raise ValueError("Unsure which GALEX or Swift UVOT band this is: " + filter_name)
-
-            # Calculate the attenuation
-            attenuation = factor * attenuation_v / av_ebv_ratio
-
-        # Fill in the Ha attenuation manually
-        elif "Halpha" in filter_name or "656_1" in filter_name: attenuation = 0.174
-
-        # Other bands for which attenuation is listed by IRSA
-        elif filter_name in irsa_names:
-
-            irsa_name = irsa_names[filter_name]
-
-            # Find the index of the corresponding table entry
-            index = tables.find_index(self.table, irsa_name)
-
-            # Get the attenuation
-            attenuation = self.table["A_SandF"][index]
-
-        # All other bands: set attenuation to zero
-        #else: #attenuation = 0.0
-        # NO: RAISE AND ERROR
-        else: raise ValueError("Cannot determine the extinction for the '"+  filter_name + "' filter")
-
-        # Return the galactic attenuation coefficient
-        return attenuation
-
-    # -----------------------------------------------------------------
-
     def extinction_for_filter(self, fltr):
 
         """
@@ -195,8 +168,159 @@ class IRSAGalacticExtinction(object):
         # No extinction for this filter
         if not wavelengths.wavelength_in_regimes(fltr.wavelength, ["FUV-NIR"]): return 0.0
 
+        #return self.extinction_for_filter_name(filter_name)
+
+        rv = calculate_factor(fltr)
+
+        # Calculate the attenuation
+        attenuation = rv * self.attenuation_v / self.av_ebv_ratio
+
+        # Check with precalculated and with IRSA
+        if self.has_precalculated_extinction(fltr):
+            print("pre", attenuation, self.precalculated_extinction(fltr))
+        if self.has_irsa_extinction(fltr):
+            print("irsa", attenuation, self.irsa_extinction(fltr))
+
+        # Return the attenuation
+        return attenuation
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def v_band_index(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return tables.find_index(self.table, "CTIO V")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def av_ebv_ratio(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.table["A_over_E_B_V_SandF"][self.v_band_index]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def attenuation_v(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.table["A_SandF"][self.v_band_index]
+
+    # -----------------------------------------------------------------
+
+    def has_precalculated_extinction(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
         filter_name = str(fltr)
-        return self.extinction_for_filter_name(filter_name)
+
+        if "GALEX" in filter_name or "UVOT" in filter_name:
+            if "NUV" in filter_name or "FUV" in filter_name or "W2" in filter_name or "M2" in filter_name \
+                or "W1" in filter_name: return True
+            else: return False
+        elif "Halpha" in filter_name or "656_1" in filter_name: return True
+        else: return False
+
+    # -----------------------------------------------------------------
+
+    def has_irsa_extinction(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return str(fltr) in irsa_names
+
+    # -----------------------------------------------------------------
+
+    def precalculated_extinction(self, fltr):
+
+        """
+        :param fltr:
+        :return:
+        """
+
+        filter_name = str(fltr)
+
+        # GALEX bands
+        if "GALEX" in filter_name or "UVOT" in filter_name:
+
+            # Get the A(V) / E(B-V) ratio
+            #v_band_index = tables.find_index(self.table, "CTIO V")
+            #av_ebv_ratio = self.table["A_over_E_B_V_SandF"][v_band_index]
+
+            # Get the attenuation of the V band A(V)
+            #attenuation_v = self.table["A_SandF"][v_band_index]
+
+            # Determine the factor
+            if "NUV" in filter_name: factor = 8.0
+            elif "FUV" in filter_name: factor = 7.9
+            elif "W2" in filter_name: factor = 8.81867
+            elif "M2" in filter_name: factor = 9.28435
+            elif "W1" in filter_name: factor = 6.59213
+            else: raise ValueError("Unsure which GALEX or Swift UVOT band this is: " + filter_name)
+
+            # Calculate the attenuation
+            attenuation = factor * self.attenuation_v / self.av_ebv_ratio
+
+        # Fill in the Ha attenuation manually
+        elif "Halpha" in filter_name or "656_1" in filter_name: attenuation = 0.174
+
+        else: raise ValueError("Don't have precalculated extinction for this filter")
+
+        # Return the attenuation
+        return attenuation
+
+    # -----------------------------------------------------------------
+
+    def irsa_extinction(self, fltr):
+
+        """
+        This function ...
+        :param fltr: 
+        :return: 
+        """
+
+        filter_name = str(fltr)
+
+        # Other bands for which attenuation is listed by IRSA
+        #elif filter_name in irsa_names:
+
+        irsa_name = irsa_names[filter_name]
+
+        # Find the index of the corresponding table entry
+        index = tables.find_index(self.table, irsa_name)
+
+        # Get the attenuation
+        attenuation = self.table["A_SandF"][index]
+
+        # All other bands: set attenuation to zero
+        #else: #attenuation = 0.0
+        # NO: RAISE AND ERROR
+        #else: raise ValueError("Cannot determine the extinction for the '"+  filter_name + "' filter")
+
+        # Return the galactic attenuation coefficient
+        return attenuation
 
     # -----------------------------------------------------------------
 
