@@ -79,13 +79,25 @@ def calculate_factor(fltr):
 
     log.info("Calculating R(V) for the " + str(fltr) + " filter ...")
 
+    #print("filter wavelengths", fltr.wavelengths)
+
     transmissionfun = interp1d(fltr.wavelengths, fltr.transmissions)
+
+    minwavelength = min(fltr.wavelengths)
+    maxwavelength = max(fltr.wavelengths)
 
     rv31_curve = Curve.from_data_file(rv31_path, x_name="Wavelength", y_name="R(V)")
 
     # To micron from Angstrom
     wavelengths = np.array(rv31_curve.x_data) * 0.0001
     rvs = rv31_curve.y_data
+
+    mask = np.array([wavelength > maxwavelength or wavelength < minwavelength for wavelength in wavelengths])
+    inverse_mask = np.logical_not(mask)
+    wavelengths = wavelengths[inverse_mask]
+    rvs = rvs[inverse_mask]
+
+    #print("wavelengths", wavelengths)
 
     # Calculate interpolated transmissions
     interpolated = transmissionfun(wavelengths)
@@ -379,8 +391,10 @@ class GalacticExtinction(object):
                 # Add extinction point
                 curve.add_point(fltr, extinction)
 
-            except ValueError:
-                if ignore_errors: pass
+            except ValueError as e:
+                if ignore_errors:
+                    log.warning("Could not determine the extinction for the " + str(fltr) + " filter:")
+                    print(e)
                 else: raise ValueError("Could not determine the extinction for the " + str(fltr) + "filter")
 
         # Return the curve
