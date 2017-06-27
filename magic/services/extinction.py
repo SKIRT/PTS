@@ -29,6 +29,7 @@ from ...core.basics.curve import FilterCurve, Curve
 from ...core.filter.filter import parse_filter
 from ..tools import wavelengths
 from ...core.tools.logging import log
+from ...core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -77,10 +78,11 @@ def calculate_factor(fltr):
     # interpol:
     #filtFUV2 = INTERPOL(filtFUV, waveFUV, wave_RV3_1)
 
-    log.info("Calculating R(V) for the " + str(fltr) + " filter ...")
+    log.info("Calculating R for the " + str(fltr) + " filter ...")
 
     #print("filter wavelengths", fltr.wavelengths)
 
+    #transmissions = fltr.transmissions
     transmissionfun = interp1d(fltr.wavelengths, fltr.transmissions)
 
     minwavelength = min(fltr.wavelengths)
@@ -101,12 +103,14 @@ def calculate_factor(fltr):
 
     # Calculate interpolated transmissions
     interpolated = transmissionfun(wavelengths)
+    for index in range(len(interpolated)):
+        if interpolated[index] < 0: interpolated[index] = 0.0
 
     #j = where(filtFUV2 LT 0.)
     #filtFUV2[j] = 0.
 
-    sumFUV = 0
-    sum2FUV = 0
+    sumFUV = 0.
+    sum2FUV = 0.
 
     #nwave = n_elements(wave_RV3_1)
     nwave = len(wavelengths)
@@ -118,16 +122,23 @@ def calculate_factor(fltr):
         wave_delta = wavelengths[i+1] - wavelengths[i]
 
         #FUV
-        sumFUV += (rvs[i] * interpolated[i] * wave_delta)
+        sumFUV += rvs[i] * interpolated[i] * wave_delta
         sum2FUV += interpolated[i] * wave_delta
 
-    #print,sumFUV,sum2FUV
+    print("SUMS", sumFUV, sum2FUV)
+
+    result = sumFUV / sum2FUV
+
+    index = sequences.find_closest_index(wavelengths, fltr.wavelength.to("micron").value)
+    lazy_result = rvs[index]
+
+    print("RESULT", result, lazy_result)
 
     #print, 'FUV'
     #print, sumFUV / sum2FUV
 
     # Return the result
-    return sumFUV / sum2FUV
+    return result
 
 # -----------------------------------------------------------------
 
@@ -177,21 +188,26 @@ class GalacticExtinction(object):
         :return:
         """
 
+        # Parse filter
+        if types.is_string_type(fltr): fltr = parse_filter(fltr)
+
         # No extinction for this filter
         if not wavelengths.wavelength_in_regimes(fltr.wavelength, ["FUV-NIR"]): return 0.0
 
         #return self.extinction_for_filter_name(filter_name)
 
-        rv = calculate_factor(fltr)
+        r = calculate_factor(fltr)
+
+        # reddening ratio Av / E(B-V) = 3.1
 
         # Calculate the attenuation
-        attenuation = rv * self.attenuation_v / self.av_ebv_ratio
+        attenuation = r * self.attenuation_v #/ self.av_ebv_ratio
 
         # Check with precalculated and with IRSA
         if self.has_precalculated_extinction(fltr):
-            print("pre", attenuation, self.precalculated_extinction(fltr))
+            print("pre", attenuation, self.precalculated_extinction(fltr), attenuation/self.precalculated_extinction(fltr))
         if self.has_irsa_extinction(fltr):
-            print("irsa", attenuation, self.irsa_extinction(fltr))
+            print("irsa", attenuation, self.irsa_extinction(fltr), attenuation/self.irsa_extinction(fltr))
 
         # Return the attenuation
         return attenuation
@@ -418,7 +434,7 @@ class GalacticExtinction(object):
             filter_name = instrument + " " + band
 
             # Get the extinction
-            extinction = self.extinction_for_filter_name(filter_name)
+            extinction = self.extinction_for_filter(filter_name)
 
             # Correct the flux value (and error) for galactic extinction
             correction_factor = 10 ** (0.4 * extinction)

@@ -51,6 +51,8 @@ filters = get_filters_for_regimes("UV-NIR")
 curve = extinction.extinction_curve(filters, ignore_errors=True)
 print(curve)
 plot = Plot()
+plot.set_x_log_scale()
+plot.set_y_log_scale()
 plot.add_curve(curve, "extinction")
 plot.finish()
 
