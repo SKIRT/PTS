@@ -26,7 +26,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...magic.core.dataset import DataSet
 from ...core.basics.containers import NamedFileList
-from ...magic.services.extinction import GalacticExtinction
+from ...magic.services.attenuation import GalacticAttenuation
 from ...core.filter.filter import parse_filter
 from ...magic.sources.extractor import SourceExtractor
 from ...magic.sky.skysubtractor import SkySubtractor
@@ -250,8 +250,8 @@ class DataPreparer(PreparationComponent):
         # Call the constructor of the base class
         super(DataPreparer, self).__init__(*args, **kwargs)
 
-        # The extinction calculator
-        self.extinction = None
+        # The attenuation calculator
+        self.attenuation = None
 
         # The DustPedia properties
         self.properties = None
@@ -343,7 +343,7 @@ class DataPreparer(PreparationComponent):
         self.load_statistics()
 
         # Create the galactic extinction calculator
-        self.extinction = GalacticExtinction(self.galaxy_center)
+        self.attenuation = GalacticAttenuation(self.galaxy_center)
 
         # Create the DustPedia properties
         self.properties = DustPediaProperties()
@@ -654,7 +654,7 @@ class DataPreparer(PreparationComponent):
             fltr = parse_filter(name)
 
             # Get the extinction value
-            attenuation = self.extinction.extinction_for_filter(fltr)
+            attenuation = self.attenuation.extinction_for_filter(fltr)
 
             # Load the image
             image = Image.from_file(path)

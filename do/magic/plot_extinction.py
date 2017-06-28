@@ -30,14 +30,8 @@ extinction_path = fs.join(introspection.pts_subproject_dir("core"), "data", "ext
 
 import pyximport
 
-import os
-#if os.path.exists(extinction_path):
 USE_CYTHON = True
-#fname = "extinction.pyx"
 fname = extinction_path
-#else:
-#    USE_CYTHON = False
-#    fname = "extinction.c"
 
 core_data_directory_path = fs.join(introspection.pts_subproject_dir("core"), "data")
 

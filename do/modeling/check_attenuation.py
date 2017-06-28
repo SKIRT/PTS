@@ -18,7 +18,7 @@ from pts.core.basics.configuration import ConfigurationDefinition, parse_argumen
 from pts.modeling.core.environment import GalaxyModelingEnvironment
 from pts.modeling.preparation.preparer import load_statistics
 from pts.core.filter.filter import parse_filter
-from pts.magic.services.extinction import GalacticExtinction
+from pts.magic.services.attenuation import GalacticAttenuation
 from pts.core.tools.logging import log
 from pts.modeling.component.galaxy import get_galaxy_properties
 
@@ -44,8 +44,7 @@ properties = get_galaxy_properties(modeling_path)
 
 # -----------------------------------------------------------------
 
-#extinction = GalacticExtinction(environment.galaxy_name)
-extinction = GalacticExtinction(properties.center)
+attenuation = GalacticAttenuation(properties.center)
 
 # -----------------------------------------------------------------
 
@@ -61,15 +60,15 @@ for prep_name in environment.preparation_names:
     fltr = parse_filter(prep_name)
 
     # Get the extinction
-    ext = extinction.extinction_for_filter(fltr)
+    att = attenuation.extinction_for_filter(fltr)
 
-    if ext == 0.0:
-        if statistics.attenuation != 0.0: log.warning(prep_name + ": extinction is zero but preparation extinction value was " + str(statistics.attenuation))
+    if att == 0.0:
+        if statistics.attenuation != 0.0: log.warning(prep_name + ": attenuation is zero but preparation attenuation value was " + str(statistics.attenuation))
         continue
 
     # Ratio
-    ratio = statistics.attenuation / ext
-    rel = abs((statistics.attenuation - ext)/ext)
+    ratio = statistics.attenuation / att
+    rel = abs((statistics.attenuation - att)/att)
 
     #print(prep_name, statistics.attenuation, ext, ratio, rel * 100)
 

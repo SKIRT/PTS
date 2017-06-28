@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
-from pts.magic.services.extinction import GalacticExtinction
+from pts.magic.services.attenuation import GalacticAttenuation
 from pts.core.basics.plot import Plot
 from pts.core.filter.broad import categorize_filters, categorized_filters_sorted_labels, get_filters_for_regimes
 
@@ -29,8 +29,8 @@ config = parse_arguments("extinction", definition)
 
 # -----------------------------------------------------------------
 
-# Create extinction object
-extinction = GalacticExtinction(config.galaxy_name)
+# Create attenuation object
+attenuation = GalacticAttenuation(config.galaxy_name)
 
 # -----------------------------------------------------------------
 
@@ -48,7 +48,7 @@ filters = get_filters_for_regimes("UV-NIR")
 
 # -----------------------------------------------------------------
 
-curve = extinction.extinction_curve(filters, ignore_errors=True)
+curve = attenuation.extinction_curve(filters, ignore_errors=True)
 print(curve)
 plot = Plot()
 plot.set_x_log_scale()

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.magic.misc.extinction Contains the GalacticExtinction class.
+## \package pts.magic.services.attenuation Contains the GalacticAttenuation class.
 
 # -----------------------------------------------------------------
 
@@ -179,7 +179,7 @@ def calculate_r_broad(fltr):
 
 # -----------------------------------------------------------------
 
-class GalacticExtinction(object):
+class GalacticAttenuation(object):
 
     """
     This class ...
