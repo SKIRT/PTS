@@ -323,6 +323,30 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
         return self.modeling_configuration.cache_host_id
 
+    # -----------------------------------------------------------------
+
+    @property
+    def preparation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.directories_in_path(self.prep_path, returns="name")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def preparation_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.directories_in_path(self.prep_path, returns="dict")
+
 # -----------------------------------------------------------------
 
 input_name = "input"

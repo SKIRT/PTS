@@ -157,6 +157,22 @@ def steps_before_and_including(step):
 
 # -----------------------------------------------------------------
 
+def load_statistics(modeling_path, prep_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param prep_name:
+    :return:
+    """
+
+    prep_path = fs.join(modeling_path, "prep", prep_name)
+    statistics_path = fs.join(prep_path, statistics_name)
+    statistics = PreparationStatistics.from_file(statistics_path)
+    return statistics
+
+# -----------------------------------------------------------------
+
 class PreparationStatistics(SimplePropertyComposite):
 
     """

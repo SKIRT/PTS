@@ -30,6 +30,8 @@ from ...core.filter.filter import parse_filter
 from ..tools import wavelengths
 from ...core.tools.logging import log
 from ...core.tools import sequences
+from ...core.filter.broad import BroadBandFilter
+from ...core.filter.narrow import NarrowBandFilter
 
 # -----------------------------------------------------------------
 
@@ -63,7 +65,43 @@ rv31_path = fs.join(extinction_data_path, "al_av3_1.dat")
 
 # -----------------------------------------------------------------
 
-def calculate_factor(fltr):
+def calculate_r(fltr):
+
+    """
+    This function ...
+    :param fltr:
+    :return:
+    """
+
+    # Calcualte R
+    if isinstance(fltr, BroadBandFilter): return calculate_r_broad(fltr)
+    elif isinstance(fltr, NarrowBandFilter): return calculate_r_narrow(fltr)
+    else: raise ValueError("Filter object not recognized")
+
+# -----------------------------------------------------------------
+
+def calculate_r_narrow(fltr):
+
+    """
+    This function ...
+    :param fltr:
+    :return:
+    """
+
+    log.debug("Calculating R for the " + str(fltr) + " filter ...")
+
+    rv31_curve = Curve.from_data_file(rv31_path, x_name="Wavelength", y_name="R")
+    # To micron from Angstrom
+    wavelengths = np.array(rv31_curve.x_data) * 0.0001
+    rvs = rv31_curve.y_data
+
+    # Return
+    rvs_interp = interp1d(wavelengths, rvs)
+    return rvs_interp(fltr.wavelength.to("micron").value)
+
+# -----------------------------------------------------------------
+
+def calculate_r_broad(fltr):
 
     """
     This function ...
@@ -78,7 +116,7 @@ def calculate_factor(fltr):
     # interpol:
     #filtFUV2 = INTERPOL(filtFUV, waveFUV, wave_RV3_1)
 
-    log.info("Calculating R for the " + str(fltr) + " filter ...")
+    log.debug("Calculating R for the " + str(fltr) + " filter ...")
 
     #print("filter wavelengths", fltr.wavelengths)
 
@@ -88,8 +126,7 @@ def calculate_factor(fltr):
     minwavelength = min(fltr.wavelengths)
     maxwavelength = max(fltr.wavelengths)
 
-    rv31_curve = Curve.from_data_file(rv31_path, x_name="Wavelength", y_name="R(V)")
-
+    rv31_curve = Curve.from_data_file(rv31_path, x_name="Wavelength", y_name="R")
     # To micron from Angstrom
     wavelengths = np.array(rv31_curve.x_data) * 0.0001
     rvs = rv31_curve.y_data
@@ -125,14 +162,14 @@ def calculate_factor(fltr):
         sumFUV += rvs[i] * interpolated[i] * wave_delta
         sum2FUV += interpolated[i] * wave_delta
 
-    print("SUMS", sumFUV, sum2FUV)
+    #print("SUMS", sumFUV, sum2FUV)
 
     result = sumFUV / sum2FUV
 
     index = sequences.find_closest_index(wavelengths, fltr.wavelength.to("micron").value)
     lazy_result = rvs[index]
 
-    print("RESULT", result, lazy_result)
+    #print("RESULT", result, lazy_result)
 
     #print, 'FUV'
     #print, sumFUV / sum2FUV
@@ -192,11 +229,12 @@ class GalacticExtinction(object):
         if types.is_string_type(fltr): fltr = parse_filter(fltr)
 
         # No extinction for this filter
-        if not wavelengths.wavelength_in_regimes(fltr.wavelength, ["FUV-NIR"]): return 0.0
+        #if not wavelengths.wavelength_in_regimes(fltr.wavelength, ["FUV-NIR"]): return 0.0
+        if fltr.wavelength not in wavelengths.extinction_wavelength_range: return 0.0
 
         #return self.extinction_for_filter_name(filter_name)
 
-        r = calculate_factor(fltr)
+        r = calculate_r(fltr)
 
         # reddening ratio Av / E(B-V) = 3.1
 
@@ -204,10 +242,10 @@ class GalacticExtinction(object):
         attenuation = r * self.attenuation_v #/ self.av_ebv_ratio
 
         # Check with precalculated and with IRSA
-        if self.has_precalculated_extinction(fltr):
-            print("pre", attenuation, self.precalculated_extinction(fltr), attenuation/self.precalculated_extinction(fltr))
-        if self.has_irsa_extinction(fltr):
-            print("irsa", attenuation, self.irsa_extinction(fltr), attenuation/self.irsa_extinction(fltr))
+        #if self.has_precalculated_extinction(fltr):
+        #    print("pre", attenuation, self.precalculated_extinction(fltr), attenuation/self.precalculated_extinction(fltr))
+        #if self.has_irsa_extinction(fltr):
+        #    print("irsa", attenuation, self.irsa_extinction(fltr), attenuation/self.irsa_extinction(fltr))
 
         # Return the attenuation
         return attenuation
@@ -264,7 +302,7 @@ class GalacticExtinction(object):
             if "NUV" in filter_name or "FUV" in filter_name or "W2" in filter_name or "M2" in filter_name \
                 or "W1" in filter_name: return True
             else: return False
-        elif "Halpha" in filter_name or "656_1" in filter_name: return True
+        #elif "Halpha" in filter_name or "Ha" in filter_name or "656_1" in filter_name: return True # NO: only for a particular galaxy??
         else: return False
 
     # -----------------------------------------------------------------
@@ -312,8 +350,9 @@ class GalacticExtinction(object):
             attenuation = factor * self.attenuation_v / self.av_ebv_ratio
 
         # Fill in the Ha attenuation manually
-        elif "Halpha" in filter_name or "656_1" in filter_name: attenuation = 0.174
+        #elif "Halpha" in filter_name or "Ha" in filter_name or "656_1" in filter_name: attenuation = 0.174
 
+        # No precalculated extinction
         else: raise ValueError("Don't have precalculated extinction for this filter")
 
         # Return the attenuation

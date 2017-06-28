@@ -26,6 +26,10 @@ black_body_wavelength_range = QuantityRange(50., 2000., "micron")
 
 # -----------------------------------------------------------------
 
+extinction_wavelength_range = QuantityRange(0.005, 10., "micron")
+
+# -----------------------------------------------------------------
+
 spectrum_wavelengths = OrderedDict([(("UV", "EUV"), (0.01, 0.121)),
                                    (("UV", "Lyman-alpha"), (0.121, 0.122)),
                                    (("UV", "FUV"), (0.122, 0.2)),
