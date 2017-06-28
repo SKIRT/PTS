@@ -19,28 +19,14 @@ import matplotlib.pyplot as plt
 from matplotlib import rcParams
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-#import extinction
-
 rcParams['font.family'] = 'serif'
-
-from distutils.core import setup
-from Cython.Build import cythonize
-
-from setuptools.extension import Extension
 
 # Import the relevant PTS classes and modules
 from pts.core.data.attenuation import CalzettiAttenuationCurve, BattistiAttenuationCurve
-#from pts.core.data import extinction
 from pts.core.tools import introspection
 from pts.core.tools import filesystem as fs
 
 extinction_path = fs.join(introspection.pts_subproject_dir("core"), "data", "extinction.pyx")
-
-#setup(
-#    ext_modules = cythonize(extinction_path, include_dirs=[np.get_include()])
-#)
-
-#print(ext_modules)
 
 import pyximport
 
@@ -66,46 +52,28 @@ bsplines_path = fs.join(extern_path, "bsplines.pxi")
 sourcefiles = [fname, bs_c_path]
 dependsfiles = [bs_h_path, bsplines_path]
 include_dirs = [np.get_include(), extern_path]
-extensions = [Extension(extinction_module_name, sourcefiles, include_dirs=include_dirs,
-                        depends=dependsfiles, extra_compile_args=['-std=c99'])]
+#extensions = [Extension(extinction_module_name, sourcefiles, include_dirs=include_dirs,
+#                        depends=dependsfiles, extra_compile_args=['-std=c99'])]
 
-#from os import environ
-#cflags = '-I/' + extern_path[1:]
-#ldflags = "-L" + extern_path[1:] + " -lcustomlib"
-#print(cflags)
-#print(ldflags)
-
-#environ['CFLAGS'] = cflags
-##environ['LDFLAGS'] = '-Lpath/to/my/custom/lib -lcustomlib'
-#environ['LDFLAGS'] = ldflags
-
-#pyximport.install()
-# From https://stackoverflow.com/questions/14657375/cython-fatal-error-numpy-arrayobject-h-no-such-file-or-directory
-#pyximport.install(setup_args={"script_args":["--compiler=mingw32"],
-#                              "include_dirs":np.get_include()}, reload_support=True)
 pyximport.install(build_dir=core_data_directory_path, setup_args={"include_dirs":include_dirs}, reload_support=True, pyimport=True)
-pyximport.install(setup_args={"include_dirs":include_dirs}, reload_support=True, pyimport=True)
+#pyximport.install(setup_args={"include_dirs":include_dirs}, reload_support=True, pyimport=True)
 from pts.core.data import extinction
 
-#extra_compile_args = ['-std=c99']
-#pyximport.install(setup_args={"include_dirs": include_dirs, "depends": dependsfiles, "extra_compile_args": extra_compile_args})
-#from pts.core.data import extinction
-
-#if USE_CYTHON:
-#from Cython.Build import cythonize
-#modules = cythonize(extensions)
-
-#from pts.core.data import extinction
-#extinction = modules[0]
-#import pts.core.data.extinction.pyx
-
-#setup(ext_modules=modules)
-#from pts.core.data import extinction
-#import pts.core.data.extinction
+print("here")
 
 # -----------------------------------------------------------------
 
 def extinction_figure(wave, a_lambda, residual_from, residual_lims=(-0.1, 0.4), title_text='$R_V = 3.1$'):
+
+    """
+    This function ...
+    :param wave:
+    :param a_lambda:
+    :param residual_from:
+    :param residual_lims:
+    :param title_text:
+    :return:
+    """
 
     names = list(a_lambda.keys())  # consistent ordering between panels
     fig = plt.figure(figsize=(8.5, 6.))
@@ -151,7 +119,9 @@ def extinction_figure(wave, a_lambda, residual_from, residual_lims=(-0.1, 0.4), 
     axresid.set_xscale('log')
     plt.tight_layout()
 
-    return fig
+    #return fig
+
+    plt.show()
 
 # -----------------------------------------------------------------
 
