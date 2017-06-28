@@ -24,6 +24,7 @@ from astropy.table import Table
 from ...core.tools import tables, introspection, arrays
 from ...core.tools import filesystem as fs
 from ..basics.curve import Curve
+from ...magic.tools.wavelengths import extinction_wavelength_range
 
 # -----------------------------------------------------------------
 
@@ -73,6 +74,28 @@ class ExtinctionCurve(Curve):
         # Add the data
         if wavelengths is not None:
             for index in range(len(wavelengths)): self.add_row([wavelengths[index], extinctions[index]])
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_range(cls, wavelength_range=extinction_wavelength_range, npoints=100, scale="logarithmic", rv=3.1):
+
+        """
+        This function ...
+        :param wavelength_range:
+        :param npoints:
+        :param scale
+        :param rv:
+        :return:
+        """
+
+        # Generate
+        if scale == "logarithmic": wavelengths = wavelength_range.log(npoints)
+        elif scale == "linear": wavelengths = wavelength_range.linear(npoints)
+        else: raise ValueError("Invalid scale: " + scale)
+
+        # Create and return
+        return cls(wavelengths=wavelengths, rv=rv)
 
     # -----------------------------------------------------------------
 
@@ -131,115 +154,252 @@ class ExtinctionCurve(Curve):
 
 # -----------------------------------------------------------------
 
-class MilkyWayAttenuationCurve(AttenuationCurve):
+extinction_path = fs.join(introspection.pts_subproject_dir("core"), "data", "extinction_functions.pyx")
+
+import pyximport
+
+#USE_CYTHON = True
+fname = extinction_path
+
+core_data_directory_path = fs.join(introspection.pts_subproject_dir("core"), "data")
+
+#extinction_module_name = "extinction"
+extinction_module_name = "pts.core.data.extinction_functions"
+
+extern_path = fs.join(introspection.pts_subproject_dir("core"), "data", "extern")
+bs_c_path = fs.join(extern_path, "bs.c")
+bs_h_path = fs.join(extern_path, "bs.h")
+bsplines_path = fs.join(extern_path, "bsplines.pxi")
+
+sourcefiles = [fname, bs_c_path]
+dependsfiles = [bs_h_path, bsplines_path]
+include_dirs = [np.get_include(), extern_path]
+#extensions = [Extension(extinction_module_name, sourcefiles, include_dirs=include_dirs,
+#                        depends=dependsfiles, extra_compile_args=['-std=c99'])]
+
+pyximport.install(build_dir=core_data_directory_path, setup_args={"include_dirs":include_dirs}, reload_support=True, pyimport=True)
+#pyximport.install(setup_args={"include_dirs":include_dirs}, reload_support=True, pyimport=True)
+from pts.core.data import extinction_functions
+
+# -----------------------------------------------------------------
+
+class CardelliClaytonMathisExtinctionCurve(ExtinctionCurve):
 
     """
     This class ...
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, wavelengths, rv=3.1):
 
         """
         This function ...
-        :param rv: the value of R(V). If None, the mean Milky Way attenuation curve is generated. (See Fitzpatrick & Massa, 2007)
+        :param wavelengths:
+        :param rv:
         """
 
-        # Determine the path to the data file
-        #path = fs.join(attenuation_data_path, "AttenuationLawMWRv5.dat")
-
-        # Load the attenuation data
-        #wavelengths_angstrom, alambda_av = np.loadtxt(path, unpack=True)
-
-        # Convert wavelengths into micron
-        #wavelengths = wavelengths_angstrom * 0.0001
-
-        # Attenuations
-        #attenuations = alambda_av
-
-        # Get data
-        wavelengths, attenuations = generate_milky_way_attenuations(0.1, 1000, 1000)
-
-        kwargs["wavelengths"] = wavelengths
-        kwargs["attenuations"] = attenuations
+        # Generate
+        extinctions = extinction_functions.ccm89(wavelengths, 1.0, rv)
 
         # Call the constructor of the base class
-        super(MilkyWayAttenuationCurve, self).__init__(*args, **kwargs)
+        super(CardelliClaytonMathisExtinctionCurve, self).__init__(wavelengths=wavelengths, extinctions=extinctions)
 
 # -----------------------------------------------------------------
 
-class SMCAttenuationCurve(AttenuationCurve):
+class ODonnellExtinctionCurve(ExtinctionCurve):
 
     """
     This class ...
     """
 
-    # Determine the path to the data file
-    dat_path = fs.join(attenuation_data_path, "AttenuationLawSMC.dat")
-
-    # -----------------------------------------------------------------
-
-    def __init__(self, *args, **kwargs):
+    def __init__(self, wavelengths, rv=3.1):
 
         """
         This function ...
-        :param args:
-        :param kwargs:
+        :param wavelengths:
         """
 
-        # Load the attenuation data
-        wavelengths_angstrom, alambda_av = np.loadtxt(self.dat_path, unpack=True)
-
-        # Convert wavelengths into micron
-        wavelengths = wavelengths_angstrom * 0.0001
-
-        # Attenuations
-        attenuations = alambda_av
-
-        kwargs["wavelengths"] = wavelengths
-        kwargs["attenuations"] = attenuations
+        # Generate
+        extinctions = extinction_functions.odonnell94(wavelengths, 1.0, rv)
 
         # Call the constructor of the base class
-        super(SMCAttenuationCurve, self).__init__(*args, **kwargs)
+        super(ODonnellExtinctionCurve, self).__init__(wavelengths=wavelengths, extinctions=extinctions)
 
 # -----------------------------------------------------------------
 
-class CalzettiAttenuationCurve(AttenuationCurve):
+class FitzpatrickExtinctionCurve(ExtinctionCurve):
 
     """
     This class ...
     """
 
-    # Determine the path to the data file
-    path = fs.join(attenuation_data_path, "AttenuationLawCalzetti.dat")
-
-    # -----------------------------------------------------------------
-
-    def __init__(self, *args, **kwargs):
+    def __init__(self, wavelengths, rv=3.1):
 
         """
-        This function ...
-        :param args:
-        :param kwargs:
+        Thisf unction ...
+        :param wavelengths:
+        :param rv:
         """
 
-        # Load the attenuation data
-        wavelengths_angstrom, alambda_av = np.loadtxt(self.path, unpack=True)
-
-        # Convert wavelengths into micron
-        wavelengths = wavelengths_angstrom * 0.0001
-
-        # Attenuations
-        attenuations = alambda_av
-
-        kwargs["wavelengths"] = wavelengths
-        kwargs["attenuations"] = attenuations
+        # Generate
+        extinctions = extinction_functions.fitzpatrick99(wavelengths, 1.0, rv)
 
         # Call the constructor of the base class
-        super(CalzettiAttenuationCurve, self).__init__(*args, **kwargs)
+        super(FitzpatrickExtinctionCurve, self).__init__(wavelengths=wavelengths, extinctions=extinctions)
 
 # -----------------------------------------------------------------
 
-class BattistiAttenuationCurve(AttenuationCurve):
+class FitzpatrickMassaExtinctionCurve(ExtinctionCurve):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, wavelengths):
+
+        """
+        Thisf unction ...
+        :param wavelengths:
+        """
+
+        # Generate
+        extinctions = extinction_functions.fm07(wavelengths, 1.0)
+
+        # Call the constructor of the base class
+        super(FitzpatrickMassaExtinctionCurve, self).__init__(wavelengths=wavelengths, extinctions=extinctions)
+
+# -----------------------------------------------------------------
+
+class CalzettiExtinctionCurve(ExtinctionCurve):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, wavelengths, rv=3.1):
+
+        """
+        This function ...
+        :param wavelengths:
+        :param rv:
+        """
+
+        # Generate
+        extinctions = extinction_functions.calzetti00(wavelengths, 1.0, rv)
+
+        # Call the constructor of the base class
+        super(CalzettiExtinctionCurve, self).__init__(wavelengths=wavelengths, extinctions=extinctions)
+
+# -----------------------------------------------------------------
+
+# class MilkyWayAttenuationCurve(AttenuationCurve):
+#
+#     """
+#     This class ...
+#     """
+#
+#     def __init__(self, *args, **kwargs):
+#
+#         """
+#         This function ...
+#         :param rv: the value of R(V). If None, the mean Milky Way attenuation curve is generated. (See Fitzpatrick & Massa, 2007)
+#         """
+#
+#         # Determine the path to the data file
+#         #path = fs.join(attenuation_data_path, "AttenuationLawMWRv5.dat")
+#
+#         # Load the attenuation data
+#         #wavelengths_angstrom, alambda_av = np.loadtxt(path, unpack=True)
+#
+#         # Convert wavelengths into micron
+#         #wavelengths = wavelengths_angstrom * 0.0001
+#
+#         # Attenuations
+#         #attenuations = alambda_av
+#
+#         # Get data
+#         wavelengths, attenuations = generate_milky_way_attenuations(0.1, 1000, 1000)
+#
+#         kwargs["wavelengths"] = wavelengths
+#         kwargs["attenuations"] = attenuations
+#
+#         # Call the constructor of the base class
+#         super(MilkyWayAttenuationCurve, self).__init__(*args, **kwargs)
+
+# -----------------------------------------------------------------
+
+# class SMCAttenuationCurve(AttenuationCurve):
+#
+#     """
+#     This class ...
+#     """
+#
+#     # Determine the path to the data file
+#     dat_path = fs.join(attenuation_data_path, "AttenuationLawSMC.dat")
+#
+#     # -----------------------------------------------------------------
+#
+#     def __init__(self, *args, **kwargs):
+#
+#         """
+#         This function ...
+#         :param args:
+#         :param kwargs:
+#         """
+#
+#         # Load the attenuation data
+#         wavelengths_angstrom, alambda_av = np.loadtxt(self.dat_path, unpack=True)
+#
+#         # Convert wavelengths into micron
+#         wavelengths = wavelengths_angstrom * 0.0001
+#
+#         # Attenuations
+#         attenuations = alambda_av
+#
+#         kwargs["wavelengths"] = wavelengths
+#         kwargs["attenuations"] = attenuations
+#
+#         # Call the constructor of the base class
+#         super(SMCAttenuationCurve, self).__init__(*args, **kwargs)
+
+# -----------------------------------------------------------------
+
+# class CalzettiAttenuationCurve(AttenuationCurve):
+#
+#     """
+#     This class ...
+#     """
+#
+#     # Determine the path to the data file
+#     path = fs.join(attenuation_data_path, "AttenuationLawCalzetti.dat")
+#
+#     # -----------------------------------------------------------------
+#
+#     def __init__(self, *args, **kwargs):
+#
+#         """
+#         This function ...
+#         :param args:
+#         :param kwargs:
+#         """
+#
+#         # Load the attenuation data
+#         wavelengths_angstrom, alambda_av = np.loadtxt(self.path, unpack=True)
+#
+#         # Convert wavelengths into micron
+#         wavelengths = wavelengths_angstrom * 0.0001
+#
+#         # Attenuations
+#         attenuations = alambda_av
+#
+#         kwargs["wavelengths"] = wavelengths
+#         kwargs["attenuations"] = attenuations
+#
+#         # Call the constructor of the base class
+#         super(CalzettiAttenuationCurve, self).__init__(*args, **kwargs)
+
+# -----------------------------------------------------------------
+
+class BattistiExtinctionCurve(ExtinctionCurve):
 
     """
     This class ...
@@ -269,59 +429,59 @@ class BattistiAttenuationCurve(AttenuationCurve):
         kwargs["attenuations"] = attenuations
 
         # Call the constructor of the base class
-        super(BattistiAttenuationCurve, self).__init__(*args, **kwargs)
+        super(BattistiExtinctionCurve, self).__init__(*args, **kwargs)
 
 # -----------------------------------------------------------------
 
-class MappingsAttenuationCurve(AttenuationCurve):
-
-    """
-    This class ...
-    """
-
-    path = fs.join(attenuation_data_path, "AttenuationLawMAPPINGS.dat")
-
-    # -----------------------------------------------------------------
-
-    def __init__(self, *args, **kwargs):
-
-        """
-        This function ...
-        :param args:
-        :param kwargs:
-        """
-
-        attenuation = kwargs.pop("attenuation")
-        wavelength = kwargs.pop("wavelength")
-
-        # Load the data
-        # wl in micron from long to short wl.
-        # ABS attenuations (see header of data file)
-        wavelengths, abs_attenuations = np.loadtxt(self.path, unpack=True)
-
-        # CREATE A TABLE SO WE CAN EASILY SORT THE COLUMNS FOR INCREASING WAVELENGTH
-        names = ["Wavelength", "ABS attenuation"]
-        # Create the table
-        abs_table = tables.new([wavelengths, abs_attenuations], names)
-        abs_table["Wavelength"].unit = Unit("micron")
-        # Sort the table on wavelength
-        abs_table.sort("Wavelength")
-
-        wavelengths = np.array(list(abs_table["Wavelength"]))
-        abs_attenuations = np.array(list(abs_table["ABS attenuation"]))
-
-        # Find the ABS attenuation at the specified wavelength
-        interpolated = interpolate.interp1d(wavelengths, abs_attenuations, kind='linear')
-        abs_wavelength = interpolated(wavelength.to("micron").value)
-
-        # 'Real' attenuations
-        attenuations_mappings = abs_attenuations / abs_wavelength * attenuation
-
-        kwargs["wavelengths"] = wavelengths
-        kwargs["attenuations"] = attenuations_mappings
-
-        # Call the constructor of the base class
-        super(MappingsAttenuationCurve, self).__init__(*args, **kwargs)
+# class MappingsAttenuationCurve(AttenuationCurve):
+#
+#     """
+#     This class ...
+#     """
+#
+#     path = fs.join(attenuation_data_path, "AttenuationLawMAPPINGS.dat")
+#
+#     # -----------------------------------------------------------------
+#
+#     def __init__(self, *args, **kwargs):
+#
+#         """
+#         This function ...
+#         :param args:
+#         :param kwargs:
+#         """
+#
+#         attenuation = kwargs.pop("attenuation")
+#         wavelength = kwargs.pop("wavelength")
+#
+#         # Load the data
+#         # wl in micron from long to short wl.
+#         # ABS attenuations (see header of data file)
+#         wavelengths, abs_attenuations = np.loadtxt(self.path, unpack=True)
+#
+#         # CREATE A TABLE SO WE CAN EASILY SORT THE COLUMNS FOR INCREASING WAVELENGTH
+#         names = ["Wavelength", "ABS attenuation"]
+#         # Create the table
+#         abs_table = tables.new([wavelengths, abs_attenuations], names)
+#         abs_table["Wavelength"].unit = Unit("micron")
+#         # Sort the table on wavelength
+#         abs_table.sort("Wavelength")
+#
+#         wavelengths = np.array(list(abs_table["Wavelength"]))
+#         abs_attenuations = np.array(list(abs_table["ABS attenuation"]))
+#
+#         # Find the ABS attenuation at the specified wavelength
+#         interpolated = interpolate.interp1d(wavelengths, abs_attenuations, kind='linear')
+#         abs_wavelength = interpolated(wavelength.to("micron").value)
+#
+#         # 'Real' attenuations
+#         attenuations_mappings = abs_attenuations / abs_wavelength * attenuation
+#
+#         kwargs["wavelengths"] = wavelengths
+#         kwargs["attenuations"] = attenuations_mappings
+#
+#         # Call the constructor of the base class
+#         super(MappingsAttenuationCurve, self).__init__(*args, **kwargs)
 
 # -----------------------------------------------------------------
 

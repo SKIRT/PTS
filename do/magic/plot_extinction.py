@@ -21,39 +21,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 rcParams['font.family'] = 'serif'
 
-# Import the relevant PTS classes and modules
-from pts.core.data.attenuation import CalzettiAttenuationCurve, BattistiAttenuationCurve
-from pts.core.tools import introspection
-from pts.core.tools import filesystem as fs
-
-extinction_path = fs.join(introspection.pts_subproject_dir("core"), "data", "extinction.pyx")
-
-import pyximport
-
-USE_CYTHON = True
-fname = extinction_path
-
-core_data_directory_path = fs.join(introspection.pts_subproject_dir("core"), "data")
-
-#extinction_module_name = "extinction"
-extinction_module_name = "pts.core.data.extinction"
-
-extern_path = fs.join(introspection.pts_subproject_dir("core"), "data", "extern")
-bs_c_path = fs.join(extern_path, "bs.c")
-bs_h_path = fs.join(extern_path, "bs.h")
-bsplines_path = fs.join(extern_path, "bsplines.pxi")
-
-sourcefiles = [fname, bs_c_path]
-dependsfiles = [bs_h_path, bsplines_path]
-include_dirs = [np.get_include(), extern_path]
-#extensions = [Extension(extinction_module_name, sourcefiles, include_dirs=include_dirs,
-#                        depends=dependsfiles, extra_compile_args=['-std=c99'])]
-
-pyximport.install(build_dir=core_data_directory_path, setup_args={"include_dirs":include_dirs}, reload_support=True, pyimport=True)
-#pyximport.install(setup_args={"include_dirs":include_dirs}, reload_support=True, pyimport=True)
-from pts.core.data import extinction
-
-print("here")
+from pts.core.data.extinction import CardelliClaytonMathisExtinctionCurve, ODonnellExtinctionCurve
+from pts.core.data.extinction import FitzpatrickExtinctionCurve, FitzpatrickMassaExtinctionCurve, CalzettiExtinctionCurve
 
 # -----------------------------------------------------------------
 
@@ -121,10 +90,13 @@ def extinction_figure(wave, a_lambda, residual_from, residual_lims=(-0.1, 0.4), 
 
 wave = np.logspace(np.log10(910.), np.log10(30000.), 2000)
 
-a_lambda = {'ccm89': extinction.ccm89(wave, 1.0, 3.1),
-            'odonnell94': extinction.odonnell94(wave, 1.0, 3.1),
-            'fitzpatrick99': extinction.fitzpatrick99(wave, 1.0),
-            'fm07': extinction.fm07(wave, 1.0)}
+# -----------------------------------------------------------------
+
+a_lambda = {'ccm89': CardelliClaytonMathisExtinctionCurve(wavelengths=wave).extinctions(asarray=True),
+            'odonnell94': ODonnellExtinctionCurve(wavelengths=wave).extinctions(asarray=True),
+            'fitzpatrick99': FitzpatrickExtinctionCurve(wavelengths=wave).extinctions(asarray=True),
+            'fm07': FitzpatrickMassaExtinctionCurve(wavelengths=wave).extinctions(asarray=True),
+            'calzetti': CalzettiExtinctionCurve(wavelengths=wave).extinctions(asarray=True)}
 extinction_figure(wave, a_lambda, 'fitzpatrick99')
 
 #a_lambda = {""}
