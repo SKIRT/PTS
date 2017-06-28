@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.magic.extinction Get the galactic extinction for a certain galaxy.
+## \package pts.do.magic.attenuation Get the galactic attenuation for a certain galaxy.
 
 # -----------------------------------------------------------------
 
@@ -25,7 +25,7 @@ definition = ConfigurationDefinition()
 definition.add_required("galaxy_name", "string", "galaxy name")
 
 # Get the configuration
-config = parse_arguments("extinction", definition)
+config = parse_arguments("attenuation", definition)
 
 # -----------------------------------------------------------------
 

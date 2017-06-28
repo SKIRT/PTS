@@ -27,11 +27,7 @@ from ..basics.curve import Curve
 
 # -----------------------------------------------------------------
 
-attenuation_data_path = fs.join(introspection.pts_dat_dir("core"), "attenuation")
-
-# -----------------------------------------------------------------
-
-class AttenuationCurve(Curve):
+class ExtinctionCurve(Curve):
 
     """
     This class ...
@@ -50,11 +46,11 @@ class AttenuationCurve(Curve):
 
         # Names
         x_name = "Wavelength"
-        y_name = "Attenuation"
+        y_name = "Extinction"
 
         # Descriptions
         x_description = "Wavelength"
-        y_description = "Attenuation"
+        y_description = "Extinction"
 
         kwargs["x_unit"] = x_unit
         kwargs["y_unit"] = None
@@ -64,44 +60,19 @@ class AttenuationCurve(Curve):
         kwargs["y_description"] = y_description
 
         # If data is passed
-        if "wavelengths" in kwargs and "attenuations" in kwargs:
+        if "wavelengths" in kwargs and "extinctions" in kwargs:
 
             wavelengths = kwargs.pop("wavelengths")
-            attenuations = kwargs.pop("attenuations")
+            extinctions = kwargs.pop("extinctions")
 
-        else: wavelengths = attenuations = None
+        else: wavelengths = extinctions = None
 
         # Call the constructor of the base class
-        super(AttenuationCurve, self).__init__(*args, **kwargs)
+        super(ExtinctionCurve, self).__init__(*args, **kwargs)
 
         # Add the data
         if wavelengths is not None:
-            for index in range(len(wavelengths)): self.add_row([wavelengths[index], attenuations[index]])
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_seds(cls, total, transparent):
-
-        """
-        This function ...
-        :param total:
-        :param transparent:
-        :return:
-        """
-
-        # Get the wavelengths
-        wavelengths = total.wavelengths(unit="micron", add_unit=False)
-
-        # Get the total and transparent fluxes
-        total_fluxes = total.photometry(asarray=True)
-        transparent_fluxes = transparent.photometry(asarray=True)
-
-        # Calculate the attenuations
-        attenuations = -2.5 * np.log10(total_fluxes / transparent_fluxes)
-
-        # Create a new AttenuationCurve instance
-        return cls(wavelengths, attenuations)
+            for index in range(len(wavelengths)): self.add_row([wavelengths[index], extinctions[index]])
 
     # -----------------------------------------------------------------
 
@@ -120,7 +91,7 @@ class AttenuationCurve(Curve):
 
     # -----------------------------------------------------------------
 
-    def attenuations(self, asarray=False):
+    def extinctions(self, asarray=False):
 
         """
         This function ...
@@ -128,12 +99,12 @@ class AttenuationCurve(Curve):
         :return:
         """
 
-        if asarray: return arrays.plain_array(self["Attenuation"])
-        else: return arrays.array_as_list(self["Attenuation"])
+        if asarray: return arrays.plain_array(self["Extinction"])
+        else: return arrays.array_as_list(self["Extinction"])
 
     # -----------------------------------------------------------------
 
-    def attenuation_at(self, wavelength):
+    def extinction_at(self, wavelength):
 
         """
         This function ...
@@ -141,7 +112,7 @@ class AttenuationCurve(Curve):
         :return:
         """
 
-        interpolated = interpolate.interp1d(self.wavelengths(unit="micron", asarray=True), self.attenuations(asarray=True), kind='linear')
+        interpolated = interpolate.interp1d(self.wavelengths(unit="micron", asarray=True), self.extinctions(asarray=True), kind='linear')
         return interpolated(wavelength.to("micron").value)
 
     # -----------------------------------------------------------------
@@ -155,8 +126,8 @@ class AttenuationCurve(Curve):
         :return:
         """
 
-        attenuation_wavelength = self.attenuation_at(wavelength)
-        self["Attenuation"] /= attenuation_wavelength * value
+        extinction_wavelength = self.extinction_at(wavelength)
+        self["Extinction"] /= extinction_wavelength * value
 
 # -----------------------------------------------------------------
 
