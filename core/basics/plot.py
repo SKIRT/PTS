@@ -266,6 +266,9 @@ class Plot(object):
         :return:
         """
 
+        # Set tight layout
+        plt.tight_layout()
+
         # Save the plot
         if out is None: self.show()
         else: self.saveto(out)

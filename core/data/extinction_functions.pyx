@@ -21,12 +21,6 @@ __all__ = ['ccm89', 'odonnell94', 'Fitzpatrick99', 'fitzpatrick99', 'fm07',
 #
 # Second, this C code is significantly faster than CubicSpline.
 include "extern/bsplines.pxi"
-#include "bsplines.pxi"
-
-#from ..tools import introspection
-#from ..tools import filesystem as fs
-#bsplines_path = fs.join(introspection.pts_subproject_dir("core"), "extern", "bsplines.pxi")
-#include bsplines_path
 
 # ------------------------------------------------------------------------------
 # Utility functions for converting wavelength units
@@ -502,6 +496,7 @@ DEF FM07_C2 = 0.807
 DEF FM07_C3 = 2.991
 DEF FM07_C4 = 0.319
 DEF FM07_C5 = 6.097
+
 DEF FM07_X02 = FM07_X0 * FM07_X0
 DEF FM07_GAMMA2 = FM07_GAMMA * FM07_GAMMA
 DEF FM07_R_V = 3.1  # Fixed for the time being (used in fm07kknots)

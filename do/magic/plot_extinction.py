@@ -22,7 +22,9 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 rcParams['font.family'] = 'serif'
 
 from pts.core.data.extinction import CardelliClaytonMathisExtinctionCurve, ODonnellExtinctionCurve
-from pts.core.data.extinction import FitzpatrickExtinctionCurve, FitzpatrickMassaExtinctionCurve, CalzettiExtinctionCurve
+from pts.core.data.extinction import FitzpatrickExtinctionCurve, FitzpatrickMassaExtinctionCurve
+from pts.core.data.extinction import CalzettiExtinctionCurve, BattistiExtinctionCurve
+from pts.core.basics.range import QuantityRange
 
 # -----------------------------------------------------------------
 
@@ -64,6 +66,7 @@ def extinction_figure(wave, a_lambda, residual_from, residual_lims=(-0.1, 0.4), 
     axresid = divider.append_axes("bottom", size=2.0, pad=0.2, sharex=ax)
 
     for name in names:
+        #print(a_lambda[name], a_lambda[residual_from])
         plt.plot(wave, a_lambda[name] - a_lambda[residual_from])
 
     plt.axvline(x=2700., ls=':', c='k')
@@ -80,6 +83,7 @@ def extinction_figure(wave, a_lambda, residual_from, residual_lims=(-0.1, 0.4), 
 
     ax.set_xscale('log')
     axresid.set_xscale('log')
+
     plt.tight_layout()
 
     #return fig
@@ -88,17 +92,23 @@ def extinction_figure(wave, a_lambda, residual_from, residual_lims=(-0.1, 0.4), 
 
 # -----------------------------------------------------------------
 
-wave = np.logspace(np.log10(910.), np.log10(30000.), 2000)
+#wave = np.logspace(np.log10(910.), np.log10(30000.), 2000)
+
+# Create wavelengths
+wavelenth_range = QuantityRange(910., 30000., unit="AA")
+wavelengths = wavelenth_range.log(2000)
+#print(wavelengths)
+
+wavelengths_scalar = wavelenth_range.log(2000, add_unit=False, as_list=True)
 
 # -----------------------------------------------------------------
 
-a_lambda = {'ccm89': CardelliClaytonMathisExtinctionCurve(wavelengths=wave).extinctions(asarray=True),
-            'odonnell94': ODonnellExtinctionCurve(wavelengths=wave).extinctions(asarray=True),
-            'fitzpatrick99': FitzpatrickExtinctionCurve(wavelengths=wave).extinctions(asarray=True),
-            'fm07': FitzpatrickMassaExtinctionCurve(wavelengths=wave).extinctions(asarray=True),
-            'calzetti': CalzettiExtinctionCurve(wavelengths=wave).extinctions(asarray=True)}
-extinction_figure(wave, a_lambda, 'fitzpatrick99')
-
-#a_lambda = {""}
+a_lambda = {'ccm89': CardelliClaytonMathisExtinctionCurve(wavelengths=wavelengths).extinctions(asarray=True),
+            'odonnell94': ODonnellExtinctionCurve(wavelengths=wavelengths).extinctions(asarray=True),
+            'fitzpatrick99': FitzpatrickExtinctionCurve(wavelengths=wavelengths).extinctions(asarray=True),
+            'fm07': FitzpatrickMassaExtinctionCurve(wavelengths=wavelengths).extinctions(asarray=True),
+            'calzetti': CalzettiExtinctionCurve(wavelengths=wavelengths).extinctions(asarray=True),
+            'battisti': BattistiExtinctionCurve(wavelengths=wavelengths).extinctions(asarray=True)}
+extinction_figure(wavelengths_scalar, a_lambda, 'fitzpatrick99')
 
 # -----------------------------------------------------------------

@@ -13,22 +13,19 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+from abc import ABCMeta, abstractmethod
 import numpy as np
 from scipy import interpolate
-
-# Import astronomical modules
-from astropy.units import Unit, spectral
-from astropy.table import Table
 
 # Import the relevant PTS classes and modules
 from ...core.tools import tables, introspection, arrays
 from ...core.tools import filesystem as fs
-from ..basics.curve import Curve
+from ..basics.curve import Curve, WavelengthCurve
 from ...magic.tools.wavelengths import extinction_wavelength_range
 
 # -----------------------------------------------------------------
 
-class ExtinctionCurve(Curve):
+class ExtinctionCurve(WavelengthCurve):
 
     """
     This class ...
@@ -43,21 +40,21 @@ class ExtinctionCurve(Curve):
         """
 
         # Units
-        x_unit = "micron"
+        #x_unit = "micron"
 
         # Names
-        x_name = "Wavelength"
+        #x_name = "Wavelength"
         y_name = "Extinction"
 
         # Descriptions
-        x_description = "Wavelength"
+        #x_description = "Wavelength"
         y_description = "Extinction"
 
-        kwargs["x_unit"] = x_unit
+        #kwargs["x_unit"] = x_unit
         kwargs["y_unit"] = None
-        kwargs["x_name"] = x_name
+        #kwargs["x_name"] = x_name
         kwargs["y_name"] = y_name
-        kwargs["x_description"] = x_description
+        #kwargs["x_description"] = x_description
         kwargs["y_description"] = y_description
 
         # If data is passed
@@ -77,40 +74,18 @@ class ExtinctionCurve(Curve):
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def from_range(cls, wavelength_range=extinction_wavelength_range, npoints=100, scale="logarithmic", rv=3.1):
-
-        """
-        This function ...
-        :param wavelength_range:
-        :param npoints:
-        :param scale
-        :param rv:
-        :return:
-        """
-
-        # Generate
-        if scale == "logarithmic": wavelengths = wavelength_range.log(npoints)
-        elif scale == "linear": wavelengths = wavelength_range.linear(npoints)
-        else: raise ValueError("Invalid scale: " + scale)
-
-        # Create and return
-        return cls(wavelengths=wavelengths, rv=rv)
-
-    # -----------------------------------------------------------------
-
-    def wavelengths(self, unit=None, asarray=False, add_unit=True):
-
-        """
-        This function ...
-        :param unit:
-        :param asarray:
-        :param add_unit:
-        :return:
-        """
-
-        if asarray: return arrays.plain_array(self["Wavelength"], unit=unit, array_unit=self.column_unit("Wavelength"))
-        else: return arrays.array_as_list(self["Wavelength"], unit=unit, add_unit=add_unit, array_unit=self.column_unit("Wavelength"))
+    # def wavelengths(self, unit=None, asarray=False, add_unit=True):
+    #
+    #     """
+    #     This function ...
+    #     :param unit:
+    #     :param asarray:
+    #     :param add_unit:
+    #     :return:
+    #     """
+    #
+    #     if asarray: return arrays.plain_array(self["Wavelength"], unit=unit, array_unit=self.column_unit("Wavelength"))
+    #     else: return arrays.array_as_list(self["Wavelength"], unit=unit, add_unit=add_unit, array_unit=self.column_unit("Wavelength"))
 
     # -----------------------------------------------------------------
 
@@ -154,6 +129,38 @@ class ExtinctionCurve(Curve):
 
 # -----------------------------------------------------------------
 
+class GeneratedExtinctionCurve(ExtinctionCurve):
+
+    """
+    This class ...
+    """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_range(cls, wavelength_range=extinction_wavelength_range, npoints=100, scale="logarithmic", rv=3.1):
+
+        """
+        This function ...
+        :param wavelength_range:
+        :param npoints:
+        :param scale
+        :param rv:
+        :return:
+        """
+
+        # Generate
+        if scale == "logarithmic": wavelengths = wavelength_range.log(npoints)
+        elif scale == "linear": wavelengths = wavelength_range.linear(npoints)
+        else: raise ValueError("Invalid scale: " + scale)
+
+        # Create and return
+        return cls(wavelengths=wavelengths, rv=rv)
+
+# -----------------------------------------------------------------
+
 extinction_path = fs.join(introspection.pts_subproject_dir("core"), "data", "extinction_functions.pyx")
 
 import pyximport
@@ -183,7 +190,7 @@ from pts.core.data import extinction_functions
 
 # -----------------------------------------------------------------
 
-class CardelliClaytonMathisExtinctionCurve(ExtinctionCurve):
+class CardelliClaytonMathisExtinctionCurve(GeneratedExtinctionCurve):
 
     """
     This class ...
@@ -197,15 +204,18 @@ class CardelliClaytonMathisExtinctionCurve(ExtinctionCurve):
         :param rv:
         """
 
+        # Create array of wavelengths (because can be list of quantities)
+        wave_array = np.array([wavelength.to("AA").value for wavelength in wavelengths])
+
         # Generate
-        extinctions = extinction_functions.ccm89(wavelengths, 1.0, rv)
+        extinctions = extinction_functions.ccm89(wave_array, 1.0, rv)
 
         # Call the constructor of the base class
         super(CardelliClaytonMathisExtinctionCurve, self).__init__(wavelengths=wavelengths, extinctions=extinctions)
 
 # -----------------------------------------------------------------
 
-class ODonnellExtinctionCurve(ExtinctionCurve):
+class ODonnellExtinctionCurve(GeneratedExtinctionCurve):
 
     """
     This class ...
@@ -218,15 +228,18 @@ class ODonnellExtinctionCurve(ExtinctionCurve):
         :param wavelengths:
         """
 
+        # Create array of wavelengths (because can be list of quantities)
+        wave_array = np.array([wavelength.to("AA").value for wavelength in wavelengths])
+
         # Generate
-        extinctions = extinction_functions.odonnell94(wavelengths, 1.0, rv)
+        extinctions = extinction_functions.odonnell94(wave_array, 1.0, rv)
 
         # Call the constructor of the base class
         super(ODonnellExtinctionCurve, self).__init__(wavelengths=wavelengths, extinctions=extinctions)
 
 # -----------------------------------------------------------------
 
-class FitzpatrickExtinctionCurve(ExtinctionCurve):
+class FitzpatrickExtinctionCurve(GeneratedExtinctionCurve):
 
     """
     This class ...
@@ -240,15 +253,18 @@ class FitzpatrickExtinctionCurve(ExtinctionCurve):
         :param rv:
         """
 
+        # Create array of wavelengths (because can be list of quantities)
+        wave_array = np.array([wavelength.to("AA").value for wavelength in wavelengths])
+
         # Generate
-        extinctions = extinction_functions.fitzpatrick99(wavelengths, 1.0, rv)
+        extinctions = extinction_functions.fitzpatrick99(wave_array, 1.0, rv)
 
         # Call the constructor of the base class
         super(FitzpatrickExtinctionCurve, self).__init__(wavelengths=wavelengths, extinctions=extinctions)
 
 # -----------------------------------------------------------------
 
-class FitzpatrickMassaExtinctionCurve(ExtinctionCurve):
+class FitzpatrickMassaExtinctionCurve(GeneratedExtinctionCurve):
 
     """
     This class ...
@@ -261,15 +277,18 @@ class FitzpatrickMassaExtinctionCurve(ExtinctionCurve):
         :param wavelengths:
         """
 
+        # Create array of wavelengths (because can be list of quantities)
+        wave_array = np.array([wavelength.to("AA").value for wavelength in wavelengths])
+
         # Generate
-        extinctions = extinction_functions.fm07(wavelengths, 1.0)
+        extinctions = extinction_functions.fm07(wave_array, 1.0)
 
         # Call the constructor of the base class
         super(FitzpatrickMassaExtinctionCurve, self).__init__(wavelengths=wavelengths, extinctions=extinctions)
 
 # -----------------------------------------------------------------
 
-class CalzettiExtinctionCurve(ExtinctionCurve):
+class CalzettiExtinctionCurve(GeneratedExtinctionCurve):
 
     """
     This class ...
@@ -283,47 +302,14 @@ class CalzettiExtinctionCurve(ExtinctionCurve):
         :param rv:
         """
 
+        # Create array of wavelengths (because can be list of quantities)
+        wave_array = np.array([wavelength.to("AA").value for wavelength in wavelengths])
+
         # Generate
-        extinctions = extinction_functions.calzetti00(wavelengths, 1.0, rv)
+        extinctions = extinction_functions.calzetti00(wave_array, 1.0, rv)
 
         # Call the constructor of the base class
         super(CalzettiExtinctionCurve, self).__init__(wavelengths=wavelengths, extinctions=extinctions)
-
-# -----------------------------------------------------------------
-
-# class MilkyWayAttenuationCurve(AttenuationCurve):
-#
-#     """
-#     This class ...
-#     """
-#
-#     def __init__(self, *args, **kwargs):
-#
-#         """
-#         This function ...
-#         :param rv: the value of R(V). If None, the mean Milky Way attenuation curve is generated. (See Fitzpatrick & Massa, 2007)
-#         """
-#
-#         # Determine the path to the data file
-#         #path = fs.join(attenuation_data_path, "AttenuationLawMWRv5.dat")
-#
-#         # Load the attenuation data
-#         #wavelengths_angstrom, alambda_av = np.loadtxt(path, unpack=True)
-#
-#         # Convert wavelengths into micron
-#         #wavelengths = wavelengths_angstrom * 0.0001
-#
-#         # Attenuations
-#         #attenuations = alambda_av
-#
-#         # Get data
-#         wavelengths, attenuations = generate_milky_way_attenuations(0.1, 1000, 1000)
-#
-#         kwargs["wavelengths"] = wavelengths
-#         kwargs["attenuations"] = attenuations
-#
-#         # Call the constructor of the base class
-#         super(MilkyWayAttenuationCurve, self).__init__(*args, **kwargs)
 
 # -----------------------------------------------------------------
 
@@ -363,73 +349,38 @@ class CalzettiExtinctionCurve(ExtinctionCurve):
 
 # -----------------------------------------------------------------
 
-# class CalzettiAttenuationCurve(AttenuationCurve):
-#
-#     """
-#     This class ...
-#     """
-#
-#     # Determine the path to the data file
-#     path = fs.join(attenuation_data_path, "AttenuationLawCalzetti.dat")
-#
-#     # -----------------------------------------------------------------
-#
-#     def __init__(self, *args, **kwargs):
-#
-#         """
-#         This function ...
-#         :param args:
-#         :param kwargs:
-#         """
-#
-#         # Load the attenuation data
-#         wavelengths_angstrom, alambda_av = np.loadtxt(self.path, unpack=True)
-#
-#         # Convert wavelengths into micron
-#         wavelengths = wavelengths_angstrom * 0.0001
-#
-#         # Attenuations
-#         attenuations = alambda_av
-#
-#         kwargs["wavelengths"] = wavelengths
-#         kwargs["attenuations"] = attenuations
-#
-#         # Call the constructor of the base class
-#         super(CalzettiAttenuationCurve, self).__init__(*args, **kwargs)
-
-# -----------------------------------------------------------------
-
-class BattistiExtinctionCurve(ExtinctionCurve):
+class BattistiExtinctionCurve(GeneratedExtinctionCurve):
 
     """
     This class ...
     """
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, wavelengths): # wl_B16 = np.arange(0.125, 0.832, 0.01)
 
         """
         This function ...
-        :param args:
-        :param kwargs:
+        :param wavelengths:
         """
 
+        wavelengths_micron = np.array([wavelength.to("micron").value for wavelength in wavelengths])
+
         # From Battisit et al. 2016
-
-        wl_B16 = np.arange(0.125, 0.832, 0.01)
-        x = 1. / wl_B16
+        x = 1. / wavelengths_micron
         Qfit_B16 = -2.488 + 1.803 * x - 0.261 * x ** 2 + 0.0145 * x ** 3
-        interpfunc = interpolate.interp1d(wl_B16, Qfit_B16, kind='linear')
-        Qfit_B16_V = interpfunc(0.55)  # Interpolate to find attenuation at V band central wavelengths
-        n_atts_B16 = Qfit_B16 / Qfit_B16_V
 
-        wavelengths = wl_B16
-        attenuations = Qfit_B16 + 1. # TODO: understand this more ...
+        #interpfunc = interpolate.interp1d(wavelengths_micron, Qfit_B16, kind='linear')
+        #Qfit_B16_V = interpfunc(0.55)  # Interpolate to find attenuation at V band central wavelengths
+        #n_atts_B16 = Qfit_B16 / Qfit_B16_V
 
-        kwargs["wavelengths"] = wavelengths
-        kwargs["attenuations"] = attenuations
+        #wavelengths = wl_B16
+        #attenuations = Qfit_B16 + 1. # TODO: understand this more ...
+        extinctions = Qfit_B16 + 1.
+
+        #kwargs["wavelengths"] = wavelengths
+        #kwargs["attenuations"] = attenuations
 
         # Call the constructor of the base class
-        super(BattistiExtinctionCurve, self).__init__(*args, **kwargs)
+        super(BattistiExtinctionCurve, self).__init__(wavelengths=wavelengths, extinctions=extinctions)
 
 # -----------------------------------------------------------------
 
