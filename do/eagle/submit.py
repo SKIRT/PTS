@@ -70,7 +70,7 @@ if stage=="simulate":
     tasks = 2
     cpuspertask = 8
     cpuspernode = 16
-    memorypernode = 30  # set to 120 for simulations with IFU
+    memorypernode = 120  # set to 120 for simulations with IFU
 else:
     tasks = 1
     cpuspertask = 1
