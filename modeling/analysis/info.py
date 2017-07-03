@@ -32,10 +32,14 @@ class AnalysisRunInfo(object):
 
         self.name = None
         self.path = None
+        self.fitting_run = None
         self.generation_name = None
         self.simulation_name = None
         self.parameter_values = None
         self.chi_squared = None
+
+        # The path
+        self.path = None
 
     # -----------------------------------------------------------------
 
@@ -54,6 +58,7 @@ class AnalysisRunInfo(object):
         info = cls()
         info.name = map.name
         info.path = map.path
+        info.fitting_run = map.fitting_run
         info.generation_name = map.generation_name
         info.simulation_name = map.simulation_name
         info.parameter_values = map.parameter_values
@@ -64,7 +69,22 @@ class AnalysisRunInfo(object):
 
     # -----------------------------------------------------------------
 
-    def save(self, path):
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether the path is valid
+        if self.path is None: raise RuntimeError("Path is not defined")
+
+        # Save
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
 
         """
         This function ...
@@ -75,10 +95,14 @@ class AnalysisRunInfo(object):
         map = Map()
         map.name = self.name
         map.path = self.path
+        map.fitting_run = self.fitting_run
         map.generation_name = self.generation_name
         map.simulation_name = self.simulation_name
         map.parameter_valus = self.parameter_values
         map.chi_squared = self.chi_squared
         with open(path, 'w') as infofile: write_mapping(infofile, map)
+
+        # Set the new path
+        self.path = path
 
 # -----------------------------------------------------------------

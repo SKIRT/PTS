@@ -13,27 +13,27 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..core.component import ModelingComponent
+from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-class PhotometryComponent(ModelingComponent):
+class PhotometryComponent(GalaxyModelingComponent):
     
     """
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(PhotometryComponent, self).__init__(config)
+        super(PhotometryComponent, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 
@@ -51,15 +51,16 @@ class PhotometryComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(PhotometryComponent, self).setup()
+        super(PhotometryComponent, self).setup(**kwargs)
 
         # Set ...
         self.phot_temp_path = fs.create_directory_in(self.phot_path, "temp")

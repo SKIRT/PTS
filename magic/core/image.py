@@ -16,18 +16,19 @@ from __future__ import absolute_import, division, print_function
 import copy
 
 # Import astronomical modules
-from astropy.io import fits
-from astropy.units import Unit
+from astropy.io.fits import Header
 
 # Import the relevant PTS classes and modules
 from ..basics.layers import Layers
-from ..basics.region import Region
+from ..region.list import PixelRegionList
 from ..basics.mask import Mask
 from .mask import Mask as newMask
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
-from . import io
 from .frame import Frame, sum_frames
+from ...core.tools.stringify import tostr
+from ...core.units.unit import PhotometricUnit
+from ...core.units.stringify import represent_unit
 
 # -----------------------------------------------------------------
 
@@ -56,9 +57,8 @@ class Image(object):
         self.segments = Layers()
         self.regions = Layers()
 
-        # The image name and path
+        # The image name
         self.name = name
-        self.path = None
 
         # The original image header
         self.original_header = None
@@ -68,6 +68,9 @@ class Image(object):
 
         # Temporary fix because fwhm is sometimes not transferred to a new primary Frame and therefore fwhm information is lost on the complete image
         self._fwhm = None
+
+        # The image path
+        self.path = None
 
     # -----------------------------------------------------------------
 
@@ -101,6 +104,35 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    def load_image(self, image, replace=True):
+
+        """
+        This function loads the frames, masks, regions and segmentation maps from another image into this image
+        :param image:
+        :param replace:
+        :return:
+        """
+
+        # Remove the frames, masks, regions and segmentation maps from this image
+        #image.remove_all_frames()
+        #image.remove_all_masks()
+        #image.remove_all_regions()
+        #image.remove_all_segments()
+
+        # Add the frames
+        for label in image.frames: self.add_frame(image.frames[label], label, overwrite=replace)
+
+        # Add the masks
+        for label in image.masks: self.add_mask(image.masks[label], label, overwrite=replace)
+
+        # Add the regions
+        for label in image.regions: self.add_region(image.regions[label], label, overwrite=replace)
+
+        # Add the segmentation maps
+        for label in image.segments: self.add_segments(image.segments[label], label, overwrite=replace)
+
+    # -----------------------------------------------------------------
+
     def copy(self):
 
         """
@@ -121,6 +153,56 @@ class Image(object):
         """
 
         return self.frames[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_errors(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.errors_name is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def errors_name(self):
+
+        """
+        This function returns the name of the error map frame
+        :return:
+        """
+
+        frame_names = self.frames.keys()
+
+        possible_error_map_names = ["errors", "error", "uncertainties"]
+
+        if contains_two_or_more(frame_names, possible_error_map_names): raise RuntimeError("Image contains multiple error maps, don't know which to choose")
+
+        # Loop over possible names, return frame if present
+        for name in possible_error_map_names:
+            if name in frame_names: return name
+
+        # No error map found
+        return None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def errors(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        frame_name = self.errors_name
+        if frame_name is None: return None
+
+        return self.frames[frame_name]
 
     # -----------------------------------------------------------------
 
@@ -270,6 +352,18 @@ class Image(object):
     # -----------------------------------------------------------------
 
     @property
+    def filter_name(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return str(self.filter)
+
+    # -----------------------------------------------------------------
+
+    @property
     def wavelength(self):
 
         """
@@ -305,6 +399,31 @@ class Image(object):
 
         # Set the unit of all frames
         for frame_name in self.frames: self.frames[frame_name].unit = value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def distance(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.primary.distance if self.has_frames else None
+
+    # -----------------------------------------------------------------
+
+    @distance.setter
+    def distance(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        for frame_name in self.frames: self.frames[frame_name].distance = value
 
     # -----------------------------------------------------------------
 
@@ -376,7 +495,7 @@ class Image(object):
         fwhm = self.fwhm
 
         # Convert into pixels
-        return (fwhm / self.average_pixelscale).to("pix").value
+        return (fwhm / self.average_pixelscale).to("").value
 
     # -----------------------------------------------------------------
 
@@ -406,6 +525,116 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def description(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.primary.description
+
+    # -----------------------------------------------------------------
+
+    @description.setter
+    def description(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self.primary.description = value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def zero_point(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.primary.zero_point
+
+    # -----------------------------------------------------------------
+
+    @property
+    def source_extracted(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.primary.source_extracted
+
+    # -----------------------------------------------------------------
+
+    @source_extracted.setter
+    def source_extracted(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self.primary.source_extracted = value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extinction_corrected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.primary.extinction_corrected
+
+    # -----------------------------------------------------------------
+
+    @extinction_corrected.setter
+    def extinction_corrected(self, value):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.primary.extinction_corrected = value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sky_subtracted(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.primary.sky_subtracted
+
+    # -----------------------------------------------------------------
+
+    @sky_subtracted.setter
+    def sky_subtracted(self, value):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.primary.sky_subtracted = value
+
+    # -----------------------------------------------------------------
+
     def __repr__(self):
 
         """
@@ -419,7 +648,25 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def save(self, path=None, add_metadata=False, origin=None, add_masks=True, add_segments=True, add_regions=False):
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Saving the image ...")
+
+        # Check whether the path is defined
+        if self.path is None: raise RuntimeError("Path is not defined for this image")
+
+        # Save the image
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path, add_metadata=False, origin=None, add_masks=True, add_segments=True, add_regions=False):
 
         """
         This function exports the image (frames and masks) as a datacube into FITS file.
@@ -432,16 +679,17 @@ class Image(object):
         :return:
         """
 
-        if path is None: path = self.path
-
         # Create an array to contain the data cube
         datacube = []
+
+        # Names of the planes
+        plane_names = []
 
         plane_index = 0
 
         # Create a header from the wcs
         if self.wcs is not None: header = self.wcs.to_header() # Create a header from the coordinate system
-        else: header = fits.Header() # Construct a new header
+        else: header = Header() # Construct a new header
 
         # Get the names of the frames
         frame_names = self.frames.keys()
@@ -458,9 +706,11 @@ class Image(object):
 
             # Add this frame to the data cube, if its coordinates match those of the primary frame
             datacube.append(self.frames[frame_name]._data)
-            
+            plane_name = frame_name + " [frame]"
+            plane_names.append(plane_name)
+
             # Add the name of the frame to the header
-            header["PLANE" + str(plane_index)] = frame_name + " [frame]"
+            header["PLANE" + str(plane_index)] = plane_name
 
             # Increment the plane index
             plane_index += 1
@@ -478,9 +728,11 @@ class Image(object):
 
                 # Add this mask to the data cube
                 datacube.append(self.masks[mask_name].astype(int))
+                plane_name = mask_name + " [mask]"
+                plane_names.append(plane_name)
 
                 # Add the name of the mask to the header
-                header["PLANE" + str(plane_index)] = mask_name + " [mask]"
+                header["PLANE" + str(plane_index)] = plane_name
 
                 # Increment the plane index
                 plane_index += 1
@@ -498,20 +750,21 @@ class Image(object):
 
                 # Add this segmentation map to the data cube
                 datacube.append(self.segments[segments_name].data)
+                plane_names = segments_name + " [segments]"
+                plane_names.append(plane_name)
 
                 # Add the name of the segmentation map to the header
-                header["PLANE" + str(plane_index)] = segments_name + " [segments]"
+                header["PLANE" + str(plane_index)] = plane_name
 
                 # Increment the plane index
                 plane_index += 1
 
                 last_addition = "SegmentationMap"
 
-        if add_regions:
+        #if add_regions:
 
             # http://docs.astropy.org/en/stable/io/fits/
-
-            tbhdu = fits.BinTableHDU.from_columns([fits.Column(name='target', format='20A', array=a1), fits.Column(name='V_mag', format='E', array=a2)])
+            #tbhdu = fits.BinTableHDU.from_columns([fits.Column(name='target', format='20A', array=a1), fits.Column(name='V_mag', format='E', array=a2)])
 
         # Add the meta information to the header
         if add_metadata:
@@ -523,25 +776,74 @@ class Image(object):
         if plane_index > 1:
             header["NAXIS"] = 3
             header["NAXIS3"] = plane_index
-        else: # only one plane
-            datacube = datacube[0]
+        else:
             header.remove("PLANE0")
-            header["PTSCLS"] = last_addition # if only one Frame or Mask or SegmentationMap has been added
+            header["PTSCLS"] = last_addition  # if only one Frame or Mask or SegmentationMap has been added
 
         # Set unit, FWHM and filter description
-        if self.unit is not None: header.set("SIGUNIT", str(self.unit), "Unit of the map")
+        if self.unit is not None:
+            header.set("SIGUNIT", represent_unit(self.unit), "Unit of the map")
+            header.set("PHYSTYPE", self.unit.physical_type, "Physical type of the unit")
         if self.fwhm is not None: header.set("FWHM", self.fwhm.to("arcsec").value, "[arcsec] FWHM of the PSF")
+
+        # Set filter
         if self.filter is not None: header.set("FILTER", str(self.filter), "Filter used for this observation")
+        else: header.set("FILTER", "n/a", "This image does not correspond to a certain observational filter")
+
+        # Pixelscale
         if self.wcs is None and self.pixelscale is not None:
-            header.set("XPIXSIZE", repr(self.pixelscale.x.to("arcsec/pix").value), "[arcsec/pix] Pixelscale for x axis")
-            header.set("YPIXSIZE", repr(self.pixelscale.y.to("arcsec/pix").value), "[arcsec/pix] Pixelscale for y axis")
+            header.set("XPIXSIZE", repr(self.pixelscale.x.to("arcsec").value), "[arcsec] Pixelscale for x axis")
+            header.set("YPIXSIZE", repr(self.pixelscale.y.to("arcsec").value), "[arcsec] Pixelscale for y axis")
+
+        # Set distance
+        if self.distance is not None: header.set("DISTANCE", repr(self.distance.to("Mpc").value), "[Mpc] Distance to the object")
 
         # Add origin description
         if origin is not None: header["ORIGIN"] = origin
         else: header["ORIGIN"] = "Image class of PTS package"
 
-        # Write
-        io.write_datacube(datacube, header, path)
+        # FITS format
+        if path.endswith(".fits"):
+
+            # Import
+            from . import fits as pts_fits
+
+            if len(datacube) == 1: datacube = datacube[0]
+
+            # Write
+            pts_fits.write_datacube(datacube, header, path)
+
+        # ASDF format
+        elif path.endswith(".asdf"):
+
+            # Import
+            from asdf import AsdfFile
+
+            # Create the tree
+            tree = dict()
+
+            if len(datacube) == 1:
+
+                plane = datacube[0]
+                name = plane_names[0].split(" [")[0]
+
+                # Set the plane
+                tree[name] = plane
+
+            else:
+
+                for i in range(len(datacube)):
+                    tree[plane_names[i]] = datacube[i]
+                tree["header"] = header
+
+            # Create the asdf file
+            ff = AsdfFile(tree)
+
+            # Write
+            ff.write_to(path)
+
+        # Only FITS or ASDF format is allowed
+        else: raise ValueError("Only the FITS or ASDF filetypes are supported")
 
         # Update the path
         self.path = path
@@ -628,7 +930,7 @@ class Image(object):
         if not fs.is_file(path): raise IOError("The region file does not exist")
 
         # Create an Region object from the regions file
-        region = Region.from_file(path)
+        region = PixelRegionList.from_file(path)
 
         # Add the region to the set of regions
         self.add_region(region, name, overwrite)
@@ -674,29 +976,6 @@ class Image(object):
             elif layer_type == "regions": self.regions[name].selected = selected
             elif layer_type == "masks": self.masks[name].selected = selected
             else: raise ValueError("Invalid state dictionary")
-
-    # -----------------------------------------------------------------
-
-    @unit.setter
-    def unit(self, unit):
-
-        """
-        This function ...
-        :param unit:
-        :return:
-        """
-
-        # Convert string units to Astropy unit objects
-        if isinstance(unit, basestring): unit = Unit(unit)
-
-        # Loop over all frames
-        for frame_name in self.frames:
-
-            # Inform the user
-            log.debug("Setting the unit of the " + frame_name + " frame to " + str(unit) + " ...")
-
-            # Set the unit for this frame
-            self.frames[frame_name].unit = unit
 
     # -----------------------------------------------------------------
 
@@ -762,23 +1041,43 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def convert_to(self, unit):
+    @property
+    def has_wcs(self):
 
         """
         This function ...
-        :param unit:
+        :return:
         """
 
-        # Make an Astropy Unit instance
-        if isinstance(unit, basestring): unit = Unit(unit)
+        return self.wcs is not None
+
+    # -----------------------------------------------------------------
+
+    def convert_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False, brightness_strict=False):
+
+        """
+        This function ...
+        :param to_unit:
+        :param distance:
+        :param density:
+        :param brightness:
+        :param density_strict:
+        :param brightness_strict:
+        """
+
+        # Parse "to unit": VERY IMPORTANT, BECAUSE DOING SELF.UNIT = TO_UNIT WILL OTHERWISE REPARSE AND WILL BE OFTEN INCORRECT!! (NO DENSITY OR BRIGHTNESS INFO)
+        to_unit = PhotometricUnit(to_unit, density=density, brightness=brightness, brightness_strict=brightness_strict, density_strict=density_strict)
 
         # Inform the user
-        log.debug("Converting the unit of the image from " + str(self.unit) + " to " + str(unit) + " ...")
+        log.debug("Converting the unit of the image from " + tostr(self.unit, add_physical_type=True) + " to " + tostr(to_unit, add_physical_type=True) + " ...")
+
+        # Set the distance
+        if distance is None: distance = self.distance
 
         # Calculate the conversion factor
-        a = 1.0 * self.unit
-        b = 1.0 * unit
-        factor = (a/b).decompose().value
+        factor = self.unit.conversion_factor(to_unit, density=density, fltr=self.filter, pixelscale=self.pixelscale,
+                                             distance=distance, brightness=brightness, density_strict=density_strict,
+                                             brightness_strict=brightness_strict)
 
         # Debug message
         log.debug("Conversion factor = " + str(factor))
@@ -787,11 +1086,14 @@ class Image(object):
         self.__imul__(factor)
 
         # Set the new unit
-        self.unit = unit
+        self.unit = to_unit
+
+        # Return the conversion factor
+        return factor
 
     # -----------------------------------------------------------------
 
-    def convolve(self, kernel, allow_huge=False, fft=True):
+    def convolve(self, kernel, allow_huge=True, fft=True):
 
         """
         This function ...
@@ -819,6 +1121,9 @@ class Image(object):
         :param exact:
         :param parallel:
         """
+
+        # Check whether the image has a WCS
+        if self.has_wcs: raise RuntimeError("Cannot rebin a frame without coordinate system")
 
         # Create a copy of the current wcs
         original_wcs = self.wcs.deepcopy()
@@ -1069,6 +1374,26 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    def __abs__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        new = self.copy()
+
+        # Loop over all frames
+        for frame_name in self.frames:
+
+            # Get absolute values of frame
+            new.frames[frame_name] = abs(self.frames[frame_name])
+
+        # Return the new image
+        return new
+
+    # -----------------------------------------------------------------
+
     def __setitem__(self, item, value):
 
         """
@@ -1160,7 +1485,7 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def load_frames(self, path, index=None, name=None, description=None, always_call_first_primary=True, rebin_to_wcs=False, hdulist_index=0, no_filter=False):
+    def load_frames(self, path, index=None, name=None, description=None, always_call_first_primary=True, rebin_to_wcs=False, hdulist_index=0, no_filter=False, silent=False):
 
         """
         This function ...
@@ -1171,6 +1496,8 @@ class Image(object):
         :param always_call_first_primary:
         :param rebin_to_wcs:
         :param hdulist_index:
+        :param no_filter:
+        :param silent:
         :return:
         """
 
@@ -1178,10 +1505,11 @@ class Image(object):
         if not fs.is_file(path): raise IOError("File '" + path + "' does not exist")
 
         # Show which image we are importing
-        log.debug("Reading in file '" + path + "' ...")
+        if not silent: log.debug("Reading in file '" + path + "' ...")
 
         # Load frames
-        frames, masks, segments, meta = io.load_frames(path, index, name, description, always_call_first_primary,
+        from . import fits as pts_fits
+        frames, masks, segments, meta = pts_fits.load_frames(path, index, name, description, always_call_first_primary,
                                                        rebin_to_wcs, hdulist_index, no_filter)
 
         # Set frames, masks and meta information
@@ -1220,15 +1548,13 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
-    def remove_frames_except(self, names):
+    def remove_frames_except(self, *names):
 
         """
         This function ...
         :param names:
         :return:
         """
-
-        if isinstance(names, basestring): names = [names]
 
         # Loop over all frames
         for frame_name in list(self.frames.keys()):
@@ -1599,5 +1925,26 @@ def ordered_dict_prepend(dct, key, value, dict_setitem=dict.__setitem__):
     else:
         root[1] = first[0] = dct._OrderedDict__map[key] = [root, first, key]
         dict_setitem(dct, key, value)
+
+# -----------------------------------------------------------------
+
+def contains_two_or_more(in_list, from_list):
+
+    """
+    This function ...
+    :param in_list:
+    :param from_list:
+    :return:
+    """
+
+    counter = 0
+
+    for item in in_list:
+
+        if item in from_list: counter += 1
+
+        if counter == 2: return True
+
+    return False
 
 # -----------------------------------------------------------------

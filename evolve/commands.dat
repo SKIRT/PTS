@@ -1,0 +1,6 @@
+# Command | Configuration | Class | Configuration method | Description
+optimize_continuous | optimize | optimize.continuous.ContinuousOptimizer | arguments | Optimize a problem with genetic algorithms in a single continuous run
+optimize_steps | optimize | optimize.stepwise.StepWiseOptimizer | arguments | Optimize a problem with genetic algorithms in steps
+optimize_runs | -- | optimize.runs.RunsOptimizer | arguments | Optimize a problem in multiple runs
+plot_heat_map | -- | plot.heatmap.HeatMapPlotter | arguments | Plot heat map
+plot_scores | -- | plot.scores.ScoresPlotter | arguments | Plot scores

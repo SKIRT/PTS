@@ -16,28 +16,26 @@ from __future__ import absolute_import, division, print_function
 import math
 import numpy as np
 
-# Import astronomical modules
-from astropy.units import Unit
-
 # Import the relevant PTS classes and modules
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
-from pts.core.basics.filter import Filter
+from pts.core.filter.broad import BroadBandFilter
 from pts.core.simulation.execute import SkirtExec
 from pts.modeling.core.mappings import Mappings
-from pts.core.data.sed import IntrinsicSED, SED
+from pts.core.data.sed import SED
 from pts.core.simulation.skifile import LabeledSkiFile
 from pts.core.basics.map import Map
 from pts.core.basics.configuration import load_mapping
 from pts.modeling.basics.properties import GalaxyProperties
-from pts.modeling.fitting.initialization import spectral_factor_hz_to_micron
+#from pts.modeling.fitting.initialization import spectral_factor_hz_to_micron
 from pts.core.basics.range import QuantityRange
 from pts.core.plot.sed import SEDPlotter
 from pts.core.simulation.wavelengthgrid import WavelengthGrid
 from pts.core.plot.seds import plotseds
 from pts.modeling.basics.projection import GalaxyProjection
 from pts.modeling.basics.instruments import FullInstrument, FrameInstrument, SimpleInstrument
+from pts.core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -65,7 +63,7 @@ log.start("Starting mappings_test ...")
 
 # -----------------------------------------------------------------
 
-fuv_filter = Filter.from_string("FUV")
+fuv_filter = BroadBandFilter("FUV")
 fuv_wavelength = fuv_filter.pivot
 
 # -----------------------------------------------------------------
@@ -141,7 +139,7 @@ denominator = 4. * math.pi * prop.distance**2.
 
 sed = mappings_initial.sed
 wavelengths = sed.wavelengths(unit="micron")
-luminosities = sed.luminosities(unit="W/micron")
+luminosities = sed.photometry(unit="W/micron")
 
 fluxes = []
 
@@ -151,7 +149,7 @@ for i in range(len(wavelengths)):
     wavelength = wavelengths[i]
     luminosity = luminosities[i]
 
-    new_luminosity = luminosity.to("W/micron").value / spectral_factor_hz_to_micron(wavelength) * Unit("W/Hz")
+    new_luminosity = luminosity.to("W/micron").value / spectral_factor_hz_to_micron(wavelength) * u("W/Hz")
 
     #new_luminosities.append(new_luminosity)
 
@@ -162,15 +160,15 @@ for i in range(len(wavelengths)):
     fluxes.append(flux)
 
 # Create an SED
-flux_sed = SED()
+flux_sed = SED(photometry_unit="Jy")
 
 for i in range(len(wavelengths)):
 
-    flux_sed.add_entry(wavelengths[i], fluxes[i])
+    flux_sed.add_point(wavelengths[i], fluxes[i])
 
 #plotter = SEDPlotter()
 
-#plotter.add_modeled_sed(flux_sed, "mappings", residuals=False)
+#plotter.add_sed(flux_sed, "mappings", residuals=False)
 
 min_wavelength = 0.1 #* Unit("micron")
 max_wavelength = 1000. #* Unit("micron")
@@ -262,7 +260,7 @@ lambdas, lambda_flambda = np.loadtxt(sedpath, usecols=(0, 1), unpack=True)
 #lambdaLlambdav = simulation.luminosityforflux(fv, simulation.instrumentdistance(unit='m'), distance_unit='m', luminositydensity_unit='W/micron', wavelength=lambdav) * lambdav * 1e7
 
 # Create the SED
-#sed = IntrinsicSED.from_luminosities(lambdav, lambdaLlambdav, luminosity_unit="erg/s")
+#sed = SED.from_arrays(lambdav, lambdaLlambdav, wavelength_unit="micron", photometry_unit="erg/s")
 
 # Divide by wavelength in micron
 flambda = lambda_flambda / lambdas
@@ -274,18 +272,18 @@ fnus = []
 
 for i in range(len(flambda)):
 
-    fnu = flambda[i] / spectral_factor_hz_to_micron(lambdas[i] * Unit("micron")) * Unit("W / (m2 * Hz)")
+    fnu = flambda[i] / spectral_factor_hz_to_micron(lambdas[i] * u("micron")) * u("W / (m2 * Hz)")
     fnu = fnu.to("Jy").value
     fnus.append(fnu)
 
 # Create the SED
-sed = SED()
+sed = SED(photometry_unit="Jy")
 
 for i in range(len(lambdas)):
-    sed.add_entry(lambdas[i] * Unit("micron"), fnus[i] * Unit("Jy"))
+    sed.add_point(lambdas[i] * u("micron"), fnus[i] * u("Jy"))
 
 plotter = SEDPlotter()
-plotter.add_modeled_sed(sed, "...", residuals=False)
+plotter.add_sed(sed, "...", residuals=False)
 
 #min_wavelength = None
 #max_wavelength = None

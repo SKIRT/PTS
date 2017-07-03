@@ -31,15 +31,15 @@ class ImageFetcher(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
-        :param config:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(ImageFetcher, self).__init__(config)
+        super(ImageFetcher, self).__init__(*args, **kwargs)
 
         # The DustPediaSample object
         self.sample = DustPediaSample()
@@ -47,8 +47,8 @@ class ImageFetcher(Configurable):
         # The DustPediaDataBase object
         self.database = DustPediaDatabase()
 
-        # The NGC ID
-        self.ngc_id = None
+        # The NGC name
+        self.ngc_name = None
 
     # -----------------------------------------------------------------
 
@@ -82,8 +82,8 @@ class ImageFetcher(Configurable):
         # Call the setup function of the base class
         super(ImageFetcher, self).setup(**kwargs)
 
-        # Get the NGC ID
-        self.ngc_id = self.sample.get_name(self.config.galaxy_name)
+        # Get the NGC name
+        self.ngc_name = self.sample.get_name(self.config.galaxy_name)
 
         # Get username and password for the DustPedia database
         if self.config.database.username is not None:
@@ -103,13 +103,19 @@ class ImageFetcher(Configurable):
         :return:
         """
 
-        #filters = self.database.get_image_filters(self.ngc_id)
-        names_and_urls = self.database.get_image_names_and_urls(self.ngc_id)
+        # Inform the user
+        log.info("Getting the images ...")
+
+        #filters = self.database.get_image_filters(self.ngc_name)
+        names_and_urls = self.database.get_image_names_and_urls(self.ngc_name)
 
         paths = dict()
 
         # Create directories
         for instrument in self.config.instruments:
+
+            # Inform the user
+            log.info("Creating directory for the " + instrument + " instrument ...")
 
             # Create directory
             path = fs.create_directory_in(self.config.path, instrument)
@@ -127,11 +133,11 @@ class ImageFetcher(Configurable):
             # Determine image path
             path = fs.join(paths[instrument], name)
 
-            # Download the file
-            #self.database.download_file(url, path)
+            # Inform the user
+            log.info("Downloading the " + name + " image ...")
 
-            from ...core.tools import network
-            network.download_file(url, path)
+            # Download via database (decompressing is also done)
+            self.database.download_image_from_url(url, path)
 
     # -----------------------------------------------------------------
 

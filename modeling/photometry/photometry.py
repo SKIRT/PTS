@@ -22,8 +22,8 @@ from ...core.tools.logging import log
 from ...core.data.sed import ObservedSED
 from ...core.basics.errorbar import ErrorBar, sum_errorbars_quadratically
 from ...core.plot.sed import SEDPlotter
-from ...magic.misc.kernels import AnianoKernels
-from ...magic.misc.psfs import HerschelPSFs
+from ...magic.convolution.aniano import AnianoKernels
+from ...magic.convolution.psfs import HerschelPSFs
 from ...magic.core.kernel import ConvolutionKernel
 from ...core.launch.pts import PTSRemoteLauncher
 from ...magic.misc.calibration import CalibrationError
@@ -80,16 +80,16 @@ class PhotoMeter(PhotometryComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(PhotoMeter, self).__init__(config)
+        super(PhotoMeter, self).__init__(*args, **kwargs)
 
         # The list of image frames
         self.frames = dict()
@@ -127,15 +127,16 @@ class PhotoMeter(PhotometryComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the truncated images
         self.load_images()
@@ -160,27 +161,28 @@ class PhotoMeter(PhotometryComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(PhotoMeter, self).setup()
+        super(PhotoMeter, self).setup(**kwargs)
 
         # Create an observed SED
-        self.sed = ObservedSED()
+        self.sed = ObservedSED(photometry_unit="Jy")
 
         # Setup the remote PTS launcher
         self.launcher.setup(self.config.remote)
 
         # Initialize the flux error table
-        self.error_table = FluxErrorTable.initialize()
+        self.error_table = FluxErrorTable()
 
         # Initialize the flux differences table
-        self.differences_table = FluxDifferencesTable.initialize(self.reference_sed_labels)
+        self.differences_table = FluxDifferencesTable(labels=self.reference_sed_labels)
 
     # -----------------------------------------------------------------
 
@@ -325,7 +327,7 @@ class PhotoMeter(PhotometryComponent):
             errorbar = sum_errorbars_quadratically(calibration_error, aperture_noise)
 
             # Add this entry to the SED
-            self.sed.add_entry(self.frames[name].filter, flux, errorbar)
+            self.sed.add_point(self.frames[name].filter, flux, errorbar)
 
     # -----------------------------------------------------------------
 
@@ -371,7 +373,7 @@ class PhotoMeter(PhotometryComponent):
 
         # Get list of instruments, bands and fluxes of the calculated SED
         filters = self.sed.filters()
-        fluxes = self.sed.fluxes(unit="Jy", add_unit=False)
+        fluxes = self.sed.photometry(unit="Jy", add_unit=False)
 
         # The number of data points
         number_of_points = len(filters)
@@ -448,7 +450,7 @@ class PhotoMeter(PhotometryComponent):
         log.info("Writing SED to a data file ...")
 
         # Save the SED
-        self.sed.save(self.observed_sed_path)
+        self.sed.saveto(self.observed_sed_path)
 
     # -----------------------------------------------------------------
 
@@ -493,14 +495,14 @@ class PhotoMeter(PhotometryComponent):
         log.info("Plotting the SED ...")
 
         # Create a new SEDPlotter instance
-        plotter = SEDPlotter(self.galaxy_name)
+        plotter = SEDPlotter()
 
         # Add the SED
-        plotter.add_observed_sed(self.sed, "PTS")
+        plotter.add_sed(self.sed, "PTS")
 
         # Determine the full path to the plot file
         path = fs.join(self.phot_path, "sed.pdf")
-        plotter.run(output=path)
+        plotter.run(output=path, title=self.galaxy_name)
 
     # -----------------------------------------------------------------
 
@@ -515,17 +517,17 @@ class PhotoMeter(PhotometryComponent):
         log.info("Plotting the SED with reference fluxes ...")
 
         # Create a new SEDPlotter instance
-        plotter = SEDPlotter(self.galaxy_name)
+        plotter = SEDPlotter()
 
         # Add the SED
-        plotter.add_observed_sed(self.sed, "PTS")
+        plotter.add_sed(self.sed, "PTS")
 
         # Add the reference SEDs
-        for label in self.reference_seds: plotter.add_observed_sed(self.reference_seds[label], label)
+        for label in self.reference_seds: plotter.add_sed(self.reference_seds[label], label)
 
         # Determine the full path to the plot file
         path = fs.join(self.phot_path, "sed_with_references.pdf")
-        plotter.run(ouput=path)
+        plotter.run(ouput=path, title=self.galaxy_name)
 
     # -----------------------------------------------------------------
 
@@ -636,7 +638,7 @@ class PhotoMeter(PhotometryComponent):
         config = setter.run(definition)
 
         # Create the aperture noise calculator, configure it with the configuration
-        calculator = ApertureNoiseCalculator(config)
+        calculator = ApertureNoiseCalculator(config=config)
 
         # Set the input
         input_dict = dict()
@@ -725,7 +727,7 @@ class PhotoMeter(PhotometryComponent):
         input_dict["cutout"] = frame
 
 
-        config_dict["pix_arcsec"] = frame.average_pixelscale.to("arcsec/pix").value
+        config_dict["pix_arcsec"] = frame.average_pixelscale.to("arcsec").value
 
 
         truncation_ellipse_sky = self.truncation_ellipse
@@ -793,7 +795,7 @@ class PhotoMeter(PhotometryComponent):
         # PREPARE THE CONVOLUTION KERNEL
         psf.prepare_for(frame)
 
-        psf.save(fs.join(self.phot_temp_path, filter_name + "_psf.fits"))
+        psf.saveto(fs.join(self.phot_temp_path, filter_name + "_psf.fits"))
 
         # SET INPUT DICT
 

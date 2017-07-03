@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.core.tools import introspection
-from pts.magic.misc.dustpedia import DustPediaDatabase, get_account
+from pts.dustpedia.core.database import DustPediaDatabase, get_account
 from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
 
 # -----------------------------------------------------------------

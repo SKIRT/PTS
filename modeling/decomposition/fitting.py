@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.decomposition TO DO
+## \package pts.modeling.decomposition.fitting Contains the FittingDecomposer class.
 
 # -----------------------------------------------------------------
 
@@ -26,14 +26,15 @@ class FittingDecomposer(DecompositionComponent):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(FittingDecomposer, self).__init__(config)
+        super(FittingDecomposer, self).__init__(*args, **kwargs)
 
         # The dictionary of components
         self.components = dict()
@@ -100,5 +101,29 @@ class FittingDecomposer(DecompositionComponent):
         This function ...
         :return:
         """
+
+# -----------------------------------------------------------------
+
+# From https://groups.google.com/forum/#!topic/astropy-dev/W0GzYoSvjF4
+def moffat_fitting():
+
+    from astropy.modeling.models import custom_model
+    # Define model
+    @custom_model
+    def Elliptical_Moffat2D(x, y, N_sky = 1., amplitude = 1., phi=0., power = 1., x_0 = 0., y_0 = 0., width_x = 1., width_y = 1.):
+
+        c = np.cos(phi)
+        s = np.sin(phi)
+        A = (c / width_x) ** 2 + (s / width_y)**2
+        B = (s / width_x) ** 2 + (c/ width_y)**2
+        C = 2 * s * c * (1/width_x**2 - 1/width_y**2)
+        denom = (1 + A * (x-x_0)**2 + B * (y-y_0)**2 + C*(x-x_0)*(y-y_0))**power
+        return N_sky + amplitude / denom
+
+    moffat_init  = Elliptical_Moffat2D(amplitude=peak_targ, x_0=cbox_size, y_0=cbox_size)
+    fit_y, fit_x = np.mgrid[:2*cbox_size, :2*cbox_size]
+    fit_moffat   = fitting.LevMarLSQFitter()
+    moffat       = fit_moffat(moffat_init, fit_x, fit_y, image_targ)
+    #moffat
 
 # -----------------------------------------------------------------

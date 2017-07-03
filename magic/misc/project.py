@@ -30,14 +30,15 @@ class Projector(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(Projector, self).__init__(config)
+        super(Projector, self).__init__(*args, **kwargs)
 
         # The galaxy properties object
         self.properties = None
@@ -184,6 +185,6 @@ class Projector(Configurable):
             path = self.output_path_file(name + ".proj")
 
             # Save the projection
-            self.projections[name].save(path)
+            self.projections[name].saveto(path)
 
 # -----------------------------------------------------------------

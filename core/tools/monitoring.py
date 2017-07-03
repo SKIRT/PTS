@@ -20,9 +20,17 @@ import psutil
 import multiprocessing
 import numpy as np
 
+# Import the relevant PTS classes and modules
+from ..units.parsing import parse_unit as u
+
 # -----------------------------------------------------------------
 
 def memory_usage():
+
+    """
+    This function ...
+    :return: 
+    """
 
     # If we are on linux
     if platform == "linux" or platform == "linux2":
@@ -57,8 +65,7 @@ def free_memory():
 
     # Get the currently available virtual memory (in gigabytes)
     memory = psutil.virtual_memory().available / 1e9
-    
-    return memory
+    return memory * u("GB")
 
 # -----------------------------------------------------------------
 

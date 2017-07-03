@@ -24,9 +24,9 @@ from ..preparation.component import PreparationComponent
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...magic.core.frame import Frame
-from ...magic.core.io import get_frame_names
+from ...magic.core.fits import get_frame_names
 from ...magic.basics.mask import Mask, get_mask_names
-from ...magic.basics.region import Region
+from ...magic.region.list import PixelRegionList
 from ...magic.plot.imagegrid import StandardImageGridPlotter
 from ...core.plot.distribution import DistributionGridPlotter, DistributionPlotter
 from ...core.basics.distribution import Distribution
@@ -48,17 +48,17 @@ class PreparationPlotter(PlottingComponent, PreparationComponent):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructors of the base classes
-        PlottingComponent.__init__(self, config)
-        PreparationComponent.__init__(self, config)
+        PlottingComponent.__init__(self, *args, **kwargs)
+        PreparationComponent.__init__(self, *args, **kwargs)
 
         # -- Attributes --
 
@@ -303,7 +303,7 @@ class PreparationPlotter(PlottingComponent, PreparationComponent):
                 continue
 
             # Open the annulus region
-            region = Region.from_file(region_path).homogenized()
+            region = PixelRegionList.from_file(region_path).homogenized()
 
             # Add the region to the dictionary
             self.annuli[label] = region

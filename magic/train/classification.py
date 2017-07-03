@@ -19,30 +19,30 @@ from sklearn import svm
 from sklearn.externals import joblib
 
 # Import the relevant PTS classes and modules
-from ...core.basics.configurable import OldConfigurable
 from ..core.image import Image
 from ..core.source import Source
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
+from ...core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
-class Classifier(OldConfigurable):
+class Classifier(Configurable):
 
     """
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(Classifier, self).__init__(config, "magic")
+        super(Classifier, self).__init__(*args, **kwargs)
 
         # The classifier object
         self.vector_classifier = None
@@ -100,15 +100,16 @@ class Classifier(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the training data
         self.load_data()
@@ -121,15 +122,16 @@ class Classifier(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup of the base class
-        super(Classifier, self).setup()
+        super(Classifier, self).setup(**kwargs)
 
         # Create the vector classifier
         self.vector_classifier = svm.SVC(gamma=0.001, C=100.) # support vector classification
@@ -154,7 +156,7 @@ class Classifier(OldConfigurable):
         """
 
         # Inform the user
-        self.log.info("Starting the classification procedure ...")
+        log.info("Starting the classification procedure ...")
 
         # Get a list of the filepaths for every FITS file in the 'yes' directory
         yes_paths = fs.files_in_path(self.yes_path, extension="fits")
@@ -170,7 +172,7 @@ class Classifier(OldConfigurable):
         self.targets = []
 
         # Inform the user
-        self.log.info("Gathering files ...")
+        log.info("Gathering files ...")
 
         # Loop over all FITS files
         for label in paths:
@@ -219,7 +221,7 @@ class Classifier(OldConfigurable):
         """
 
         # Inform the user
-        self.log.info("Fitting training data ...")
+        log.info("Fitting training data ...")
 
         # The classifier is fit to the model, or learns from the model: by passing the training set
         self.vector_classifier.fit(self.data, self.targets)
@@ -249,7 +251,7 @@ class Classifier(OldConfigurable):
         classifier_path = os.path.join(self.classification_mode_path, "classifier.pkl")
 
         # Inform the user
-        self.log.info("Writing the classifier to " + classifier_path)
+        log.info("Writing the classifier to " + classifier_path)
 
         # Serialize and dump the classifier
         joblib.dump(self.vector_classifier, classifier_path)

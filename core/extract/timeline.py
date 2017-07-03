@@ -30,7 +30,7 @@ class TimeLineTable(Table):
     """
 
     @classmethod
-    def from_columns(cls, process_list, phase_list, start_list, end_list):
+    def from_columns(cls, process_list, phase_list, start_list, end_list, simulation_phase_list, annotation_list):
 
         """
         This function ...
@@ -38,11 +38,13 @@ class TimeLineTable(Table):
         :param phase_list:
         :param start_list:
         :param end_list:
+        :param simulation_phase_list:
+        :param annotation_list:
         :return:
         """
 
-        names = ["Process rank", "Simulation phase", "Start time", "End time"]
-        data = [process_list, phase_list, start_list, end_list]
+        names = ["Process rank", "Phase", "Start time", "End time", "Simulation phase", "Annotation"]
+        data = [process_list, phase_list, start_list, end_list, simulation_phase_list, annotation_list]
 
         # Call the constructor of the base class
         table = cls(data, names=names, masked=True)
@@ -80,7 +82,7 @@ class TimeLineTable(Table):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def processes(self):
+    def nprocesses(self):
 
         """
         This function ...
@@ -91,12 +93,16 @@ class TimeLineTable(Table):
 
     # -----------------------------------------------------------------
 
-    def duration(self, phase, single=False):
+    def duration(self, phase, single=False, only_root=False, simulation_phase=None, annotation_contains=None, annotation=None):
 
         """
         This function ...
         :param phase:
         :param single:
+        :param only_root:
+        :param simulation_phase:
+        :param annotation_contains:
+        :param annotation:
         :return:
         """
 
@@ -105,33 +111,61 @@ class TimeLineTable(Table):
 
         assert self["Process rank"][0] == 0
 
+        processes = []
+        skip_to_next_process = False
+
         # Loop over the table rows
         for i in range(len(self)):
 
+            # Get tbe process rank
+            rank = self["Process rank"][i]
+
             # Only add the contributions from the root process
-            if self["Process rank"][i] > 0: break
+            if only_root and rank > 0: break
+
+            # Skip to next process
+            if skip_to_next_process:
+                if rank == processes[-1]: continue
+                else: skip_to_next_process = False
+
+            # Add the process rank so that we can check whether we have encounterd each of them at the end
+            if rank not in processes: processes.append(rank)
+
+            # Check simulation phase
+            if simulation_phase is not None and self["Simulation phase"][i] != simulation_phase: continue
+
+            # Check annotation
+            if annotation_contains is not None:
+                if self["Annotation"][i] is None: continue
+                elif annotation_contains not in self["Annotation"][i]: continue
+            if annotation is not None and annotation != self["Annotation"][i]: continue
 
             # Check whether the current entry corresponds to the desired phase
-            if self["Simulation phase"][i] == phase:
+            if self["Phase"][i] == phase:
 
                 # Get the start and end time for the phase
                 start = self["Start time"][i]
                 end = self["End time"][i]
 
                 # Calculate the time duration for this phase, returning it if single=True, otherwise add it to the total
-                if single: return end - start
-                else: total += end - start
+                total += end - start
+                if single: skip_to_next_process = True
 
-        # Return the total amount of time spent in the specified phase
-        return total
+        # Assert that we had every process
+        if not only_root: assert sorted(list(processes)) == range(self.nprocesses)
+
+        # Return the (average) total amount of time spent in the specified phase
+        if only_root: return total
+        else: return total / self.nprocesses
 
     # -----------------------------------------------------------------
 
-    def duration_without(self, phases):
+    def duration_without(self, phases, only_root=False):
 
         """
         This function ...
         :param phases:
+        :param only_root:
         :return:
         """
 
@@ -146,14 +180,28 @@ class TimeLineTable(Table):
 
         assert self["Process rank"][0] == 0
 
+        processes = []
+        skip_to_next_process = False
+
         # Loop over the table rows
         for i in range(len(self)):
 
+            # Get the process rank
+            rank = self["Process rank"][i]
+
             # Only add the contributions from the root process
-            if self["Process rank"][i] > 0: break
+            if only_root and rank > 0: break
+
+            # Skip to next process
+            if skip_to_next_process:
+                if rank == processes[-1]: continue
+                else: skip_to_next_process = False
+
+            # Add the process rank so that we can check whether we have encounterd each of them at the end
+            if rank not in processes: processes.append(rank)
 
             # Check whether the current entry corresponds to a phase different from the specified phase
-            if self["Simulation phase"][i] not in phases:
+            if self["Phase"][i] not in phases:
 
                 # Get the start and end time for this phase
                 start = self["Start time"][i]
@@ -162,8 +210,12 @@ class TimeLineTable(Table):
                 # Add the duration to the total
                 total += end - start
 
+        # Assert that we had every process
+        if not only_root: assert sorted(processes) == range(self.nprocesses)
+
         # Return the total amount of time spent in phases other than the specified phase
-        return total
+        if only_root: return total
+        else: return total / self.nprocesses
 
     # -----------------------------------------------------------------
 
@@ -180,6 +232,30 @@ class TimeLineTable(Table):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def total_root(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration_without(None, only_root=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def total_all_processes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration_without(None) * self.nprocesses
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def setup(self):
 
         """
@@ -188,6 +264,30 @@ class TimeLineTable(Table):
         """
 
         return self.duration("setup")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def setup_root(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration("setup", only_root=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def setup_all_processes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration("setup") * self.nprocesses
 
     # -----------------------------------------------------------------
 
@@ -204,6 +304,30 @@ class TimeLineTable(Table):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def stellar_root(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration("stellar", single=True, only_root=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def stellar_all_processes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration("stellar", single=True) * self.nprocesses
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def spectra(self):
 
         """
@@ -212,6 +336,30 @@ class TimeLineTable(Table):
         """
 
         return self.duration("spectra")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spectra_root(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration("spectra", only_root=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def spectra_all_processes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration("spectra") * self.nprocesses
 
     # -----------------------------------------------------------------
 
@@ -228,29 +376,100 @@ class TimeLineTable(Table):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def dustem(self):
+    def dust_root(self):
 
         """
         This function ...
         :return:
         """
 
-        # Loop over the table rows in opposite direction so that we know the first dust photon shooting phase is the
-        # final dust emission phase
-        for i in reversed(range(len(self))):
+        return self.duration("dust", only_root=True)
 
-            # Only add the contributions from the root process
-            if self["Process rank"][i] > 0: break
+    # -----------------------------------------------------------------
 
-            # Check whether the current entry corresponds to the desired phase
-            if self["Simulation phase"][i] == "dust":
+    @lazyproperty
+    def dust_all_processes(self):
 
-                # Get the start and end time for the phase
-                start = self["Start time"][i]
-                end = self["End time"][i]
+        """
+        This function ...
+        :return:
+        """
 
-                # Calculate the time duration for the dust emission phase (only the shooting part)
-                return end - start
+        return self.duration("dust") * self.nprocesses
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dustemission_spectra(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the duration of the dust spectra calculation phase belonging to the (final) dust emission phase
+        return self.duration("spectra", single=True, simulation_phase="DUST EMISSION")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dustemission_spectra_root(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration("spectra", single=True, simulation_phase="DUST EMISSION", only_root=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dustemission_spectra_all_processes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration("spectra", single=True, simulation_phase="DUST EMISSION") * self.nprocesses
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dustemission_photons(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Return the duration of the dust photon shooting phase belonging to the (final) dust emission phase
+        return self.duration("dust", single=True, simulation_phase="DUST EMISSION")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dustemission_photons_root(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration("spectra", single=True, simulation_phase="DUST EMISSION", only_root=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dustemission_photons_all_processes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration("spectra", single=True, simulation_phase="DUST EMISSION") * self.nprocesses
 
     # -----------------------------------------------------------------
 
@@ -267,6 +486,30 @@ class TimeLineTable(Table):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def writing_root(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration("write", only_root=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def writing_all_processes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration("write") * self.nprocesses
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def communication(self):
 
         """
@@ -275,6 +518,119 @@ class TimeLineTable(Table):
         """
 
         return self.duration("comm")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def communication_root(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration("comm", only_root=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def communication_all_processes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration("comm") * self.nprocesses
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def communication_densities(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the communication phase that is the communication of the dust densities during the setup
+        return self.duration("comm", single=True, annotation_contains="dust densities")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def communication_densities_root(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration("comm", single=True, annotation_contains="dust densities", only_root=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def communication_densities_all_processes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration("comm", single=True, annotation_contains="dust densities") * self.nprocesses
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def communication_stellar_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the communication phase that is the (first) communication of the absorbed stellar luminosities
+        return self.duration("comm", single=True, annotation_contains="absorbed stellar luminosity table")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def communication_dust_absorption(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the communication phase that is the (first) communication of the absorbed stellar luminosities
+        return self.duration("comm", single=True, annotation_contains="absorbed dust luminosity table")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def communication_emission(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the communication phase ...
+        return self.duration("comm", single=True, annotation_contains="dust emission spectra table")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def communication_instruments(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the communication phase ...
+        return self.duration("comm", single=True, annotation_contains="observed fluxes")
 
     # -----------------------------------------------------------------
 
@@ -291,6 +647,30 @@ class TimeLineTable(Table):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def waiting_root(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration("wait", only_root=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def waiting_all_processes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration("wait") * self.nprocesses
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def other(self):
 
         """
@@ -299,6 +679,30 @@ class TimeLineTable(Table):
         """
 
         return self.duration(None)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def other_root(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration(None, only_root=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def other_all_processes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.duration(None) * self.nprocesses
 
     # -----------------------------------------------------------------
 
@@ -315,6 +719,18 @@ class TimeLineTable(Table):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def serial_root(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.setup_root + self.writing_root + self.other_root
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def parallel(self):
 
         """
@@ -327,6 +743,18 @@ class TimeLineTable(Table):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def parallel_root(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.stellar_root + self.spectra_root + self.dust_root
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def overhead(self):
 
         """
@@ -335,6 +763,18 @@ class TimeLineTable(Table):
         """
 
         return self.communication + self.waiting
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def overhead_root(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.communication_root + self.waiting_root
 
     # -----------------------------------------------------------------
 
@@ -424,11 +864,20 @@ class TimeLineExtractor(object):
         phase_list = []
         start_list = []
         end_list = []
+        simulation_phase_list = []
+        annotation_list = []
 
         # Loop over all log files to determine the earliest recorded time
         t_0 = datetime.now()
         for log_file in self.log_files:
             if log_file.t_0 < t_0: t_0 = log_file.t_0
+
+        # Keep track of the actual simulation phase (setup, stellar, self-absorption, dust emission, writing)
+        simulation_phase = None
+
+        # Keep track of the dust self-absorption stage and cycle
+        dust_selfabsorption_stage = None
+        dust_selfabsorption_cycle = None
 
         # Loop over the log files again and fill the column lists
         unique_processes = []
@@ -438,43 +887,83 @@ class TimeLineExtractor(object):
             process = log_file.process
             unique_processes.append(process)
 
+            # Get the first message
+            message = log_file.contents["Message"][0]
+
             # Keep track of the current phase while looping over the log file entries
             current_phase = log_file.contents["Phase"][0]
             process_list.append(process)
             phase_list.append(current_phase)
             start_list.append((log_file.t_0 - t_0).total_seconds())
+            simulation_phase_list.append(get_simulation_phase(message, None))
+            annotation_list.append(None)
 
-            # Loop over all log file entries
+            # Loop over all log file entries (lines)
             for j in range(len(log_file.contents)):
 
                 # Get the description of the current simulation phase
                 phase = log_file.contents["Phase"][j]
 
-                # If a new phase is entered
-                if phase != current_phase:
+                # Get the current message
+                message = log_file.contents["Message"][j]
 
-                    # Determine the current time
-                    seconds = (log_file.contents["Time"][j] - t_0).total_seconds()
+                # Get the simulation phase
+                simulation_phase = get_simulation_phase(message, simulation_phase)
 
-                    # Mark the end of the previous phase
-                    end_list.append(seconds)
+                # Check for markers that indicate a dust self-absorption cycle
+                if "Starting the" in message and "dust self-absorption cycle" in message:
+                    stage_description = message.split("Starting the ")[1].split(" dust self-absorption")[0]
+                    if stage_description == "first-stage": dust_selfabsorption_stage = 0
+                    elif stage_description == "second-stage": dust_selfabsorption_stage = 1
+                    elif stage_description == "last-stage": dust_selfabsorption_stage = 2
+                    else: raise ValueError("Invalid dust self-absorption stage: " + stage_description)
+                    dust_selfabsorption_cycle = int(message.split("dust self-absorption cycle ")[1].split("...")[0])
 
-                    # Mark the start of the current phase
-                    process_list.append(process)
-                    phase_list.append(phase)
-                    start_list.append(seconds)
+                if simulation_phase == "DUST EMISSION":
+                    dust_selfabsorption_stage = None
+                    dust_selfabsorption_cycle = None
 
-                    # Update the current phase
-                    current_phase = phase
+                # If a new phase is not entered
+                if phase == current_phase: continue
+
+                # Determine the current time
+                seconds = (log_file.contents["Time"][j] - t_0).total_seconds()
+
+                # Check whether the current entry corresponds to the desired phase
+                annotation = None
+                if simulation_phase == "DUST SELF-ABSORPTION":
+                    if phase == "dust": annotation = str(dust_selfabsorption_stage) + "," + str(dust_selfabsorption_cycle)
+                    elif phase == "spectra": annotation = str(dust_selfabsorption_stage) + "," + str(dust_selfabsorption_cycle)
+                if phase == "comm":
+                    communication_of = log_file.contents["Message"][j].split("communication of")[1].split("...")[0].lower()
+                    if communication_of.startswith("the "): communication_of = communication_of.split("the ")[1]
+                    annotation = communication_of
+
+                # Mark the end of the previous phase
+                end_list.append(seconds)
+
+                # Mark the start of the current phase
+                process_list.append(process)
+                phase_list.append(phase)
+                start_list.append(seconds)
+
+                # Set the simulation phase
+                simulation_phase_list.append(simulation_phase)
+
+                # Set the annotation
+                annotation_list.append(annotation)
+
+                # Update the current phase
+                current_phase = phase
 
             # Add the last recorded time in the log file as the end of the last simulation phase
             end_list.append((log_file.t_last - t_0).total_seconds())
 
         # Fix for when the number of phases does not correspond between the different processes
-        if len(unique_processes) > 1: verify_phases(process_list, phase_list, start_list, end_list)
+        if len(unique_processes) > 1: verify_phases(process_list, phase_list, start_list, end_list, simulation_phase_list, annotation_list)
 
         # Create the table
-        self.table = TimeLineTable.from_columns(process_list, phase_list, start_list, end_list)
+        self.table = TimeLineTable.from_columns(process_list, phase_list, start_list, end_list, simulation_phase_list, annotation_list)
 
     # -----------------------------------------------------------------
 
@@ -503,7 +992,7 @@ class TimeLineExtractor(object):
 
 # -----------------------------------------------------------------
 
-def verify_phases(process_list, phase_list, start_list, end_list):
+def verify_phases(process_list, phase_list, start_list, end_list, simulation_phase_list, annotation_list):
 
     """
     This function ...
@@ -511,6 +1000,8 @@ def verify_phases(process_list, phase_list, start_list, end_list):
     :param phase_list:
     :param start_list:
     :param end_list:
+    :param simulation_phase_list:
+    :param annotation_list:
     :return:
     """
 
@@ -541,14 +1032,40 @@ def verify_phases(process_list, phase_list, start_list, end_list):
             missing_phase = phase_list[process_indices[1]+entry_index]
             missing_end = end_list[process_indices[1]+entry_index]
 
+            missing_simulation_phase = simulation_phase_list[process_indices[1]+entry_index]
+            missing_annotation = simulation_phase_list[process_indices[1]+entry_index]
+
             process_list.insert(entry_index, 0)
             phase_list.insert(entry_index, missing_phase)
             start_list.insert(entry_index, end_list[entry_index-1])
             end_list.insert(entry_index, missing_end)
+            simulation_phase_list.insert(entry_index, missing_simulation_phase)
+            annotation_list.insert(entry_index, missing_annotation)
 
         #for rank in range(1,nprocs):
 
             #print(phase_process_0, phase_list[process_indices[rank]+entry_index])
             #print(rank, process_list[process_indices[rank]+entry_index])
+
+# -----------------------------------------------------------------
+
+def get_simulation_phase(message, simulation_phase):
+
+    """
+    This function ...
+    :param message:
+    :param simulation_phase:
+    :return:
+    """
+
+    # Check for marker for the setup phase
+    if message == "Starting setup...": simulation_phase = "SETUP"
+    elif message == "Starting the stellar emission phase...": simulation_phase = "STELLAR EMISSION"
+    elif message == "Starting the dust self-absorption phase...": simulation_phase = "DUST SELF-ABSORPTION"
+    elif message == "Starting the dust emission phase...": simulation_phase = "DUST EMISSION"
+    elif message == "Starting writing results...": simulation_phase = "WRITING"
+    else: pass
+
+    return simulation_phase
 
 # -----------------------------------------------------------------

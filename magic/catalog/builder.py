@@ -13,27 +13,27 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ...core.basics.configurable import OldConfigurable
+from ...core.basics.configurable import Configurable
 from ...core.tools import tables
 
 # -----------------------------------------------------------------
 
-class CatalogBuilder(OldConfigurable):
+class CatalogBuilder(Configurable):
 
     """
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(CatalogBuilder, self).__init__(config, "magic")
+        super(CatalogBuilder, self).__init__(*args, **kwargs)
 
         # The image frame
         self.frame = None
@@ -175,9 +175,9 @@ class CatalogBuilder(OldConfigurable):
             on_galaxy_column.append(self.star_extractor.catalog["On galaxy"][index])
             original_id_column.append(None)
 
-        #position_error = 0.5 * self.frame.average_pixelscale.to("mas/pix").value  # in mas !!
-        x_position_error = 0.5 * self.frame.pixelscale.x.to("mas/pix").value
-        y_position_error = 0.5 * self.frame.pixelscale.y.to("mas/pix").value
+        #position_error = 0.5 * self.frame.average_pixelscale.to("mas").value  # in mas !!
+        x_position_error = 0.5 * self.frame.pixelscale.x.to("mas").value
+        y_position_error = 0.5 * self.frame.pixelscale.y.to("mas").value
 
         # Append stars from the trained extractor; loop over the stars found by the trained extractor
         for star in self.trained_extractor.stars:

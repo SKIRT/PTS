@@ -1,0 +1,38 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+# *****************************************************************
+# **       PTS -- Python Toolkit for working with SKIRT          **
+# **       © Astronomical Observatory, Ghent University          **
+# *****************************************************************
+
+## \package pts.do.core.simulation_info Show information about a certain remote simulation.
+
+# -----------------------------------------------------------------
+
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import the relevant PTS classes and modules
+from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.remote.host import find_host_ids
+
+# -----------------------------------------------------------------
+
+# Create the configuration definition
+definition = ConfigurationDefinition()
+
+# Add required
+definition.add_required("remote", "string", "ID of the remote host", choices=find_host_ids())
+definition.add_required("simulation_id", "integer", "ID of the simulation")
+
+# -----------------------------------------------------------------
+
+# Parse the arguments into a configuration
+setter = ArgumentConfigurationSetter("simulation_info", "Show information about a certain remote simulation")
+config = setter.run(definition)
+
+# -----------------------------------------------------------------
+
+print("Not implemented yet")
+
+# -----------------------------------------------------------------

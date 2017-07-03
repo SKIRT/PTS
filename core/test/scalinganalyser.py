@@ -26,16 +26,16 @@ class ScalingAnalyser(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(ScalingAnalyser, self).__init__(config)
+        super(ScalingAnalyser, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 

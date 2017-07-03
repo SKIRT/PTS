@@ -17,20 +17,24 @@ import numpy as np
 
 # Import astronomical modules
 from astropy.table import Table, Column
-from astropy.units import Unit
+
+# Import the relevant PTS classes and modules
+from . import arrays
 
 # -----------------------------------------------------------------
 
-def find_index(table, key, column_name=None):
+def find_index(table, key, column_name=None, where=None):
 
     """
     This function ...
     :param table:
     :param key:
     :param column_name:
+    :param where:
     :return:
     """
 
+    # If multiple keys are passed
     if isinstance(key, list):
 
         if column_name is None: raise ValueError("Column names must be specified when specifying multiple keys")
@@ -38,6 +42,9 @@ def find_index(table, key, column_name=None):
 
         # Loop over all entries in the table
         for i in range(len(table)):
+
+            if where is not None:
+                if skip_entry_based_on_where(table, i, where): continue
 
             found_mismatch = False
 
@@ -51,7 +58,7 @@ def find_index(table, key, column_name=None):
 
         return None
 
-    #elif isinstance(key, basestring):
+    # Just a single key is passed
     else:
 
         # Get first column name if none is given
@@ -60,11 +67,34 @@ def find_index(table, key, column_name=None):
         # Loop over all entries in the column
         for i in range(len(table)):
 
+            # Skip
+            if where is not None:
+                if skip_entry_based_on_where(table, i, where): continue
+
             if table[column_name][i] == key: return i
 
         return None
 
-    #else: raise ValueError("Invalid key: must be a list (of strings) or a string")
+# -----------------------------------------------------------------
+
+def skip_entry_based_on_where(table, index, where):
+
+    """
+    This function ...
+    :param table: 
+    :param index: 
+    :param where: 
+    :return: 
+    """
+
+    skip_entry = False
+    for cname in where:
+        #print(table[cname][index], where[cname])
+        if table[cname][index] != where[cname]:
+            skip_entry = True
+            break
+
+    return skip_entry
 
 # -----------------------------------------------------------------
 
@@ -116,109 +146,6 @@ def find_indices(table, key, column_name=None):
         return indices
 
     #else: raise ValueError("Invalid key: must be a list (of strings) or a string")
-
-# -----------------------------------------------------------------
-
-def find_closest_index(table, value, column_name=None):
-
-    """
-    This function ...
-    :param table:
-    :param value:
-    :param column_name:
-    :return:
-    """
-
-    # Get first column name if none is given
-    if column_name is None: column_name = table.colnames[0]
-
-    closest_delta = None
-    #closest_delta = float("inf")
-    closest_index = None
-
-    column_unit = table[column_name].unit
-    value_unit = value.unit if hasattr(value, "unit") else None
-
-    # Check units
-    if value_unit is not None:
-        if column_unit is None: raise ValueError("Value has a unit but column has not: cannot compare these values")
-        else: value = value.to(column_unit).value # for correct comparison inside loop
-    elif column_unit is not None: raise ValueError("Value has no unit but the column has: cannot compare these values")
-
-    # Loop over all entries in the column
-    for i in range(len(table)):
-
-        delta = abs(table[column_name][i] - value)
-
-        if closest_delta is None or delta < closest_delta:
-            closest_delta = delta
-            closest_index = i
-
-    return closest_index
-
-# -----------------------------------------------------------------
-
-def find_closest_above_index(table, value, column_name=None):
-
-    """
-    This function ...
-    :param table:
-    :param value:
-    :param column_name:
-    :return:
-    """
-
-    # Get first column name if none is given
-    if column_name is None: column_name = table.colnames[0]
-
-    column_unit = table[column_name].unit
-    value_unit = value.unit if hasattr(value, "unit") else None
-
-    # Check units
-    if value_unit is not None:
-        if column_unit is None: raise ValueError("Value has a unit but column has not: cannot compare these values")
-        else: value = value.to(column_unit).value  # for correct comparison inside loop
-    elif column_unit is not None: raise ValueError("Value has no unit but the column has: cannot compare these values")
-
-    # Loop from beginning, return index of first value that is greater
-    for i in range(len(table)):
-
-        table_value = table[column_name][i]
-        if table_value > value: return i
-
-    return None
-
-# -----------------------------------------------------------------
-
-def find_closest_below_index(table, value, column_name=None):
-
-    """
-    This function ...
-    :param table:
-    :param value:
-    :param column_name:
-    :return:
-    """
-
-    # Get first column name if none is given
-    if column_name is None: column_name = table.colnames[0]
-
-    column_unit = table[column_name].unit
-    value_unit = value.unit if hasattr(value, "unit") else None
-
-    # Check units
-    if value_unit is not None:
-        if column_unit is None: raise ValueError("Value has a unit but column has not: cannot compare these values")
-        else: value = value.to(column_unit).value  # for correct comparison inside loop
-    elif column_unit is not None: raise ValueError("Value has no unit but the column has: cannot compare these values")
-
-    # Loop from end (reversed loop), return index of first value that is smaller
-    for i in reversed(range(len(table))):
-
-        table_value = table[column_name][i]
-        if table_value < value: return i
-
-    return None
 
 # -----------------------------------------------------------------
 
@@ -372,66 +299,7 @@ def fix_string_length_column(table, column_name, length):
 
 # -----------------------------------------------------------------
 
-def column_as_list(column, add_unit=True, unit=None, masked_value=None):
-
-    """
-    This function ...
-    :param column:
-    :param add_unit:
-    :param unit:
-    :param masked_value:
-    :return:
-    """
-
-    # Initialize a list to contain the column values
-    result = []
-
-    has_unit = column.unit is not None
-    has_mask = hasattr(column, "mask")
-
-    # If unit has to be converted, check whether the original unit is specified
-    if not has_unit and unit is not None: raise ValueError("Cannot determine the unit of the column so values cannot be converted to " + str(unit))
-
-    # Loop over the entries in the column
-    for i in range(len(column)):
-
-        if has_mask and column.mask[i]: result.append(masked_value)
-        else:
-
-            if has_unit:
-
-                # Add the unit initially to be able to convert
-                value = column[i] * column.unit
-
-                # If a target unit is specified, convert
-                if unit is not None: value = value.to(unit).value * Unit(unit) # If converted, do not add any unit
-
-                if not add_unit: value = value.value # If not converted and add_unit is enabled, add the unit
-
-            else: value = column[i]
-
-            # Add the value to the list
-            result.append(value)
-
-    # Return the list
-    return result
-
-# -----------------------------------------------------------------
-
-def column_as_array(column, unit=None):
-
-    """
-    This function ...
-    :param column:
-    :param unit:
-    :return:
-    """
-
-    return np.array(column_as_list(column, unit=unit, add_unit=False, masked_value=float('nan')))
-
-# -----------------------------------------------------------------
-
-def columns_as_objects(columns, cls, add_unit=True, unit=None):
+def columns_as_objects(columns, cls, add_unit=True, unit=None, column_units=None, density=False, brightness=False):
 
     """
     This function ...
@@ -439,6 +307,9 @@ def columns_as_objects(columns, cls, add_unit=True, unit=None):
     :param cls:
     :param add_unit:
     :param unit:
+    :param column_units:
+    :param density:
+    :param brightness:
     :return:
     """
 
@@ -451,8 +322,11 @@ def columns_as_objects(columns, cls, add_unit=True, unit=None):
     # Initialize a list to contain the column values
     column_lists = []
 
+    if column_units is None: column_units = [None] * ncols
+
     # Loop over the columns, get list of values
-    for column in columns: column_lists.append(column_as_list(column, add_unit=add_unit, unit=unit))
+    for column, column_unit in zip(columns, column_units):
+        column_lists.append(arrays.array_as_list(column, add_unit=add_unit, unit=unit, array_unit=column_unit, density=density, brightness=brightness))
 
     # Loop over the column values for each entry
     for i in range(len(column_lists[0])):

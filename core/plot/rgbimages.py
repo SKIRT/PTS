@@ -21,7 +21,8 @@ import warnings
 import numpy as np
 
 # Import astronomical modules
-import pyfits
+try: import pyfits
+except ImportError: import astropy.io.fits as pyfits
 
 # Import the relevant PTS classes and modules
 from ..basics.rgbimage import RGBImage
@@ -45,7 +46,7 @@ def makergbimages(simulation, wavelength_tuples=None, from_percentile=30, to_per
     for index in range(len(wavelength_tuples)):
 
         # get the frame indices corresponding to the requested wavelengths
-        if wavelength_tuples[index] == None: frames = None
+        if wavelength_tuples[index] is None: frames = None
         else: frames = simulation.frameindices(wavelength_tuples[index])
 
         # get a list of output file names, including extension, one for each instrument

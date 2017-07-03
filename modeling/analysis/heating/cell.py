@@ -35,16 +35,16 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(CellDustHeatingAnalyser, self).__init__(config)
+        super(CellDustHeatingAnalyser, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 
@@ -400,7 +400,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         path = fs.join(self.cell_heating_path, "distribution.dat")
 
         # Save the distribution
-        self.distribution.save(path)
+        self.distribution.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -418,7 +418,7 @@ class CellDustHeatingAnalyser(DustHeatingAnalysisComponent):
         path = fs.join(self.cell_heating_path, "radial_distribution.dat")
 
         # Save the radial distribution
-        self.radial_distribution.save(path)
+        self.radial_distribution.saveto(path)
 
     # -----------------------------------------------------------------
 

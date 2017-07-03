@@ -7,7 +7,7 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.core.basics.host import find_host_ids
+from pts.core.remote.host import find_host_ids
 
 # -----------------------------------------------------------------
 

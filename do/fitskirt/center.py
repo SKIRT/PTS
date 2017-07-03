@@ -30,7 +30,7 @@
 # -----------------------------------------------------------------
 
 # Import the necessary modules
-import pyfits
+import astropy.io.fits as pyfits
 import sys
 
 # Main function, this part actually runs when routine is called

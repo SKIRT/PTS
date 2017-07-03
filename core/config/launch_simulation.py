@@ -5,10 +5,9 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-from pts.core.config.simulation.analysis import definition as analysis_definition
-from pts.core.config.simulation.logging import definition as logging_definition
-from pts.core.config.simulation.launch import definition
-from pts.core.basics.host import find_host_ids
+# Import the relevant PTS classes and modules
+from pts.core.config.launch import definition
+from pts.core.remote.host import find_host_ids
 
 # -----------------------------------------------------------------
 
@@ -17,6 +16,10 @@ definition.add_required("ski", "file_path", "the name/path of the ski file")
 
 # Simulation settings
 definition.add_flag("relative", "treats the given input and output paths as being relative to the ski/fski file")
+
+# Flags
+definition.add_flag("create_output", "create the output directory if it is not yet present")
+definition.add_flag("progress_bar", "use progress bars to show progress (for local simulation or remote simulation in attached mode)", True)
 
 # -----------------------------------------------------------------
 
@@ -27,11 +30,11 @@ definition.add_positional_optional("remote", "string", "the remote host on which
 definition.add_optional("cluster", "string", "the name of the cluster", letter="c")
 definition.add_optional("parallel", "integer_tuple", "the parallelization scheme (processes, threads)", letter="p")
 definition.add_optional("walltime", "duration", "an estimate for the walltime of the simulation for the specified parallelization scheme")
+definition.add_flag("data_parallel", "enable data parallelization", None)
 
-# Logging options
-definition.import_section("logging", "logging options", logging_definition)
+# -----------------------------------------------------------------
 
-# Analysis
-definition.import_section("analysis", "analysis options", analysis_definition)
+definition.add_optional("finish_at", "string", "finish when this is encountered")
+definition.add_optional("finish_after", "string", "finish after this is encountered")
 
 # -----------------------------------------------------------------

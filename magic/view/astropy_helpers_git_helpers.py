@@ -1,3 +1,4 @@
+# HIDE_DEPENDS
 # This file is covered by a different copyright notice from the rest of the ztv project.
 
 # This file provides the astropy_helpers.git_helpers functionality from the astropy_helpers project

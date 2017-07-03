@@ -37,16 +37,16 @@ class MemoryTester(Configurable):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(MemoryTester, self).__init__(config)
+        super(MemoryTester, self).__init__(*args, **kwargs)
 
         # Local SKIRT execution environment
         self.skirt = SkirtExec()
@@ -250,10 +250,10 @@ class MemoryTester(Configurable):
         log.info("Launching remotely ...")
 
         # Get the number of free cores
-        ncores = math.floor(self.launcher.single_remote.free_sockets) * self.launcher.single_remote.cores_per_socket
+        ncores = int(math.floor(self.launcher.single_remote.free_sockets)) * self.launcher.single_remote.cores_per_socket
 
         # Determine the number of cores per process, the number of threads per core and thus the number of threads per process
-        cores_per_process = max(math.floor(ncores / self.config.nprocesses), 1)
+        cores_per_process = max(int(math.floor(ncores / self.config.nprocesses)), 1)
         threads_per_core = self.launcher.single_remote.threads_per_core if self.launcher.single_host.use_hyperthreading else 1
         nthreads = cores_per_process * threads_per_core
         ncores = nthreads / threads_per_core * self.config.nprocesses
@@ -266,7 +266,10 @@ class MemoryTester(Configurable):
         else: self.launcher.set_parallelization_for_host(self.launcher.single_host.id, self.parallelization)
 
         # Run the batch launcher
-        self.simulations = self.launcher.run()
+        self.launcher.run()
+
+        # Set the simulations
+        self.simulations = self.launcher.launched_simulations
 
     # -----------------------------------------------------------------
 

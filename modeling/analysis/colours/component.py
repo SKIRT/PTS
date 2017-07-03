@@ -25,16 +25,16 @@ class ColourAnalysisComponent(AnalysisComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(ColourAnalysisComponent, self).__init__(config)
+        super(ColourAnalysisComponent, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 

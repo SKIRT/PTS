@@ -24,6 +24,10 @@ from ..basics.distribution import Distribution
 
 # -----------------------------------------------------------------
 
+possible_phases = ["setup", "wait", "comm", "stellar", "spectra", "dust", "write"]
+
+# -----------------------------------------------------------------
+
 class LogFile(object):
 
     """
@@ -52,6 +56,18 @@ class LogFile(object):
 
         # Parse the log file
         self.contents = parse(path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def messages(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self.contents["Message"])
 
     # -----------------------------------------------------------------
 
@@ -161,7 +177,7 @@ class LogFile(object):
         # Cannot determine total runtime
         if self.finished_simulation_message is None: return None
 
-        seconds = float(self.finished_simulation_message.split(" in ")[1].split(" s")[0])
+        seconds = float(self.finished_simulation_message.split(" in ")[-1].split(" s")[0])
         return seconds
 
     # -----------------------------------------------------------------
@@ -796,6 +812,18 @@ class LogFile(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nprocesses(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.processes
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def threads(self):
 
@@ -834,6 +862,18 @@ class LogFile(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nthreads(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.threads
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def data_parallel(self):
 
@@ -843,28 +883,28 @@ class LogFile(object):
         """
 
         # Loop over all log file entries
-        #for i in range(len(self.contents)):
+        for i in range(len(self.contents)):
 
             # Get the current log message
-            #message = self.contents["Message"][i]
+            message = self.contents["Message"][i]
 
             # Look for a message that indicates whether the Absorbed Stellar Luminosity Table is distributed or not
-            #if "Absorbed Stellar Luminosity Table" in message:
+            if "Absorbed Stellar Luminosity Table" in message:
 
-                #if "is not distributed" in message: return False
-                #elif "is distributed" in message: return True
-                #else: raise ValueError("Log message truncated")
+                if "is not distributed" in message: return False
+                elif "is distributed" in message: return True
+                else: raise ValueError("Log message truncated")
 
             # Alternatively, look at the Dust Emission Spectra Table
 
         # Return false if no messages regarding the distributed-ness of the tables was encountered
-        #return False
+        return False
 
         # Simple implementation (only works if the log file is complete)
         #return "in data parallelization mode" in self.finished_simulation_message
 
-        # Simple implementation
-        return "in data parallelization mode" in self.starting_simulation_message
+        # Simple implementation (should be enough, but I was working with log files where this was not yet present)
+        #return "in data parallelization mode" in self.starting_simulation_message
 
 # -----------------------------------------------------------------
 
@@ -982,6 +1022,42 @@ def get_phase(line, current, previous, previousprevious):
     elif search_dust(line): return "dust", current, previous
     elif search_write(line): return "write", current, previous
     else: return current, previous, previousprevious # phase still going on
+
+# -----------------------------------------------------------------
+
+def get_last_phase(lines):
+
+    """
+    This function ...
+    :return:
+    """
+
+    # The current phase
+    current_phase = None
+
+    # The phase before that
+    previous_phase = None
+
+    # The phase even before that
+    previousprevious_phase = None
+
+    # The start index of the current phase
+    start_index = 0
+
+    # Loop over the log lines
+    for index, line in enumerate(lines):
+
+        # Remember current phase before checking next line
+        current_phase_before = current_phase
+
+        # Get the simulation phase
+        current_phase, previous_phase, previousprevious_phase = get_phase(line, current_phase, previous_phase, previousprevious_phase)
+
+        # If new phase, set start index
+        if current_phase != current_phase_before: start_index = index
+
+    # Return the current phase
+    return current_phase, start_index
 
 # -----------------------------------------------------------------
 
@@ -1110,5 +1186,64 @@ def search_write(line):
     """
 
     return "Starting writing results" in line
+
+# -----------------------------------------------------------------
+
+def get_start_line(lines):
+
+    """
+    This function ...
+    :param lines:
+    :return:
+    """
+
+    # Loop over all the lines
+    for line in lines:
+
+        # Look for the message that indicates the start of the simulation
+        if "Starting simulation" in line: return line
+
+    # Return None if the message could not be found
+    return None
+
+# -----------------------------------------------------------------
+
+def get_nprocesses(lines):
+
+    """
+    This function ...
+    :param lines:
+    :return:
+    """
+
+    # Get line of the log file which states that the simulation is starting
+    start = get_start_line(lines)
+
+    # Read number of processes from "Starting simulation ..." message
+    if "with" in start:
+        processes = int(start.split(' with ')[1].split()[0])
+        return processes
+    else: return 1
+
+# -----------------------------------------------------------------
+
+def get_simulation_phase(line, simulation_phase):
+
+    """
+    This function ...
+    :param line:
+    :param simulation_phase: current simulation phase
+    :return:
+    """
+
+    # Check for marker for the setup phase
+    if "Starting setup..." in line: simulation_phase = "SETUP"
+    elif "Starting the stellar emission phase..." in line: simulation_phase = "STELLAR EMISSION"
+    elif "Starting the dust self-absorption phase..." in line: simulation_phase = "DUST SELF-ABSORPTION"
+    elif "Starting the dust emission phase..." in line: simulation_phase = "DUST EMISSION"
+    elif "Starting writing results..." in line: simulation_phase = "WRITING"
+    else: pass
+
+    return simulation_phase
 
 # -----------------------------------------------------------------

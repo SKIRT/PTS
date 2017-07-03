@@ -19,13 +19,19 @@ import types
 import logging
 import warnings
 
-# Import astronomical modules
-from astropy.utils.exceptions import AstropyWarning
-
 # -----------------------------------------------------------------
 
 # Suppress Astropy warnings
-#warnings.simplefilter('ignore', category=AstropyWarning)
+# Import astronomical modules
+try:
+    from astropy.utils.exceptions import AstropyWarning
+    warnings.simplefilter('ignore', category=AstropyWarning)
+except ImportError: pass
+
+# -----------------------------------------------------------------
+
+# ?
+#logging.basicConfig()
 
 # -----------------------------------------------------------------
 
@@ -60,7 +66,7 @@ log = None
 
 def handle_exception(exc_type, exc_value, exc_traceback):
 
-    if issubclass(exc_type, KeyboardInterrupt):
+    if issubclass(exc_type, KeyboardInterrupt) or issubclass(exc_type, SystemExit):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
     #log.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
@@ -115,24 +121,178 @@ def setup_log(level="INFO", path=None, memory=False):
 
     log.setLevel(level)
 
-    if path is not None:
-
-        # Create file handler
-        fh = logging.FileHandler(path)
-
-        # Set the formatter
-        fh.setFormatter(log.handlers[0].formatter)
-
-        # Set the level
-        fh.setLevel(level)
-
-        # Add the handler to the log instance
-        log.addHandler(fh)
+    if path is not None: add_log_file(path)
 
     # Memory logging
     if memory: pass
 
     return log
+
+# -----------------------------------------------------------------
+
+def add_log_file(path, level="DEBUG"):
+
+    """
+    This function ...
+    :param path: 
+    :param level:
+    :return: 
+    """
+
+    # Create file handler
+    fh = logging.FileHandler(path)
+
+    # Set the formatter
+    fh.setFormatter(log.handlers[0].formatter)
+
+    # Set the level
+    fh.setLevel(level)
+
+    # Add the handler to the log instance
+    log.addHandler(fh)
+
+    # Return the handler
+    return fh
+
+# -----------------------------------------------------------------
+
+def remove_log_file(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    fh = get_handler(path)
+    remove_filehandler(fh)
+
+# -----------------------------------------------------------------
+
+def remove_filehandler(fh):
+
+    """
+    This function ...
+    :param fh:
+    :return:
+    """
+
+    log.removeHandler(fh)
+
+# -----------------------------------------------------------------
+
+def remove_all_log_files():
+
+    """
+    This function ...
+    :return: 
+    """
+
+    # Remove all file handlers, but keep the others
+    log.handlers = [h for h in log.handlers if not isinstance(h, logging.FileHandler)]
+
+# -----------------------------------------------------------------
+
+def get_filehandlers():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return [h for h in log.handlers if isinstance(h, logging.FileHandler)]
+
+# -----------------------------------------------------------------
+
+def get_handler(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    for fh in get_filehandlers():
+        if get_filepath(fh) == path: return fh
+    return None
+
+# -----------------------------------------------------------------
+
+def get_filepath(fh):
+
+    """
+    This function ...
+    :param fh:
+    :return:
+    """
+
+    return fh.baseFilename
+
+# -----------------------------------------------------------------
+
+def get_filepaths():
+
+    """
+    This function ...
+    :return:
+    """
+
+    paths = []
+
+    for fh in log.handlers:
+        if not isinstance(fh, logging.FileHandler): continue
+        paths.append(get_filepath(fh))
+
+    return paths
+
+# -----------------------------------------------------------------
+
+class write_log_to(object):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, filename, level="DEBUG"):
+
+        """
+        This function ...
+        :param filename:
+        :param level:
+        :return:
+        """
+
+        self.filename = filename
+        self.level = level
+        self.fh = None
+
+    # -----------------------------------------------------------------
+
+    def __enter__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Add handler
+        self.fh = add_log_file(self.filename, level=self.level)
+
+    # -----------------------------------------------------------------
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+
+        """
+        This function ...
+        :param exc_type:
+        :param exc_val:
+        :param exc_tb:
+        :return:
+        """
+
+        # Remove the handler
+        remove_filehandler(self.fh)
+        self.fh = None
 
 # -----------------------------------------------------------------
 
@@ -365,5 +525,31 @@ def customwarn(message, category, filename, lineno, file=None, line=None):
     #sys.stdout.write(warnings.formatwarning(message, category, filename, lineno))
     log.warning(str(category.__name__) + ": " + str(message) + " [file:" + str(filename) + ", line:" + str(lineno) + "]")
 warnings.showwarning = customwarn
+
+# -----------------------------------------------------------------
+
+class suppress_logging(object):
+
+    def __enter__(self):
+
+        self.original_level = log.level
+        log.setLevel("WARNING")
+
+    def __exit__(self, type, value, traceback):
+
+        log.setLevel(self.original_level)
+
+# -----------------------------------------------------------------
+
+class no_debugging(object):
+
+    def __enter__(self):
+
+        self.original_level = log.level
+        log.setLevel("INFO")
+
+    def __exit__(self, type, value, traceback):
+
+        log.setLevel(self.original_level)
 
 # -----------------------------------------------------------------

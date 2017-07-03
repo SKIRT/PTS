@@ -17,30 +17,30 @@ import os
 
 # Import the relevant PTS classes and modules
 from .classification import Classifier
-from ...core.basics.configurable import OldConfigurable
 from ..core.image import Image
 from ..core.source import Source
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
+from ...core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
-class Verifier(OldConfigurable):
+class Verifier(Configurable):
 
     """
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(Verifier, self).__init__(config, "magic")
+        super(Verifier, self).__init__(*args, **kwargs)
 
         # The classifier object
         self.classifier = None
@@ -71,15 +71,16 @@ class Verifier(OldConfigurable):
         
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # Classify
         self.classify()
@@ -89,15 +90,16 @@ class Verifier(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup of the base class
-        super(Verifier, self).setup()
+        super(Verifier, self).setup(**kwargs)
 
         self.classifier = Classifier()
         self.classifier.config.mode = self.config.mode
@@ -123,7 +125,7 @@ class Verifier(OldConfigurable):
         """
 
         # Inform the user
-        self.log.info("Starting the verification ...")
+        log.info("Starting the verification ...")
 
         # Get a list of the filepaths for every FITS file in the current working directory
         file_paths = fs.files_in_path(os.getcwd(), extension="fits", contains=self.config.mode)

@@ -76,6 +76,9 @@ class SegmentationMap(SegmentationImage):
         # Set the WCS
         self.wcs = kwargs.pop("wcs", None)
 
+        # The path
+        self.path = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -96,10 +99,18 @@ class SegmentationMap(SegmentationImage):
         fwhm = None
         add_meta = False
 
-        from . import io # Import here because io imports SegmentationMap
+        from .fits import load_frame # Import here because .fits imports SegmentationMap
 
-        # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
-        return io.load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta)
+        try:
+            # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
+            segments = load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta)
+        except TypeError: raise IOError("The file is possibly damaged")
+
+        # Set the path
+        segments.path = path
+
+        # Return the segmentation map
+        return segments
 
     # -----------------------------------------------------------------
 
@@ -179,7 +190,25 @@ class SegmentationMap(SegmentationImage):
 
     # -----------------------------------------------------------------
 
-    def save(self, path, header=None):
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Saving the segmentation map ...")
+
+        # Check whether the path is valid
+        if self.path is None: raise RuntimeError("Path is not defined")
+
+        # Save
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path, header=None):
 
         """
         This function ...
@@ -191,9 +220,36 @@ class SegmentationMap(SegmentationImage):
         # If a header is not specified, created it from the WCS
         if header is None: header = self.header
 
-        from . import io  # Import here because io imports SegmentationMap
+        # FITS format
+        if path.endswith(".fits"):
 
-        # Write to a FITS file
-        io.write_frame(self._data, header, path)
+            from .fits import write_frame  # Import here because io imports SegmentationMap
+
+            # Write to a FITS file
+            write_frame(self._data, header, path)
+
+        # ASDF format
+        elif path.endswith(".asdf"):
+
+            # Import
+            from asdf import AsdfFile
+
+            # Create the tree
+            tree = dict()
+
+            tree["data"] = self._data
+            tree["header"] = header
+
+            # Create the asdf file
+            ff = AsdfFile(tree)
+
+            # Write
+            ff.write_to(path)
+
+        # Invalid
+        else: raise ValueError("Only the FITS or ASDF filetypes are supported")
+
+        # Update the path
+        self.path = path
 
 # -----------------------------------------------------------------

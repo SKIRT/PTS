@@ -14,7 +14,10 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..basics.table import SmartTable
+from ..tools import tables, time
 from ..simulation.simulation import SkirtSimulation, RemoteSimulation
+from ..tools.logging import log
+from ..units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -24,33 +27,45 @@ class MemoryTable(SmartTable):
     This class ...
     """
 
-    column_info = [("Simulation name", str, None, "name of the simulation"),
-                   ("Timestamp", str, None, "timestamp"),
-                   ("Host id", str, None, "remote host ID"),
-                   ("Cluster name", str, None, "remote cluster name"),
-                   ("Cores", int, None, "number of cores"),
-                   ("Threads per core", int, None, "number of threads per core"),
-                   ("Processes", int, None, "number of processes"),
-                   ("Wavelengths", int, None, "number of wavelengths"),
-                   ("Dust cells", int, None, "number of dust cells"),
-                   ("Grid type", str, None, "type of grid"),
-                   ("Min level", int, None, "minimum division level for the tree"),
-                   ("Max level", int, None, "maximum division level for the tree"),
-                   ("Search method", str, None, "search method (TopDown, Neighbor or Bookkeeping)"),
-                   ("Sample count", int, None, "sample count"),
-                   ("Max optical depth", float, None, "maximum optical depth"),
-                   ("Max mass fraction", float, None, "maximum mass fraction"),
-                   ("Max density dispersion", float, None, "maximum density dispersion"),
-                   ("Self-absorption", bool, None, "self-absorption enabled"),
-                   ("Transient heating", bool, None, "transient (non-LTE) heating enabled"),
-                   ("Data-parallel", bool, None, "data parallelization enabled"),
-                   ("Number of pixels", int, None, "total number of spatial pixels for all instruments"),
-                   ("Total peak memory", float, "GB", "peak memory usage during total simulation"),
-                   ("Setup peak memory", float, "GB", "peak memory usage during setup"),
-                   ("Stellar emission peak memory", float, "GB", "peak memory usage during stellar emission"),
-                   ("Spectra calculation peak memory", float, "GB", "peak memory usage during spectra calculation"),
-                   ("Dust emission peak memory", float, "GB", "peak memory usage during dust emission"),
-                   ("Writing peak memory", float, "GB", "peak memory usage during writing")]
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(MemoryTable, self).__init__(*args, **kwargs)
+
+        # Add column info
+        self.add_column_info("Simulation name", str, None, "name of the simulation")
+        self.add_column_info("Timestamp", str, None, "timestamp")
+        self.add_column_info("Host id", str, None, "remote host ID")
+        self.add_column_info("Cluster name", str, None, "remote cluster name")
+        self.add_column_info("Cores", int, None, "number of cores")
+        self.add_column_info("Threads per core", int, None, "number of threads per core")
+        self.add_column_info("Processes", int, None, "number of processes")
+        self.add_column_info("Wavelengths", int, None, "number of wavelengths")
+        self.add_column_info("Dust cells", int, None, "number of dust cells")
+        self.add_column_info("Grid type", str, None, "type of grid")
+        self.add_column_info("Min level", int, None, "minimum division level for the tree"),
+        self.add_column_info("Max level", int, None, "maximum division level for the tree"),
+        self.add_column_info("Search method", str, None, "search method (TopDown, Neighbor or Bookkeeping)")
+        self.add_column_info("Sample count", int, None, "sample count")
+        self.add_column_info("Max optical depth", float, None, "maximum optical depth")
+        self.add_column_info("Max mass fraction", float, None, "maximum mass fraction")
+        self.add_column_info("Max density dispersion", float, None, "maximum density dispersion")
+        self.add_column_info("Self-absorption", bool, None, "self-absorption enabled")
+        self.add_column_info("Transient heating", bool, None, "transient (non-LTE) heating enabled")
+        self.add_column_info("Data-parallel", bool, None, "data parallelization enabled")
+        self.add_column_info("Number of pixels", int, None, "total number of spatial pixels for all instruments")
+        self.add_column_info("Total peak memory", float, u("Gbyte"), "peak memory usage during total simulation")
+        self.add_column_info("Setup peak memory", float, u("Gbyte"), "peak memory usage during setup")
+        self.add_column_info("Stellar emission peak memory", float, u("Gbyte"), "peak memory usage during stellar emission")
+        self.add_column_info("Spectra calculation peak memory", float, u("Gbyte"), "peak memory usage during spectra calculation")
+        self.add_column_info("Dust emission peak memory", float, u("Gbyte"), "peak memory usage during dust emission")
+        self.add_column_info("Writing peak memory", float, u("Gbyte"), "peak memory usage during writing")
 
     # -----------------------------------------------------------------
 
@@ -115,11 +130,11 @@ class MemoryTable(SmartTable):
         :return:
         """
 
+        # Get the simulation name
+        simulation_name = simulation.name
+
         # Remote simulation
         if isinstance(simulation, RemoteSimulation):
-
-            # Get the simulation name
-            simulation_name = simulation.name
 
             # Time of submitting
             submitted_at = simulation.submitted_at
@@ -138,8 +153,6 @@ class MemoryTable(SmartTable):
 
         # Basic simulation object
         elif isinstance(simulation, SkirtSimulation):
-
-            simulation_name = simulation.prefix()
 
             # Time of submitting
             submitted_at = None
@@ -160,6 +173,12 @@ class MemoryTable(SmartTable):
 
         # Invalid argument
         else: raise ValueError("Invalid argument for 'simulation'")
+
+        # Check whether the name is unique
+        if simulation_name in self["Simulation name"]:
+            log.warning("A simulation with the name '" + simulation_name + "' is already present in this memory table")
+            simulation_name = time.unique_name(simulation_name)
+            log.warning("Generating the unique name '" + simulation_name + "' for this simulation")
 
         # Get the peak memory usage
         peak_memory_usage = None
@@ -240,5 +259,98 @@ class MemoryTable(SmartTable):
                        search_method, sample_count, max_optical_depth, max_mass_fraction, max_dens_disp,
                        selfabsorption, transient_heating, data_parallel, npixels, peak_memory_usage, setup_peak_memory,
                        stellar_peak_memory, spectra_peak_memory, dust_peak_memory, writing_peak_memory)
+
+        # Return the unique simulation name
+        return simulation_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulation_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return list(self["Simulation name"])
+
+    # -----------------------------------------------------------------
+
+    def different_ski_parameters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        parameters = []
+        ski_parameters = ["Wavelengths", "Dust cells", "Grid type", "Min level", "Max level", "Search method",
+                          "Sample count", "Max optical depth", "Max mass fraction", "Max density dispersion",
+                          "Self-absorption", "Transient heating", "Number of pixels"]
+        for parameter in ski_parameters:
+            if not self.all_equal(parameter): parameters.append(str(parameter))
+
+        # Return the parameters
+        return parameters
+
+    # -----------------------------------------------------------------
+
+    def index_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Find index of the simulation
+        index = tables.find_index(self, simulation_name)
+        return index
+
+    # -----------------------------------------------------------------
+
+    def ski_parameters_for_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        # Find index of the simulation
+        index = self.index_for_simulation(simulation_name)
+
+        # Initialize dictionary
+        parameters = dict()
+
+        # Set the parameter values
+        for parameter in self.different_ski_parameters(): parameters[str(parameter)] = self[parameter][index] # dtype('S21') to str
+
+        # Return the parameter values
+        return parameters
+
+    # -----------------------------------------------------------------
+
+    def indices_for_parameters(self, parameters):
+
+        """
+        This function ...
+        :return:
+        """
+
+        indices = []
+
+        # Loop over the rows
+        for index in range(len(self)):
+
+            for label in parameters:
+
+                if self[label][index] != parameters[label]: break
+
+            # Break is not encountered: all parameters match for this row
+            else: indices.append(index)
+
+        return indices
 
 # -----------------------------------------------------------------

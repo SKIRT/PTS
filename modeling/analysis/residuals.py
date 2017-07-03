@@ -18,7 +18,7 @@ from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...magic.core.frame import Frame
 from ...magic.plot.imagegrid import ResidualImageGridPlotter
-from ...magic.basics.skyregion import SkyRegion
+from ...magic.region.list import SkyRegionList
 
 # -----------------------------------------------------------------
 
@@ -28,16 +28,16 @@ class ResidualAnalyser(AnalysisComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(ResidualAnalyser, self).__init__(config)
+        super(ResidualAnalyser, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 
@@ -258,7 +258,7 @@ class ResidualAnalyser(AnalysisComponent):
             log.debug("Writing the residual frame for the " + filter_name + " band to '" + path + "' ...")
 
             # Write the image
-            self.residuals[filter_name].save(path)
+            self.residuals[filter_name].saveto(path)
 
     # -----------------------------------------------------------------
 

@@ -13,19 +13,20 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import requests
 import numpy as np
-from lxml import html
 
 # Import astronomical modules
 from astropy.table import Table
 from astroquery.vizier import Vizier
-from astropy.units import Unit
+from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
-from ...magic.basics.skygeometry import SkyCoordinate
+from ...magic.basics.coordinate import SkyCoordinate
+from ...magic.tools import catalogs
+from ...core.units.parsing import parse_unit as u
+from ...core.tools import tables
 
 # -----------------------------------------------------------------
 
@@ -38,10 +39,6 @@ dustpedia_data_path = fs.join(dustpedia_dat_path, "data")
 # -----------------------------------------------------------------
 
 ledawise_table_path = fs.join(dustpedia_data_path, "DustPedia_LEDAWISE_Herschel.csv")
-
-# -----------------------------------------------------------------
-
-leda_search_object_url = "http://leda.univ-lyon1.fr/ledacat.cgi?"
 
 # -----------------------------------------------------------------
 
@@ -85,6 +82,79 @@ filter_names = {"GALEX FUV": "GALEX_FUV",
 # -----------------------------------------------------------------
 
 # naming convention: [galaxy] [telescope] [band].fits.
+
+# -----------------------------------------------------------------
+
+def resolve_name(galaxy_name):
+
+    """
+    This function ...
+    :param galaxy_name:
+    :return:
+    """
+
+    sample = DustPediaSample()
+    name = sample.get_name(galaxy_name)
+    return name
+
+# -----------------------------------------------------------------
+
+properties_table_path = fs.join(dustpedia_data_path, "DustPedia_HyperLEDA_Herschel.csv")
+
+# -----------------------------------------------------------------
+
+def get_center(galaxy_name):
+
+    """
+    This function ...
+    :param galaxy_name:
+    :return:
+    """
+
+    sample = DustPediaSample()
+    return sample.get_position(galaxy_name)
+
+# -----------------------------------------------------------------
+
+def get_distance(galaxy_name):
+
+    """
+    This fucntion ...
+    :param galaxy_name:
+    :return:
+    """
+
+    name = resolve_name(galaxy_name)
+
+    # Load the table
+    properties = Table.read(properties_table_path)
+
+    # Find galaxy
+    index = tables.find_index(properties, name)
+
+    # Return the distance
+    return properties["dist_best"][index] * u("Mpc")
+
+# -----------------------------------------------------------------
+
+def get_inclination(galaxy_name):
+
+    """
+    This function ...
+    :param galaxy_name:
+    :return:
+    """
+
+    name = resolve_name(galaxy_name)
+
+    # Load the table
+    properties = Table.read(properties_table_path)
+
+    # Find galaxy
+    index = tables.find_index(properties, name)
+
+    # Return the inclination
+    return Angle(properties["incl"][index], "deg")
 
 # -----------------------------------------------------------------
 
@@ -149,7 +219,7 @@ class DustPediaSample(object):
         if len(table) > 1: raise ValueError("Ambiguous result")
 
         # Calculate the diameter
-        diameter = np.power(10.0, table["logD25"][0]) * 0.1 * Unit("arcmin") if table["logD25"][0] else None
+        diameter = np.power(10.0, table["logD25"][0]) * 0.1 * u("arcmin") if table["logD25"][0] else None
 
         # Return
         return diameter
@@ -185,22 +255,8 @@ class DustPediaSample(object):
         :return:
         """
 
-        url = leda_search_object_url + galaxy_name
-
-        page_as_string = requests.get(url).content
-
-        tree = html.fromstring(page_as_string)
-
-        tables = [e for e in tree.iter() if e.tag == 'table']
-
-        table = tables[1]
-
-        table_rows = [e for e in table.iter() if e.tag == 'tr']
-        column_headings = [e.text_content() for e in table_rows[0].iter() if e.tag == 'th']
-
-        #return table_rows, column_headings
-
-        objname = str(table_rows[1].text_content().split("\n")[1]).strip()
+        # Get the HYPERLEDA name
+        objname = catalogs.get_hyperleda_name(galaxy_name)
 
         # CHECK WHETHER IN DUSTPEDIA SAMPLE
         if objname not in self.primary_sample: raise ValueError("This galaxy is not in the DustPedia primary sample")

@@ -1,0 +1,915 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+# *****************************************************************
+# **       PTS -- Python Toolkit for working with SKIRT          **
+# **       © Astronomical Observatory, Ghent University          **
+# *****************************************************************
+
+## \package pts.core.tools.numbers Provides functions for dealing with numbers.
+
+# -----------------------------------------------------------------
+
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import standard modules
+import math
+import random
+import numpy as np
+from itertools import cycle
+from math import log10, floor
+
+# Import the relevant PTS classes and modules
+from . import sequences
+
+# -----------------------------------------------------------------
+
+def is_even(integer):
+
+    """
+    This function ...
+    :param integer: 
+    :return: 
+    """
+    
+    return integer % 2 == 0
+
+# -----------------------------------------------------------------
+
+def is_odd(integer):
+    
+    """
+    This functio n...
+    :param integer: 
+    :return: 
+    """
+
+    return integer % 2 != 0
+
+# -----------------------------------------------------------------
+
+def is_integer(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    return int(value) == value
+
+# -----------------------------------------------------------------
+
+def as_integer_check(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    if not is_integer(value): raise ValueError("Not an integer")
+    return int(value)
+
+# -----------------------------------------------------------------
+
+def factors(n):
+
+    """
+    This function ...
+    :param n: 
+    :return: 
+    """
+
+    numbers = []
+    for i in range(int(math.sqrt(n))):
+        if n % i == 0: numbers.append(i)
+    return numbers
+
+# -----------------------------------------------------------------
+
+def factor_pairs(n):
+
+    """
+    This function ...
+    :param n: 
+    :return: 
+    """
+
+    pairs = []
+
+    for i in factors(n):  # You need to write the factor() function
+
+        pair = (i, n / i)
+        pairs.append(pair)
+
+    return pairs
+
+# -----------------------------------------------------------------
+
+def derivatives(x, y):
+
+    """
+    This function calculates the derivative values using finite differences
+    :param x: 
+    :param y: 
+    :return: 
+    """
+
+    new_x = []
+    for i in range(len(x)-1):
+        between = 0.5 * (x[i] + x[i+1])
+        new_x.append(between)
+
+    # Calculate derivatives
+    new_y = np.diff(y) / np.diff(x)
+
+    # Return x, y finite differences derivative data
+    return new_x, new_y
+
+# -----------------------------------------------------------------
+
+def test_division_in_n_dimensions(n):
+
+    """
+    This function ...
+    :param n: 
+    :return: 
+    """
+
+    amount = 50
+
+    # Generate random integer numbers between 10 and 1000
+    for _ in range(amount):
+
+        number = random.randint(10, 1000)
+        factors = divide_in_n_dimensions(number, n)
+
+        result = sequences.multiply_all_integers(factors)
+
+        print(number, result)
+
+# -----------------------------------------------------------------
+
+def divide_in_n_dimensions(number, n, sampled_most=None, weights=None):
+
+    """
+    This function ...
+    :param number: 
+    :param n: 
+    :param sampled_most:
+    :param weights:
+    :return: 
+    """
+
+    # Check sampled_most and weights argument: NO, IT IS POSSIBLE FOR BOTH TO HAVE EFFECT
+    #if sampled_most is not None and weights is not None: raise ValueError("Either define 'sampled_most' or 'weights'")
+
+    from . import types
+    if not types.is_integer_type(number): raise ValueError("Number must be integer")
+
+    result = number**(1./n)
+    result = int(math.ceil(result))
+
+    the_factors = [result] * n
+
+    # Multiply with weights
+    if weights is not None: the_factors = [int(math.ceil(the_factors[index] * weights[index])) for index in range(len(the_factors))]
+
+    #print(factors)
+
+    # Create iterator of indices of labels to decrease the value
+    if sampled_most is not None: lst = [index for index in range(n) if not sampled_most[index]]
+    else: lst = range(n)
+    indices = cycle(lst)
+
+    # Lower some of the factors till the result is as small as possible, but still equal to or greater than the initial number
+    previous_factors = None
+    while True:
+
+        #print("factors", factors)
+        product = sequences.multiply_all_integers(the_factors)
+
+        if product < number: return previous_factors
+        else:
+            previous_factors = the_factors[:] # copy
+            index = indices.next()
+            #print("index", index)
+            # Lower one of the factors
+            the_factors[index] = the_factors[index] - 1
+
+# -----------------------------------------------------------------
+
+def round_to_1_significant_digit(x):
+
+    """
+    >>> round_to_1_significant_digit(0.0232)
+    0.02
+    >>> round_to_1_significant_digit(1234243)
+    1000000.0
+    >>> round_to_1_significant_digit(13)
+    10.0
+    >>> round_to_1_significant_digit(4)
+    4.0
+    >>> round_to_1_significant_digit(19)
+    20.0
+    :param x: 
+    :return: 
+    """
+
+    return round(x, -int(floor(log10(abs(x)))))
+
+# -----------------------------------------------------------------
+
+def round_to_n_significant_digits(x, n):
+
+    """
+    >>> round_to_n_significant_digits(0.0232)
+    0.023
+    >>> round_to_n_significant_digits(0.0232, 1)
+    0.02
+    >>> round_to_n_significant_digits(1234243, 3)
+    1230000.0
+    :param x: 
+    :param n: 
+    :return: 
+    """
+
+    return round(x, n-int(floor(log10(abs(x))))-1)
+
+# -----------------------------------------------------------------
+
+def integer_bit_length(integer):
+
+    """
+    This fucntion ...
+    :param integer: 
+    :return: 
+    """
+
+    return integer.bit_length()
+
+# -----------------------------------------------------------------
+
+def nbits_for_integer(integer):
+
+    """
+    This function ...
+    :param integer: 
+    :return: 
+    """
+
+    return integer_bit_length(integer)
+
+# -----------------------------------------------------------------
+
+def min_nbits_for_nintegers(nintegers):
+
+    """
+    This function ...
+    :param nintegers: 
+    :return: 
+    """
+
+    return nbits_for_integer(nintegers-1)
+
+# -----------------------------------------------------------------
+
+def max_integer_for_nbits(nbits):
+
+    """
+    This function ...
+    :param nbits: 
+    :return: 
+    """
+
+    return 2 ** nbits - 1
+
+# -----------------------------------------------------------------
+
+def nintegers_for_nbits(nbits):
+
+    """
+    This function ...
+    :param nbits: 
+    :return: 
+    """
+
+    return 2 ** nbits
+
+# -----------------------------------------------------------------
+
+def integer_to_binary(integer):
+
+    """
+    This function ...
+    :param integer: 
+    :return: 
+    """
+
+    from numpy import binary_repr
+    return binary_repr(integer)
+
+# -----------------------------------------------------------------
+
+def binary_to_integer(binary):
+
+    """
+    This function ...
+    :param binary: 
+    :return: 
+    """
+
+    return int(str(binary), 2)
+
+# -----------------------------------------------------------------
+
+def integer_to_quaternary(integer):
+
+    """
+    This function ...
+    :param integer: 
+    :return: 
+    """
+
+    from numpy import base_repr
+    return base_repr(integer, 4)
+
+# -----------------------------------------------------------------
+
+def quaternary_to_integer(quaternary):
+
+    """
+    This fucntion ...
+    :param quaternary: 
+    :return: 
+    """
+
+    return int(str(quaternary), 4)
+
+# -----------------------------------------------------------------
+
+def integer_to_binary_string(integer, nbits=None):
+
+    """
+    This function ...
+    :param integer: 
+    :param nbits:
+    :return: 
+    """
+
+    binary = integer_to_binary(integer)
+    return binary_to_binary_string(binary, nbits)
+
+# -----------------------------------------------------------------
+
+def binary_string_to_integer(binary_string):
+
+    """
+    This function ...
+    :param binary_string: 
+    :return: 
+    """
+
+    binary = binary_string_to_binary(binary_string)
+    return binary_to_integer(binary)
+
+# -----------------------------------------------------------------
+
+# FROM:
+# Traditional Techniques of Genetic Algorithms Applied to Floating-Point Chromosome Representations
+# Leo Budin, Marin Golub, Andrea Budin
+
+# -----------------------------------------------------------------
+
+def float_to_binary(value, low, high, nbits):
+
+    """
+    This function ...
+    :param value: 
+    :param high:
+    :param low:
+    :param nbits:
+    :return: 
+    """
+
+    # Set to floats
+    value = float(value)
+    high = float(high)
+    low = float(low)
+
+    scaled = (value - low) / (high - low) * 2**nbits
+    integer = int(round(scaled))
+    return integer_to_binary(integer)
+
+# -----------------------------------------------------------------
+
+def binary_to_float(binary, low, high, nbits):
+
+    """
+    This function ...
+    :param binary: 
+    :param high:
+    :param low:
+    :param nbits:
+    :return: 
+    """
+
+    # Set to floats
+    high = float(high)
+    low = float(low)
+
+    integer = binary_to_integer(binary)
+    scaled = float(integer)
+
+    value = low + scaled * 2**(-nbits) * (high - low)
+
+    largest_error = 0.5 * (high - low) / nintegers_for_nbits(nbits)
+    #print(largest_error)
+    #scaled += largest_error
+
+    value += 0.5 * largest_error
+
+    return value
+
+# -----------------------------------------------------------------
+
+def binary_to_binary_string(binary, nbits=None):
+
+    """
+    This function ...
+    :param binary: 
+    :param nbits:
+    :return: 
+    """
+
+    if nbits is None: characters = list(str(binary))
+    else:
+        string = str(binary)
+        npadded = nbits - len(string)
+        characters = list("0" * npadded + string)
+
+    # Return the binary string as a list of integers
+    return [int(character) for character in characters]
+
+# -----------------------------------------------------------------
+
+def binary_string_to_binary(binary_string):
+
+    """
+    This function ...
+    :param binary_string: 
+    :return: 
+    """
+
+    return int("".join(str(bit) for bit in binary_string))
+
+# -----------------------------------------------------------------
+
+def binary_string_to_float(binary_string, low, high, nbits):
+    
+    """
+    This function ...
+    :param binary_string: 
+    :param low:
+    :param high:
+    :param nbits:
+    :return: 
+    """
+
+    binary = binary_string_to_binary(binary_string)
+    return binary_to_float(binary, low, high, nbits)
+
+# -----------------------------------------------------------------
+
+def float_to_binary_string(value, low, high, nbits):
+    
+    """
+    This function ...
+    :param value:
+    :param low:
+    :param high:
+    :param nbits:
+    :return: 
+    """
+
+    binary = float_to_binary(value, low, high, nbits)
+    return binary_to_binary_string(binary, nbits)
+
+# -----------------------------------------------------------------
+
+# https://math.stackexchange.com/questions/1968416/number-of-significant-figures-when-going-from-base-10-to-binary
+# First comment: I would think math.floor(log2(10)) = 3 significant figures in binary per significant figure in base 10
+
+# -----------------------------------------------------------------
+
+def binary_digits_for_significant_figures(nfigures):
+
+    """
+    This function ...
+    :param nfigures: 
+    :return: 
+    """
+
+    return int(math.floor(np.log2(10) * nfigures)) + 1
+
+# -----------------------------------------------------------------
+
+def nbits_for_ndigits(ndigits):
+
+    """
+    This fucntion ...
+    :param ndigits: 
+    :return: 
+    """
+
+    return binary_digits_for_significant_figures(ndigits)
+
+# -----------------------------------------------------------------
+
+def largest_error(nbits, low, high):
+
+    """
+    This function ...
+    :param nbits: 
+    :param low: 
+    :param high: 
+    :return: 
+    """
+
+    return 0.5 * (high - low) / nintegers_for_nbits(nbits)
+
+# -----------------------------------------------------------------
+
+def order_of_magnitude(number):
+
+    """
+    This function ...
+    :param number: 
+    :return: 
+    """
+
+    string = str(float(number)).split(".")[0]
+    return len(string) - 1
+
+# -----------------------------------------------------------------
+
+def rounding_error_order_of_magnitude(number, ndigits):
+
+    """
+    This function ...
+    :param number: 
+    :param ndigits: 
+    :return: 
+    """
+
+    error = order_of_magnitude(number) - ndigits
+    return error
+
+# -----------------------------------------------------------------
+
+def rounding_error(number, ndigits):
+
+    """
+    This function ...
+    :param number: 
+    :param ndigits: 
+    :return: 
+    """
+
+    return 5. * 10**rounding_error_order_of_magnitude(number, ndigits)
+
+# -----------------------------------------------------------------
+
+def maximal_error(number, ndigits):
+
+    """
+    This fucntion ...
+    :param number: 
+    :param ndigits: 
+    :return: 
+    """
+
+    return rounding_error(number, ndigits)
+
+# -----------------------------------------------------------------
+
+def minimal_nsteps(number, low, high, ndigits):
+
+    """
+    This function ...
+    :param number: 
+    :param low:
+    :param high:
+    :param ndigits: 
+    :return: 
+    """
+
+    maximal_error = rounding_error(number, ndigits)
+    minimal_number_of_steps = int(math.ceil((high - low) / maximal_error))
+    return minimal_number_of_steps
+
+# -----------------------------------------------------------------
+
+def nbits_for_ndigits_experimental(ndigits, low, high):
+
+    """
+    This function ...
+    :param ndigits: 
+    :param low: 
+    :param high: 
+    :return: 
+    """
+
+    nsteps = minimal_nsteps(low, low, high, ndigits)
+    return min_nbits_for_nintegers(nsteps)
+
+# -----------------------------------------------------------------
+
+def binary_gray_code(n):
+
+    """
+    This function generates the Gray code for dimension n
+    :param n: 
+    :return: 
+    """
+
+    def gray_code_recurse(g, n):
+
+        k = len(g)
+
+        if n <= 0: return
+        else:
+
+            for i in range(k-1, -1, -1):
+
+                char = '1' + g[i]
+                g.append(char)
+
+            for i in range(k-1, -1, -1):
+
+                g[i] = '0' + g[i]
+
+            gray_code_recurse(g, n-1)
+
+    g = ['0','1']
+    gray_code_recurse(g, n-1)
+
+    result = []
+    for entry in g: result.append([int(character) for character in entry])
+    return result
+
+# -----------------------------------------------------------------
+
+def quaternary_gray_code(n):
+
+    """
+    This fucntion ...
+    :param n: 
+    :return: 
+    """
+
+    start = ['0', '1', '2', '3']
+
+    #ncombinations = min_nbits_for_nintegers()
+
+    #total = []
+
+    previous = start
+    #new = None
+
+    # Do n-1 times: e.g. for 3 qits, there's two steps from the start to the
+    # http://www.eetimes.com/author.asp?section_id=14&doc_id=1283114
+    for _ in range(n-1):
+
+        previous_length = len(previous)
+
+        # Add flipped orders
+        new = previous + previous[::-1] + previous + previous[::-1]
+
+        # Add first characters
+        for i in range(previous_length):
+
+            new[i] = '0' + new[i]
+
+        for i in range(previous_length, 2*previous_length):
+
+            new[i] = '1' + new[i]
+
+        for i in range(previous_length, 3*previous_length):
+
+            new[i] = '2' + new[i]
+
+        for i in range(previous_length, 4*previous_length):
+
+            new[i] = '3' + new[i]
+
+        previous = new
+
+    #print(previous)
+
+    codes = previous
+
+    result = []
+    for entry in codes: result.append([int(character) for character in entry])
+    return result
+
+# -----------------------------------------------------------------
+
+def binary_string_to_gray_binary_string(bits):
+
+    """
+    This fucntion ...
+    :param bits: 
+    :return: 
+    """
+
+    return bits[:1] + [i ^ ishift for i, ishift in zip(bits[:-1], bits[1:])]
+
+# -----------------------------------------------------------------
+
+def gray_binary_string_to_binary_string(bits):
+
+    """
+    This fucntion ...
+    :param bits: 
+    :return: 
+    """
+    
+    b = [bits[0]]
+    for nextb in bits[1:]: b.append(b[-1] ^ nextb)
+    return b
+
+# -----------------------------------------------------------------
+
+def gray_binary_string_to_integer(binary_string):
+
+    """
+    This function ...
+    :param binary_string: 
+    :return: 
+    """
+
+    normal_binary_string = gray_binary_string_to_binary_string(binary_string)
+    return binary_string_to_integer(normal_binary_string)
+
+# -----------------------------------------------------------------
+
+def integer_to_gray_binary_string(integer, nbits=None):
+
+    """
+    This fucntion ...
+    :param integer: 
+    :param nbits:
+    :return: 
+    """
+
+    normal_binary_string = integer_to_binary_string(integer, nbits=nbits)
+    return binary_string_to_gray_binary_string(normal_binary_string)
+
+# -----------------------------------------------------------------
+
+def gray_binary_string_to_float(binary_string, low, high, nbits):
+
+    """
+    This function ...
+    :param binary_string:
+    :param low:
+    :param high:
+    :param nbits:
+    :return: 
+    """
+
+    binary_string = gray_binary_string_to_binary_string(binary_string)
+    return binary_string_to_float(binary_string, low, high, nbits)
+
+# -----------------------------------------------------------------
+
+def float_to_gray_binary_string(value, low, high, nbits):
+
+    """
+    This function ...
+    :param value: 
+    :param low:
+    :param high:
+    :param nbits:
+    :return: 
+    """
+
+    binary_string = float_to_binary_string(value, low, high, nbits)
+    return binary_string_to_gray_binary_string(binary_string)
+
+# -----------------------------------------------------------------
+
+def next_binary_string(binary_string):
+
+    """
+    This function ...
+    :param binary_string: 
+    :return: 
+    """
+
+    nbits = len(binary_string)
+    max_integer = max_integer_for_nbits(nbits)
+    integer = binary_string_to_integer(binary_string)
+    if integer == max_integer: raise ValueError("Cannot increment: last binary for this number of bits")
+    return integer_to_binary_string(integer + 1, nbits=nbits)
+
+# -----------------------------------------------------------------
+
+def next_gray_binary_string(binary_string):
+
+    """
+    This function ...
+    :param binary_string: 
+    :return: 
+    """
+
+    nbits = len(binary_string)
+    max_integer = max_integer_for_nbits(nbits)
+    integer = gray_binary_string_to_integer(binary_string)
+    if integer == max_integer: raise ValueError("Cannot increment: last binary for this number of bits")
+    return integer_to_gray_binary_string(integer + 1, nbits=nbits)
+
+# -----------------------------------------------------------------
+
+def generate_bit_slices(nbits):
+
+    """
+    This function ...
+    :return: 
+    """
+
+    slices = []
+
+    tempsum = 0
+    for index in range(len(nbits)):
+        nbits = nbits[index]
+        slices.append(slice(tempsum, tempsum+nbits))
+        tempsum += nbits
+
+    return slices
+
+# -----------------------------------------------------------------
+
+def random_linear(low, high):
+
+    """
+    This function ...
+    :param low: 
+    :param high: 
+    :return: 
+    """
+
+    random = np.random.uniform(low, high)
+    return random
+
+# -----------------------------------------------------------------
+
+def random_logarithmic(low, high):
+
+    """
+    This function ...
+    :param low: 
+    :param high: 
+    :return: 
+    """
+
+    # Generate random logarithmic variate
+    logmin = np.log10(low)
+    logmax = np.log10(high)
+    lograndom = np.random.uniform(logmin, logmax)
+    random = 10 ** lograndom
+    return random
+
+# -----------------------------------------------------------------
+
+def to_scale(value, scale):
+
+    """
+    This funciton ...
+    :param value: 
+    :param scale: 
+    :return: 
+    """
+
+    if scale == "linear": return value
+    elif scale == "logarithmic": return np.log10(value)
+    else: raise ValueError("Invalid scale " + scale)
+
+# -----------------------------------------------------------------
+
+def unscale(value, scale):
+
+    """
+    This funciton ...
+    :param value: 
+    :param scale: 
+    :return: 
+    """
+
+    if scale == "linear": return value
+    elif scale == "logarithmic": return 10**value
+    else: raise ValueError("Invalid scale " + scale)
+
+# -----------------------------------------------------------------

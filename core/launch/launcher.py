@@ -24,13 +24,14 @@ from ..simulation.definition import SingleSimulationDefinition
 from .options import LoggingOptions
 from .analyser import SimulationAnalyser
 from ..simulation.remote import SkirtRemote
-from ..tools import filesystem as fs
 from ..tools.logging import log
 from .options import SchedulingOptions
 from ..advanced.parallelizationtool import ParallelizationTool
 from ..advanced.memoryestimator import MemoryEstimator
 from ..simulation.parallelization import Parallelization
 from .options import AnalysisOptions
+from ..tools import filesystem as fs
+from ..tools import parallelization
 
 # -----------------------------------------------------------------
 
@@ -40,16 +41,16 @@ class SKIRTLauncher(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(SKIRTLauncher, self).__init__(config)
+        super(SKIRTLauncher, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 
@@ -57,7 +58,7 @@ class SKIRTLauncher(Configurable):
         self.skirt = SkirtExec()
 
         # Create the SKIRT remote execution context
-        self.remote = SkirtRemote()
+        self.remote = None
 
         # Create a SimulationAnalyser instance
         self.analyser = SimulationAnalyser()
@@ -80,6 +81,9 @@ class SKIRTLauncher(Configurable):
         # Initialize a list to contain the retrieved finished simulations
         self.simulations = []
 
+        # Estimates of the memory requirement
+        self.memory = None
+
     # -----------------------------------------------------------------
 
     @property
@@ -92,7 +96,8 @@ class SKIRTLauncher(Configurable):
 
         # Check whether the number of processes and the number of threads are both defined
         #return self.config.arguments.parallel.processes is not None and self.config.arguments.parallel.threads is not None
-        return False
+        #return False
+        return self.parallelization is not None
 
     # -----------------------------------------------------------------
 
@@ -100,14 +105,15 @@ class SKIRTLauncher(Configurable):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # 2. Create the simulation definition
-        self.create_definition()
+        # 2. Create the simulation definition (if necessary)
+        if self.definition is None: self.create_definition()
 
         # 2. Set the parallelization scheme
         if not self.has_parallelization: self.set_parallelization()
@@ -129,6 +135,7 @@ class SKIRTLauncher(Configurable):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
@@ -136,14 +143,29 @@ class SKIRTLauncher(Configurable):
         super(SKIRTLauncher, self).setup(**kwargs)
 
         # Setup the remote execution context
-        if self.config.remote is not None: self.remote.setup(self.config.remote, self.config.cluster)
+        if self.config.remote is not None:
+            self.remote = SkirtRemote()
+            self.remote.setup(self.config.remote, self.config.cluster)
+
+        # Create output directory
+        if self.config.create_output and not fs.is_directory(self.config.output): fs.create_directory(self.config.output)
 
         # Create the logging options
         self.logging_options = LoggingOptions()
         self.logging_options.set_options(self.config.logging)
 
         # Create the analysis options
-        self.create_analysis_options()
+        if "analysis_options" in kwargs: self.set_analysis_options(kwargs.pop("analysis_options"))
+        else: self.create_analysis_options()
+
+        # Get the memory information passed to this instance
+        self.memory = kwargs.pop("memory", None)
+
+        # Get the definition
+        if "definition" in kwargs: self.definition = kwargs.pop("definition")
+
+        # Get the parallelization
+        if "parallelization" in kwargs: self.parallelization = kwargs.pop("parallelization")
 
     # -----------------------------------------------------------------
 
@@ -154,9 +176,31 @@ class SKIRTLauncher(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Creating the analysis options ...")
+
         # Create the analysis options object
         self.analysis_options = AnalysisOptions()
         self.analysis_options.set_options(self.config.analysis)
+
+        # Check the options
+        self.analysis_options.check(self.logging_options, self.config.output)
+
+    # -----------------------------------------------------------------
+
+    def set_analysis_options(self, options):
+
+        """
+        This function ...
+        :param options:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the analysis options ...")
+
+        # Set
+        self.analysis_options = options
 
         # Check the options
         self.analysis_options.check(self.logging_options, self.config.output)
@@ -207,34 +251,39 @@ class SKIRTLauncher(Configurable):
         # Check whether MPI is available on this system
         if introspection.has_mpi():
 
-            # The memory estimator
-            estimator = MemoryEstimator()
+            # If memory requirement is not set
+            if self.memory is None:
 
-            # Configure the memory estimator
-            estimator.config.ski = self.definition.ski_path
-            estimator.config.input = self.config.input_path
-            #estimator.config.ncells =
+                # The memory estimator
+                estimator = MemoryEstimator()
 
-            estimator.config.show = False
+                # Configure the memory estimator
+                estimator.config.ski = self.definition.ski_path
+                estimator.config.input = self.config.input
+                estimator.config.show = False
 
-            # Estimate the memory
-            estimator.run()
+                # Estimate the memory
+                estimator.run()
+
+                # Get the memory requirement
+                self.memory = estimator.memory
 
             # Get the serial and parallel parts of the simulation's memory
-            serial_memory = estimator.serial_memory
-            parallel_memory = estimator.parallel_memory
+            serial_memory = self.memory.serial
+            parallel_memory = self.memory.parallel
 
             # Calculate the total memory of one process without data parallelization
             total_memory = serial_memory + parallel_memory
 
             # Calculate the maximum number of processes based on the memory requirements
-            processes = int(monitoring.free_memory() / total_memory)
+            free_memory = monitoring.free_memory()
+            processes = int(free_memory / total_memory)
 
             # If there is too little free memory for the simulation, the number of processes will be smaller than one
             if processes < 1:
 
                 # Exit with an error
-                log.error("Not enough memory available to run this simulation")
+                log.error("Not enough memory available to run this simulation locally: free memory = " + str(free_memory) + ", required memory = " + str(total_memory))
                 exit()
 
         # No MPI available
@@ -245,7 +294,7 @@ class SKIRTLauncher(Configurable):
 
         # If there are too little free cpus for the amount of processes, the number of threads will be smaller than one
         if threads < 1:
-            processes = int(monitoring.free_cpus())
+            processes = max(int(monitoring.free_cpus()), 1)
             threads = 1
 
         # Set the parallelization options
@@ -255,7 +304,16 @@ class SKIRTLauncher(Configurable):
         cores = processes * threads
         threads_per_core = 2
 
+        # Debugging
+        log.debug("The number of cores is " + str(cores))
+        log.debug("The number of thread per core is " + str(threads_per_core))
+        log.debug("The number of processes is " + str(processes))
+
+        # Set the parallelization scheme
         self.parallelization = Parallelization(cores, threads_per_core, processes, data_parallel=False)
+
+        # Debugging
+        log.debug("The parallelization scheme is " + str(self.parallelization))
 
     # -----------------------------------------------------------------
 
@@ -265,6 +323,9 @@ class SKIRTLauncher(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Setting the parallelization scheme for remote execution ...")
 
         # If the remote uses a scheduling system
         if self.remote.scheduler:
@@ -316,14 +377,14 @@ class SKIRTLauncher(Configurable):
         # Don't show the parallelization
         tool.config.show = False
 
-        # Run the parallelization tool
-        tool.run()
+        # Run the parallelization tool (passing the memory requirement of the simulation as an argument)
+        tool.run(memory=self.memory)
 
         # Get the parallelization scheme
         self.parallelization = tool.parallelization
 
         # Debugging
-        #log.debug("The parallelization scheme for simulation '" + simulation_name + "' is " + str(parallelization))
+        log.debug("The parallelization scheme is " + str(self.parallelization))
 
     # -----------------------------------------------------------------
 
@@ -334,6 +395,22 @@ class SKIRTLauncher(Configurable):
         number of cores and hyperthreads per core on the remote host.
         Returns:
         """
+
+        # Check locally or remotely
+        if self.config.remote: self.check_parallelization_remote()
+        else: self.check_parallelization_local()
+
+    # -----------------------------------------------------------------
+
+    def check_parallelization_remote(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the parallelization scheme ...")
 
         # If the remote host uses a scheduling system, check whether the parallelization options are possible
         # based on the cluster properties defined in the configuration
@@ -377,6 +454,30 @@ class SKIRTLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    def check_parallelization_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the parallelization scheme ...")
+
+        # Determine the total number of requested threads
+        requested_threads = self.parallelization.nthreads
+
+        # Determine the total number of hardware threads that can be used on the remote host
+        hardware_threads = parallelization.ncores()
+        if parallelization.has_hyperthreading(): hardware_threads *= parallelization.nthreads_per_core()
+
+        # If the number of requested threads is greater than the allowed number of hardware threads, raise
+        # an error
+        if requested_threads > hardware_threads: raise RuntimeError("The requested number of processes and threads "
+                                                                    "exceeds the total number of hardware threads")
+
+    # -----------------------------------------------------------------
+
     def launch(self):
 
         """
@@ -401,10 +502,12 @@ class SKIRTLauncher(Configurable):
         """
 
         # Inform the user
-        log.info("Launching the simulation locally...")
+        log.info("Launching the simulation locally ...")
 
         # Run the simulation
-        self.simulation = self.skirt.run(self.definition, logging_options=self.logging_options, silent=False, wait=True)
+        self.simulation = self.skirt.run(self.definition, logging_options=self.logging_options, silent=False, wait=True,
+                                         progress_bar=self.config.progress_bar, parallelization=self.parallelization,
+                                         finish_after=self.config.finish_after, finish_at=self.config.finish_at)
 
         # Set the simulation name
         self.simulation.name = self.definition.prefix
@@ -422,7 +525,7 @@ class SKIRTLauncher(Configurable):
         """
 
         # Inform the user
-        log.info("Launching the simulation remotely...")
+        log.info("Launching the simulation remotely ...")
 
         # Add the walltime to the scheduling options
         if self.config.walltime is not None:
@@ -433,7 +536,7 @@ class SKIRTLauncher(Configurable):
         # Run the simulation
         self.simulation = self.remote.run(self.definition, self.logging_options, self.parallelization,
                                           scheduling_options=scheduling_options, attached=self.config.attached,
-                                          analysis_options=self.analysis_options)
+                                          analysis_options=self.analysis_options, progress_bar=self.config.progress_bar)
 
         # Set the analysis options for the simulation
         self.set_remote_simulation_options()
@@ -493,5 +596,96 @@ class SKIRTLauncher(Configurable):
 
         # Retrieval
         self.simulation.retrieve_types = self.config.retrieve_types
+
+# -----------------------------------------------------------------
+
+class SingleImageSKIRTLauncher(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self):
+
+        """
+        The constructor ...
+        """
+
+        # The SKIRT execution context
+        self.skirt = SkirtExec()
+
+    # -----------------------------------------------------------------
+
+    def run(self, ski_path, out_path, wcs, total_flux, kernel, instrument_name=None, progress_bar=False):
+
+        """
+        This function ...
+        :param ski_path:
+        :param out_path:
+        :param wcs:
+        :param total_flux:
+        :param kernel:
+        :param instrument_name:
+        :param progress_bar:
+        :return:
+        """
+
+        from ...magic.core.frame import Frame
+        from ..simulation.arguments import SkirtArguments
+
+        # Create a SkirtArguments object
+        arguments = SkirtArguments()
+
+        # Adjust the parameters
+        arguments.ski_pattern = ski_path
+        arguments.output_path = out_path
+        arguments.single = True  # we expect a single simulation from the ski pattern
+
+        # Inform the user
+        log.info("Running a SKIRT simulation with " + str(fs.name(ski_path)) + " ...")
+
+        # Run the simulation
+        simulation = self.skirt.run(arguments, silent=False if log.is_debug() else True, progress_bar=progress_bar)
+
+        # Get the simulation prefix
+        prefix = simulation.prefix()
+
+        # Get the (frame)instrument name
+        if instrument_name is None:
+
+            # Get the name of the unique instrument (give an error if there are more instruments)
+            instrument_names = simulation.parameters().get_instrument_names()
+            assert len(instrument_names) == 1
+            instrument_name = instrument_names[0]
+
+        # Determine the name of the SKIRT output FITS file
+        fits_name = prefix + "_" + instrument_name + "_total.fits"
+
+        # Determine the path to the output FITS file
+        fits_path = fs.join(out_path, fits_name)
+
+        # Check if the output contains the "disk_earth_total.fits" file
+        if not fs.is_file(fits_path): raise RuntimeError("Something went wrong with the " + prefix + " simulation: output FITS file missing")
+
+        # Open the simulated frame
+        simulated_frame = Frame.from_file(fits_path)
+
+        # Set the coordinate system of the disk image
+        simulated_frame.wcs = wcs
+
+        # Debugging
+        log.debug("Rescaling the " + prefix + " image to a flux density of " + str(total_flux) + " ...")
+
+        # Rescale to the flux density
+        simulated_frame.normalize(to=total_flux)
+
+        # Debugging
+        log.debug("Convolving the " + prefix + " image ...")
+
+        # Convolve the frame
+        simulated_frame.convolve(kernel)
+
+        # Return the frame
+        return simulated_frame
 
 # -----------------------------------------------------------------

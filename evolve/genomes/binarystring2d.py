@@ -27,15 +27,16 @@
 # -----------------------------------------------------------------
 
 # Import other evolve modules
-from ..genome import GenomeBase
-from .. import constants
-from .. import utils
+from ..core.genome import GenomeBase
+from ..core import constants
+from ..core import utils
 
 # -----------------------------------------------------------------
 
 class G2DBinaryString(GenomeBase):
 
-    """ G3DBinaryString Class - The 2D Binary String chromosome
+    """
+    G2DBinaryString Class - The 2D Binary String chromosome
     Inheritance diagram for :class:`G2DBinaryString.G2DBinaryString`:
     .. inheritance-diagram:: G2DBinaryString.G2DBinaryString
     Example:
@@ -48,17 +49,29 @@ class G2DBinaryString(GenomeBase):
 
     # -----------------------------------------------------------------
 
+    dimension = 2
+
+    # -----------------------------------------------------------------
+
     def __init__(self, height, width):
-        """ The initializator of G2DBinaryString representation,
+
+        """
+        The initializator of G2DBinaryString representation,
         height and width must be specified """
+
+        # Call the constructor of the base class
         super(G2DBinaryString, self).__init__()
+
+        # Set height and weight
         self.height = height
         self.width = width
 
+        # Initialize the data structure for the genes
         self.genomeString = [None] * height
         for i in xrange(height):
             self.genomeString[i] = [None] * width
 
+        # Set ...
         self.initializator.set(constants.CDefG2DBinaryStringInit)
         self.mutator.set(constants.CDefG2DBinaryStringMutator)
         self.crossover.set(constants.CDefG2DBinaryStringCrossover)
@@ -76,9 +89,10 @@ class G2DBinaryString(GenomeBase):
 
     def getItem(self, x, y):
 
-        """ Return the specified gene of List
+        """
+        Return the specified gene of List
         Example:
-           >>> genome.getItem(3, 1)
+           getItem(3, 1)
            0
         :param x: the x index, the column
         :param y: the y index, the row
@@ -91,9 +105,10 @@ class G2DBinaryString(GenomeBase):
 
     def setItem(self, x, y, value):
 
-        """ Set the specified gene of List
+        """
+        Set the specified gene of List
         Example:
-           >>> genome.setItem(3, 1, 0)
+           genome.setItem(3, 1, 0)
         :param x: the x index, the column
         :param y: the y index, the row
         :param value: the value (integers 0 or 1)
@@ -106,43 +121,60 @@ class G2DBinaryString(GenomeBase):
     # -----------------------------------------------------------------
 
     def __getitem__(self, key):
-        """ Return the specified gene of List """
+
+        """
+        Return the specified gene of List
+        """
+
         return self.genomeString[key]
 
     # -----------------------------------------------------------------
 
     def __iter__(self):
-        """ Iterator support to the list """
+
+        """
+        Iterator support to the list
+        """
+
         return iter(self.genomeString)
 
     # -----------------------------------------------------------------
 
     def getHeight(self):
+
         """ Return the height (lines) of the List """
+
         return self.height
 
     # -----------------------------------------------------------------
 
     def getWidth(self):
+
         """ Return the width (lines) of the List """
+
         return self.width
 
     # -----------------------------------------------------------------
 
     def getSize(self):
-        """ Returns a tuple (height, widht)
-
-        Example:
-           >>> genome.getSize()
-           (3, 2)
 
         """
+        Returns a tuple (height, widht)
+        Example:
+           genome.getSize()
+           (3, 2)
+        """
+
         return self.getHeight(), self.getWidth()
 
     # -----------------------------------------------------------------
 
     def __repr__(self):
-        """ Return a string representation of Genome """
+
+        """
+        Return a string representation of Genome
+        """
+
         ret = GenomeBase.__repr__(self)
         ret += "- G2DBinaryString\n"
         ret += "\tList size:\t %s\n" % (self.getSize(),)

@@ -14,7 +14,14 @@ from pts.core.basics.configuration import ConfigurationDefinition
 definition = ConfigurationDefinition()
 
 # Add optional
-definition.add_optional("remote", "string", "update on a remote system")
+definition.add_positional_optional("host_id", "string", "update on a remote system")
+
+# Add flags
+definition.add_flag("dependencies", "also update the dependencies", False)
+
+# Add flag
+#definition.add_flag("all_remotes", "update on all remote hosts")
+
+definition.add_flag("conda", "update conda", False)
 
 # -----------------------------------------------------------------
-

@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import astronomical modules
-import astropy.units as u
 from astropy.coordinates import SkyCoord
 
 # -----------------------------------------------------------------
@@ -69,7 +68,7 @@ def pixel_mapping(wcs1, wcs2):
 
         # Transform the world coordinates from the output image into the coordinate
         # system of the input image
-        C2 = SkyCoord(lon2,lat2,unit=(u.Unit("deg"),u.Unit("deg")), frame=csys2)
+        C2 = SkyCoord(lon2, lat2, unit="deg", frame=csys2)
         C1 = C2.transform_to(csys1)
         lon2,lat2 = C1.spherical.lon.deg,C1.spherical.lat.deg
 
@@ -200,6 +199,38 @@ def ra_distance(declination, ra_a, ra_b):
 
     # Return ...
     return np.degrees(np.arccos(cos_ra_distance))
+
+# -----------------------------------------------------------------
+
+def ra_around(ra_center, ra_distance, declination):
+
+    """
+    This function ...
+    :param ra_center: 
+    :param ra_distance: 
+    :param declination: 
+    :return: 
+    """
+
+    difference = abs(ra_difference(ra_distance, declination))
+    return ra_center - difference, ra_center + difference
+
+# -----------------------------------------------------------------
+
+def ra_difference(ra_distance, declination):
+
+    """
+    This function ...
+    :param ra_distance:
+    :param declination
+    :return: 
+    """
+
+    cos_ra_difference = ( np.cos(np.radians(ra_distance)) - np.sin(np.radians(declination))**2 ) / np.cos(np.radians(declination))**2
+
+    if cos_ra_difference > 1.0 and np.isclose(cos_ra_difference, 1.0): cos_ra_difference = 1.0
+
+    return np.degrees(np.arccos(cos_ra_difference))
 
 # -----------------------------------------------------------------
 

@@ -1,7 +1,6 @@
-#import aplpy
+
+
 import pyparsing
-import pyregion
-import pyfits
 import matplotlib.pyplot as pyplot
 import matplotlib as mpl
 

@@ -17,7 +17,7 @@ import numpy as np
 from scipy import ndimage
 
 # Import the relevant PTS classes and modules
-from ..tools import fitting, plotting, coordinates, cropping, regions
+from ..tools import fitting, plotting, coordinates, cropping
 
 # -----------------------------------------------------------------
 

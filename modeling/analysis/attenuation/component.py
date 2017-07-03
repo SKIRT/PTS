@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from abc import ABCMeta
+
 # Import the relevant PTS classes and modules
 from ..component import AnalysisComponent
 from ....core.tools import filesystem as fs
@@ -25,16 +28,20 @@ class AttenuationAnalysisComponent(AnalysisComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(AttenuationAnalysisComponent, self).__init__(config)
+        super(AttenuationAnalysisComponent, self).__init__(*args, **kwargs)
 
         # The analysis run
         self.analysis_run = None

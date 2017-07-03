@@ -136,6 +136,27 @@ if vistype=='particles':
 
 # -----------------------------------------------------------------
 
+# build RGB images
+if vistype=='rgbimages':
+    from pts.core.plot.rgbimages import makeintegratedrgbimages
+    from pts.core.filter.broad import BroadBandFilter
+    print "Building RGB images for {} SKIRT-runs".format(len(skirtruns))
+    filterR = BroadBandFilter('SDSS.i')
+    filterG = BroadBandFilter('SDSS.r')
+    filterB = BroadBandFilter('SDSS.g')
+    filterIR = BroadBandFilter('Pacs.green')
+    filterUV = BroadBandFilter('GALEX.FUV')
+    for skirtrun in skirtruns:
+        print "Building RGB images for SKIRT-run {}...".format(skirtrun.runid())
+        fmin,fmax = makeintegratedrgbimages(skirtrun.simulation(),
+            [ (filterR, 1,0,0), (filterG, 0,1,0), (filterB, 0,0,1) ], postfix="_optical")
+        makeintegratedrgbimages(skirtrun.simulation(),
+            [ (filterR, 1,0,0), (filterG, 0,1,0), (filterB, 0,0,1), (filterIR, 0.02,0,0), (filterUV, 0,0,4) ],
+            postfix="_augmented", fmin=fmin, fmax=fmax)
+        move_visualization_files(skirtrun, filenames)
+
+# -----------------------------------------------------------------
+
 # build SED plots for each SKIRT-run
 if vistype=='seds':
     from pts.core.plot.seds import plotseds

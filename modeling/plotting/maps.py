@@ -36,17 +36,17 @@ class MapsPlotter(PlottingComponent, MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructors of the base classes
-        PlottingComponent.__init__(self, config)
-        MapsComponent.__init__(self)
+        PlottingComponent.__init__(self, *args, **kwargs)
+        MapsComponent.__init__(self, *args, **kwargs)
 
         # -- Attributes --
 
@@ -55,15 +55,16 @@ class MapsPlotter(PlottingComponent, MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the images
         self.load_images()
@@ -73,7 +74,7 @@ class MapsPlotter(PlottingComponent, MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...

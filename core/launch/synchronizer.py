@@ -14,11 +14,11 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..simulation.simulation import RemoteSimulation
-from ..basics.host import find_host_ids, has_simulations, has_tasks
+from ..remote.host import find_host_ids, has_simulations, has_tasks
 from .analyser import SimulationAnalyser
 from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
-from ..basics.remote import Remote
+from ..remote.remote import Remote
 from ..tools import filesystem as fs
 from ..tools.logging import log
 from ..basics.task import Task
@@ -33,16 +33,17 @@ class RemoteSynchronizer(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
+        :param interactive:
         :param config:
         :return:
         """
 
         # Call the constructor of the base class
-        super(RemoteSynchronizer, self).__init__(config)
+        super(RemoteSynchronizer, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 
@@ -60,32 +61,7 @@ class RemoteSynchronizer(Configurable):
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def from_arguments(cls, arguments):
-
-        """
-        This function ...
-        :param arguments:
-        :return:
-        """
-
-        # Create a new RemoteSynchronizer instance
-        synchronizer = cls()
-
-        ## Adjust the configuration settings according to the command-line arguments
-
-        # Set the remote name and the delete dictionary
-        if hasattr(arguments, "remote"): synchronizer.config.remote = arguments.remote
-        if hasattr(arguments, "ids"): synchronizer.config.ids = arguments.ids
-        if hasattr(arguments, "status"): synchronizer.config.statuses = arguments.status
-        if hasattr(arguments, "relaunch"): synchronizer.config.relaunch = arguments.relaunch
-
-        # Return the new synchronizer
-        return synchronizer
-
-    # -----------------------------------------------------------------
-
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
@@ -93,7 +69,7 @@ class RemoteSynchronizer(Configurable):
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Retrieve the simulations and tasks
         self.retrieve()
@@ -106,7 +82,7 @@ class RemoteSynchronizer(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
@@ -114,26 +90,33 @@ class RemoteSynchronizer(Configurable):
         """
 
         # Call the setup function of the base class
-        super(RemoteSynchronizer, self).setup()
+        super(RemoteSynchronizer, self).setup(**kwargs)
 
-        # Find host ids for which a configuration file has been created by the user
-        for host_id in find_host_ids():
+        # Load the remote instances
+        if "remotes" in kwargs: self.remotes = kwargs.pop("remotes")
+        else:
 
-            # If a list of remotes is defined and this remote is not in it, skip it
-            if self.config.remote is not None and host_id not in self.config.remote: continue
+            # Determine the host IDs
+            if self.config.host_ids is not None: host_ids = self.config.host_ids
+            else: host_ids = find_host_ids()
 
-            # If there are currently no simulations corresponding to this host, skip it
-            if (not has_simulations(host_id)) and (not has_tasks(host_id)): continue
+            # Loop over the host IDs
+            for host_id in host_ids:
 
-            # Create a remote SKIRT execution context
-            if introspection.skirt_is_present(): remote = SkirtRemote()
-            else: remote = Remote()
+                # If there are currently no simulations corresponding to this host, skip it
+                if (not has_simulations(host_id)) and (not has_tasks(host_id)): continue
 
-            # Setup the remote execution context
-            remote.setup(host_id)
+                # Create a remote SKIRT execution context
+                if introspection.skirt_is_present(): remote = SkirtRemote()
+                else: remote = Remote()
 
-            # Add the remote to the list of remote objects
-            self.remotes.append(remote)
+                # Setup the remote execution context
+                if not remote.setup(host_id):
+                    log.warning("Remote host '" + host_id + "' is not available: skipping ...")
+                    continue
+
+                # Add the remote to the list of remote objects
+                self.remotes.append(remote)
 
     # -----------------------------------------------------------------
 
@@ -255,24 +238,8 @@ class RemoteSynchronizer(Configurable):
             # Run the analyser on the simulation
             self.analyser.run(simulation=simulation)
 
-            # Loop over the 'extra' analyser classes that are defined for this simulation
-            for analyser_class in simulation.analyser_classes:
-
-                # Create an instance of the analyser class
-                analyser = analyser_class.for_simulation(simulation)
-
-                # Run the analyser, giving the standard simulation analyser as an argument
-                analyser.run(self.analyser)
-
-            # Clear the standard simulation analyser
+            # Clear the simulation analyser
             self.analyser.clear()
-
-            # Indicate that this simulation has been analysed
-            simulation.analysed = True
-            simulation.save()
-
-            # If requested, remove the local output directory
-            if simulation.remove_local_output: fs.remove_directory(simulation.output_path)
 
     # -----------------------------------------------------------------
 
@@ -289,21 +256,8 @@ class RemoteSynchronizer(Configurable):
         # Loop over the list of retrieved tasks
         for task in self.tasks:
 
-            # Loop over the analyser classes that are defined for this task
-            for analyser_class in task.analyser_classes:
-
-                # Create an instance of the analyser class
-                analyser = analyser_class.for_task(task)
-
-                # Run the analyser
-                analyser.run()
-
-            # Set analysed flag to True
-            task.analysed = True
-            task.save()
-
-            # Remove the local output if requested
-            if task.remove_local_output: fs.remove_directory(task.local_output_path)
+            # Analyse the task
+            task.analyse()
 
     # -----------------------------------------------------------------
 

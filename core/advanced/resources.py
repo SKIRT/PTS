@@ -240,7 +240,7 @@ class ResourceEstimator(object):
         rate = self.log_file.stellar_packages / self.extractor.stellar
 
         # Calculate the rate of photon packages launched per second without recording absorption
-        rate_noabsorption = self.log_file.dust_packages / self.extractor.dustem
+        rate_noabsorption = self.log_file.dust_packages / self.extractor.dustemission_photons
 
         # Estimate the walltime for the stellar emission phase
         stellar_walltime = packages / rate

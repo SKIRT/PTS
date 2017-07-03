@@ -24,16 +24,13 @@ import glob
 from matplotlib import colors
 from matplotlib import cm
 from matplotlib.colors import LogNorm
-import pyfits
 from collections import OrderedDict
 from textwrap import wrap
 
 from astropy.io import fits
-from pyfits import PrimaryHDU, Header
 from astropy.visualization import SqrtStretch, LogStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 
-#import aplpy
 import wcsaxes
 import matplotlib.colors as mpl_colors
 import matplotlib.colorbar as mpl_colorbar

@@ -29,12 +29,13 @@ from astropy.coordinates import Angle
 from photutils import source_properties, properties_table
 
 # Import the relevant PTS classes and modules
-from ..tools import fitting, plotting, statistics, coordinates, cropping, interpolation, masks, regions
-from ..core.source import Source
-from ..basics.vector import Position, Extent
-from ..basics.geometry import Ellipse
-from ..basics.mask import Mask
+from ..tools import fitting, plotting, statistics, coordinates, cropping, interpolation, masks
+from ..core.detection import Detection
+from ..region.ellipse import PixelEllipseRegion
 from ...core.tools.logging import log
+from ..region import tools as regions
+from ..basics.coordinate import PixelCoordinate
+from ..basics.stretch import PixelStretch
 
 # -----------------------------------------------------------------
 
@@ -59,18 +60,18 @@ def find_contours(data, segments, sigma_level):
     for properties in properties_list:
 
         # Obtain the position, orientation and extent
-        position = Position(properties.xcentroid.value, properties.ycentroid.value)
+        position = PixelCoordinate(properties.xcentroid.value, properties.ycentroid.value)
         a = properties.semimajor_axis_sigma.value * sigma_level
         b = properties.semiminor_axis_sigma.value * sigma_level
         angle = properties.orientation.value # in radians
         angle = Angle(angle, u.rad)
 
-        radius = Extent(a, b)
+        radius = PixelStretch(a, b)
 
         meta = {"text": str(properties.label)}
 
         # Create the contour
-        contours.append(Ellipse(position, radius, angle, meta=meta))
+        contours.append(PixelEllipseRegion(position, radius, angle, meta=meta))
 
     # Return the contours
     return contours
@@ -99,16 +100,16 @@ def find_contour(box, mask, sigma_level):
     properties = props[0]
 
     # Obtain the position, orientation and extent
-    position = Position(properties.xcentroid.value + x_shift, properties.ycentroid.value + y_shift)
+    position = PixelCoordinate(properties.xcentroid.value + x_shift, properties.ycentroid.value + y_shift)
     a = properties.semimajor_axis_sigma.value * sigma_level
     b = properties.semiminor_axis_sigma.value * sigma_level
     angle = properties.orientation.value # in radians
     angle = Angle(angle, u.rad)
 
-    radius = Extent(a, b)
+    radius = PixelStretch(a, b)
 
     # Create and return the elliptical contour
-    return Ellipse(position, radius, angle)
+    return PixelEllipseRegion(position, radius, angle)
 
 # -----------------------------------------------------------------
 
@@ -155,7 +156,7 @@ def find_source_iraf(frame, ellipse, config, track_record, special=False):
 
 # -----------------------------------------------------------------
 
-def fit_model_to_source(source, config, track_record=None, level=0, special=False):
+def fit_model_to_source(source, config, track_record=None, level=0, special=False, stop_if_fail=False):
 
     """
     This function searches for sources ...
@@ -164,6 +165,7 @@ def fit_model_to_source(source, config, track_record=None, level=0, special=Fals
     :param track_record:
     :param level:
     :param special:
+    :param stop_if_fail:
     :return:
     """
 
@@ -202,8 +204,11 @@ def fit_model_to_source(source, config, track_record=None, level=0, special=Fals
     # Calculate the difference between the mean position of the model and the position of the center / peak
     difference = fitting.center(model) - position
 
-    # If ...
+    # Failed fit
     if difference.norm > config.max_model_offset:
+
+        # If stop if fail
+        if stop_if_fail: return None, None
 
         # Show a plot for debugging
         if config.debug.model_offset or special:
@@ -212,8 +217,16 @@ def fit_model_to_source(source, config, track_record=None, level=0, special=Fals
             rel_model = fitting.shifted_model(model, -source.cutout.x_min, -source.cutout.y_min)
             plotting.plot_peak_model(source.cutout, rel_peak.x, rel_peak.y, rel_model, title="Center of source and peak do not match")
 
+        # Set min pixels
+        min_pixels = 4
+
         # Create a new zoomed-in source
-        source = source.zoom(config.zoom_factor)
+        source = source.zoom(config.zoom_factor, min_xpixels=min_pixels, min_ypixels=min_pixels)
+
+        # Check if we cannot zoom further
+        if source.cutout.xsize <= min_pixels: stop_if_fail = True
+        elif source.cutout.ysize <= min_pixels: stop_if_fail = True
+        else: stop_if_fail = False
 
         # Estimate and subtract the background
         source.estimate_background(config.background_est_method, config.sigma_clip_background)
@@ -222,7 +235,7 @@ def fit_model_to_source(source, config, track_record=None, level=0, special=Fals
         if track_record is not None: track_record.append(copy.deepcopy(source))
 
         # Try again (iterative procedure of zooming in, stops if the size of the cutout becomes too small)
-        return fit_model_to_source(source, config, track_record, level, special=special)
+        return fit_model_to_source(source, config, track_record, level, special=special, stop_if_fail=stop_if_fail)
 
     # The fit succeeded
     else:
@@ -278,7 +291,6 @@ def make_star_model(shape, data, annuli_mask, fit_mask, background_outer_sigmas,
     :param data:
     :param annuli_mask:
     :param fit_mask:
-    :param background_inner_sigmas:
     :param background_outer_sigmas:
     :param fit_sigmas:
     :param model_name:
@@ -408,7 +420,7 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
     sigma_level = config.sigma_level if sigma_level is None else sigma_level
 
     # Create a source object
-    source = Source.from_ellipse(frame, ellipse, config.background_outer_factor)
+    source = Detection.from_ellipse(frame, ellipse, config.background_outer_factor)
 
     # If the source cutout is zero or nan everywhere, return None (no source can be found here)
     if np.all(np.isnan(source.cutout)) or not np.any(source.cutout):
@@ -421,7 +433,7 @@ def find_source_segmentation(frame, ellipse, config, track_record=None, expansio
         #import os
         #from ..core import Frame
         #frame = Frame(source.cutout)
-        #frame.save(os.path.join(os.getcwd(), "lalalalalal-nans.fits"))
+        #frame.saveto(os.path.join(os.getcwd(), "lalalalalal-nans.fits"))
         #plotting.plot_box(source.cutout)
 
         if special:
@@ -646,11 +658,11 @@ def find_source_peaks(frame, ellipse, config, track_record=None, level=0, specia
     """
     This function ...
     :param frame:
-    :param center:
-    :param radius:
-    :param angle:
+    :param ellipse:
     :param config:
+    :param track_record:
     :param level:
+    :param special:
     :return:
     """
 
@@ -658,7 +670,7 @@ def find_source_peaks(frame, ellipse, config, track_record=None, level=0, specia
     if level < config.min_level or level > config.max_level: return None
 
     # Create a source object
-    source = Source.from_ellipse(frame, ellipse, config.background_outer_factor)
+    source = Detection.from_ellipse(frame, ellipse, config.background_outer_factor)
 
     # If the frame is zero in this box, continue to the next object
     if not np.any(source.cutout): return None

@@ -1,0 +1,46 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+# *****************************************************************
+# **       PTS -- Python Toolkit for working with SKIRT          **
+# **       © Astronomical Observatory, Ghent University          **
+# *****************************************************************
+
+# Import the relevant PTS classes and modules
+from pts.core.basics.configuration import ConfigurationDefinition
+from pts.modeling.build.component import get_model_names
+from pts.core.tools import filesystem as fs
+from pts.modeling.config.build_representation import dust_grid_types, default_dust_grid_type
+
+# -----------------------------------------------------------------
+
+# Determine the modeling path
+modeling_path = fs.cwd()
+
+# -----------------------------------------------------------------
+
+default_nrepresentations = 2
+
+# -----------------------------------------------------------------
+
+# Create the configuration
+definition = ConfigurationDefinition(log_path="log", config_path="config")
+
+# Name of the model for which to create the representation
+model_names = get_model_names(modeling_path)
+if len(model_names) == 0: raise RuntimeError("No models found: first run build_model to create a new model")
+elif len(model_names) == 1: definition.add_fixed("model_name", "name of the model", model_names[0])
+else: definition.add_required("model_name", "string", "name of the model", choices=model_names)
+
+# Number of representation to generate
+definition.add_optional("nrepresentations", "positive_integer", "number of representations to generate", default_nrepresentations, min_value=2)
+
+# Settings for the dust grid generation
+definition.add_section("dg", "settings for the dust grids")
+definition.sections["dg"].add_optional("grid_type", "string", "type of dust grid", default_dust_grid_type, choices=dust_grid_types)
+definition.sections["dg"].add_optional("scale_range", "real_range", "range of the number of image pixels to take as the minimum scale in the model (can also be a certain fraction of a pixel)", "0.5>10.", convert_default=True)
+definition.sections["dg"].add_optional("bintree_level_range", "integer_range", "range of the minimum depth level for binary trees", "6>9", convert_default=True)
+definition.sections["dg"].add_optional("octtree_level_range", "integer_range", "range of the minimum depth level for octtrees", "2>3", convert_default=True)
+definition.sections["dg"].add_optional("mass_fraction_range", "real_range", "range of the maximum mass fraction in each cell", "0.5e-6>1e-5", convert_default=True)
+definition.sections["dg"].add_optional("scale_heights", "real", "number of times to take the dust scale height as the vertical radius of the dust grid", 10.)
+
+# -----------------------------------------------------------------

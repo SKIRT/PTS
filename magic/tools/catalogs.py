@@ -15,10 +15,12 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
+import requests
 import numpy as np
+from lxml import html
 
 # Import astronomical modules
-from astropy.units import Unit, Magnitude
+from astropy.units import Magnitude
 from astroquery.vizier import Vizier
 from astroquery.simbad import Simbad
 from astroquery.ned import Ned
@@ -28,9 +30,47 @@ from astropy.coordinates import Angle
 # Import the relevant PTS classes and modules
 from ...core.tools import tables
 from ...core.tools.logging import log
-from ..basics.skygeometry import SkyCoordinate
-from . import regions
-from ..basics.vector import Position, Extent
+from ..basics.coordinate import SkyCoordinate
+from ..basics.vector import Extent
+from ...core.units.parsing import parse_unit as u
+
+# -----------------------------------------------------------------
+
+leda_search_object_url = "http://leda.univ-lyon1.fr/ledacat.cgi?"
+
+# -----------------------------------------------------------------
+
+def get_hyperleda_name(galaxy_name):
+
+    """
+    This function ...
+    :param galaxy_name:
+    :return:
+    """
+
+    url = leda_search_object_url + galaxy_name
+
+    page_as_string = requests.get(url).content
+
+    tree = html.fromstring(page_as_string)
+
+    tables = [e for e in tree.iter() if e.tag == 'table']
+
+    table = tables[1]
+    #table = tables[1]
+
+    #print(table.text_content())
+    objname = table.text_content().split(" (")[0]
+
+    #table_rows = [e for e in table.iter() if e.tag == 'tr']
+    #column_headings = [e.text_content() for e in table_rows[0].iter() if e.tag == 'th']
+
+    # return table_rows, column_headings
+
+    #objname = str(table_rows[0].text_content().split("\n")[1]).strip()
+
+    # Return the HYPERLEDA name
+    return objname
 
 # -----------------------------------------------------------------
 
@@ -256,7 +296,7 @@ def from_galaxies(galaxies):
 
 # -----------------------------------------------------------------
 
-def create_star_catalog(coordinate_box, pixelscale, catalogs=None):
+def create_star_catalog(coordinate_box, pixelscale, catalogs=None, check_in_box=False):
 
     """
     This function ...
@@ -297,7 +337,7 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs=None):
         encountered = [False] * len(catalog_column)
 
         # Inform the user
-        log.debug("Querying the " + catalog + " catalog")
+        log.debug("Querying the " + catalog + " catalog ...")
 
         # Query Vizier and obtain the resulting table
         result = viz.query_region(center.to_astropy(), width=ra_span, height=dec_span, catalog=catalog)
@@ -329,6 +369,9 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs=None):
         # Loop over all entries in the table
         for i in range(len(table)):
 
+            # Debugging
+            log.debug("Processing entry " + str(i+1) + " ...")
+
             # -- General information --
 
             # Get the ID of this star in the catalog
@@ -349,22 +392,25 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs=None):
 
             number_of_stars += 1
 
-            # If this star does not lie within the frame, skip it
-            #if not frame.contains(position): continue
-            if not coordinate_box.contains(position): continue
+            # Optional because this takes a lot of time
+            if check_in_box:
+
+                # If this star does not lie within the frame, skip it
+                #if not frame.contains(position): continue
+                if not coordinate_box.contains(position): continue
 
             number_of_stars_in_frame += 1
 
             # Get the mean error on the right ascension and declination
             if catalog == "UCAC4" or catalog == "NOMAD":
 
-                ra_error = table["e_RAJ2000"][i] * Unit("mas")
-                dec_error = table["e_DEJ2000"][i] * Unit("mas")
+                ra_error = table["e_RAJ2000"][i] * u("mas")
+                dec_error = table["e_DEJ2000"][i] * u("mas")
 
             elif catalog == "II/246":
 
-                error_maj = table["errMaj"][i] * Unit("arcsec")
-                error_min = table["errMin"][i] * Unit("arcsec")
+                error_maj = table["errMaj"][i] * u("arcsec")
+                error_min = table["errMin"][i] * u("arcsec")
                 error_theta = Angle(table["errPA"][i], "deg")
 
                 # Temporary: use only the major axis error (convert the error ellipse into a circle)
@@ -410,7 +456,7 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs=None):
                 # be one match of a star of one catalog with the star of another catalog, within the radius of 3 pixels)
                 if encountered[index]: continue
 
-                saved_star_position = SkyCoordinate(ra=ra_column[index], dec=dec_column[index], unit="deg", frame="fk5")
+                saved_star_position = SkyCoordinate(ra=ra_column[index].value, dec=dec_column[index].value, unit="deg", frame="fk5")
                 #saved_star_pixel_position = saved_star_position.to_pixel(frame.wcs)
 
                 # Calculate the distance between the star already in the list and the new star
@@ -418,7 +464,7 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs=None):
 
                 difference_ra = saved_star_position.ra - position.ra
                 difference_dec = saved_star_position.dec - position.dec
-                difference = Extent((difference_ra * pixelscale.average).to("pix").value, (difference_dec * pixelscale.average).to("pix").value)
+                difference = Extent((difference_ra * pixelscale.average).to("").value, (difference_dec * pixelscale.average).to("").value)
 
                 # Check whether the distance is less then 3 pixels
                 if difference.norm < 3.0:
@@ -447,8 +493,8 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs=None):
                 # Fill in the column lists
                 catalog_column.append(catalog)
                 id_column.append(star_id)
-                ra_column.append(star_ra)
-                dec_column.append(star_dec)
+                ra_column.append(star_ra * u("deg"))
+                dec_column.append(star_dec * u("deg"))
                 ra_error_column.append(ra_error.value)
                 dec_error_column.append(dec_error.value)
                 confidence_level_column.append(1)
@@ -459,8 +505,8 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs=None):
         log.debug("Number of stars that were only present in this catalog: " + str(number_of_new_stars))
 
     # Create and return the table
-    data = [catalog_column, id_column, ra_column, dec_column, ra_error_column, dec_error_column, confidence_level_column]
-    names = ['Catalog', 'Id', 'Right ascension', 'Declination', 'Right ascension error', 'Declination error', 'Confidence level']
+    #data = [catalog_column, id_column, ra_column, dec_column, ra_error_column, dec_error_column, confidence_level_column]
+    #names = ['Catalog', 'Id', 'Right ascension', 'Declination', 'Right ascension error', 'Declination error', 'Confidence level']
 
     # TODO: add magnitudes to the table ?
 
@@ -484,19 +530,21 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs=None):
         #magnitude_column_names.append(column_name)
 
     # Create the catalog
-    meta = {'name': 'stars'}
-    catalog = tables.new(data, names, meta)
+    #meta = {'name': 'stars'}
+    #catalog = tables.new(data, names, meta)
 
     # Set units
-    catalog["Right ascension"].unit = "deg"
-    catalog["Declination"].unit = "deg"
-    catalog["Right ascension error"].unit = "mas"
-    catalog["Declination error"].unit = "mas"
+    #catalog["Right ascension"].unit = "deg"
+    #catalog["Declination"].unit = "deg"
+    #catalog["Right ascension error"].unit = "mas"
+    #catalog["Declination error"].unit = "mas"
     #for name in magnitude_column_names:
     #    self.catalog[name].unit = "mag"
 
     # Return the catalog
-    return catalog
+    #return catalog
+
+    return catalog_column, id_column, ra_column, dec_column, ra_error_column, dec_error_column, confidence_level_column
 
 # -----------------------------------------------------------------
 
@@ -530,7 +578,13 @@ def create_galaxy_catalog(coordinate_box):
     dec_span = 2.0 * coordinate_box.radius.dec
 
     # Find galaxies in the box defined by the center and RA/DEC ranges
+    index = 0
     for name, position in galaxies_in_box(center, ra_span, dec_span):
+
+        # Debugging
+        log.debug("Processing entry " + str(index+1) + " ...")
+
+        index += 1
 
         # Get galaxy information
         gal_name, position, gal_redshift, gal_type, gal_names, gal_distance, gal_inclination, gal_d25, gal_major, gal_minor, gal_pa = get_galaxy_info(name, position)
@@ -546,24 +600,35 @@ def create_galaxy_catalog(coordinate_box):
 
         # Fill the columns
         name_column.append(gal_name)
-        ra_column.append(position.ra.value)
-        dec_column.append(position.dec.value)
+        #ra_column.append(position.ra.value)
+        ra_column.append(position.ra)
+        #dec_column.append(position.dec.value)
+        dec_column.append(position.dec)
         redshift_column.append(gal_redshift)
         type_column.append(gal_type)
-        alternative_names_column.append(", ".join(gal_names) if len(gal_names) > 0 else None)
-        distance_column.append(gal_distance.value if gal_distance is not None else None)
-        inclination_column.append(gal_inclination.degree if gal_inclination is not None else None)
-        d25_column.append(gal_d25.value if gal_d25 is not None else None)
-        major_column.append(gal_major.value if gal_major is not None else None)
-        minor_column.append(gal_minor.value if gal_minor is not None else None)
-        pa_column.append(gal_pa.degree if gal_pa is not None else None)
+        #alternative_names_column.append(", ".join(gal_names) if len(gal_names) > 0 else None)
+        alternative_names_column.append(gal_names)
+        #distance_column.append(gal_distance.value if gal_distance is not None else None)
+        distance_column.append(gal_distance)
+        #inclination_column.append(gal_inclination.degree if gal_inclination is not None else None)
+        inclination_column.append(gal_inclination)
+        #d25_column.append(gal_d25.value if gal_d25 is not None else None)
+        d25_column.append(gal_d25)
+        #major_column.append(gal_major.value if gal_major is not None else None)
+        major_column.append(gal_major)
+        #minor_column.append(gal_minor.value if gal_minor is not None else None)
+        minor_column.append(gal_minor)
+        #pa_column.append(gal_pa.degree if gal_pa is not None else None)
+        pa_column.append(gal_pa)
 
     # Determine the number of galaxies in the lists
     number_of_galaxies = len(name_column)
 
     # Indicate which galaxy is the principal galaxy
     principal_column = [False] * number_of_galaxies
-    principal_index = max(range(number_of_galaxies), key=lambda index: major_column[index])
+
+    # Determine the index of the galaxy with the maximal major axis length
+    principal_index = max(range(number_of_galaxies), key=lambda index: (major_column[index] if major_column[index] is not None else 0.0))
     principal_column[principal_index] = True
 
     # Loop over the other galaxies, check if they are companion galaxies of the principal galax
@@ -594,30 +659,56 @@ def create_galaxy_catalog(coordinate_box):
         if len(companion_list) == 0: companions_column.append(None)
         else: companions_column.append(", ".join(companion_list))
 
-    # Create the data structure and names list
-    data = [name_column, ra_column, dec_column, redshift_column, type_column, alternative_names_column, distance_column,
-            inclination_column, d25_column, major_column, minor_column, pa_column, principal_column, companions_column,
-            parent_column]
-    names = ["Name", "Right ascension", "Declination", "Redshift", "Type", "Alternative names", "Distance",
-             "Inclination", "D25", "Major axis length", "Minor axis length", "Position angle", "Principal",
-             "Companion galaxies", "Parent galaxy"]
-    meta = {'name': 'stars'}
+    # Return the data
+    return name_column, ra_column, dec_column, redshift_column, type_column, alternative_names_column, distance_column, \
+           inclination_column, d25_column, major_column, minor_column, pa_column, principal_column, companions_column, \
+           parent_column
 
-    # Create the catalog table
-    catalog = tables.new(data, names, meta)
+# -----------------------------------------------------------------
 
-    # Set the column units
-    catalog["Distance"].unit = "Mpc"
-    catalog["Inclination"].unit = "deg"
-    catalog["D25"].unit = "arcmin"
-    catalog["Major axis length"].unit = "arcmin"
-    catalog["Minor axis length"].unit = "arcmin"
-    catalog["Position angle"].unit = "deg"
-    catalog["Right ascension"].unit = "deg"
-    catalog["Declination"].unit = "deg"
+def get_galaxy_s4g_one_component_info(name):
 
-    # Return the catalog
-    return catalog
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    # The Vizier querying object
+    vizier = Vizier()
+    vizier.ROW_LIMIT = -1
+
+    # Get the "galaxies" table
+    result = vizier.query_object(name, catalog=["J/ApJS/219/4/galaxies"])
+    table = result[0]
+
+    # PA: [0.2/180] Outer isophote position angle
+    # e_PA: [0/63] Standard deviation in PA
+    # Ell:  [0.008/1] Outer isophote ellipticity
+    # e_Ell: [0/0.3] Standard deviation in Ell
+
+    # PA1: Elliptical isophote position angle in deg
+    # n: Sersic index
+    # Re: effective radius in arcsec
+
+    # Tmag: total magnitude
+
+    s4g_name = table["Name"][0]
+
+    pa = Angle(table["PA"][0] - 90., "deg")
+    pa_error = Angle(table["e_PA"][0], "deg")
+
+    ellipticity = table["Ell"][0]
+    ellipticity_error = table["e_Ell"][0]
+
+    n = table["n"][0]
+
+    re = table["Re"][0] * u("arcsec")
+
+    mag = table["Tmag"][0]
+
+    # Return the results
+    return s4g_name, pa, ellipticity, n, re, mag
 
 # -----------------------------------------------------------------
 
@@ -716,7 +807,7 @@ def get_galaxy_info(name, position):
 
     # Get the size of the galaxy
     ratio = np.power(10.0, entry["logR25"]) if entry["logR25"] else None
-    diameter = np.power(10.0, entry["logD25"]) * 0.1 * Unit("arcmin") if entry["logD25"] else None
+    diameter = np.power(10.0, entry["logD25"]) * 0.1 * u("arcmin") if entry["logD25"] else None
 
     #print("  ratio = ", ratio)
     #print("  D25_diameter = ", diameter)
@@ -728,9 +819,9 @@ def get_galaxy_info(name, position):
 
         radial_profiles_entry = radial_profiles_result[0][0]
 
-        gal_distance = radial_profiles_entry["Dist"] * Unit("Mpc")
+        gal_distance = radial_profiles_entry["Dist"] * u("Mpc")
         gal_inclination = Angle(radial_profiles_entry["i"], "deg")
-        gal_d25 = radial_profiles_entry["D25"] * Unit("arcmin")
+        gal_d25 = radial_profiles_entry["D25"] * u("arcmin")
 
     else:
 
@@ -810,93 +901,5 @@ def galaxies_in_box(center, ra_span, dec_span):
 
     # Return the list of galaxies
     return names
-
-# -----------------------------------------------------------------
-
-def fetch_objects_in_box(box, catalog, keywords, radius, limit=None, column_filters=None):
-
-    """
-    This function ...
-    :param box:
-    :param catalog:
-    :param keywords:
-    :param radius:
-    :param limit:
-    :param column_filters:
-    :return:
-    """
-
-    # Define the center coordinate for the box
-    coordinate = SkyCoordinate(ra=box[0], dec=box[1], unit="deg", frame="fk5") # frame: icrs, fk5... ?
-
-    # Make a Vizier object
-    if column_filters is None:
-        viz = Vizier(columns=['_RAJ2000', '_DEJ2000','B-V', 'Vmag', 'Plx'], keywords=keywords)
-    else:
-        viz = Vizier(columns=['_RAJ2000', '_DEJ2000','B-V', 'Vmag', 'Plx'], column_filters=column_filters, keywords=keywords)
-
-    # No limit on the number of entries
-    viz.ROW_LIMIT = limit if limit is not None else -1
-
-    # Query the box of our image frame
-    result = viz.query_region(coordinate.to_astropy(), width=box[3] * Unit("deg"), height=box[2] * Unit("deg"), catalog=catalog)
-
-    region_string = "# Region file format: DS9 version 3.0\n"
-    region_string += "global color=green\n"
-
-    # Result may contain multiple tables (for different catalogs)
-    for table in result:
-
-        # For every entry in the table
-        for entry in table:
-
-            # Get the right ascension and the declination
-            ra = entry[0]
-            dec = entry[1]
-
-            # Create a string with the coordinates of the star
-            regline = "fk5;circle(%s,%s,%.2f\")\n" % (ra, dec, radius)
-
-            # Add the parameters of this star to the region string
-            region_string += regline
-
-    # Return the region
-    return regions.parse(region_string)
-
-# -----------------------------------------------------------------
-
-def fetch_object_by_name(name, radius):
-
-    """
-    This function ...
-    :param name:
-    :param color:
-    :param radius:
-    :return:
-    """
-
-    # Query the NED database for the object
-    table = Ned.query_object(name)
-
-    region_string = "# Region file format: DS9 version 3.0\n"
-    region_string += "global color=green\n"
-
-    # For every entry in the table
-    for entry in table:
-
-        # Get the right ascension and the declination
-        ra = entry[2]
-        dec = entry[3]
-
-        #print coordinates.degrees_to_hms(ra=ra, dec=dec)
-
-        # Create a string with the coordinates of the star
-        regline = "fk5;circle(%s,%s,%.2f\")\n" % (ra, dec, radius)
-
-        # Add the parameters of this star to the region string
-        region_string += regline
-
-    # Return the region
-    return regions.parse(region_string)
 
 # -----------------------------------------------------------------

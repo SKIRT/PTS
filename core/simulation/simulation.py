@@ -18,7 +18,7 @@ import os.path
 import types
 import numpy as np
 import importlib
-from collections import defaultdict
+import warnings
 
 # Import the relevant PTS classes and modules
 from ..tools import serialization
@@ -27,6 +27,10 @@ from .skifile import SkiFile
 ### from .logfile import LogFile    # temporarily removed to avoid dependency on matplotlib
 from ..tools import archive as arch
 from ..launch.options import AnalysisOptions
+from .status import SimulationStatus
+from .input import SimulationInput
+from ..tools import types
+from ..tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -64,7 +68,8 @@ def createsimulations(source="", single=False):
     # If a single simulation is expected
     if single:
 
-        if not len(simulations) == 1: raise ValueError("Multiple simulations were found")
+        if len(simulations) == 0: raise ValueError("No simulations were found matching the source '" + str(source) + "'")
+        elif len(simulations) > 1: raise ValueError("Multiple simulations were found for source '" + str(source) + "': " + ", ".join([simulation.prefix + " in " + simulation.output_path for simulation in simulations]))
         else: return simulations[0]
 
     # If multiple simulations are expected
@@ -105,12 +110,15 @@ class SkirtSimulation(object):
     # - outpath: the output path of the simulation; the path may be absolute, relative to a user's home folder,
     #   or relative to the current working directory. A missing or empty outpath means the current working directory.
     #
-    def __init__(self, prefix="", inpath="", outpath="", ski_path=None, parameters=None):
+    def __init__(self, prefix="", inpath="", outpath="", ski_path=None, parameters=None, name=None):
 
         # Set the full path to the input directory or the paths to the input files
         if inpath is not None:
-            if isinstance(inpath, list): self._inpath = inpath
-            else: self._inpath = os.path.realpath(os.path.expanduser(inpath))
+            if types.is_sequence(inpath): self._inpath = inpath
+            elif types.is_string_type(inpath): self._inpath = os.path.realpath(os.path.expanduser(inpath))
+            elif isinstance(inpath, SimulationInput): self._inpath = inpath
+            elif types.is_dictionary(inpath): self._inpath = SimulationInput(**inpath)
+            else: raise ValueError("Invalid value for 'inpath': " + tostr(inpath) + " (" + str(type(inpath)) + ")")
         else: self._inpath = None
         self._outpath = os.path.realpath(os.path.expanduser(outpath if outpath is not None else ""))
         self._prefix = prefix
@@ -126,10 +134,14 @@ class SkirtSimulation(object):
         self.input_path = self._inpath
         self.output_path = self._outpath
 
-        if self.ski_path is None: self.ski_path = self.outfilepath("parameters.xml")
+        # Try to obtain ski path from file with name prefix.ski in current working directory
+        if self.ski_path is None and fs.is_file(fs.join(fs.cwd(), prefix + ".ski")): self.ski_path = fs.join(fs.cwd(), prefix + ".ski")
 
         # The base path = the directory where the ski file is located
-        self.base_path = fs.directory_of(self.ski_path)
+        if self.ski_path is not None: self.base_path = fs.directory_of(self.ski_path)
+        else:
+            self.base_path = None # if ski path is not specified, base path is unknown
+            self.ski_path = self.outfilepath("parameters.xml")
 
         # provide placeholders for caching frequently-used objects
         self._parameters = parameters
@@ -138,10 +150,22 @@ class SkirtSimulation(object):
         self._threads = None
 
         # A name given to the simulation
-        self.name = None
+        self._name = name
+
+        # The simulation file path
+        self.path = None
+
+        # The parallelization properties
+        self.parallelization = None
 
         # The options for analysing the simulation output
         self.analysis = AnalysisOptions()
+
+        # The paths to the extra simulation analysers
+        self.analyser_paths = []
+
+        # Flag indicating whether this simulation has been analysed or not
+        self.analysed = False
 
     ## This function returns whether the simulation requires input
     @property
@@ -151,6 +175,16 @@ class SkirtSimulation(object):
     ## This function returns the simulation name, used as a prefix for output filenames
     def prefix(self):
         return self._prefix
+
+    ## This function returns the simulation name, which is the prefix is a name was not set
+    @property
+    def name(self):
+        return self._name if self._name is not None else self.prefix()
+
+    ## This functions sets the name
+    @name.setter
+    def name(self, value):
+        self._name = value
 
     ## This function returns the absolute input path of the simulation
     def inpath(self):
@@ -162,7 +196,9 @@ class SkirtSimulation(object):
 
     ## This function returns the absolute path for a simulation input file, given the file's name
     def infilepath(self, name):
-        return os.path.join(self._inpath, name)
+        if isinstance(self._inpath, basestring): return os.path.join(self._inpath, name)
+        elif isinstance(self._inpath, SimulationInput): return self._inpath[name]
+        else: raise ValueError("The input path is of invalid type")
 
     ## This function returns the absolute path for a simulation output file, given the file's partial name
     # (the partial name does not include the prefix and the subsequent underscore).
@@ -176,7 +212,16 @@ class SkirtSimulation(object):
     ## This function returns a LogFile object created from the simulation's log file
     @property
     def log_file(self):
-        return LogFile(self.outfilepath("log.txt"))
+        path = self.outfilepath("log.txt")
+        if not fs.is_file(path): raise IOError("The log file is not present at '" + path + "'")
+        return LogFile(path)
+
+    # -----------------------------------------------------------------
+
+    ## This function returns a SimulationStatus object, that can be refreshed when desired
+    def get_status(self):
+        logpath = self.logfilepath()
+        return SimulationStatus(logpath)
 
     # -----------------------------------------------------------------
 
@@ -553,67 +598,29 @@ class SkirtSimulation(object):
     def from_modeling(self):
         return self.analysis.modeling_path is not None
 
-# -----------------------------------------------------------------
+    ## This function adds an analyser class to the simulation
+    def add_analyser(self, clspath):
+        self.analyser_paths.append(clspath)
 
-class RemoteSimulation(SkirtSimulation):
+    @property
+    def analyser_classes(self):
 
-    """
-    This class ...
-    """
+        # The list of classes
+        classes = []
 
-    def __init__(self, ski_path, input_path, output_path):
+        # Loop over the class paths
+        for class_path in self.analyser_paths:
+            module_path, class_name = class_path.rsplit('.', 1)
 
-        """
-        The constructor ...
-        :return:
-        """
+            # Get the class of the configurable of which an instance has to be created
+            module = importlib.import_module(module_path)
+            cls = getattr(module, class_name)
 
-        # Determine the simulation prefix
-        prefix = fs.strip_extension(fs.name(ski_path))
+            # Add the class to the list of classes
+            classes.append(cls)
 
-        # Call the constructor of the base class
-        super(RemoteSimulation, self).__init__(prefix, input_path, output_path, ski_path)
-
-        # -- Attributes --
-
-        # Properties of the remote host on which the simulation was run
-        self.host_id = None
-        self.cluster_name = None
-
-        # The simulation file path
-        self.path = None
-
-        # Basic properties
-        self.id = None
-        self.remote_ski_path = None
-        self.remote_simulation_path = None
-        self.remote_input_path = None
-        self.remote_output_path = None
-        self.submitted_at = None
-
-        # Options for retrieval
-        self.retrieve_types = None
-
-        # The parallelization properties
-        self.parallelization = None
-
-        # Options for removing remote or local input and output
-        self.remove_remote_input = True                 # After retrieval
-        self.remove_remote_output = True                # After retrieval
-        self.remove_remote_simulation_directory = True  # After retrieval
-        self.remove_local_output = False                # After analysis
-
-        # The execution handle
-        self.handle = None
-
-        # Flag indicating whether this simulation has been retrieved or not
-        self.retrieved = False
-
-        # Flag indicating whether this simulation has been analysed or not
-        self.analysed = False
-
-        # The paths to the extra simulation analysers
-        self.analyser_paths = []
+        # Return the list of classes
+        return classes
 
     # -----------------------------------------------------------------
 
@@ -634,45 +641,6 @@ class RemoteSimulation(SkirtSimulation):
 
         # Return the simulation object
         return simulation
-
-    # -----------------------------------------------------------------
-
-    def add_analyser(self, clspath):
-
-        """
-        This function ...
-        :param clspath:
-        :return:
-        """
-
-        self.analyser_paths.append(clspath)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def analyser_classes(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # The list of classes
-        classes = []
-
-        # Loop over the class paths
-        for class_path in self.analyser_paths:
-            module_path, class_name = class_path.rsplit('.', 1)
-
-            # Get the class of the configurable of which an instance has to be created
-            module = importlib.import_module(module_path)
-            cls = getattr(module, class_name)
-
-            # Add the class to the list of classes
-            classes.append(cls)
-
-        # Return the list of classes
-        return classes
 
     # -----------------------------------------------------------------
 
@@ -700,7 +668,9 @@ class RemoteSimulation(SkirtSimulation):
         """
 
         # Check whether a path is defined for the simulation file
-        if self.path is None: raise RuntimeError("The simulation file does not exist yet")
+        if self.path is None:
+            warnings.warn("Not saving this local simulation object")
+            return
 
         # Save to the original path
         self.saveto(self.path)
@@ -723,5 +693,140 @@ class RemoteSimulation(SkirtSimulation):
 
         # Serialize and dump the simulation object
         serialization.dump(self, self.path, method="pickle")
+
+# -----------------------------------------------------------------
+
+class RemoteSimulation(SkirtSimulation):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, ski_path, input_path, output_path):
+
+        """
+        The constructor ...
+        :return:
+        """
+
+        # Determine the simulation prefix
+        prefix = fs.strip_extension(fs.name(ski_path))
+
+        # Call the constructor of the base class
+        super(RemoteSimulation, self).__init__(prefix, input_path, output_path, ski_path)
+
+        # -- Attributes --
+
+        # Properties of the remote host on which the simulation was run
+        self.host_id = None
+        self.cluster_name = None
+
+        # Basic properties
+        self.id = None
+        self.remote_ski_path = None
+        self.remote_simulation_path = None
+        self.remote_input_path = None
+        self.remote_output_path = None
+        self.submitted_at = None
+
+        # Options for retrieval
+        self.retrieve_types = None
+
+        # Options for removing remote or local input and output
+        self.remove_remote_input = True                 # After retrieval
+        self.remove_remote_output = True                # After retrieval
+        self.remove_remote_simulation_directory = True  # After retrieval
+        self.remove_local_output = False                # After analysis
+
+        # The execution handle
+        self.handle = None
+
+        # Flag indicating whether this simulation has been retrieved or not
+        self.retrieved = False
+
+    # -----------------------------------------------------------------
+
+    def remote_input_file_path(self, name):
+
+        """
+        This function returns the absolute path for a simulation input file, given the file's name
+        """
+
+        return fs.join(self.remote_input_path, name)
+
+    # -----------------------------------------------------------------
+
+    def remote_output_file_path(self, partialname):
+
+        """
+        This function returns the absolute path for a simulation output file, given the file's partial name
+        (the partial name does not include the prefix and the subsequent underscore).
+        :param partialname:
+        :return:
+        """
+
+        return fs.join(self.remote_output_path, self._prefix + "_" + partialname)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def remote_log_file_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote_output_file_path("log.txt")
+
+    # -----------------------------------------------------------------
+
+    def get_remote_log_file_paths(self, remote):
+
+        """
+        This function returns a list of absolute filepaths for all log files produced by the simulation, including
+        the master log file and any log files produced by parallel (MPI) processes. The list includes only paths for
+        log files that actually exist, and the paths are listed in order of process rank.
+        :return:
+        """
+
+        logname = self._prefix + "_log"
+        return remote.files_in_path(self.remote_output_path, startswith=logname, extension="txt")
+
+    # -----------------------------------------------------------------
+
+    def remove_from_remote(self, remote, full=False):
+
+        """
+        This function ...
+        :param remote:
+        :param full:
+        :return:
+        """
+
+        # Remove the remote input, if present, if requested
+        if (self.remove_remote_input or full) and self.has_input and remote.is_directory(self.remote_input_path): remote.remove_directory(self.remote_input_path)
+
+        # Remove the remote output, if requested
+        if (self.remove_remote_output or full) and remote.is_directory(self.remote_output_path): remote.remove_directory(self.remote_output_path)
+
+        # If both the input and output directories have to be removed, the remote simulation directory
+        # can be removed too
+        if (self.remove_remote_simulation_directory or full) and remote.is_directory(self.remote_simulation_path): remote.remove_directory(self.remote_simulation_path)
+
+    # -----------------------------------------------------------------
+
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether a path is defined for the simulation file
+        if self.path is None: raise RuntimeError("The simulation file does not exist yet")
+
+        # Save to the original path
+        self.saveto(self.path)
 
 # -----------------------------------------------------------------

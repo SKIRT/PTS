@@ -42,7 +42,7 @@ class MemoryUsageTable(Table):
         :return:
         """
 
-        names = ['Process rank', 'Simulation phase', 'Simulation time', 'Memory usage']
+        names = ['Process rank', 'Phase', 'Simulation time', 'Memory usage']
         data = [process_list, phase_list, seconds_list, memory_list]
 
         # Add column of allocated memory

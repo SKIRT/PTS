@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
+import math
 import numpy as np
 
 # Import astronomical modules
@@ -54,13 +55,14 @@ def sigma_clip_mask_list(data, sigma=3.0, mask=None):
 
 # -----------------------------------------------------------------
 
-def sigma_clip_mask(data, sigma_level=3.0, mask=None):
+def sigma_clip_mask(data, sigma_level=3.0, mask=None, niters=None):
 
     """
     This function ...
     :param data:
     :param sigma_level:
     :param mask:
+    :param niters: None means till convergence is achieved
     :return:
     """
 
@@ -68,7 +70,7 @@ def sigma_clip_mask(data, sigma_level=3.0, mask=None):
     x_values, y_values, z_values = general.split_xyz(data, mask=mask)
 
     # Sigma-clip z-values that are outliers
-    masked_z_values = sigma_clip(z_values, sigma=sigma_level, iters=None, copy=False)
+    masked_z_values = sigma_clip(z_values, sigma=sigma_level, iters=niters, copy=False)
 
     # Copy the mask or create a new one if none was provided
     new_mask = copy.deepcopy(mask) if mask is not None else Mask(np.zeros_like(data))
@@ -84,7 +86,8 @@ def sigma_clip_mask(data, sigma_level=3.0, mask=None):
     #if not isinstance(new_mask, Mask): print(new_mask, mask)
 
     # Assert the mask is of type 'Mask'
-    assert isinstance(new_mask, Mask)
+    from ..core.mask import Mask as newMask
+    assert isinstance(new_mask, Mask) or isinstance(new_mask, newMask)
 
     # Return the new or updated mask
     return new_mask
@@ -213,5 +216,53 @@ def cutoff(values, method, limit):
         return np.ma.max(masked_values)
 
     else: raise ValueError("Invalid cutoff method (must be 'percentage' or 'sigma_clip'")
+
+# -----------------------------------------------------------------
+
+def inverse_gaussian(center, sigma, amplitude, y):
+
+    """
+    This function ...
+    :param center:
+    :param sigma:
+    :param amplitude:
+    :param y:
+    :return:
+    """
+
+    x = np.sqrt( - 2. * sigma**2 * np.log(y * np.sqrt(2. * math.pi * sigma**2) / amplitude)) + center
+    return x
+
+# -----------------------------------------------------------------
+
+def gaussian(center, sigma, amplitude, x):
+
+    """
+    This function ...
+    :param center:
+    :param sigma:
+    :param amplitude:
+    :param x:
+    :return:
+    """
+
+    normal = 1. / np.sqrt(2. * math.pi * sigma**2 ) * np.exp( - ( x - center)**2 / (2. * sigma**2))
+    return normal * amplitude
+
+# -----------------------------------------------------------------
+
+def test_inverse(x, center, sigma, amplitude):
+
+    """
+    This function ...
+    :param x:
+    :param center:
+    :param sigma:
+    :param amplitude:
+    :return:
+    """
+
+    y = gaussian(center, sigma, amplitude, x)
+    return inverse_gaussian(center, sigma, amplitude, y)
 
 # -----------------------------------------------------------------

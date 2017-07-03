@@ -25,8 +25,8 @@
 # -----------------------------------------------------------------
 
 # Import other evolve modules
-from ..genome import GenomeBase
-from .. import constants
+from ..core.genome import GenomeBase
+from ..core import constants
 
 # -----------------------------------------------------------------
 
@@ -41,8 +41,8 @@ class G2DList(GenomeBase):
           >>> genome = G2DList(10, 10)
 
        Compare
-          >>> genome2 = genome1.clone()
-          >>> genome2 == genome1
+          genome2 = genome1.clone()
+          genome2 == genome1
           True
 
        Iteration
@@ -79,15 +79,25 @@ class G2DList(GenomeBase):
 
     # -----------------------------------------------------------------
 
+    dimension = 2
+
+    # -----------------------------------------------------------------
+
     def __init__(self, height, width, cloning=False):
 
-        """ The initializator of G2DList representation,
-        height and width must be specified """
+        """
+        The initializator of G2DList representation,
+        height and width must be specified
+        """
 
+        # Call the constructor of the base class
         super(G2DList, self).__init__()
+
+        # Set height and width
         self.height = height
         self.width = width
 
+        # Initialize data structure for the genes
         self.genomeList = [None] * height
         for i in xrange(height):
             self.genomeList[i] = [None] * width
@@ -115,9 +125,9 @@ class G2DList(GenomeBase):
 
         """ Return the specified gene of List
         Example:
-           >>> genome.getItem(3, 1)
+           genome.getItem(3, 1)
            666
-           >>> genome[3][1]
+           genome[3][1]
 
         :param x: the x index, the column
         :param y: the y index, the row
@@ -130,10 +140,11 @@ class G2DList(GenomeBase):
 
     def setItem(self, x, y, value):
 
-        """ Set the specified gene of List
+        """
+        Set the specified gene of List
         Example:
-           >>> genome.setItem(3, 1, 666)
-           >>> genome[3][1] = 666
+           genome.setItem(3, 1, 666)
+           genome[3][1] = 666
 
         :param x: the x index, the column
         :param y: the y index, the row
@@ -146,7 +157,9 @@ class G2DList(GenomeBase):
 
     def __getitem__(self, key):
 
-        """ Return the specified gene of List """
+        """
+        Return the specified gene of List
+        """
 
         return self.genomeList[key]
 
@@ -154,7 +167,9 @@ class G2DList(GenomeBase):
 
     def __iter__(self):
 
-        """ Iterator support to the list """
+        """
+        Iterator support to the list
+        """
 
         return iter(self.genomeList)
 
@@ -162,7 +177,9 @@ class G2DList(GenomeBase):
 
     def getHeight(self):
 
-        """ Return the height (lines) of the List """
+        """
+        Return the height (lines) of the List
+        """
 
         return self.height
 
@@ -170,7 +187,9 @@ class G2DList(GenomeBase):
 
     def getWidth(self):
 
-        """ Return the width (lines) of the List """
+        """
+        Return the width (lines) of the List
+        """
 
         return self.width
 
@@ -178,9 +197,10 @@ class G2DList(GenomeBase):
 
     def getSize(self):
 
-        """ Returns a tuple (height, widht)
+        """
+        Returns a tuple (height, widht)
         Example:
-           >>> genome.getSize()
+           genome.getSize()
            (3, 2)
 
         """
@@ -191,7 +211,9 @@ class G2DList(GenomeBase):
 
     def __repr__(self):
 
-        """ Return a string representation of Genome """
+        """
+        Return a string representation of Genome
+        """
 
         ret = GenomeBase.__repr__(self)
         ret += "- G2DList\n"
@@ -210,7 +232,8 @@ class G2DList(GenomeBase):
 
     def resumeString(self):
 
-        """ Returns a resumed string representation of the Genome
+        """
+        Returns a resumed string representation of the Genome
         .. versionadded:: 0.6
            The *resumeString* method.
         """
@@ -226,7 +249,9 @@ class G2DList(GenomeBase):
 
     def clearList(self):
 
-        """ Remove all genes from Genome """
+        """
+        Remove all genes from Genome
+        """
 
         del self.genomeList[:]
 
@@ -238,9 +263,10 @@ class G2DList(GenomeBase):
 
     def copy(self, g):
 
-        """ Copy genome to 'g'
+        """
+        Copy genome to 'g'
         Example:
-           >>> genome_origin.copy(genome_destination)
+           genome_origin.copy(genome_destination)
         :param g: the destination G2DList instance
         """
 
@@ -254,7 +280,8 @@ class G2DList(GenomeBase):
 
     def clone(self):
 
-        """ Return a new instace copy of the genome
+        """
+        Return a new instace copy of the genome
         :rtype: the G2DList clone instance
         """
 

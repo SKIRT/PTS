@@ -1,0 +1,387 @@
+# GALEX:
+
+# For GALEX, I should be able to give you exactly what you're after immediately.
+# I have attached a file called DustPedia_Herschel_GALEX_Results.csv containing the details of every GALEX
+# observation that I used in the cutout-making process (such as exposure time), and which target galaxy each
+# observation was used for (ie, a given observation can appear more than once in that file, as it could be associated
+# with more than one target galaxy - and vice-a-versa).
+
+# However, note that some of these observations are not incorporated into the final cutouts, for various reasons.
+# For example:
+# - Any observations that were not contiguously "attached" to the location of the target galaxy (ie, if there were
+#   "gaps" in coverage between observations) were rejected.
+# - The outer region of each observation was masked, to remove low-quality data. In some cases, this resulted in the
+#   remainder of the observation not providing coverage of the region of interest.
+# - The final cutouts had diameters of either 1 degree of 0.5 degrees. However, for all sources I queried a region of
+#   sky large enough to produce a 1 degree cutout - I just discarded the observation that were not needed for the smaller
+#   cutouts.
+
+# Also, note that the DustPedia GALtEX cutouts have been re-gridded to larger pixel sizes than the standard GALEX
+# archive data (the ancillary data report provides details).
+
+# Also attached is a file that lists the URLs each GALEX observation can be downloaded from. Annoyingly, the URLs are
+# *not* properly standardised; simply knowing the details of am observation is *not* enough to automatically construct
+# the correct URL! I had to write a script that crawled through the GALEX GR6/7 archive website page-by-page,
+# doing string-matching to find the appropriate URLs... I hate that archive.
+
+# It's easy to work out which URLs correspond to which observations, as the URL for a given observation always
+# contains the tilename (note that there will often be multiple observations, and hence URLS, associated with a given tilename).
+
+
+####
+
+
+## NEW INFO:
+
+# Firstly, checking my code, I realised that I didn't implement the "attachment to target location" criterion in the
+# GALEX maps; it appears it basically never happens in GALEX. (I mainly brought in that criterion to handle Spitzer
+# maps, where it is really common to have multiple unattached observations within a given 0.5x0.5 degree patch of sky.)
+
+# To use Montage to find out what images cover a given part of the sky, you first want to run mImgTable on the folder
+# containing your image files, like so:
+# montage_wrapper.commands.mImgtbl('/folder/with/maps/', 'Image_Metadata_Table.dat', corners=True)
+
+# The 'Image_Metadata_Table.dat' output file is a table recording the geometry of all the files in the folder in
+# question. You then use this file as an input to the function mCoverageCheck, which is used like this:
+
+# montage_wrapper.commands_extra.mCoverageCheck('Image_Metadata_Table.dat', 'Overlap_Table.dat', mode='box', ra=ra,
+# dec=dec, width=width)
+
+# The 'Overlap_Table.dat' contains the subset of the rows from 'Image_Metadata_Table.dat' that intersect the defined
+# region (not just those that cover the centre coordinate). I then read in this in with:
+
+# overlap_files = np.genfromtxt('Overlap_Table.dat', skip_header=3, usecols=[31], dtype=('S500'))
+
+# Regarding doing the actual mosaicing, it was nice and straightforward with the SDSS data, where I used the
+# high-level Montage command mExec:
+
+# montage_wrapper.commands.mExec('SDSS', band, raw_dir='/path/to/files/', level_only=False, corners=False,
+# debug_level=0, output_image='Mosaic.fits', region_header='Header.hdr', workspace_dir='/some/temp/dir')
+
+# The nice thing about this command is that if you leave out the set raw_dir=None, then it will automatically
+# retrieve the necessary SDSS primary fields from the SDSS server. However, when dealing with large numbers of
+# cutouts in succession, I found it somewhat quicker to wget the files myself. The region_header is typically a
+# file created by Montage's mHdr function.
+
+# For GALEX, the mosaicing was a bit more involved:
+#
+# - I had to use the relative-response and sky-background maps to work out which part of each fits file was usable,
+#   becuase raw GALEX tiles use 0 to indicate that a pixel recieved no photons... *or* that the pixel is outside
+#   the detector footprint... MADNESS!
+# - The co-addition had to be weighted by the exposure time. To do this, I created relative weight maps where each
+#   pixel was just the square root of the 'exptime' header keyword value (where the relative-response and
+#   sky-background maps were used to remove irrelevant pixels).
+# - I had to adjust the background levels myself, as Montage hates all the zeros in GALEX maps.
+
+# And whilst I did the re-projection with Montage, I did the actual coaddition using SWarp (as it has a far quicker
+# runtime than doing it myself in Python). I have attached the very (very, very, very, very) ugly script I used to do
+# all this. This should make it possible for you to work out the process I followed.
+
+# Regarding not needing to make the full maps to work out the poisson noise, you're probably right.
+
+# For the GALEX maps, you probably just need the input maps and the weight maps, re-projected to the output grid.
+
+# For SDSS, all input maps are given equal weighting. By using mExec I skipped all of the 'intermediate' steps of
+# the mosaicing. However you could just use mProjExec to regrid to all of the input fields for a given galaxy to the
+# output projection mExec will have used. Jjust give the ra, dec, and width to mHdr to produce a header, and then
+# use this header as input to mProjExec to regrid all the individual image to the final projection.
+
+
+## GALEX exposure, background , etc.
+
+# That's nice and straightforwad! You can use the same URLs as for the standard maps, but just replace
+# '-int.fits' with '-rr.fits' for the relative response maps, or '-exp.fits' for exposure maps, etc.
+
+# If you can look at the various files available for each tilenum by looking at this page for each tile:
+
+# 'http://galex.stsci.edu/GR6/?page=downloadlist&tilenum='+str(tilenum)+'&type=coaddI&product=Imaging%20Only'
+
+
+####
+
+
+
+def old_end_of_mosaic_galex_function():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Poisson temp directory in temporary directory
+    temp_poisson_path = fs.join(temp_path_band, "poisson2")
+    fs.create_directory(temp_poisson_path)
+
+    # Some directories
+    temp_poisson_count_path = fs.create_directory_in(temp_poisson_path, "count")
+    temp_poisson_countsr_path = fs.create_directory_in(temp_poisson_path, "countsr")
+    temp_poisson_rebin_path = fs.create_directory_in(temp_poisson_path, "rebin-count")
+    temp_poisson_footprint_path = fs.create_directory_in(temp_poisson_path, "footprint")
+    temp_poisson_weights_path = fs.create_directory_in(temp_poisson_path, "weights")
+    temp_poisson_result_path = fs.create_directory_in(temp_poisson_path, "result")
+
+    # CONVERT TO JANSKY / PIX
+
+    # FROM COUNT / S TO AB MAG:
+    # mag_AB = ZP - (2.5 * log10(CpS))
+    # FROM AB MAG TO FLUX (JANSKY):
+    # mag_AB = -2.5 log (Fv / 3631 Jy) => Fv[Jy] = ...
+
+    # Calculate the conversion factor
+    conversion_factor = 1.0
+    conversion_factor *= ab_mag_zero_point.to("Jy").value
+
+    if band_dict['band_long'] == "FUV":
+        conversion_factor *= 10. ** (galex_fuv_zero_point / 2.5)
+    elif band_dict['band_long'] == "NUV":
+        conversion_factor *= 10. ** (galex_nuv_zero_point / 2.5)
+    else: raise ValueError("Invalid band name: " + band_dict['band_long'])
+
+    # DO THE CONVERSION
+
+    # Convert and set the new unit
+    out_image *= conversion_factor
+    out_image.unit = "Jy/pix"
+
+    #######################
+
+    #### NO, BECAUSE SWARP DECIDES ITS OWN COORDINATE SYSTEM BASED ON WHAT IT HAS AS INPUT IMAGES, SO
+    #### THE SWARP MOSAIC MAY NOT CORRESPOND EXACTLY TO THE TARGET HEADER OR WCS THAT WE CREATED TO
+    # Load header
+    #rebin_header = Header.fromtextfile(header_path)
+    # To coordinate system
+    #rebin_wcs = CoordinateSystem(rebin_header)
+    rebin_wcs = out_image.wcs
+
+    ## CALCULATION OF POISSON
+
+    ## REBINNING AND CONVERSION TO COUNT
+
+    #print(fs.files_in_path(counts_path_band))
+
+    # Open the -int images in the temp_swarp_path that are used to make the mosaic, convert them to counts
+    nswarp_images = 0
+    for filename in os.listdir(temp_swarp_path):
+    #for filename in os.listdir(counts_path_band):
+
+        if not filename.endswith("-int.fits"): continue
+
+        # Determine the path to the cleaned rebinned image inside temp_swarp_path
+        # Setting the frame NAN where the corresponding cleaned image is also NAN
+        cleaned_path = fs.join(temp_swarp_path, filename)
+
+        # Determine the path to the corresponding weight map
+        weight_path = cleaned_path.replace("-int", "-int.wgt")
+
+        #print(filename_ends, filename, exposure_times.keys())
+
+        # Get the image name
+        image_name = filename.split(filename_ends)[0]
+
+        # Increment the counter
+        nswarp_images += 1
+
+        # Determine filepath
+        #filepath = fs.join(temp_swarp_path, filename)
+
+        filepath = fs.join(counts_path_band, image_name + "-" + band_dict["band_short"] + "-cnt.fits")
+
+        # Debugging
+        log.debug("Loading the " + image_name + " frame ...")
+
+        # Load the frame
+        frame = Frame.from_file(filepath)
+
+        # Debugging
+        log.debug("Converting unit to count / sr ...")
+
+        # Get the exposure time for this image
+        exposure_time = exposure_times[image_name]
+
+        # Debugging
+        log.debug("The exposure time for this image is " + str(exposure_time))
+
+        # Convert the frame FROM COUNT/S to COUNT
+        #frame *= exposure_times[image_name]
+        frame.unit = "count" # set the unit to count
+
+        # Save the frame to the count path
+        frame.saveto(fs.join(temp_poisson_count_path, image_name + ".fits"))
+
+        # CONVERT THE FRAME FROM COUNT TO COUNT/SR
+        frame /= frame.pixelarea.to("sr").value
+        frame.unit = "count/sr"
+
+        # Save the frame to the countsr path
+        frame.saveto(fs.join(temp_poisson_countsr_path, image_name + ".fits"))
+
+        # REBIN THE FRAME TO THE COMMON PIXEL GRID
+        footprint = frame.rebin(rebin_wcs)
+
+        # CONVERT THE FRAME FROM COUNT/SR TO COUNT
+        frame *= frame.pixelarea.to("sr").value
+        frame.unit = "count"
+
+        # SET NANS IN THE REBINNED FRAME WHERE THE CLEANED IMAGE IN THE TEMP SWARP PATH IS ALSO NAN
+        ## FIRST REBIN THE CLEANED IMAGE ALSO TO THE FINAL WCS AS DETERMINED BY SWARP
+        #cleaned_frame = Frame.from_file(cleaned_path)
+        weight_map = Frame.from_file(weight_path)
+        weight_map.rebin(rebin_wcs)
+        frame[weight_map.nans()] = np.NaN
+
+        # Save the rebinned frame
+        frame.saveto(fs.join(temp_poisson_rebin_path, image_name + ".fits"))
+
+        # SET NANS IN THE FOOTPRINT WHERE THE WEIGHT MAP IN THE TEMP SWARP PATH IS ALSO NAN
+        footprint[weight_map.nans()] = np.NaN
+
+        # Save the (rebinned) footprint
+        footprint.saveto(fs.join(temp_poisson_footprint_path, image_name + ".fits"))
+
+    # Initialize a list to contain the frames to be summed
+    a_frames = [] # the rebinned maps in counts
+    ab_frames = []
+    weight_frames = []
+
+    # Loop over the files in the temp poisson rebin directory
+    for path, name in fs.files_in_path(temp_poisson_rebin_path, extension="fits", returns=["path", "name"]):
+
+        # Open the rebinned frame IN COUNTS
+        a = Frame.from_file(path)
+
+        # Set NaNs to zero
+        a.replace_nans(0.0) # if we don't do this the entire combined poisson error frame is NaN
+
+        # Get footprint
+        footprint_path = fs.join(temp_poisson_footprint_path, name + ".fits")
+        b = Frame.from_file(footprint_path)
+
+        # Set NaNs to zero
+        b.replace_nans(0.0)
+
+        # Add product of primary and footprint and footprint to the appropriate list
+        ab = a * b
+        a_frames.append(a)
+        ab_frames.append(ab)
+
+        # Calculate weight frame
+        weight_frame = b * math.sqrt(exposure_times[name])
+        weight_frames.append(weight_frame)
+
+        # Save weight frame
+        weight_frame.saveto(fs.join(temp_poisson_weights_path, name + ".fits"))
+
+    # Take the sums
+    ab_sum = sum_frames(*ab_frames)
+
+    # AB SUM SHOULD ACTUALLY BE THE SAME AS A SUM
+    a_sum = sum_frames(*a_frames) # SUM ALL THE COUNT MAPS
+    # Save the total count map (a_sum)
+    a_sum.saveto(fs.join(temp_poisson_result_path, "total_counts.fits"))
+
+    # Calculate the relative poisson errors
+    rel_poisson_frame = ab_sum ** (-0.5)
+
+    # Calculate the total weight map
+    total_weight_map = sum_frames(*weight_frames)
+
+    # Save rel poisson frame and total weight map
+    rel_poisson_frame.saveto(fs.join(temp_poisson_result_path, "rel_poisson.fits"))
+    total_weight_map.saveto(fs.join(temp_poisson_result_path, "weights.fits"))
+
+    # Write the Poisson error frame also to the output directory
+    #poisson_path = fs.join(output_path, id_string + "_relpoisson.fits")
+    #rel_poisson_frame.saveto(poisson_path)
+
+    ################ WRITE RESULT
+
+    # Determine output image path
+    out_image_path = fs.join(output_path, id_string + ".fits")
+
+    image = Image()
+    image.add_frame(out_image, "primary") # the mosaic
+    image.add_frame(rel_poisson_frame, "rel_poisson") # has no unit, but Image will be saved with unit. Problem?
+
+    # Save the image
+    image.saveto(out_image_path)
+
+    ################
+
+    # Clean up
+    log.success("Completed creating the mosaic and poisson noise map for " + id_string)
+    #gc.collect()
+    #shutil.rmtree(temp_dir)
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    # Flux zero point for converting AB magnitudes to Jansky
+    ab_mag_zero_point = 3631. * Unit("Jy")
+
+    # Zero points for conversion from GALEX count/s to AB magnitude system
+    galex_fuv_zero_point = 18.82
+    galex_nuv_zero_point = 20.08
+
+    # -----------------------------------------------------------------
+
+    def convert_mosaic_and_error_map_to_ct_per_s(id_string, temp_mosaic_path, output_path):
+
+        """
+        This function ...
+        :param id_string:
+        :param temp_mosaic_path:
+        :param output_path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Converting the mosaic and error map back to counts per seconds ...")
+
+        mosaic_path = fs.join(temp_mosaic_path, "mosaic.fits")
+        mosaic_error_path = fs.join(temp_mosaic_path, "mosaic_errors.fits")
+
+        mosaic = Frame.from_file(mosaic_path)
+        errors = Frame.from_file(mosaic_error_path)
+
+        # SOME THINGS
+        mosaic[mosaic.data == 0] = np.NaN
+        mosaic[mosaic.data < -1E3] = np.NaN
+        mosaic[mosaic.data <= 1E-8] = 0
+
+        # NUMBER OF SR PER PIXEL
+        pixelsr = mosaic.pixelarea.to("sr").value
+
+        # CONVERT TO COUNTS/S
+        mosaic *= pixelsr
+        mosaic.unit = "count/s"
+
+        # CONVERT TO COUNTS/S
+        errors *= pixelsr
+        errors.unit = "count/s"
+
+
+        # CALCULATE RELATIVE POISSON ERROR MAP
+        relerrors = errors / mosaic
+        relerrors[relerrors < 0.] = 0.0  # set negative values for relative error map to zero
+        relerrors.replace_nans(0.0)  # set NaN values (because mosaic was zero) to zero
+
+        ### SAVE
+
+        # Save mosaic as FITS file
+        mosaic_output_path = fs.join(output_path, id_string + ".fits")
+        mosaic.saveto(mosaic_output_path)
+
+        # Save error map as FITS file
+        errors_output_path = fs.join(output_path, id_string + "_errors.fits")
+        errors.saveto(errors_output_path)
+
+        # Save relative error map as FITS file
+        relerrors_output_path = fs.join(output_path, id_string + "_relerrors.fits")
+        relerrors.saveto(relerrors_output_path)
+
+        ###

@@ -26,7 +26,6 @@ from matplotlib import font_manager
 from skimage.measure import block_reduce
 
 # Import astronomical modules
-from astropy.units import Unit
 from astropy.table import Table
 
 # Import the relevant PTS classes and modules
@@ -42,10 +41,13 @@ from ..dist_ellipse import distance_ellipse
 from ..core.frame import Frame
 from ..core.segmentationmap import SegmentationMap
 from ..basics.vector import Position
-from ..basics.region import Region
-from ..basics.geometry import Coordinate, Circle, Composite
+from ..basics.coordinate import PixelCoordinate
+from ..region.list import PixelRegionList
+from ..region.circle import PixelCircleRegion
+from ..region.composite import PixelCompositeRegion
 from ..core.source import Source
 from ..misc import chrisfuncs
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -62,15 +64,15 @@ class ApertureNoiseCalculator(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(ApertureNoiseCalculator, self).__init__(config)
+        super(ApertureNoiseCalculator, self).__init__(*args, **kwargs)
 
         # INPUT
 
@@ -112,11 +114,11 @@ class ApertureNoiseCalculator(Configurable):
         # Try the exact method
         success = self.try_exact()
 
-        # Try the interpolation method
+        # Try the extrapolation method
         if not success:
 
             # Debugging
-            log.debug("Unable to estiamte aperture noise using full-size randomly-placed sky apertures (only " + str(int(self.exact_calculator.sky_success_counter)) + " could be placed); switching to aperture extrapolation.")
+            log.debug("Unable to estimate aperture noise using full-size randomly-placed sky apertures (only " + str(int(self.exact_calculator.sky_success_counter)) + " could be placed); switching to aperture extrapolation.")
 
             # Try the extrapolation method
             success = self.try_extrapolation()
@@ -251,15 +253,15 @@ class ExactApertureNoiseCalculator(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(ExactApertureNoiseCalculator, self).__init__(config)
+        super(ExactApertureNoiseCalculator, self).__init__(*args, **kwargs)
 
         # INPUT
 
@@ -299,7 +301,7 @@ class ExactApertureNoiseCalculator(Configurable):
         self.apertures_noise_frame = None
 
         # Region for the sky aperture circles
-        self.aperture_region = Region()
+        self.aperture_region = PixelRegionList()
 
         self.covering_apertures = None
         self.apertures_mask = None
@@ -652,7 +654,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
             center = aperture_centers[i]
 
-            circle = Circle(center, aperture_radius)
+            circle = PixelCircleRegion(center, aperture_radius)
 
             mask = Mask.from_shape(circle, self.cutout.shape[1], self.cutout.shape[0])
 
@@ -683,12 +685,12 @@ class ExactApertureNoiseCalculator(Configurable):
         #shape = (self.cutout.shape[1], self.cutout.shape[0])
         center = Position(int(round(self.centre_j)), int(round(self.centre_i)))
         ratio = self.adj_axial_ratio
-        angle = self.adj_angle * Unit("deg")
+        angle = self.adj_angle * u("deg")
 
         distance_ell = Frame(distance_ellipse(self.cutout.shape, center, ratio, angle))
 
         path = fs.join(self.config.plot_path, "distance_ellipse.fits")
-        distance_ell.save(path)
+        distance_ell.saveto(path)
 
         # The maximum "major-relative" radius
         max_maj_distance = np.max(distance_ell)
@@ -744,7 +746,7 @@ class ExactApertureNoiseCalculator(Configurable):
             #random_r_list = adj_semimin_pix + np.abs(np.random.normal(loc=0.0, scale=5.0 * self.adj_semimaj_pix_full, size=random_size))
             random_normalized_r = np.random.uniform(min_random_r, max_random_r)
 
-            unrotated_ellipse_angle = (random_theta - self.adj_angle) * Unit("deg")
+            unrotated_ellipse_angle = (random_theta - self.adj_angle) * u("deg")
 
             #print("AXIAL RATIO", self.adj_axial_ratio)
             #print("UNROTATED ELLIPSE ANGLE", unrotated_ellipse_angle)
@@ -759,7 +761,7 @@ class ExactApertureNoiseCalculator(Configurable):
             y = random_y
 
             # Create a coordinate for the center of the aperture
-            center = Coordinate(x, y)
+            center = PixelCoordinate(x, y)
 
             # CHECK WHETHER THE COORDINATE LIES IN THE FRAME
             xsize = self.cutout.shape[1]
@@ -787,7 +789,7 @@ class ExactApertureNoiseCalculator(Configurable):
             # CREATE APERTURE
 
             # Create a circular aperture
-            circle = Circle(center, sky_ap_rad_pix)
+            circle = PixelCircleRegion(center, sky_ap_rad_pix)
 
             # IS THIS APERTURE OK?
 
@@ -888,9 +890,9 @@ class ExactApertureNoiseCalculator(Configurable):
             self.covering_apertures.add_shape(circle)
 
             # Create annulus
-            base = Circle(center, bg_inner_semimaj_pix)
-            exclude = Circle(center, bg_inner_semimaj_pix + bg_width)
-            annulus = Composite(base, exclude)
+            base = PixelCircleRegion(center, bg_inner_semimaj_pix)
+            exclude = PixelCircleRegion(center, bg_inner_semimaj_pix + bg_width)
+            annulus = PixelCompositeRegion(base, exclude)
 
             # Add aperture circle to region
             self.aperture_region.append(circle)
@@ -1274,7 +1276,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
         # Save ...
         apertures_frame_path = fs.join(self.config.plot_path, "apertures.fits")
-        self.apertures_frame.save(apertures_frame_path)
+        self.apertures_frame.saveto(apertures_frame_path)
 
     # -----------------------------------------------------------------
 
@@ -1290,7 +1292,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
         # Save ...
         apertures_sum_frame_path = fs.join(self.config.plot_path, "apertures_sum.fits")
-        self.apertures_sum_frame.save(apertures_sum_frame_path)
+        self.apertures_sum_frame.saveto(apertures_sum_frame_path)
 
     # -----------------------------------------------------------------
 
@@ -1306,7 +1308,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
         # Save ...
         apertures_mean_frame_path = fs.join(self.config.plot_path, "apertures_mean.fits")
-        self.apertures_mean_frame.save(apertures_mean_frame_path)
+        self.apertures_mean_frame.saveto(apertures_mean_frame_path)
 
     # -----------------------------------------------------------------
 
@@ -1322,7 +1324,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
         # Save ...
         apertures_noise_frame_path = fs.join(self.config.plot_path, "apertures_noise.fits")
-        self.apertures_noise_frame.save(apertures_noise_frame_path)
+        self.apertures_noise_frame.saveto(apertures_noise_frame_path)
 
     # -----------------------------------------------------------------
 
@@ -1338,7 +1340,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
         # Save region
         region_path = fs.join(self.config.plot_path, "apertures.reg")
-        self.aperture_region.save(region_path)
+        self.aperture_region.saveto(region_path)
 
     # -----------------------------------------------------------------
 
@@ -1354,7 +1356,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
         # Save covering map
         covering_path = fs.join(self.config.plot_path, "covering.fits")
-        self.covering_apertures.save(covering_path)
+        self.covering_apertures.saveto(covering_path)
 
     # -----------------------------------------------------------------
 
@@ -1370,7 +1372,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
         # Save aperture mask
         apertures_mask_path = fs.join(self.config.plot_path, "apertures_mask.fits")
-        self.apertures_mask.save(apertures_mask_path)
+        self.apertures_mask.saveto(apertures_mask_path)
 
     # -----------------------------------------------------------------
 
@@ -1386,7 +1388,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
         # Save prior mask
         prior_mask_path = fs.join(self.config.plot_path, "prior_mask.fits")
-        self.prior_mask.save(prior_mask_path)
+        self.prior_mask.saveto(prior_mask_path)
 
     # -----------------------------------------------------------------
 
@@ -1402,7 +1404,7 @@ class ExactApertureNoiseCalculator(Configurable):
 
         # Save flag mask
         flag_mask_path = fs.join(self.config.plot_path, "flag_mask.fits")
-        self.flag_mask.save(flag_mask_path)
+        self.flag_mask.saveto(flag_mask_path)
 
 # -----------------------------------------------------------------
 
@@ -1412,14 +1414,15 @@ class ExtrapolatingApertureNoiseCalculator(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The consturctor ...
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(ExtrapolatingApertureNoiseCalculator, self).__init__(config)
+        super(ExtrapolatingApertureNoiseCalculator, self).__init__(*args, **kwargs)
 
         # INPUT
 
@@ -1520,6 +1523,7 @@ class ExtrapolatingApertureNoiseCalculator(Configurable):
         sky_ap_rad_pix = (ap_area / np.pi)**0.5
 
         # Generate list of mini-aperture sizes to use, and declare result lists
+        #mini_ap_rad_base = 1.2 # NEW value used by Chris
         #mini_ap_rad_base = 2.0
         mini_ap_rad_base = 5.0
         mini_ap_rad_pix_input = mini_ap_rad_base**np.arange(1.0, np.ceil( math.log( sky_ap_rad_pix, mini_ap_rad_base)))[::-1]

@@ -24,7 +24,7 @@ from pts.magic.sources.extractor import SourceExtractor
 from pts.core.tools import configuration
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
-from pts.magic.basics.region import Region
+from pts.magic.region.list import PixelRegionList
 from pts.magic.view import MagicViewer
 
 # -----------------------------------------------------------------
@@ -67,7 +67,7 @@ arguments = parser.parse_args()
 if arguments.input is not None:
 
     # Determine the full path to the input directory
-    input_path = fs.absolute(arguments.input)
+    input_path = fs.absolute_path(arguments.input)
 
     # Give an error if the input directory does not exist
     if not fs.is_directory(input_path): raise argparse.ArgumentError(input_path, "The input directory does not exist")
@@ -81,7 +81,7 @@ else: input_path = fs.cwd()
 if arguments.output is not None:
     
     # Determine the full path to the output directory
-    output_path = fs.absolute(arguments.output)
+    output_path = fs.absolute_path(arguments.output)
     
     # Create the directory if it does not yet exist
     if not fs.is_directory(output_path): fs.create_directory(output_path)
@@ -104,7 +104,7 @@ log.start("Starting find_and_extract ...")
 # -----------------------------------------------------------------
 
 # Determine the full path to the image
-image_path = fs.absolute(arguments.image)
+image_path = fs.absolute_path(arguments.image)
 
 # Determine the full path to the bad region file
 bad_region_path = fs.join(input_path, arguments.bad) if arguments.bad is not None else None
@@ -128,7 +128,7 @@ log.info("Importing the galactic and stellar catalogs ...")
 catalog_importer = CatalogImporter()
 
 # Run the catalog importer
-catalog_importer.run(image.frames.primary)
+catalog_importer.run(image.primary.coordinate_box)
 
 # -----------------------------------------------------------------
 
@@ -142,7 +142,7 @@ if arguments.special is not None:
     log.info("Creating mask covering objects that require special attention from " + path + " ...")
 
     # Load the region and create a mask from it
-    special_region = Region.from_file(path)
+    special_region = PixelRegionList.from_file(path)
 
 # No special region
 else: special_region = None
@@ -159,7 +159,7 @@ if arguments.ignore is not None:
     log.info("Creating mask covering objects that should be ignored from " + path + " ...")
 
     # Load the region and create a mask from it
-    ignore_region = Region.from_file(path)
+    ignore_region = PixelRegionList.from_file(path)
 
 # No ignore region
 else: ignore_region = None
@@ -173,29 +173,29 @@ log.info("Running the source finder ...")
 finder = SourceFinder.from_arguments(arguments)
 
 # Run the extractor
-finder.run(image.frames.primary, catalog_importer.galactic_catalog, catalog_importer.stellar_catalog, special_region, ignore_region, bad_mask)
+finder.run(image.primary, catalog_importer.galactic_catalog, catalog_importer.stellar_catalog, special_region, ignore_region, bad_mask)
 
 # -----------------------------------------------------------------
 
 # Save the galaxy region
 galaxy_region = finder.galaxy_region
 galaxy_region_path = fs.join(output_path, "galaxies.reg")
-galaxy_region.save(galaxy_region_path)
+galaxy_region.saveto(galaxy_region_path)
 
 # Save the star region
 star_region = finder.star_region
 star_region_path = fs.join(output_path, "stars.reg")
-star_region.save(star_region_path)
+star_region.saveto(star_region_path)
 
 # Save the saturation region
 saturation_region = finder.saturation_region
 saturation_region_path = fs.join(output_path, "saturation.reg")
-saturation_region.save(saturation_region_path)
+saturation_region.saveto(saturation_region_path)
 
 # Save the other sources region
 other_region = finder.other_region
 other_region_path = fs.join(output_path, "other_sources.reg")
-other_region.save(other_region_path)
+other_region.saveto(other_region_path)
 
 # -----------------------------------------------------------------
 
@@ -213,7 +213,7 @@ segments.add_frame(finder.other_segments, "other_sources")
 
 # Save the FITS file with the segmentation maps
 path = fs.join(output_path, "segments.fits")
-segments.save(path)
+segments.saveto(path)
 
 # -----------------------------------------------------------------
 
@@ -229,9 +229,9 @@ if arguments.interactive:
     name = raw_input("Press enter to continue with the extraction step ...")
 
     # Import the star and saturation regions which have been adjusted by the user
-    star_region = Region.from_file(star_region_path)
-    saturation_region = Region.from_file(saturation_region_path)
-    other_region = Region.from_file(other_region_path)
+    star_region = PixelRegionList.from_file(star_region_path)
+    saturation_region = PixelRegionList.from_file(saturation_region_path)
+    other_region = PixelRegionList.from_file(other_region_path)
 
 # -----------------------------------------------------------------
 
@@ -242,7 +242,7 @@ log.info("Running the source extractor ...")
 extractor = SourceExtractor.from_arguments(arguments)
 
 # Run the source extractor
-extractor.run(image.frames.primary, star_region, saturation_region, galaxy_segments, star_segments, other_segments)
+extractor.run(image.primary, star_region, saturation_region, galaxy_segments, star_segments, other_segments)
 
 # -----------------------------------------------------------------
 
@@ -250,6 +250,6 @@ extractor.run(image.frames.primary, star_region, saturation_region, galaxy_segme
 result_path = fs.join(output_path, image.name + ".fits")
 
 # Save the resulting image as a FITS file
-image.save(result_path)
+image.saveto(result_path)
 
 # -----------------------------------------------------------------

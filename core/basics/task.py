@@ -36,6 +36,10 @@ class Task(object):
         :param config_string:
         """
 
+        # The remote host ID and cluster name
+        self.host_id = None
+        self.cluster_name = None
+
         # The task ID and name
         self.id = None
         self.name = None
@@ -173,6 +177,52 @@ class Task(object):
 
         # Return the list of classes
         return classes
+
+    # -----------------------------------------------------------------
+
+    def analyse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the analyser classes that are defined for this task
+        for analyser_class in self.analyser_classes:
+
+            # Create an instance of the analyser class
+            analyser = analyser_class.for_task(self)
+
+            # Run the analyser
+            analyser.run()
+
+        # Set analysed flag to True
+        self.analysed = True
+        if self.path is not None: self.save()
+
+        # Remove the local output if requested
+        if self.remove_local_output: fs.remove_directory(self.local_output_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_from_remote(self, remote, full=False):
+
+        """
+        This function ..
+        :param remote:
+        :param full:
+        :return:
+        """
+
+        ## REMOVE REMOTE OUTPUT IF REQUESTED
+        if self.remove_remote_output or full:
+
+            # Remove the temporary PTS directory if it contains the output directory
+            if remote.is_subdirectory(self.remote_output_path, self.remote_temp_pts_path) and remote.is_directory(self.remote_temp_pts_path): remote.remove_directory(self.remote_temp_pts_path)
+            else:
+                # Remove the output directory and the temporary directory seperately
+                if remote.is_directory(self.remote_output_path): remote.remove_directory(self.remote_output_path)
+                if remote.is_directory(self.remote_temp_pts_path): remote.remove_directory(self.remote_temp_pts_path)
 
     # -----------------------------------------------------------------
 

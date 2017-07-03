@@ -21,16 +21,19 @@ from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from ..basics.mask import Mask
-from ..basics.geometry import Ellipse, Coordinate
-from ..core.source import Source
+from ..region.ellipse import PixelEllipseRegion
+from ..basics.coordinate import PixelCoordinate
+from ..core.detection import Detection
 from ...core.tools.logging import log
 from ...core.basics.configurable import Configurable
 from ..tools import masks
 from ...core.basics.animation import Animation
-from ..basics.region import Region
+from ..region.list import PixelRegionList
 from ..core.image import Image
 from ..core.frame import Frame
 from ...core.tools import filesystem as fs
+from ..region.list import load_as_pixel_region_list
+from ..region.point import PixelPointRegion
 
 # -----------------------------------------------------------------
 
@@ -40,15 +43,16 @@ class SourceExtractor(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(SourceExtractor, self).__init__(config)
+        super(SourceExtractor, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 
@@ -85,6 +89,15 @@ class SourceExtractor(Configurable):
         # The list of sources
         self.sources = []
 
+        # STATISTICS
+        self.ngalaxy_sources = 0
+        self.nstar_sources = 0
+        self.nother_sources = 0
+        self.nforeground = 0
+        self.nfailed = 0
+        self.nsuccess = 0
+        self.nwith_saturation = 0
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -103,20 +116,20 @@ class SourceExtractor(Configurable):
         # 3. Create the mask of all sources to be removed
         self.create_mask()
 
-        # 3. For each source, check the pixels in the background that belong to an other source
+        # 4. For each source, check the pixels in the background that belong to an other source
         self.set_cross_contamination()
 
-        # 4. Remove the sources
+        # 5. Remove the sources
         self.remove_sources()
 
-        # 5. Fix extreme values that showed up during the interpolation steps
+        # 6. Fix extreme values that showed up during the interpolation steps
         self.fix_extreme_values()
 
-        # 6. Set nans back into the frame
+        # 7. Set nans back into the frame
         self.set_nans()
 
-        # Writing
-        if self.config.output is not None: self.write()
+        # 8. Writing
+        if self.config.output is not None and self.config.write: self.write()
 
     # -----------------------------------------------------------------
 
@@ -132,24 +145,14 @@ class SourceExtractor(Configurable):
         super(SourceExtractor, self).setup(**kwargs)
 
         # Set the image frame
-        if "frame" in kwargs:
-            self.frame = kwargs.pop("frame")
+        if "frame" in kwargs: self.frame = kwargs.pop("frame")
         else: self.load_frame()
 
-        # Regions
-        #self.galaxy_region = kwargs.pop("galaxy_region")
-        #self.star_region = kwargs.pop("star_region")
-        #self.saturation_region = kwargs.pop("saturation_region")
-        #self.other_region = kwargs.pop("other_region")
+        # Load the region lists
+        self.load_regions(**kwargs)
 
-        # Segmentation maps
-        #self.galaxy_segments = kwargs.pop("galaxy_segments")
-        #self.star_segments = kwargs.pop("star_segments")
-        #self.other_segments = kwargs.pop("other_segments")
-
-        self.load_regions()
-
-        self.load_segments()
+        # Load the segmentation maps
+        self.load_segments(**kwargs)
 
         # Initialize the mask
         self.mask = Mask.empty_like(self.frame)
@@ -184,49 +187,95 @@ class SourceExtractor(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Loading the image frame ...")
+
+        # load
         self.frame = Frame.from_file(self.config.image)
 
     # -----------------------------------------------------------------
 
-    def load_regions(self):
+    def load_regions(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
+        # Inform the user
+        log.info("Loading the regions ...")
+
         # Load the galaxy region
-        galaxy_region_path = self.input_path_file("galaxies.reg")
-        self.galaxy_region = Region.from_file(galaxy_region_path) if fs.is_file(galaxy_region_path) else None
+        if "galaxy_region" in kwargs: self.galaxy_region = kwargs.pop("galaxy_region")
+        else:
+            galaxy_region_path = self.input_path_file("galaxies.reg")
+            self.galaxy_region = load_as_pixel_region_list(galaxy_region_path, self.frame.wcs) if fs.is_file(galaxy_region_path) else None
 
         # Load the star region
-        star_region_path = self.input_path_file("stars.reg")
-        self.star_region = Region.from_file(star_region_path) if fs.is_file(star_region_path) else None
+        if "star_region" in kwargs: self.star_region = kwargs.pop("star_region")
+        else:
+            star_region_path = self.input_path_file("stars.reg")
+            self.star_region = load_as_pixel_region_list(star_region_path, self.frame.wcs) if fs.is_file(star_region_path) else None
 
         # Load the saturation region
-        saturation_region_path = self.input_path_file("saturation.reg")
-        self.saturation_region = Region.from_file(saturation_region_path) if fs.is_file(saturation_region_path) else None
+        if "saturation_region" in kwargs: self.saturation_region = kwargs.pop("saturation_region")
+        else:
+            saturation_region_path = self.input_path_file("saturation.reg")
+            self.saturation_region = load_as_pixel_region_list(saturation_region_path, self.frame.wcs) if fs.is_file(saturation_region_path) else None
 
         # Load the region of other sources
-        other_region_path = self.input_path_file("other_sources.reg")
-        self.other_region = Region.from_file(other_region_path) if fs.is_file(other_region_path) else None
+        if "other_region" in kwargs: self.other_region = kwargs.pop("other_region")
+        else:
+            other_region_path = self.input_path_file("other_sources.reg")
+            self.other_region = load_as_pixel_region_list(other_region_path, self.frame.wcs) if fs.is_file(other_region_path) else None
+
+        # Debugging
+        if self.galaxy_region is not None: log.debug("Galaxy regions: PRESENT")
+        else: log.debug("Galaxy regions: NOT PRESENT")
+        if self.star_region is not None: log.debug("Star regions: PRESENT")
+        else: log.debug("Star regions: NOT PRESENT")
+        if self.saturation_region is not None: log.debug("Saturation regions: PRESENT")
+        else: log.debug("Saturation regions: NOT PRESENT")
+        if self.other_region is not None: log.debug("Other regions: PRESENT")
+        else: log.debug("Other regions: NOT PRESENT")
 
     # -----------------------------------------------------------------
 
-    def load_segments(self):
+    def load_segments(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
-        # Load the image with segmentation maps
-        segments = Image.from_file(self.input_path_file("segments.fits"), no_filter=True)
+        # Inform the user
+        log.info("Loading the segmentation maps ...")
 
-        # Get the segmentation maps
-        self.galaxy_segments = segments.frames.galaxies if "galaxies" in segments.frames else None
-        self.star_segments = segments.frames.stars if "stars" in segments.frames else None
-        self.other_segments = segments.frames.other_sources if "other_sources" in segments.frames else None
+        # Load the image with segmentation maps
+        segments = None
+        if "segments" in kwargs: segments = kwargs.pop("segments")
+        else:
+            segments_path = self.input_path_file("segments.fits")
+            if not fs.is_file(segments_path): log.warning("No segmentation maps found, using regions to define the to be extracted patches")
+            else: segments = Image.from_file(segments_path, no_filter=True)
+
+        # If segments is not None
+        if segments is not None:
+
+            # Get the segmentation maps
+            self.galaxy_segments = segments.frames["galaxies"] if "galaxies" in segments.frames else None
+            self.star_segments = segments.frames["stars"] if "stars" in segments.frames else None
+            self.other_segments = segments.frames["other_sources"] if "other_sources" in segments.frames else None
+
+        # Debugging
+        if self.galaxy_segments is not None: log.debug("Galaxy segments: PRESENT")
+        else: log.debug("Galaxy segments: NOT PRESENT")
+        if self.star_segments is not None: log.debug("Star segments: PRESENT")
+        else: log.debug("Star segments: NOT PRESENT")
+        if self.other_segments is not None: log.debug("Other segments: PRESENT")
+        else: log.debug("Other segments: NOT PRESENT")
 
     # -----------------------------------------------------------------
 
@@ -264,22 +313,46 @@ class SourceExtractor(Configurable):
         # Loop over the shapes in the galaxy region
         for shape in self.galaxy_region:
 
+            #print(shape.label)
+            #print(shape.meta)
+
             # Shapes without text are in this case just coordinates
-            if "text" not in shape.meta: continue
+            #if "text" not in shape.meta: continue
 
-            # Get the coordinate of the center for this galaxy
-            center = shape.center
+            if shape.label is None: continue
 
-            # Check the label of the corresponding segment
-            label = self.galaxy_segments[int(center.y), int(center.x)]
+            if self.galaxy_segments is not None:
 
-            if label == 3 or (label == 2 and self.config.remove_companions):
+                # Get the coordinate of the center for this galaxy
+                center = shape.center
+
+                #print("here")
+
+                # Check the label of the corresponding segment
+                label = self.galaxy_segments[int(center.y), int(center.x)]
+
+                if label == 3 or (label == 2 and self.config.remove_companions):
+
+                    # Create a source
+                    source = Detection.from_shape(self.frame, shape, self.config.source_outer_factor)
+
+                    # Check whether it is a 'special' source
+                    source.special = self.special_mask.masks(center) if self.special_mask is not None else False
+
+                    self.ngalaxy_sources += 1
+
+                    # Add the source to the list
+                    self.sources.append(source)
+
+            elif "principal" not in shape.label:
 
                 # Create a source
-                source = Source.from_shape(self.frame, shape, self.config.source_outer_factor)
+                source = Detection.from_shape(self.frame, shape, self.config.source_outer_factor)
 
-                # Check whether it is a 'special' source
-                source.special = self.special_mask.masks(center) if self.special_mask is not None else False
+                # Check whether it is a special source
+                source.special = self.special_mask.masks(shape.center) if self.special_mask is not None else False
+
+                self.ngalaxy_sources += 1
 
                 # Add the source to the list
                 self.sources.append(source)
@@ -300,97 +373,128 @@ class SourceExtractor(Configurable):
         for shape in self.star_region:
 
             # Ignore shapes without text, these should be just the positions of the peaks
-            if "text" not in shape.meta: continue
+            #if "text" not in shape.meta: continue
+            if shape.label is None: continue
 
             # Ignore shapes with color red (stars without source)
-            if shape.meta["color"] == "red": continue
+            if shape.appearance["color"] == "red": continue
 
             # Get the star index
-            index = int(shape.meta["text"])
+            index = int(shape.label)
 
-            # Look whether a saturation source is present
-            saturation_source = None
-
-            # Check whether the star is a foreground star
-            #if self.principal_mask.masks(shape.center): foreground = True
-
-            if self.saturation_region is not None:
-
-                # Add the saturation sources
-                # Loop over the shapes in the saturation region
-                for j in range(len(self.saturation_region)):
-
-                    saturation_shape = self.saturation_region[j]
-
-                    if "text" not in saturation_shape.meta: continue
-
-                    saturation_index = int(saturation_shape.meta["text"])
-
-                    if index != saturation_index: continue
-                    else:
-                        # Remove the saturation shape from the region
-                        saturation_shape = self.saturation_region.pop(j)
-
-                        # Create saturation source
-                        saturation_source = Source.from_shape(self.frame, saturation_shape, self.config.source_outer_factor)
-
-                        # Replace the saturation mask
-                        segments_cutout = self.star_segments[saturation_source.y_slice, saturation_source.x_slice]
-                        saturation_mask = Mask(segments_cutout == index)
-                        saturation_source.mask = saturation_mask.fill_holes()
-
-                        # Break the loop
-                        break
+            # Get the saturation source
+            saturation_source = self.find_saturation_source(index)
 
             # Check whether the star is a 'special' region
             special = self.special_mask.masks(shape.center) if self.special_mask is not None else False
 
+            # Saturation source was found
             if saturation_source is not None:
 
+                self.nwith_saturation += 1
+
                 ## DILATION
+                if self.config.dilate_saturation: self.dilate_saturation_source(saturation_source)
 
-                if self.config.dilate_saturation:
+                # Set the source to be the saturation source
+                source = saturation_source
 
-                    # factor = saturation_dilation_factor
-                    dilation_factor = self.config.saturation_dilation_factor
+            # Create a new source from the shape
+            else: source = Detection.from_shape(self.frame, shape, self.config.source_outer_factor)
 
-                    saturation_source = saturation_source.zoom_out(dilation_factor, self.frame, keep_original_mask=True)
+            # Set special flag
+            source.special = special
 
-                    mask_area = np.sum(saturation_source.mask)
-                    area_dilation_factor = dilation_factor ** 2.
-                    new_area = mask_area * area_dilation_factor
+            # Increment
+            self.nstar_sources += 1
 
-                    ## Circular mask approximation
+            # Add it to the list
+            self.sources.append(source)
 
-                    # ellipse = find_contour(source.mask.astype(float), source.mask)
-                    # radius = ellipse.radius.norm
+    # -----------------------------------------------------------------
 
-                    mask_radius = math.sqrt(mask_area / math.pi)
-                    new_radius = math.sqrt(new_area / math.pi)
+    def find_saturation_source(self, index):
 
-                    kernel_radius = new_radius - mask_radius
+        """
+        This function ...
+        :param index: 
+        :return: 
+        """
 
-                    # Replace mask
-                    saturation_source.mask = saturation_source.mask.disk_dilation(radius=kernel_radius)
+        # Deubgging
+        log.debug("Finding a saturation source for star " + str(index) + " ...")
 
-                ## END DILATION CODE
+        # Look whether a saturation source is present
+        saturation_source = None
 
-                # Set special
-                saturation_source.special = special
+        # Check whether the star is a foreground star
+        #if self.principal_mask.masks(shape.center): foreground = True
 
-                # Add the saturation source
-                self.sources.append(saturation_source)
+        # If there is a saturation region
+        if self.saturation_region is not None:
 
-            else:
+            # Add the saturation sources
+            # Loop over the shapes in the saturation region
+            for j in range(len(self.saturation_region)):
 
-                # Create a new source from the shape
-                source = Source.from_shape(self.frame, shape, self.config.source_outer_factor)
+                saturation_shape = self.saturation_region[j]
 
-                # Set special
-                source.special = special
+                #if "text" not in saturation_shape.meta: continue
+                if saturation_shape.label is None: continue
 
-                # Add it to the list
-                self.sources.append(source)
+                saturation_index = int(saturation_shape.label)
+
+                if index != saturation_index: continue
+                else:
+
+                    # Remove the saturation shape from the region
+                    saturation_shape = self.saturation_region.pop(j)
+
+                    # Create saturation source
+                    saturation_source = Detection.from_shape(self.frame, saturation_shape, self.config.source_outer_factor)
+
+                    # Replace the saturation mask
+                    segments_cutout = self.star_segments[saturation_source.y_slice, saturation_source.x_slice]
+                    saturation_mask = Mask(segments_cutout == index)
+                    saturation_source.mask = saturation_mask.fill_holes()
+
+                    # Break the loop
+                    break
+
+        # Return the saturation source
+        return saturation_source
+
+    # -----------------------------------------------------------------
+
+    def dilate_saturation_source(self, saturation_source):
+
+        """
+        This function ...
+        :param saturation_source:
+        :return: 
+        """
+
+        # factor = saturation_dilation_factor
+        dilation_factor = self.config.saturation_dilation_factor
+
+        saturation_source = saturation_source.zoom_out(dilation_factor, self.frame, keep_original_mask=True)
+
+        mask_area = np.sum(saturation_source.mask)
+        area_dilation_factor = dilation_factor ** 2.
+        new_area = mask_area * area_dilation_factor
+
+        ## Circular mask approximation
+
+        # ellipse = find_contour(source.mask.astype(float), source.mask)
+        # radius = ellipse.radius.norm
+
+        mask_radius = math.sqrt(mask_area / math.pi)
+        new_radius = math.sqrt(new_area / math.pi)
+
+        kernel_radius = new_radius - mask_radius
+
+        # Replace mask
+        saturation_source.mask = saturation_source.mask.disk_dilation(radius=kernel_radius)
 
     # -----------------------------------------------------------------
 
@@ -408,12 +512,12 @@ class SourceExtractor(Configurable):
         for shape in self.other_region:
 
             # This is a source found by SourceFinder
-            if "text" in shape.meta:
+            if shape.label is not None:
 
-                label = int(shape.meta["text"])
+                label = int(shape.label)
 
                 # Create a source
-                source = Source.from_shape(self.frame, shape, self.config.source_outer_factor)
+                source = Detection.from_shape(self.frame, shape, self.config.source_outer_factor)
 
                 # Replace the source mask
                 segments_cutout = self.other_segments[source.y_slice, source.x_slice]
@@ -455,10 +559,13 @@ class SourceExtractor(Configurable):
             else:
 
                 # Create a source
-                source = Source.from_shape(self.frame, shape, self.config.source_outer_factor)
+                source = Detection.from_shape(self.frame, shape, self.config.source_outer_factor)
 
             # Check whether source is 'special'
             source.special = self.special_mask.masks(shape.center) if self.special_mask is not None else False
+
+            # Increment
+            self.nother_sources += 1
 
             # Add the source to the list
             self.sources.append(source)
@@ -518,6 +625,18 @@ class SourceExtractor(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nsources(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return len(self.sources)
+
+    # -----------------------------------------------------------------
+
     def remove_sources(self):
 
         """
@@ -545,6 +664,11 @@ class SourceExtractor(Configurable):
             if self.principal_mask is not None: foreground = masks.overlap(self.principal_mask[source.y_slice, source.x_slice], source.mask)
             else: foreground = False
 
+            if foreground: self.nforeground += 1
+
+            # SKip foreground if requested
+            if self.config.only_foreground and not foreground: continue
+
             # Disable sigma-clipping for estimating background when the source is foreground to the principal galaxy (to avoid clipping the galaxy's gradient)
             sigma_clip = self.config.sigma_clip if not foreground else False
 
@@ -564,6 +688,7 @@ class SourceExtractor(Configurable):
                 source.estimate_background(self.config.interpolation_method, sigma_clip=sigma_clip)
             except ValueError: # ValueError: zero-size array to reduction operation minimum which has no identity
                 # in: limits = (np.min(known_points), np.max(known_points)) [inpaint_biharmonic]
+                self.nfailed += 1
                 count += 1
                 continue
 
@@ -576,6 +701,9 @@ class SourceExtractor(Configurable):
 
             # Replace the pixels by the background
             source.background.replace(self.frame, where=source.mask)
+
+            # Increment
+            self.nsuccess += 1
 
             #if not sigma_clip:
             #    # source.plot()
@@ -649,8 +777,8 @@ class SourceExtractor(Configurable):
         log.info("Writing the animation ...")
 
         # Save the animation
-        path = fs.join(output_path, "animation.gif")
-        self.animation.save(path)
+        path = self.output_path_file("animation.gif")
+        self.animation.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -665,10 +793,10 @@ class SourceExtractor(Configurable):
         log.info("Writing the result ...")
 
         # Determine the path to the resulting FITS file
-        path = self.output_path_file(self.frame.name + ".fits")
+        path = self.output_path_file("extracted.fits")
 
         # Save the resulting image as a FITS file
-        self.frame.save(path)
+        self.frame.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -686,7 +814,7 @@ class SourceExtractor(Configurable):
         path = self.output_path_file("mask.fits")
 
         # Save the total mask as a FITS file
-        Frame(self.mask.astype(float)).save(path)
+        Frame(self.mask.astype(float)).saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -706,14 +834,15 @@ class SourceExtractor(Configurable):
         for shape in self.galaxy_region:
 
             # Skip single coordinates
-            if isinstance(shape, Coordinate): continue
+            if isinstance(shape, PixelCoordinate): continue
 
-            if "principal" in shape.meta["text"]: return shape
+            if shape.label is not None and "principal" in shape.label: return shape
+            if "text" in shape.meta and "principal" in shape.meta["text"]: return shape
 
-            if not isinstance(shape, Ellipse): return shape
+            if not isinstance(shape, PixelEllipseRegion) and not isinstance(shape, PixelPointRegion): return shape
 
-            major_axis_length = shape.major
-            if largest_shape is None or major_axis_length > largest_shape.major: largest_shape = shape
+            semimajor_axis_length = shape.semimajor
+            if largest_shape is None or semimajor_axis_length > largest_shape.semimajor: largest_shape = shape
 
         # Return the largest shape
         return largest_shape

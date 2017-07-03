@@ -1,3 +1,4 @@
+# HIDE_DEPENDS
 import sys
 
 class ImageProcessAction():

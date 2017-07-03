@@ -104,6 +104,18 @@ class ErrorBar(object):
 
     # -----------------------------------------------------------------
 
+    def to(self, unit):
+
+        """
+        This function ...
+        :param unit:
+        :return:
+        """
+
+        return ErrorBar(self.lower.to(unit), self.upper.to(unit))
+
+    # -----------------------------------------------------------------
+
     def as_tuple(self):
 
         """
@@ -204,6 +216,18 @@ class ErrorBar(object):
         """
 
         return self.__idiv__(value)
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..tools import stringify
+        return stringify.stringify(self.lower)[1] + ">" + stringify.stringify(self.upper)[1]
 
     # -----------------------------------------------------------------
 

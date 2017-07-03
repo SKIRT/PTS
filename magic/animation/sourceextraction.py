@@ -23,8 +23,7 @@ from astropy.visualization.mpl_normalize import ImageNormalize
 
 # Import the relevant PTS classes and modules
 from ...core.basics.animation import Animation
-from ..tools import plotting
-from ..basics.geometry import Ellipse
+from ..region.ellipse import PixelEllipseRegion
 from ..basics.mask import Mask
 
 # -----------------------------------------------------------------
@@ -83,7 +82,7 @@ class SourceExtractionAnimation(Animation):
                           facecolor="none", lw=5)
         ax.add_patch(r)
 
-        if isinstance(self.principal_shape, Ellipse):
+        if isinstance(self.principal_shape, PixelEllipseRegion):
 
             ell = plt_Ellipse((self.principal_shape.center.x, self.principal_shape.center.y),
                               2.0 * self.principal_shape.radius.x, 2.0 * self.principal_shape.radius.y,

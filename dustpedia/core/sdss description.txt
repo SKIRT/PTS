@@ -1,0 +1,234 @@
+#SDSS:
+
+# For SDSS, you can use the Montage function mArchiveList to get a listing of the SDSS DR9 fields that cover a given
+# area of sky (there is a nice Python wrapper available for Montage, which can make it easier to interact with).
+# This function outputs a table giving the details of the relevant fields, including URLs where they can be downloaded.
+
+# Note that I only used the SDSS primary fields to produce the DustPedia cutouts (the Ancillary Data Report I attached
+# in the previous email explains this in more detail). I have attached a file that lists all the SDSS primary fields.
+# After you have the results table produced by mArchiveGet, you can match the results with the primary fields list
+# to find out the fields I used to make the final cutouts.
+
+# Also, bear in mind that the DustPedia SDSS cutouts are re-gridded to North-East orientation, and 0.45" pixel sizes (again, see the ancillary data report for details).
+
+# The SDSS database website provides extensive information about every SDSS field. It may be possible to use this
+# database to find out the information you want about each field without having to download the actual FITS files,
+# once you have the fields' ID information.
+
+
+
+## EXTRA INFO:
+
+
+# It should be straightforward to produce things to the same pixel grid as I used. I used the Montage command mHdr to
+# construct the basic header, including WCS, for my cutouts. And in my experience, giving mHdr a particular set of
+# inputs always results in the same output. Specifically, I ran mHdr through the Montage wrapper for Python, as follows:
+
+# montage_wrapper.commands.mHdr( str(ra)+' '+str(dec), width, '/some/output/path/header.hdr', pix_size=pix_size )
+
+# Where:
+# - ra and dec are taken from the ra2000 and de2000 of the attached DustPedia_LEDAWISE_Herschel.csv table
+# - width is 0.5 degrees for galaxies with D25<6 arcmin, and 1 degree for galaxies with D25>=6 arcmin (as listed in DustPedia_LEDAWISE_Herschel.csv)
+# - pix_size is 3.2 for GALEX, and 0.45 for SDSS.
+
+# This should allow you to work on the exact same pixel grid as I did for any given target.
+
+
+# The reason mArchiveList queries DR9 is that the SDSS imaging products haven't changed since DR9, so Montage haven't
+# felt the need to explicitly update which data release they query, as they'd get the same results.
+# Hence the lack of specifying the data release.
+
+###
+
+# photoField	$BOSS_PHOTOOBJ/RERUN/RUN
+# frame	        $BOSS_PHOTOOBJ/frames/RERUN/RUN/CAMCOL
+
+
+# frame naming convention:
+
+# frame-[ugriz]-[0-9]{6}-[1-6]-[0-9]{4}\.fits\.bz2, where [ugriz] is the filter, [0-9]{6} is a zero-padded six-digit number containing the run number, [1-6] is the camera column ('camcol') and [0-9]{4} is the zero-padded, four-digit frame sequence number.
+# OR THUS:
+# frame-[ugriz]-RUN-CAMCOL-FRAMESEQ.fits.bz2
+
+# photoField naming convention:
+
+# photoField-[0-9]{6}-[1-6]\.fits, where [0-9]{6} is the zero-padded, six digit run number and [1-6] is the camcol number.
+# OR THUS:
+# photoField-RUN-CAMCOL.fits  ## NO .BZ2 !!
+
+####
+
+# FROM DR7 page: (http://classic.sdss.org/dr7/algorithms/fluxcal.html#counts2mag)
+
+        # Computing errors on counts (converting counts to photo-electrons)
+        # The fpC (corrected frames) and fpObjc (object tables with counts for each object instead of magnitudes)
+        # files report counts (or "data numbers", DN). However, it is the number of photo-electrons which is really
+        # counted by the CCD detectors and which therefore obeys Poisson statistics. The number of photo-electrons
+        # is related to the number of counts through the gain (which is really an inverse gain):
+        #
+        #      photo-electrons = counts * gain
+        #
+        # The gain is reported in the headers of the tsField and fpAtlas files (and hence also in the field table in
+        # the CAS). The total noise contributed by dark current and read noise (in units of DN2) is also reported in
+        # the tsField files in header keyword dark_variance (and correspondingly as darkVariance in the field table in
+        # the CAS), and also as dark_var in the fpAtlas header.
+        #
+        # Thus, the error in DN is given by the following expression:
+        #
+        #      error(counts) = sqrt([counts+sky]/gain + Npix*(dark_variance+skyErr)),
+        #
+        # where counts is the number of object counts, sky is the number of sky counts summed over the same area as
+        # the object counts, Npix is the area covered by the object in pixels, gain and dark_variance and skyErr are
+        # the gain, dark variance, and the error on the estimate of the average sky level in the frame, respectively,
+        # from the corresponding tsField file.
+
+        ####
+        # BUT: Note: fpC files are no longer produced as of DR8. Instead, equivalent data is stored in frame files.
+        # (https://data.sdss.org/datamodel/files/PHOTO_REDUX/RERUN/RUN/objcs/CAMCOL/fpC.html)
+        ###
+
+        # EXPLANATION OF (POISSON) NOISE CALCULATION FROM DR8 ONWARDS !!!:
+
+        # on DATA MODEL page for 'frame': https://data.sdss.org/datamodel/files/BOSS_PHOTOOBJ/frames/RERUN/RUN/CAMCOL/frame.html
+        #
+        # Frame = The calibrated, sky-subtracted corrected frame plus associated calibration meta-data.
+        # The units of the images are in nanomaggies. It is kept compressed under "bzip2", which we have found is
+        # the most efficient compressor of this format. In addition, there is a lossy compression applied to the
+        # floating point values (which retains accuracy at the 0.1 percent level). The IDL routine "read_frame.pro"
+        # in photoop will back out the calibration and sky-subtraction from this file if necessary, in steps explained
+        #  below. Also explained below is how to calculate the noise in the image.
+        #
+
+        # HDU0: the corrected frame, what is normally in the "fpC" files
+        #
+        #  The "image", a 2048x1489 array of floating point values, the calibrated and sky-subtracted version
+        #  of the fpC "corrected frame" files produced by photo. Units are in nanomaggies.
+        #
+        # HDU1: the flat-field and calibration vector
+        #
+        #  The "calibvec", a 2048-element array of "float32" values, encompassing the flat-field correction to
+        #  apply, multiplied by the calibration. Translates the counts in the original image into nanomaggies.
+        #
+        # HDU2: the sky image
+        #
+        #
+
+        # ;; 0. find filename of the frame file
+        # framename = (sdss_name('frame', run, camcol, field, $
+        #               filter=filternum(filter), rerun=rerun))[0]+'.bz2'
+        #
+        # ;; 1. read in the FITS image from HDU0; the resulting image will be
+        # ;;    sky-subtracted as well as calibrated in nanomaggies/pixel
+        # img = mrdfits(framename,0,hdr)
+        # nrowc= (size(img,/dim))[1]
+        #
+        # ;; 2. read in sky, and interpolate to full image size; this returns a
+        #;;    sky image the same size as the frame image, in units of counts
+        # sky = mrdfits(framename,2)
+        # simg = interpolate(sky.allsky, sky.xinterp, sky.yinterp, /grid)
+        #
+        # ;; 3. read in calibration, and expand to full image size; this returns
+        # ;;    a calibration image the same size as the frame image, in units of
+        # ;;    nanomaggies per count
+        # calib= mrdfits(framename,1)
+        # cimg= calib#replicate(1.,nrowc)
+        #
+
+        # DATA MODEL DIRECTORIES: https://data.sdss.org/datamodel/files/
+
+        #   BOSS_PHOTOOBJ  https://data.sdss.org/sas/dr13/eboss/photoObj
+        #   PHOTO_CALIB    https://data.sdss.org/sas/dr13/eboss/calib/dr13_final
+        #   PHOTO_SKY      https://data.sdss.org/sas/dr13/eboss/photo/sky
+
+        # DATA MODEL: frame : https://data.sdss.org/datamodel/files/BOSS_PHOTOOBJ/frames/RERUN/RUN/CAMCOL/frame.html  (DR13?)
+
+        # DATA MODEL: photoField table (GAIN AND DARKVARIANCE) : https://data.sdss.org/datamodel/files/BOSS_PHOTOOBJ/RERUN/RUN/photoField.html  (DR13?)
+
+        # SKY FRAMES: https://data.sdss.org/datamodel/files/PHOTO_SKY/RERUN/RUN/sky/skyframes.html
+
+        #
+
+        # MAKING SQL QUERY: http://skyserver.sdss.org/dr12/en/help/docs/realquery.aspx
+
+        # SDSS SOFTWARE UTILS: http://www.sdss.org/dr13/software/products/
+
+        # PHOTOOP IDL PACKAGE LATEST VERSION: https://svn.sdss.org/public/repo/sdss/photoop/tags/v1_9_9/
+        # svn export https://svn.sdss.org/public/repo/sdss/photoop/tags/v1_9_9/ photoop
+
+        # IDLUTILS IDL PACKAGE LATEST VERSION: https://svn.sdss.org/public/repo/sdss/idlutils/tags/v5_5_9/
+        # svn export https://svn.sdss.org/public/repo/sdss/idlutils/tags/v5_5_9/ idlutils
+
+        ##
+        # PyIDL installation: https://pypi.python.org/pypi/pyIDL/
+
+        ###
+        
+        
+        
+        
+        
+        
+        # FIELD URL = field_url_start / RERUN / RUN    + / photoField-6digits-CAMCOL.fits
+                # example: http://data.sdss3.org/sas/dr12/env/BOSS_PHOTOOBJ/301/4294/photoField-004294-5.fits
+
+                # FRAME URL = $BOSS_PHOTOOBJ / frames / RERUN / RUN / CAMCOL    +   /frame-[ugriz]-6digits-CAMCOL-FRAMESEQ.fits.bz2
+                # example: http://data.sdss3.org/sas/dr10/boss/photoObj/frames/301/4294/5/frame-i-004294-5-0229.fits.bz2
+                
+                
+                
+                
+    # To use Montage to find out what images cover a given part of the sky, you first want to run mImgTable on the folder
+            # containing your image files, like so:
+            # montage_wrapper.commands.mImgtbl('/folder/with/maps/', 'Image_Metadata_Table.dat', corners=True)
+
+            # The 'Image_Metadata_Table.dat' output file is a table recording the geometry of all the files in the folder in
+            # question. You then use this file as an input to the function mCoverageCheck, which is used like this:
+
+            # montage_wrapper.commands_extra.mCoverageCheck('Image_Metadata_Table.dat', 'Overlap_Table.dat', mode='box', ra=ra,
+            # dec=dec, width=width)
+
+            # The 'Overlap_Table.dat' contains the subset of the rows from 'Image_Metadata_Table.dat' that intersect the defined
+            # region (not just those that cover the centre coordinate). I then read in this in with:
+
+            # overlap_files = np.genfromtxt('Overlap_Table.dat', skip_header=3, usecols=[31], dtype=('S500'))
+            
+    ## CONVERT THE IMAGES TO COUNT (DECALIBRATE)
+
+            log.warning("The frames now have to be converted to counts (DN) manually!")
+
+            log.warning("Execute the following IDL commands to convert a frame:")
+
+            # 1. read in the FITS image from HDU0; the resulting image will be
+            # sky-subtracted as well as calibrated in nanomaggies/pixel
+            log.info("IDL> img= mrdfits(framename,0,hdr)")
+            log.info("IDL> nrowc= (size(img,/dim))[1]")
+            log.info("")
+
+            # 2. read in sky, and interpolate to full image size; this returns a
+            # sky image the same size as the frame image, in units of counts
+            log.info("IDL> sky= mrdfits(framename,2)")
+            log.info("IDL> simg= interpolate(sky.allsky, sky.xinterp, sky.yinterp, /grid)")
+            log.info("")
+
+            # 3. read in calibration, and expand to full image size; this returns
+            # a calibration image the same size as the frame image, in units of
+            # nanomaggies per count
+            log.info("IDL> calib= mrdfits(framename,1)")
+            log.info("IDL> cimg= calib#replicate(1.,nrowc)")
+            log.info("")
+
+            ##
+
+            # If you have performed the above calculations, you can return the image to very close to the state it
+            # was in when input into the photometric pipeline, as follows:
+
+            # 4. Convert to
+
+            log.info("IDL> dn= img/cimg+simg")
+            log.info("")
+
+            log.warning("Then save the DN image as a FITS file!")
+
+            log.info("IDL> writefits,'path',dn")
+            
+            

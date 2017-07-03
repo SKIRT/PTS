@@ -17,7 +17,7 @@ from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.core.tools import introspection
 from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
-from pts.modeling.core.component import load_modeling_history
+from pts.modeling.component.component import load_modeling_history
 
 # -----------------------------------------------------------------
 

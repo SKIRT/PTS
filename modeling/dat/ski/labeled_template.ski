@@ -87,6 +87,7 @@
         <dustDistribution type="DustDistribution">
           <CompDustDistribution>
             <components type="DustComp">
+              <!-- Dust disk -->
               <DustComp>
                 <geometry type="Geometry">
                   <ReadFitsGeometry filename="dust.fits" pixelScale="49.74188368 pc" positionAngle="[position_angle:157 deg]" inclination="[inclination:59 deg]" xelements="375" yelements="525" xcenter="196.94613" ycenter="253.97332" axialScale="[dust_scaleheight:260.5 pc]"/>

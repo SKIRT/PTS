@@ -13,11 +13,13 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..basics.configurable import OldConfigurable, Configurable
+from ..basics.configurable import Configurable
 from ..launch.basicanalyser import BasicAnalyser
 from ..launch.batchanalyser import BatchAnalyser
 from ..test.scalinganalyser import ScalingAnalyser
 from ..tools.logging import log
+from ..simulation.simulation import RemoteSimulation
+from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -27,16 +29,16 @@ class SimulationAnalyser(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(SimulationAnalyser, self).__init__(config)
+        super(SimulationAnalyser, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 
@@ -72,6 +74,9 @@ class SimulationAnalyser(Configurable):
 
         # 3. Analyse the scaling, if the simulation is part of a scaling test
         if self.simulation.from_scaling_test: self.analyse_scaling()
+
+        # 4. Perform extra analysis
+        self.analyse_extra()
 
     # -----------------------------------------------------------------
 
@@ -152,5 +157,36 @@ class SimulationAnalyser(Configurable):
 
         # Run the scaling analyser
         self.scaling_analyser.run(simulation=self.simulation, timeline=self.basic_analyser.timeline, memory=self.basic_analyser.memory)
+
+    # -----------------------------------------------------------------
+
+    def analyse_extra(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Performing extra analysis on the simulation output ...")
+
+        # Loop over the 'extra' analyser classes that are defined for this simulation
+        for analyser_class in self.simulation.analyser_classes:
+
+            # Debugging
+            log.debug("Running the " + analyser_class.__name__ + " on the simulation ...")
+
+            # Create an instance of the analyser class
+            analyser = analyser_class.for_simulation(self.simulation)
+
+            # Run the analyser, giving this simulation analyser instance as an argument
+            analyser.run(simulation_analyser=self)
+
+        # Indicate that this simulation has been analysed
+        self.simulation.analysed = True
+        self.simulation.save()
+
+        # If requested, remove the local output directory
+        if isinstance(self.simulation, RemoteSimulation) and self.simulation.remove_local_output: fs.remove_directory(self.simulation.output_path)
 
 # -----------------------------------------------------------------

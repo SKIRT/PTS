@@ -12,21 +12,22 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import requests
-from lxml import html
-
 # Import astronomical modules
 from astropy.table import Table
+from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.tools import tables
-from ...core.basics.filter import Filter
+from ...core.filter.filter import parse_filter
 from ...core.data.sed import ObservedSED
 from .sample import DustPediaSample
+from ...magic.region.ellipse import SkyEllipseRegion
+from ...magic.basics.coordinate import SkyCoordinate
+from ...magic.basics.stretch import SkyStretch
+from ...core.units.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -80,16 +81,20 @@ class DustPediaPhotometry(object):
         The constructor ...
         """
 
+        # Read the tables
         self.aperture = Table.read(ap_phot_table_path)
         self.iras_scanpi = Table.read(iras_scanpi_phot_table_path)
         self.planck = Table.read(planck_phot_table_path)
 
+        # Initialize dictionaries
         self.aperture_filters = dict()
         self.iras_filters = dict()
         self.planck_filters = dict()
 
+        # Set the filters for which there is photometry
         self.set_filters()
 
+        # Create the DustPedia sample object
         self.sample = DustPediaSample()
 
     # -----------------------------------------------------------------
@@ -102,38 +107,108 @@ class DustPediaPhotometry(object):
         """
 
         # APERTURE
-
         for colname in self.aperture.colnames:
 
             if colname in non_flux_columns: continue
-
             if colname.endswith("_err") or colname.endswith("_flag"): continue
-
-            fltr = Filter.from_string(colname)
-
+            fltr = parse_filter(colname)
             self.aperture_filters[colname] = fltr
 
         # IRAS
-
         for colname in self.iras_scanpi.colnames:
-
             if colname in non_flux_columns: continue
             if colname.endswith("_err") or colname.endswith("_flag"): continue
-
-            fltr = Filter.from_string(colname)
-
+            fltr = parse_filter(colname)
             self.iras_filters[colname] = fltr
 
         # PLANCK
-
         for colname in self.planck.colnames:
-
             if colname in non_flux_columns: continue
             if colname.endswith("_err") or colname.endswith("_flag"): continue
-
-            fltr = Filter.from_string(colname)
-
+            fltr = parse_filter(colname)
             self.planck_filters[colname] = fltr
+
+    # -----------------------------------------------------------------
+
+    def get_aperture(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the aperture for galaxy '" + galaxy_name + "' ...")
+
+        # Get DustPedia name of the galaxy
+        objname = self.sample.get_name(galaxy_name)
+
+        # Find in table
+        index = tables.find_index(self.aperture, objname, "name")
+
+        # Get properties
+        ra = self.aperture["ra"][index]
+        dec = self.aperture["dec"][index]
+        semimaj_arcsec = self.aperture["semimaj_arcsec"][index]
+        axial_ratio = self.aperture["axial_ratio"][index]
+        pos_angle = self.aperture["pos_angle"][index]
+
+        # Create center
+        center = SkyCoordinate(ra=ra, dec=dec, unit="deg")
+
+        semimaj = semimaj_arcsec * u("arcsec")
+
+        # Create radius
+        radius = SkyStretch(semimaj, semimaj/axial_ratio)
+
+        # Create the angle
+        angle = Angle(pos_angle, "deg")
+
+        # Create aperture
+        aperture = SkyEllipseRegion(center, radius, angle=angle)
+
+        # Return the aperture
+        return aperture
+
+    # -----------------------------------------------------------------
+
+    def get_flags(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the photometry flags for galaxy '" + galaxy_name + "' ...")
+
+        # Get DustPedia name of galaxy
+        objname = self.sample.get_name(galaxy_name)
+
+        # Find in table
+        index = tables.find_index(self.aperture, objname, "name")
+
+        # Initialize dictionary for the flags for each filter
+        flags = dict()
+
+        # Loop over the filters for which there is aperture photometry
+        for colname in self.aperture_filters:
+
+            flag_colname = colname + "_flag"
+
+            # Masked entry
+            if hasattr(self.aperture[flag_colname], "mask") and self.aperture[flag_colname].mask[index]: continue
+
+            # Get the flag
+            flag = self.aperture[flag_colname][index]
+
+            # Set the flag for this filter
+            flags[colname] = flag
+
+        # Return the flags
+        return flags
 
     # -----------------------------------------------------------------
 
@@ -146,8 +221,13 @@ class DustPediaPhotometry(object):
         :param add_planck:
         """
 
+        # Inform the user
+        log.info("Getting the DustPedia SED for galaxy '" + galaxy_name + "' ...")
+
+        # Get DustPedia name of galaxy
         objname = self.sample.get_name(galaxy_name)
 
+        # Find in table
         index = tables.find_index(self.aperture, objname, "name")
 
         filters = []
@@ -208,11 +288,12 @@ class DustPediaPhotometry(object):
                     errors.append(self.planck[colname + "_err"][index])
                 else: errors.append(None)
 
-        sed = ObservedSED()
+        sed = ObservedSED(photometry_unit="Jy")
 
         for i in range(len(filters)):
-            sed.add_entry(filters[i], fluxes[i], errors[i])
+            sed.add_point(filters[i], fluxes[i], errors[i])
 
+        # Return the SED
         return sed
 
 # -----------------------------------------------------------------

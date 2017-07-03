@@ -19,6 +19,7 @@ from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
 from ...core.tools import tables
+from ...core.tools import arrays
 
 # -----------------------------------------------------------------
 
@@ -34,13 +35,10 @@ class WavelengthGrid(object):
         The constructor ...
         """
 
-        # Attributes
-        #self.table = Table(names=["Wavelength", "Delta"], dtype=('f8', 'f8'))
-        #self.table = Table(names=["Wavelength"], dtype=['f8'])
-        #self.table["Wavelength"].unit = Unit("micron")
-        #self.table["Delta"].unit = Unit("micron")
-
         self.table = None
+
+        # The path
+        self.path = None
 
     # -----------------------------------------------------------------
 
@@ -58,6 +56,9 @@ class WavelengthGrid(object):
 
         # Load the table
         grid.table = tables.from_file(path, format="ascii.ecsv")
+
+        # Set the path
+        grid.path = path
 
         # Return the new instance
         return grid
@@ -89,7 +90,7 @@ class WavelengthGrid(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_wavelengths(cls, wavelengths, unit="micron"):
+    def from_wavelengths(cls, wavelengths, unit=None):
 
         """
         This function ...
@@ -100,6 +101,19 @@ class WavelengthGrid(object):
 
         # Create a new class instance
         grid = cls()
+
+        # Check if wavelengths are values or quantities
+        for index in range(len(wavelengths)):
+
+            if unit is None:
+                if hasattr(wavelengths[index], "unit"):
+                    unit = wavelengths[index].unit
+                    wavelengths[index] = wavelengths[index].value
+                else: pass
+            else:
+                if hasattr(wavelengths[index], "unit"):
+                    wavelengths[index] = wavelengths[index].to(unit).value
+                else: pass
 
         # Add the wavelengths
         grid.table = Table()
@@ -327,7 +341,7 @@ class WavelengthGrid(object):
         :return:
         """
 
-        return tables.find_closest_index(self.table, wavelength, column_name="Wavelength")
+        return arrays.find_closest_index(self.table["Wavelength"], wavelength, array_unit=self.table["Wavelength"].unit)
 
     # -----------------------------------------------------------------
 
@@ -339,7 +353,7 @@ class WavelengthGrid(object):
         :return:
         """
 
-        return tables.find_closest_above_index(self.table, wavelength, column_name="Wavelength")
+        return arrays.find_closest_above_index(self.table["Wavelength"], wavelength, array_unit=self.table["Wavelength"].unit)
 
     # -----------------------------------------------------------------
 
@@ -351,7 +365,7 @@ class WavelengthGrid(object):
         :return:
         """
 
-        return tables.find_closest_below_index(self.table, wavelength, column_name="Wavelength")
+        return arrays.find_closest_below_index(self.table["Wavelength"], wavelength, array_unit=self.table["Wavelength"].unit)
 
     # -----------------------------------------------------------------
 
@@ -381,8 +395,8 @@ class WavelengthGrid(object):
         :return:
         """
 
-        if asarray: return tables.column_as_array(self.table["Wavelength"], unit=unit)
-        else: return tables.column_as_list(self.table["Wavelength"], unit=unit, add_unit=add_unit)
+        if asarray: return arrays.plain_array(self.table["Wavelength"], unit=unit, array_unit=self.table["Wavelength"].unit)
+        else: return arrays.array_as_list(self.table["Wavelength"], unit=unit, add_unit=add_unit, array_unit=self.table["Wavelength"].unit)
 
     # -----------------------------------------------------------------
 
@@ -396,8 +410,8 @@ class WavelengthGrid(object):
         :return:
         """
 
-        if asarray: return tables.column_as_array(self.table["Delta"], unit=unit)
-        else: return tables.column_as_list(self.table["Delta"], unit=unit, add_unit=add_unit)
+        if asarray: return arrays.plain_array(self.table["Delta"], unit=unit, array_unit=self.table["Delta"].unit)
+        else: return arrays.array_as_list(self.table["Delta"], unit=unit, add_unit=add_unit, array_unit=self.table["Delta"].unit)
 
     # -----------------------------------------------------------------
 
@@ -429,7 +443,22 @@ class WavelengthGrid(object):
 
     # -----------------------------------------------------------------
 
-    def save(self, path):
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether the path is valid
+        if self.path is None: raise RuntimeError("Path is not defined")
+
+        # Save
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
 
         """
         This function ...
@@ -439,5 +468,8 @@ class WavelengthGrid(object):
 
         # Write the table
         tables.write(self.table, path, format="ascii.ecsv")
+
+        # Update the path
+        self.path = path
 
 # -----------------------------------------------------------------

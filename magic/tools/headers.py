@@ -13,20 +13,22 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import re
 import copy
 import numpy as np
 
 # Import astronomical modules
 from astropy import coordinates
-from astropy import units as u
+from astropy.units import CompositeUnit
 
 # Import the relevant PTS classes and modules
-from ..basics.vector import Extent
-from ...core.basics.filter import Filter
+from ...core.filter.filter import parse_filter
 from ..basics.coordinatesystem import CoordinateSystem
 from ...core.tools.logging import log
 from ..basics.pixelscale import Pixelscale
+from ...core.units.unit import PhotometricUnit
+from ...core.units.parsing import parse_unit as u
+from ...core.units.utils import interpret_physical_type
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -65,23 +67,33 @@ def get_pixelscale(header):
             scale = header[keyword]
             if scale == "N/A": continue
 
-            try: unit = header.comments[keyword].split("[")[1].split("]")[0]
-            except IndexError: unit = None
+            scale = float(scale)
 
-            # Parse the unit with Astropy
-            if unit is not None:
+            #print(scale, type(scale))
+            # Composite unit
+            #if isinstance(scale, CompositeUnit):
+            #    scale = parse_quantity(str(scale))
 
-                unit = unit.replace("asec", "arcsec")
-                if not (unit.endswith("pixel") or unit.endswith("pix")): unit = unit + "/pix"
-                try: unit = u.Unit(unit)
-                except ValueError: unit = None
+            # If unit is not defined
+            if not hasattr(scale, "unit"):
 
-            log.debug("pixelscale found in " + str(keyword) + " keyword = " + str(scale))
-            log.debug("unit for the pixelscale = " + str(unit))
+                try: unit = header.comments[keyword].split("[")[1].split("]")[0]
+                except IndexError: unit = None
 
-            # If no unit is found, guess that it's arcseconds / pixel ...
-            if unit is None: unit = u.Unit("arcsec/pix")
-            scale = scale * unit
+                # Parse the unit with Astropy
+                if unit is not None:
+
+                    unit = unit.replace("asec", "arcsec")
+                    if not (unit.endswith("pixel") or unit.endswith("pix")): unit = unit + "/pix"
+                    try: unit = u(unit)
+                    except ValueError: unit = None
+
+                log.debug("pixelscale found in " + str(keyword) + " keyword = " + str(scale))
+                log.debug("unit for the pixelscale = " + str(unit))
+
+                # If no unit is found, guess that it's arcseconds / pixel ...
+                if unit is None: unit = u("arcsec/pix")
+                scale = scale * unit
 
             # Return the scale
             return Pixelscale(scale)
@@ -106,22 +118,22 @@ def get_pixelscale(header):
 
                 unit1 = unit1.replace("asec", "arcsec")
                 if not (unit1.endswith("pixel") or unit1.endswith("pix")): unit1 = unit1 + "/pix"
-                try: unit1 = u.Unit(unit1)
+                try: unit1 = u(unit1)
                 except ValueError: unit1 = None
 
             if unit2 is not None:
 
                 unit2 = unit2.replace("asec", "arcsec")
                 if not (unit2.endswith("pixel") or unit2.endswith("pix")): unit2 = unit2 + "/pix"
-                try: unit2 = u.Unit(unit2)
+                try: unit2 = u(unit2)
                 except ValueError: unit2 = None
 
             log.debug("pixelscale found in PXSCAL1 and PXSCAL2 keywords = (" + str(scale1) + "," +str(scale2) + ")")
             log.debug("unit for the pixelscale = (" + str(unit1) + "," + str(unit2) + ")")
 
             # If no unit is found, guess that it's arcseconds / pixel ...
-            if unit1 is None: unit1 = u.Unit("arcsec/pix")
-            if unit2 is None: unit2 = u.Unit("arcsec/pix")
+            if unit1 is None: unit1 = u("arcsec/pix")
+            if unit2 is None: unit2 = u("arcsec/pix")
             scale1 = scale1 * unit1
             scale2 = scale2 * unit2
 
@@ -130,6 +142,19 @@ def get_pixelscale(header):
 
     # If none of the above keywords were found, return None
     else: return None
+
+# -----------------------------------------------------------------
+
+def get_psf_filter(header):
+
+    """
+    This function ...
+    :param header: 
+    :return: 
+    """
+
+    if "PSFFLTR" not in header: return None
+    else: return parse_filter(header["PSFFLTR"])
 
 # -----------------------------------------------------------------
 
@@ -145,6 +170,7 @@ def get_filter(name, header=None):
     filterid = name.lower()
     channel = None
     wavelength = None
+    frequency = None
 
     if "kernel" in filterid:
         log.debug("The image represents a kernel, so no filter will be set")
@@ -152,6 +178,9 @@ def get_filter(name, header=None):
 
     # Get information from the header
     if header is not None:
+
+        # HEADER EXPLICITLY SAYS THAT THERE IS NO FILTER!
+        if "FILTER" in header and header["FILTER"] == "n/a": return None
 
         # Get information regarding the telescope and instrument
         if "TELESCOP" in header: filterid += " " + get_string(header["TELESCOP"]).lower()
@@ -162,13 +191,13 @@ def get_filter(name, header=None):
         # Get a name describing the filter
         if "FILTER" in header:
             try:
-                filter = Filter.from_string(header["FILTER"])
+                filter = parse_filter(header["FILTER"])
                 return filter
             except ValueError: pass
             filterid += " " + get_string(header['FILTER']).lower()
         if "FLTRNM" in header:
             try:
-                filter = Filter.from_string(header["FLTRNM"])
+                filter = parse_filter(header["FLTRNM"])
                 return filter
             except ValueError: pass
             filterid += " " + get_string(header['FLTRNM']).lower()
@@ -183,10 +212,16 @@ def get_filter(name, header=None):
         elif "WVLNGTH" in header: wavelength = get_quantity(header["WVLNGTH"], "micron")
         else: wavelength = None
 
+        # Get the frequency
+        if "FREQ" in header: frequency = get_quantity(header["FREQ"], "GHz")
+        elif "FREQUENCY" in header: frequency = get_quantity(header["FREQUENCY"], "GHz")
+        else: frequency = None
+
     # Debug information
     log.debug("filterid = " + str(filterid))
     log.debug("channel = " + str(channel))
     log.debug("wavelength = " + str(wavelength))
+    log.debug("frequency = " + str(frequency))
 
     final_filter_name = None
 
@@ -300,7 +335,12 @@ def get_filter(name, header=None):
                 elif np.isclose(wavelength.to("micron").value, 4.6, rtol=0.05): final_filter_name = "WISE W2"
                 elif np.isclose(wavelength.to("micron").value, 12., rtol=0.05): final_filter_name = "WISE W3"
                 elif np.isclose(wavelength.to("micron").value, 22., rtol=0.05): final_filter_name = "WISE W4"
+                else: log.warning("Could not determine which WISE filter was used for this image")
 
+            elif "3.4" in filterid: final_filter_name = "WISE W1"
+            elif "4.6" in filterid: final_filter_name = "WISE W2"
+            elif "11.6" in filterid or "12" in filterid: final_filter_name = "WISE W3"
+            elif "22.1" in filterid or "22" in filterid: final_filter_name = "WISE W4"
             else: log.warning("Could not determine which WISE filter was used for this image")
 
     # MIPS filters
@@ -361,36 +401,122 @@ def get_filter(name, header=None):
 
             elif wavelength is not None:
 
-                if wavelength == 250: final_filter_name = "SPIRE PSW"
-                elif wavelength == 350: final_filter_name = "SPIRE PMW"
-                elif wavelength == 500: final_filter_name = "SPIRE PLW"
+                if np.isclose(wavelength.to("micron").value, 250., rtol=0.05): final_filter_name = "SPIRE PSW"
+                elif np.isclose(wavelength.to("micron").value, 350, rtol=0.05): final_filter_name = "SPIRE PMW"
+                elif np.isclose(wavelength.to("micron").value, 500., rtol=0.05): final_filter_name = "SPIRE PLW"
                 else: log.warning("Could not determine which SPIRE filter was used for this image")
 
     # -- H alpha --
-    elif "alpha" in filterid or "6561" in filterid or "656_1" in filterid: final_filter_name = "656_1"
+    #elif "alpha" in filterid or "6561" in filterid or "656_1" in filterid: final_filter_name = "656_1"
+    elif "alpha" in filterid or "6561" in filterid or "656_1" in filterid: final_filter_name = "Halpha"
     elif "ha" in filterid and "kpno" in filterid: final_filter_name = "Halpha"
 
+    # Planck
+    elif "planck" in filterid:
+
+        # ngc3031_planck_10600
+        # ngc3031_planck_1380
+        # ngc3031_planck_2100
+        # ngc3031_planck_3000
+        # ngc3031_planck_350
+        # ngc3031_planck_4260
+        # ngc3031_planck_550
+        # ngc3031_planck_6810
+        # ngc3031_planck_850
+
+        # planck_info["Planck_350"] = ("857", "HFI")
+        # planck_info["Planck_550"] = ("545", "HFI")
+        # planck_info["Planck_850"] = ("353", "HFI")
+        # planck_info["Planck_1380"] = ("217", "HFI")
+        # planck_info["Planck_2100"] = ("143", "HFI")
+        # planck_info["Planck_3000"] = ("100", "HFI")
+        # planck_info["Planck_4260"] = ("070", "LFI")
+        # planck_info["Planck_6810"] = ("044", "LFI")
+        # planck_info["Planck_10600"] = ("030", "LFI")
+
+        if "350" in filterid: final_filter_name = "Planck 350"
+        elif "550" in filterid: final_filter_name = "Planck 550"
+        elif "850" in filterid: final_filter_name = "Planck 850"
+        elif "1380" in filterid: final_filter_name = "Planck 1380"
+        elif "2100" in filterid: final_filter_name = "Planck 2100"
+        elif "3000" in filterid: final_filter_name = "Planck 3000"
+        elif "4260" in filterid: final_filter_name = "Planck 4260"
+        elif "6810" in filterid: final_filter_name = "Planck 6810"
+        elif "10600" in filterid: final_filter_name = "Planck 10600"
+        else:
+
+            if "30" in filterid: final_filter_name = "Planck 30"
+            elif "44" in filterid: final_filter_name = "Planck 44"
+            elif "70" in filterid: final_filter_name = "Planck 70"
+            elif "100" in filterid: final_filter_name = "Planck 100"
+            elif "143" in filterid: final_filter_name = "Planck 143"
+            elif "217" in filterid: final_filter_name = "Planck 217"
+            elif "353" in filterid: final_filter_name = "Planck 353"
+            elif "545" in filterid: final_filter_name = "Planck 545"
+            elif "857" in filterid: final_filter_name = "Planck 857"
+            else:
+
+                # Wavelength
+                if wavelength is not None:
+
+                    if np.isclose(wavelength.to("micron").value, 350., rtol=0.05): final_filter_name = "Planck 350"
+                    elif np.isclose(wavelength.to("micron").value, 550., rtol=0.05): final_filter_name = "Planck 550"
+                    elif np.isclose(wavelength.to("micron").value, 850., rtol=0.05): final_filter_name = "Planck 850"
+                    elif np.isclose(wavelength.to("micron").value, 1380., rtol=0.05): final_filter_name = "Planck 1380"
+                    elif np.isclose(wavelength.to("micron").value, 2100., rtol=0.05): final_filter_name = "Planck 2100"
+                    elif np.isclose(wavelength.to("micron").value, 3000., rtol=0.05): final_filter_name = "Planck 3000"
+                    elif np.isclose(wavelength.to("micron").value, 4260., rtol=0.05): final_filter_name = "Planck 4260"
+                    elif np.isclose(wavelength.to("micron").value, 6810, rtol=0.05): final_filter_name = "Planck 6810"
+                    elif np.isclose(wavelength.to("micron").value, 10600, rtol=0.05): final_filter_name = "Planck 10600"
+                    else: log.warning("Could not determine which Planck filter was used for this image")
+
+                # Frequency
+                elif frequency is not None:
+
+                    if np.isclose(frequency.to("GHz").value, 30., rtol=0.05): final_filter_name = "Planck 30"
+                    elif np.isclose(frequency.to("GHz").value, 44., rtol=0.05): final_filter_name = "Planck 44"
+                    elif np.isclose(frequency.to("GHz").value, 70., rtol=0.05): final_filter_name = "Planck 70"
+                    elif np.isclose(frequency.to("GHz").value, 100, rtol=0.05): final_filter_name = "Planck 100"
+                    elif np.isclose(frequency.to("GHz").value, 143, rtol=0.05): final_filter_name = "Planck 143"
+                    elif np.isclose(frequency.to("GHz").value, 217, rtol=0.05): final_filter_name = "Planck 217"
+                    elif np.isclose(frequency.to("GHz").value, 353, rtol=0.05): final_filter_name = "Planck 353"
+                    elif np.isclose(frequency.to("GHz").value, 545, rtol=0.05): final_filter_name = "Planck 545"
+                    elif np.isclose(frequency.to("GHz").value, 857, rtol=0.05): final_filter_name = "Planck 857"
+                    else: log.warning("Could not determine which Planck filter was used for this image")
+
+    # No filter name could be composed
     if final_filter_name is None:
 
+        # If wavelength was found
         if wavelength is not None:
 
+            # Warning
+            log.warning("Filter could not be identified, but wavelength is " + str(wavelength))
+
+            # Set limits
             value = wavelength.to("micron").value
             five_percent = 0.05 * value
             lower = value - five_percent
             upper = value + five_percent
 
+            log.warning("Setting the filter to a uniform filter between the wavelengths " + str(lower) + " micron and " + str(upper) + " micron")
+
             if "FILTER" in header: name = header["FILTER"].split("  / ")[0].replace(" ", "")
             else: name = None
 
             # Create a custom filter around the wavelength
-            fltr = Filter((lower, upper), name=name)
+            fltr = parse_filter((lower, upper), name=name)
 
-        else: fltr = None
+        # Wavelength could not be found
+        else:
+            log.warning("Filter or wavelength could not be identified")
+            fltr = None
 
+    # Filter name could be composed
     else:
 
         # Create the filter
-        fltr = Filter.from_string(final_filter_name)
+        fltr = parse_filter(final_filter_name)
 
         # Inform the user
         log.debug("Filter was identified as " + str(fltr))
@@ -408,23 +534,30 @@ def get_unit(header):
     :return:
     """
 
+    # Check whether physical type is defined
+    if "PHYSTYPE" in header:
+        physical_type = header["PHYSTYPE"]
+        density, brightness = interpret_physical_type(physical_type)
+        density_strict = brightness_strict = True
+    else: density = brightness = density_strict = brightness_strict = False # these are the defaults
+
     unit = None
 
+    # Look for different keywords
     for keyword in ("BUNIT", "SIGUNIT", "ZUNITS"):
 
-        if keyword in header:
+        # Skip
+        if keyword not in header: continue
 
-            value = header[keyword].split("   / ")[0].rstrip()
+        value = header[keyword].split("   / ")[0].rstrip()
 
-            if value.isupper(): value = value.replace("DN", "count").replace("SEC", "second").lower()
-            else: value = value.replace("DN", "count")
+        try:
+            # Unit found
+            unit = PhotometricUnit(value, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
+            break
 
-            try:
-                #print(value)
-                unit = u.Unit(value)
-                #print(unit)
-                break
-            except ValueError: continue
+        # Parsing failed
+        except ValueError: continue
 
     # Return the unit
     return unit
@@ -443,12 +576,35 @@ def get_fwhm(header):
 
     for keyword in ["FWHM"]:
 
-        if keyword in header:
+        if keyword not in header: continue
 
-            fwhm = get_quantity(header["FWHM"], default_unit="arcsec")
+        # Get the FWHM
+        fwhm = get_quantity(header["FWHM"], default_unit="arcsec")
 
     # Return the FWHM
     return fwhm
+
+# -----------------------------------------------------------------
+
+def get_distance(header):
+    
+    """
+    This function ...
+    :param header: 
+    :return: 
+    """
+
+    distance = None
+
+    for keyword in ["DISTANCE"]:
+
+        if keyword not in header: continue
+
+        # Get the distance
+        distance = get_quantity(header["DISTANCE"], default_unit="Mpc")
+
+    # Return the distance
+    return distance
 
 # -----------------------------------------------------------------
 
@@ -481,10 +637,56 @@ def is_sky_subtracted(header):
     # Initially, set the boolean to False
     subtracted = False
 
+    # Find the keyword
     if 'BACK_SUB' in header: subtracted = header['BACK_SUB']
+
+    # Check type
+    if not isinstance(subtracted, bool): raise ValueError("Invalid value for 'BACK_SUB'")
 
     # Return the boolean value
     return subtracted
+
+# -----------------------------------------------------------------
+
+def is_source_extracted(header):
+
+    """
+    This function ...
+    :param header:
+    :return:
+    """
+
+    extracted = False
+
+    # Find the keyword
+    if "SRC_EXTR" in header: extracted = header["SRC_EXTR"]
+
+    # Check type
+    if not isinstance(extracted, bool): raise ValueError("Invalid value for 'SRC_EXTR'")
+
+    # Return the boolean value
+    return extracted
+
+# -----------------------------------------------------------------
+
+def is_extinction_corrected(header):
+
+    """
+    This function ...
+    :param header:
+    :return:
+    """
+
+    corrected = False
+
+    # Find the keyword
+    if "EXT_CORR" in header: corrected = header["EXT_CORR"]
+
+    # Check type
+    if not isinstance(corrected, bool): raise ValueError("Invalid value for 'EXT_CORR'")
+
+    # Return the boolean value
+    return corrected
 
 # -----------------------------------------------------------------
 
@@ -682,7 +884,7 @@ def get_pixel_mapping(header1, header2):
 
         # Transform the world coordinates from the output image into the coordinate
         # system of the input image
-        C2 = coordinates.SkyCoord(lon2,lat2,unit=(u.deg,u.deg),frame=csys2)
+        C2 = coordinates.SkyCoord(lon2, lat2, unit="deg", frame=csys2)
         C1 = C2.transform_to(csys1)
         lon2,lat2 = C1.spherical.lon.deg,C1.spherical.lat.deg
 
@@ -739,14 +941,15 @@ def get_quantity(entry, default_unit=None):
     :return:
     """
 
-    if isinstance(entry, basestring): value = entry.split("   / ")[0].rstrip()
+    if types.is_string_type(entry): value = entry.split("   / ")[0].rstrip()
     else: value = entry
 
+    # Try parsing
     try:
 
         num_value = float(value)
         if default_unit is None: raise RuntimeError("Default unit is not provided")
-        unit = u.Unit(default_unit)
+        unit = u(default_unit)
 
     except ValueError:
 
@@ -760,11 +963,12 @@ def get_quantity(entry, default_unit=None):
 
         #unit = u.Unit(unit_description)
 
-        composite_unit = u.Unit(value)
+        composite_unit = u(value)
+        if default_unit is None: raise RuntimeError("Default unit is not provided")
+        num_value = composite_unit.to(default_unit)
+        unit = u(default_unit)
 
-        num_value = composite_unit.to("micron")
-        unit = u.Unit("micron")
-
+    # Return quantity
     return num_value * unit
 
 # -----------------------------------------------------------------

@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from abc import abstractmethod, ABCMeta
+from abc import abstractmethod, ABCMeta, abstractproperty
 from collections import OrderedDict, defaultdict
 
 # Import the relevant PTS classes and modules
@@ -21,6 +21,8 @@ from ....core.tools.logging import log
 from ..component import FittingComponent
 from ....magic.animation.scatter import ScatterAnimation
 from ....magic.animation.distribution import DistributionAnimation
+from ....core.tools import types
+from ....core.tools import numbers, sequences
 
 # -----------------------------------------------------------------
 
@@ -34,21 +36,28 @@ class ModelGenerator(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(ModelGenerator, self).__init__(config)
+        super(ModelGenerator, self).__init__(*args, **kwargs)
+
+        # The fitting run
+        self.fitting_run = None
+
+        # The generation
+        self.generation = None
 
         # The dictionary with the parameter ranges
         self.ranges = OrderedDict()
 
         # The dictionary with the list of the model parameters
-        self.parameters = defaultdict(list)
+        self.parameters = defaultdict(dict)
 
         # The parameter value distributions
         self.distributions = dict()
@@ -57,6 +66,25 @@ class ModelGenerator(FittingComponent):
         self.scatter_animation = None
         self.scatter_animation_labels = None
         self.parameter_animations = dict()
+
+        # The scales for the different parameters
+        self.scales = None
+
+        # Other input
+        self.most_sampled_parameters = None
+        self.sampling_weights = None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def generation_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.generation.path
 
     # -----------------------------------------------------------------
 
@@ -80,7 +108,7 @@ class ModelGenerator(FittingComponent):
         :return:
         """
 
-        return len(self.parameters[self.free_parameter_labels[0]])
+        return len(self.parameters[self.fitting_run.free_parameter_labels[0]])
 
     # -----------------------------------------------------------------
 
@@ -96,7 +124,7 @@ class ModelGenerator(FittingComponent):
         minima = []
 
         # Set the list values
-        for label in self.free_parameter_labels: minima.append(self.ranges[label].min)
+        for label in self.fitting_run.free_parameter_labels: minima.append(self.ranges[label].min)
 
         # Return the minimal parameter values
         return minima
@@ -115,7 +143,73 @@ class ModelGenerator(FittingComponent):
         maxima = []
 
         # Set the list values
-        for label in self.free_parameter_labels: maxima.append(self.ranges[label].max)
+        for label in self.fitting_run.free_parameter_labels: maxima.append(self.ranges[label].max)
+
+        # Return the maximal parameter values
+        return maxima
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_minima_scalar(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a list
+        minima = []
+
+        # Set the list values
+        for label in self.fitting_run.free_parameter_labels:
+
+            min_value = self.ranges[label].min
+
+            # Convert if necessary
+            if label in self.fitting_run.parameter_units and self.fitting_run.parameter_units[label] is not None:
+                unit = self.fitting_run.parameter_units[label]
+                min_value = min_value.to(unit).value
+
+            # Assert that is real type
+            assert types.is_real_type(min_value)
+            min_value = float(min_value)
+
+            # Add to list
+            minima.append(min_value)
+
+        # Return the minimal parameter values
+        return minima
+
+    # -----------------------------------------------------------------
+
+    @property
+    def parameter_maxima_scalar(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize a list
+        maxima = []
+
+        # Set the list values
+        for label in self.fitting_run.free_parameter_labels:
+
+            max_value = self.ranges[label].max
+
+            # Convert if necessary
+            if label in self.fitting_run.parameter_units and self.fitting_run.parameter_units[label] is not None:
+                unit = self.fitting_run.parameter_units[label]
+                max_value = max_value.to(unit).value
+
+            # Assert that is real type
+            assert types.is_real_type(max_value)
+            max_value = float(max_value)
+
+            # Add to list
+            maxima.append(max_value)
 
         # Return the maximal parameter values
         return maxima
@@ -131,19 +225,34 @@ class ModelGenerator(FittingComponent):
         :return:
         """
 
+        #print("HEREE!!!!!")
+
         self.ranges[label] = parameter_range
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    @abstractproperty
+    def individual_names(self):
 
         """
         This function ...
+        :return: 
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def run(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 3. Load the current parameter value probability distributions
         self.load_distributions()
@@ -159,15 +268,29 @@ class ModelGenerator(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup of the base class
-        super(ModelGenerator, self).setup()
+        super(ModelGenerator, self).setup(**kwargs)
+
+        # Get the fitting run
+        self.fitting_run = kwargs.pop("fitting_run")
+
+        # Get the generation
+        self.generation = kwargs.pop("generation")
+
+        # Get scales for different free parameters
+        if "scales" in kwargs: self.scales = kwargs.pop("scales")
+
+        # Get other input
+        if "most_sampled_parameters" in kwargs: self.most_sampled_parameters = kwargs.pop("most_sampled_parameters")
+        if "sampling_weights" in kwargs: self.sampling_weights = kwargs.pop("sampling_weights")
 
     # -----------------------------------------------------------------
 
@@ -182,10 +305,10 @@ class ModelGenerator(FittingComponent):
         log.info("Loading the current parameter distributions ...")
 
         # Loop over the free parameters
-        for label in self.free_parameter_labels:
+        for label in self.fitting_run.free_parameter_labels:
 
             # Load the distribution
-            if self.has_distribution(label): self.distributions[label] = self.get_parameter_distribution(label)
+            if self.fitting_run.has_distribution(label): self.distributions[label] = self.fitting_run.get_parameter_distribution(label)
 
     # -----------------------------------------------------------------
 
@@ -200,10 +323,10 @@ class ModelGenerator(FittingComponent):
         log.info("Initializing the animations ...")
 
         # Initialize the scatter animation, if there are exactly 3 free parameters
-        if len(self.free_parameter_labels) == 3:
+        if len(self.fitting_run.free_parameter_labels) == 3:
 
-            label0, label1, label2 = self.free_parameter_labels
-            description0, description1, description2 = [self.parameter_descriptions[label] for label in [label0, label1, label2]]
+            label0, label1, label2 = self.fitting_run.free_parameter_labels
+            description0, description1, description2 = [self.fitting_run.parameter_descriptions[label] for label in [label0, label1, label2]]
 
             # Establish the order of the free parameters in the scatter ani
             self.scatter_animation_labels = [label0, label1, label2]
@@ -215,9 +338,9 @@ class ModelGenerator(FittingComponent):
             self.scatter_animation.z_label = description2
 
         # Loop over the free parameters and create an individual animation for each of them
-        for label in self.free_parameter_labels:
+        for label in self.fitting_run.free_parameter_labels:
 
-            description = self.parameter_descriptions[label]
+            description = self.fitting_run.parameter_descriptions[label]
 
             # Initialize the young FUV luminosity distribution animation
             animation = DistributionAnimation(self.ranges[label].min, self.ranges[label].max, description, "New models")
@@ -237,6 +360,121 @@ class ModelGenerator(FittingComponent):
         """
 
         pass
+
+    # -----------------------------------------------------------------
+
+    def generate_grid_points_one_scale(self, scale, most_sampled=None, weights=None):
+
+        """
+        This function ...
+        :param scale: 
+        :param most_sampled:
+        :param weights:
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Generating grid points for the parameter values of models on a " + scale + " scale ...")
+
+        # The order is important!
+        if most_sampled is not None: sampled_most = [(label in most_sampled) for label in self.fitting_run.free_parameter_labels]
+        else: sampled_most = None
+
+        # Determine the number of grid points for each parameter based on the desired total number of models
+        factors = numbers.divide_in_n_dimensions(self.config.nmodels, self.fitting_run.nfree_parameters, sampled_most=sampled_most, weights=weights)
+
+        # Initialize a dictionary for the grid points for each parameter
+        grid_points = dict()
+
+        # Generate the grid points for each parameter, and loop from the center of the range
+        for label_index, label in enumerate(self.fitting_run.free_parameter_labels):
+
+            # Determine the number of grid points
+            npoints = factors[label_index]
+
+            # Get the range
+            parameter_range = self.ranges[label]
+
+            # Generate the grid points, based on the scale
+            values = generate_grid_points_from_center(parameter_range, npoints, scale)
+
+            # Set the values
+            grid_points[label] = values
+
+        # Return the dictionary
+        return grid_points
+
+    # -----------------------------------------------------------------
+
+    def generate_grid_points_different_scales(self, scales, most_sampled=None, weights=None):
+
+        """
+        This function ...
+        :param scales: 
+        :param most_sampled:
+        :param weights:
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Generating grid points for the parameter values of models ...")
+
+        # The order is important!
+        if most_sampled is not None: sampled_most = [(label in most_sampled) for label in self.fitting_run.free_parameter_labels]
+        else: sampled_most = None
+
+        # Determine the number of grid points for each parameter based on the desired total number of models
+        factors = numbers.divide_in_n_dimensions(self.config.nmodels, self.fitting_run.nfree_parameters, sampled_most=sampled_most, weights=weights)
+
+        # Initialize a dictionary for the grid points for each parameter
+        grid_points = dict()
+
+        # Generate the grid points for each parameter, and loop from the center of the range
+        for label_index, label in enumerate(self.fitting_run.free_parameter_labels):
+
+            # Determine the number of grid points
+            npoints = factors[label_index]
+
+            # Get the range
+            parameter_range = self.ranges[label]
+
+            # Get the scale
+            scale = scales[label]
+
+            # Generate the grid points, based on the scale
+            values = generate_grid_points_from_center(parameter_range, npoints, scale)
+
+            # Set the values
+            grid_points[label] = values
+
+        # Return the dictionary
+        return grid_points
+
+    # -----------------------------------------------------------------
+
+    def grid_points_to_lists(self, grid_points_dict):
+
+        """
+        This function ...
+        :param grid_points_dict:
+        :return: 
+        """
+
+        # Convert into lists, and strip units
+        grid_points_lists = []
+        for label in enumerate(self.fitting_run.free_parameter_labels):
+
+            # Get the list of scalar values
+            if label in self.fitting_run.parameter_units and self.fitting_run.parameter_units[label] is not None:
+                unit = self.fitting_run.parameter_units[label]
+                values = [value.to(unit).value for value in grid_points_dict[label]]
+            else: values = grid_points_dict[label]
+
+            # Add the list of grid point values
+            grid_points_lists.append(values)
+
+        # Return the lists
+        return grid_points_lists
 
     # -----------------------------------------------------------------
 
@@ -275,5 +513,28 @@ class ModelGenerator(FittingComponent):
 
             # Add a point (and thus one frame) to the individual parameter animations
             for label in values_dict: self.parameter_animations[label].add_value(values_dict[label])
+
+# -----------------------------------------------------------------
+
+def generate_grid_points_from_center(parameter_range, npoints, scale):
+
+    """
+    This function ...
+    :param parameter_range:
+    :param npoints:
+    :param scale:
+    :return: 
+    """
+
+    # Generate the grid points, based on the scale
+    if scale == "linear": values = parameter_range.linear(npoints, as_list=True)
+    elif scale == "logarithmic": values = parameter_range.log(npoints, as_list=True)
+    else: raise ValueError("Invalid scale: " + str(scale))
+
+    # Re-arrange the list to contain the grid points from the center towards the edges
+    values = sequences.rearrange_from_middle(values)
+
+    # Return the values
+    return values
 
 # -----------------------------------------------------------------

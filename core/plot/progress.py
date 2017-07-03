@@ -87,7 +87,7 @@ class ProgressPlotter(Plotter):
             for i in range(len(self.table)):
 
                 # Skip entries that do not belong to the current simulation phase
-                if not self.table["Simulation phase"][i] == phase: continue
+                if not self.table["Phase"][i] == phase: continue
 
                 # Get the process rank
                 rank = self.table["Process rank"][i]
@@ -151,7 +151,7 @@ def create_progress_plot(data, path, title):
 
     # Set the axis labels
     plt.xlabel("Time (s)", fontsize='large')
-    plt.ylabel("Progress (%)", fontsize='large')
+    plt.ylabel("Progress (\%)", fontsize='large')
 
     # Set the plot title
     plt.title(title)

@@ -65,24 +65,30 @@ class ParallelizationTool(Configurable):
     This function ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(ParallelizationTool, self).__init__(config)
+        super(ParallelizationTool, self).__init__(*args, **kwargs)
 
         # The ski file
         self.ski = None
+
+        # The dimension of the dust lib
+        self.dustlib_dimension = None
 
         # The memory estimator
         self.estimator = MemoryEstimator()
 
         # The parallelization object
         self.parallelization = None
+
+        # The memory requirement for the simulation
+        self.memory = None
 
     # -----------------------------------------------------------------
 
@@ -96,11 +102,14 @@ class ParallelizationTool(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
+        # Get additional properties from the ski file
+        self.get_properties()
+
         # 2. Set the parallelization scheme
         self.set_parallelization()
 
         # 3. Show the parallelization scheme
-        if self.config.show: self.show_parallelization()
+        if self.config.show: self.show()
 
     # -----------------------------------------------------------------
 
@@ -117,6 +126,21 @@ class ParallelizationTool(Configurable):
 
         # Open the ski file
         self.ski = self.config.ski if isinstance(self.config.ski, SkiFile) else SkiFile(self.config.ski)
+
+        # Set the memory requirement
+        self.memory = kwargs.pop("memory", None)
+
+    # -----------------------------------------------------------------
+
+    def get_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the dustlib dimension
+        self.dustlib_dimension = self.ski.dustlib_dimension()
 
     # -----------------------------------------------------------------
 
@@ -148,20 +172,30 @@ class ParallelizationTool(Configurable):
         # If MPI can be used
         else:
 
-            # Configure the memory estimator
-            self.estimator.config.ski = self.ski
-            self.estimator.config.input = self.config.input
-            self.estimator.config.ncells = self.config.ncells
+            # If memory as not been set
+            if self.memory is None:
 
-            # Don't show the memory
-            self.estimator.config.show = False
+                # Configure the memory estimator
+                self.estimator.config.ski = self.ski
+                self.estimator.config.input = self.config.input
+                self.estimator.config.ncells = self.config.ncells
 
-            # Estimate the memory
-            self.estimator.run()
+                # Don't show the memory
+                self.estimator.config.show = False
 
-            # Get the serial and parallel parts of the simulation's memory
-            serial_memory = self.estimator.serial_memory
-            parallel_memory = self.estimator.parallel_memory
+                # Estimate the memory
+                self.estimator.run()
+
+                # Get the serial and parallel parts of the simulation's memory
+                #serial_memory = self.estimator.serial_memory
+                #parallel_memory = self.estimator.parallel_memory
+
+                # Set the memory requirement
+                self.memory = self.estimator.memory
+
+            # Get serial and parallel parts of the memory requirement
+            serial_memory = self.memory.serial
+            parallel_memory = self.memory.parallel
 
             # Calculate the total memory of one process without data parallelization
             total_memory = serial_memory + parallel_memory
@@ -235,7 +269,7 @@ class ParallelizationTool(Configurable):
 
                 # Nlambda >= 10 * Np?
                 nwavelengths = self.ski.nwavelengthsfile(self.config.input) if self.ski.wavelengthsfile() else self.ski.nwavelengths()
-                if nwavelengths >= 10 * nprocesses:
+                if nwavelengths >= 10 * nprocesses and self.dustlib_dimension == 3:
 
                     # data parallelization
                     # Create the parallelization object
@@ -248,7 +282,7 @@ class ParallelizationTool(Configurable):
 
     # -----------------------------------------------------------------
 
-    def show_parallelization(self):
+    def show(self):
 
         """
         This function ...

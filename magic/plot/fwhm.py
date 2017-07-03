@@ -17,26 +17,26 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Import the relevant PTS classes and modules
-from ...core.basics.configurable import OldConfigurable
+from ...core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
-class FwhmPlotter(OldConfigurable):
+class FwhmPlotter(Configurable):
 
     """
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(FwhmPlotter, self).__init__(config, "magic")
+        super(FwhmPlotter, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 

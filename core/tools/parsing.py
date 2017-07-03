@@ -14,16 +14,171 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import re
-
-# Import astronomical modules
-from astropy.coordinates import Angle
-from astropy.units import Unit
+#import numpy as np
 
 # Import the relevant PTS classes and modules
-from ..basics.range import IntegerRange, RealRange, QuantityRange
+#from ..basics.range import IntegerRange, RealRange, QuantityRange # imported below to accomodate clean python installs
 from ...magic.basics.vector import Vector
 from . import filesystem as fs
-from ..basics.filter import Filter
+from . import types
+# Imported below to accomodate clean python installs
+#from ..filter.broad import BroadBandFilter
+#from ..filter.broad import identifiers as broad_band_identifiers
+#from ..filter.narrow import NarrowBandFilter, generate_aliases_ranges, wavelength_range_for_spec
+#from ..filter.filter import parse_filter
+#from ..basics.errorbar import ErrorBar
+#from ..basics.unit import PhotometricUnit, parse_unit
+#from ..basics.quantity import parse_quantity
+
+# -----------------------------------------------------------------
+
+def integer_or_real_or_string(argument):
+
+    """
+    This function ...
+    :param argument: 
+    :return: 
+    """
+
+    # First try integer, then real, then string
+    try: return integer(argument)
+    except ValueError:
+        try: return real(argument)
+        except ValueError:
+            return string(argument)
+
+# -----------------------------------------------------------------
+
+def real_or_quantity(argument):
+
+    """
+    This fucntion ...
+    :param argument:
+    :return:
+    """
+
+    try: return real(argument)
+    except ValueError: return quantity(argument)
+
+# -----------------------------------------------------------------
+
+def real_list_or_quantity_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: return real_list(argument)
+    except ValueError: return quantity_list(argument)
+
+# -----------------------------------------------------------------
+
+def bit(argument):
+
+    """
+    This function ...
+    :param argument: 
+    :return: 
+    """
+
+    value = integer(argument)
+    if value == 0 or value == 1: return value
+    else: raise ValueError("")
+
+# -----------------------------------------------------------------
+
+def digit(argument):
+
+    """
+    This function ...
+    :param argument: 
+    :return: 
+    """
+
+    value = integer(argument)
+    if 0 <= value <= 9: return value
+    else: raise ValueError("Not a digit: must be integer between 0 and 9")
+
+# -----------------------------------------------------------------
+
+def binary(argument):
+
+    """
+    This function ...
+    :param argument: 
+    :return: 
+    """
+
+    chars = characters(argument)
+    return [bit(char) for char in chars]
+
+# -----------------------------------------------------------------
+
+def characters(argument):
+
+    """
+    This function ...
+    :param argument: 
+    :return: 
+    """
+
+    return list(argument)
+
+# -----------------------------------------------------------------
+
+def character(argument):
+
+    """
+    This function ...
+    :param argument: 
+    :return: 
+    """
+
+    chars = character(argument)
+    if len(chars) == 1: return chars[0]
+    else: raise ValueError("Contains multiple characters")
+
+# -----------------------------------------------------------------
+
+def letter(argument):
+
+    """
+    THis function ...
+    :param argument: 
+    :return: 
+    """
+
+    char = character(argument)
+    if char.isalpha(): return char
+    else: raise ValueError("Is not a letter character")
+
+# -----------------------------------------------------------------
+
+def integer_array(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    import numpy as np
+    return np.array(integer_list(argument))
+
+# -----------------------------------------------------------------
+
+def real_array(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    import numpy as np
+    return np.array(real_list(argument))
 
 # -----------------------------------------------------------------
 
@@ -79,6 +234,89 @@ def negative_integer(argument):
 
     value = integer(argument)
     if value > 0: raise ValueError("Value is greater than zero")
+    return value
+
+# -----------------------------------------------------------------
+
+def even_integer(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    value = integer(argument)
+    if value % 2 != 0: raise ValueError("Integer is not even")
+    return value
+
+# -----------------------------------------------------------------
+
+def even_positive_integer(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    value = positive_integer(argument)
+    if value % 2 != 0: raise ValueError("Integer is not even")
+
+# -----------------------------------------------------------------
+
+def even_negative_integer(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    value = negative_integer(argument)
+    if value % 2 != 0: raise ValueError("Integer is not even")
+    return value
+
+# -----------------------------------------------------------------
+
+def odd_integer(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    value = integer(argument)
+    if value % 2 == 0: raise ValueError("Integer is not odd")
+    return value
+
+# -----------------------------------------------------------------
+
+def odd_positive_integer(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    value = positive_integer(argument)
+    if value % 2 == 0: raise ValueError("Integer is not odd")
+    return value
+
+# -----------------------------------------------------------------
+
+def odd_negative_integer(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    value = negative_integer(argument)
+    if value % 2 == 0: raise ValueError("Integer is not odd")
     return value
 
 # -----------------------------------------------------------------
@@ -149,6 +387,19 @@ def string(argument):
 
 # -----------------------------------------------------------------
 
+def string_no_spaces(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    if " " in argument: raise ValueError("The string cannot contain spaces")
+    return argument
+
+# -----------------------------------------------------------------
+
 def real_range(argument):
 
     """
@@ -156,6 +407,8 @@ def real_range(argument):
     :param argument:
     :return:
     """
+
+    from ..basics.range import IntegerRange, RealRange, QuantityRange
 
     min_value, max_value = real_tuple(argument.replace(">", ","))
     return RealRange(min_value, max_value)
@@ -170,6 +423,8 @@ def integer_range(argument):
     :return:
     """
 
+    from ..basics.range import IntegerRange, RealRange, QuantityRange
+
     min_value, max_value = integer_tuple(argument.replace(">", ","))
     return IntegerRange(min_value, max_value)
 
@@ -183,8 +438,56 @@ def quantity_range(argument):
     :return:
     """
 
+    from ..basics.range import QuantityRange
     min_quantity, max_quantity = quantity_tuple(argument.replace(">", ","))
     return QuantityRange(min_quantity, max_quantity)
+
+# -----------------------------------------------------------------
+
+def photometric_quantity_range(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..basics.range import QuantityRange
+    min_quantity, max_quantity = photometric_quantity_tuple(argument.replace(">", ","))
+    return QuantityRange(min_quantity, max_quantity)
+
+# -----------------------------------------------------------------
+
+def photometric_density_quantity_range(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..basics.range import QuantityRange
+    min_quantity, max_quantity = photometric_density_quantity_tuple(argument.replace(">", ","))
+    return QuantityRange(min_quantity, max_quantity)
+
+# -----------------------------------------------------------------
+
+def range(argument):
+
+    """
+    Integer, real or quantity range
+    :param argument:
+    :return:
+    """
+
+    try: range = integer_range(argument)
+    except ValueError:
+        try: range = real_range(argument)
+        except ValueError:
+            try: range = quantity_range(argument)
+            except ValueError: raise ValueError("Not a valid range")
+
+    return range
 
 # -----------------------------------------------------------------
 
@@ -197,9 +500,47 @@ def directory_path(argument):
     :return:
     """
 
-    path = fs.absolute(argument)
+    path = fs.absolute_path(argument)
     if not fs.is_directory(path): raise ValueError("Is not a directory: " + path)
     return path
+
+# -----------------------------------------------------------------
+
+def directorypath_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return [directory_path(path) for path in string_list(argument)]
+
+# -----------------------------------------------------------------
+
+def path(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    path = fs.absolute_path(argument)
+    if not fs.is_file(path) and not fs.is_directory(path): raise ValueError("Is not a file or directory: " + path)
+    return path
+
+# -----------------------------------------------------------------
+
+def path_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return [path(p) for p in string_list(argument)]
 
 # -----------------------------------------------------------------
 
@@ -211,7 +552,7 @@ def file_path(argument):
     :return:
     """
 
-    path = fs.absolute(argument)
+    path = fs.absolute_path(argument)
     if not fs.is_file(path): raise ValueError("Is not a file: " + path)
     return path
 
@@ -226,6 +567,21 @@ def filepath_list(argument):
     """
 
     return [file_path(path) for path in string_list(argument)]
+
+# -----------------------------------------------------------------
+
+def string_tuple(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try:
+        a, b = argument.split(",")
+        return a, b
+    except: raise ValueError("Tuple must be of format a,b")
 
 # -----------------------------------------------------------------
 
@@ -274,6 +630,58 @@ def quantity_tuple(argument):
 
 # -----------------------------------------------------------------
 
+def quantity_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    quantities = []
+    for item in string_list(argument): quantities.append(quantity(item))
+    return quantities
+
+# -----------------------------------------------------------------
+
+def photometric_quantity_tuple(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    a, b = map(photometric_quantity, argument.split(","))
+    return a, b
+
+# -----------------------------------------------------------------
+
+def photometric_density_quantity_tuple(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    a, b = map(photometric_density_quantity, argument.split(","))
+    return a, b
+
+# -----------------------------------------------------------------
+
+def mixed_tuple(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return tuple(argument.split(","))
+
+# -----------------------------------------------------------------
+
 def quantity_vector(argument):
 
     """
@@ -300,7 +708,34 @@ def string_list(argument):
     :return:
     """
 
-    return argument.split(",")
+    if argument == "": return []
+    else: return argument.split(",")
+
+# -----------------------------------------------------------------
+
+def string_or_string_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: return string_list(argument)
+    except ValueError: return string(argument)
+
+# -----------------------------------------------------------------
+
+def mixed_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    if argument == "": return []
+    else: return [eval(value) for value in argument.split(",")]
 
 # -----------------------------------------------------------------
 
@@ -321,36 +756,44 @@ def duration(argument):
 
 # -----------------------------------------------------------------
 
-def integer_list(string):
+def integer_list(argument):
 
     """
     A list of integer values, based on a string denoting a certain range (e.g. '3-9') or a
     set of integer values seperated by commas ('2,14,20')
-    :param string:
+    :param argument:
     :return:
     """
 
-    if "-" in string and "," in string:
+    if argument == "": return []
 
-        parts = string.split(",")
+    if "-" in argument and "," in argument:
+
+        parts = argument.split(",")
+        #print("PARTS", parts)
         total_int_list = []
         for part in parts: total_int_list += integer_list(part)
         return total_int_list
 
     # Split the string
-    splitted = string.split('-')
+    splitted = argument.split('-')
+
+    #print("SPLITTED", splitted)
 
     if len(splitted) == 0: raise ValueError("No range given")
     elif len(splitted) == 1:
 
         splitted = splitted[0].split(",")
 
+        #print("SPLITTED 2", splitted)
+
         # Check if the values are valid
         for value in splitted:
             if not value.isdigit(): raise ValueError("Argument contains unvalid characters")
 
-        # Only leave unique values
-        return list(set([int(value) for value in splitted]))
+        # Only leave unique values: NO!!!!!!??? WHY WAS THIS EVER HERE???
+        #return list(set([int(value) for value in splitted]))
+        return [integer(value) for value in splitted]
 
     elif len(splitted) == 2:
 
@@ -358,6 +801,18 @@ def integer_list(string):
         return range(int(splitted[0]), int(splitted[1])+1)
 
     else: raise ValueError("Values must be seperated by commas or by a '-' in the case of a range")
+
+# -----------------------------------------------------------------
+
+def real_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return [real(value) for value in string_list(argument)]
 
 # -----------------------------------------------------------------
 
@@ -369,131 +824,358 @@ def dictionary(argument):
     :return:
     """
 
-    d = eval(argument)
-    if not isinstance(d, dict): raise ValueError("Not a proper specification of a dictionary")
+    if argument == "": return dict()
+    else:
+        d = eval("{" + argument + "}")
+        if not isinstance(d, dict): raise ValueError("Not a proper specification of a dictionary")
+        return d
+
+# -----------------------------------------------------------------
+
+def string_string_dictionary(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    d = dictionary(argument)
+    for key, value in d.items():
+        if not isinstance(key, basestring): raise ValueError("All keys must be strings")
+        if not isinstance(value, basestring): raise ValueError("All values must be strings")
     return d
 
 # -----------------------------------------------------------------
 
-def simulation_ids(string):
+def string_string_list_dictionary(argument):
 
     """
-    The IDs of remote simulations
-    :param string:
+    This function ...
+    :param argument: 
+    :return: 
+    """
+
+    d = dictionary(argument)
+    for key, value in d.items():
+        if not types.is_string_type(key): raise ValueError("All keys must be strings")
+        if not types.is_string_sequence(value): raise ValueError("All values must be string sequences")
+    return d
+
+# -----------------------------------------------------------------
+
+def string_integer_dictionary(argument):
+
+    """
+    This function ...
+    :param argument: 
+    :return: 
+    """
+
+    d = dictionary(argument)
+    for key, value in d.items():
+        if not isinstance(key, basestring): raise ValueError("All keys must be strings")
+        if not isinstance(value, int): raise ValueError("All values must be integers")
+    return d
+
+# -----------------------------------------------------------------
+
+def string_filepath_dictionary(argument):
+
+    """
+    This function ...
+    :param argument:
     :return:
     """
 
-    # Initialize a dictionary
-    delete = dict()
+    d = dictionary(argument)
+    for key, value in d.items():
+        if not isinstance(key, basestring): raise ValueError("All keys must be strings")
+        d[key] = file_path(value) # check if parsing as filepath succeeds
+    return d
 
-    # If the string is empty, raise an error
-    if not string.strip(): raise ValueError("No input for argument")
+# -----------------------------------------------------------------
 
-    # Split the string by the ';' character, so that each part represents a different remote host
-    for entry in string.split(";"):
+def string_unit_dictionary(argument):
 
-        # Split again to get the host ID
-        splitted = entry.split(":")
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
 
-        # Get the host ID
-        host_id = splitted[0]
+    d = dictionary(argument)
+    for key, value in d.items():
+        if not isinstance(key, basestring): raise ValueError("All keys must be strings")
+        d[key] = unit(value)
+    return d
 
-        # Get the simulation ID's
-        values = integer_list(splitted[1])
+# -----------------------------------------------------------------
 
-        # Add the simulation ID's to the dictionary for the correspoding host ID
-        delete[host_id] = values
+def string_photometricunit_dictionary(argument):
 
-    # Return the dictionary with ID's of simulations that should be deleted
-    return delete
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    d = dictionary(argument)
+    for key, value in d.items():
+        if not isinstance(key, basestring): raise ValueError("All keys must be strings")
+        d[key] = photometric_unit(value)
+    return d
+
+# -----------------------------------------------------------------
+
+def string_tuple_dictionary(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    d = dictionary(argument)
+    for key, value in d.items():
+        if not isinstance(key, basestring): raise ValueError("All keys must be strings")
+        if not isinstance(value, tuple): raise ValueError("All values must be tuples")
+    return d
+
+# -----------------------------------------------------------------
+
+def unit(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..units.parsing import parse_unit
+    return parse_unit(argument) # can be photometric, but doesn't need to be
+
+# -----------------------------------------------------------------
+
+def photometric_unit(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..units.unit import PhotometricUnit
+    return PhotometricUnit(argument)
+
+# -----------------------------------------------------------------
+
+def photometric_density_unit(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..units.unit import PhotometricUnit
+    return PhotometricUnit(argument, density=True, density_strict=True)
+
+# -----------------------------------------------------------------
+
+def photometric_brightness_unit(argument):
+
+    """
+    THis function ...
+    :param argument: 
+    :return: 
+    """
+
+    from ..units.unit import PhotometricUnit
+    return PhotometricUnit(argument, brightness=True, brightness_strict=True)
+
+# -----------------------------------------------------------------
+
+def length_unit(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..units.parsing import parse_unit
+    unit = parse_unit(argument)
+    if unit.physical_type != "length": raise ValueError("Not a length unit")
+    else: return unit
 
 # -----------------------------------------------------------------
 
 def quantity(argument):
 
     """
-    An Astropy quantity.
-    >>> quantity("2GB")
-    (2.0, 'GB')
-    >>> quantity("17 ft")
-    (17.0, 'ft')
-    >>> quantity("   3.4e-27 frobnitzem ")
-    (3.4e-27, 'frobnitzem')
-    >>> quantity("9001")
-    (9001.0, '')
-    >>> quantity("spam sandwhiches")
-    (1.0, 'spam sandwhiches')
-    >>> quantity("")
-    (1.0, '')
+    An Astropy quantity
     """
 
-    # NEW IMPLEMENTATION
-    units = ""
-    number = 1.0
-    while argument:
-        try:
-            number = float(argument)
-            break
-        except ValueError:
-            units = argument[-1:] + units
-            argument = argument[:-1]
-    return number * Unit(units.strip())
-
-    # FIRST IMPLEMENTATION
-    #splitted = argument.split()
-    #value = float(splitted[0])
-    #unit = Unit(splitted[1])
-    #return value * unit
-
-    # http://stackoverflow.com/questions/2240303/separate-number-from-unit-in-a-string-in-python
-
-    # SECOND IMPLEMENTATION
-    #numeric = '0123456789-.'
-    #for i, c in enumerate(argument + " "):
-    #    if c not in numeric:
-    #        break
-    #value = argument[:i]
-    #unit = Unit(argument[i:].lstrip())
-    #return value * unit
+    from ..units.parsing import parse_quantity
+    return parse_quantity(argument)
 
 # -----------------------------------------------------------------
 
-def angle(argument, default_unit=None):
+def photometric_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..units.parsing import parse_quantity
+    return parse_quantity(argument)
+
+# -----------------------------------------------------------------
+
+def photometric_density_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..units.parsing import parse_quantity
+    return parse_quantity(argument, density=True)
+
+# -----------------------------------------------------------------
+
+def length_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..units.parsing import parse_quantity
+    qty = parse_quantity(argument)
+    if qty.unit.physical_type != "length": raise ValueError("Not a length")
+    return qty
+
+# -----------------------------------------------------------------
+
+def temperature_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..units.parsing import parse_quantity
+    qty = parse_quantity(argument)
+    if qty.unit.physical_type != "temperature": raise ValueError("Not a temperature")
+    return qty
+
+# -----------------------------------------------------------------
+
+def mass_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..units.parsing import parse_quantity
+    qty = parse_quantity(argument)
+    if qty.unit.physical_type != "mass": raise ValueError("Not a mass")
+    return qty
+
+# -----------------------------------------------------------------
+
+def mass_density_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..units.parsing import parse_quantity
+    qty = parse_quantity(argument)
+    if qty.unit.physical_type != "mass density": raise ValueError("Not a mass density")
+    return qty
+
+# -----------------------------------------------------------------
+
+def mass_surface_density_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..units.parsing import parse_quantity
+    qty = parse_quantity(argument)
+
+    # Check
+    b = qty.unit / "m"
+    if b.physical_type != "mass density": raise ValueError("Not a mass surface density")
+
+    # Return
+    return qty
+
+# -----------------------------------------------------------------
+
+def angle(argument):
 
     """
     An Astropy Angle
     :param argument:
-    :param default_unit:
     :return:
     """
 
-    # OLD IMPLEMENTATION
-    #splitted = entry.split()
-    #value = float(splitted[0])
-    #try: unit = splitted[1]
-    #except IndexError: unit = default_unit
-    # Create an Angle object and return it
-    #if unit is not None: value = Angle(value, unit)
-    #return value
+    from ..units.parsing import parse_angle
+    return parse_angle(argument)
 
-    # NEW IMPLEMENTATION
-    units = ""
-    number = 1.0
-    while argument:
-        try:
-            number = float(argument)
-            break
-        except ValueError:
-            units = argument[-1:] + units
-            argument = argument[:-1]
+# -----------------------------------------------------------------
 
-    if not units: # if string is empty
+def errorbar(argument):
 
-        if default_unit is None: raise ValueError("Unit not specified")
-        else: units = default_unit
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
 
-    # Create and return the Angle object
-    return Angle(number, units)
+    from ..basics.errorbar import ErrorBar
+
+    upper = None
+    if ">" in argument: lower, upper = quantity_tuple(argument.replace(">", ","))
+    else: lower = quantity(argument)
+
+    # Create error bar
+    return ErrorBar(lower, upper)
+
+# -----------------------------------------------------------------
+
+def photometric_errorbar(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..basics.errorbar import ErrorBar
+
+    upper = None
+    if ">" in argument: lower, upper = photometric_quantity_tuple(argument)
+    else: lower = photometric_quantity(argument)
+
+    # Create error bar
+    return ErrorBar(lower, upper)
 
 # -----------------------------------------------------------------
 
@@ -545,6 +1227,18 @@ def url(argument):
 
 # -----------------------------------------------------------------
 
+def url_list(argument):
+
+    """
+    This function ...
+    :param argument: 
+    :return: 
+    """
+
+    return [url(element) for element in string_list(argument)]
+
+# -----------------------------------------------------------------
+
 def image_path(argument):
 
     """
@@ -554,7 +1248,6 @@ def image_path(argument):
     """
 
     path = file_path(argument)
-
     if path.endswith("fits"): raise ValueError("Unrecognized file type")
     else: return path
 
@@ -568,11 +1261,12 @@ def filter(argument):
     :return:
     """
 
-    return Filter.from_string(argument)
+    from ..filter.filter import parse_filter
+    return parse_filter(argument)
 
 # -----------------------------------------------------------------
 
-def coordinate(argument):
+def filter_list(argument):
 
     """
     This function ...
@@ -580,9 +1274,216 @@ def coordinate(argument):
     :return:
     """
 
-    from ...magic.basics.geometry import Coordinate
+    return [filter(arg) for arg in string_list(argument)]
+
+# -----------------------------------------------------------------
+
+def broad_band_filter(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..filter.broad import BroadBandFilter
+    return BroadBandFilter(argument)
+
+# -----------------------------------------------------------------
+
+def narrow_band_filter(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..filter.narrow import NarrowBandFilter
+    return NarrowBandFilter(argument)
+
+# -----------------------------------------------------------------
+
+def broad_band_filter_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    filters = []
+    for item in string_list(argument): filters.append(broad_band_filter(item))
+    return filters
+
+# -----------------------------------------------------------------
+
+def narrow_band_filter_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    filters = []
+    for item in string_list(argument): filters.append(narrow_band_filter(item))
+    return filters
+
+# -----------------------------------------------------------------
+
+def lazy_filter_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..filter.broad import BroadBandFilter
+    from ..filter.broad import identifiers as broad_band_identifiers
+    from ..filter.narrow import NarrowBandFilter, generate_aliases_ranges, wavelength_range_for_spec
+    from ..filter.filter import parse_filter
+
+    filters = []
+    for arg in string_list(argument):
+
+        try:
+
+            # Try to parse the filter
+            fltr = parse_filter(arg)
+            filters.append(fltr)
+
+        # If parsing directly failes
+        except ValueError:
+
+            # Try matching with broad bands
+            for spec in broad_band_identifiers:
+
+                identifier = broad_band_identifiers[spec]
+
+                if "instruments" in identifier:
+                    if arg in identifier.instruments:
+                        filters.append(BroadBandFilter(spec))
+                        continue # this filter matches
+                if "observatories" in identifier:
+                    if arg in identifier.observatories:
+                        filters.append(BroadBandFilter(spec))
+                        continue # this filter matches
+
+            # Try matching with narrow bands defined by wavelength ranges
+            for spec, alias in generate_aliases_ranges():
+
+                if alias not in argument: continue
+
+                # Get wavelength range
+                wavelength_range = wavelength_range_for_spec(spec)
+
+                # Create two filters, one for the minimum and one for the maximum wavelength
+                fltr_min = NarrowBandFilter(wavelength_range.min, name=alias + " min")
+                fltr_max = NarrowBandFilter(wavelength_range.max, name=alias + " max")
+
+                filters.append(fltr_min)
+                filters.append(fltr_max)
+
+    # Return the list of filters
+    return filters
+
+# -----------------------------------------------------------------
+
+def lazy_broad_band_filter_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..filter.broad import BroadBandFilter
+    from ..filter.broad import identifiers as broad_band_identifiers
+
+    filters = []
+    for arg in string_list(argument):
+
+        try:
+            # Try to parse the filter
+            fltr = BroadBandFilter(arg)
+            filters.append(fltr)
+
+        except ValueError:
+
+            # Try matching with broad bands
+            for spec in broad_band_identifiers:
+
+                identifier = broad_band_identifiers[spec]
+
+                #print(spec)
+
+                if "instruments" in identifier:
+                    if arg in identifier.instruments:
+                        filters.append(BroadBandFilter(spec))
+                        continue  # this filter matches
+                if "observatories" in identifier:
+                    if arg in identifier.observatories:
+                        filters.append(BroadBandFilter(spec))
+                        continue  # this filter matches
+
+    # Return the filters
+    return filters
+
+# -----------------------------------------------------------------
+
+def lazy_narrow_band_filter_list(argument):
+
+    """
+    This fucntion ...
+    :param argument:
+    :return:
+    """
+
+    from ..filter.narrow import NarrowBandFilter, generate_aliases_ranges, wavelength_range_for_spec
+
+    filters = []
+    for arg in string_list(argument):
+
+        try:
+            # Try to parse the filter
+            fltr = NarrowBandFilter(arg)
+            filters.append(fltr)
+
+        except ValueError:
+
+            # Try matching with narrow bands defined by wavelength ranges
+            for spec, alias in generate_aliases_ranges():
+
+                if alias not in argument: continue
+
+                # Get wavelength range
+                wavelength_range = wavelength_range_for_spec(spec)
+
+                # Create two filters, one for the minimum and one for the maximum wavelength
+                fltr_min = NarrowBandFilter(wavelength_range.min, name=alias + " min")
+                fltr_max = NarrowBandFilter(wavelength_range.max, name=alias + " max")
+
+                filters.append(fltr_min)
+                filters.append(fltr_max)
+
+    # Return the filters
+    return filters
+
+# -----------------------------------------------------------------
+
+def pixelcoordinate(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ...magic.basics.coordinate import PixelCoordinate
     x, y = real_tuple(argument)
-    return Coordinate(x, y)
+    return PixelCoordinate(x, y)
 
 # -----------------------------------------------------------------
 
@@ -594,8 +1495,109 @@ def skycoordinate(argument):
     :return:
     """
 
-    from ...magic.basics.skygeometry import SkyCoordinate
+    from ...magic.basics.coordinate import SkyCoordinate
     ra, dec = quantity_tuple(argument)
     return SkyCoordinate(ra=ra, dec=dec)
+
+# -----------------------------------------------------------------
+
+def sed_entry(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    fltr, flux, flux_error = argument.split("::")
+
+    fltr = filter(fltr)
+    flux = photometric_quantity(flux)
+    flux_error = photometric_errorbar(flux_error)
+
+    return fltr, flux, flux_error
+
+# -----------------------------------------------------------------
+
+def sed_entry_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    entries = []
+    for item in string_list(argument): entries.append(sed_entry(item))
+    return entries
+
+# -----------------------------------------------------------------
+
+def instrument_frame(argument):
+
+    """
+    This function ....
+    :param argument:
+    :return:
+    """
+
+    from ...modeling.basics.instruments import InstrumentFrame
+    return InstrumentFrame(**dictionary(argument))
+
+# -----------------------------------------------------------------
+
+def instrument_frame_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return [instrument_frame(arg) for arg in string_list(argument)]
+
+# -----------------------------------------------------------------
+
+def parts(argument):
+
+    """
+    This function ...
+    :param argument: 
+    :return: 
+    """
+
+    import numpy as np
+    values = real_array(argument)
+    relative_values = list(values / np.sum(values))
+    return relative_values
+
+# -----------------------------------------------------------------
+
+def weights(argument):
+
+    """
+    This fucntion ...
+    :param argument: 
+    :return: 
+    """
+
+    import numpy as np
+    ratios = np.array(parts(argument))
+    the_weights = list(ratios * len(ratios))
+    return the_weights
+
+# -----------------------------------------------------------------
+
+def pixel_shape(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ...magic.basics.vector import PixelShape
+    shape = integer_tuple(argument)
+    return PixelShape.from_tuple(shape)
 
 # -----------------------------------------------------------------

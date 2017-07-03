@@ -22,6 +22,9 @@ from .simulation import SkirtSimulation
 from ..basics.map import Map
 from ..tools import filesystem as fs
 from .definition import SingleSimulationDefinition, MultiSimulationDefinition
+from ..tools.logging import log
+from .input import SimulationInput
+from ..tools import types
 
 # -----------------------------------------------------------------
 
@@ -73,23 +76,16 @@ class SkirtArguments(object):
 
     # -----------------------------------------------------------------
 
-    @classmethod
-    def from_config(cls, config):
+    @property
+    def prefix(self):
 
         """
         This function ...
-        :param config:
         :return:
         """
 
-        # Create a new instance
-        arguments = cls()
-
-        # Loop over the entries in the configuration and create an attribute with the same name
-        for entry in config: setattr(arguments, entry, config[entry])
-
-        # Return the arguments instance
-        return arguments
+        if not fs.is_file(self.ski_pattern): raise RuntimeError("Cannot determine the prefix for the ski pattern '" + self.ski_pattern + "'. Does it define multiple files?")
+        return fs.strip_extension(fs.name(self.ski_pattern))
 
     # -----------------------------------------------------------------
 
@@ -116,10 +112,11 @@ class SkirtArguments(object):
             arguments.input_path = definition.input_path
             arguments.output_path = definition.output_path
 
+            # Set other
             arguments.single = True
-
             arguments.emulate = emulate
 
+            # Return the arguments object
             return arguments
 
         # If the first argument defines multiple simulations
@@ -165,10 +162,12 @@ class SkirtArguments(object):
 
     # -----------------------------------------------------------------
 
-    def simulations(self):
+    def simulations(self, simulation_names=None, simulation_name=None):
 
         """
         This function ...
+        :param simulation_names:
+        :param simulation_name:
         :return:
         """
 
@@ -176,7 +175,7 @@ class SkirtArguments(object):
         simulations = []
 
         # Loop over the seperate ski files defined in the ski pattern
-        pattern = [self.ski_pattern] if isinstance(self.ski_pattern, basestring) else self.ski_pattern
+        pattern = [self.ski_pattern] if types.is_string_type(self.ski_pattern) else self.ski_pattern
         for skifile in pattern:
 
             # Determine the directory path and the actual file descriptor
@@ -190,25 +189,34 @@ class SkirtArguments(object):
             for dirpath, dirnames, filenames in dirlist:
                 for filename in fnmatch.filter(filenames, name):
 
+                    # Determine input and output path
                     inp = os.path.join(dirpath, self.input_path) if (self.relative and self.input_path is not None) else self.input_path
                     out = os.path.join(dirpath, self.output_path) if (self.relative and self.output_path is not None) else self.output_path
 
                     # Create the simulation and add it to the list
-                    simulations.append(SkirtSimulation(filename, inpath=inp, outpath=out))
+                    filepath = fs.join(dirpath, filename)
+                    sim_name = simulation_names[filepath] if simulation_names is not None and filepath in simulation_names else None
+                    simulations.append(SkirtSimulation(filename, inpath=inp, outpath=out, ski_path=filepath, name=sim_name))
 
         # Check whether the ski pattern is ought to represent only one particular simulation
         if self.single:
 
             # If multiple matching ski files are found, raise an error
             if len(simulations) > 1: raise ValueError("The specified ski pattern defines multiple simulations")
-            else: return simulations[0]
+            else: simulation = simulations[0]
+
+            # Set name and return simulation
+            if simulation_name is not None: simulation.name = simulation_name
+            return simulation
 
         # Else, just return the list of simulations (even when containing only one item)
-        else: return simulations
+        else:
+            if simulation_name is not None: raise ValueError("'simulation_name' cannot be specified if single=False")
+            return simulations
 
     # -----------------------------------------------------------------
 
-    def to_command(self, skirt_path, mpi_command, scheduler, bind_to_cores=False, threads_per_core=1, to_string=False):
+    def to_command(self, skirt_path, mpi_command, scheduler, bind_to_cores=False, threads_per_core=1, to_string=False, remote=None):
 
         """
         This function ...
@@ -218,21 +226,32 @@ class SkirtArguments(object):
         :param bind_to_cores:
         :param threads_per_core:
         :param to_string:
+        :param remote:
         :return:
         """
 
-        # If the input consists of a list of paths, check whether they represent files in the same directory
-        if isinstance(self.input_path, list):
+        #print("INPUT PATH", self.input_path)
 
-            dir_path = None
-            for path in self.input_path:
-                this_dir_path = fs.directory_of(path)
-                if dir_path is None: dir_path = this_dir_path
-                elif dir_path != this_dir_path: raise RuntimeError("Cannot convert this SkirtArguments instance to a command: input files should be placed in the same directory!")
-            self.input_path = dir_path
+        if isinstance(self.input_path, SimulationInput): input_dir_path = self.input_path.to_single_directory()
+
+        # If the input consists of a list of paths, check whether they represent files in the same directory
+        elif types.is_sequence(self.input_path):
+            #print(1)
+            input_dir_path = SimulationInput(*self.input_path).to_single_directory()
+        elif types.is_string_type(self.input_path):
+            #print(2)
+            input_dir_path = SimulationInput(self.input_path).to_single_directory()
+        elif types.is_dictionary(self.input_path):
+            #print("HERE")
+            #exit()
+            input_dir_path = SimulationInput(**self.input_path).to_single_directory()
+        elif self.input_path is None:
+            #print(4)
+            input_dir_path = None
+        else: raise ValueError("Type of simulation input not recognized")
 
         # Create the argument list
-        arguments = skirt_command(skirt_path, mpi_command, bind_to_cores, self.parallel.processes, self.parallel.threads, threads_per_core, scheduler)
+        arguments = skirt_command(skirt_path, mpi_command, bind_to_cores, self.parallel.processes, self.parallel.threads, threads_per_core, scheduler, remote)
 
         # Parallelization options
         if self.parallel.threads > 0: arguments += ["-t", str(self.parallel.threads)]
@@ -246,7 +265,9 @@ class SkirtArguments(object):
         if self.logging.allocation: arguments += ["-l", str(self.logging.allocation_limit)]
 
         # Options for input and output
-        if self.input_path is not None: arguments += ["-i", self.input_path]
+        #if input_dir_path is not None: arguments += ["-i", "'" + input_dir_path + "'"]
+        #if self.output_path is not None: arguments += ["-o", "'" + self.output_path + "'"]
+        if input_dir_path is not None: arguments += ["-i", input_dir_path]
         if self.output_path is not None: arguments += ["-o", self.output_path]
 
         # Other options
@@ -255,7 +276,7 @@ class SkirtArguments(object):
         # Ski file pattern
         if self.relative: arguments += ["-k"]
         if self.recursive: arguments += ["-r"]
-        if isinstance(self.ski_pattern, basestring): arguments += [self.ski_pattern]
+        if types.is_string_type(self.ski_pattern): arguments += [self.ski_pattern]
         elif isinstance(self.ski_pattern, list): arguments += self.ski_pattern
         else: raise ValueError("The ski pattern must consist of either a string or a list of strings")
 
@@ -356,7 +377,7 @@ class SkirtArguments(object):
 
 # -----------------------------------------------------------------
 
-def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, threads_per_core, scheduler):
+def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, threads_per_core, scheduler, remote=None):
 
     """
     This function ...
@@ -367,6 +388,7 @@ def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, th
     :param threads:
     :param threads_per_core:
     :param scheduler:
+    :param remote:
     :return:
     """
 
@@ -380,11 +402,16 @@ def skirt_command(skirt_path, mpi_command, bind_to_cores, processes, threads, th
         # If 'process to core' binding must be enabled, add the 'cpus-per-proc' option
         # (see https://www.open-mpi.org/faq/?category=tuning)
         if bind_to_cores:
+
             # Hyperthreading: threads_per_core will be > 1
             # No hyperthreading: threads_per_core will be 1
             # cores / process = (cores / thread) * (threads / process)
             cores_per_process = int(threads / threads_per_core)
-            command += ["--cpus-per-proc", str(cores_per_process)] # "CPU'S per process" means "core per process" in our definitions
+
+            # Check if cpus-per-proc option is possible
+            if remote is None or remote.mpi_knows_cpus_per_proc_option:
+                command += ["--cpus-per-proc", str(cores_per_process)] # "CPU'S per process" means "core per process" in our definitions
+            else: log.warning("The MPI version on the remote host does not know the 'cpus-per-proc' command. Processes cannot be bound to cores")
 
         # Add the SKIRT path and return the final command list
         command += [skirt_path]

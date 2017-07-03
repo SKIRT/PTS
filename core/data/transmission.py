@@ -17,12 +17,12 @@ import numpy as np
 from scipy import interpolate
 
 # Import astronomical modules
-from astropy.units import Unit, spectral
 from astropy.table import Table
 
 # Import the relevant PTS classes and modules
-from ...core.tools import tables, introspection
-from ...core.tools import filesystem as fs
+from ..tools import tables, arrays
+from ..basics.curve import Curve
+from ..units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -49,7 +49,7 @@ class TransmissionCurve(object):
         else: self.table = tables.new([wavelengths, transmissions], names)
 
         # Set column units
-        self.table["Wavelength"].unit = Unit("micron")
+        self.table["Wavelength"].unit = u("micron")
 
     # -----------------------------------------------------------------
 
@@ -65,6 +65,10 @@ class TransmissionCurve(object):
         # Get the wavelengths and transmissions
         wavelengths = fltr._Wavelengths
         transmissions = fltr._Transmission
+
+        # Make sure that the transmission curves are not floating, but are attached to the x axis
+        transmissions[0] = 0.0
+        transmissions[-1] = 0.0
 
         # Create a new TransmissionCurve instance
         return cls(wavelengths, transmissions)
@@ -117,8 +121,8 @@ class TransmissionCurve(object):
         :return:
         """
 
-        if asarray: return tables.column_as_array(self.table["Wavelength"], unit=unit)
-        else: return tables.column_as_list(self.table["Wavelength"], unit=unit, add_unit=add_unit)
+        if asarray: return arrays.plain_array(self.table["Wavelength"], unit=unit, array_unit=self.table["Wavelength"].unit)
+        else: return arrays.array_as_list(self.table["Wavelength"], unit=unit, add_unit=add_unit, array_unit=self.table["Wavelength"].unit)
 
     # -----------------------------------------------------------------
 
@@ -130,8 +134,8 @@ class TransmissionCurve(object):
         :return:
         """
 
-        if asarray: return tables.column_as_array(self.table["Transmission"])
-        else: return tables.column_as_list(self.table["Transmission"])
+        if asarray: return arrays.plain_array(self.table["Transmission"])
+        else: return arrays.array_as_list(self.table["Transmission"])
 
     # -----------------------------------------------------------------
 

@@ -16,14 +16,15 @@ from __future__ import absolute_import, division, print_function
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
-from pts.core.basics.filter import Filter
+from pts.core.filter.broad import BroadBandFilter
 from pts.magic.core.frame import Frame
 from pts.magic.core.remote import RemoteFrame
 from pts.magic.basics.coordinatesystem import CoordinateSystem
-from pts.magic.misc.extinction import GalacticExtinction
-from pts.magic.misc.kernels import AnianoKernels
+from pts.magic.services.attenuation import GalacticAttenuation
+from pts.magic.convolution.aniano import AnianoKernels
 from pts.magic.core.kernel import ConvolutionKernel
 from pts.core.tools import parsing
+from pts.core.remote.python import AttachedPythonSession
 
 # -----------------------------------------------------------------
 
@@ -69,8 +70,8 @@ center_coordinate = reference_wcs.coordinate_range[0]
 
 # -----------------------------------------------------------------
 
-# Create the galactic extinction calculator
-extinction = GalacticExtinction(center_coordinate)
+# Create the galactic attenuation calculator
+attenuation = GalacticAttenuation(center_coordinate)
 
 # -----------------------------------------------------------------
 
@@ -80,6 +81,7 @@ aniano = AnianoKernels()
 # -----------------------------------------------------------------
 
 remote_host_id = "nancy"
+session = AttachedPythonSession.from_host_id(remote_host_id)
 
 # -----------------------------------------------------------------
 
@@ -96,16 +98,16 @@ for path in paths:
     galaxy_name, instrument, band, _ = name.split("_")
 
     # Create the filter
-    fltr = Filter.from_instrument_and_band(instrument, band)
+    fltr = BroadBandFilter.from_instrument_and_band(instrument, band)
 
     # Load the frame
     poisson = Frame.from_file(path)
 
     # Get the attenuation
-    attenuation = extinction.extinction_for_filter(fltr)
+    att = attenuation.extinction_for_filter(fltr)
 
     # CORRECT FOR GALACTIC EXTINCTION
-    poisson *= 10**(0.4 * attenuation)
+    poisson *= 10**(0.4 * att)
 
     # CONVERT UNIT to MJy/sr
     poisson *= 1e-6
@@ -125,7 +127,7 @@ for path in paths:
                 if "FWHM" in line: fwhm = parsing.quantity(line.split("FWHM: ")[1].replace("\n", ""))
 
     # Get the kernel path for convolution from this filter to the Pacs red filter
-    kernel_file_path = aniano.get_kernel_path(fltr, "Pacs red", fwhm=fwhm)
+    kernel_file_path = aniano.get_kernel_path(fltr, "Pacs red", from_fwhm=fwhm)
     kernel = ConvolutionKernel.from_file(kernel_file_path)
 
     # Prepare the kernel
@@ -140,6 +142,6 @@ for path in paths:
     # SAVE
     prep_path_band = fs.join(prep_path, instrument + " " + band)
     result_path = fs.join(prep_path_band, "poisson.fits")
-    remote_frame.save(result_path)
+    remote_frame.saveto(result_path)
 
 # -----------------------------------------------------------------

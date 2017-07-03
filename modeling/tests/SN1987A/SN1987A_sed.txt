@@ -1,0 +1,14 @@
+# Herschel fluxes from Matsuura et al. 2015
+70	0.0455	0.0034
+100	0.0824	0.0045
+160	0.1530	0.0090
+250	0.1107	0.0252
+350	0.0693	0.0228
+
+# APEX flux from Lakicevic et al. 2012
+#350	0.0440	0.0070
+
+# ALMA fluxes (only ejecta) from Indebetouw et al. 2014
+440	0.0500	0.0150
+870	0.0050	0.0010
+

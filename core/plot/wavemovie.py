@@ -16,15 +16,24 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import logger
+from ..tools.logging import log
+
 # Import standard modules
+import warnings
 import os
 import numpy as np
 import matplotlib
-if matplotlib.get_backend().lower() != "agg": matplotlib.use("agg")
+with warnings.catch_warnings():
+    warnings.filterwarnings('error')
+    try:
+        if matplotlib.get_backend().lower() != "agg": matplotlib.use("agg")
+    except Warning as w: log.warning("An failed attempt of setting the Matplotlib backend has been made because it has already been set")
 import matplotlib.pyplot as plt
 
 # Import astronomical modules
-import pyfits
+try: import pyfits
+except ImportError: import astropy.io.fits as pyfits
 
 # Import the relevant PTS classes and modules
 from ..basics.moviefile import MovieFile

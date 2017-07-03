@@ -27,15 +27,15 @@ class SEDFetcher(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs
         """
 
         # Call the constructor of the base class
-        super(SEDFetcher, self).__init__(config)
+        super(SEDFetcher, self).__init__(*args, **kwargs)
 
         # The DustPediaSample object
         self.sample = DustPediaSample()
@@ -47,7 +47,7 @@ class SEDFetcher(Configurable):
         self.sed = None
 
         # The NGC ID
-        self.ngc_id = None
+        self.ngc_name = None
 
     # -----------------------------------------------------------------
 
@@ -82,7 +82,8 @@ class SEDFetcher(Configurable):
         super(SEDFetcher, self).setup(**kwargs)
 
         # Get the NGC ID
-        self.ngc_id = self.sample.get_name(self.config.galaxy_name)
+        if "ngc_name" in kwargs: self.ngc_name = kwargs.pop("ngc_name")
+        else: self.ngc_name = self.sample.get_name(self.config.galaxy_name)
 
     # -----------------------------------------------------------------
 
@@ -97,7 +98,7 @@ class SEDFetcher(Configurable):
         log.info("Getting the SED ...")
 
         # Get the SED for the galaxy
-        self.sed = self.photometry.get_sed(self.ngc_id, add_iras=self.config.iras, add_planck=self.config.planck)
+        self.sed = self.photometry.get_sed(self.ngc_name, add_iras=self.config.iras, add_planck=self.config.planck)
 
     # -----------------------------------------------------------------
 
@@ -127,6 +128,6 @@ class SEDFetcher(Configurable):
         path = fs.join(self.config.path, self.config.galaxy_name + ".dat")
 
         # Save the SED
-        self.sed.save(path)
+        self.sed.saveto(path)
 
 # -----------------------------------------------------------------

@@ -14,10 +14,10 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, ArgumentConfigurationSetter
-from pts.core.basics.host import find_host_ids
+from pts.core.remote.host import find_host_ids
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
-from pts.core.basics.remote import Remote
+from pts.core.remote.remote import Remote
 from pts.core.basics.task import Task
 from pts.core.tools import introspection
 
@@ -70,7 +70,7 @@ for filename in remote.files_in_path(log_output_path):
 if log_path is None: raise RuntimeError("Log does not exist remotely")
 
 # Read the text file
-lines = remote.read_text_file(log_path)
+lines = remote.read_lines(log_path)
 
 # Print the lines of the log file
 for line in lines: print(line)

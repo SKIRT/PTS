@@ -14,18 +14,586 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
+import importlib
 from abc import ABCMeta, abstractmethod
 from types import NoneType
 import sys
 import argparse
 from collections import OrderedDict
-import numpy as np
+import StringIO
+from functools import partial
 
 # Import the relevant PTS classes and modules
 from .map import Map
-from ..tools import parsing
+from ..tools import parsing, stringify
 from ..tools import filesystem as fs
-from ..tools.logging import log
+from ..tools.logging import log, setup_log
+from .composite import SimplePropertyComposite
+from ..tools import introspection
+from ..tools import numbers, types
+from ..tools import time
+
+# -----------------------------------------------------------------
+
+subtypes = dict()
+subtypes["integer"] = ["positive_integer", "negative_integer"]
+subtypes["real"] = ["fraction", "positive_real", "negative_real"]
+subtypes["string"] = ["file_path"]
+subtypes["quantity"] = ["photometric_quantity", "photometric_density_quantity"]
+subtypes["unit"] = ["photometric_unit", "photometric_density_unit"]
+subtypes["filter"] = ["broad_band_filter", "narrow_band_filter"]
+subtypes["list"] = ["integer_list", "real_list", "quantity_list"]
+
+related_types = []
+related_types.append(["integer", "positive_integer", "negative_integer", "even_integer", "even_positive_integer", "even_negative_integer", "odd_integer", "odd_positive_integer", "odd_negative_integer"])
+related_types.append(["real", "fraction", "positive_real", "negative_real"])
+related_types.append(["string", "file_path", "directory_path", "string_no_spaces"])
+related_types.append(["quantity", "photometric_quantity", "photometric_density_quantity"])
+related_types.append(["unit", "photometric_unit", "photometric_density_unit"])
+related_types.append(["filter", "narrow_band_filter", "broad_band_filter"])
+related_types.append(["broad_band_filter_list", "lazy_filter_list", "narrow_band_list"])
+
+# -----------------------------------------------------------------
+
+def initialize_log(config, remote=None):
+
+    """
+    This function ...
+    :parma remote:
+    :return:
+    """
+
+    # Determine the log level
+    level = "INFO"
+    if config.debug: level = "DEBUG"
+    if config.brief: level = "SUCCESS"
+
+    # Determine log path
+    #if args.remote is None: logfile_path = fs.join(config.log_path, time.unique_name("log") + ".txt") if config.report else None
+    #else: logfile_path = None
+
+    # Determine the log file path
+    if remote is None: logfile_path = fs.join(config.log_path, time.unique_name("log") + ".txt") if config.report else None
+    else: logfile_path = None
+
+    # Initialize the logger
+    log = setup_log(level=level, path=logfile_path)
+
+    # Return the logger
+    return log
+
+# -----------------------------------------------------------------
+
+def parse_arguments(name, definition):
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Create the configuration
+    setter = ArgumentConfigurationSetter(name)
+    config = setter.run(definition)
+
+    # Initialize the logger
+    log = initialize_log(config)
+
+    # Return the configuration
+    return config
+
+# -----------------------------------------------------------------
+
+def create_configuration_passive(command_name, class_name, configuration_module_path, config_dict, description=None, cwd=None):
+
+    """
+    This function ...
+    :param command_name:
+    :param class_name:
+    :param configuration_module_path:
+    :param config_dict:
+    :param description:
+    :param cwd:
+    :return:
+    """
+
+    # Find definition
+    #try:
+    #    configuration_module = importlib.import_module(configuration_module_path)
+    #    definition = getattr(configuration_module, "definition")
+    #except ImportError:
+    #    log.warning("No configuration definition found for the " + class_name + " class")
+    #    definition = ConfigurationDefinition()  # Create new configuration definition
+
+    # Get the definition
+    definition = get_definition(class_name, configuration_module_path, cwd=cwd)
+
+    ## CREATE THE CONFIGURATION
+
+    # Create the configuration setter
+    if config_dict is None: config_dict = dict()  # no problem if all options are optional
+    setter = DictConfigurationSetter(config_dict, command_name, description)
+
+    # Create the configuration from the definition and from the provided configuration dictionary
+    config = setter.run(definition)
+
+    # Set the working directory
+    if cwd is not None: config.path = cwd
+
+    # Return the configuration
+    return config
+
+# -----------------------------------------------------------------
+
+def prompt_yn(name, description):
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Create definition
+    definition = ConfigurationDefinition(write_config=False)
+    definition.add_flag(name, description, default=None)
+
+    # Create setter
+    setter = InteractiveConfigurationSetter("proceed", add_logging=False, add_cwd=False)
+
+    # Get the answer
+    while True:
+        config = setter.run(definition, prompt_optional=True)
+        if config[name] is None: log.warning("Answer with yes (y) or no (n)")
+        else: return config[name]
+
+# -----------------------------------------------------------------
+
+def prompt_proceed(description=None):
+
+    """
+    This function ...
+    :param description:
+    :return:
+    """
+
+    if description is None: description = "proceed?"
+
+    # Create definition
+    definition = ConfigurationDefinition(write_config=False)
+    definition.add_flag("proceed", description, default=None)
+
+    # Create setter
+    setter = InteractiveConfigurationSetter("proceed", add_logging=False, add_cwd=False)
+
+    # Get the answer
+    while True:
+        config = setter.run(definition, prompt_optional=True)
+        if config.proceed is None: log.warning("Answer with yes (y) or no (n)")
+        else: return config.proceed
+
+# -----------------------------------------------------------------
+
+def prompt_variable(name, parsing_type, description, choices=None, default=None, required=True):
+
+    """
+    This function ....
+    :param name: 
+    :param parsing_type: 
+    :param description: 
+    :param choices: 
+    :param default: 
+    :return: 
+    """
+
+    # Create definition
+    definition = ConfigurationDefinition(write_config=False)
+
+    # Add setting
+    if default is not None: definition.add_optional(name, parsing_type, description, choices=choices, default=default)
+    elif required: definition.add_required(name, parsing_type, description, choices=choices)
+    else: definition.add_optional(name, parsing_type, description, choices=choices)
+
+    # Create setter
+    setter = InteractiveConfigurationSetter(name, add_logging=False, add_cwd=False)
+
+    # Get the answer
+    config = setter.run(definition, prompt_optional=True)
+    return config[name]
+
+# -----------------------------------------------------------------
+
+def prompt_string_list(name, description, choices=None, default=None, required=True):
+
+    """
+    This function ...
+    :param name: 
+    :param description: 
+    :param choices: 
+    :param default: 
+    :param required: 
+    :return: 
+    """
+
+    return prompt_variable(name, "string_list", description, choices=choices, default=default, required=required)
+
+# -----------------------------------------------------------------
+
+def prompt_string(name, description, choices=None, default=None, required=True):
+
+    """
+    This function ...
+    :param name:
+    :param description:
+    :param choices:
+    :param default:
+    :param required:
+    :return:
+    """
+
+    return prompt_variable(name, "string", description, choices=choices, default=default, required=required)
+
+# -----------------------------------------------------------------
+
+def prompt_real(name, description, choices=None, default=None, required=True):
+
+    """
+    This function ...
+    :param name:
+    :param description:
+    :param choices:
+    :param default:
+    :param required:
+    :return:
+    """
+
+    return prompt_variable(name, "real", description, choices=choices, default=default, required=required)
+
+# -----------------------------------------------------------------
+
+def prompt_weights(name, description, choices=None, default=None, required=True):
+
+    """
+    This function ...
+    :param name: 
+    :param description: 
+    :param choices: 
+    :param default: 
+    :param required: 
+    :return: 
+    """
+
+    return prompt_variable(name, "weights", description, choices=choices, default=default, required=required)
+
+# -----------------------------------------------------------------
+
+def create_configuration_interactive(definition, command_name, description, **kwargs):
+
+    """
+    This function ...
+    :param definition: 
+    :param command_name: 
+    :param description: 
+    :return: 
+    """
+
+    return create_configuration(definition, command_name, description, "interactive", **kwargs)
+
+# -----------------------------------------------------------------
+
+def create_configuration(definition, command_name, description, configuration_method, **kwargs):
+
+    """
+    This function ...
+    :param definition:
+    :param command_name:
+    :param description:
+    :param configuration_method:
+    :param kwargs:
+    :return:
+    """
+
+    ## CREATE THE CONFIGURATION
+
+    # Create the configuration setter
+    if configuration_method == "interactive": setter = InteractiveConfigurationSetter(command_name, description, **kwargs)
+    elif configuration_method == "arguments": setter = ArgumentConfigurationSetter(command_name, description, **kwargs)
+    elif configuration_method.startswith("file"):
+        configuration_filepath = configuration_method.split(":")[1]
+        setter = FileConfigurationSetter(configuration_filepath, command_name, description, **kwargs)
+    elif configuration_method == "last":
+        configuration_filepath = fs.join(introspection.pts_user_config_dir, command_name + ".cfg")
+        if not fs.is_directory(introspection.pts_user_config_dir): fs.create_directory(introspection.pts_user_config_dir)
+        if not fs.is_file(configuration_filepath): raise RuntimeError("Cannot use rerun (config file not present)")
+        setter = FileConfigurationSetter(configuration_filepath, command_name, description, **kwargs)
+    else: raise ValueError("Invalid configuration method: " + configuration_method)
+
+    # Create the configuration from the definition and from reading the command line arguments
+    config = setter.run(definition)
+
+    # Return the configuration
+    return config
+
+# -----------------------------------------------------------------
+
+def create_configuration_flexible(name, definition, settings=None, default=False):
+
+    """
+    This function ...
+    :param name:
+    :param definition:
+    :param settings:
+    :param default:
+    :return: 
+    """
+
+    ## A test settings dict is given
+    if settings is not None:
+
+        # Create the configuration
+        setter = DictConfigurationSetter(settings, name, add_logging=False, add_cwd=False)
+        config = setter.run(definition)
+
+    # Settings are not given, default flag is added
+    elif default:
+
+        # Create the configuration
+        setter = PassiveConfigurationSetter(name, add_cwd=False, add_logging=False)
+        config = setter.run(definition)
+
+    # No test configuration is given and default flag is not added
+    else:
+
+        # Create the configuration
+        setter = InteractiveConfigurationSetter(name, add_cwd=False, add_logging=False)
+        config = setter.run(definition, prompt_optional=True)
+
+    # Return the configuration
+    return config
+
+# -----------------------------------------------------------------
+
+def get_config_for_class(cls, config=None, interactive=False, cwd=None):
+
+    """
+    This function ...
+    :param cls:
+    :param config:
+    :param interactive:
+    :param cwd:
+    :return:
+    """
+
+    # If config is specified
+    if config is not None:
+
+        #from .configuration import Configuration, ConfigurationDefinition, DictConfigurationSetter
+
+        if isinstance(config, Configuration): return config
+        elif isinstance(config, dict):
+
+            # Find the command
+            command_name, class_name, configuration_module_path, description = find_command(cls)
+
+            # Get configuration definition
+            if command_name is not None: definition = get_definition(class_name, configuration_module_path, cwd=cwd)
+            else: definition = ConfigurationDefinition(write_config=False)
+
+            # Create the DictConfigurationSetter
+            setter = DictConfigurationSetter(config, command_name, description)
+
+            # Set the configuration
+            config = setter.run(definition)
+
+            # Set the path
+            if cwd is not None: config.path = cwd
+
+            # Return the configuration
+            return config
+
+        # Not a valid config argument
+        else: raise ValueError("Config should be Configuration, dictionary or None")
+
+    # Look for the config
+    else:
+
+        # Find the command
+        command_name, class_name, configuration_module_path, description = find_command(cls)
+
+        if command_name is not None:
+
+            # Get definition
+            definition = get_definition(class_name, configuration_module_path, cwd=cwd)
+
+            ## CREATE THE CONFIGURATION
+
+            # Create configuration setter
+            if interactive: setter = InteractiveConfigurationSetter(class_name, add_logging=False)
+            else: setter = PassiveConfigurationSetter(class_name, add_logging=False)
+
+            # Create the configuration from the definition
+            config = setter.run(definition)
+
+            # Set the path
+            if cwd is not None: config.path = cwd
+
+            # Return the configuration
+            return config
+
+            # log.warning("The object has not been configured yet")
+
+        else:
+
+            # Create an empty definition
+            definition = ConfigurationDefinition(write_config=False)
+            setter = InteractiveConfigurationSetter(class_name, add_logging=False)
+
+            # Create new config
+            config = setter.run(definition, prompt_optional=False)
+
+            # Set the path
+            if cwd is not None: config.path = cwd
+
+            # Return the configuration
+            return config
+
+# -----------------------------------------------------------------
+
+def find_command(cls):
+
+    """
+    This function ...
+    :return:
+    """
+
+    from ..tools import introspection
+
+    tables = introspection.get_arguments_tables()
+    # table_matches = introspection.find_matches_tables(script_name, tables)
+
+    import inspect
+
+    class_name = cls.__name__
+
+    class_path = inspect.getfile(cls).split(".py")[0]
+
+    relative_class_path = class_path.rsplit("pts/")[1]
+
+    relative_class_pts = relative_class_path.replace("/", ".") + "." + class_name
+
+    subproject, relative_class_subproject = relative_class_pts.split(".", 1)
+
+    # print(subproject, relative_class_subproject)
+
+    # exit()
+
+    # Get the correct table
+    table = tables[subproject]
+
+    command_name = None
+    description = None
+    configuration_name = None
+    configuration_module_path = None
+
+    # print(table)
+
+    #print(relative_class_subproject)
+
+    for i in range(len(table["Path"])):
+
+        # print(table["Path"][i], relative_class_subproject)
+
+        #print(table["Path"][i], relative_class_subproject)
+
+        if table["Path"][i] == relative_class_subproject:
+
+            command_name = table["Command"][i]
+            description = table["Description"][i]
+
+            configuration_name = table["Configuration"][i]
+            if configuration_name == "--": configuration_name = command_name
+            configuration_module_path = "pts." + subproject + ".config." + configuration_name
+
+            break
+
+    # Return the command name
+    return command_name, class_name, configuration_module_path, description
+
+# -----------------------------------------------------------------
+
+def get_definition(class_name, configuration_module_path, cwd=None):
+
+    """
+    This function ...
+    :return:
+    """
+
+    import importlib
+
+    ## GET THE CONFIGURATION DEFINITION
+    try:
+        #print(cwd)
+        if cwd is not None: original_cwd = fs.change_cwd(cwd)
+        else: original_cwd = None
+        configuration_module = importlib.import_module(configuration_module_path)
+        # has_configuration = True
+        definition = getattr(configuration_module, "definition")
+        if original_cwd is not None: fs.change_cwd(original_cwd)
+    except ImportError:
+        log.warning("No configuration definition found for the " + class_name + " class")
+        # has_configuration = False
+        definition = ConfigurationDefinition(write_config=False)  # Create new configuration definition
+
+    # Return the configuration definition
+    return definition
+
+# -----------------------------------------------------------------
+
+def combine_configs(*args):
+
+    """
+    This function ...
+    :param args:
+    :return:
+    """
+
+    # Initialize a new configuration
+    config = Configuration()
+
+    # Loop over the configurations
+    for cfg in args:
+        for label in cfg: config[label] = cfg[label]
+
+    # Return the resulting configuration
+    return config
+
+# -----------------------------------------------------------------
+
+def are_related_types(type_a, type_b):
+
+    """
+    This function ...
+    :param type_a:
+    :param type_b:
+    :return:
+    """
+
+    for lst in related_types:
+        if type_a in lst and type_b in lst: return True
+
+    return False
+
+# -----------------------------------------------------------------
+
+def parent_type(type_name):
+
+    """
+    This function ...
+    :param type_name:
+    :return:
+    """
+
+    if type_name in subtypes.keys(): return type_name
+    for label in subtypes:
+        if type_name in subtypes[label]: return label
+    return None
 
 # -----------------------------------------------------------------
 
@@ -34,6 +602,20 @@ class Configuration(Map):
     """
     This function ...
     """
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        This function ...
+        """
+
+        # Call the constructor of the base class
+        super(Configuration, self).__init__(*args, **kwargs)
+
+        # The path
+        self._path = None
+
+    # -----------------------------------------------------------------
 
     @classmethod
     def from_file(cls, path):
@@ -49,6 +631,9 @@ class Configuration(Map):
 
         # Load the settings
         with open(path, 'r') as configfile: load_mapping(configfile, config)
+
+        # Set the path
+        config._path = path
 
         # Return the config
         return config
@@ -76,6 +661,17 @@ class Configuration(Map):
 
     # -----------------------------------------------------------------
 
+    def copy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return copy.deepcopy(self)
+
+    # -----------------------------------------------------------------
+
     def log_dir_path(self):
 
         """
@@ -90,18 +686,48 @@ class Configuration(Map):
 
     # -----------------------------------------------------------------
 
-    #@property
-    def config_dir_path(self):
+    def config_file_path(self, command_name=None):
 
         """
-        The directory where the config file should be saved
+        This function ...
+        :param command_name:
         :return:
         """
 
-        if "config_path" in self:
-            if self["config_path"] is not None: return fs.absolute_or_in(self["config_path"], self["path"]) # absolute path or relative to the working directory
-            else: return self.output_path()
-        else: return None
+        # Config path specified
+        if "config_path" in self and self["config_path"] is not None:
+
+            # File or directory?
+            name = fs.name(self["config_path"])
+
+            # File, determine full path
+            if "." in name: filepath = fs.absolute_or_in(self["config_path"], self["path"])
+
+            # Directory, set file path from directory path
+            else:
+
+                dirpath = fs.absolute_or_in(self["config_path"], self["path"])
+
+                # Create directory if necessary
+                if not fs.is_directory(dirpath): fs.create_directory(dirpath)
+
+                # Determine filepath
+                filename = command_name + ".cfg" if command_name is not None else "config.cfg"
+                filepath = fs.join(dirpath, filename)
+
+            # Retrun the config file path
+            return filepath
+
+        # No config path specified
+        else:
+
+            # Determine filepath
+            dirpath = self.output_path()
+            filename = command_name + ".cfg" if command_name is not None else "config.cfg"
+            filepath = fs.join(dirpath, filename)
+
+            # Return the config file path
+            return filepath
 
     # -----------------------------------------------------------------
 
@@ -138,7 +764,22 @@ class Configuration(Map):
 
     # -----------------------------------------------------------------
 
-    def save(self, path):
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether the path is valid
+        if self._path is None: raise RuntimeError("Path is not defined")
+
+        # Save
+        self.saveto(self._path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
 
         """
         This function ...
@@ -146,7 +787,25 @@ class Configuration(Map):
         :return:
         """
 
+        # Write
         with open(path, 'w') as configfile: write_mapping(configfile, self)
+
+        # Update the path
+        self._path = path
+
+# -----------------------------------------------------------------
+
+def open_mapping(filepath):
+
+    """
+    This function ...
+    :param filepath: 
+    :return: 
+    """
+
+    parameters = Map()
+    with open(filepath, "r") as fh: load_mapping(fh, parameters)
+    return parameters
 
 # -----------------------------------------------------------------
 
@@ -209,16 +868,32 @@ def load_mapping(mappingfile, mapping, indent=""):
             # Remove comment after the declaration
             if "#" in line: line = line.split("#")[0]
 
-            try:
-                before, after = line.split(":")
+            try: before, after = line.split(":", 1)
             except ValueError: print("ERROR processing: ", line)
 
             #print("declaration", before, after)
 
             if after.strip() == "":
 
-                state = 3  # state 3: just before "{" is expected to start subdefinition
-                continue
+                # Check if there is a specification
+                if before.endswith("]"):
+                    name = before.split("[")[0].strip()
+                    specification = before.split("[")[1].split("]")[0].strip()
+                else:
+                    name = before
+                    specification = None
+
+                if specification is None or specification == "section":
+                    state = 3 # state 3: just before "{" is expected to start subdefinition
+                    continue
+                else:
+                    if specification.endswith("list"): value = []
+                    elif specification.endswith("tuple"): value = ()
+                    elif specification.endswith("dictionary"): value = {}
+                    else: raise RuntimeError("Encountered empty value for '" + name + "' of type '" + specification)
+
+                    # Set the value
+                    mapping[name] = value
 
             else:
 
@@ -285,6 +960,19 @@ def load_mapping(mappingfile, mapping, indent=""):
 
 # -----------------------------------------------------------------
 
+def save_mapping(path, mapping):
+
+    """
+    This function ...
+    :param path:
+    :param mapping:
+    :return:
+    """
+
+    with open(path, 'w') as fh: write_mapping(fh, mapping)
+
+# -----------------------------------------------------------------
+
 def write_mapping(mappingfile, mapping, indent=""):
 
     """
@@ -299,6 +987,9 @@ def write_mapping(mappingfile, mapping, indent=""):
     length = len(mapping)
     for name in mapping:
 
+        # Skip internal stuff
+        if name.startswith("_"): continue
+
         value = mapping[name]
 
         if isinstance(value, Map):
@@ -309,7 +1000,7 @@ def write_mapping(mappingfile, mapping, indent=""):
             print(indent + "}", file=mappingfile)
 
         else:
-            ptype, string = stringify(mapping[name])
+            ptype, string = stringify.stringify(mapping[name])
             print(indent + name + " [" + ptype + "]: " + string, file=mappingfile)
 
         if index != length - 1: print("", file=mappingfile)
@@ -342,7 +1033,7 @@ def mapping_to_lines(lines, mapping, indent=""):
 
         else:
 
-            ptype, string = stringify(mapping[name])
+            ptype, string = stringify.stringify(mapping[name])
             lines.append(indent + name + " [" + ptype + "]: " + string)
 
         if index != length - 1: lines.append("")
@@ -350,77 +1041,32 @@ def mapping_to_lines(lines, mapping, indent=""):
 
 # -----------------------------------------------------------------
 
-def stringify(value):
+def print_mapping(mapping, indent="", empty_lines=True):
 
     """
     This function ...
-    :param value:
+    :param mapping:
+    :param indent:
+    :param empty_lines:
     :return:
     """
 
-    if isinstance(value, list):
+    # Create output string
+    output = StringIO.StringIO()
 
-        strings = []
-        ptype = None
-        for entry in value:
+    # Write mapping to string buffer
+    print("")
+    write_mapping(output, mapping, indent=indent)
+    print("")
 
-            parsetype, val = stringify_not_list(entry)
+    # Show contents
+    contents = output.getvalue()
+    for line in contents.split("\n"):
+        if not empty_lines and line.strip() == "": continue
+        print(line)
 
-            if ptype is None: ptype = parsetype
-            elif ptype != parsetype: raise ValueError("Nonuniform list")
-
-            strings.append(val)
-
-        return ptype + "_list", ",".join(strings)
-
-    elif isinstance(value, tuple):
-
-        strings = []
-        ptype = None
-        for entry in value:
-
-            parsetype, val = stringify_not_list(entry)
-
-            if ptype is None: ptype = parsetype
-            elif ptype != parsetype: raise ValueError("Nonuniform tuple")
-
-            strings.append(val)
-
-        return ptype + "_tuple", ",".join(strings)
-
-    else: return stringify_not_list(value)
-
-# -----------------------------------------------------------------
-
-def stringify_not_list(value):
-
-    """
-    This function ...
-    :param value:
-    :return:
-    """
-
-    from astropy.units import Quantity
-    from astropy.coordinates import Angle
-    from pts.magic.basics.skygeometry import SkyCoordinate
-
-    from .range import RealRange, IntegerRange, QuantityRange
-
-    from .filter import Filter
-
-    if isinstance(value, bool): return "boolean", str(value)
-    elif isinstance(value, int): return "integer", str(value)
-    elif isinstance(value, float) or isinstance(value, np.float32) or isinstance(value, np.float64): return "real", repr(value)
-    elif isinstance(value, basestring): return "string", value
-    elif isinstance(value, Quantity): return "quantity", repr(value.value) + " " + str(value.unit).replace("solMass", "Msun").replace("solLum", "Lsun").replace(" ", "")
-    elif isinstance(value, Angle): return "angle", repr(value.value) + " " + str(value.unit).replace(" ", "")
-    elif isinstance(value, NoneType): return "None", "None"
-    elif isinstance(value, RealRange): return "real_range", repr(value)
-    elif isinstance(value, IntegerRange): return "integer_range", repr(value)
-    elif isinstance(value, QuantityRange): return "quantity_range", repr(value)
-    elif isinstance(value, SkyCoordinate): return "skycoordinate", repr(value.ra.value) + " " + str(value.ra.unit) + "," + repr(value.dec.value) + " " + str(value.dec.unit)
-    elif isinstance(value, Filter): return "filter", str(value)
-    else: raise ValueError("Unrecognized type: " + str(type(value)))
+    # Close the string buffer
+    output.close()
 
 # -----------------------------------------------------------------
 
@@ -489,6 +1135,17 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
+    def __len__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.fixed) + len(self.required) + len(self.pos_optional) + len(self.optional) + len(self.flags)
+
+    # -----------------------------------------------------------------
+
     def save(self, path):
 
         """
@@ -512,11 +1169,17 @@ class ConfigurationDefinition(object):
         """
 
         # Required
+        index = 0
         for name in self.required:
 
-            real_type = self.required[name][0]
-            description = self.required[name][1]
-            choices = self.required[name][2]
+            # Get properties
+            real_type = self.required[name].type
+            description = self.required[name].description
+            choices = self.required[name].choices
+            suggestions = self.required[name].suggestions
+            min_value = self.required[name].min_value
+            max_value = self.required[name].max_value
+            forbidden = self.required[name].forbidden
 
             # Add prefix
             #if self.prefix is not None: name = self.prefix + "/" + name
@@ -527,15 +1190,36 @@ class ConfigurationDefinition(object):
             if real_type.__name__.endswith("_list"): choices = None
 
             # Add argument to argument parser
-            parser.add_argument(name, type=real_type, help=description, choices=choices)
+
+            #print("real_type", real_type.__name__)
+            #print(len(self.pos_optional))
+            #print(index, len(self.required) - 1)
+
+            # Construct type
+            the_type = construct_type(real_type, min_value, max_value, forbidden)
+
+            if suggestions is not None: description += " [suggestions: " + stringify.stringify(suggestions)[1] + "]"
+
+            # If this is the last required argument, and it is of 'string' type, and there are no positional arguments,
+            # we can allow the string to contain spaces without having to add quotation marks
+            if real_type.__name__ == "string" and len(self.pos_optional) == 0 and index == len(self.required) - 1:
+                parser.add_argument(name, nargs='+', help=description, choices=choices)
+            else: parser.add_argument(name, type=the_type, help=description, choices=choices)
+
+            index += 1
 
         # Positional optional
         for name in self.pos_optional:
 
-            real_type = self.pos_optional[name][0]
-            description = self.pos_optional[name][1]
-            default = self.pos_optional[name][2]
-            choices = self.pos_optional[name][3]
+            # Get properties
+            real_type = self.pos_optional[name].type
+            description = self.pos_optional[name].description
+            default = self.pos_optional[name].default
+            choices = self.pos_optional[name].choices
+            suggestions = self.pos_optional[name].suggestions
+            min_value = self.pos_optional[name].min_value
+            max_value = self.pos_optional[name].max_value
+            forbidden = self.pos_optional[name].forbidden
 
             # Add prefix
             #if self.prefix is not None: name = self.prefix + "/" + name
@@ -545,18 +1229,28 @@ class ConfigurationDefinition(object):
             # Don't set choices for 'list'-type argument values, the choices here are allowed to be entered in any combination. Not just one of the choices is expected.
             if real_type.__name__.endswith("_list"): choices = None
 
+            # Construct type
+            if min_value is not None or max_value is not None or forbidden is not None: the_type = construct_type(real_type, min_value, max_value, forbidden)
+            else: the_type = real_type
+
+            if suggestions is not None: description += " [suggestions: " + stringify.stringify(suggestions)[1] + "]"
+
             # Add argument to argument parser
-            parser.add_argument(name, type=real_type, help=description, default=default, nargs='?', choices=choices)
+            parser.add_argument(name, type=the_type, help=description, default=default, nargs='?', choices=choices)
 
         # Optional
         for name in self.optional:
 
-            # (real_type, description, default, letter)
-            real_type = self.optional[name][0]
-            description = self.optional[name][1]
-            default = self.optional[name][2]
-            choices = self.optional[name][3]
-            letter = self.optional[name][5]
+            # Get properties
+            real_type = self.optional[name].type
+            description = self.optional[name].description
+            default = self.optional[name].default
+            choices = self.optional[name].choices
+            letter = self.optional[name].letter
+            suggestions = self.optional[name].suggestions
+            min_value = self.optional[name].min_value
+            max_value = self.optional[name].max_value
+            forbidden = self.optional[name].forbidden
 
             # Add prefix
             #if self.prefix is not None: name = self.prefix + "/" + name
@@ -568,32 +1262,69 @@ class ConfigurationDefinition(object):
             # Don't set choices for 'list'-type argument values, the choices here are allowed to be entered in any combination. Not just one of the choices is expected.
             if real_type.__name__.endswith("_list"): choices = None
 
+            # Construct type
+            the_type = construct_type(real_type, min_value, max_value, forbidden)
+
+            if suggestions is not None: description += " [suggestions: " + stringify.stringify(suggestions)[1] + "]"
+
             # Add the argument
-            if letter is None: parser.add_argument("--" + name, type=real_type, help=description, default=default, choices=choices)
-            else: parser.add_argument("-" + letter, "--" + name, type=real_type, help=description, default=default, choices=choices)
+            if letter is None: parser.add_argument("--" + name, type=the_type, help=description, default=default, choices=choices)
+            else: parser.add_argument("-" + letter, "--" + name, type=the_type, help=description, default=default, choices=choices)
 
         # Flag
         for name in self.flags:
 
-            # (description, letter)
-            description = self.flags[name][0]
-            letter = self.flags[name][1]
-            default = self.flags[name][2] # True or False
+            # Get properties
+            description = self.flags[name].description
+            letter = self.flags[name].letter
+            default = self.flags[name].default
 
-            # Add prefix
-            #if self.prefix is not None: name = self.prefix + "/" + name
+            # Default is True
+            if default is True:
 
-            if prefix is not None:
-                name = prefix + "/" + name
+                name = "not_" + name
+                description = "don't " + description
+
+                if prefix is not None:
+                    name = prefix + "/" + name
+                    letter = None
+
+                # Add the argument
+                if letter is None: parser.add_argument("--" + name, action="store_true", help=description)
+                else: parser.add_argument("-" + letter, "--" + name, action="store_true", help=description)
+
+            # Default is False
+            elif default is False:
+
+                if prefix is not None:
+                    name = prefix + "/" + name
+                    letter = None
+
+                # Add the argument
+                if letter is None: parser.add_argument("--" + name, action="store_true", help=description)
+                else: parser.add_argument("-" + letter, "--" + name, action="store_true", help=description)
+
+            # Default is None
+            elif default is None:
+
                 letter = None
 
-            # Add the argument
-            if letter is None:
-                if default is False: parser.add_argument("--" + name, action="store_true", help=description)
-                else: parser.add_argument("--!" + name, action="store_true", help="don't" + description)
-            else:
-                if default is False: parser.add_argument("-" + letter, "--" + name, action="store_true", help=description)
-                else: parser.add_argument("-!" + letter, "--!" + name, action="store_true", help="don't" + description)
+                name1 = name
+                description1 = description
+
+                name2 = "not_" + name
+                description2 = "don't " + description
+
+                if prefix is not None:
+                    name1 = prefix + "/" + name1
+                    name2 = prefix + "/" + name2
+
+                # Add 2 arguments to the parser
+                parser.add_argument("--" + name1, action="store_true", help=description1)
+                parser.add_argument("--" + name2, action="store_true", help=description2)
+
+            # Invalid option
+            else: raise ValueError("Invalid option for default of flag '" + name + "': " + str(default))
 
         # Add arguments of sections
         for section_name in self.sections:
@@ -619,48 +1350,138 @@ class ConfigurationDefinition(object):
         """
 
         # Add fixed
-        for name in self.fixed: settings[name] = self.fixed[name][1]
+        for name in self.fixed: settings[name] = self.fixed[name].value
 
         # Add required
         for name in self.required:
 
+            # Get properties
+            real_type = self.required[name].type
+            choices = self.required[name].choices
+
             if prefix is not None: argument_name = prefix + "/" + name
             else: argument_name = name
 
-            settings[name] = getattr(arguments, argument_name)
+            # Get the value
+            value = getattr(arguments, argument_name)
+
+            # Check each value in the list, if applicable
+            if real_type.__name__.endswith("_list") and choices is not None:
+                # Check whether they are all in the choices
+                for item in value:
+                    if not item in choices: raise ValueError("Element '" + item + "' not recognized. Options are: " + stringify.stringify(choices)[1])
+
+            # Convert from list into string if string contains spaces and was the last required argument
+            if real_type.__name__ == "string" and isinstance(value, list): value = " ".join(value)
+
+            # Set the value
+            settings[name] = value
 
         # Add positional optional
         for name in self.pos_optional:
 
+            # Get properties
+            real_type = self.pos_optional[name].type
+            choices = self.pos_optional[name].choices
+
             if prefix is not None: argument_name = prefix + "/" + name
             else: argument_name = name
 
-            settings[name] = getattr(arguments, argument_name)
+            # Get the value
+            value = getattr(arguments, argument_name)
+
+            # Check each value in the list, if applicable
+            if real_type.__name__.endswith("_list") and choices is not None and value is not None:
+                # Check whether they are all in the choices
+                for item in value:
+                    if not item in choices: raise ValueError("Element '" + item + "' not recognized. Options are: " + stringify.stringify(choices)[1])
+
+            # Set the value
+            settings[name] = value
 
         # Add optional
         for name in self.optional:
 
+            # Get properties
+            real_type = self.optional[name].type
+            choices = self.optional[name].choices
+
             if prefix is not None: argument_name = prefix + "/" + name
             else: argument_name = name
 
-            settings[name] = getattr(arguments, argument_name)
+            # Get the value
+            value = getattr(arguments, argument_name)
+
+            # Check each value in the list, if applicable
+            if real_type.__name__.endswith("_list") and choices is not None and value is not None:
+                # Check whether they are all in the choices
+                for item in value:
+                    if not item in choices: raise ValueError("Element '" + item + "' not recognized. Options are: " + stringify.stringify(choices)[1])
+
+            # Set the value
+            settings[name] = value
 
         # Add flags
         for name in self.flags:
 
-            default = self.flags[name][2]
+            # Get properties
+            default = self.flags[name].default
 
-            if prefix is not None: argument_name = prefix + "/" + name
-            else: argument_name = name
+            # Default is True
+            if default is True:
 
-            #print(self.flags)
+                command_name = "not_" + name
 
-            if default: # if default == True
+                if prefix is not None: argument_name = prefix + "/" + command_name
+                else: argument_name = command_name
 
-                argument_name = "!" + argument_name
+                # Get the value
                 settings[name] = not getattr(arguments, argument_name)
 
-            else: settings[name] = getattr(arguments, argument_name)
+            # Default is False
+            elif default is False:
+
+                command_name = name
+
+                if prefix is not None: argument_name = prefix + "/" + command_name
+                else: argument_name = command_name
+
+                # Get the value
+                settings[name] = getattr(arguments, argument_name)
+
+            # Default is None
+            elif default is None:
+
+                command_name1 = name
+                command_name2 = "not_" + name
+
+                if prefix is not None:
+                    argument_name1 = prefix + "/" + command_name1
+                    argument_name2 = prefix + "/" + command_name2
+                else:
+                    argument_name1 = command_name1
+                    argument_name2 = command_name2
+
+                value1 = getattr(arguments, argument_name1)
+                value2 = getattr(arguments, argument_name2)
+
+                # Argument 1 is True
+                if value1:
+
+                    if value2: raise ValueError("Options '" + argument_name1 + "' and '" + argument_name2 + "' cannot both be enabled because they contradict each other")
+                    settings[name] = True
+
+                # Argument 1 is False
+                else:
+
+                    # Argument 2 is True (this is the negated one!)
+                    if value2: settings[name] = False
+
+                    # Argument 2 is False (so none of both options are specified: use the default of None)
+                    else: settings[name] = None
+
+            # Invalid option
+            else: raise ValueError("Invalid value for default of flag '" + name + "': " + str(default))
 
         # Add the configuration settings of the various sections
         for name in self.sections:
@@ -720,6 +1541,60 @@ class ConfigurationDefinition(object):
 
     # -----------------------------------------------------------------
 
+    def import_section_from_composite_class(self, name, description, cls):
+
+        """
+        This funtion ...
+        """
+
+        # First create 'default' instance
+        instance = cls()
+        self.import_section_from_properties(name, description, instance)
+
+    # -----------------------------------------------------------------
+
+    def import_section_from_properties(self, name, description, instance):
+
+        """
+        This function creates a configuration section from a SimplePropertyComposite-derived class
+        :param name:
+        :param description:
+        :param instance:
+        :return:
+        """
+
+        default_values = vars(instance)
+
+        # Add empty section
+        self.add_section(name, description)
+
+        # Loop over the properties
+        for pname in default_values:
+
+            if pname.startswith("_"): continue
+
+            default_value = default_values[pname]
+
+            # Section
+            if isinstance(default_value, SimplePropertyComposite):
+
+                # Recursive call to this function
+                pdescription = instance._descriptions[pname]
+                self.sections[name].import_section_from_properties(pname, pdescription, default_value)
+
+            else:
+
+                # Get the type, description and the choices
+                ptype = instance._ptypes[pname]
+                pdescription = instance._descriptions[pname]
+                choices = instance._choices[pname]
+
+                # Add to the definition
+                if ptype == "boolean": self.sections[name].add_flag(pname, pdescription, default_value)
+                else: self.sections[name].add_optional(pname, ptype, pdescription, default_value, choices=choices)
+
+    # -----------------------------------------------------------------
+
     def add_fixed(self, name, description, value):
 
         """
@@ -730,11 +1605,12 @@ class ConfigurationDefinition(object):
         :return:
         """
 
-        self.fixed[name] = (description, value)
+        self.fixed[name] = Map(description=description, value=value)
 
     # -----------------------------------------------------------------
 
-    def add_required(self, name, user_type, description, choices=None, choice_descriptions=None, dynamic_list=False):
+    def add_required(self, name, user_type, description, choices=None, dynamic_list=False, suggestions=None,
+                     min_value=None, max_value=None, forbidden=None):
 
         """
         This function ...
@@ -742,21 +1618,29 @@ class ConfigurationDefinition(object):
         :param user_type:
         :param description:
         :param choices:
-        :param choice_descriptions:
         :param dynamic_list:
+        :param suggestions:
+        :param min_value:
+        :param max_value:
+        :param forbidden:
         :return:
         """
+
+        # Check
+        if choices is not None and suggestions is not None: raise ValueError("Cannot specify both choices and suggestions at the same time")
 
         # Get the real type
         real_type = get_real_type(user_type)
 
         # Add
-        self.required[name] = (real_type, description, choices, choice_descriptions, dynamic_list)
+        self.required[name] = Map(type=real_type, description=description, choices=choices, dynamic_list=dynamic_list,
+                                  suggestions=suggestions, min_value=min_value, max_value=max_value, forbidden=forbidden)
 
     # -----------------------------------------------------------------
 
     def add_positional_optional(self, name, user_type, description, default=None, choices=None,
-                                choice_descriptions=None, convert_default=False, dynamic_list=False):
+                                convert_default=False, dynamic_list=False, suggestions=None, min_value=None,
+                                max_value=None, forbidden=None):
 
         """
         This function ...
@@ -765,25 +1649,37 @@ class ConfigurationDefinition(object):
         :param description:
         :param default:
         :param choices:
-        :param choice_descriptions:
         :param convert_default:
         :param dynamic_list:
+        :param suggestions:
+        :param min_value:
+        :param max_value:
+        :param forbidden:
         :return:
         """
+
+        # Check
+        if choices is not None and suggestions is not None: raise ValueError("Cannot specify both choices and suggestions at the same time")
 
         # Get the real type
         real_type = get_real_type(user_type)
 
         # Get the real default value
-        if convert_default and default is not None: default = get_real_value(default, real_type)
+        if default is not None:
+
+            # Convert or check default value
+            if convert_default: default = parse_default(default, user_type, real_type)
+            else: default = check_default(default, user_type)
 
         # Add
-        self.pos_optional[name] = (real_type, description, default, choices, choice_descriptions, dynamic_list)
+        self.pos_optional[name] = Map(type=real_type, description=description, default=default, choices=choices,
+                                      dynamic_list=dynamic_list, suggestions=suggestions, min_value=min_value,
+                                      max_value=max_value, forbidden=forbidden)
 
     # -----------------------------------------------------------------
 
-    def add_optional(self, name, user_type, description, default=None, choices=None, choice_descriptions=None,
-                     letter=None, convert_default=False, dynamic_list=False):
+    def add_optional(self, name, user_type, description, default=None, choices=None, letter=None, convert_default=False,
+                     dynamic_list=False, suggestions=None, min_value=None, max_value=None, forbidden=None):
 
         """
         This function ...
@@ -792,12 +1688,18 @@ class ConfigurationDefinition(object):
         :param description:
         :param default:
         :param choices:
-        :param choice_descriptions:
         :param letter:
         :param convert_default:
         :param dynamic_list:
+        :param suggestions:
+        :param min_value:
+        :param max_value:
+        :param forbidden:
         :return:
         """
+
+        # Check
+        if choices is not None and suggestions is not None: raise ValueError("Cannot specify both choices and suggestions at the same time")
 
         if self.prefix is not None and letter is not None: raise ValueError("Cannot assign letter argument for child configuration definition")
 
@@ -805,14 +1707,20 @@ class ConfigurationDefinition(object):
         real_type = get_real_type(user_type)
 
         # Get the real default value
-        if convert_default and default is not None: default = get_real_value(default, real_type)
+        if default is not None:
+
+            # Convert or check default value
+            if convert_default: default = parse_default(default, user_type, real_type)
+            else: default = check_default(default, user_type)
 
         # Add
-        self.optional[name] = (real_type, description, default, choices, choice_descriptions, letter, dynamic_list)
+        self.optional[name] = Map(type=real_type, description=description, default=default, choices=choices,
+                                  letter=letter, dynamic_list=dynamic_list, suggestions=suggestions,
+                                  min_value=min_value, max_value=max_value, forbidden=forbidden)
 
     # -----------------------------------------------------------------
 
-    def add_flag(self, name, description, default=False, letter=None):
+    def add_flag(self, name, description, default=False, letter=None, convert_default=False):
 
         """
         This function ...
@@ -820,11 +1728,15 @@ class ConfigurationDefinition(object):
         :param description:
         :param default:
         :param letter:
+        :param convert_default:
         :return:
         """
 
+        # Convert default
+        if convert_default: default = get_real_value(default, parsing.boolean)
+
         # Add
-        self.flags[name] = (description, letter, default)
+        self.flags[name] = Map(description=description, letter=letter, default=default)
 
 # -----------------------------------------------------------------
 
@@ -892,7 +1804,8 @@ class ConfigurationSetter(object):
             log_path = fs.absolute_or_in(self.definition.log_path, cwd_path) if self.definition.log_path is not None else cwd_path # set absolute log path
 
             self.definition.add_fixed("log_path", "the directory for the log file be written to", log_path)
-            self.definition.add_flag("debug", "enable debug output")
+            self.definition.add_flag("debug", "enable debug output", letter="d")
+            self.definition.add_flag("brief", "brief output", letter="b")
             self.definition.add_flag("report", "write a report file")
 
         # Add config path
@@ -969,6 +1882,7 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
             if answer == "": prompt_optional = True
             else: prompt_optional = parsing.boolean(answer)
 
+        # Get the settings from an interactive prompt
         add_settings_interactive(self.config, self.definition, prompt_optional=prompt_optional)
 
 # -----------------------------------------------------------------
@@ -1482,8 +2396,9 @@ def write_definition(definition, configfile, indent=""):
     # Fixed
     for name in definition.fixed:
 
-        description = definition.fixed[name][0]
-        value = definition.fixed[name][1]
+        # Get properties
+        description = definition.fixed[name].description
+        value = definition.fixed[name].value
 
         print(indent + "# " + description, file=configfile)
         print(indent + name + " [fixed]: " + str(value), file=configfile)
@@ -1491,55 +2406,73 @@ def write_definition(definition, configfile, indent=""):
     # Required
     for name in definition.required:
 
-        real_type = definition.required[name][0]
-        description = definition.required[name][1]
-        choices = definition.required[name][2]
-        choice_descriptions = definition.required[name][3]
+        # Get properties
+        real_type = definition.required[name].type
+        description = definition.required[name].description
+        choices = definition.required[name].choices
+        dynamic_list = definition.required[name].dynamic_list
+        suggestions = definition.required[name].suggestions
+        min_value = definition.required[name].min_value
+        max_value = definition.required[name].max_value
+        forbidden = definition.required[name].forbidden
 
         choices_string = ""
-        if choices is not None: choices_string = " # choices = " + stringify(choices)[1]
+        if isinstance(choices, dict): choices_string = " # choices = " + stringify.stringify(choices.keys())[1]
+        elif choices is not None: choices_string = " # choices = " + stringify.stringify(choices)[1]
 
         print(indent + "# " + description, file=configfile)
-        print(indent + name + " [required, " + str(real_type) + "]: None" + choices_string, file=configfile)
+        print(indent + name + " [required, " + real_type.__name__ + "]: None" + choices_string, file=configfile)
 
     # Positional optional
     for name in definition.pos_optional:
 
-        real_type = definition.pos_optional[name][0]
-        description = definition.pos_optional[name][1]
-        default = definition.pos_optional[name][2]
-        choices = definition.pos_optional[name][3]
-        choice_descriptions = definition.pos_optional[name][4]
+        # Get properties
+        real_type = definition.pos_optional[name].type
+        description = definition.pos_optional[name].description
+        default = definition.pos_optional[name].default
+        choices = definition.pos_optional[name].choices
+        dynamic_list = definition.pos_optional[name].dynamic_list
+        suggestions = definition.pos_optional[name].suggestions
+        min_value = definition.pos_optional[name].min_value
+        max_value = definition.pos_optional[name].max_value
+        forbidden = definition.pos_optional[name].forbidden
 
         choices_string = ""
-        if choices is not None: choices_string = " # choices = " + stringify(choices)[1]
+        if isinstance(choices, dict): choices_string = " # choices = " + stringify.stringify(choices.keys())[1]
+        elif choices is not None: choices_string = " # choices = " + stringify.stringify(choices)[1]
 
         print(indent + "# " + description, file=configfile)
-        print(indent + name + " [pos_optional, " + str(real_type) + "]: " + str(default) + choices_string, file=configfile)
+        print(indent + name + " [pos_optional, " + real_type.__name__ + "]: " + str(default) + choices_string, file=configfile)
 
     # Optional
     for name in definition.optional:
 
-        real_type = definition.optional[name][0]
-        description = definition.optional[name][1]
-        default = definition.optional[name][2]
-        choices = definition.optional[name][3]
-        choice_descriptions = definition.optional[name][4]
-        letter = definition.optional[name][5]
+        # Get properties
+        real_type = definition.optional[name].type
+        description = definition.optional[name].description
+        default = definition.optional[name].default
+        choices = definition.optional[name].choices
+        letter = definition.optional[name].letter
+        dynamic_list = definition.optional[name].dynamic_list
+        suggestions = definition.optional[name].suggestions
+        min_value = definition.optional[name].min_value
+        max_value = definition.optional[name].max_value
+        forbidden = definition.optional[name].forbidden
 
         choices_string = ""
-        if choices is not None: choices_string = " # choices = " + stringify(choices)[1]
+        if isinstance(choices, dict): choices_string = " # choices = " + stringify.stringify(choices.keys())[1]
+        elif choices is not None: choices_string = " # choices = " + stringify.stringify(choices)[1]
 
         print(indent + "# " + description, file=configfile)
-        print(indent + name + " [optional, " + str(real_type) + "]: " + str(default) + choices_string, file=configfile)
+        print(indent + name + " [optional, " + real_type.__name__ + "]: " + str(default) + choices_string, file=configfile)
 
     # Flag
     for name in definition.flags:
 
-        # (description, letter)
-        description = definition.flags[name][0]
-        letter = definition.flags[name][1]
-        default = definition.flags[name][2]  # True or False
+        # Get properties
+        description = definition.flags[name].description
+        letter = definition.flags[name].letter
+        default = definition.flags[name].default  # True or False
 
         print(indent + "# " + description, file=configfile)
         print(indent + name + " [flag]: " + str(default), file=configfile)
@@ -1547,6 +2480,7 @@ def write_definition(definition, configfile, indent=""):
     # Sections
     for section_name in definition.sections:
 
+        # Get properties
         section_definition = definition.sections[section_name]
         section_description = definition.section_descriptions[section_name]
 
@@ -1573,28 +2507,46 @@ def add_settings_from_dict(config, definition, dictionary):
 
     dict_that_is_emptied = copy.deepcopy(dictionary)
 
+    removed_keys = []
+
     # Fixed
     for name in definition.fixed:
 
-        value = definition.fixed[name][1]
+        # Get properties
+        description = definition.fixed[name].description
+        value = definition.fixed[name].value
+
+        # Set the value in the config
         config[name] = value
 
     # Required
     for name in definition.required:
 
-        if not name in dictionary: raise ValueError("The option '" + name + "' is not specified in the configuration dictionary")
+        if name not in dictionary: raise ValueError("The option '" + name + "' is not specified in the configuration dictionary")
 
-        choices = definition.required[name][2]
+        # Get properties
+        real_type = definition.required[name].type
+        description = definition.required[name].description
+        choices = definition.required[name].choices
+        dynamic_list = definition.required[name].dynamic_list
+        suggestions = definition.required[name].suggestions
+        min_value = definition.required[name].min_value
+        max_value = definition.required[name].max_value
+        forbidden = definition.required[name].forbidden
 
         # Get the value specified in the dictionary
-        #value = dictionary[name]
         value = dict_that_is_emptied.pop(name)
+        removed_keys.append(name)
 
-        # TODO: check type?
-
-        # Check with choices
-        if choices is not None:
-            if value not in choices: raise ValueError("The value of '" + str(value) + "' for the option '" + name + "' is not valid: choices are: " + str(choices))
+        # Checks
+        check_list(name, value, real_type)
+        check_tuple(name, value, real_type)
+        check_dictionary(name, value, real_type)
+        check_type(name, value, real_type)
+        check_forbidden(name, value, real_type, forbidden)
+        check_min(name, value, real_type, min_value)
+        check_max(name, value, real_type, max_value)
+        check_choices(name, value, real_type, choices)
 
         # Set the value
         config[name] = value
@@ -1602,20 +2554,35 @@ def add_settings_from_dict(config, definition, dictionary):
     # Positional optional
     for name in definition.pos_optional:
 
-        default = definition.pos_optional[name][2]
-        choices = definition.pos_optional[name][3]
+        # Get properties
+        real_type = definition.pos_optional[name].type
+        description = definition.pos_optional[name].description
+        default = definition.pos_optional[name].default
+        choices = definition.pos_optional[name].choices
+        dynamic_list = definition.pos_optional[name].dynamic_list
+        suggestions = definition.pos_optional[name].suggestions
+        min_value = definition.pos_optional[name].min_value
+        max_value = definition.pos_optional[name].max_value
+        forbidden = definition.pos_optional[name].forbidden
 
         # Check if this option is specified in the dictionary
         if name in dictionary:
 
-            #value = dictionary[name]
+            # Get the value
             value = dict_that_is_emptied.pop(name)
+            removed_keys.append(name)
 
-            # TODO: check type?
+            if value is not None:
 
-            # Check with choices
-            if choices is not None:
-                if value not in choices: raise ValueError("The value of '" + str(value) + "' for the option '" + name + "' is not valid: choices are: " + str(choices))
+                # Checks
+                check_list(name, value, real_type)
+                check_tuple(name, value, real_type)
+                check_dictionary(name, value, real_type)
+                check_type(name, value, real_type)
+                check_forbidden(name, value, real_type, forbidden)
+                check_min(name, value, real_type, min_value)
+                check_max(name, value, real_type, max_value)
+                check_choices(name, value, real_type, choices)
 
         # Use the default value otherwise
         else: value = default
@@ -1626,21 +2593,36 @@ def add_settings_from_dict(config, definition, dictionary):
     # Optional
     for name in definition.optional:
 
-        # (real_type, description, default, letter)
-        default = definition.optional[name][2]
-        choices = definition.optional[name][3]
+        # Get properties
+        real_type = definition.optional[name].type
+        description = definition.optional[name].description
+        default = definition.optional[name].default
+        choices = definition.optional[name].choices
+        letter = definition.optional[name].letter
+        dynamic_list = definition.optional[name].dynamic_list
+        suggestions = definition.optional[name].suggestions
+        min_value = definition.optional[name].min_value
+        max_value = definition.optional[name].max_value
+        forbidden = definition.optional[name].forbidden
 
         # Check if this option is specified in the dictionary
         if name in dictionary:
 
-            #value = dictionary[name]
+            # Get the value
             value = dict_that_is_emptied.pop(name)
+            removed_keys.append(name)
 
-            # TODO: check type?
+            if value is not None:
 
-            # Check with choices
-            if choices is not None:
-                if value not in choices: raise ValueError("The value of '" + str(value) + "' for the option '" + name + "' is not valid: choices are: " + str(choices))
+                # Checks
+                check_list(name, value, real_type)
+                check_tuple(name, value, real_type)
+                check_dictionary(name, value, real_type)
+                check_type(name, value, real_type)
+                check_forbidden(name, value, real_type, forbidden)
+                check_min(name, value, real_type, min_value)
+                check_max(name, value, real_type, max_value)
+                check_choices(name, value, real_type, choices)
 
         # Use the default value otherwise
         else: value = default
@@ -1651,12 +2633,13 @@ def add_settings_from_dict(config, definition, dictionary):
     # Flags
     for name in definition.flags:
 
-        # (description, letter, default)
-        #letter = definition.flags[name][1]
-        default = definition.flags[name][2]  # True or False
+        # Get properties
+        default = definition.flags[name].default  # True or False
 
         # Check if this option is specified in the dictionary
-        if name in dictionary: value = dict_that_is_emptied.pop(name)
+        if name in dictionary:
+            value = dict_that_is_emptied.pop(name)
+            removed_keys.append(name)
 
         # Use the default value otherwise
         else: value = default
@@ -1677,10 +2660,236 @@ def add_settings_from_dict(config, definition, dictionary):
         else: section_dictionary = dict() # new empty dict
 
         # Add the settings
-        add_settings_from_dict(config[name], section_definition, section_dictionary)
+        removed_section_keys = add_settings_from_dict(config[name], section_definition, section_dictionary)
+
+        if name in dictionary:
+            #print(dict_that_is_emptied[name])
+            for key in removed_section_keys:
+                del dict_that_is_emptied[name][key]
+            #print(dict_that_is_emptied[name])
+            if len(dict_that_is_emptied[name]) == 0: del dict_that_is_emptied[name]
 
     # Add leftover settings
     add_nested_dict_values_to_map(config, dict_that_is_emptied)
+
+    # Return the list of removed keys
+    return removed_keys
+
+# -----------------------------------------------------------------
+
+def check_list(name, value, real_type):
+
+    """
+    This function ...
+    :param name:
+    :param value:
+    :param real_type:
+    :return:
+    """
+
+    # For lists: check here
+    # List-type setting
+    if real_type.__name__.endswith("_list") and not isinstance(value, list): raise ValueError("The option '" + name + "' must be a list")
+
+# -----------------------------------------------------------------
+
+def check_tuple(name, value, real_type):
+
+    """
+    This function ...
+    :param name:
+    :param value:
+    :param real_type:
+    :return:
+    """
+
+    # For tuples: check here
+    if real_type.__name__.endswith("_tuple") and not isinstance(value, tuple): raise ValueError("The option '" + name + "' must be a tuple")
+
+# -----------------------------------------------------------------
+
+def check_dictionary(name, value, real_type):
+
+    """
+    This function ...
+    :param name:
+    :param value:
+    :param real_type:
+    :return:
+    """
+
+    # For dictionaries: check here
+    if real_type.__name__.endswith("_dictionary") and not isinstance(value, dict): raise ValueError("The option '" + name + "' must be a dictionary")
+
+# -----------------------------------------------------------------
+
+def check_type(name, value, real_type):
+
+    """
+    This function ...
+    :param name:
+    :param value:
+    :param real_type:
+    :return:
+    """
+
+    # TODO: Use derived and related types to check the type of the given value
+
+    # List-type setting
+    #if real_type.__name__.endswith("_list"):
+    #    pass
+
+    # Single-value setting
+    #else:
+    #    pass
+
+    return
+
+# -----------------------------------------------------------------
+
+def check_forbidden(name, value, real_type, forbidden):
+
+    """
+    This function ...
+    :param name:
+    :param value:
+    :param real_type:
+    :param forbidden:
+    :return:
+    """
+
+    # Check forbidden
+    if forbidden is None: return
+
+    # Check whether forbidden is a list
+    if not isinstance(forbidden, list): raise ValueError("Forbidden values for '" + name + "' must be a list")
+
+    # List-type setting
+    if real_type.__name__.endswith("_list"):
+
+        # Loop over the entries
+        for entry in value:
+            if entry in forbidden: raise ValueError("The value '" + stringify.stringify(entry)[1] + "' in '" + name + "' is forbidden")
+
+    # Single-value type setting
+    else:
+
+        if value in forbidden: raise ValueError("The value '" + stringify.stringify(value)[1] + " for '" + name + "' is forbidden")
+
+# -----------------------------------------------------------------
+
+def check_min(name, value, real_type, min_value):
+
+    """
+    This function ...
+    :param name:
+    :param value:
+    :param real_type:
+    :param min_value:
+    :return:
+    """
+
+    # Check min
+    if min_value is not None:
+
+        # List type setting
+        if real_type.__name__.endswith("_list"):
+
+            # Loop over the entries
+            for entry in value:
+
+                if entry < min_value: raise ValueError("The value '" + stringify.stringify(entry)[1] + "' for '" + name + "' is too low: minimum value is '" + stringify.stringify(min_value)[1] + "'")
+
+        # Single-value type setting
+        else:
+
+            if value < min_value: raise ValueError("The value '" + stringify.stringify(value)[1] + "' for '" + name + "' is too low: minimum value is '" + stringify.stringify(min_value)[1] + "'")
+
+# -----------------------------------------------------------------
+
+def check_max(name, value, real_type, max_value):
+
+    """
+    This function ...
+    :param name:
+    :param value:
+    :param real_type:
+    :param max_value:
+    :return:
+    """
+
+    if max_value is not None:
+
+        # List type setting
+        if real_type.__name__.endswith("_list"):
+
+            # Loop over the entries
+            for entry in value:
+
+                if entry > max_value: raise ValueError("The value '" + stringify.stringify(entry)[1] + "' for '" + name + "' is too high: maximum value is '" + stringify.stringify(max_value)[1] + "'")
+
+        # Single-value type setting
+        else:
+
+            if value > max_value: raise ValueError("The value '" + stringify.stringify(value)[1] + "' for '" + name + "' is too high: maximum value is '" + stringify.stringify(max_value)[1] + "'")
+
+# -----------------------------------------------------------------
+
+def check_choices(name, value, real_type, choices):
+
+    """
+    This function ...
+    :param name:
+    :param value:
+    :param real_type:
+    :param choices:
+    :return:
+    """
+
+    # No choices
+    if choices is None: return
+
+    # Check that choices is list
+    if not isinstance(choices, list) and not isinstance(choices, dict): raise ValueError("Choices for '" + name + "' must be a list")
+
+    # More than one choice
+    if len(choices) > 1:
+
+        # Convert the choices into a string
+        choices_string = stringify.stringify(choices.keys())[1] if isinstance(choices, dict) else stringify.stringify(choices)[1]
+
+        # Check whether the given value matches the allowed choices
+
+        # List-type setting
+        if real_type.__name__.endswith("_list"):  # list-type setting
+
+            # Loop over the entries in the given list
+            for entry in value:
+
+                # Check whether each entry appears in the choices
+                if entry not in choices: raise ValueError("The value '" + stringify.stringify(entry)[1] + "' in '" + name + "' is not valid, choices are: '" + choices_string + "'")
+
+        # Single-value setting and not None
+        else:
+            if value not in choices: raise ValueError("The value '" + stringify.stringify(value)[1] + "' for the option '" + name + "' is not valid, choices are: '" + choices_string + "'")
+
+    # Exactly one choice
+    else:
+
+        # List-type setting
+        if real_type.__name__.endswith("_list"):  # list-type setting
+
+            if isinstance(choices, dict): exact_value = [choices.keys()[0]]
+            else: exact_value = [choices[0]]
+
+        # Single-value setting
+        else:
+
+            if isinstance(choices, dict): exact_value = choices.keys()[0]
+            else: exact_value = choices[0]
+
+        # Check with the value that the only exact choice
+        if value != exact_value: raise ValueError("The value '" + stringify.stringify(value)[1] + "' for '" + name + "' is not valid: only allowed option is '" + stringify.stringify(exact_value)[1] + "'")
 
 # -----------------------------------------------------------------
 
@@ -1695,7 +2904,7 @@ def add_settings_default(config, definition):
 
     # Fixed
     for name in definition.fixed:
-        value = definition.fixed[name][1]
+        value = definition.fixed[name].value
         config[name] = value
 
     # Required
@@ -1707,7 +2916,8 @@ def add_settings_default(config, definition):
     # Positional optional
     for name in definition.pos_optional:
 
-        default = definition.pos_optional[name][2]
+        # Get properties
+        default = definition.pos_optional[name].default
 
         # Set the value
         config[name] = default
@@ -1715,8 +2925,8 @@ def add_settings_default(config, definition):
     # Optional
     for name in definition.optional:
 
-        # (real_type, description, default, letter)
-        default = definition.optional[name][2]
+        # Get properties
+        default = definition.optional[name].default
 
         # Set the value
         config[name] = default
@@ -1724,9 +2934,8 @@ def add_settings_default(config, definition):
     # Flags
     for name in definition.flags:
 
-        # (description, letter, default)
-        # letter = definition.flags[name][1]
-        default = definition.flags[name][2]  # True or False
+        # Get properties
+        default = definition.flags[name].default  # True or False
 
         # Set the boolean value
         config[name] = default
@@ -1755,14 +2964,15 @@ def add_settings_interactive(config, definition, prompt_optional=True):
     # Fixed
     for name in definition.fixed:
 
-        description = definition.fixed[name][0]
-        value = definition.fixed[name][1]
+        # Get properties
+        description = definition.fixed[name].description
+        value = definition.fixed[name].value
 
         # Give name and description
         log.success(name + ": " + description)
 
         # Inform the user
-        log.info("Using fixed value for " + str(value))
+        log.info("Using fixed value '" + str(value) + "' for " + name)
 
         # Set the value
         config[name] = value
@@ -1770,24 +2980,117 @@ def add_settings_interactive(config, definition, prompt_optional=True):
     # Required
     for name in definition.required:
 
-        real_type = definition.required[name][0]
-        description = definition.required[name][1]
-        choices = definition.required[name][2]
-        choice_descriptions = definition.required[name][3]
-        dynamic_list = definition.required[name][4]
+        # Get properties
+        real_type = definition.required[name].type
+        description = definition.required[name].description
+        choices = definition.required[name].choices
+        dynamic_list = definition.required[name].dynamic_list
+        suggestions = definition.required[name].suggestions
+        min_value = definition.required[name].min_value
+        max_value = definition.required[name].max_value
+        forbidden = definition.required[name].forbidden
 
         # Give name and description
         log.success(name + ": " + description)
 
+        # Get list of choices and a dict of their descriptions
         if choices is not None:
+            choices_list = choices.keys() if isinstance(choices, dict) else choices
+            choice_descriptions = choices if isinstance(choices, dict) else None
+        else: choices_list = choice_descriptions = None
 
+        # No choices
+        if choices is None:
+
+            # List-type setting
+            if real_type.__name__.endswith("_list"):  # list-type setting
+
+                # Dynamic list
+                if dynamic_list:
+
+                    real_base_type = getattr(parsing, real_type.__name__.split("_list")[0])
+
+                    # Construct type
+                    the_type = construct_type(real_base_type, min_value, max_value, forbidden)
+
+                    log.info("Provide a value for a list item and press ENTER. Leave blank and press ENTER to end the list")
+
+                    # Show suggestions
+                    if suggestions is not None:
+                        log.info("Suggestions:")
+                        for suggestion in suggestions:
+                            suggestion_description = suggestions[suggestion]
+                            log.info(" - " + suggestion + ": " + suggestion_description)
+
+                    value = []
+                    while True:
+                        answer = raw_input("   : ")
+                        if answer == "": break # end of the list
+                        try:
+                            #single_value = real_base_type(answer)
+                            single_value = the_type(answer)
+                            value.append(single_value)
+                        except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+
+                # Not a dynamic list
+                else:
+
+                    log.info("Provide the values, seperated by commas")
+
+                    # Construct type
+                    the_type = construct_type(real_type, min_value, max_value, forbidden)
+
+                    # Show suggestions
+                    if suggestions is not None:
+                        log.info("Suggestions:")
+                        for suggestion in suggestions:
+                            suggestion_description = suggestions[suggestion]
+                            log.info(" - " + suggestion + ": " + suggestion_description)
+
+                    value = []  # to remove warning from IDE that value could be referenced (below) without assignment
+                    while True:
+                        answer = raw_input("   : ")
+                        try:
+                            #value = real_type(answer)
+                            value = the_type
+                            break
+                        except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+
+            # Single-value setting
+            else:
+
+                log.info("Provide a value")
+
+                # Construct type
+                the_type = construct_type(real_type, min_value, max_value, forbidden)
+
+                # Show suggestions
+                if suggestions is not None:
+                    log.info("Suggestions:")
+                    for suggestion in suggestions:
+                        suggestion_description = suggestions[suggestion]
+                        log.info(" - " + suggestion + ": " + suggestion_description)
+
+                value = None # to remove warning from IDE that value could be referenced (below) without assignment
+                while True:
+                    answer = raw_input("   : ")
+                    try:
+                        #value = real_type(answer)
+                        value = the_type(answer)
+                        break
+                    except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+
+        # More than one choice
+        elif len(choices) > 1:
+
+            # List-type setting
             if real_type.__name__.endswith("_list"): # list-type setting
 
                 log.info("Choose one or more of the following options (separated only by commas)")
 
-                for index, label in enumerate(choices):
+                for index, label in enumerate(choices_list):
                     choice_description = ""
-                    if choice_descriptions is not None and label in choice_descriptions: choice_description = ": " + choice_descriptions[label]
+                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[label]
                     log.info(" - [" + str(index) + "] " + label + choice_description)
 
                 value = None # to remove warning from IDE that value could be referenced (below) without assignment
@@ -1796,70 +3099,56 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                     answer = raw_input("   : ")
                     try:
                         indices = parsing.integer_list(answer)
-                        value = [choices[index] for index in indices] # value is a list
+                        value = [choices_list[index] for index in indices] # value is a list
                         break
-                    except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+                    except (ValueError, IndexError) as e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
+            # Single-value setting
             else:
 
                 log.info("Choose one of the following options")
 
-                for index, label in enumerate(choices):
+                for index, label in enumerate(choices_list):
                     choice_description = ""
-                    if choice_descriptions is not None and label in choice_descriptions: choice_description = ": " + choice_descriptions[label]
+                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[label]
                     log.info(" - [" + str(index) + "] " + label + choice_description)
 
                 value = None  # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
-
                     # Get the number of the choice
                     answer = raw_input("   : ")
                     try:
                         index = parsing.integer(answer)
-                        value = choices[index]
+                        value = choices_list[index]
                         break
-                    except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+                    except (ValueError, IndexError) as e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
+        # Only one choice
+        #elif len(choices) == 1:
         else:
 
+            # List-type setting
             if real_type.__name__.endswith("_list"):  # list-type setting
 
-                if dynamic_list:
-
-                    log.info("Provide a value for a list item and press ENTER. Leave blank and press ENTER to end the list")
-
-                    value = []
-                    while True:
-                        answer = raw_input("   : ")
-                        if answer == "": break # end of the list
-                        try:
-                            single_value = real_type(answer)
-                            value.append(single_value)
-                        except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
-
+                if isinstance(choices, dict):
+                    log.info("Only one option: automatically using a list of this value '[" + str(choices.keys()[0]) + "]' for " + name)
+                    value = [choices.keys()[0]]
                 else:
+                    # Inform the user
+                    log.info("Only one option: automatically using a list of this value '[" + str(choices[0]) + "]' for " + name)
+                    value = [choices[0]]
 
-                    log.info("Provide the values, seperated by commas")
-
-                    value = []  # to remove warning from IDE that value could be referenced (below) without assignment
-                    while True:
-                        answer = raw_input("   : ")
-                        try:
-                            value = real_type(answer)
-                            break
-                        except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
-
+            # Single-value setting
             else:
 
-                log.info("Provide a value")
-
-                value = None # to remove warning from IDE that value could be referenced (below) without assignment
-                while True:
-                    answer = raw_input("   : ")
-                    try:
-                        value = real_type(answer)
-                        break
-                    except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+                if isinstance(choices, dict):
+                    # Inform the user
+                    log.info("Only one option: automatically using value of '" + str(choices.keys()[0]) + "' for " + name)
+                    value = choices.keys()[0]
+                else:
+                    # Inform the user
+                    log.info("Only one option: automatically using value of '" + str(choices[0]) + "' for " + name)
+                    value = choices[0]
 
         # Set the value
         config[name] = value
@@ -1867,12 +3156,22 @@ def add_settings_interactive(config, definition, prompt_optional=True):
     # Positional optional
     for name in definition.pos_optional:
 
-        real_type = definition.pos_optional[name][0]
-        description = definition.pos_optional[name][1]
-        default = definition.pos_optional[name][2]
-        choices = definition.pos_optional[name][3]
-        choice_descriptions = definition.pos_optional[name][4]
-        dynamic_list = definition.pos_optional[name][5]
+        # Get properties
+        real_type = definition.pos_optional[name].type
+        description = definition.pos_optional[name].description
+        default = definition.pos_optional[name].default
+        choices = definition.pos_optional[name].choices
+        dynamic_list = definition.pos_optional[name].dynamic_list
+        suggestions = definition.pos_optional[name].suggestions
+        min_value = definition.pos_optional[name].min_value
+        max_value = definition.pos_optional[name].max_value
+        forbidden = definition.pos_optional[name].forbidden
+
+        # Get list of choices and a dict of their descriptions
+        if choices is not None:
+            choices_list = choices.keys() if isinstance(choices, dict) else choices
+            choice_descriptions = choices if isinstance(choices, dict) else None
+        else: choices_list = choice_descriptions = None
 
         if not prompt_optional:
             value = default
@@ -1884,17 +3183,116 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         log.success(name + ": " + description)
 
         #
-        log.info("Press ENTER to use the default value (" + str(default) + ")")
+        log.info("Press ENTER to use the default value (" + stringify.stringify(default)[1] + ")")
 
-        if choices is not None:
+        # Choices are not given
+        if choices_list is None:
 
+            # List-typ setting
+            if real_type.__name__.endswith("_list"):  # list-type setting
+
+                # Dynamic list
+                if dynamic_list:
+
+                    log.info(
+                        "or provide other values. Enter a value and press ENTER. To end the list, leave blank and press ENTER.")
+
+                    real_base_type = getattr(parsing, real_type.__name__.split("_list")[0])
+
+                    # Construct type
+                    the_type = construct_type(real_base_type, min_value, max_value, forbidden)
+
+                    # Show suggestions
+                    if suggestions is not None:
+                        log.info("Suggestions:")
+                        for suggestion in suggestions:
+                            suggestion_description = suggestions[suggestion]
+                            log.info(" - " + suggestion + ": " + suggestion_description)
+
+                    value = []  # to remove warning
+                    while True:
+                        answer = raw_input("   : ")
+                        if answer == "":
+                            break  # end of list
+                        else:
+                            try:
+                                # single_value = real_type(answer)
+                                single_value = the_type(answer)
+                                value.append(single_value)
+                            except ValueError, e:
+                                log.warning("Invalid input: " + str(e) + ". Try again.")
+
+                # Not a dynamic list
+                else:
+
+                    log.info("or provide other values, separated by commas")
+
+                    # Construct type
+                    the_type = construct_type(real_type, min_value, max_value, forbidden)
+
+                    # Show suggestions
+                    if suggestions is not None:
+                        log.info("Suggestions:")
+                        for suggestion in suggestions:
+                            suggestion_description = suggestions[suggestion]
+                            log.info(" - " + suggestion + ": " + suggestion_description)
+
+                    value = default  # to remove warning from IDE that value could be referenced (below) without assignment
+                    while True:
+                        answer = raw_input("   : ")
+                        if answer == "":
+                            value = default
+                            break
+                        else:
+                            try:
+                                # value = real_type(answer)
+                                value = the_type(answer)
+                                break
+                            except ValueError, e:
+                                log.warning("Invalid input: " + str(e) + ". Try again.")
+
+            # Not a list
+            else:
+
+                log.info("or provide another value")
+
+                # Construct type
+                the_type = construct_type(real_type, min_value, max_value, forbidden)
+
+                # Show suggestions
+                if suggestions is not None:
+                    log.info("Suggestions:")
+                    for suggestion in suggestions:
+                        suggestion_description = suggestions[suggestion]
+                        log.info(" - " + suggestion + ": " + suggestion_description)
+
+                value = default  # to remove warning from IDE that value could be referenced (below) without assignment
+                while True:
+                    answer = raw_input("   : ")
+                    if answer == "":
+                        value = default
+                        break
+                    else:
+                        try:
+                            # value = real_type(answer)
+                            value = the_type(answer)
+                            break
+                        except ValueError, e:
+                            log.warning("Invalid input: " + str(e) + ". Try again.")
+
+        # Choices are given
+        #if choices_list is not None:
+        # More than one choice or no default
+        elif len(choices) > 1 or default is None:
+
+            # List-type setting
             if real_type.__name__.endswith("_list"):  # list-type setting
 
                 log.info("or choose one or more of the following options (separated only by commas)")
 
-                for index, label in enumerate(choices):
+                for index, label in enumerate(choices_list):
                     choice_description = ""
-                    if choice_descriptions is not None and label in choice_descriptions: choice_description = ": " + choice_descriptions[label]
+                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[label]
                     log.info(" - [" + str(index) + "] " + label + choice_description)
 
                 value = default # to remove warning from IDE that value could be referenced (below) without assignment
@@ -1907,17 +3305,17 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                     else:
                         try:
                             indices = parsing.integer_list(answer)
-                            value = [choices[index] for index in indices] # value is a list
+                            value = [choices_list[index] for index in indices] # value is a list
                             break
-                        except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+                        except (ValueError, IndexError) as e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
             else:
 
                 log.info("or choose one of the following options")
 
-                for index, label in enumerate(choices):
+                for index, label in enumerate(choices_list):
                     choice_description = ""
-                    if choice_descriptions is not None and label in choice_descriptions: choice_description = ": " + choice_descriptions[label]
+                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[label]
                     log.info(" - [" + str(index) + "] " + label + choice_description)
 
                 value = default  # to remove warning from IDE that value could be referenced (below) without assignment
@@ -1930,59 +3328,42 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                     else:
                         try:
                             index = parsing.integer(answer)
-                            value = choices[index]
+                            value = choices_list[index]
                             break
-                        except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+                        except (ValueError, IndexError) as e: log.warning("Invalid input: " + str(e) + ". Try again.")
 
+        # Exactly one choice AND a default value
         else:
 
+            # List-type setting
             if real_type.__name__.endswith("_list"):  # list-type setting
 
-                if dynamic_list:
-
-                    log.info("or provide other values. Enter a value and press ENTER. To end the list, leave blank and press ENTER.")
-
-                    value = [] # to remove warning
-                    while True:
-                        answer = raw_input("   : ")
-                        if answer == "": break # end of list
-                        else:
-                            try:
-                                single_value = real_type(answer)
-                                value.append(single_value)
-                            except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
-
+                if isinstance(choices, dict):
+                    log.info("Only one option: automatically using a list of this value '[" + str(
+                        choices.keys()[0]) + "]' for " + name)
+                    value = [choices.keys()[0]]
+                    assert value == default
                 else:
+                    # Inform the user
+                    log.info("Only one option: automatically using a list of this value '[" + str(
+                        choices[0]) + "]' for " + name)
+                    value = [choices[0]]
+                    assert value == default
 
-                    log.info("or provide other values, separated by commas")
-
-                    value = default  # to remove warning from IDE that value could be referenced (below) without assignment
-                    while True:
-                        answer = raw_input("   : ")
-                        if answer == "":
-                            value = default
-                            break
-                        else:
-                            try:
-                                value = real_type(answer)
-                                break
-                            except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
-
+            # Single-value setting
             else:
 
-                log.info("or provide another value")
-
-                value = default  # to remove warning from IDE that value could be referenced (below) without assignment
-                while True:
-                    answer = raw_input("   : ")
-                    if answer == "":
-                        value = default
-                        break
-                    else:
-                        try:
-                            value = real_type(answer)
-                            break
-                        except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+                if isinstance(choices, dict):
+                    # Inform the user
+                    log.info(
+                        "Only one option: automatically using value of '" + str(choices.keys()[0]) + "' for " + name)
+                    value = choices.keys()[0]
+                    assert value == default
+                else:
+                    # Inform the user
+                    log.info("Only one option: automatically using value of '" + str(choices[0]) + "' for " + name)
+                    value = choices[0]
+                    assert value == default
 
         # Set the value
         config[name] = value
@@ -1990,14 +3371,23 @@ def add_settings_interactive(config, definition, prompt_optional=True):
     # Optional
     for name in definition.optional:
 
-        # (real_type, description, default, letter)
-        real_type = definition.optional[name][0]
-        description = definition.optional[name][1]
-        default = definition.optional[name][2]
-        choices = definition.optional[name][3]
-        choice_descriptions = definition.optional[name][4]
-        letter = definition.optional[name][5]
-        dynamic_list = definition.optional[name][6]
+        # Get properties
+        real_type = definition.optional[name].type
+        description = definition.optional[name].description
+        default = definition.optional[name].default
+        choices = definition.optional[name].choices
+        letter = definition.optional[name].letter
+        dynamic_list = definition.optional[name].dynamic_list
+        suggestions = definition.optional[name].suggestions
+        min_value = definition.optional[name].min_value
+        max_value = definition.optional[name].max_value
+        forbidden = definition.optional[name].forbidden
+
+        # Get list of choices and a dict of their descriptions
+        if choices is not None:
+            choices_list = choices.keys() if isinstance(choices, dict) else choices
+            choice_descriptions = choices if isinstance(choices, dict) else None
+        else: choices_list = choice_descriptions = None
 
         if not prompt_optional:
             value = default
@@ -2009,79 +3399,59 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         log.success(name + ": " + description)
 
         #
-        log.info("Press ENTER to use the default value (" + str(default) + ")")
+        log.info("Press ENTER to use the default value (" + stringify.stringify(default)[1] + ")")
 
-        if choices is not None:
+        # Choices are not given
+        if choices_list is None:
 
+            # List-type setting
             if real_type.__name__.endswith("_list"):  # list-type setting
 
-                log.info("or choose one or more of the following options (separated only by commas)")
-
-                for index, label in enumerate(choices):
-                    choice_description = ""
-                    if choice_descriptions is not None and label in choice_descriptions: choice_description = ": " + choice_descriptions[label]
-                    log.info(" - [" + str(index) + "] " + label + choice_description)
-
-                value = default  # to remove warning from IDE that value could be referenced (below) without assignment
-                while True:
-
-                    # Get the numbers of the choice
-                    answer = raw_input("   : ")
-                    if answer == "":
-                        value = default
-                        break
-                    else:
-                        try:
-                            indices = parsing.integer_list(answer)
-                            value = [choices[index] for index in indices] # value is a list here
-                            break
-                        except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
-
-            else:
-
-                log.info("or choose one of the following options")
-
-                for index, label in enumerate(choices):
-                    choice_description = ""
-                    if choice_descriptions is not None and label in choice_descriptions: choice_description = ": " + choice_descriptions[label]
-                    log.info(" - [" + str(index) + "] " + label + choice_description)
-
-                value = default  # to remove warning from IDE that value could be referenced (below) without assignment
-                while True:
-
-                    # Get the number of the choice
-                    answer = raw_input("   : ")
-                    if answer == "":
-                        value = default
-                        break
-                    else:
-                        try:
-                            index = parsing.integer(answer)
-                            value = choices[index] # if we are here, no error was raised
-                            break
-                        except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
-
-        else:
-
-            if real_type.__name__.endswith("_list"):  # list-type setting
-
+                # Dynamic list
                 if dynamic_list:
 
-                    log.info("or provide other values. Enter a value and press ENTER. To end the list, leave blank and press ENTER.")
+                    log.info(
+                        "or provide other values. Enter a value and press ENTER. To end the list, leave blank and press ENTER.")
 
-                    value = [] # to remove warning
+                    real_base_type = getattr(parsing, real_type.__name__.split("_list")[0])
+
+                    # Construct type
+                    the_type = construct_type(real_base_type, min_value, max_value, forbidden)
+
+                    # Show suggestions
+                    if suggestions is not None:
+                        log.info("Suggestions:")
+                        for suggestion in suggestions:
+                            suggestion_description = suggestions[suggestion]
+                            log.info(" - " + suggestion + ": " + suggestion_description)
+
+                    value = []  # to remove warning
                     while True:
                         answer = raw_input("   : ")
-                        if answer == "": break # end of list
+                        if answer == "":
+                            break  # end of list
                         else:
                             try:
-                                single_value = real_type(answer)
+                                # single_value = real_type(answer)
+                                single_value = the_type(answer)
                                 value.append(single_value)
-                            except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+                            except ValueError, e:
+                                log.warning("Invalid input: " + str(e) + ". Try again.")
 
+                # Not dynamic list
                 else:
 
                     log.info("or provide other values, separated by commas")
+
+                    # Construct type
+                    the_type = construct_type(real_type, min_value, max_value, forbidden)
+
+                    # Show suggestions
+                    if suggestions is not None:
+                        log.info("Suggestions:")
+                        for suggestion in suggestions:
+                            suggestion_description = suggestions[suggestion]
+                            log.info(" - " + suggestion + ": " + suggestion_description)
 
                     value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                     while True:
@@ -2091,15 +3461,28 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                             break
                         else:
                             try:
-                                value = real_type(answer)
+                                # value = real_type(answer)
+                                value = the_type(answer)
                                 break
-                            except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+                            except ValueError, e:
+                                log.warning("Invalid input: " + str(e) + ". Try again.")
 
+            # Single-value setting
             else:
 
                 log.info("or provide another value")
 
-                value = default # to remove warning from IDE that value could be referenced (below) without assignment
+                # Construct type
+                the_type = construct_type(real_type, min_value, max_value, forbidden)
+
+                # Show suggestions
+                if suggestions is not None:
+                    log.info("Suggestions:")
+                    for suggestion in suggestions:
+                        suggestion_description = suggestions[suggestion]
+                        log.info(" - " + suggestion + ": " + suggestion_description)
+
+                value = default  # to remove warning from IDE that value could be referenced (below) without assignment
                 while True:
                     # Get the input
                     answer = raw_input("   : ")
@@ -2108,9 +3491,99 @@ def add_settings_interactive(config, definition, prompt_optional=True):
                         break
                     else:
                         try:
-                            value = real_type(answer)
+                            # value = real_type(answer)
+                            value = the_type(answer)
                             break
-                        except ValueError, e: log.warning("Invalid input: " + str(e) + ". Try again.")
+                        except ValueError, e:
+                            log.warning("Invalid input: " + str(e) + ". Try again.")
+
+        # Choices are given
+        #if choices_list is not None:
+        # If more choices are given or no default is given
+        elif len(choices_list) > 1 or default is None:
+
+            # List-type setting
+            if real_type.__name__.endswith("_list"):  # list-type setting
+
+                log.info("or choose one or more of the following options (separated only by commas)")
+
+                for index, label in enumerate(choices_list):
+                    choice_description = ""
+                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[label]
+                    log.info(" - [" + str(index) + "] " + label + choice_description)
+
+                value = default  # to remove warning from IDE that value could be referenced (below) without assignment
+                while True:
+
+                    # Get the numbers of the choice
+                    answer = raw_input("   : ")
+                    if answer == "":
+                        value = default
+                        break
+                    else:
+                        try:
+                            indices = parsing.integer_list(answer)
+                            value = [choices_list[index] for index in indices] # value is a list here
+                            break
+                        except (ValueError, IndexError) as e: log.warning("Invalid input: " + str(e) + ". Try again.")
+
+            # Not a list
+            else:
+
+                log.info("or choose one of the following options")
+
+                for index, label in enumerate(choices_list):
+                    choice_description = ""
+                    if choice_descriptions is not None: choice_description = ": " + choice_descriptions[label]
+                    log.info(" - [" + str(index) + "] " + label + choice_description)
+
+                value = default  # to remove warning from IDE that value could be referenced (below) without assignment
+                while True:
+
+                    # Get the number of the choice
+                    answer = raw_input("   : ")
+                    if answer == "":
+                        value = default
+                        break
+                    else:
+                        try:
+                            index = parsing.integer(answer)
+                            value = choices_list[index] # if we are here, no error was raised
+                            break
+                        except (ValueError, IndexError) as e: log.warning("Invalid input: " + str(e) + ". Try again.")
+
+        # No choices
+        else:
+
+            # List-type setting
+            if real_type.__name__.endswith("_list"):  # list-type setting
+
+                if isinstance(choices, dict):
+                    log.info("Only one option: automatically using a list of this value '[" + str(
+                        choices.keys()[0]) + "]' for " + name)
+                    value = [choices.keys()[0]]
+                    assert value == default
+                else:
+                    # Inform the user
+                    log.info("Only one option: automatically using a list of this value '[" + str(
+                        choices[0]) + "]' for " + name)
+                    value = [choices[0]]
+                    assert value == default
+
+            # Single-value setting
+            else:
+
+                if isinstance(choices, dict):
+                    # Inform the user
+                    log.info(
+                        "Only one option: automatically using value of '" + str(choices.keys()[0]) + "' for " + name)
+                    value = choices.keys()[0]
+                    assert value == default
+                else:
+                    # Inform the user
+                    log.info("Only one option: automatically using value of '" + str(choices[0]) + "' for " + name)
+                    value = choices[0]
+                    assert value == default
 
         # Set the value
         config[name] = value
@@ -2118,10 +3591,10 @@ def add_settings_interactive(config, definition, prompt_optional=True):
     # Flags
     for name in definition.flags:
 
-        # (description, letter)
-        description = definition.flags[name][0]
-        letter = definition.flags[name][1]
-        default = definition.flags[name][2]  # True or False
+        # Get properties
+        description = definition.flags[name].description
+        letter = definition.flags[name].letter
+        default = definition.flags[name].default  # True or False
 
         if not prompt_optional:
             value = default
@@ -2188,10 +3661,193 @@ def add_nested_dict_values_to_map(mapping, dictionary):
         # Recursively call this function if the value is an other dictionary
         if isinstance(value, dict):
 
-            mapping[name] = Map()
-            add_nested_dict_values_to_map(mapping[name], value)
+            # Already existing submapping
+            if name in mapping: add_nested_dict_values_to_map(mapping[name], value)
+            else:
+                mapping[name] = Map()
+                add_nested_dict_values_to_map(mapping[name], value)
 
         # Else, add the value to the mapping
         else: mapping[name] = value
+
+# -----------------------------------------------------------------
+
+def smart_type(argument, real_type, min_value, max_value, forbidden):
+
+    """
+    This function ...
+    :param argument:
+    :param real_type:
+    :param min_value:
+    :param max_value:
+    :param forbidden:
+    :return:
+    """
+
+    parsed = real_type(argument)
+    if min_value is not None and parsed < min_value: raise ValueError("Value should be higher than " + stringify.stringify_not_list(min_value)[1])
+    if max_value is not None and parsed > max_value: raise ValueError("Value should be lower than " + stringify.stringify_not_list(max_value)[1])
+    if forbidden is not None and parsed in forbidden: raise ValueError("Value " + stringify.stringify_not_list(parsed) + " is forbidden")
+
+    # All checks passed, return the parsed value
+    return parsed
+
+# -----------------------------------------------------------------
+
+def smart_list_type(argument, real_base_type, min_value, max_value, forbidden):
+
+    """
+    This function ...
+    :param argument:
+    :param real_base_type:
+    :param min_value:
+    :param max_value:
+    :param forbidden:
+    :return:
+    """
+
+    arguments = [argument.strip() for argument in argument.split(",")]
+    return [smart_type(argument, real_base_type, min_value, max_value, forbidden) for argument in arguments]
+
+# -----------------------------------------------------------------
+
+def construct_type(real_type, min_value, max_value, forbidden):
+
+    """
+    This function ...
+    :param real_type:
+    :param min_value:
+    :param max_value:
+    :param forbidden:
+    :return:
+    """
+
+    # List type
+    if real_type.__name__.endswith("list") and not hasattr(parsing, real_type.__name__):
+
+        # Determine base type parsing function
+        base_type = getattr(parsing, real_type.__name__.split("_list")[0])
+        the_type = partial(smart_list_type, **{"real_base_type": base_type, "min_value": min_value, "max_value": max_value, "forbidden": forbidden})
+
+        # Return the new function
+        return the_type
+
+    else:
+
+        # Construct the actual type
+        the_type = partial(smart_type, **{"real_type": real_type, "min_value": min_value, "max_value": max_value, "forbidden": forbidden})
+
+        # Return the new function
+        return the_type
+
+# -----------------------------------------------------------------
+
+def parse_default(default, user_type, real_type):
+
+    """
+    This function ...
+    :param default:
+    :param user_type:
+    :param real_type:
+    :return:
+    """
+
+    if user_type.endswith("list") and isinstance(default, list):
+
+        real_base_type = getattr(parsing, user_type.split("_list")[0])
+        default = [get_real_value(arg, real_base_type) for arg in default]
+
+    else: default = get_real_value(default, real_type)
+
+    # Return the default value
+    return default
+
+# -----------------------------------------------------------------
+
+def check_default(default, user_type):
+
+    """
+    This function ...
+    :param default:
+    :param user_type:
+    :return:
+    """
+
+    default_type, default_string = stringify.stringify(default)
+    if default_type != user_type and not are_related_types(default_type, user_type):
+
+        # List-like property
+        if user_type.endswith("list"):
+
+            base_type = user_type.split("_list")[0]
+            new_default = []
+            for value in default:
+                try:
+                    #print(value, type(value), base_type)
+                    value = check_default_single_value(value, base_type)
+                    new_default.append(value)
+                except ValueError: raise ValueError("Default value '" + str(default) + "' is not of the right type '" + user_type + "'")
+            default = new_default
+
+        # Single-value property
+        else: default = try_to_convert_to_type(default, user_type)
+
+    # Return the check default value
+    return default
+
+# -----------------------------------------------------------------
+
+def check_default_single_value(default, user_type):
+
+    """
+    Thi function ...
+    :param value:
+    :param user_type:
+    :return:
+    """
+
+    default_type, default_string = stringify.stringify(default)
+    if default_type != user_type and not are_related_types(default_type, user_type):
+
+        default = try_to_convert_to_type(default, user_type)
+
+    # Return the checked default value
+    return default
+
+# -----------------------------------------------------------------
+
+def try_to_convert_to_type(default, user_type):
+
+    """
+    This function ...
+    :param default:
+    :param user_type:
+    :return:
+    """
+
+    if user_type == "mixed": return default
+    elif parent_type(user_type) == "integer" and numbers.is_integer(default): return int(default)
+    elif parent_type(user_type) == "real" and numbers.is_integer(default): return float(default)
+    elif types.is_string_type(default): return try_to_convert_from_string(default, user_type)
+    else: raise ValueError("Default value '" + str(default) + "' could not be converted to the right type '" + user_type + "'")
+
+# -----------------------------------------------------------------
+
+def try_to_convert_from_string(string, user_type):
+
+    """
+    This function ...
+    :param string: 
+    :param user_type: 
+    :return: 
+    """
+
+    # Get the parsing function
+    parsing_function = getattr(parsing, user_type)
+
+    try:
+        value = parsing_function(string)
+        return value
+    except ValueError: raise ValueError("String '" + str(string) + "' could not be converted to the right type '" + user_type + "'")
 
 # -----------------------------------------------------------------

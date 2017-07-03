@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import astronomical modules
-from astropy.units import Unit
 from astropy.modeling.models import Gaussian2D
 
 # Import the relevant PTS classes and modules
@@ -25,10 +24,10 @@ from pts.core.tools import filesystem as fs
 from pts.magic.core.frame import Frame
 from pts.magic.core.source import Source
 from pts.magic.tools import statistics, plotting, fitting
-from pts.magic.basics.geometry import Ellipse
+from pts.magic.region.ellipse import PixelEllipseRegion
 from pts.magic.basics.vector import Extent
-
 from .component import DecompositionComponent
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -38,14 +37,14 @@ class DecompositionResidualsCalculator(DecompositionComponent):
     This function ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         This function ...
-        :param config:
+        :param kwargs:
         """
 
-        super(DecompositionResidualsCalculator, self).__init__(config)
+        super(DecompositionResidualsCalculator, self).__init__(*args, **kwargs)
 
         self.i1_jy = None
         self.disk_jy = None
@@ -61,15 +60,16 @@ class DecompositionResidualsCalculator(DecompositionComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Setup
-        self.setup()
+        self.setup(**kwargs)
 
         # Load the images
         self.load_images()
@@ -256,19 +256,19 @@ class DecompositionResidualsCalculator(DecompositionComponent):
 
         # Bulge residual
         path = fs.join(self.components_residuals_path, "bulge.fits")
-        self.bulge_residual.save(path)
+        self.bulge_residual.saveto(path)
 
         # Bulge2D residual
         path = fs.join(self.components_residuals_path, "bulge2D.fits")
-        self.bulge2d_residual.save(path)
+        self.bulge2d_residual.saveto(path)
 
         # Disk residual
         path = fs.join(self.components_residuals_path, "disk.fits")
-        self.disk_residual.save(path)
+        self.disk_residual.saveto(path)
 
         # Calculate the model residual frame
         path = fs.join(self.components_residuals_path, "model.fits")
-        self.model_residual.save(path)
+        self.model_residual.saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -282,7 +282,7 @@ class DecompositionResidualsCalculator(DecompositionComponent):
         exit()
 
         # FWHM of all the images
-        fwhm = 11.18 * Unit("arcsec")
+        fwhm = 11.18 * u("arcsec")
         fwhm_pix = (fwhm / frame.average_pixelscale).to("pix").value
         sigma = fwhm_pix * statistics.fwhm_to_sigma
 
@@ -292,7 +292,7 @@ class DecompositionResidualsCalculator(DecompositionComponent):
         center = parameters.center.to_pixel(frame.wcs)
 
         # Create a source around the galaxy center
-        ellipse = Ellipse(center, 20.0*sigma)
+        ellipse = PixelEllipseRegion(center, 20.0*sigma)
         source = Source.from_ellipse(model_residual, ellipse, 1.5)
 
         source.estimate_background("polynomial")
@@ -306,7 +306,7 @@ class DecompositionResidualsCalculator(DecompositionComponent):
         rel_model = fitting.shifted_model(model, -source.cutout.x_min, -source.cutout.y_min)
         plotting.plot_peak_model(source.cutout, rel_center.x, rel_center.y, rel_model)
 
-        model_fwhm_pix = fitting.fwhm(model) * Unit("pix")
+        model_fwhm_pix = fitting.fwhm(model)
         model_fwhm = (model_fwhm_pix * frame.average_pixelscale).to("arcsec")
 
         print("Model FWHM: ", model_fwhm)
@@ -315,7 +315,7 @@ class DecompositionResidualsCalculator(DecompositionComponent):
 
         all_residual = Frame(np.copy(model_residual))
         all_residual[source.y_slice, source.x_slice] -= evaluated_model
-        all_residual.save(fs.join(residuals_path, "all_residual.fits"))
+        all_residual.saveto(fs.join(residuals_path, "all_residual.fits"))
 
         model = Gaussian2D(amplitude=0.0087509425805, x_mean=center.x, y_mean=center.y, x_stddev=sigma, y_stddev=sigma)
         rel_model = fitting.shifted_model(model, -source.cutout.x_min, -source.cutout.y_min)
@@ -325,6 +325,6 @@ class DecompositionResidualsCalculator(DecompositionComponent):
 
         all_residual2 = Frame(np.copy(model_residual))
         all_residual2[source.y_slice, source.x_slice] -= evaluated_model
-        all_residual2.save(fs.join(residuals_path, "all_residual2.fits"))
+        all_residual2.saveto(fs.join(residuals_path, "all_residual2.fits"))
 
 # -----------------------------------------------------------------

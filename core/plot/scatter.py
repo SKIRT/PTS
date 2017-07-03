@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.plotting.scatter Contains the ScatterPlotter class.
+## \package pts.modeling.plotting.scatter Contains the Scatter3DPlotter class.
 
 # -----------------------------------------------------------------
 
@@ -14,7 +14,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 from collections import OrderedDict
-from textwrap import wrap
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -22,6 +21,8 @@ from scipy.stats import gaussian_kde
 
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
+from ..basics.scatter import Scatter
+from ..tools import strings
 
 # -----------------------------------------------------------------
 
@@ -31,13 +32,13 @@ pretty_colors = ["dodgerblue", "r", "purple", "darkorange", "lawngreen", "yellow
 
 # -----------------------------------------------------------------
 
-class ScatterPlotter(object):
+class Scatter3DPlotter(object):
     
     """
     This class ...
     """
 
-    def __init__(self, title=None, data=None):
+    def __init__(self):
 
         """
         This function ...
@@ -45,16 +46,10 @@ class ScatterPlotter(object):
         """
 
         # Set the title
-        self.title = title
+        self.title = None
 
-        if data is None:
-            self.x = []
-            self.y = []
-            self.z = []
-        else:
-            self.x = data[0]
-            self.y = data[1]
-            self.z = data[2]
+        # The data (Scatter instances)
+        self.data = OrderedDict()
 
         # The axes labels
         self.x_label = None
@@ -89,19 +84,17 @@ class ScatterPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def add_point(self, x, y, z):
+    def add_data(self, label, scatter):
 
         """
         This function ...
-        :param x:
-        :param y:
-        :param z:
+        :param label:
+        :param scatter:
         :return:
         """
 
-        self.x.append(x)
-        self.y.append(y)
-        self.z.append(z)
+        if label in self.data: raise ValueError("Already scatter data with the label '" + label + "'")
+        self.data[label] = scatter
 
     # -----------------------------------------------------------------
 
@@ -183,13 +176,16 @@ class ScatterPlotter(object):
 
     # -----------------------------------------------------------------
 
-    def run(self, output_path):
+    def run(self, output_path, title=None):
 
         """
         This function ...
         :param output_path:
+        :param title:
         :return:
         """
+
+        if title is not None: self.title = title
 
         # Make the plot
         if self.density: self.plot_with_density(output_path)
@@ -257,7 +253,15 @@ class ScatterPlotter(object):
         # Add first subplot
         ax = self._figure.add_subplot(1, 1, 1, projection='3d')
 
-        ax.scatter(self.x, self.y, self.z)
+        # Loop over the different scatter data sets
+        for label in self.data:
+
+            x = self.data[label].x(asarray=True)
+            y = self.data[label].y(asarray=True)
+            z = self.data[label].z(asarray=True)
+            ax.scatter(x, y, z, label=label)
+
+        # Set axes limits
         ax.set_xlim(self.x_limits)
         ax.set_ylim(self.y_limits)
         ax.set_zlim(self.z_limits)
@@ -266,7 +270,7 @@ class ScatterPlotter(object):
         ax.set_zlabel(self.z_label)
 
         # Set the title
-        if self.title is not None: plt.suptitle("\n".join(wrap(self.title, 60)))
+        if self.title is not None: plt.suptitle(strings.split_in_lines(self.title))
 
         plt.tight_layout()
 
@@ -297,7 +301,15 @@ class ScatterPlotter(object):
         # Add first subplot
         ax = self._figure.add_subplot(2, 2, 1, projection='3d')
 
-        ax.scatter(self.x, self.y, self.z)
+        # Loop over the different scatter data sets
+        for label in self.data:
+
+            x = self.data[label].x(asarray=True)
+            y = self.data[label].y(asarray=True)
+            z = self.data[label].z(asarray=True)
+            ax.scatter(x, y, z)
+
+        # Set axes limits
         ax.set_xlim(self.x_limits)
         ax.set_ylim(self.y_limits)
         ax.set_zlim(self.z_limits)
@@ -313,17 +325,25 @@ class ScatterPlotter(object):
         # Add second subplot
         ax = self._figure.add_subplot(2, 2, 2)
 
-        # Density plot of FUV young vs. FUV ionizing
-        if len(self.x) > 4:
-            x = np.array(self.x)
-            y = np.array(self.y)
-            xy = np.vstack([x, y])
-            z = gaussian_kde(xy)(xy)
-            # Sort the points by density, so that the densest points are plotted last
-            idx = z.argsort()
-            x, y, z = x[idx], y[idx], z[idx]
-            ax.scatter(x, y, c=z, s=100, edgecolor='', cmap=self.color_map)
-        else: ax.scatter([],[])
+        for label in self.data:
+
+            x = self.data[label].x(asarray=True)
+            y = self.data[label].y(asarray=True)
+
+            # Density plot of FUV young vs. FUV ionizing
+            if len(x) > 4:
+
+                x = np.array(x)
+                y = np.array(y)
+                xy = np.vstack([x, y])
+                z = gaussian_kde(xy)(xy)
+
+                # Sort the points by density, so that the densest points are plotted last
+                idx = z.argsort()
+                x, y, z = x[idx], y[idx], z[idx]
+                ax.scatter(x, y, c=z, s=100, edgecolor='', cmap=self.color_map)
+
+            else: ax.scatter([],[])
 
         ax.set_xlabel(self.x_label)
         ax.set_ylabel(self.y_label)
@@ -333,17 +353,25 @@ class ScatterPlotter(object):
         # Add third subplot
         ax = self._figure.add_subplot(2, 2, 3)
 
-        # Density plot of FUV young vs. dust mass
-        if len(self.x) > 4:
-            x = np.array(self.x)
-            y = np.array(self.z)
-            xy = np.vstack([x, y])
-            z = gaussian_kde(xy)(xy)
-            # Sort the points by density, so that the densest points are plotted last
-            idx = z.argsort()
-            x, y, z = x[idx], y[idx], z[idx]
-            ax.scatter(x, y, c=z, s=100, edgecolor='', cmap=self.color_map)
-        else: ax.scatter([],[])
+        for label in self.data:
+
+            x = self.data[label].x(asarray=True)
+            z = self.data[label].z(asarray=True)
+
+            # Density plot of FUV young vs. dust mass
+            if len(x) > 4:
+
+                x = np.array(x)
+                y = np.array(z)
+                xy = np.vstack([x, y])
+                z = gaussian_kde(xy)(xy)
+
+                # Sort the points by density, so that the densest points are plotted last
+                idx = z.argsort()
+                x, y, z = x[idx], y[idx], z[idx]
+                ax.scatter(x, y, c=z, s=100, edgecolor='', cmap=self.color_map)
+
+            else: ax.scatter([],[])
 
         ax.set_xlabel(self.x_label)
         ax.set_ylabel(self.z_label)
@@ -353,17 +381,25 @@ class ScatterPlotter(object):
         # Add fourth subplot
         ax = self._figure.add_subplot(2, 2, 4)
 
-        # Density plot of FUV ionizing vs. dust mass
-        if len(self.x) > 4:
-            x = np.array(self.y)
-            y = np.array(self.z)
-            xy = np.vstack([x, y])
-            z = gaussian_kde(xy)(xy)
-            # Sort the points by density, so that the densest points are plotted last
-            idx = z.argsort()
-            x, y, z = x[idx], y[idx], z[idx]
-            ax.scatter(x, y, c=z, s=100, edgecolor='', cmap=self.color_map)
-        else: ax.scatter([],[])
+        for label in self.data:
+
+            y = self.data[label].y(asarray=True)
+            z = self.data[label].z(asarray=True)
+
+            # Density plot of FUV ionizing vs. dust mass
+            if len(y) > 4:
+
+                x = np.array(y)
+                y = np.array(z)
+                xy = np.vstack([x, y])
+                z = gaussian_kde(xy)(xy)
+
+                # Sort the points by density, so that the densest points are plotted last
+                idx = z.argsort()
+                x, y, z = x[idx], y[idx], z[idx]
+                ax.scatter(x, y, c=z, s=100, edgecolor='', cmap=self.color_map)
+
+            else: ax.scatter([],[])
 
         ax.set_xlabel(self.y_label)
         ax.set_ylabel(self.z_label)
@@ -371,7 +407,7 @@ class ScatterPlotter(object):
         ax.set_ylim(self.z_limits)
 
         # Set the title
-        if self.title is not None: plt.suptitle("\n".join(wrap(self.title, 60)))
+        if self.title is not None: plt.suptitle(strings.split_in_lines(self.title))
 
         plt.tight_layout()
 

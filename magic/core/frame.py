@@ -22,20 +22,47 @@ import tempfile
 # Import astronomical modules
 from reproject import reproject_exact, reproject_interp
 from astropy.io import fits
-from astropy.units import Unit
 from astropy.convolution import convolve, convolve_fft
 from astropy.nddata import NDDataArray
+from astropy.units import UnitConversionError
 
 # Import the relevant PTS classes and modules
-from .box import Box
-from ..basics.vector import Position, Extent
-from ..basics.geometry import Rectangle
-from ..basics.skygeometry import SkyCoordinate, SkyRectangle
+from .cutout import Cutout
+from ..basics.vector import Position
+from ..region.rectangle import SkyRectangleRegion
+from ..basics.coordinate import SkyCoordinate
+from ..basics.stretch import SkyStretch
 from ..tools import cropping
 from ...core.tools.logging import log
 from ..basics.mask import Mask, MaskBase
 from ...core.tools import filesystem as fs
 from ...core.tools import archive
+from ..basics.vector import Pixel
+from ...core.units.unit import PhotometricUnit
+from ...core.filter.filter import parse_filter
+from .mask import Mask as newMask
+from ..convolution.kernels import get_fwhm, has_variable_fwhm
+from ...core.tools import types
+from ...core.units.parsing import parse_unit as u
+from ..basics.vector import PixelShape
+from ...core.tools.stringify import tostr
+from ...core.units.stringify import represent_unit
+from ..basics.pixelscale import Pixelscale
+
+# -----------------------------------------------------------------
+
+def get_filter(frame_path):
+
+    """
+    Ths function allows getting the filter of a frame without loading the entire frame
+    :param frame_path: 
+    :return: 
+    """
+
+    from ..tools import headers
+    header = fits.getheader(frame_path)
+    fltr = headers.get_filter(fs.name(frame_path[:-5]), header)
+    return fltr
 
 # -----------------------------------------------------------------
 
@@ -58,16 +85,47 @@ class Frame(NDDataArray):
         :param kwargs:
         """
 
+        # Check the data
+        #if data.dtype.type not in types.real_types:
+        #    if data.dtype.type in types.integer_types: pass
+        #    else: data = np.array(data, dtype=float)
+
         wcs = kwargs.pop("wcs", None)
         unit = kwargs.pop("unit", None)
+
+        # Set general properties and flags
         self.name = kwargs.pop("name", None)
         self.description = kwargs.pop("description", None)
         self.zero_point = kwargs.pop("zero_point", None)
-        self.filter = kwargs.pop("filter", None)
+        self.source_extracted = kwargs.pop("source_extracted", False)
+        self.extinction_corrected = kwargs.pop("extinction_corrected", False)
         self.sky_subtracted = kwargs.pop("sky_subtracted", False)
-        self.fwhm = kwargs.pop("fwhm", None)
+
+        # Set filter
+        self.filter = kwargs.pop("filter", None)
+
+        # Set FWHM
+        self._fwhm = kwargs.pop("fwhm", None)
+
+        # Set pixelscale
         self._pixelscale = kwargs.pop("pixelscale", None)
+        if self._pixelscale is not None and not isinstance(self._pixelscale, Pixelscale): self._pixelscale = Pixelscale(self._pixelscale)
+
+        # Set wavelength
         self._wavelength = kwargs.pop("wavelength", None)
+
+        # Set meta data
+        self.metadata = kwargs.pop("meta", dict())
+
+        # Distance
+        self.distance = kwargs.pop("distance", None)
+
+        # PSF FILTER
+        self._psf_filter = kwargs.pop("psf_filter", None)
+
+        # The path
+        self.path = kwargs.pop("path", None)
+        self._from_multiplane = kwargs.pop("from_multiplane", False)
 
         # Call the constructor of the base class
         super(Frame, self).__init__(data, *args, **kwargs)
@@ -75,6 +133,100 @@ class Frame(NDDataArray):
         # Set the WCS and unit
         self.wcs = wcs # go through the setter
         self.unit = unit # go through the setter
+
+    # -----------------------------------------------------------------
+
+    @property
+    def shape(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return PixelShape.from_tuple(super(Frame, self).shape)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def filter_name(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return str(self.filter) if self.filter is not None else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def psf_filter(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # FILTER CAN BE DIFFERENT FROM PSF FILTER !! E.G. FUV IMAGE CONVOLVED TO RESOLUTION OF HERSCHEL BAND
+
+        # BUT: if PSFFLTR WAS NOT FOUND IN HEADER, AND THUS PRESENT AS _PSF_FILTER, ASSUME PSF_FILTER = FILTER (ORIGINAL IMAGE)
+        if self._psf_filter is None: return self.filter
+        else: return self._psf_filter
+
+    # -----------------------------------------------------------------
+
+    @psf_filter.setter
+    def psf_filter(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        if types.is_string_type(value): value = parse_filter(value)
+        self._psf_filter = value
+
+    # -----------------------------------------------------------------
+
+    @property
+    def psf_filter_name(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return str(self.psf_filter) if self.psf_filter is not None else None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fwhm(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Find the FWHM for the filter
+        if self._fwhm is not None: return self._fwhm
+        elif self.psf_filter is not None and not has_variable_fwhm(self.psf_filter): return get_fwhm(self.psf_filter)
+        else: return None
+
+    # -----------------------------------------------------------------
+
+    @fwhm.setter
+    def fwhm(self, value):
+
+        """
+        This function ...
+        :param value: 
+        :return: 
+        """
+
+        self._fwhm = value
 
     # -----------------------------------------------------------------
 
@@ -103,6 +255,18 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.wcs is not None
+
+    # -----------------------------------------------------------------
+
     @NDDataArray.unit.setter
     def unit(self, unit):
 
@@ -112,11 +276,47 @@ class Frame(NDDataArray):
         :return:
         """
 
-        # Convert string units to Astropy unit objects
-        if isinstance(unit, basestring): unit = Unit(unit)
+        # Convert string units to PhotometricUnit object
+        if types.is_string_type(unit): unit = PhotometricUnit(unit)
 
         # Set the unit
         self._unit = unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_unit(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.unit is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def filter(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self._filter
+
+    # -----------------------------------------------------------------
+
+    @filter.setter
+    def filter(self, fltr):
+
+        """
+        This function ...
+        """
+
+        if fltr is None: self._filter = None
+        else: self._filter = parse_filter(fltr)
 
     # -----------------------------------------------------------------
 
@@ -129,6 +329,7 @@ class Frame(NDDataArray):
         """
 
         if isinstance(item, MaskBase): return self._data[item.data]
+        elif isinstance(item, Pixel): return self._data[item.y, item.x]
         else: return self._data[item]
 
     # -----------------------------------------------------------------
@@ -142,6 +343,8 @@ class Frame(NDDataArray):
         """
 
         if isinstance(item, MaskBase): self._data[item.data] = value
+        elif isinstance(item, Pixel): self._data[item.y, item.x] = value
+        elif isinstance(item, tuple): self._data[item[0], item[1]] = value
         else: self._data[item] = value
 
     # -----------------------------------------------------------------
@@ -419,9 +622,78 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def __abs__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        new = self.copy()
+        new._data = abs(self._data)
+        return new
+
+    # -----------------------------------------------------------------
+
+    def log10(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Replace the data
+        self._data = np.log10(self.data)
+
+        # Set the unit to None
+        self.unit = None
+
+    # -----------------------------------------------------------------
+
+    def get_log10(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        new = self.copy()
+        new.log10()
+        return new
+
+    # -----------------------------------------------------------------
+
+    def log(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Replace the data
+        self._data = np.log(self.data)
+
+        # Set the unit to None
+        self.unit = None
+
+    # -----------------------------------------------------------------
+
+    def get_log(self):
+
+        """
+        THis function ...
+        :return: 
+        """
+
+        new = self.copy()
+        new.log10()
+        return new
+
+    # -----------------------------------------------------------------
+
     @classmethod
     def from_url(cls, url, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
-                  fwhm=None, add_meta=True):
+                  fwhm=None, add_meta=True, distance=None):
 
         """
         This function ...
@@ -434,6 +706,7 @@ class Frame(NDDataArray):
         :param no_filter:
         :param fwhm:
         :param add_meta:
+        :param distance:
         :return:
         """
 
@@ -464,13 +737,13 @@ class Frame(NDDataArray):
             fs.remove_file(local_path)
 
         # Open the FITS file
-        return cls.from_file(fits_path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta)
+        return cls.from_file(fits_path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta, distance=distance)
 
     # -----------------------------------------------------------------
 
     @classmethod
     def from_file(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
-                  fwhm=None, add_meta=True):
+                  fwhm=None, add_meta=True, extra_meta=None, silent=False, distance=None):
 
         """
         This function ...
@@ -483,16 +756,19 @@ class Frame(NDDataArray):
         :param no_filter:
         :param fwhm:
         :param add_meta:
+        :param extra_meta:
+        :param silent:
+        :param distance:
         :return:
         """
 
         # Show which image we are importing
-        log.info("Reading in file " + path + " ...")
+        if not silent: log.info("Reading in file " + path + " ...")
 
-        from . import io
-
+        from ..core.fits import load_frame
         # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
-        return io.load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta)
+        try: return load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta, extra_meta=extra_meta, distance=distance)
+        except TypeError: raise IOError("File is possibly damaged")
 
     # -----------------------------------------------------------------
 
@@ -527,7 +803,7 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return np.all(self._data == 0)
+        return np.all(np.equal(self._data, 0))
 
     # -----------------------------------------------------------------
 
@@ -539,7 +815,69 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return not np.any(self._data == 0)
+        return not np.any(np.equal(self._data, 0))
+
+    # -----------------------------------------------------------------
+
+    def where(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return newMask(np.equal(self._data, value))
+        #return newMask(self._data == value)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unique_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the unique values in the gridded data
+        values = np.unique(self._data)
+        return list(values)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unique_value_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        masks = []
+
+        for value in self.unique_values:
+            where = self.where(value)
+            masks.append(where)
+
+        return masks
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unique_value_and_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        returns = []
+        for value in self.unique_values:
+            where = self.where(value)
+            returns.append((value, where))
+
+        return returns
 
     # -----------------------------------------------------------------
 
@@ -554,6 +892,20 @@ class Frame(NDDataArray):
         # Return the pixelscale of the WCS is WCS is defined
         if self.wcs is not None: return self.wcs.pixelscale
         else: return self._pixelscale  # return the pixelscale
+
+    # -----------------------------------------------------------------
+
+    @pixelscale.setter
+    def pixelscale(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        if not isinstance(value, Pixelscale): value = Pixelscale(value)
+        self._pixelscale = value
 
     # -----------------------------------------------------------------
 
@@ -578,22 +930,84 @@ class Frame(NDDataArray):
         :return:
         """
 
-        square_pixel = 1.0 * Unit("pix2")
-        return (self.pixelscale.x * self.pixelscale.y * square_pixel).to("sr")
+        try:
+            solid = (self.pixelscale.x * self.pixelscale.y).to("sr")
+            return solid
+        except UnitConversionError:
+            log.warning("UNIT CONVERSION ERROR: " + str(self.pixelscale.x) + ", " + str(self.pixelscale.y))
+            deg = (self.pixelscale.x * self.pixelscale.y).value
+            return (deg * u("deg")).to("sr")
+
+        #return (self.pixelscale.x * self.pixelscale.y).to("sr")
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def zeros(cls, shape):
+    def random(cls, shape, wcs=None, filter=None):
+
+        """
+        This function ...
+        :param shape: 
+        :param wcs: 
+        :param filter:
+        :return: 
+        """
+
+        # Create a new frame
+        new = cls(np.random.random(shape), wcs=wcs, filter=filter)
+        return new
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def ones(cls, shape, wcs=None, filter=None, unit=None):
+
+        """
+        This function ...
+        :param shape: 
+        :param wcs: 
+        :param filter: 
+        :return: 
+        """
+
+        # Create a new frame
+        new = cls(np.ones(shape), wcs=wcs, filter=filter, unit=unit)
+        return new
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def zeros(cls, shape, wcs=None, filter=None, unit=None):
 
         """
         This function ...
         :param shape:
+        :param wcs:
+        :param filter:
         :return:
         """
 
         # Create a new frame
-        new = cls(np.zeros(shape))
+        new = cls(np.zeros(shape), wcs=wcs, filter=filter, unit=unit)
+        return new
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def ones_like(cls, frame):
+
+        """
+        This function ...
+        :param frame: 
+        :return: 
+        """
+
+        if hasattr(frame, "wcs"): wcs = frame.wcs
+        else: wcs = None
+
+        # Create a new frame
+        if hasattr(frame, "_data"): new = cls(np.ones_like(frame._data), wcs=wcs)
+        else: new = cls(np.zeros_like(frame), wcs=wcs)
         return new
 
     # -----------------------------------------------------------------
@@ -607,9 +1021,12 @@ class Frame(NDDataArray):
         :return:
         """
 
+        if hasattr(frame, "wcs"): wcs = frame.wcs
+        else: wcs = None
+
         # Create a new frame
-        if hasattr(frame, "_data"): new = cls(np.zeros_like(frame._data))
-        else: new = cls(np.zeros_like(frame))
+        if hasattr(frame, "_data"): new = cls(np.zeros_like(frame._data), wcs=wcs)
+        else: new = cls(np.zeros_like(frame), wcs=wcs)
         return new
 
     # -----------------------------------------------------------------
@@ -658,12 +1075,12 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
-    def xsize(self): return self.shape[1]
+    def xsize(self): return self.shape.x
 
     # -----------------------------------------------------------------
 
     @property
-    def ysize(self): return self.shape[0]
+    def ysize(self): return self.shape.y
 
     # -----------------------------------------------------------------
 
@@ -675,7 +1092,7 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return (self.fwhm / self.average_pixelscale).to("pix").value if self.fwhm is not None else None
+        return (self.fwhm / self.average_pixelscale).to("").value if self.fwhm is not None else None
 
     # -----------------------------------------------------------------
 
@@ -722,8 +1139,8 @@ class Frame(NDDataArray):
         :return:
         """
 
-        # Return the pivot wavelength of the frame's filter, if defined
-        if self.filter is not None: return self.filter.effectivewavelength() * Unit("micron")
+        # Return the wavelength of the frame's filter, if defined
+        if self.filter is not None: return self.filter.wavelength
         else: return self._wavelength # return the wavelength (if defined, is None otherwise)
 
     # -----------------------------------------------------------------
@@ -740,6 +1157,19 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    @property
+    def pivot_wavelength_or_wavelength(self):
+
+        """
+        This fucntion ...
+        :return: 
+        """
+
+        if self.filter is not None: return self.filter.pivot
+        else: return self.wavelength
+        
+    # -----------------------------------------------------------------
+
     def cutout_around(self, position, radius):
 
         """
@@ -749,37 +1179,104 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return Box.cutout(self, position, radius)
+        return Cutout.cutout(self, position, radius)
 
     # -----------------------------------------------------------------
 
-    def convert_to(self, unit):
+    def convert_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False, brightness_strict=False):
 
         """
         This function ...
-        :param unit:
+        :param to_unit:
+        :param distance:
+        :param density:
+        :param brightness:
+        :param density_strict:
+        :param brightness_strict:
         :return:
         """
 
-        # Make an Astropy Unit instance
-        if isinstance(unit, basestring): unit = Unit(unit)
+        # Parse "to unit": VERY IMPORTANT, BECAUSE DOING SELF.UNIT = TO_UNIT WILL OTHERWISE REPARSE AND WILL BE OFTEN INCORRECT!! (NO DENSITY OR BRIGHTNESS INFO)
+        to_unit = PhotometricUnit(to_unit, density=density, brightness=brightness, brightness_strict=brightness_strict, density_strict=density_strict)
 
-        # Inform the user
-        log.debug("Converting the unit of the frame from " + str(self.unit) + " to " + str(unit) + " ...")
+        # Debugging
+        log.debug("Converting the frame from unit " + tostr(self.unit, add_physical_type=True) + " to unit " + tostr(to_unit, add_physical_type=True) + " ...")
+
+        # Set the distance
+        if distance is None: distance = self.distance
 
         # Calculate the conversion factor
-        a = 1.0 * self.unit
-        b = 1.0 * unit
-        factor = (a / b).decompose().value
+        factor = self.unit.conversion_factor(to_unit, wavelength=self.pivot_wavelength_or_wavelength, distance=distance,
+                                             pixelscale=self.pixelscale, density=density, brightness=brightness,
+                                             density_strict=density_strict, brightness_strict=brightness_strict)
 
-        # Debug message
-        log.debug("Conversion factor = " + str(factor))
+        # Debugging
+        log.debug("Conversion factor: " + str(factor))
 
         # Multiply the frame with the conversion factor
         self.__imul__(factor)
 
         # Set the new unit
-        self.unit = unit
+        self.unit = to_unit
+
+        # Return the conversion factor
+        return factor
+
+    # -----------------------------------------------------------------
+
+    def converted_to(self, to_unit, distance=None, density=False, brightness=False, density_strict=False, brightness_strict=False):
+
+        """
+        This function ...
+        :param to_unit: 
+        :param distance:  
+        :param density:
+        :param brightness:
+        :param density_strict:
+        :param brightness_strict:
+        :return: 
+        """
+
+        new = self.copy()
+        new.convert_to(to_unit, distance=distance, density=density, brightness=brightness, density_strict=density_strict, brightness_strict=brightness_strict)
+        return new
+
+    # -----------------------------------------------------------------
+
+    @property
+    def corresponding_angular_area_unit(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.unit.corresponding_angular_area_unit
+
+    # -----------------------------------------------------------------
+
+    def convert_to_corresponding_angular_area_unit(self, distance=None):
+
+        """
+        This function ...
+        :param distance: 
+        :return: 
+        """
+
+        self.convert_to(self.corresponding_angular_area_unit, distance=distance)
+
+    # -----------------------------------------------------------------
+
+    def converted_to_corresponding_angular_area_unit(self, distance=None):
+
+        """
+        This function ...
+        :param distance:  
+        :return: 
+        """
+
+        #print(self.corresponding_angular_area_unit)
+        return self.converted_to(self.corresponding_angular_area_unit, distance=distance)
 
     # -----------------------------------------------------------------
 
@@ -820,10 +1317,32 @@ class Frame(NDDataArray):
         if sum < 0: raise RuntimeError("The sum of the frame is negative")
 
         # Calculate the conversion factor
-        factor = to / sum
+        if hasattr(to, "unit"): # quantity
+            factor = to.value / sum
+            unit = to.unit
+        else:
+            factor = to / sum
+            unit = None
 
         # Multiply the frame with the conversion factor
         self.__imul__(factor)
+
+        # Set the unit to None
+        self.unit = unit
+
+    # -----------------------------------------------------------------
+
+    def normalized(self, to=1.):
+        
+        """
+        This function ...
+        :param to: 
+        :return: 
+        """
+
+        new = self.copy()
+        new.normalize(to=to)
+        return new
 
     # -----------------------------------------------------------------
 
@@ -840,7 +1359,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def convolve(self, kernel, allow_huge=False, fft=True):
+    def convolve(self, kernel, allow_huge=True, fft=True):
 
         """
         This function ...
@@ -850,12 +1369,14 @@ class Frame(NDDataArray):
         :return:
         """
 
-        # Get the kernel FWHM
+        # Get the kernel FWHM and PSF filter
         kernel_fwhm = kernel.fwhm
+        kernel_psf_filter = kernel.psf_filter
 
         # Skip the calculation for a constant frame
         if self.is_constant():
-            self.fwhm = kernel_fwhm
+            self._fwhm = kernel_fwhm
+            self._psf_filter = kernel_psf_filter
             return
 
         # Check whether the kernel is prepared
@@ -871,15 +1392,16 @@ class Frame(NDDataArray):
         if not kernel.normalized: raise RuntimeError("The kernel is not properly normalized: sum is " + repr(kernel.sum()) + " , difference from unity is " + repr(kernel.sum() - 1.0))
 
         # Do the convolution on this frame
-        if fft: new_data = convolve_fft(self._data, kernel._data, normalize_kernel=False, interpolate_nan=True, allow_huge=allow_huge)
-        else: new_data = convolve(self._data, kernel._data, normalize_kernel=False)
+        if fft: new_data = convolve_fft(self._data, kernel.data, normalize_kernel=False, interpolate_nan=True, allow_huge=allow_huge)
+        else: new_data = convolve(self._data, kernel.data, normalize_kernel=False)
 
         # Put back NaNs
         new_data[nans_mask] = float("nan")
 
         # Replace the data and FWHM
         self._data = new_data
-        self.fwhm = kernel_fwhm
+        self._fwhm = kernel_fwhm
+        self._psf_filter = kernel_psf_filter
 
     # -----------------------------------------------------------------
 
@@ -908,6 +1430,12 @@ class Frame(NDDataArray):
         :param parallel:
         :return:
         """
+
+        # Check whether the frame has a WCS
+        if not self.has_wcs: raise RuntimeError("Cannot rebin a frame without coordinate system")
+
+        # Check the unit
+        #if self.unit is not None and not self.unit.is_per_pixelsize: raise ValueError("Cannot rebin a frame that is expressed per angular area. First convert the units.")
 
         # Calculate rebinned data and footprint of the original image
         if exact: new_data, footprint = reproject_exact((self._data, self.wcs), reference_wcs, shape_out=reference_wcs.shape, parallel=parallel)
@@ -1247,9 +1775,49 @@ class Frame(NDDataArray):
         :return:
         """
 
+        data = ndimage.interpolation.rotate(self.data, angle.to("deg").value, reshape=False, order=1, mode='constant', cval=float('nan'))
+
+        # Replace data
+        self._data = data
+
+        # Rotate wcs
+        if self.wcs is not None:
+
+            rotated_wcs = self.wcs.deepcopy()
+            rotated_wcs.rotateCD(angle)  # STILL UNTESTED
+
+            # Replace wcs
+            self.wcs = rotated_wcs
+
+        # Return mask of padded pixels
+        return self.nans()
+
+    # -----------------------------------------------------------------
+
+    def rotation_mask(self, angle):
+
+        """
+        This function ...
+        :param angle:
+        :return:
+        """
+
+        data = ndimage.interpolation.rotate(self.data, angle.to("deg").value, reshape=False, order=1, mode='constant', cval=float('nan'))
+        return newMask(np.isnan(data))
+
+    # -----------------------------------------------------------------
+
+    def rotated(self, angle):
+
+        """
+        This function ...
+        :param angle:
+        :return:
+        """
+
         # Calculate the rotated array
         #frame[np.isnan(frame)] = 0.0
-        data = ndimage.interpolation.rotate(self, angle, reshape=False, order=1, mode='constant', cval=float('nan'))
+        data = ndimage.interpolation.rotate(self.data, angle.to("deg").value, reshape=False, order=1, mode='constant', cval=float('nan'))
         #new_frame = misc.imrotate(frame, angle, interp="bilinear")
 
         # Convert the wcs to header
@@ -1279,7 +1847,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def shift(self, extent):
+    def shifted(self, extent):
 
         """
         This function ...
@@ -1290,7 +1858,7 @@ class Frame(NDDataArray):
         # TODO: change the WCS !!!
 
         # Transform the data
-        data = ndimage.interpolation.shift(self, (extent.y, extent.x))
+        data = ndimage.interpolation.shift(self.data, (extent.y, extent.x))
 
         # Return the shifted frame
         # data, wcs=None, name=None, description=None, unit=None, zero_point=None, filter=None, sky_subtracted=False, fwhm=None
@@ -1306,7 +1874,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def center_around(self, position):
+    def centered_around(self, position):
 
         """
         This function ...
@@ -1318,7 +1886,7 @@ class Frame(NDDataArray):
         shift = position - center
 
         # Return the shifted frame
-        return self.shift(shift)
+        return self.shifted(shift)
 
     # -----------------------------------------------------------------
 
@@ -1384,16 +1952,16 @@ class Frame(NDDataArray):
         # Get coordinate range
         center, ra_span, dec_span = self.coordinate_range
 
-        ra = center.ra.to(unit).value
-        dec = center.dec.to(unit).value
+        #ra = center.ra.to(unit).value
+        #dec = center.dec.to(unit).value
 
-        ra_span = ra_span.to(unit).value
-        dec_span = dec_span.to(unit).value
+        #ra_span = ra_span.to(unit).value
+        #dec_span = dec_span.to(unit).value
 
         # Create rectangle
-        center = Position(ra, dec)
-        radius = Extent(0.5 * ra_span, 0.5 * dec_span)
-        box = Rectangle(center, radius)
+        center = SkyCoordinate(center.ra, center.dec)
+        radius = SkyStretch(0.5 * ra_span, 0.5 * dec_span)
+        box = SkyRectangleRegion(center, radius)
 
         # Return the box
         return box
@@ -1484,11 +2052,36 @@ class Frame(NDDataArray):
         data = self._data[box.y_min:box.y_max, box.x_min:box.x_max]
 
         # Create the new box and return it
-        return Box(data, box.x_min, box.x_max, box.y_min, box.y_max)
+        return Cutout(data, box.x_min, box.x_max, box.y_min, box.y_max)
 
     # -----------------------------------------------------------------
 
-    def save(self, path, header=None, origin=None, extra_header_info=None):
+    def save(self, header=None, origin=None, extra_header_info=None, add_meta=True):
+
+        """
+        This function ...
+        :param header:
+        :param origin:
+        :param extra_header_info:
+        :param add_meta:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Saving the frame ...")
+
+        # Check if path is defined
+        if self.path is None: raise RuntimeError("Path for the frame is not defined")
+
+        # Check if original file was not multiplane
+        if self._from_multiplane: raise RuntimeError("Cannot save frame into a multiplane image")
+
+        # Save
+        self.saveto(self.path, header, origin, extra_header_info, add_meta)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path, header=None, origin=None, extra_header_info=None, add_meta=True):
 
         """
         This function ...
@@ -1496,33 +2089,82 @@ class Frame(NDDataArray):
         :param header:
         :param origin:
         :param extra_header_info:
+        :param add_meta:
         """
 
         if header is None: header = self.header
 
         # Set unit, FWHM and filter description
-        if self.unit is not None: header.set("SIGUNIT", str(self.unit), "Unit of the map")
+        if self.unit is not None:
+            header.set("SIGUNIT", represent_unit(self.unit), "Unit of the map")
+            header.set("PHYSTYPE", self.unit.physical_type, "Physical type of the unit")
         if self.fwhm is not None: header.set("FWHM", self.fwhm.to("arcsec").value, "[arcsec] FWHM of the PSF")
+
+        # Set filter
         if self.filter is not None: header.set("FILTER", str(self.filter), "Filter used for this observation")
+        else: header.set("FILTER", "n/a", "This image does not correspond to a certain observational filter")
+
+        # Set pixelscale
         if self.wcs is None and self.pixelscale is not None:
-            header.set("XPIXSIZE", repr(self.pixelscale.x.to("arcsec/pix").value), "[arcsec/pix] Pixelscale for x axis")
-            header.set("YPIXSIZE", repr(self.pixelscale.y.to("arcsec/pix").value), "[arcsec/pix] Pixelscale for y axis")
+            header.set("XPIXSIZE", repr(self.pixelscale.x.to("arcsec").value), "[arcsec] Pixelscale for x axis")
+            header.set("YPIXSIZE", repr(self.pixelscale.y.to("arcsec").value), "[arcsec] Pixelscale for y axis")
+
+        # Set distance
+        if self.distance is not None: header.set("DISTANCE", repr(self.distance.to("Mpc").value), "[Mpc] Distance to the object")
+
+        # Set PSF FILTER
+        if self.psf_filter is not None: header.set("PSFFLTR", str(self.psf_filter), "Filter to which the PSF of the frame corresponds")
 
         # Add origin description
         if origin is not None: header["ORIGIN"] = origin
         else: header["ORIGIN"] = "Frame class of PTS package"
 
+        # Add meta information
+        if add_meta:
+            for key in self.metadata:
+                header[key] = self.metadata[key]
+
         # Add extra info
         if extra_header_info is not None:
             for key in extra_header_info: header[key] = extra_header_info[key]
 
-        # Write
-        from . import io
-        io.write_frame(self._data, header, path)
+        # FITS format
+        if path.endswith(".fits"):
+
+            # Write
+            from .fits import write_frame
+            #try:
+            write_frame(self._data, header, path)
+            #except IOError("Something went wrong during write")
+
+        # ASDF format
+        elif path.endswith(".asdf"):
+
+            # Import
+            from asdf import AsdfFile
+
+            # Create the tree
+            tree = dict()
+
+            # Add data and header
+            tree["data"] = self._data
+            tree["header"] = header
+
+            # Create the asdf file
+            ff = AsdfFile(tree)
+
+            # Write
+            ff.write_to(path)
+
+        # Not allowed
+        else: raise ValueError("Only the FITS or ASDF filetypes are supported")
+
+        # Replace the path
+        self.path = path
 
 # -----------------------------------------------------------------
 
-def sum_frames(*args):
+def sum_frames(*args, **kwargs):
 
     """
     This function ...
@@ -1532,7 +2174,7 @@ def sum_frames(*args):
 
     #arrays = [np.array(arg) for arg in args] # how it used to be
     arrays = [arg.data for arg in args]
-    return Frame(np.sum(arrays, axis=0))
+    return Frame(np.sum(arrays, axis=0), **kwargs)
 
 # -----------------------------------------------------------------
 
@@ -1547,5 +2189,44 @@ def sum_frames_quadratically(*args):
     #arrays = [np.array(arg)**2 for arg in args]
     arrays = [arg.data**2 for arg in args]
     return Frame(np.sqrt(np.sum(arrays, axis=0)))
+
+# -----------------------------------------------------------------
+
+def linear_combination(frames, coefficients, checks=True):
+
+    """
+    This function ...
+    :param frames: 
+    :param coefficients:
+    :param checks:
+    :return: 
+    """
+
+    if checks:
+        from .list import check_uniformity
+        unit, wcs, pixelscale, psf_filter, fwhm, distance = check_uniformity(*frames)
+    else: unit = wcs = pixelscale = psf_filter = fwhm = distance = None
+
+    #print("unit", unit)
+    #print("wcs", wcs)
+    #print("pixelscale", pixelscale)
+    #print("psf_filter", psf_filter)
+    #print("fwhm", fwhm)
+    #print("distance", distance)
+
+    #print(coefficients)
+    return sum_frames(*[frame*coefficient for coefficient, frame in zip(coefficients, frames)], unit=unit, wcs=wcs, pixelscale=pixelscale, psf_filter=psf_filter, fwhm=fwhm, distance=distance)
+
+# -----------------------------------------------------------------
+
+def log10(frame):
+
+    """
+    This function ...
+    :param frame: 
+    :return: 
+    """
+
+    return frame.get_log10()
 
 # -----------------------------------------------------------------

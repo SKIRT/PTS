@@ -1,3 +1,4 @@
+# HIDE_DEPENDS
 from __future__ import absolute_import
 from .source_panel import SourcePanel
 from .plot_panel import PlotPanel
@@ -11,6 +12,5 @@ control_panels_to_load = [("Source", SourcePanel),
                           ("Plot", PlotPanel),
                           ("Stats", StatsPanel),
                           ("Phot", PhotPanel),
-                          ("Faker", FitsFakerPanel)
+                          #("Faker", FitsFakerPanel)
                           ]
-

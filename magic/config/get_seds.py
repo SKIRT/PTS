@@ -20,7 +20,8 @@ definition.add_required("galaxy_name", "string", "galaxy name")
 # The filter
 definition.add_optional("catalogs", "string_list", "names of the catalogs to query", default=catalog_names, choices=catalog_names)
 
-# Write
+# Flags
+definition.add_flag("list", "list the results", True)
 definition.add_flag("write", "write the results", True)
 
 # -----------------------------------------------------------------

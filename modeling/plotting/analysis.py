@@ -33,31 +33,33 @@ from ...core.plot.sed import SEDPlotter
 
 # -----------------------------------------------------------------
 
+def get_features(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+# -----------------------------------------------------------------
+
 class AnalysisPlotter(PlottingComponent, AnalysisComponent):
     
     """
     This class...
     """
 
-    # The load functions
-    load_functions = dict()
-
-    # The plot functions
-    plot_functions = dict()
-
-    # -----------------------------------------------------------------
-
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructors of the base classes
-        PlottingComponent.__init__(self, config)
-        AnalysisComponent.__init__(self, config)
+        PlottingComponent.__init__(self, config, interactive)
+        AnalysisComponent.__init__(self, config, interactive)
 
         # -- Attributes --
 
@@ -81,15 +83,16 @@ class AnalysisPlotter(PlottingComponent, AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the wavelength grid
         self.load_wavelength_grid()
@@ -441,10 +444,10 @@ class AnalysisPlotter(PlottingComponent, AnalysisComponent):
         for label in self.seds:
 
             # Add the simulated SED to the plotter
-            plotter.add_modeled_sed(self.seds[label], label)
+            plotter.add_sed(self.seds[label], label)
 
         # Add the observed SED to the plotter
-        plotter.add_observed_sed(self.observed_sed, "observation")
+        plotter.add_sed(self.observed_sed, "observation")
 
         # Determine the path to the SED plot file
         path = fs.join(self.plot_analysis_path, "sed_contributions.pdf")

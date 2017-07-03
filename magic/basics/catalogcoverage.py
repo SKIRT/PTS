@@ -18,7 +18,8 @@ import numpy as np
 
 # Import the relevant PTS classes and modules
 from ..basics.vector import Position, Extent
-from ..basics.geometry import Rectangle
+from ..basics.coordinate import SkyCoordinate
+from ..region.rectangle import PixelRectangleRegion, SkyRectangleRegion
 from ...core.tools import tables, introspection
 from ...core.tools import filesystem as fs
 
@@ -57,7 +58,7 @@ class CatalogCoverage(object):
             galaxy_ra_span = self.table["Right ascension span"][0]
             galaxy_dec_span = self.table["Declination span"][0]
 
-            self.first_box = Rectangle(Position(galaxy_ra, galaxy_dec), Extent(galaxy_ra_span, galaxy_dec_span))
+            self.first_box = PixelRectangleRegion(Position(galaxy_ra, galaxy_dec), Extent(galaxy_ra_span, galaxy_dec_span))
 
         else:
 
@@ -133,10 +134,10 @@ class CatalogCoverage(object):
             # If a frame with identical ranges has already been processed before
             if identical_box_already_processed: return True
 
-            entry_center = Position(entry_ra, entry_dec)
+            entry_center = SkyCoordinate(entry_ra, entry_dec)
             entry_radius = Extent(0.5 * entry_ra_span, 0.5 * entry_dec_span)
 
-            entry_box = Rectangle(entry_center, entry_radius)
+            entry_box = SkyRectangleRegion(entry_center, entry_radius)
 
             self.boxes.append(entry_box)
 

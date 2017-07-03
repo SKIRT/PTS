@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
-from ..core.component import ModelingComponent
+from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import filesystem as fs
 from ...core.launch.timing import TimingTable
 from ...core.launch.memory import MemoryTable
@@ -25,22 +25,22 @@ from .run import AnalysisRun
 
 # -----------------------------------------------------------------
 
-class AnalysisComponent(ModelingComponent):
+class AnalysisComponent(GalaxyModelingComponent):
     
     """
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(AnalysisComponent, self).__init__(config)
+        super(AnalysisComponent, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 
@@ -172,7 +172,8 @@ def get_analysis_run_names(modeling_path):
     """
 
     analysis_path = fs.join(modeling_path, "analysis")
-    return fs.directories_in_path(analysis_path, returns="name")
+    if not fs.is_file(analysis_path): return None
+    else: return fs.directories_in_path(analysis_path, returns="name")
 
 # -----------------------------------------------------------------
 
@@ -184,6 +185,8 @@ def get_last_run_name(modeling_path):
     :return:
     """
 
-    return sorted(get_analysis_run_names(modeling_path))[-1]
+    names = get_analysis_run_names(modeling_path)
+    if names is None: return None
+    else: return sorted(names)[-1]
 
 # -----------------------------------------------------------------

@@ -30,6 +30,7 @@ from photutils import detect_sources
 # Import the relevant PTS classes and modules
 from .vector import Position
 from ...core.tools.logging import log
+from .vector import Pixel
 
 # -----------------------------------------------------------------
 
@@ -80,6 +81,23 @@ class MaskBase(object):
 
         # Set data
         self._data = data.astype(bool)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_region(cls, region, x_size, y_size):
+
+        """
+        This function ...
+        :param region:
+        :param x_size:
+        :param y_size
+        :return:
+        """
+
+        # Return a new Mask object
+        data = region.to_mask(x_size, y_size)
+        return cls(data)
 
     # -----------------------------------------------------------------
 
@@ -135,14 +153,26 @@ class MaskBase(object):
 
     # -----------------------------------------------------------------
 
-    @property
-    def array(self):
+    def astype(self, dtype):
 
         """
-        The underlying array
+        This function ...
+        :param dtype: 
+        :return: 
         """
 
-        return self._data
+        return self.data.astype(dtype)
+
+    # -----------------------------------------------------------------
+
+    #@property
+    #def array(self):
+
+        #"""
+        #The underlying array
+        #"""
+
+        #return self._data
 
     # -----------------------------------------------------------------
 
@@ -152,7 +182,7 @@ class MaskBase(object):
         Array representation of the mask (e.g., for matplotlib).
         """
 
-        return self._data
+        return self.data
 
     # -----------------------------------------------------------------
 
@@ -165,6 +195,27 @@ class MaskBase(object):
         """
 
         if isinstance(item, MaskBase): return self._data[item.data]
+        elif isinstance(item, Pixel): return self._data[item.y, item.x]
+        elif isinstance(item, tuple):
+            #return self._data[item] #  ## WHY IS THIS NOT WORKING?????!!!
+            #print(item)
+            #print(self.shape)
+            if isinstance(item[0], slice) and isinstance(item[1], slice):
+                slice_y = item[0]
+                slice_x = item[1]
+                #indices_y = slice_y.indices(self.ysize)
+                #indices_x = slice_x.indices(self.xsize)
+                #print(indices_x)
+                #print(indices_y)
+                return self._data[slice_y, slice_x]
+            elif isinstance(item[0], int) and isinstance(item[1], int):
+                #print(self.shape)
+                #print(item)
+                #try:
+                return self._data.__getitem__(item)
+                #except IndexError:
+            else: raise NotImplementedError("Not implemented")
+            #return self._data[item[0], item[1]]
         else: return self._data[item]
 
     # -----------------------------------------------------------------
@@ -178,6 +229,28 @@ class MaskBase(object):
         """
 
         if isinstance(item, MaskBase): self._data[item.data] = value
+        elif isinstance(item, Pixel): self._data[item.y, item.x] = value
+        elif isinstance(item, tuple):
+            #print(self._data)
+            #print(type(self._data))
+            #print(item)
+            #self._data[0, 0] = value
+            #self._data[item[0], item[1]] = value
+            ## WHY IS THIS NOT WORKING?????!!!
+            # Error: TypeError: __array__() takes exactly 1 argument (2 given)
+            try: self._data.__setitem__(item, value)
+            except TypeError:
+                #print(item)
+                #print(value)
+                #data = np.array(self._data)
+                slice_y = item[0]
+                slice_x = item[1]
+                indices_y = slice_y.indices(self.ysize)
+                indices_x = slice_x.indices(self.xsize)
+                for index_y, y in enumerate(indices_y):
+                    for index_x, x in enumerate(indices_x):
+                        self._data[y, x] = value[index_y, index_x]
+                #for index in range(indices[0], indices[1], indices[2]):
         else: self._data[item] = value
 
     # -----------------------------------------------------------------
@@ -329,6 +402,37 @@ class MaskBase(object):
 
         # Erode
         self._data = ndimage.binary_erosion(self._data, structure, iterations)
+
+    # -----------------------------------------------------------------
+
+    def eroded_rc(self, rank=2, connectivity=2, iterations=1):
+
+        """
+        This function ...
+        :param rank: 
+        :param connectivity: 
+        :param iterations: 
+        :return: 
+        """
+
+        new = self.copy()
+        new.erode_rc(rank, connectivity, iterations)
+        return new
+
+    # -----------------------------------------------------------------
+
+    def eroded(self, structure, iterations):
+
+        """
+        This function ...
+        :param structure: 
+        :param iterations: 
+        :return: 
+        """
+
+        new = self.copy()
+        new.erode(structure, iterations)
+        return new
 
     # -----------------------------------------------------------------
 
@@ -512,10 +616,29 @@ class MaskBase(object):
         """
 
         # Calculate x and y of the pixel corresponding to the object's position
-        x_pixel = int(round(position.x))
-        y_pixel = int(round(position.y))
+        pixel = Pixel.for_coordinate(position, round_first=True)
 
-        return self.data[y_pixel, x_pixel]  # Return the value of the mask in this pixel
+        # Check whether pixel exists in this mask
+        if not pixel.exists_in(self): return False
+
+        # Return whether the corresponding pixel is masked
+        return self.data[pixel.y, pixel.x]  # Return the value of the mask in this pixel
+
+    # -----------------------------------------------------------------
+
+    def covers(self, other_mask):
+
+        """
+        This function ...
+        :param other_mask:
+        :return:
+        """
+
+        if isinstance(other_mask, MaskBase): other = other_mask.data
+        else: other = other_mask
+
+        not_covered = other_mask & self.inverse().data
+        return not np.any(not_covered)
 
     # -----------------------------------------------------------------
 
@@ -746,12 +869,26 @@ class Mask(np.ndarray):
     # -----------------------------------------------------------------
 
     @property
-    def xsize(self): return self.shape[1]
+    def xsize(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self.shape[1]
 
     # -----------------------------------------------------------------
 
     @property
-    def ysize(self): return self.shape[0]
+    def ysize(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        return self.shape[0]
 
     # -----------------------------------------------------------------
 

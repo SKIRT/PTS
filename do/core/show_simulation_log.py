@@ -14,10 +14,10 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
-from pts.core.basics.host import find_host_ids
+from pts.core.remote.host import find_host_ids
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
-from pts.core.basics.remote import Remote
+from pts.core.remote.remote import Remote
 from pts.core.tools import introspection
 from pts.core.simulation.simulation import RemoteSimulation
 
@@ -62,13 +62,13 @@ simulation = RemoteSimulation.from_file(simulation_path)
 ski_name = simulation.prefix()
 
 # The path to the simulation log file
-remote_log_file_path = fs.join(simulation.remote_output_path, ski_name + "_log.txt")
+remote_log_file_path = simulation.remote_log_file_path
 
 # Check whether the log file exists
 if not remote.is_file(remote_log_file_path): raise RuntimeError("The log file does not exist remotely")
 
 # Read the log file
-lines = remote.read_text_file(remote_log_file_path)
+lines = remote.read_lines(remote_log_file_path)
 
 # Print the lines of the log file
 for line in lines: print(line)

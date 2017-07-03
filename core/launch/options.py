@@ -12,31 +12,17 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import copy
-import warnings
-
 # Import the relevant PTS classes and modules
-from ..basics.map import Map
 from ..tools.logging import log
+from ..basics.composite import SimplePropertyComposite
 
 # -----------------------------------------------------------------
 
-class Options(object):
+class Options(SimplePropertyComposite):
 
     """
     This class ...
     """
-
-    def __init__(self):
-
-        """
-        The constructor ...
-        """
-
-        pass
-
-    # -----------------------------------------------------------------
 
     def set_options(self, options):
 
@@ -46,31 +32,8 @@ class Options(object):
         :return:
         """
 
-        # Loop over all the options defined in the 'options' dictionary
-        for option in options:
-
-            # Check whether an option with this name exists in this class
-            if hasattr(self, option):
-
-                # Check if the option is composed of other options (a Map), or if it is just a simple variable
-                if isinstance(getattr(self, option), Map): getattr(self, option).set_items(options[option])
-
-                # If it is a simple variable, just use setattr to set the attribute of this class
-                else: setattr(self, option, options[option])
-
-            # If the option does not exist, ignore it but give a warning
-            else: warnings.warn("The option " + option + " does not exist")
-
-    # -----------------------------------------------------------------
-
-    def copy(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return copy.deepcopy(self)
+        # Call the set_properties function
+        self.set_properties(options)
 
 # -----------------------------------------------------------------
 
@@ -80,7 +43,7 @@ class LoggingOptions(Options):
     This function ...
     """
 
-    def __init__(self, brief=False, verbose=False, memory=False, allocation=False, allocation_limit=1e-5):
+    def __init__(self, **kwargs):
 
         """
         The constructor ...
@@ -89,22 +52,25 @@ class LoggingOptions(Options):
         # Call the constructor of the base class
         super(LoggingOptions, self).__init__()
 
-        # Set options
-        self.brief = brief              # Brief console logging
-        self.verbose = verbose          # Verbose logging
-        self.memory = memory            # State the amount of used memory with each log message
-        self.allocation = allocation    # Write log messages with the amount of (de)allocated memory
-        self.allocation_limit = allocation_limit  # The lower limit for the amount of (de)allocated memory to be logged
+        # Add properties
+        self.add_property("brief", "boolean", "brief console logging", False)
+        self.add_property("verbose", "boolean", "verbose logging", False)
+        self.add_property("memory", "boolean", " state the amount of used memory with each log message", False)
+        self.add_property("allocation", "boolean", "write log messages with the amount of (de)allocated memory", False)
+        self.add_property("allocation_limit", "real", "lower limit for the amount of (de)allocated memory to be logged", 1e-5)
+
+        # Set values
+        self.set_properties(kwargs)
 
 # -----------------------------------------------------------------
 
-class SchedulingOptions(object):
+class SchedulingOptions(Options):
 
     """
     This function ...
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
@@ -114,36 +80,15 @@ class SchedulingOptions(object):
         super(SchedulingOptions, self).__init__()
 
         # Scheduling options
-        self.nodes = None
-        self.ppn = None
-        self.mail = None
-        self.full_node = None
-        self.walltime = None
-        self.local_jobscript_path = None
+        self.add_property("nodes", "positive_integer", "number of nodes", None)
+        self.add_property("ppn", "positive_integer", "number of processors per node", None)
+        self.add_property("mail", "boolean", "send mails", None)
+        self.add_property("full_node", "boolean", "use full nodes", None)
+        self.add_property("walltime", "real", "expected walltime", None)
+        self.add_property("local_jobscript_path", "string", None)
 
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_dict(cls, dictionary):
-
-        """
-        This function ...
-        :param dictionary:
-        :return:
-        """
-
-        # Create a new SchedulingOptions instance
-        options = cls()
-
-        if "nodes" in dictionary: options.nodes = dictionary["nodes"]
-        if "ppn" in dictionary: options.ppn = dictionary["ppn"]
-        if "mail" in dictionary: options.mail = dictionary["mail"]
-        if "full_node" in dictionary: options.full_node = dictionary["full_node"]
-        if "walltime" in dictionary: options.walltime = dictionary["walltime"]
-        if "local_jobscript_path" in dictionary: options.local_jobscript_path = dictionary["local jobscript path"]
-
-        # Return the scheduling options object
-        return options
+        # Set values
+        self.set_properties(kwargs)
 
 # -----------------------------------------------------------------
 
@@ -153,7 +98,7 @@ class AnalysisOptions(Options):
     This class ...
     """
 
-    def __init__(self):
+    def __init__(self, **kwargs):
 
         """
         The constructor ...
@@ -163,49 +108,54 @@ class AnalysisOptions(Options):
         # Call the constructor of the base class
         super(AnalysisOptions, self).__init__()
 
-        # Options for extracting data from the simulation's log files
-        self.extraction = Map()
-        self.extraction.path = None
-        self.extraction.progress = False
-        self.extraction.timeline = False
-        self.extraction.memory = False
+        # Extraction
+        self.add_section("extraction", "options for extractin data from the simulation's log files")
+        self.extraction.add_property("path", "string", "extraction directory", None)
+        self.extraction.add_property("progress", "boolean", "extract information about the progress in the different simulation phases", False)
+        self.extraction.add_property("timeline", "boolean", "extract timeline information for the different simulation phases on the different processes", False)
+        self.extraction.add_property("memory", "boolean", "extract information about the memory usage during the simulation", False)
 
-        # Options for plotting simulation output
-        self.plotting = Map()
-        self.plotting.path = None
-        self.plotting.format = "pdf" # can be 'pdf', 'png' or other formats supported by MatplotLib
-        self.plotting.progress = False
-        self.plotting.timeline = False
-        self.plotting.memory = False
-        self.plotting.seds = False
-        self.plotting.grids = False
-        self.plotting.reference_seds = None # The path to a file containing an SED for which the points have to be
-                                           # plotted against the simulated curve (when plotting seds is enabled)
+        # Plotting
+        self.add_section("plotting", "options for plotting simulation output")
+        self.plotting.add_property("path", "string", "plotting directory", None)
+        self.plotting.add_property("format", "string", "image format for the plots", "pdf", choices=["pdf", "png"])
+        self.plotting.add_property("progress", "boolean", "make plots of the progress of the simulation phases as a function of time", False)
+        self.plotting.add_property("timeline", "boolean", "plot the timeline for the different processes", False)
+        self.plotting.add_property("memory", "boolean", "plot the memory consumption as a function of time", False)
+        self.plotting.add_property("seds", "boolean", "make plots of the simulated SEDs", False)
+        self.plotting.add_property("grids", "boolean", "make plots of the dust grid", False)
+        self.plotting.add_property("reference_seds", "filepath_list", "path to a reference SED file against which the simulated SKIRT SEDs should be plotted", None)
 
-        # Options for creating data of various formats
-        self.misc = Map()
-        self.misc.path = None
-        self.misc.rgb = False
-        self.misc.wave = False
-        self.misc.fluxes = False
-        self.misc.images = False
-        self.misc.observation_filters = None # The filters for which to recreate the observations
-        self.misc.observation_instruments = None # The instrument for which to recreate the observations
-        self.misc.make_images_remote = None  # Perform the calculation of the observed images on a remote machine (this is a memory and CPU intensive step)
-        self.misc.images_wcs = None  # the path to the FITS file from which the WCS should be set as the WCS of the simulated images
-        self.misc.images_unit = None # the unit to which the simulated images should be converted (if None, the original unit is kept)
-        self.misc.images_kernels = None # the paths to the FITS file of convolution kernel used for convolving the observed images (a dictionary where the keys are the filter names)
+        # Misc
+        self.add_section("misc", "settings for creating data of various types from the simulation output")
+        self.misc.add_property("path", "string", "misc output directory", None)
+        self.misc.add_property("rgb", "boolean", "make RGB images from the simulated datacube(s)", False)
+        self.misc.add_property("wave", "boolean", "make a wavelength movie through the simulated datacube(s)", False)
+        self.misc.add_property("fluxes", "boolean", "calculate observed fluxes from the SKIRT output SEDs", False)
+        self.misc.add_property("images", "boolean", "make observed images form the simulated datacube(s)", False)
+        self.misc.add_property("observation_filters", "string_list", "the names of the filters for which to recreate the observations", None)
+        self.misc.add_property("observation_instruments", "string_list", "the names of the instruments for which to recreate the observations", None)
+        self.misc.add_property("make_images_remote", "string", "Perform the calculation of the observed images on a remote machine (this is a memory and CPU intensive step)", None)
+        self.misc.add_property("images_wcs", "file_path", "the path to the FITS/txt file for which the WCS should be set as the WCS of the recreated observed images", None)
+        self.misc.add_property("images_unit", "string", "the unit to which the recreated observed images should be converted", None)
+        self.misc.add_property("images_kernels", "string_string_dictionary", "paths to the FITS file of convolution kernel used for convolving the observed images (a dictionary where the keys are the filter names)", None)
+        self.misc.add_property("rebin_wcs", "string_string_dictionary", "paths to the FITS/txt files of which the WCS should be used as the target for rebinning")
+        self.misc.add_property("spectral_convolution", "boolean", "use spectral convolution to calculate observed fluxes and create observed images", True)
+        self.misc.add_property("flux_errors", "string_string_dictionary", "errorbars for the different flux points of the mock observed SED")
 
         # Properties that are relevant for simulations launched as part of a batch (e.g. from an automatic launching procedure)
-        self.timing_table_path = None
-        self.memory_table_path = None
+        self.add_property("timing_table_path", "file_path", "path of the timing table", None)
+        self.add_property("memory_table_path", "file_path", "path of the memory table", None)
 
         # Properties relevant for simulations part of a scaling test
-        self.scaling_path = None
-        self.scaling_run_name = None
+        self.add_property("scaling_path", "string", "scaling directory path", None)
+        self.add_property("scaling_run_name", "string", "name of scaling run", None)
 
         # Properties relevant for simulations part of radiative transfer modeling
-        self.modeling_path = None
+        self.add_property("modeling_path", "string", "modeling directory path", None)
+
+        # Set options
+        self.set_options(kwargs)
 
     # -----------------------------------------------------------------
 

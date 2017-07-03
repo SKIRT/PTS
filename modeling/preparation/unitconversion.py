@@ -16,13 +16,14 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import astronomical modules
-from astropy import units as u
 from astropy import constants
+from astropy.units import spectral
 
 # Import the relevant PTS classes and modules
-from ...core.basics.configurable import OldConfigurable
+from ...core.basics.configurable import Configurable
 from ...core.tools import tables
 from ...core.tools.logging import log
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -30,7 +31,7 @@ from ...core.tools.logging import log
 speed_of_light = constants.c
 
 # Flux zero point for AB magnitudes
-ab_mag_zero_point = 3631. * u.Unit("Jy")
+ab_mag_zero_point = 3631. * u("Jy")
 
 # 2MASS F_0 (in Jy)
 f_0_2mass = {"2MASS.J": 1594.0, "2MASS.H": 1024.0, "2MASS.Ks": 666.7}
@@ -59,7 +60,7 @@ galex_conversion_factors = {"GALEX.FUV": 1.40e-15, "GALEX.NUV": 2.06e-16}
 ergscmHz_to_Jy = 1e23
 
 # Effective wavelengths for GALEX
-effective_wavelengths = {"GALEX.FUV": 1528.0 * u.Unit("Angstrom"), "GALEX.NUV": 2271.0 * u.Unit("Angstrom")}
+effective_wavelengths = {"GALEX.FUV": 1528.0 * u("Angstrom"), "GALEX.NUV": 2271.0 * u("Angstrom")}
 
 # Conversion between flux density in SI units and Jansky
 jansky_to_si = 1e-26  # 1 Jy in W / [ m2 * Hz]
@@ -78,8 +79,8 @@ def spectral_factor(wavelength, wavelength_unit, frequency_unit):
     """
 
     # Convert string units to Unit objects
-    if isinstance(wavelength_unit, basestring): wavelength_unit = u.Unit(wavelength_unit)
-    if isinstance(frequency_unit, basestring): frequency_unit = u.Unit(frequency_unit)
+    if isinstance(wavelength_unit, basestring): wavelength_unit = u(wavelength_unit)
+    if isinstance(frequency_unit, basestring): frequency_unit = u(frequency_unit)
 
     conversion_factor_unit = wavelength_unit / frequency_unit
 
@@ -270,22 +271,22 @@ names = ["Band", "b", "Zero-flux magnitude", "m"]
 
 # -----------------------------------------------------------------
 
-class UnitConverter(OldConfigurable):
+class UnitConverter(Configurable):
     
     """
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(UnitConverter, self).__init__(config, "modeling")
+        super(UnitConverter, self).__init__(*args, **kwargs)
 
         # The image
         self.image = None
@@ -343,7 +344,7 @@ class UnitConverter(OldConfigurable):
         super(UnitConverter, self).setup()
 
         # Create a unit object
-        self.target_unit = u.Unit(self.config.to_unit)
+        self.target_unit = u(self.config.to_unit)
 
         # Set the image reference
         self.image = image
@@ -480,7 +481,7 @@ class UnitConverter(OldConfigurable):
         self.conversion_factor *= 1e-6
 
         # Conversion from MJy (per pixel2) to MJy / sr
-        self.conversion_factor *= self.pixel_factor(self.image.frames.primary.average_pixelscale)
+        self.conversion_factor *= self.pixel_factor(self.image.primary.average_pixelscale)
 
     # -----------------------------------------------------------------
 
@@ -539,7 +540,7 @@ class UnitConverter(OldConfigurable):
         # What Ilse says it should be:
 
         # Get the frequency of Ha
-        frequency = self.image.wavelength.to("Hz", equivalencies=u.spectral())
+        frequency = self.image.wavelength.to("Hz", equivalencies=spectral())
 
         # Conversion from erg / [s * cm2] (per pixel2) to erg / [s * cm2 * Hz] (per pixel2)
         self.conversion_factor *= 1.0 / frequency.value
@@ -572,7 +573,7 @@ class UnitConverter(OldConfigurable):
         #    - m_0: the F_0 values found on the webpage above are for a magnitude of zero, so m_0 = 0
         # The two equations combine to:
         #  F(X) = F_0 * 10^(-m_0/2.5) * X
-        m_0 = self.image.frames.primary.zero_point
+        m_0 = self.image.primary.zero_point
         f_0 = f_0_2mass[self.image.filter.name]
         self.conversion_factor *= f_0 * np.power(10.0, -m_0/2.5)
 
@@ -601,7 +602,7 @@ class UnitConverter(OldConfigurable):
         """
 
         # Conversion from dimensionless unit (DN, or count) to flux (in W / [cm2 * micron]) (per pixel)
-        m_0 = self.image.frames.primary.zero_point # rounded values in the header ??
+        m_0 = self.image.primary.zero_point # rounded values in the header ??
         #m_0 = m_0_wise[self.image.filter.name] + absolute_calibration_wise[self.image.filter.name]
         if self.image.filter.name == "WISE.W4": m_0 += calibration_discrepancy_wise_w4
         f_0 = f_0_wise[self.image.filter.name]

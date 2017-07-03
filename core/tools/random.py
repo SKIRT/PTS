@@ -73,6 +73,7 @@ def setup_prng(seed):
     # Inform the user
     log.info("Seeding the random number generator ...")
 
+    # Give seed
     prng.seed(seed)
 
     # Return the instance

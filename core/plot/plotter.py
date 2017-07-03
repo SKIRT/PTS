@@ -16,12 +16,12 @@ from __future__ import absolute_import, division, print_function
 from abc import ABCMeta, abstractmethod, abstractproperty
 
 # Import the relevant PTS classes and modules
-from ..basics.configurable import OldConfigurable
+from ..basics.configurable import Configurable
 from ..tools.logging import log
 
 # -----------------------------------------------------------------
 
-class Plotter(OldConfigurable):
+class Plotter(Configurable):
 
     """
     This class ...
@@ -39,7 +39,7 @@ class Plotter(OldConfigurable):
         """
 
         # Call the constructor of the base class
-        super(Plotter, self).__init__(None, "core")
+        super(Plotter, self).__init__(None)
 
         # -- Attributes --
 
@@ -48,9 +48,6 @@ class Plotter(OldConfigurable):
 
         # The data structure to contain the input information in plottable format
         self.data = []
-
-        # The path to the output directory
-        self.output_path = None
 
     # -----------------------------------------------------------------
 
@@ -106,7 +103,7 @@ class Plotter(OldConfigurable):
         self.table = table
 
         # Set the path to the output directory
-        self.output_path = output_path
+        self.config.output = output_path
 
     # -----------------------------------------------------------------
 
@@ -127,7 +124,6 @@ class Plotter(OldConfigurable):
 
         """
         This function ...
-        :param path:
         :return:
         """
 

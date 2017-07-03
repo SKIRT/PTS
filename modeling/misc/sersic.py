@@ -72,7 +72,7 @@
 import operator
 
 import scipy.integrate, scipy.optimize
-import mpmath
+#import mpmath ## temporarily disable this import statement for 'pts depends'
 import numpy as np
 
 # Maximum multiple of effective radius to which to carry integrals.

@@ -6,15 +6,15 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
-from pts.modeling.plotting.data import DataPlotter
+from pts.modeling.plotting.data import get_features
+from pts.modeling.config.plot import definition
+from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
-
 # Add settings
-definition.add_positional_optional("features", "string_list", "features to be plotted", choices=DataPlotter.features())
+features = get_features(fs.cwd())
+definition.pos_optional["features"].choices = features
+definition.pos_optional["features"].default = features.keys()
 
 # -----------------------------------------------------------------

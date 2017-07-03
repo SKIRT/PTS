@@ -18,31 +18,31 @@ from astropy.units import Unit
 # Import the relevant PTS classes and modules
 from ..core.image import Image
 from ..core.frame import Frame
-from ..core.box import Box
+from ..core.cutout import Cutout
 from ..basics.mask import Mask
-from ..basics.region import Region
-from ...core.basics.configurable import OldConfigurable
+from ..region.list import PixelRegionList
+from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-class ImageImporter(OldConfigurable):
+class ImageImporter(Configurable):
 
     """
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(ImageImporter, self).__init__(config, "magic")
+        super(ImageImporter, self).__init__(*args, **kwargs)
 
         # The image
         self.image = None
@@ -69,6 +69,7 @@ class ImageImporter(OldConfigurable):
         :param bad_region_path:
         :param unit:
         :param fwhm:
+        :param find_error_frame:
         :return:
         """
 
@@ -183,7 +184,7 @@ class ImageImporter(OldConfigurable):
                     if error_frame.unit != Unit("MJy/sr"): raise ValueError("Cannot rebin since unit " + str(error_frame.unit) + " is not recognized as a surface brightness unit")
 
                     # Do the rebinning
-                    error_frame = error_frame.rebinned(self.image.frames.primary.wcs)
+                    error_frame = error_frame.rebinned(self.image.primary.wcs)
 
                 # Add the error frame
                 self.image.add_frame(error_frame, "errors")
@@ -201,7 +202,7 @@ class ImageImporter(OldConfigurable):
         log.info("Creating a mask to cover bad pixels ...")
 
         # Create a mask for the nans in the primary
-        nan_mask = Mask.is_nan(self.image.frames.primary)
+        nan_mask = Mask.is_nan(self.image.primary)
 
         # Sometimes, saturated stars have a few pixels that are nan. In this case, we certainly don't want to ignore these pixels
         # because we want to remove the star and its diffraction spikes. So, we want to remove these little blobs of nan from the nan_mask,
@@ -267,7 +268,7 @@ class ImageImporter(OldConfigurable):
             #source = Source.from_ellipse(self.image.frames.primary, contour, 1.5)
             #source.plot()
 
-            cutout = Box.from_ellipse(self.image.frames.primary, contour)
+            cutout = Cutout.from_ellipse(self.image.primary, contour)
 
             #cutout.plot()
 
@@ -285,7 +286,7 @@ class ImageImporter(OldConfigurable):
             #plotting.plot_box(interpolated_box)
 
             # Replace frame pixels
-            self.image.frames.primary[cutout.y_slice, cutout.x_slice][where_is_cutout_segment] = interpolated_box[where_is_cutout_segment]
+            self.image.primary[cutout.y_slice, cutout.x_slice][where_is_cutout_segment] = interpolated_box[where_is_cutout_segment]
             nan_mask[cutout.y_slice, cutout.x_slice][where_is_cutout_segment] = False
 
         # Add the mask

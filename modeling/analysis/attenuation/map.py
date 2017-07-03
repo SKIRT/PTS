@@ -31,16 +31,16 @@ class AttenuationMapAnalyser(AttenuationAnalysisComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(AttenuationMapAnalyser, self).__init__(config)
+        super(AttenuationMapAnalyser, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 
@@ -58,15 +58,16 @@ class AttenuationMapAnalyser(AttenuationAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the wavelength grid
         self.load_wavelength_grid()
@@ -82,15 +83,16 @@ class AttenuationMapAnalyser(AttenuationAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(AttenuationMapAnalyser, self).setup()
+        super(AttenuationMapAnalyser, self).setup(**kwargs)
 
         # Load the analysis run
         self.load_run()
@@ -229,6 +231,6 @@ class AttenuationMapAnalyser(AttenuationAnalysisComponent):
 
         # Determine the path and save
         path = fs.join(self.attenuation_map_path, "FUV attenuation.fits")
-        self.attenuation.save(path)
+        self.attenuation.saveto(path)
 
 # -----------------------------------------------------------------

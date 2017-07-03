@@ -18,11 +18,11 @@ from abc import ABCMeta
 
 # Import astronomical modules
 from astropy.coordinates import Angle
-from astropy.units import Unit
-from astropy.modeling.models import Sersic2D
+from astropy.units import dimensionless_angles
 
 # Import the relevant PTS classes and modules
 from ...core.basics.composite import SimplePropertyComposite
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -65,27 +65,38 @@ class SersicModel3D(Model):
     This function ...
     """
 
-    def __init__(self, effective_radius, index, flattening, tilt=0):
+    def __init__(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
-        self.effective_radius = effective_radius
-        self.index = index
-        self.flattening = flattening
-        self.tilt = tilt
+        # Call the constructor of the base class
+        super(SersicModel3D, self).__init__()
+
+        # Define properties
+        self.add_property("effective_radius", "quantity", "effective radius")
+        self.add_property("index", "real", "sersic index")
+        self.add_property("y_flattening", "real", "flattening along y direction", 1.)
+        self.add_property("z_flattening", "real", "flattening along z direction", 1.)
+        self.add_property("azimuth", "angle", "azimuth angle", Angle(0.0, "deg"))
+        self.add_property("tilt", "angle", "tilt angle", Angle(0.0, "deg"))
+
+        # Set properties
+        self.set_properties(kwargs)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_2d(cls, sersic2d, inclination, position_angle):
+    def from_2d(cls, sersic2d, inclination, position_angle, azimuth_or_tilt="azimuth"):
 
         """
         :param sersic2d:
         :param inclination:
         :param position_angle:
+        :param azimuth_or_tilt:
         :return:
         """
 
@@ -93,15 +104,43 @@ class SersicModel3D(Model):
         effective_radius = sersic2d.effective_radius
         index = sersic2d.index
 
-        # Calculate the intrinsic flattening
-        flattening = intrinsic_flattening(sersic2d.axial_ratio, inclination)
+        # Tilt angle and z flattening
+        if azimuth_or_tilt == "tilt":
 
-        # Calculate the tilt angle of the bulge (tilt w.r.t. the x-axis)
-        tilt = deproject_pa_to_tilt(sersic2d.position_angle - position_angle, inclination)
-        tilt = Angle(90., "deg") - tilt
+            # Calculate the intrinsic flattening
+            y_flattening = 1.
+            z_flattening = intrinsic_z_flattening(sersic2d.axial_ratio, inclination)
+
+            # Set azimuth
+            azimuth = 0. * u("deg")
+
+            # Calculate the tilt angle of the bulge (tilt w.r.t. the x-axis)
+            tilt = deproject_pa_to_tilt(sersic2d.position_angle - position_angle, inclination)
+            tilt = Angle(90., "deg") - tilt
+
+        # Azimuth angle and y flattening
+        elif azimuth_or_tilt == "azimuth":
+
+            # TODO: this is not working right and therefore unusable for the moment
+
+            # Calculate the intrinsic flattening
+            y_flattening = intrinsic_z_flattening(sersic2d.axial_ratio, inclination)
+            #z_flattening = intrinsic_z_flattening(sersic2d.axial_ratio, inclination)
+            z_flattening = 1.
+
+            # Calculate the azimuth angle of the bulge
+            azimuth = deproject_pa_to_azimuth(sersic2d.position_angle - position_angle, inclination)
+
+            # Set tilt
+            #tilt = Angle(90., "deg")
+            tilt = Angle(0., "deg")
+
+        # Other input
+        else: raise ValueError("Incorrect value for 'azimuth_or_tilt'")
 
         # Create a new Sersic model and return it
-        return cls(effective_radius, index, flattening, tilt)
+        return cls(effective_radius=effective_radius, index=index, y_flattening=y_flattening, z_flattening=z_flattening,
+                   azimuth=azimuth, tilt=tilt)
 
 # -----------------------------------------------------------------
 
@@ -111,20 +150,27 @@ class ExponentialDiskModel3D(Model):
     This function ...
     """
 
-    def __init__(self, radial_scale, axial_scale, radial_truncation=0, axial_truncation=0, inner_radius=0, tilt=0):
+    def __init__(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
-        # Set the properties
-        self.radial_scale = radial_scale
-        self.axial_scale = axial_scale
-        self.radial_truncation = radial_truncation
-        self.axial_truncation = axial_truncation
-        self.inner_radius = inner_radius
-        self.tilt = tilt
+        # Call the constructor of the base class
+        super(ExponentialDiskModel3D, self).__init__()
+
+        # Define properties
+        self.add_property("radial_scale", "quantity", "radial scale")
+        self.add_property("axial_scale", "quantity", "axial scale")
+        self.add_property("radial_truncation", "real", "radial truncation", 0)
+        self.add_property("axial_truncation", "real", "axial truncation", 0)
+        self.add_property("inner_radius", "real", "inner radius", 0)
+        self.add_property("tilt", "angle", "tilt", Angle(0.0, "deg"))
+
+        # Set properties
+        self.set_properties(kwargs)
 
     # -----------------------------------------------------------------
 
@@ -143,7 +189,7 @@ class ExponentialDiskModel3D(Model):
         radial_scale = exponentialdiskmodel2d.scalelength
 
         # Calculate the intrinsic flattening
-        flattening = intrinsic_flattening(exponentialdiskmodel2d.axial_ratio, inclination)
+        flattening = intrinsic_z_flattening(exponentialdiskmodel2d.axial_ratio, inclination)
 
         # Calculate the axial scale
         axial_scale = flattening * radial_scale
@@ -154,7 +200,33 @@ class ExponentialDiskModel3D(Model):
         tilt = Angle(90., "deg") - tilt
 
         # Create a new exponential disk model and return it
-        return cls(radial_scale, axial_scale, tilt=tilt)
+        return cls(radial_scale=radial_scale, axial_scale=axial_scale, tilt=tilt)
+
+# -----------------------------------------------------------------
+
+class RingModel3D(Model):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(RingModel3D, self).__init__()
+
+        # Define the properties
+        self.add_property("radius", "quantity", "radius of the ring")
+        self.add_property("width", "quantity", "width of the ring")
+        self.add_property("height", "quantity", "height of the ring")
+
+        # Set the properties
+        self.set_properties(kwargs)
 
 # -----------------------------------------------------------------
 
@@ -164,30 +236,75 @@ class DeprojectionModel3D(Model):
     This class ...
     """
 
-    def __init__(self, filename, pixelscale, position_angle, inclination, x_size, y_size, x_center, y_center, scale_height):
+    def __init__(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
+
+        # Call the constructor of the base class
+        super(DeprojectionModel3D, self).__init__()
 
         # position angle: -360 deg to 360 deg
         # inclination: 0 deg to 90 deg
         # center in pixel coordinates!
 
-        self.filename = filename
-        self.pixelscale = pixelscale
-        self.position_angle = position_angle
-        self.inclination = inclination
-        self.x_size = x_size
-        self.y_size = y_size
-        self.x_center = x_center
-        self.y_center = y_center
-        self.scale_height = scale_height
+        # Define the properties
+        self.add_property("filename", "string", "name of the input FITS file")
+        self.add_property("pixelscale", "quantity", "pixelscale of the FITS image")
+        self.add_property("position_angle", "angle", "position angle")
+        self.add_property("inclination", "angle", "inclination")
+        self.add_property("x_size", "positive_integer", "number of x pixels")
+        self.add_property("y_size", "positive_integer", "number of y pixels")
+        self.add_property("x_center", "real", "x center in image coordinates")
+        self.add_property("y_center", "real", "y center in image coordinates")
+        self.add_property("scale_height", "quantity", "scale height")
+
+        # Set the properties
+        self.set_properties(kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_wcs(cls, wcs, galaxy_center, distance, pa, inclination, filepath, scale_height):
+
+        """
+        This function ...
+        :param wcs:
+        :param galaxy_center:
+        :param distance:
+        :param pa:
+        :param inclination:
+        :param filepath
+        :param scale_height:
+        :return:
+        """
+
+        # Get the center pixel
+        pixel_center = galaxy_center.to_pixel(wcs)
+        xc = pixel_center.x
+        yc = pixel_center.y
+
+        # Get the pixelscale in physical units
+        pixelscale_angular = wcs.average_pixelscale.to("deg")  # in deg
+        pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
+
+        # Get the number of x and y pixels
+        x_size = wcs.xsize
+        y_size = wcs.ysize
+
+        # Create the deprojection model
+        deprojection = cls(filename=filepath, pixelscale=pixelscale, position_angle=pa, inclination=inclination,
+                           x_size=x_size, y_size=y_size, x_center=xc, y_center=yc, scale_height=scale_height)
+
+        # Return the deprojection model
+        return deprojection
 
 # -----------------------------------------------------------------
 
-def intrinsic_flattening(qprime, inclination):
+def intrinsic_z_flattening(qprime, inclination):
 
     """
     This function ...
@@ -200,6 +317,37 @@ def intrinsic_flattening(qprime, inclination):
 
     # Calculate the intrinsic flattening
     q = math.sqrt((qprime**2 - math.cos(i)**2)/math.sin(i)**2)
+
+    # Return the intrinsic flattening
+    return q
+
+# -----------------------------------------------------------------
+
+def intrinsic_y_flattening(qprime, inclination):
+
+    """
+    This function ...
+    :param qprime:
+    :param inclination:
+    :return:
+    """
+
+    # Get the inclination angle in radians
+    i = inclination.to("radian").value
+
+    # Calculate the 'inclination' w.r.t. the y axis
+    #i_wrt_y = 0.5 * math.pi - i
+
+    print(inclination)
+    print(qprime)
+    print(i_wrt_y)
+    print(math.cos(i_wrt_y))
+    print(math.sin(i_wrt_y))
+
+    #qprime =
+
+    # Calculate the intrinsic flattening
+    q = math.sqrt((qprime ** 2 - math.cos(i_wrt_y) ** 2) / math.sin(i_wrt_y) ** 2)
 
     # Return the intrinsic flattening
     return q
@@ -223,7 +371,7 @@ def project_azimuth_to_pa(azimuth, inclination):
     cos_pa = math.cos(azimuth_radian) * math.cos(i_radian) / denominator
     sin_pa = math.sin(azimuth_radian) / denominator
 
-    pa_radian = math.atan2(sin_pa, cos_pa) * Unit("radian")
+    pa_radian = math.atan2(sin_pa, cos_pa) * u("radian")
 
     return pa_radian.to("deg")
 
@@ -245,9 +393,9 @@ def deproject_pa_to_azimuth(pa, inclination):
     denominator = math.sqrt(math.cos(pa_radian)**2 + math.sin(pa_radian)**2 * math.cos(i_radian)**2)
 
     cos_azimuth = math.cos(pa_radian) / denominator
-    sin_azimuth = math.sin(pa_radian) * math.cos(inclination) / denominator
+    sin_azimuth = math.sin(pa_radian) * math.cos(i_radian) / denominator
 
-    azimuth_radian = math.atan2(sin_azimuth, cos_azimuth) * Unit("radian")
+    azimuth_radian = math.atan2(sin_azimuth, cos_azimuth) * u("radian")
 
     return azimuth_radian.to("deg")
 
@@ -271,7 +419,7 @@ def project_tilt_to_pa(tilt, inclination):
     cos_pa = math.sin(tilt_radian) * math.sin(i_radian) / denominator
     sin_pa = math.cos(tilt_radian) / denominator
 
-    pa_radian = math.atan2(sin_pa, cos_pa) * Unit("radian")
+    pa_radian = math.atan2(sin_pa, cos_pa) * u("radian")
 
     return pa_radian.to("deg")
 
@@ -295,7 +443,7 @@ def deproject_pa_to_tilt(pa, inclination):
     cos_tilt = math.sin(pa_radian) * math.sin(i_radian) / denominator
     sin_tilt = math.cos(pa_radian) / denominator
 
-    tilt_radian = math.atan2(sin_tilt, cos_tilt) * Unit("radian")
+    tilt_radian = math.atan2(sin_tilt, cos_tilt) * u("radian")
 
     return tilt_radian.to("deg")
 
@@ -361,12 +509,19 @@ class SersicModel2D(Model):
         :param kwargs:
         """
 
-        self.rel_contribution = kwargs.pop("rel_contribution", None)
-        self.fluxdensity = kwargs.pop("fluxdensity", None)
-        self.axial_ratio = kwargs.pop("axial_ratio", None)
-        self.position_angle = kwargs.pop("position_angle", None)  # (degrees ccw from North)
-        self.effective_radius = kwargs.pop("effective_radius", None)
-        self.index = kwargs.pop("index", None)
+        # Call the constructor of the base class
+        super(SersicModel2D, self).__init__()
+
+        # Define properties
+        self.add_property("rel_contribution", "real", "relative contribution")
+        self.add_property("fluxdensity", "quantity", "flux density")
+        self.add_property("axial_ratio", "real", "axial ratio")
+        self.add_property("position_angle", "angle", "position angle") # (degrees ccw from North)
+        self.add_property("effective_radius", "quantity", "effective radius")
+        self.add_property("index", "real", "sersic index")
+
+        # Set properties
+        self.set_properties(kwargs)
 
 # -----------------------------------------------------------------
 
@@ -382,11 +537,18 @@ class ExponentialDiskModel2D(Model):
         The constructor ...
         """
 
-        self.rel_contribution = kwargs.pop("relative_contribution", None)
-        self.fluxdensity = kwargs.pop("fluxdensity", None)
-        self.axial_ratio = kwargs.pop("axial_ratio", None)
-        self.position_angle = kwargs.pop("position_angle", None) # (degrees ccw from North)
-        self.mu0 = kwargs.pop("mu0", None)
-        self.scalelength = kwargs.pop("scalelength", None)
+        # Call the constructor of the base class
+        super(ExponentialDiskModel2D, self).__init__()
+
+        # Define properties
+        self.add_property("rel_contribution", "real", "relative contribution")
+        self.add_property("fluxdensity", "quantity", "flux density")
+        self.add_property("axial_ratio", "real", "axial ratio")
+        self.add_property("position_angle", "angle", "position_angle") # (degrees ccw from North)
+        self.add_property("mu0", "quantity", "surface brightness at center")
+        self.add_property("scalelength", "quantity", "scale length")
+
+        # Set properties
+        self.set_properties(kwargs)
 
 # -----------------------------------------------------------------

@@ -17,7 +17,9 @@ from astropy.coordinates import Angle
 from astropy.units import Unit, dimensionless_angles
 
 # Import the relevant PTS classes and modules
+from ...magic.basics.pixelscale import Pixelscale
 from ...magic.basics.vector import Position
+from ...magic.basics.vector import Extent
 
 # -----------------------------------------------------------------
 
@@ -61,6 +63,43 @@ class GalaxyProjection(object):
         self.field_x_physical = field_x
         self.field_y_physical = field_y
 
+        # The path
+        self.path = None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def physical_pixelscale(self):
+
+        """
+        This function
+        :return:
+        """
+
+        # From field of view to pixel scale
+        pixelscale_x = self.field_x_physical / self.pixels_x
+        pixelscale_y = self.field_y_physical / self.pixels_y
+
+        # Create xy extent
+        return Extent(pixelscale_x, pixelscale_y)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        physical = self.physical_pixelscale
+        pixelscale_x_angular = (physical.x / self.distance).to("arcsec", equivalencies=dimensionless_angles())
+        pixelscale_y_angular = (physical.y / self.distance).to("arcsec", equivalencies=dimensionless_angles())
+
+        # Create and return the pixelscale
+        return Pixelscale(pixelscale_x_angular, pixelscale_y_angular)
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -79,6 +118,106 @@ class GalaxyProjection(object):
 
         # Get derived properties
         pixels_x, pixels_y, center_x, center_y, field_x, field_y = get_relevant_wcs_properties(wcs, center, distance)
+
+        # Create and return a new class instance
+        return cls(distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_deprojection(cls, deprojection, distance, azimuth):
+
+        """
+        This function ...
+        :param deprojection:
+        :param distance:
+        :param azimuth:
+        :return:
+        """
+
+        pixels_x = deprojection.x_size
+        pixels_y = deprojection.y_size
+
+        pixelscale = deprojection.pixelscale
+
+        # In pixel
+        x_center = deprojection.x_center
+        y_center = deprojection.y_center
+
+        # To physical
+        center_x = x_center * pixelscale
+        center_y = y_center * pixelscale
+
+        # Detemrine field of view
+        field_x = pixelscale * pixels_x
+        field_y = pixelscale * pixels_y
+
+        inclination = deprojection.inclination
+        position_angle = deprojection.position_angle
+
+        # Create and return a new class instance
+        return cls(distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_instrument(cls, instrument, default_pixels_x=None, default_pixels_y=None, default_field_x=None,
+                        default_field_y=None):
+
+        """
+        This function ...
+        :param instrument:
+        :param default_pixels_x:
+        :param default_pixels_y:
+        :param default_field_x:
+        :param default_field_y:
+        :return:
+        """
+
+        # distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x, field_y
+
+        # Each instrument
+        distance = instrument.distance
+        inclination = instrument.inclination
+        azimuth = instrument.azimuth
+        position_angle = instrument.position_angle
+
+        from .instruments import SEDInstrument, FrameInstrument, SimpleInstrument, FullInstrument
+
+        # SED instrument
+        if isinstance(instrument, SEDInstrument):
+
+            pixels_x = default_pixels_x
+            pixels_y = default_pixels_y
+
+            # Put the galaxy center at the center of the instrument
+            center_x = 0.5 * (pixels_x + 1)
+            center_y = 0.5 * (pixels_y + 1)
+
+            # Determine the pixelscale
+            pixelscale_physical_x = default_field_x / pixels_x
+            pixelscale_physical_y = default_field_y / pixels_y
+
+            # Calculate center in physical units
+            center_x = center_x * pixelscale_physical_x
+            center_y = center_y * pixelscale_physical_y
+
+            # Set field
+            field_x = default_field_x
+            field_y = default_field_y
+
+        # Instrument with pixels
+        elif isinstance(instrument, FrameInstrument) or isinstance(instrument, SimpleInstrument) or isinstance(instrument, FullInstrument):
+
+            pixels_x = instrument.pixels_x
+            pixels_y = instrument.pixels_y
+            center_x = instrument.center_x
+            center_y = instrument.center_y
+            field_x = instrument.field_x
+            field_y = instrument.field_y
+
+        # Not recognized
+        else: raise ValueError("Unrecognized instrument object")
 
         # Create and return a new class instance
         return cls(distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
@@ -125,11 +264,43 @@ class GalaxyProjection(object):
                 elif splitted[0] == "Field y": field_y = get_quantity(splitted[1])
 
         # Create and return a new class instance
-        return cls(distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+        projection = cls(distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+
+        # Set the path
+        projection.path = path
+
+        # Return the projection
+        return projection
 
     # -----------------------------------------------------------------
 
-    def save(self, path):
+    def to_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        raise NotImplementedError("Not implemented")
+
+    # -----------------------------------------------------------------
+
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether the path is valid
+        if self.path is None: raise RuntimeError("Path is not defined")
+
+        # Save
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
 
         """
         This function ...
@@ -150,6 +321,9 @@ class GalaxyProjection(object):
             print("Center y:", str(self.center_y), file=projection_file)
             print("Field x:", str(self.field_x_physical), file=projection_file)
             print("Field y:", str(self.field_y_physical), file=projection_file)
+
+        # Update the path
+        self.path = path
 
 # -----------------------------------------------------------------
 
@@ -186,6 +360,53 @@ class FaceOnProjection(GalaxyProjection):
 
         # Call the constructor
         return cls(distance, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_deprojection(cls, deprojection, distance):
+
+        """
+        This function ...
+        :param deprojection:
+        :param distance:
+        :return:
+        """
+
+        pixels_x = deprojection.x_size
+        pixels_y = deprojection.y_size
+
+        pixelscale = deprojection.pixelscale
+
+        # In pixel
+        x_center = deprojection.x_center
+        y_center = deprojection.y_center
+
+        # To physical
+        center_x = x_center * pixelscale
+        center_y = y_center * pixelscale
+
+        # Detemrine field of view
+        field_x = pixelscale * pixels_x
+        field_y = pixelscale * pixels_y
+
+        # Create and return
+        return cls(distance, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_projection(cls, projection):
+
+        """
+        This function ...
+        :param projection:
+        :return:
+        """
+
+        # Create and return
+        return cls(projection.distance, projection.pixels_x, projection.pixels_y, projection.center_x,
+                   projection.center_y, projection.field_x_physical, projection.field_y_physical)
 
 # -----------------------------------------------------------------
 
@@ -229,6 +450,53 @@ class EdgeOnProjection(GalaxyProjection):
 
         # Call the constructor
         return cls(distance, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_deprojection(cls, deprojection, distance):
+
+        """
+        This function ...
+        :param deprojection:
+        :param distance:
+        :return:
+        """
+
+        pixels_x = deprojection.x_size
+        pixels_y = deprojection.y_size
+
+        pixelscale = deprojection.pixelscale
+
+        # In pixel
+        x_center = deprojection.x_center
+        y_center = deprojection.y_center
+
+        # To physical
+        center_x = x_center * pixelscale
+        center_y = y_center * pixelscale
+
+        # Detemrine field of view
+        field_x = pixelscale * pixels_x
+        field_y = pixelscale * pixels_y
+
+        # Call the constructor
+        return cls(distance, pixels_x, pixels_y, center_x, center_y, field_x, field_y)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_projection(cls, projection):
+
+        """
+        This function ...
+        :param projection:
+        :return:
+        """
+
+        # Create and return
+        return cls(projection.distance, projection.pixels_x, projection.pixels_y, projection.center_x,
+                   projection.center_y, projection.field_x_physical, projection.field_y_physical)
 
 # -----------------------------------------------------------------
 
@@ -296,14 +564,14 @@ def get_relevant_wcs_properties(wcs, center, distance):
     # CENTER PIXEL
     pixel_center = center.to_pixel(wcs)
     center = Position(0.5*pixels_x - pixel_center.x - 0.5, 0.5*pixels_y - pixel_center.y - 0.5)
-    center_x = center.x * Unit("pix")
-    center_y = center.y * Unit("pix")
-    center_x = (center_x * wcs.pixelscale.x.to("deg/pix") * distance).to("pc", equivalencies=dimensionless_angles())
-    center_y = (center_y * wcs.pixelscale.y.to("deg/pix") * distance).to("pc", equivalencies=dimensionless_angles())
+    center_x = center.x
+    center_y = center.y
+    center_x = (center_x * wcs.pixelscale.x.to("deg") * distance).to("pc", equivalencies=dimensionless_angles())
+    center_y = (center_y * wcs.pixelscale.y.to("deg") * distance).to("pc", equivalencies=dimensionless_angles())
 
     # FIELD OF VIEW
-    field_x_angular = wcs.pixelscale.x.to("deg/pix") * pixels_x * Unit("pix")
-    field_y_angular = wcs.pixelscale.y.to("deg/pix") * pixels_y * Unit("pix")
+    field_x_angular = wcs.pixelscale.x.to("deg") * pixels_x
+    field_y_angular = wcs.pixelscale.y.to("deg") * pixels_y
     field_x_physical = (field_x_angular * distance).to("pc", equivalencies=dimensionless_angles())
     field_y_physical = (field_y_angular * distance).to("pc", equivalencies=dimensionless_angles())
 

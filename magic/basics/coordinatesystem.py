@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import math
+import traceback
 import copy
 import numpy as np
 import warnings
@@ -21,15 +22,21 @@ import warnings
 # Import astronomical modules
 from astropy import wcs
 from astropy.wcs import utils
-from astropy.units import Unit
 from astropy.io import fits
 from astropy.coordinates import Angle
+from astropy.io.fits import Header
 
 # Import the relevant PTS classes and modules
-from .geometry import Coordinate
-from .skygeometry import SkyCoordinate, SkyRectangle, SkyExtent
+from .coordinate import PixelCoordinate, SkyCoordinate
+from ..region.rectangle import SkyRectangleRegion
+from .stretch import SkyStretch
 from ..tools import coordinates
 from .pixelscale import Pixelscale
+from ...core.units.parsing import parse_unit as u
+from ...core.basics.range import QuantityRange
+from pts.magic.basics.stretch import PixelStretch
+from ...core.tools.logging import log
+from ...core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -39,10 +46,14 @@ class CoordinateSystem(wcs.WCS):
     This class ...
     """
 
-    def __init__(self, header=None):
+    def __init__(self, header=None, naxis=None, naxis1=None, naxis2=None):
 
         """
         This function ...
+        :param header:
+        :param naxis:
+        :param naxis1:
+        :param naxis2:
         :return:
         """
 
@@ -54,7 +65,7 @@ class CoordinateSystem(wcs.WCS):
             else: raise ValueError("Header does not contain coordinate information")
 
         # Call the constructor of the base class
-        super(CoordinateSystem, self).__init__(header)
+        super(CoordinateSystem, self).__init__(header=header, naxis=naxis)
 
         # Set the number of pixels in both axis directions
         if header is not None:
@@ -62,17 +73,43 @@ class CoordinateSystem(wcs.WCS):
             if not hasattr(self, "naxis1"):
 
                 try: self.naxis1 = header["NAXIS1"]
-                except TypeError: self.naxis1 = self._naxis1
+                except KeyError: self.naxis1 = self._naxis1
+                #except TypeError: self.naxis1 = self._naxis1
 
             if not hasattr(self, "naxis2"):
 
                 try: self.naxis2 = header["NAXIS2"]
-                except TypeError: self.naxis2 = self._naxis2
+                except KeyError: self.naxis2 = self._naxis2
+                #except TypeError: self.naxis2 = self._naxis2
+
+        # If naxis1 is specified
+        if naxis1 is not None: self.naxis1 = naxis1
+
+        # If naxis2 is specified
+        if naxis2 is not None: self.naxis2 = naxis2
+
+        # The path
+        self.path = None
 
     # -----------------------------------------------------------------
 
     @classmethod
     def from_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        if path.endswith(".fits"): return cls.from_fits(path)
+        elif path.endswith(".txt"): return cls.from_header_file(path)
+        else: raise ValueError("Path must be a FITS or header text file")
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_fits(cls, path):
 
         """
         This function ...
@@ -87,7 +124,264 @@ class CoordinateSystem(wcs.WCS):
         for key in header:
             if "PLANE" in key: del header[key]
 
-        return cls(header)
+        # Create and return
+        system = cls(header)
+        system.path = path
+        return system
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_header_file(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Load the header
+        header = Header.fromtextfile(path)
+
+        # Create and return the coordinate system
+        system = cls(header=header)
+        system.path = path
+        return system
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_properties(cls, size, center_pixel, center_sky, pixelscale):
+
+        """
+        This fucntion ...
+        :param size: 
+        :param center_pixel: 
+        :param center_sky: 
+        :param pixelscale: 
+        :return: 
+        """
+
+        # TODO: doesn't work
+        # see try below
+
+        # Construct header
+        header = Header()
+
+        header["CRPIX1"] = center_pixel.x
+        header["CRVAL1"] = center_sky.ra.to("deg").value
+        header["CDELT1"] = pixelscale.x.to("deg").value
+        header["CRPIX2"] = center_pixel.y
+        header["CRVAL2"] = center_sky.dec.to("deg").value
+        header["CDELT2"] = pixelscale.y.to("deg").value
+        header["NAXIS1"] = size.x
+        header["NAXIS2"] = size.y
+        header["RADESYS"] = "ICRS"
+        header["CTYPE1"] = "RA--TAN"
+        header["CTYPE2"] = "DEC--TAN"
+
+        # Create and return
+        return cls(header=header)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_properties_try(cls, size, center_pixel, center_sky, pixelscale):
+
+        """
+        This function ...
+        :param size:
+        :param center_pixel:
+        :param center_sky:
+        :param pixelscale:
+        :return:
+        """
+
+        # Create a new WCS object.  The number of axes must be set
+        # from the start
+        ##system = wcs.WCS(naxis=2)
+        #system = cls(naxis=2, naxis1=size.x, naxis2=size.y)
+
+        # Set up an "Airy's zenithal" projection
+        # Vector properties may be set with Python lists, or Numpy arrays
+        #system.wcs.crpix = [center_pixel.x, center_pixel.y]
+        #system.wcs.cdelt = np.array([pixelscale.x.to("deg").value, pixelscale.y.to("deg").value])
+        ##crval = [center_sky.ra.to("deg").value, center_sky.dec.to("deg").value]
+        ##print(crval)
+        #system.wcs.crval = [center_sky.ra.to("deg").value, center_sky.dec.to("deg").value]
+        ##system.wcs.ctype = ["RA---AIR", "DEC--AIR"]
+        #system.wcs.ctype = ["RA--TAN", "DEC--TAN"]
+        #system.wcs.set_pv([(2, 1, 45.0)])
+
+        center_x = center_pixel.x
+        center_y = center_pixel.y
+
+        # Create a new WCS object.  The number of axes must be set
+        # from the start
+        w = wcs.WCS(naxis=2)
+
+        # Set up an "Airy's zenithal" projection
+        # Vector properties may be set with Python lists, or Numpy arrays
+        #w.wcs.crpix = [-center_x, center_y]
+        #w.wcs.cdelt = np.array([-pixelscale.x.to("deg").value, pixelscale.y.to("deg").value])
+        #w.wcs.crval = [center_sky.ra.to("deg").value, center_sky.dec.to("deg").value]
+        #w.wcs.ctype = ["RA--TAN", "DEC--TAN"]
+        #w.wcs.set_pv([(2, 1, 45.0)])
+
+        # TODO: make this work with not only this example !!!
+
+        # Set up an "Airy's zenithal" projection
+        # Vector properties may be set with Python lists, or Numpy arrays
+        w.wcs.crpix = [-234.75, 8.3393]
+        w.wcs.cdelt = np.array([-0.066667, 0.066667])
+        w.wcs.crval = [0, -90]
+        w.wcs.ctype = ["RA---AIR", "DEC--AIR"]
+        w.wcs.set_pv([(2, 1, 45.0)])
+
+        # Return the coordinate system
+        #return system
+
+        header = w.to_header()
+
+        # Construct header
+        #header = Header()
+        #header["SIMPLE"] = True
+        #header["BITPIX"] = -32
+        #header["NAXIS"] = 2
+        #header["NAXIS1"] = size.x
+        #header["NAXIS2"] = size.y
+        #header["CRVAL1"] = center_sky.ra.to("deg").value
+        #header["CRVAL2"] = center_sky.dec.to("deg").value
+        #header["RADESYS"] = "ICRS"
+        #header["CTYPE1"] = "RA--TAN"
+        #header["CTYPE2"] = "DEC--TAN"
+        #header["CRPIX1"] = center_x
+        #header["CRPIX2"] = center_y
+        #header["CDELT1"] = pixelscale.x.to("deg").value
+        #header["CDELT2"] = pixelscale.y.to("deg").value
+
+        #print(header)
+
+        #from ...core.tools import filesystem as fs
+        #from ...core.tools import introspection
+        #path = fs.join(introspection.pts_temp_dir, "wcs_from_properties.fits")
+        #if fs.is_file(path): fs.remove_file(path)
+
+        #data = np.zeros((size.y, size.x))
+        #hdu = fits.PrimaryHDU(data, header)
+        #hdulist = fits.HDUList([hdu])
+        #hdulist.writeto(path)
+
+        # Convert into wcs
+        #return cls(header=header, naxis=2)
+
+        #return cls.from_fits(path)
+
+        return cls(header, naxis=2, naxis1=size.x, naxis2=size.y)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_ranges(cls, ra_range, dec_range, pixelscale):
+
+        """
+        This function ...
+        :param ra_range:
+        :param dec_range:
+        :param pixelscale:
+        :return:
+        """
+
+        # Determine the total RA and DEC distance
+        ra_begin = ra_range.min
+        ra_end = ra_range.max
+        dec_begin = dec_range.min
+        dec_end = dec_range.max
+        dec_center = dec_range.center
+        ra_distance = abs(coordinates.ra_distance(dec_center, ra_begin, ra_end))
+        dec_distance = abs(dec_end - dec_begin)
+
+        # Detemrine the nubmerof required pixels in the x and y directions
+        xpixels = int(ra_distance / pixelscale.x)
+        ypixels = int(dec_distance / pixelscale.y)
+
+        # Set size and center pixel
+        size = PixelStretch(xpixels, ypixels)
+        center_pixel = PixelCoordinate(0.5 * (size.x + 1), 0.5 * (size.y + 1))
+
+        # Determine center coordinate
+        ra_center = ra_range.center
+        dec_center = dec_range.center
+        center = SkyCoordinate(ra=ra_center, dec=dec_center)
+
+        # Create and return
+        return cls.from_properties(size, center_pixel, center, pixelscale)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_projection(cls, projection, center_coordinate):
+
+        """
+        This function ...
+        :param projection:
+        :param center_coordinate:
+        :return:
+        """
+
+        # Get properties
+        pixels_x = projection.pixels_x
+        pixels_y = projection.pixels_y
+        center_x = projection.center_x
+        center_y = projection.center_y
+
+        # Create a new coordinate system
+        #system = cls(naxis=2, naxis1=pixels_x, naxis2=pixels_y)
+
+        # Set projection
+        #system.wcs.crpix = [center_x, center_y]
+        #system.wcs.cdelt = np.array([])
+        #system.wcs.crval = []
+        #system.wcs.ctype = ["RA--TAN", "DEC--TAN"]
+        ##system.wcs.set_pv([(2, 1, 45.0)])
+
+        # Return the coordinate system
+        #return system
+
+        # FROM SKIRT FITSINOUT
+
+        # double xref = (nx+1.0)/2.0;
+        # double yref = (ny+1.0)/2.0;
+
+        # // Add the relevant keywords
+        # ffpky(fptr, TDOUBLE, "BSCALE", &one, "", &status);
+        # ffpky(fptr, TDOUBLE, "BZERO", &zero, "", &status);
+        # ffpkys(fptr, "DATE"  , const_cast<char*>(stamp.c_str()), "Date and time of creation (UTC)", &status);
+        # ffpkys(fptr, "ORIGIN", const_cast<char*>("SKIRT simulation"), "Astronomical Observatory, Ghent University", &status);
+        # ffpkys(fptr, "BUNIT" , const_cast<char*>(dataunits.c_str()), "Physical unit of the array values", &status);
+        # ffpky(fptr, TDOUBLE, "CRPIX1", &xref, "X-axis coordinate system reference pixel", &status);
+        # ffpky(fptr, TDOUBLE, "CRVAL1", &xc, "Coordinate system value at X-axis reference pixel", &status);
+        # ffpky(fptr, TDOUBLE, "CDELT1", &incx, "Coordinate increment along X-axis", &status);
+        # ffpkys(fptr, "CTYPE1", const_cast<char*>(xyunits.c_str()), "Physical units of the X-axis increment", &status);
+        # ffpky(fptr, TDOUBLE, "CRPIX2", &yref, "Y-axis coordinate system reference pixel", &status);
+        # ffpky(fptr, TDOUBLE, "CRVAL2", &yc, "Coordinate system value at Y-axis reference pixel", &status);
+        # ffpky(fptr, TDOUBLE, "CDELT2", &incy, "Coordinate increment along Y-axis", &status);
+        # ffpkys(fptr, "CTYPE2", const_cast<char*>(xyunits.c_str()), "Physical units of the Y-axis increment", &status);
+
+        # Construct header
+        header = Header()
+
+        header["CRPIX1"] = center_x
+        header["CRVAL1"] = center_coordinate.ra.to("deg").value
+        header["CDELT1"] = projection.pixelscale.x
+        header["CRPIX2"] = center_y
+        header["CRVAL2"] = center_coordinate.dec.to("deg").value
+        header["CDELT2"] = projection.pixelscale.y
+        header["NAXIS1"] = pixels_x
+        header["NAXIS2"] = pixels_y
+
+        # Create and return
+        return cls(header=header)
 
     # -----------------------------------------------------------------
 
@@ -154,8 +448,8 @@ class CoordinateSystem(wcs.WCS):
         # The units of the returned results are the same as the units of cdelt, crval, and cd for the celestial WCS
         # and can be obtained by inquiring the value of cunit property of the input WCS WCS object.
 
-        x_pixelscale = result[0] * Unit("deg/pix")
-        y_pixelscale = result[1] * Unit("deg/pix")
+        x_pixelscale = result[0] * u("deg")
+        y_pixelscale = result[1] * u("deg")
 
         # Return the pixel scale as an extent
         return Pixelscale(x_pixelscale, y_pixelscale)
@@ -182,8 +476,7 @@ class CoordinateSystem(wcs.WCS):
         :return:
         """
 
-        square_pixel = 1.0 * Unit("pix2")
-        return (self.pixelscale.x * self.pixelscale.y * square_pixel).to("sr")
+        return (self.pixelscale.x * self.pixelscale.y).to("sr")
 
     # -----------------------------------------------------------------
 
@@ -196,7 +489,7 @@ class CoordinateSystem(wcs.WCS):
         """
 
         x, y = self.wcs.crpix
-        return Coordinate(x, y)
+        return PixelCoordinate(x, y)
 
     # -----------------------------------------------------------------
 
@@ -247,30 +540,115 @@ class CoordinateSystem(wcs.WCS):
 
         try:
 
-            # Check whether the CRPIX is equal
-            if not self.wcs.crpix[0] == other_wcs.wcs.crpix[0]: return False
-            if not self.wcs.crpix[1] == other_wcs.wcs.crpix[1]: return False
+            #print(self.wcs.crpix[0], other_wcs.wcs.crpix[0])
+            #print(self.wcs.crpix[1], other_wcs.wcs.crpix[1])
+            #print(self.pixel_scale_matrix.flatten(), other_wcs.pixel_scale_matrix.flatten())
+            #print(self.wcs.crval[0], other_wcs.wcs.crval[0])
+            #print(self.wcs.crval[1], other_wcs.wcs.crval[1])
+            #print(self.naxis, other_wcs.naxis)
+            #print(self.naxis1, other_wcs.naxis1)
+            #print(self.naxis2, other_wcs.naxis2)
 
-            # Check whether the pixel scale is equal
-            for element_self, element_other in zip(list(self.pixel_scale_matrix.flatten()), list(other_wcs.pixel_scale_matrix.flatten())):
-                #print(element_self, element_other)
-                if not element_self == element_other: return False
-
-            # Check whether the CRVAL is equal
-            if not self.wcs.crval[0] == other_wcs.wcs.crval[0]: return False
-            if not self.wcs.crval[1] == other_wcs.wcs.crval[1]: return False
-
-            # Check whether the number of axis is equal
-            if not self.naxis == other_wcs.naxis: return False
-
-            # Check whether the axis sizes are equal
-            if not self.naxis1 == other_wcs.naxis1: return False
-            if not self.naxis2 == other_wcs.naxis2: return False
+            comparisons = self.make_comparisons(other_wcs)
+            #print(comparisons)
+            #exit()
 
             # If all of the above tests succeeded, the coordinate systems may be considered equal
-            return True
+            #return True
 
-        except AttributeError: return False
+            #print(sequences.all_true(comparisons))
+            return sequences.all_true(comparisons)
+
+        # Error occured
+        except AttributeError as e:
+
+            log.warning("Problem occurred while comparing coordinate systems:")
+            print(e)
+            traceback.print_exc()
+            return False
+
+    # -----------------------------------------------------------------
+
+    def make_comparisons(self, other_wcs):
+
+        """
+        This function ...
+        :param other_wcs:
+        :return:
+        """
+
+        result = []
+
+        # Check whether the CRPIX is equal
+        if not self.wcs.crpix[0] == other_wcs.wcs.crpix[0]:
+            #print("1")
+            #return False
+            result.append(False)
+        else: result.append(True)
+
+        if not self.wcs.crpix[1] == other_wcs.wcs.crpix[1]:
+            #print("2")
+            #return False
+            result.append(False)
+        else: result.append(True)
+
+        # Check whether the pixel scale is equal
+        for element_self, element_other in zip(list(self.pixel_scale_matrix.flatten()),
+                                               list(other_wcs.pixel_scale_matrix.flatten())):
+            # print(element_self, element_other)
+            if element_self != element_other:
+                #print("3")
+                #return False
+                result.append(False)
+            else: result.append(True)
+
+        # Check whether the CRVAL is equal
+        if not self.wcs.crval[0] == other_wcs.wcs.crval[0]:
+            #print("4")
+            #return False
+            result.append(False)
+        else: result.append(True)
+
+        if not self.wcs.crval[1] == other_wcs.wcs.crval[1]:
+            #print("5")
+            #return False
+            result.append(False)
+        else: result.append(True)
+
+        # Check whether the number of axis is equal
+        if not self.naxis == other_wcs.naxis:
+            #print("6")
+            #return False
+            result.append(False)
+        else: result.append(True)
+
+        # Check whether the axis sizes are equal
+        if not self.naxis1 == other_wcs.naxis1:
+            #print("7")
+            #return False
+            result.append(False)
+        else: result.append(True)
+
+        if not self.naxis2 == other_wcs.naxis2:
+            #print("8")
+            #return False
+            result.append(False)
+        else: result.append(True)
+
+        # Return the comparison results
+        return result
+
+    # -----------------------------------------------------------------
+
+    def __ne__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        return not self.__eq__(other)
 
     # -----------------------------------------------------------------
 
@@ -295,6 +673,114 @@ class CoordinateSystem(wcs.WCS):
         """
 
         return shape.to_sky(self)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ra_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        coor1 = self.wcs_pix2world(0.0, 0.0, 0)
+        coor2 = self.wcs_pix2world(self.xsize - 1.0, self.ysize - 1.0, 0)
+
+        co1 = SkyCoordinate(ra=float(coor1[0]), dec=float(coor1[1]), unit="deg", frame='fk5')
+        co2 = SkyCoordinate(ra=float(coor2[0]), dec=float(coor2[1]), unit="deg", frame='fk5')
+
+        # Get the range
+        ra_range = sorted([co1.ra.value, co2.ra.value])
+
+        # Return the range
+        return QuantityRange(ra_range[0], ra_range[1], "deg")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dec_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        coor1 = self.wcs_pix2world(0.0, 0.0, 0)
+        coor2 = self.wcs_pix2world(self.xsize - 1.0, self.ysize - 1.0, 0)
+
+        co1 = SkyCoordinate(ra=float(coor1[0]), dec=float(coor1[1]), unit="deg", frame='fk5')
+        co2 = SkyCoordinate(ra=float(coor2[0]), dec=float(coor2[1]), unit="deg", frame='fk5')
+
+        # Get the range
+        dec_range = sorted([co1.dec.value, co2.dec.value])
+
+        # Return the range
+        return QuantityRange(dec_range[0], dec_range[1], "deg")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_ra(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ra_range.min
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_ra(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ra_range.max
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_dec(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dec_range.min
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_dec(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        return self.dec_range.max
+
+    # -----------------------------------------------------------------
+
+    def contains(self, coordinate):
+
+        """
+        This function ...
+        :param coordinate: 
+        :return: 
+        """
+
+        if coordinate.ra < self.min_ra: return False
+        if coordinate.ra > self.max_ra: return False
+        if coordinate.dec < self.min_dec: return False
+        if coordinate.dec > self.max_dec: return False
+        return True
 
     # -----------------------------------------------------------------
 
@@ -332,20 +818,40 @@ class CoordinateSystem(wcs.WCS):
         ra_distance = abs(coordinates.ra_distance(dec_center, ra_begin, ra_end))
         dec_distance = abs(dec_end - dec_begin)
 
+        # NEW METHOD FROM ASTROPY
+        ra_distance_top = abs(SkyCoordinate(ra=ra_begin, dec=dec_end, unit="deg").separation(SkyCoordinate(ra=ra_end, dec=dec_end, unit="deg")).deg)
+        ra_distance_bottom = abs(SkyCoordinate(ra=ra_begin, dec=dec_begin, unit="deg").separation(SkyCoordinate(ra=ra_end, dec=dec_begin, unit="deg")).deg)
+        dec_distance_new = abs(SkyCoordinate(ra=ra_begin, dec=dec_begin, unit="deg").separation(SkyCoordinate(ra=ra_begin, dec=dec_end, unit="deg")).deg)
+
+        # Checks
+        #assert np.isclose(ra_distance_top, ra_distance_bottom, rtol=0.05), (ra_distance_top, ra_distance_bottom)
+        #assert np.isclose(ra_distance_top, ra_distance, rtol=0.05), (ra_distance_top, ra_distance)
+        assert np.isclose(dec_distance_new, dec_distance, rtol=0.05), (dec_distance_new, dec_distance)
+
+        #if not np.isclose(ra_distance_top, ra_distance_bottom, rtol=0.05):
+        #    log.warning("RA distance at top of image is " + str(ra_distance_top) + " whereas at the bottom is " + str(ra_distance_bottom))
+        #    log.warning("RA distance at center is " + str(ra_distance))
+
+        #if not np.isclose(ra_distance_top, ra_distance, rtol=0.05):
+        #    log.warning("RA distance at top of image is " + str(ra_distance_top) + " whereas at the center it is " + str(ra_distance))
+
+        # Set the RA distance to the maximum of ra_distance, ra_distance_bottom, and ra_distance_top
+        ra_distance = max(ra_distance_bottom, ra_distance_top)
+
         # Calculate the pixel scale of this image in degrees
-        x_pixelscale_deg = self.pixelscale.x.to("deg/pix").value
-        y_pixelscale_deg = self.pixelscale.y.to("deg/pix").value
+        x_pixelscale_deg = self.pixelscale.x.to("deg").value
+        y_pixelscale_deg = self.pixelscale.y.to("deg").value
 
         # Get the center pixel
-        ref_pix = self.wcs.crpix
-        ref_world = self.wcs.crval
+        #ref_pix = self.wcs.crpix
+        #ref_world = self.wcs.crval
 
         center = SkyCoordinate(ra=ra_center, dec=dec_center, unit="deg", frame="fk5")
 
         # Get the orientation of the coordinate system
         try: orientation = self.orientation
         except ValueError:
-            largest_distance = max(ra_distance, dec_distance) * Unit("deg")
+            largest_distance = max(ra_distance, dec_distance) * u("deg")
             return center, largest_distance, largest_distance
 
         if "x" in orientation[0] and "y" in orientation[1]: # RA axis = x axis and DEC axis = y axis
@@ -364,14 +870,15 @@ class CoordinateSystem(wcs.WCS):
         #assert np.isclose(ra_distance, size_ra_deg, rtol=0.05), "The coordinate system and pixel scale do not match: ra_distance=" + str(ra_distance) + ",size_ra_deg=" + str(size_ra_deg)
         #assert np.isclose(dec_distance, size_dec_deg, rtol=0.05), "The coordinate system and pixel scale do not match: dec_distance=" + str(dec_distance) + ",size_dec_deg=" + str(size_dec_deg)
 
+        # Checks
         if not np.isclose(ra_distance, size_ra_deg, rtol=0.05):
             warnings.warn("The coordinate system and pixel scale do not match: ra_distance = " + str(ra_distance) + ", size_ra_deg = " + str(size_ra_deg))
         if not np.isclose(dec_distance, size_dec_deg, rtol=0.05):
             warnings.warn("The coordinate system and pixel scale do not match: dec_distance = " + str(dec_distance) + ", size_dec_deg = " + str(size_dec_deg))
 
         # Create RA and DEC span as quantities
-        ra_span = ra_distance * Unit("deg")
-        dec_span = dec_distance * Unit("deg")
+        ra_span = ra_distance * u("deg")
+        dec_span = dec_distance * u("deg")
 
         # Return the center coordinate and the RA and DEC span
         return center, ra_span, dec_span
@@ -400,9 +907,9 @@ class CoordinateSystem(wcs.WCS):
         #radius = Extent(0.5 * ra_span, 0.5 * dec_span)
         #box = Rectangle(center, radius)
 
-        radius = SkyExtent(0.5 * ra_span, 0.5 * dec_span)
+        radius = SkyStretch(0.5 * ra_span, 0.5 * dec_span)
 
-        box = SkyRectangle(center, radius)
+        box = SkyRectangleRegion(center, radius)
 
         # Return the box
         return box
@@ -418,8 +925,8 @@ class CoordinateSystem(wcs.WCS):
         """
 
         # Calculate the number of pixels in the x and y direction that corresponds one arcmin
-        pix_x = (1. / self.pixelscale.x * Unit("arcmin")).to("pix").value
-        pix_y = (1. / self.pixelscale.y * Unit("arcmin")).to("pix").value
+        pix_x = (1. / self.pixelscale.x * u("arcmin")).to("").value
+        pix_y = (1. / self.pixelscale.y * u("arcmin")).to("").value
 
         #print(pix_x, pix_y)
 
@@ -428,8 +935,8 @@ class CoordinateSystem(wcs.WCS):
         center_coordinate = self.center_sky
 
         # Calculate the new pixel position
-        new_x_pixel = Coordinate(center.x + pix_x, center.y)
-        new_y_pixel = Coordinate(center.x, center.y + pix_y)
+        new_x_pixel = PixelCoordinate(center.x + pix_x, center.y)
+        new_y_pixel = PixelCoordinate(center.x, center.y + pix_y)
 
         # Convert to sky coordinate
         new_x_sky = self.to_sky(new_x_pixel)
@@ -625,6 +1132,68 @@ class CoordinateSystem(wcs.WCS):
                 raise NotImplementedError("Non-fk4/fk5 equinoxes are not allowed")
         elif 'GLON' in ctype or 'GLAT' in ctype:
             return 'galactic'
+
+    # -----------------------------------------------------------------
+
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Saving the coordinate system ...")
+
+        # Check whether the path is defined
+        if self.path is None: raise RuntimeError("Path is not defined for this coordinate system")
+
+        # Save the image
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        if path.endswith(".fits"): self.saveto_fits(path)
+        elif path.endswith(".txt"): self.saveto_header_file(path)
+        else: raise ValueError("Path should be a FITS or txt file")
+
+    # -----------------------------------------------------------------
+
+    def saveto_fits(self, path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Convert to header
+        header = self.to_header()
+
+        # Write as FITS file
+        header.tofile(path)
+
+    # -----------------------------------------------------------------
+
+    def saveto_header_file(self, path):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Convert to header
+        header = self.to_header()
+
+        # Write the header as a text file
+        header.totextfile(path)
 
 # -----------------------------------------------------------------
 

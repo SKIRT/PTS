@@ -15,6 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import math
 
+# Import the relevant PTS classes and modules
+from ...core.tools import types
+
 # -----------------------------------------------------------------
 
 class Vector(object):
@@ -168,7 +171,7 @@ class Extent(Vector):
         :return:
         """
 
-        return Extent(self.x + extent.x, self.y + extent.y)
+        return self.__class__(self.x + extent.x, self.y + extent.y)
 
     # -----------------------------------------------------------------
 
@@ -180,7 +183,7 @@ class Extent(Vector):
         :return:
         """
 
-        return Extent(self.x - extent.x, self.y - extent.y)
+        return self.__class__(self.x - extent.x, self.y - extent.y)
 
     # -----------------------------------------------------------------
 
@@ -192,7 +195,7 @@ class Extent(Vector):
         :return:
         """
 
-        return Extent(self.x * value, self.y * value)
+        return self.__class__(self.x * value, self.y * value)
 
     # -----------------------------------------------------------------
 
@@ -204,7 +207,7 @@ class Extent(Vector):
         :return:
         """
 
-        return Extent(self.x / value, self.y / value)
+        return self.__class__(self.x / value, self.y / value)
 
     # -----------------------------------------------------------------
 
@@ -216,6 +219,312 @@ class Extent(Vector):
         :return:
         """
 
-        return Extent(self.x / value, self.y / value)
+        return self.__class__(self.x / value, self.y / value)
+
+# -----------------------------------------------------------------
+
+class Pixel(Vector):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, x, y):
+
+        """
+        The constructor ...
+        """
+
+        # Check the arguments
+        if not types.is_integer_type(x): raise ValueError("Arguments must be integer numbers")
+        if not types.is_integer_type(y): raise ValueError("Arguments must be integer numbers")
+
+        # Call the constructor of the base class
+        super(Pixel, self).__init__(x, y)
+
+    # -----------------------------------------------------------------
+
+    def exists_in(self, frame):
+
+        """
+        This function ...
+        :param frame: 
+        :return: 
+        """
+
+        # Check whether the position can be within the mask considering its dimensions
+        if self.x < 0 or self.y < 0 or self.x >= frame.xsize or self.y >= frame.ysize: return False
+        else: return True
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def for_coordinate(cls, coordinate, round_first=False):
+
+        """
+        This function ...
+        :param coordinate:
+        :param round_first:
+        :return:
+        """
+
+        if round_first: return cls(int(round(coordinate.x)), int(round(coordinate.y)))
+        else: return cls(int(coordinate.x), int(coordinate.y))
+
+# -----------------------------------------------------------------
+
+class PixelShape(tuple):
+
+    """
+    This function ...
+    """
+
+    def __new__(cls, y, x):
+
+        """
+        This function ...
+        :param a:
+        :param b:
+        :return:
+        """
+
+        # Call the constructor of the base class
+        return super(PixelShape, cls).__new__(cls, tuple([y, x]))
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_tuple(cls, shape):
+
+        """
+        This function ...
+        :param shape:
+        :return:
+        """
+
+        return cls(x=shape[1], y=shape[0])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def x(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self[1]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nx(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.x
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ny(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.y
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nxpixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nx
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nypixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ny
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xpixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nx
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ypixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ny
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nx * self.ny
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nxy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.xy
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ntotal(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nxy
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ntotalpixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nxy
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "(nx=" + str(self.nx) + ", ny=" + str(self.ny) + ")"
+
+    # -----------------------------------------------------------------
+
+    def __repr__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "PixelShape(x=" + str(self.nx) + ", y=" + str(self.ny) + ")"
+
+    # -----------------------------------------------------------------
+
+    def __eq__(self, other):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.x == other.x and self.y == other.y
+
+    # -----------------------------------------------------------------
+
+    def __lt__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        return self.ntotal < other.ntotal
+
+    # -----------------------------------------------------------------
+
+    def __gt__(self, other):
+
+        """
+        This function ...
+        :param other:
+        :return:
+        """
+
+        return self.ntotal > other.ntotal
+
+    # -----------------------------------------------------------------
+
+    def __le__(self, other):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ntotal <= other.ntotal
+
+    # -----------------------------------------------------------------
+
+    def __ge__(self, other):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ntotal >= other.ntotal
 
 # -----------------------------------------------------------------

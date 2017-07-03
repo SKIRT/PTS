@@ -12,9 +12,6 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-from config import Sequence
-
 # Import the relevant PTS classes and modules
 from ..basics.catalogcoverage import CatalogCoverage
 from ..tools import catalogs
@@ -25,22 +22,26 @@ from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
+# DEPRECATED CLASS
+
+# -----------------------------------------------------------------
+
 class CatalogImporter(Configurable):
 
     """
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(CatalogImporter, self).__init__(config)
+        super(CatalogImporter, self).__init__(*args, **kwargs)
 
         # The catalog box
         self.coordinate_box = None
@@ -77,6 +78,9 @@ class CatalogImporter(Configurable):
 
         # 3. Import the stellar catalog
         self.import_stellar_catalog()
+
+        # 4. Write
+        if self.config.write: self.write()
 
     # -----------------------------------------------------------------
 
@@ -199,7 +203,7 @@ class CatalogImporter(Configurable):
         """
 
         # Determine the full path to the catalog file
-        path = fs.absolute(self.config.galaxies.catalog_path)
+        path = fs.absolute_path(self.config.galaxies.catalog_path)
 
         # Inform the user
         log.info("Importing galactic catalog from file " + path + " ...")
@@ -217,7 +221,7 @@ class CatalogImporter(Configurable):
         """
 
         # Determine the full path to the catalog file
-        path = fs.absolute(self.config.stars.catalog_path)
+        path = fs.absolute_path(self.config.stars.catalog_path)
 
         # Inform the user
         log.info("Importing stellar catalog from file " + path + " ...")
@@ -303,6 +307,21 @@ class CatalogImporter(Configurable):
 
         # Inform the user
         log.debug("Number of stars: " + str(len(self.stellar_catalog)))
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Write galactic catalog
+        self.write_galactic_catalog()
+
+        # Write stellar catalog
+        self.write_stellar_catalog()
 
     # -----------------------------------------------------------------
 

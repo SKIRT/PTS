@@ -36,18 +36,18 @@ class PhotometryPlotter(PlottingComponent, PhotometryComponent):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
         #super(PlottingComponent, self).__init__(config) # not sure this will work
-        PlottingComponent.__init__(self, config)
-        PhotometryComponent.__init__(self)
+        PlottingComponent.__init__(self, *args, **kwargs)
+        PhotometryComponent.__init__(self, *args, **kwargs)
 
         # -- Attributes --
 
@@ -140,7 +140,7 @@ class PhotometryPlotter(PlottingComponent, PhotometryComponent):
         plotter = SEDPlotter()
 
         # Add the SEDs
-        for label in self.seds: plotter.add_observed_sed(self.seds[label], label)
+        for label in self.seds: plotter.add_sed(self.seds[label], label)
 
         # Determine the path to the plot file
         path = fs.join(self.plot_photometry_path, "seds.pdf")

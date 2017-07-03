@@ -12,19 +12,24 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import defaultdict
+
 # Import astronomical modules
-from astropy.units import Unit
 from astropy import constants
 
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
 from ..tools import filesystem as fs
-from ..basics.filter import Filter
+from ..filter.filter import parse_filter
 from ...magic.core.kernel import ConvolutionKernel
 from ...magic.core.datacube import DataCube
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from ...magic.core.remote import RemoteDataCube
 from ..simulation.wavelengthgrid import WavelengthGrid
+from ..units.parsing import parse_unit as u
+from ..basics.configurable import Configurable
+from ..simulation.simulation import createsimulations
 
 # -----------------------------------------------------------------
 
@@ -33,21 +38,22 @@ speed_of_light = constants.c
 
 # -----------------------------------------------------------------
 
-class ObservedImageMaker(object):
+class ObservedImageMaker(Configurable):
 
     """
     This class ...
     """
 
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
+        :param interactive:
         :return:
         """
 
         # Call the constructor of the base class
-        super(ObservedImageMaker, self).__init__()
+        super(ObservedImageMaker, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 
@@ -70,9 +76,6 @@ class ObservedImageMaker(object):
         # The instrument names
         self.instrument_names = None
 
-        # The output path
-        self.output_path = None
-
         # The filters for which the images should be created
         self.filters = dict()
 
@@ -94,26 +97,24 @@ class ObservedImageMaker(object):
         # The host id
         self.host_id = None
 
+        # The path to the output data cubes
+        self.paths = defaultdict(dict)
+
+        # The rebin wcs dictionary
+        self.rebin_wcs = None
+
     # -----------------------------------------------------------------
 
-    def run(self, simulation, output_path=None, filter_names=None, instrument_names=None, wcs_path=None,
-            kernel_paths=None, unit=None, host_id=None):
+    def run(self, **kwargs):
 
         """
         This function ...
-        :param simulation:
-        :param output_path:
-        :param filter_names:
-        :param instrument_names:
-        :param wcs_path:
-        :param kernel_paths:
-        :param unit:
-        :param host_id:
+        :param kwargs
         :return:
         """
 
         # 1. Call the setup function
-        self.setup(simulation, output_path, filter_names, instrument_names, wcs_path, kernel_paths, unit, host_id)
+        self.setup(**kwargs)
 
         # 2. Create the wavelength grid
         self.create_wavelength_grid()
@@ -133,6 +134,15 @@ class ObservedImageMaker(object):
         # 7. Do convolutions
         if self.kernel_paths is not None: self.convolve()
 
+        # Rebin
+        if self.rebin_wcs is not None: self.rebin()
+
+        # Add sky
+        self.add_sky()
+
+        # Add stars
+        self.add_stars()
+
         # 8. Do unit conversions
         if self.unit is not None: self.convert_units()
 
@@ -141,21 +151,31 @@ class ObservedImageMaker(object):
 
     # -----------------------------------------------------------------
 
-    def setup(self, simulation, output_path=None, filter_names=None, instrument_names=None, wcs_path=None,
-              kernel_paths=None, unit=None, host_id=None):
+    def setup(self, **kwargs):
 
         """
         This function ...
-        :param simulation:
-        :param output_path:
-        :param filter_names:
-        :param instrument_names:
-        :param wcs_path:
-        :param kernel_paths:
-        :param unit:
-        :param host_id:
         :return:
         """
+
+        # Call the setup function of the base class
+        super(ObservedImageMaker, self).setup(**kwargs)
+
+        # simulation, output_path=None, filter_names=None, instrument_names=None, wcs_path=None,
+        # kernel_paths=None, unit=None, host_id=None
+        if "simulation" in kwargs: simulation = kwargs.pop("simulation")
+        elif "simulation_output_path" in kwargs: simulation = createsimulations(kwargs.pop("simulation_output_path"), single=True)
+        else: raise ValueError("Simulation or simulation output path must be specified")
+        output_path = kwargs.pop("output_path", None)
+        filter_names = kwargs.pop("filter_names", None)
+        instrument_names = kwargs.pop("instrument_names", None)
+        wcs_path = kwargs.pop("wcs_path", None)
+        wcs = kwargs.pop("wcs", None)
+        kernel_paths = kwargs.pop("kernel_paths", None)
+        unit = kwargs.pop("unit", None)
+        host_id = kwargs.pop("host_id", None)
+        rebin_wcs_paths = kwargs.pop("rebin_wcs_paths", None)
+        rebin_wcs = kwargs.pop("rebin_wcs", None)
 
         # Obtain the paths to the 'total' FITS files created by the simulation
         self.fits_paths = simulation.totalfitspaths()
@@ -173,16 +193,45 @@ class ObservedImageMaker(object):
         self.instrument_names = instrument_names
 
         # Set the output path
-        self.output_path = output_path
+        self.config.ouput = output_path
+
+        # If WCS is given
+        if wcs is not None: self.wcs = wcs
 
         # If a WCS path is defined (a FITS file)
-        if wcs_path is not None:
+        elif wcs_path is not None:
 
             # Debugging
             log.debug("Loading the coordinate system from '" + wcs_path + "' ...")
 
             # Load the WCS
             self.wcs = CoordinateSystem.from_file(wcs_path)
+
+        # If rebin wcs dictionary is given
+        if rebin_wcs is not None: self.rebin_wcs = rebin_wcs
+
+        # If rebin WCS paths are defined
+        elif rebin_wcs_paths is not None:
+
+            # Debugging
+            log.debug("Loading the coordinate systems for rebinning ...")
+
+            # Initialize dictionary
+            self.rebin_wcs = dict()
+
+            # Loop over the instrument names
+            for instrument in rebin_wcs_paths:
+
+                wcs_dict = dict()
+
+                # Loop over the filter names
+                for filter_name in rebin_wcs_paths[instrument]:
+
+                    # Load the wcs
+                    wcs_dict[filter_name] = CoordinateSystem.from_file(rebin_wcs_paths[instrument][filter_name])
+
+                # Set the dictionary of WCS's for this instrument
+                self.rebin_wcs[instrument] = wcs_dict
 
         # Set the kernel paths
         self.kernel_paths = kernel_paths
@@ -227,7 +276,7 @@ class ObservedImageMaker(object):
             log.debug("Constructing the " + filter_name + " filter ...")
 
             # Create the filter
-            fltr = Filter.from_string(filter_name)
+            fltr = parse_filter(filter_name)
 
             # Add the filter to the list
             self.filters[filter_name] = fltr
@@ -323,7 +372,7 @@ class ObservedImageMaker(object):
             images = dict()
 
             # Create the observed images from the current datacube (the frames get the correct unit, wcs, filter)
-            frames = self.datacubes[datacube_name].convolve_with_filters(filters)
+            frames = self.datacubes[datacube_name].frames_for_filters(filters, convolve=self.config.spectral_convolution)
 
             # Add the observed images to the dictionary
             for filter_name, frame in zip(filter_names, frames): images[filter_name] = frame # these frames can be RemoteFrames if the datacube was a RemoteDataCube
@@ -366,6 +415,81 @@ class ObservedImageMaker(object):
 
     # -----------------------------------------------------------------
 
+    def rebin(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Rebinning the images to the requested coordinate systems ...")
+
+        # Loop over the datacubes
+        for datacube_name in self.images:
+
+            # Check if the name of the datacube appears in the rebin_wcs dictionary
+            if datacube_name not in self.rebin_wcs: continue
+
+            # Loop over the filters
+            for filter_name in self.images[datacube_name]:
+
+                # Check if the name of the image appears in the rebin_wcs[datacube_name] sub-dictionary
+                if filter_name not in self.rebin_wcs[datacube_name]: continue
+
+                # Debugging
+                log.debug("Rebinning the '" + filter_name + "' image of the '" + datacube_name + "' instrument ...")
+
+                # Get the original unit
+                original_unit = self.images[datacube_name][filter_name].unit
+                converted = False
+
+                # Check if this is a surface brightness or intensity
+                if not (original_unit.is_intensity or original_unit.is_surface_brightness):
+
+                    # Determine the new (surface brightness or intensity) unit
+                    new_unit = original_unit / u("sr")
+
+                    # Debugging
+                    log.debug("Converting the unit from '" + str(original_unit) + "' to '" + str(new_unit) + "' in order to be able to perform rebinning ...")
+
+                    # Convert
+                    self.images[datacube_name][filter_name].convert_to(new_unit)
+                    converted = True
+
+                # Rebin
+                wcs = self.rebin_wcs[datacube_name][filter_name]
+                self.images[datacube_name][filter_name].rebin(wcs)
+
+                # Convert the unit back
+                if converted: self.images[datacube_name][filter_name].convert_to(original_unit)
+
+    # -----------------------------------------------------------------
+
+    def add_sky(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adding artificial sky contribution to the images ...")
+
+    # -----------------------------------------------------------------
+
+    def add_stars(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adding artificial stars to the images ...")
+
+    # -----------------------------------------------------------------
+
     def convert_units(self):
 
         """
@@ -379,7 +503,7 @@ class ObservedImageMaker(object):
         # Inform the user
         log.info("Converting the units of the images to " + str(self.unit) + " ...")
 
-        assert str(self.unit) == "MJy / sr" # TEMPORARY
+        #assert str(self.unit) == "MJy / sr" # TEMPORARY
 
         # Get the pixelscale
         #pixelscale = self.wcs.average_pixelscale.to("arcsec/pix").value # in arcsec**2 / pixel
@@ -402,15 +526,21 @@ class ObservedImageMaker(object):
                 #conversion_factor *=
 
                 # From W / (m2 * arcsec2 * micron) to W / (m2 * arcsec2 * Hz)
-                conversion_factor *= (pivot ** 2 / speed_of_light).to("micron/Hz").value
+                #conversion_factor *= (pivot ** 2 / speed_of_light).to("micron/Hz").value
 
                 # From W / (m2 * arcsec2 * Hz) to MJy / sr
-                #conversion_factor *= (Unit("W/(m2 * arcsec2 * Hz)") / Unit("MJy/sr")).to("")
-                conversion_factor *= 1e26 * 1e-6 * (Unit("sr") / Unit("arcsec2")).to("")
+                ##conversion_factor *= (Unit("W/(m2 * arcsec2 * Hz)") / Unit("MJy/sr")).to("")
+                #conversion_factor *= 1e26 * 1e-6 * (u("sr") / u("arcsec2")).to("")
 
                 # Convert
-                self.images[datacube_name][filter_name] *= conversion_factor
-                self.images[datacube_name][filter_name].unit = "MJy/sr"
+                #self.images[datacube_name][filter_name] *= conversion_factor
+                #self.images[datacube_name][filter_name].unit = "MJy/sr"
+
+                # Convert
+                factor = self.images[datacube_name][filter_name].convert_to(self.unit)
+
+                # Debugging
+                log.debug("The conversion factor is '" + str(factor) + "'")
 
     # -----------------------------------------------------------------
 
@@ -432,7 +562,10 @@ class ObservedImageMaker(object):
                 path = fs.join(self.output_path, datacube_name + "__" + filter_name + ".fits")
 
                 # Save the image
-                self.images[datacube_name][filter_name].save(path)
+                self.images[datacube_name][filter_name].saveto(path)
+
+                # Set the path
+                self.paths[datacube_name][filter_name] = path
 
 # -----------------------------------------------------------------
 

@@ -15,13 +15,16 @@
 # Import standard modules
 import os
 import subprocess
+import tempfile
 
 # Import the relevant PTS classes and modules
 from .arguments import SkirtArguments
 from .definition import SimulationDefinition
 from ..tools import introspection
 from ..tools import filesystem as fs
-from ..tools.logging import log
+from ..tools.logging import log, no_debugging
+from .definition import SingleSimulationDefinition
+from .status import SimulationStatus
 
 # -----------------------------------------------------------------
 #  SkirtExec class
@@ -136,8 +139,15 @@ class SkirtExec:
         return self.run(arguments, wait=wait, silent=silent)
 
     ## This function does the same as the execute function, but obtains its arguments from a SkirtArguments object
-    def run(self, definition_or_arguments, logging_options=None, parallelization=None, emulate=False, wait=True, silent=False):
+    def run(self, definition_or_arguments, logging_options=None, parallelization=None, emulate=False, wait=True,
+            silent=False, progress_bar=False, finish_at=None, finish_after=None):
 
+        if finish_at is not None or finish_after is not None: progress_bar = True
+
+        # The simulation names for different ski paths
+        simulation_names = dict()
+
+        # Simulation definition
         if isinstance(definition_or_arguments, SimulationDefinition):
 
             # The logging options cannot be None
@@ -146,6 +156,10 @@ class SkirtExec:
             # Create the arguments
             arguments = SkirtArguments.from_definition(definition_or_arguments, logging_options, parallelization, emulate=emulate)
 
+            # Set simulation name
+            if isinstance(definition_or_arguments, SingleSimulationDefinition): simulation_names[definition_or_arguments.ski_path] = definition_or_arguments.name
+
+        # Arguments are passed to the function
         elif isinstance(definition_or_arguments, SkirtArguments): arguments = definition_or_arguments
         else: raise ValueError("Invalid argument: should be simulation definition or SKIRT arguments instance")
 
@@ -169,19 +183,108 @@ class SkirtExec:
         # Get the command string
         command = arguments.to_command(self._path, mpi_command, scheduler)
 
+        # Not waiting and progress_bar don't go together!
+        if progress_bar and not wait: raise ValueError("Cannot show progress bar when 'wait' is False")
+        if progress_bar: wait = False
+
+        # Debugging
+        command_string = " ".join(command)
+        log.debug("The command to launch SKIRT is: '" + command_string + "'")
+
+        #print(command)
+
+        # Create a temporary file
+        output_file = tempfile.TemporaryFile()
+        error_file = tempfile.TemporaryFile()
+
+        #import sys
+        #output_file = sys.stdout
+        #error_file = sys.stderr
+
         # Launch the SKIRT command
         if wait:
             self._process = None
-            if silent: subprocess.call(command, stdout=open(os.devnull,'w'), stderr=open(os.devnull,'w'))
+            if silent: subprocess.call(command, stdout=output_file, stderr=error_file)
             else: subprocess.call(command)
-        else: self._process = subprocess.Popen(command, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
+        #else: self._process = subprocess.Popen(command, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
+
+        # CAUSES HANGING:
+        # https://thraxil.org/users/anders/posts/2008/03/13/Subprocess-Hanging-PIPE-is-your-enemy/
+        #else: self._process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1)
+
+        # PROPER:
+        else: self._process = subprocess.Popen(command, stdout=output_file, stderr=error_file)
+
+        # Show progress bar with progress
+        if progress_bar:
+
+            out_path = arguments.output_path if arguments.output_path is not None else fs.cwd()
+            prefix = arguments.prefix
+            log_path = fs.join(out_path, prefix + "_log.txt")
+            status = SimulationStatus(log_path)
+
+            #print("HERE", finish_at, finish_after)
+
+            # Show the simulation progress
+            with no_debugging(): success = status.show_progress(self._process, finish_at=finish_at, finish_after=finish_after)
+
+            # Check whether not crashed
+            if not success:
+
+                # Show SKIRT error messages
+                log.error("SKIRT error output:")
+                log.error("------------------")
+                out, err = self._process.communicate()
+                #print("OUT", out)
+                #print("ERR", err)
+
+                if out is None:
+
+                    #for line in fs.read_lines(output_file):
+
+                    if output_file is not None:
+                        for line in output_file: log.error(line)
+
+                else:
+
+                    for line in out:
+                        if "*** Error" in line:
+                            line = line.split("*** Error: ")[1].split("\n")[0]
+                            log.error(line)
+
+                if err is None:
+
+                    if error_file is not None:
+                        for line in error_file: log.error(line)
+
+                else:
+
+                    for line in err:
+                        if "*** Error" in line:
+                            line = line.split("*** Error: ")[1].split("\n")[0]
+                            log.error(line)
+                raise RuntimeError("The simulation crashed")
 
         # Return the list of simulations so that their results can be followed up
-        return arguments.simulations()
+        simulations = arguments.simulations(simulation_names=simulation_names)
+
+        # Check whether SKIRT has started
+        returncode = self._process.poll() if self._process is not None else None
+        if wait or returncode is not None: # when wait=True, or returncode is not None, SKIRT executable should have finished
+
+            # Check presence of log files
+            if arguments.single:
+                if not fs.is_file(simulations.logfilepath()): raise RuntimeError("SKIRT executable has stopped but log file is not present")
+            else:
+                for simulation in simulations:
+                    if not fs.is_file(simulation.logfilepath()): raise RuntimeError("SKIRT executable has stopped but log file for simulation " + simulation.name + " is not present")
+
+        # Return the list of simulations
+        return simulations
 
     ## This function returns True if the previously started SKIRT process is still running, False otherwise
     def isrunning(self):
-        return (self._process != None and self._process.poll() == None)
+        return (self._process != None and self._process.poll() is None)
 
     ## This function waits for the previously started SKIRT process to complete, if needed
     def wait(self):
@@ -211,32 +314,5 @@ class SkirtExec:
     @property
     def run_directory(self):
         return os.path.join(self.root_directory, "run")
-
-    ## This function installs SKIRT
-    def install(self, private=False):
-
-        # Determine the path to the home directory
-        home_dir = os.path.expanduser("~")
-
-        # Create the SKIRT directory
-        root_dir = os.path.join(home_dir, "SKIRT")
-        os.mkdir(root_dir)
-
-        # Create the SKIRT run, git and release directories
-        run_dir = os.path.join(root_dir, "run")
-        repo_dir = os.path.join(root_dir, "git")
-        release_dir = os.path.join(root_dir, "release")
-        fs.create_directories(run_dir, repo_dir, release_dir)
-
-        #  Clone the SKIRT repository
-        if private: subprocess.call("git clone git@github.ugent.be:SKIRT/SKIRT.git git", cwd=root_dir)
-
-        else: subprocess.call("git clone https://github.com/SKIRT/SKIRT.git git", cwd=root_dir)
-
-        # Compile the SKIRT code
-        subprocess.call("./makeSKIRT.sh", cwd=repo_dir)
-
-        # Put SKIRT in the PATH environment variable
-        # ...
 
 # -----------------------------------------------------------------

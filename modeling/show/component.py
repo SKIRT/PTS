@@ -13,40 +13,41 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..core.component import ModelingComponent
+from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-class ShowComponent(ModelingComponent):
+class ShowComponent(GalaxyModelingComponent):
     
     """
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(ShowComponent, self).__init__(config)
+        super(ShowComponent, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(ShowComponent, self).setup()
+        super(ShowComponent, self).setup(**kwargs)
 
 # -----------------------------------------------------------------

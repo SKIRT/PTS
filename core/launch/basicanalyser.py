@@ -39,16 +39,16 @@ class BasicAnalyser(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(BasicAnalyser, self).__init__(config)
+        super(BasicAnalyser, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 
@@ -147,6 +147,13 @@ class BasicAnalyser(Configurable):
         :return:
         """
 
+        # Inform the user
+        log.info("Extracting ...")
+
+        # Debugging
+        log.debug("Extraction options:")
+        if log.is_debug(): print(str(self.extraction_options))
+
         # Extract the progress information
         if self.extraction_options.progress: self.extract_progress()
 
@@ -164,6 +171,13 @@ class BasicAnalyser(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Plotting ...")
+
+        # Debugging
+        log.debug("Plotting options:")
+        if log.is_debug(): print(str(self.plotting_options))
 
         # If requested, plot the SED's
         if self.plotting_options.seds: self.plot_seds()
@@ -188,6 +202,13 @@ class BasicAnalyser(Configurable):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Performing miscellaneous analysis ...")
+
+        # Debugging
+        log.debug("Miscellaneous options:")
+        if log.is_debug(): print(str(self.misc_options))
 
         # If requested, make RGB images of the output FITS files
         if self.misc_options.rgb: self.make_rgb()
@@ -298,7 +319,7 @@ class BasicAnalyser(Configurable):
                 sed = SED.from_skirt(sed_path)
 
                 # Add the simulated SED to the plotter
-                plotter.add_modeled_sed(sed, instr_name)
+                plotter.add_sed(sed, instr_name)
 
             # Add the reference SEDs
             for reference_sed_path in self.plotting_options.reference_seds:
@@ -308,7 +329,7 @@ class BasicAnalyser(Configurable):
 
                 # Add the reference SED
                 reference_sed = ObservedSED.from_file(reference_sed_path)
-                plotter.add_observed_sed(reference_sed, reference_sed_name)
+                plotter.add_sed(reference_sed, reference_sed_name)
 
             # Determine the path to the plot file
             path = fs.join(self.plotting_options.path, "sed." + self.plotting_options.format)
@@ -341,7 +362,7 @@ class BasicAnalyser(Configurable):
                     sed = SED.from_skirt(sed_path, contribution=contribution)
 
                     # Add the SED to the plotter
-                    plotter.add_modeled_sed(sed, contribution, residuals=(contribution == "total"))
+                    plotter.add_sed(sed, contribution, residuals=(contribution == "total"))
 
                 # Add the reference SEDs
                 for reference_sed_path in self.plotting_options.reference_seds:
@@ -351,7 +372,7 @@ class BasicAnalyser(Configurable):
 
                     # Add the reference SED
                     reference_sed = ObservedSED.from_file(reference_sed_path)
-                    plotter.add_observed_sed(reference_sed, reference_sed_name)
+                    plotter.add_sed(reference_sed, reference_sed_name)
 
                 # Determine the path to the plot file
                 path = fs.join(self.plotting_options.path, "sed_" + instr_name + "." + self.plotting_options.format)
@@ -378,7 +399,7 @@ class BasicAnalyser(Configurable):
         log.info("Plotting grids ...")
 
         # Plot the dust grid for the simulation
-        plotgrids(self.simulation, output_path=self.plotting_options.path, silent=True)
+        plotgrids(self.simulation, output_path=self.plotting_options.path, silent=(not log.is_debug()))
 
     # -----------------------------------------------------------------
 
@@ -413,8 +434,11 @@ class BasicAnalyser(Configurable):
         # Create a TimeLinePlotter object
         plotter = TimeLinePlotter()
 
+        # Set the output path
+        plotter.config.output = self.plotting_options.path
+
         # Run the timeline plotter
-        plotter.run(self.timeline, self.plotting_options.path)
+        plotter.run(timeline=self.timeline)
 
     # -----------------------------------------------------------------
 
@@ -478,9 +502,15 @@ class BasicAnalyser(Configurable):
 
         # Create and run a ObservedFluxCalculator object
         self.flux_calculator = ObservedFluxCalculator()
-        self.flux_calculator.run(self.simulation, output_path=self.misc_options.path,
+
+        # Set spectral convolution flag
+        self.flux_calculator.config.spectral_convolution = self.misc_options.spectral_convolution
+
+        # Run
+        self.flux_calculator.run(simulation=self.simulation, output_path=self.misc_options.path,
                                  filter_names=self.misc_options.observation_filters,
-                                 instrument_names=self.misc_options.observation_instruments)
+                                 instrument_names=self.misc_options.observation_instruments,
+                                 errors=self.misc_options.flux_errors)
 
     # -----------------------------------------------------------------
 
@@ -496,13 +526,18 @@ class BasicAnalyser(Configurable):
 
         # Create and run an ObservedImageMaker object
         self.image_maker = ObservedImageMaker()
-        self.image_maker.run(self.simulation, output_path=self.misc_options.path,
+
+        # Set spectral convolution flag
+        self.image_maker.config.spectral_convolution = self.misc_options.spectral_convolution
+
+        # Run
+        self.image_maker.run(simulation=self.simulation, output_path=self.misc_options.path,
                              filter_names=self.misc_options.observation_filters,
                              instrument_names=self.misc_options.observation_instruments,
                              wcs_path=self.misc_options.images_wcs,
                              kernel_paths=self.misc_options.images_kernels,
                              unit=self.misc_options.images_unit,
-                             host_id=self.misc_options.make_images_remote)
+                             host_id=self.misc_options.make_images_remote, rebin_wcs_paths=self.misc_options.rebin_wcs)
 
 # -----------------------------------------------------------------
 

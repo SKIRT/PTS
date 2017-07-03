@@ -14,6 +14,6 @@ from pts.core.basics.configuration import ConfigurationDefinition
 definition = ConfigurationDefinition()
 
 # Add required
-definition.add_required("remote")
+definition.add_required("host_id", "string", "remote host ID")
 
 # -----------------------------------------------------------------

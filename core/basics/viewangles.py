@@ -13,13 +13,20 @@
 # -----------------------------------------------------------------
 
 # Import standard modules
+import warnings
 import numpy as np
 import math
-import time
+
+# Import the relevant PTS classes and modules
+from ..tools.logging import log
 
 # Use an interactive back-end that supports animation
 import matplotlib
-if matplotlib.get_backend().lower() != "tkagg": matplotlib.use("tkagg")
+with warnings.catch_warnings():
+    warnings.filterwarnings('error')
+    try:
+        if matplotlib.get_backend().lower() != "tkagg": matplotlib.use("tkagg")
+    except Warning as w: log.warning("An failed attempt of setting the Matplotlib backend has been made because it has already been set")
 import matplotlib.pyplot as plt
 
 # Import the relevant PTS classes and modules

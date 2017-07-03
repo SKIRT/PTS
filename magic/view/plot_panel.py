@@ -7,6 +7,8 @@
 
 # -----------------------------------------------------------------
 
+# HIDE_DEPENDS
+
 from __future__ import absolute_import
 import wx
 from wx.lib.pubsub import pub

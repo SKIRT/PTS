@@ -27,7 +27,8 @@ from ...core.basics.errorbar import ErrorBar
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.tools import time
-from ...core.basics.filter import Filter
+from ...core.filter.broad import BroadBandFilter
+from ..basics.vector import Pixel
 
 # -----------------------------------------------------------------
 
@@ -122,14 +123,18 @@ class DataCube(Image):
         wavelengths = []
 
         # Add the frames
+        nframes = 0
         for index in sorted_indices:
 
             # Add the frame
-            frame_name = "frame" + str(index)
+            frame_name = "frame" + str(nframes)
             datacube.add_frame(frames[index], frame_name)
 
             # Add the wavelength
             wavelengths.append(frames[index].filter.pivotwavelength())
+
+            # Increment the number of frames
+            nframes += 1
 
         # Create the wavelength grid
         datacube.wavelength_grid = WavelengthGrid.from_wavelengths(wavelengths, unit="micron")
@@ -237,23 +242,37 @@ class DataCube(Image):
             #return np.array(stack)
             return stack # return the list of frame slices
 
+        # If the slicing item is a pixel (x,y)
+        if isinstance(item, Pixel):
+
+            # Create a 1D Numpy array
+            stack = np.zeros(self.nframes)
+
+            # Set the values
+            for index, frame_name in enumerate(self.frames.keys()):
+                stack[index] = self.frames[item]
+
+            # Return the numpy array
+            return stack
+
         # Not implemented
         elif isinstance(item, slice): raise NotImplementedError("Not implemented yet")
 
     # -----------------------------------------------------------------
 
-    def local_sed(self, region, min_wavelength=None, max_wavelength=None):
+    def local_sed(self, region, min_wavelength=None, max_wavelength=None, errorcube=None):
 
         """
         This function ...
         :param region:
         :param min_wavelength:
         :param max_wavelength:
+        :param errorcube:
         :return:
         """
 
         # Initialize the SED
-        sed = SED()
+        sed = ObservedSED(photometry_unit=self.unit)
 
         # Create a mask from the region (or shape)
         mask = region.to_mask(self.xsize, self.ysize)
@@ -261,17 +280,24 @@ class DataCube(Image):
         # Loop over the wavelengths
         for index in self.wavelength_indices(min_wavelength, max_wavelength):
 
-            # Get the wavelength
-            wavelength = self.wavelength_grid[index]
-
             # Determine the name of the frame in the datacube
             frame_name = "frame" + str(index)
 
             # Get the flux in the pixels that belong to the region
             flux = np.sum(self.frames[frame_name][mask]) * self.unit
 
+            # Get error
+            if errorcube is not None:
+
+                # Get the error in the pixel
+                error = errorcube.frames[frame_name][mask] * self.unit
+                errorbar = ErrorBar(error)
+
+                # Add an entry to the SED
+                sed.add_point(self.frames[frame_name].filter, flux, errorbar)
+
             # Add an entry to the SED
-            sed.add_entry(wavelength, flux)
+            else: sed.add_point(self.frames[frame_name].filter, flux)
 
             # Increment the index
             index += 1
@@ -281,7 +307,7 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
-    def pixel_sed(self, x, y, min_wavelength=None, max_wavelength=None):
+    def pixel_sed(self, x, y, min_wavelength=None, max_wavelength=None, errorcube=None):
 
         """
         This function ...
@@ -289,12 +315,12 @@ class DataCube(Image):
         :param y:
         :param min_wavelength:
         :param max_wavelength:
+        :param errorcube:
         :return:
         """
 
         # Initialize the SED
-        #sed = SED()
-        sed = ObservedSED()
+        sed = ObservedSED(photometry_unit=self.unit)
 
         # Loop over the wavelengths
         for index in self.wavelength_indices(min_wavelength, max_wavelength):
@@ -305,10 +331,18 @@ class DataCube(Image):
             # Get the flux in the pixel
             flux = self.frames[frame_name][y, x] * self.unit
 
+            # Get error
+            if errorcube is not None:
+
+                # Get the error in the pixel
+                error = errorcube.frames[frame_name][y, x] * self.unit
+                errorbar = ErrorBar(error)
+
+                # Add an entry to the SED
+                sed.add_point(self.frames[frame_name].filter, flux, errorbar)
+
             # Add an entry to the SED
-            #sed.add_entry(wavelength, flux)
-            errorbar = ErrorBar(0.0, 0.0)
-            sed.add_entry(self.frames[frame_name].filter, flux, errorbar)
+            else: sed.add_point(self.frames[frame_name].filter, flux)
 
             # Increment the index
             index += 1
@@ -335,7 +369,7 @@ class DataCube(Image):
         else: raise ValueError("Mask must be string or Mask (or None) instead of " + str(type(mask)))
 
         # Initialize the SED
-        sed = SED()
+        sed = SED(photometry_unit=self.unit)
 
         # Loop over the wavelengths
         for index in self.wavelength_indices(min_wavelength, max_wavelength):
@@ -351,7 +385,7 @@ class DataCube(Image):
             else: total_flux = np.sum(self.frames[frame_name][inverse_mask]) * self.unit
 
             # Add an entry to the SED
-            sed.add_entry(wavelength, total_flux)
+            sed.add_point(wavelength, total_flux)
 
             # Increment the index
             index += 1
@@ -390,6 +424,65 @@ class DataCube(Image):
 
     # -----------------------------------------------------------------
 
+    def frames_for_filters(self, filters, convolve=False, nprocesses=8):
+
+        """
+        This function ...
+        :param filters:
+        :param convolve:
+        :param nprocesses:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting frames for " + str(len(filters)) + " different filters ...")
+
+        frames = []
+        for_convolution = []
+
+        # Loop over the filters
+        for fltr in filters:
+
+            # Broad band filter, with spectral convolution
+            if isinstance(fltr, BroadBandFilter) and convolve:
+
+                # Debugging
+                log.debug("The frame for the " + str(fltr) + " filter will be calculated by convolving spectrally")
+
+                # Add to list
+                for_convolution.append(fltr)
+
+                # Add placeholder
+                frames.append(None)
+
+            # Broad band filter without spectral convolution or narrow band filter
+            else:
+
+                # Debugging
+                log.debug("Getting the frame for the " + str(fltr) + " filter ...")
+
+                # Get the index of the wavelength closest to that of the filter
+                index = self.get_frame_index_for_wavelength(fltr.pivot)
+
+                # Get the frame
+                frames.append(self.frames[index])
+
+        # Calculate convolved frames
+        if len(for_convolution) > 0: convolved_frames = self.convolve_with_filters(for_convolution, nprocesses=nprocesses)
+        else: convolved_frames = []
+
+        # Add the convolved frames
+        for fltr, frame in zip(for_convolution, convolved_frames):
+
+            # Set the frame
+            index = filters.index(fltr)
+            frames[index] = frame
+
+        # Return the list of frames
+        return frames
+
+    # -----------------------------------------------------------------
+
     def convolve_with_filters(self, filters, nprocesses=8):
 
         """
@@ -411,16 +504,15 @@ class DataCube(Image):
         if nprocesses > 1:
 
             # Save the datacube to a temporary directory
-            temp_dir_path = fs.join(introspection.pts_temp_dir, time.unique_name("datacube-parallel-filter-convolution"))
-            fs.create_directory(temp_dir_path)
+            temp_dir_path = introspection.create_temp_dir(time.unique_name("datacube-parallel-filter-convolution"))
 
             # Save the datacube
             temp_datacube_path = fs.join(temp_dir_path, "datacube.fits")
-            self.save(temp_datacube_path)
+            self.saveto(temp_datacube_path)
 
             # Save the wavelength grid
             temp_wavelengthgrid_path = fs.join(temp_dir_path, "wavelengthgrid.dat")
-            self.wavelength_grid.save(temp_wavelengthgrid_path)
+            self.wavelength_grid.saveto(temp_wavelengthgrid_path)
 
             # Create process pool
             pool = Pool(processes=nprocesses)
@@ -529,7 +621,7 @@ def _do_one_filter_convolution_from_file(datacube_path, wavelengthgrid_path, res
     log.info("[convolution with " + fltrname + " filter] Loading filter ...")
 
     # Resurrect the filter
-    fltr = Filter.from_string(fltrname)
+    fltr = BroadBandFilter(fltrname)
 
     log.info("[convolution with " + fltrname + " filter] Loading wavelength grid ...")
 
@@ -567,7 +659,7 @@ def _do_one_filter_convolution_from_file(datacube_path, wavelengthgrid_path, res
     log.info("[convolution with " + fltrname + " filter] Saving result to " + result_path + " ...")
 
     # Save the frame with the index as name
-    frame.save(result_path)
+    frame.saveto(result_path)
 
 # -----------------------------------------------------------------
 

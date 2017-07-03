@@ -24,18 +24,10 @@
 # -----------------------------------------------------------------
 
 # Import other evolve modules
-from ..genome import GenomeBase, G1DBase
-from .. import constants
+from ..core.genome import GenomeBase, G1DBase
+from ..core import constants
 
 # -----------------------------------------------------------------
-
-#class HeterogeneousList(G1DBase):
-#
-#    """
-#    This function ...
-#    """
-
-
 
 class G1DList(G1DBase):
 
@@ -47,67 +39,70 @@ class G1DList(G1DBase):
     **Examples**
 
        The instantiation
-          >>> g = G1DList(10)
+          g = G1DList(10)
 
        Compare
-          >>> genome2 = genome1.clone()
-          >>> genome2 == genome1
+          genome2 = genome1.clone()
+          genome2 == genome1
           True
 
        Multiply
-          >>> genome = population[0]
-          >>> genome
+          genome = population[0]
+          genome
           (...)
           [1, 2, 3, 4]
-          >>> genome_result = genome * 2
-          >>> genome_result
+          genome_result = genome * 2
+          genome_result
           (...)
           [2, 2, 6, 8]
 
        Add
-          >>> genome
+          genome
           (...)
           [1, 2, 3, 4]
-          >>> genome_result = genome + 2
+          genome_result = genome + 2
           (...)
           [3, 4, 5, 6]
 
        Iteration
-          >>> for i in genome:
-          >>>   print i
+          for i in genome:
+             print i
           1
           2
           3
           4
 
        Size, slice, get/set, append
-          >>> len(genome)
+          len(genome)
           4
-          >>> genome
+          genome
           (...)
           [1, 2, 3, 4]
-          >>> genome[0:1]
+          genome[0:1]
           [1, 2]
-          >>> genome[1] = 666
-          >>> genome
+          genome[1] = 666
+          genome
           (...)
           [1, 666, 3, 4]
-          >>> genome.append(99)
-          >>> genome
+          genome.append(99)
+          genome
           (...)
           [1, 666, 3, 4, 99]
 
     :param size: the 1D list size
-
     """
 
     def __init__(self, size=10, cloning=False):
 
-        """ The initializator of G1DList representation,
-        size parameter must be specified """
+        """
+        The initializator of G1DList representation,
+        size parameter must be specified
+        """
 
+        # Call the constructor of the base class
         super(G1DList, self).__init__(size)
 
+        # If we are not cloning
         if not cloning:
 
             self.initializator.set(constants.CDefG1DListInit)
@@ -118,7 +113,9 @@ class G1DList(G1DBase):
 
     def __mul__(self, other):
 
-        """ Multiply every element of G1DList by "other" """
+        """
+        Multiply every element of G1DList by "other"
+        """
 
         newObj = self.clone()
         for i in xrange(len(newObj)):
@@ -129,7 +126,9 @@ class G1DList(G1DBase):
 
     def __add__(self, other):
 
-        """ Plus every element of G1DList by "other" """
+        """
+        Plus every element of G1DList by "other"
+        """
 
         newObj = self.clone()
         for i in xrange(len(newObj)):
@@ -140,7 +139,9 @@ class G1DList(G1DBase):
 
     def __sub__(self, other):
 
-        """ Plus every element of G1DList by "other" """
+        """
+        Plus every element of G1DList by "other"
+        """
 
         newObj = self.clone()
         for i in xrange(len(newObj)):
@@ -151,7 +152,9 @@ class G1DList(G1DBase):
 
     def __repr__(self):
 
-        """ Return a string representation of Genome """
+        """
+        Return a string representation of Genome
+        """
 
         ret = GenomeBase.__repr__(self)
         ret += "- G1DList\n"
@@ -163,9 +166,10 @@ class G1DList(G1DBase):
 
     def copy(self, g):
 
-        """ Copy genome to 'g'
+        """
+        Copy genome to 'g'
         Example:
-           >>> genome_origin.copy(genome_destination)
+           genome_origin.copy(genome_destination)
         :param g: the destination G1DList instance
         """
 
@@ -176,7 +180,8 @@ class G1DList(G1DBase):
 
     def clone(self):
 
-        """ Return a new instace copy of the genome
+        """
+        Return a new instace copy of the genome
         :rtype: the G1DList clone instance
         """
 

@@ -20,9 +20,90 @@ import StringIO
 import shutil
 import gzip
 import bz2
+import subprocess
 
 # Import the relevant PTS classes and modules
 from . import filesystem as fs
+
+# -----------------------------------------------------------------
+
+extensions = ["bz2", "zip", "gz"]
+
+# -----------------------------------------------------------------
+
+def is_archive(filepath):
+
+    """
+    This function ...
+    :param filepath: 
+    :return: 
+    """
+
+    for extension in extensions:
+        if filepath.endswith("." + extension): return True
+    return False
+
+# -----------------------------------------------------------------
+
+def bare_name(filepath):
+
+    """
+    This function ...
+    :param filepath: 
+    :return: 
+    """
+
+    for extension in extensions:
+        if filepath.endswith("." + extension): return filepath.split("." + extension)[0]
+    return filepath
+
+# -----------------------------------------------------------------
+
+def decompress_directory_in_place(filepath, remove=False, into_root=False):
+
+    """
+    This function ...
+    :param filepath:
+    :param remove:
+    :param into_root:
+    :return:
+    """
+
+    from .logging import log
+
+    # Inform the user
+    log.info("Decompressing '" + filepath + "' ...")
+
+    # Tar.gz
+    if filepath.endswith(".tar.gz"):
+
+        # Determine the path of the directory
+        new_path = filepath.split(".tar.gz")[0]
+        dir_path = fs.directory_of(new_path)
+
+        # Debugging
+        log.debug("New path: '" + new_path + "'")
+        log.debug("Decompressing in directory '" + dir_path + "' ...")
+
+        # Decompress
+        command = "tar -zxvf " + filepath + " --directory " + dir_path
+        log.debug("Decompress command: '" + command + "'")
+        subprocess.call(command, shell=True)
+
+    else: raise NotImplementedError("Not implemented yet")
+
+    if into_root:
+
+        for path in fs.files_in_path(new_path):
+            fs.move_file(path, dir_path)
+        fs.remove_directory(new_path)
+        new_path = dir_path
+
+    # Remove the file
+    if remove: fs.remove_file(filepath)
+
+    # Return the new path
+    return new_path
 
 # -----------------------------------------------------------------
 
@@ -35,16 +116,23 @@ def decompress_file_in_place(path, remove=False):
     :return:
     """
 
+    from .logging import log
+
+    # Inform the user
+    log.info("Decompressing '" + path + "' ...")
+
+    # Check extension
     if path.endswith(".bz2"):
         new_path = path.rstrip(".bz2")
         decompress_bz2(path, new_path)
     elif path.endswith(".gz"):
         new_path = path.rstrip(".gz")
+        if new_path.endswith(".tar"): new_path = new_path.split(".tar")[0]
         decompress_gz(path, new_path)
     elif path.endswith(".zip"):
         new_path = path.rstrip(".zip")
         decompress_zip(path, new_path)
-    else: raise ValueError("Unrecognized archive type (must be bz2, gz or zip)")
+    else: raise ValueError("Unrecognized archive type (must be bz2, gz [or tar.gz] or zip)")
 
     # Remove the original file if requested
     if remove: fs.remove_file(path)
@@ -120,6 +208,11 @@ def decompress_zip(zip_path, new_path):
     :return:
     """
 
+    # If directory is specified
+    if fs.is_directory(new_path):
+        name = fs.name(zip_path).rstrip(".zip")
+        new_path = fs.join(new_path, name)
+
     with zipfile.ZipFile(zip_path, 'w') as myzip:
         myzip.write(new_path)
 
@@ -134,7 +227,13 @@ def decompress_gz(gz_path, new_path):
     :return:
     """
 
-    # Decompress the kernel FITS file
+    # If directory is specified
+    if fs.is_directory(new_path):
+        name = fs.name(gz_path).rstrip(".gz")
+        if name.endswith(".tar"): name = name.split(".tar")[0]
+        new_path = fs.join(new_path, name)
+
+    # Decompress
     with gzip.open(gz_path, 'rb') as f_in:
         with open(new_path, 'wb') as f_out:
             shutil.copyfileobj(f_in, f_out)
@@ -149,6 +248,11 @@ def decompress_bz2(bz2_path, new_path):
     :param new_path:
     :return:
     """
+
+    # If directory is specified
+    if fs.is_directory(new_path):
+        name = fs.name(bz2_path).rstrip(".bz2")
+        new_path = fs.join(new_path, name)
 
     # Decompress, create decompressed new file
     with open(new_path, 'wb') as new_file, bz2.BZ2File(bz2_path, 'rb') as file:

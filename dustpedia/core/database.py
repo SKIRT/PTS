@@ -14,21 +14,27 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import tempfile
-import numpy as np
 import requests
 from lxml import html
+
+# Import astronomical modules
+from astropy.io.fits import getheader
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.tools import tables
-from ...magic.core.image import Image
 from ...magic.core.frame import Frame
 from ...core.tools import filesystem as fs
 from ...core.tools import introspection
-from .sample import DustPediaSample
-from ...core.basics.filter import Filter
+from ...core.filter.filter import parse_filter
 from ...core.tools import network
+from ...magic.basics.coordinatesystem import CoordinateSystem
+from ...core.tools import time
+from ...core.tools import types
+from ...magic.core.list import FrameList, NamedFrameList
+from ...magic.core.list import CoordinateSystemList, NamedCoordinateSystemList
+from ...core.tools import archive
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -41,6 +47,9 @@ login_link = "http://dustpedia.astro.noa.gr/Account/Login"
 # data: http://dustpedia.astro.noa.gr/Data
 data_link = "http://dustpedia.astro.noa.gr/Data"
 
+# MBB: http://dustpedia.astro.noa.gr/MBB
+mbb_link = "http://dustpedia.astro.noa.gr/MBB"
+
 # user
 user_link = "http://dustpedia.astro.noa.gr/Account/UserProfile"
 
@@ -49,8 +58,31 @@ print_preview_link = "http://dustpedia.astro.noa.gr/Data/GalaxiesPrintView"
 
 # -----------------------------------------------------------------
 
-# The path to the dustpedia account file
-account_path = fs.join(introspection.pts_user_accounts_dir, "dustpedia.txt")
+# http://dustpedia.astro.noa.gr/Content/tempFiles/mbb/dustpedia_mbb_results.csv
+
+all_mmb_results_url = "http://dustpedia.astro.noa.gr/Content/tempFiles/mbb/dustpedia_mbb_results.csv"
+
+# emissivity of κλ=8.52 x (250/λ)1.855 cm2/gr adapted to the THEMIS model
+# A bootstrap analysis was used to calculate the uncertainties in dust temperatures and masses.
+
+# -----------------------------------------------------------------
+
+def get_mbb_dust_mass(galaxy_name):
+
+    """
+    This function ...
+    :param galaxy_name: 
+    :return: 
+    """
+
+    username, password = get_account()
+
+    database = DustPediaDatabase()
+    database.login(username, password)
+
+    parameters = database.get_dust_black_body_parameters(galaxy_name)
+
+    return parameters[0]
 
 # -----------------------------------------------------------------
 
@@ -68,16 +100,13 @@ class DustPediaDatabase(object):
         """
 
         # Determine the path to a temporary directory
-        self.temp_path = tempfile.gettempdir()
+        self.temp_path = introspection.create_temp_dir(time.unique_name("database"))
 
         # Create the session
         self.session = requests.session()
 
         # A flag that states whether we are connected
         self.connected = False
-
-        # DustPedia sample
-        self.sample = DustPediaSample()
 
     # -----------------------------------------------------------------
 
@@ -104,6 +133,25 @@ class DustPediaDatabase(object):
 
         # If the login failed, raise an error
         if not self.connected: raise RuntimeError("Login failed")
+        else: log.success("Succesfully connected to the DustPedia database")
+
+    # -----------------------------------------------------------------
+
+    def reset(self, username, password):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        # Logout
+        self.logout()
+
+        # Create new session
+        self.session = requests.session()
+
+        # Login
+        self.login(username, password)
 
     # -----------------------------------------------------------------
 
@@ -141,6 +189,9 @@ class DustPediaDatabase(object):
         :param parameters:
         :return:
         """
+
+        # Inform the user
+        log.info("Getting the galaxy names ...")
 
         link = page_link_from_parameters(parameters)
 
@@ -270,13 +321,16 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
-    def get_image_urls(self, galaxy_name):
+    def get_image_urls(self, galaxy_name, error_maps=True):
 
         """
         This function ...
         :param galaxy_name:
+        :param error_maps:
         :return:
         """
+
+        #print(self.session.__getstate__())
 
         # Inform the user
         log.info("Getting the URLs of the available images for galaxy '" + galaxy_name + "' ...")
@@ -324,6 +378,9 @@ class DustPediaDatabase(object):
 
                         link = base_link + ee[2]
 
+                        name = fs.name(link)
+                        if "_Error" in name and not error_maps: continue
+
                         image_links.append(link)
 
                     #print()
@@ -332,15 +389,21 @@ class DustPediaDatabase(object):
 
                 column_index += 1
 
+        # Request other page
+        #r = self.session.get(user_link)
+
+        #self.session.prepare_request()
+
         return image_links
 
     # -----------------------------------------------------------------
 
-    def get_image_names(self, galaxy_name):
+    def get_image_names(self, galaxy_name, error_maps=True):
 
         """
         This function ...
         :param galaxy_name:
+        :param error_maps:
         :return:
         """
 
@@ -354,17 +417,19 @@ class DustPediaDatabase(object):
         for url in self.get_image_urls(galaxy_name):
 
             name = url.split("imageName=")[1].split("&instrument")[0]
+            if "_Error" in name and not error_maps: continue
             names.append(name)
 
         return names
 
     # -----------------------------------------------------------------
 
-    def get_image_names_and_urls(self, galaxy_name):
+    def get_image_names_and_urls(self, galaxy_name, error_maps=True):
 
         """
         This function ...
         :param galaxy_name:
+        :param error_maps:
         :return:
         """
 
@@ -374,11 +439,84 @@ class DustPediaDatabase(object):
         # Loop over all the urls
         for url in self.get_image_urls(galaxy_name):
 
+            # Get the filename
             name = url.split("imageName=")[1].split("&instrument")[0]
+
+            # Skip error frames if requested
+            if "_Error" in name and not error_maps: continue
+
+            # Check whether this file is a compressed image
+            if archive.is_archive(name):
+
+                # Get the bare name (without .gz)
+                name = archive.bare_name(name)
+
+            # Add an entry to the dictionary
             urls[name] = url
 
         # Return the dictionary of urls
         return urls
+
+    # -----------------------------------------------------------------
+
+    def get_image_name_for_filter(self, galaxy_name, fltr):
+
+        """
+        Thisf ucntion ...
+        :param galaxy_name: 
+        :param fltr: 
+        :return: 
+        """
+
+        # Convert into fltr
+        if types.is_string_type(fltr): fltr = parse_filter(fltr)
+
+        # Loop over all the images
+        names = self.get_image_names(galaxy_name, error_maps=False)
+        for name in names:
+
+            # Skip DSS
+            if "DSS" in name and "SDSS" not in name: continue
+
+            # Get the filter
+            fltr_string = name.split(galaxy_name + "_")[1].split(".fits")[0]
+            name_fltr = parse_filter(fltr_string)
+
+            # Match
+            if fltr == name_fltr: return name
+
+        # No match found
+        return None
+
+    # -----------------------------------------------------------------
+
+    def get_image_names_and_filters(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return:
+        """
+
+        # Initialize dictionary
+        filters = dict()
+
+        # Loop over all the images
+        names = self.get_image_names(galaxy_name, error_maps=False)
+        for name in names:
+
+            # Skip DSS
+            if "DSS" in name and "SDSS" not in name: continue
+
+            # Get the filter
+            fltr_string = name.split(galaxy_name + "_")[1].split(".fits")[0]
+            fltr = parse_filter(fltr_string)
+
+            # Set the filter
+            filters[name] = fltr
+
+        # Return the dictionary of filters
+        return filters
 
     # -----------------------------------------------------------------
 
@@ -389,22 +527,19 @@ class DustPediaDatabase(object):
         :return:
         """
 
-        galaxy_name = self.sample.get_name(galaxy_name)
-
-        names = self.get_image_names(galaxy_name)
-
+        # Initialize list
         filters = []
 
+        # Loop over the image names
+        names = self.get_image_names(galaxy_name, error_maps=False)
         for name in names:
-
-            if "Error" in name: continue
 
             # Skip DSS
             if "DSS" in name and "SDSS" not in name: continue
 
             # Get the filter
             fltr_string = name.split(galaxy_name + "_")[1].split(".fits")[0]
-            fltr = Filter.from_string(fltr_string)
+            fltr = parse_filter(fltr_string)
 
             # Add the filter
             filters.append(fltr)
@@ -443,6 +578,267 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    def get_frame(self, galaxy_name, image_name):
+
+        """
+        This function ...
+        :param galaxy_name: 
+        :param image_name: 
+        :return: 
+        """
+
+        return self.get_image(galaxy_name, image_name)
+
+    # -----------------------------------------------------------------
+
+    def get_image_for_filter(self, galaxy_name, fltr):
+
+        """
+        THis function ...
+        :param galaxy_name: 
+        :param fltr: 
+        :return: 
+        """
+
+        # Get the name
+        name = self.get_image_name_for_filter(galaxy_name, fltr)
+
+        # Return the image
+        return self.get_image(galaxy_name, name)
+
+    # -----------------------------------------------------------------
+
+    def get_frame_for_filter(self, galaxy_name, fltr):
+
+        """
+        This function ...
+        :param galaxy_name: 
+        :param fltr: 
+        :return: 
+        """
+
+        return self.get_image_for_filter(galaxy_name, fltr)
+
+    # -----------------------------------------------------------------
+
+    def get_images_for_filters(self, galaxy_name, filters):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :param filters: 
+        :return: 
+        """
+
+        images = []
+
+        # Loop over the filters
+        for fltr in filters: images.append(self.get_image_for_filter(galaxy_name, fltr))
+
+        # Return the images
+        return images
+
+    # -----------------------------------------------------------------
+
+    def get_frames_for_filters(self, galaxy_name, filters):
+
+        """
+        This function ...
+        :param galaxy_name: 
+        :param filters: 
+        :return: 
+        """
+
+        return self.get_images_for_filters(galaxy_name, filters)
+
+    # -----------------------------------------------------------------
+
+    def get_framelist_for_filters(self, galaxy_name, filters, named=False):
+
+        """
+        This function ...
+        :param galaxy_name: 
+        :param filters: 
+        :param named:
+        :return: 
+        """
+
+        # Initialize list
+        if named: frames = NamedFrameList()
+        else: frames = FrameList()
+
+        # Loop over the filters
+        for fltr in filters:
+
+            # Get image name
+            name = self.get_image_name_for_filter(galaxy_name, fltr)
+
+            # Get the frame
+            frame = self.get_frame(galaxy_name, name)
+
+            # Add the frame
+            if named: frames.append(frame, name)
+            else: frames.append(frame, fltr)
+
+        # Return the frame list
+        return frames
+
+    # -----------------------------------------------------------------
+
+    def get_header(self, galaxy_name, image_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :param image_name:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the header for the '" + image_name + "' for galaxy '" + galaxy_name + "' ...")
+
+        # Determine a temporary path for the image file
+        local_path = fs.join(self.temp_path, image_name)
+
+        # Download the image to the temporary directory
+        self.download_image(galaxy_name, image_name, local_path)
+
+        # Load the header
+        header = getheader(local_path)
+
+        # Return the header
+        return header
+
+    # -----------------------------------------------------------------
+
+    def get_header_for_filter(self, galaxy_name, fltr):
+
+        """
+        This function ...
+        :param galaxy_name: 
+        :param fltr:
+        :return: 
+        """
+
+        # Get name
+        name = self.get_image_name_for_filter(galaxy_name, fltr)
+
+        # Return the header
+        return self.get_header(galaxy_name, name)
+
+    # -----------------------------------------------------------------
+
+    def get_headers_for_filters(self, galaxy_name, filters):
+
+        """
+        This function ...
+        :param galaxy_name: 
+        :param filters: 
+        :return: 
+        """
+
+        headers = []
+        for fltr in filters: headers.append(self.get_header_for_filter(galaxy_name, fltr))
+        return headers
+
+    # -----------------------------------------------------------------
+
+    def get_wcs(self, galaxy_name, image_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :param image_name:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting the coordinate system for the '" + image_name + "' for galaxy '" + galaxy_name + "' ...")
+
+        # Get the header
+        header = self.get_header(galaxy_name, image_name)
+
+        # Create and return the coordinate system
+        return CoordinateSystem(header=header)
+
+    # -----------------------------------------------------------------
+
+    def get_coordinate_system(self, galaxy_name, image_name):
+
+        """
+        This function ...
+        :param galaxy_name: 
+        :param image_name: 
+        :return: 
+        """
+
+        return self.get_wcs(galaxy_name, image_name)
+
+    # -----------------------------------------------------------------
+
+    def get_coordinate_system_for_filter(self, galaxy_name, fltr):
+
+        """
+        This function ...
+        :param galaxy_name: 
+        :param fltr: 
+        :return: 
+        """
+
+        # Get name
+        name = self.get_image_name_for_filter(galaxy_name, fltr)
+
+        # Return the coordinate system
+        return self.get_coordinate_system(galaxy_name, name)
+
+    # -----------------------------------------------------------------
+
+    def get_coordinate_systems_for_filters(self, galaxy_name, filters):
+
+        """
+        This function ...
+        :param galaxy_name: 
+        :param filters: 
+        :return: 
+        """
+
+        coordinate_systems = []
+        for fltr in filters: coordinate_systems.append(self.get_coordinate_system_for_filter(galaxy_name, fltr))
+        return coordinate_systems
+
+    # -----------------------------------------------------------------
+
+    def get_coordinate_system_list_for_filter(self, galaxy_name, filters, named=False):
+
+        """
+        This function ...
+        :param galaxy_name: 
+        :param filters: 
+        :param named:
+        :return: 
+        """
+
+        if named: coordinate_systems = NamedCoordinateSystemList()
+        else: coordinate_systems = CoordinateSystemList()
+
+        # Loop over the filters
+        for fltr in filters:
+
+            # Get name
+            name = self.get_image_name_for_filter(galaxy_name, fltr)
+
+            # Get coordinate system
+            wcs = self.get_coordinate_system(galaxy_name, name)
+
+            # Add
+            if named: coordinate_systems.append(name, wcs)
+            else: coordinate_systems.append(wcs, fltr=fltr)
+
+        # Return
+        return coordinate_systems
+
+    # -----------------------------------------------------------------
+
     def download_image(self, galaxy_name, image_name, path):
 
         """
@@ -466,16 +862,58 @@ class DustPediaDatabase(object):
                 get_link = url
                 break
 
-        self.download_file(get_link, path)
+        # Download
+        network.download_file(get_link, path, progress_bar=log.is_debug(), stream=True, session=self.session)
 
     # -----------------------------------------------------------------
 
-    def download_images(self, galaxy_name, path):
+    def download_image_from_url(self, url, path):
+
+        """
+        This function ...
+        :param url:
+        :param path:
+        :return:
+        """
+
+        # Get the filename
+        filename = url.split("imageName=")[1].split("&")[0]
+
+        # Download archive, decompress
+        if archive.is_archive(filename):
+
+            # Download to temporary path
+            compressed_path = fs.join(self.temp_path, filename)
+
+            # Remove potential file with same name
+            if fs.is_file(compressed_path): fs.remove_file(compressed_path)
+
+            # Debugging
+            log.debug("Downloading ...")
+
+            # Download compressed file
+            network.download_file(url, compressed_path, progress_bar=log.is_debug(), stream=True, session=self.session)
+
+            # Debugging
+            log.debug("Decompressing ...")
+
+            # Decompress
+            archive.decompress_file(compressed_path, path)
+
+        # Regular download
+        else: network.download_file(url, path, progress_bar=log.is_debug(), stream=True, session=self.session)
+
+    # -----------------------------------------------------------------
+
+    def download_images(self, galaxy_name, path, error_maps=True, instruments=None, not_instruments=None):
 
         """
         This function ...
         :param galaxy_name:
         :param path: directory
+        :param error_maps:
+        :param instruments:
+        :param not_instruments:
         :return:
         """
 
@@ -483,14 +921,22 @@ class DustPediaDatabase(object):
         log.info("Downloading all images for galaxy '" + galaxy_name + "' to '" + path + " ...")
 
         # Loop over the image URLS found for this galaxy
-        for url in self.get_image_urls(galaxy_name):
+        for url in self.get_image_urls(galaxy_name, error_maps=error_maps):
+
+            # Determine instrument
+            instrument = url.split("&instrument=")[1].strip()
+            if instruments is not None and instrument not in instruments: continue
+            if not_instruments is not None and instrument in not_instruments: continue
 
             # Determine path
             image_name = url.split("imageName=")[1].split("&instrument")[0]
-            image_path = fs.join(path, image_name)
+            #image_path = fs.join(path, image_name)
 
             # Download this image
-            self.download_file(url, image_path)
+            #network.download_file(url, image_path, progress_bar=log.is_debug(), stream=True, session=self.session)
+
+            # Download (and decompress)
+            self.download_image_from_url(url, path)
 
     # -----------------------------------------------------------------
 
@@ -573,6 +1019,214 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
+    def get_dust_black_body_parameters(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Getting general information about galaxy '" + galaxy_name + "' ...")
+
+        # http://dustpedia.astro.noa.gr/MBB?GalaxyName=NGC3031&tLow=&tHigh=&vLow=&vHigh=&inclLow=&inclHigh=&d25Low=&d25High=&SearchButton=Search
+
+        r = self.session.get(mbb_link + "?GalaxyName=" + galaxy_name + "&tLow=&tHigh=&vLow=&vHigh=&inclLow=&inclHigh=&d25Low=&d25High=&SearchButton=Search")
+
+        page_as_string = r.content
+
+        tree = html.fromstring(page_as_string)
+
+        table_list = [e for e in tree.iter() if e.tag == 'table']
+        table = table_list[-1]
+
+        table_rows = [e for e in table.iter() if e.tag == 'tr']
+
+        galaxy_info = None
+
+        for row in table_rows[1:]:
+
+            column_index = 0
+
+            for e in row.iter():
+
+                if e.tag != "td": continue
+
+                if column_index == 0:
+
+                    # for ee in e.iterchildren(): print(ee.text_content())
+                    # for ee in e.iterdescendants(): print(ee.text_content())
+                    # for ee in e.itersiblings(): print(ee.text_content())
+
+                    galaxy_info = e.text_content()
+
+                    # print(galaxy_info)
+
+                column_index += 1
+
+        splitted = galaxy_info.split("\r\n")
+
+        lines = [split.strip() for split in splitted if split.strip()]
+
+        #return lines
+
+        # Dust Temperature (K): 22.6±0.7
+        # Dust Mass (M_sun): 4900000±1000000
+        # Dust Luminosity (L_sun): 2.10E+09
+
+        temperature = None
+        temperature_error = None
+        mass = None
+        mass_error = None
+        luminosity = None
+        luminosity_error = None
+
+        #for index in range(len(lines)):
+        index = 0
+        while index < len(lines):
+
+            line = lines[index]
+
+            if "Dust Temperature" in line:
+
+                next_line = lines[index+1]
+                valuestr, errorstr = next_line.split("&plusmn")
+                value = float(valuestr)
+                error = float(errorstr)
+
+                temperature = value * u("K")
+                temperature_error = error * u("K")
+
+                index += 1
+
+            elif "Dust Mass" in line:
+
+                next_line = lines[index+1]
+                valuestr, errorstr = next_line.split("&plusmn")
+                value = float(valuestr)
+                error = float(errorstr)
+
+                mass = value * u("Msun")
+                mass_error = error * u("Msun")
+
+                index += 1
+
+            elif "Dust Luminosity" in line:
+
+                next_line = lines[index+1]
+
+                #valuestr, errorstr = next_line.split("&plusmn")
+                #value = float(valuestr)
+                #error = float(errorstr)
+
+                value = float(next_line)
+                error = None
+
+                luminosity = value * u("Lsun")
+                #luminosity_error = error * u("Lsun")
+                luminosity_error = None
+
+            index += 1
+
+        # Return the parameters
+        return mass, mass_error, temperature, temperature_error, luminosity, luminosity_error
+
+    # -----------------------------------------------------------------
+
+    def download_dust_black_body_plot(self, galaxy_name, path):
+
+        """
+        This function ...
+        :param galaxy_name: 
+        :param path:
+        :return: 
+        """
+
+        # http://dustpedia.astro.noa.gr/Content/Dustpedia_SEDs_THEMIS/NGC3031.png
+
+        url = "http://dustpedia.astro.noa.gr/Content/Dustpedia_SEDs_THEMIS/" + galaxy_name + ".png"
+
+        # Download
+        filepath = network.download_file(url, path, session=self.session, progress_bar=log.is_debug())
+
+        # Return the filepath
+        return filepath
+
+    # -----------------------------------------------------------------
+
+    def show_dust_black_body_plot(self, galaxy_name):
+
+        """
+        This function ...
+        :param galaxy_name: 
+        :return: 
+        """
+
+        # Get
+        filepath = self.download_dust_black_body_plot(galaxy_name, self.temp_path)
+
+        # Open the file
+        fs.open_file(filepath)
+
+    # -----------------------------------------------------------------
+
+    def download_dust_black_body_table(self, path):
+
+        """
+        This function ... 
+        :param path: 
+        :return: 
+        """
+
+        filepath = network.download_file(all_mmb_results_url, path, session=self.session, progress_bar=log.is_debug())
+        return filepath
+
+    # -----------------------------------------------------------------
+
+    def get_dust_black_body_table(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        filepath = self.download_dust_black_body_table(self.temp_path)
+        return tables.from_file(filepath, format="ascii.no_header")
+
+    # -----------------------------------------------------------------
+
+    def get_photometry_cutouts_url(self, galaxy_name):
+
+        """
+        This fucntion ...
+        :param galaxy_name:
+        :return:
+        """
+
+        # http://dustpedia.astro.noa.gr/Data/GetImage?imageName=ESO097-013_Thumbnail_Grid.png&mode=photometry
+        url = "http://dustpedia.astro.noa.gr/Data/GetImage?imageName=" + galaxy_name + "_Thumbnail_Grid.png&mode=photometry"
+        return url
+
+    # -----------------------------------------------------------------
+
+    def download_photometry_cutouts(self, galaxy_name, dir_path):
+
+        """
+        This function ...
+        :param galaxy_name:
+        :param dir_path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Downloading the photometry cutouts for galaxy '" + galaxy_name + "' ...")
+
+        url = self.get_photometry_cutouts_url(galaxy_name)
+        return network.download_file(url, dir_path, session=self.session, progress_bar=log.is_debug())
+
+    # -----------------------------------------------------------------
+
     def download_photometry(self, dir_path):
 
         """
@@ -592,26 +1246,6 @@ class DustPediaDatabase(object):
 
         # Download the photometry files
         network.download_files(urls, dir_path)
-
-    # -----------------------------------------------------------------
-
-    def download_file(self, link, local_path):
-
-        """
-        This function ...
-        :param link:
-        :param local_path:
-        :return:
-        """
-
-        # NOTE the stream=True parameter
-        r = self.session.get(link, stream=True)
-
-        with open(local_path, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=1024):
-                if chunk: # filter out keep-alive new chunks
-                    f.write(chunk)
-                    #f.flush() # commented by recommendation from J.F.Sebastian
 
 # -----------------------------------------------------------------
 
@@ -660,8 +1294,7 @@ def get_account():
     :return:
     """
 
-    username, password = np.loadtxt(account_path, dtype=str)
-    return username, password
+    return introspection.get_account("dustpedia")
 
 # -----------------------------------------------------------------
 

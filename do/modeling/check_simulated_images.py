@@ -16,19 +16,19 @@ from __future__ import absolute_import, division, print_function
 import matplotlib.pyplot as plt
 
 # Import astronomical modules
-from astropy.units import Unit
 from astropy import constants
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.magic.core.frame import Frame
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter, InteractiveConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
 from pts.core.simulation.wavelengthgrid import WavelengthGrid
 from pts.magic.core.datacube import DataCube
 from pts.magic.core.remote import RemoteDataCube
-from pts.magic.tools import plotting
-from pts.core.basics.filter import Filter
+from pts.core.filter.broad import BroadBandFilter
+from pts.core.remote.python import AttachedPythonSession
+from pts.core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -148,7 +148,8 @@ wavelengths = wavelength_grid.wavelengths(asarray=True) # list of wavelengths
 datacube_path = fs.join(modeling_path, "fit_before_new", "best", "images", "M81_earth_total.fits")
 
 # Local or remote
-if config.remote is not None: datacube = RemoteDataCube.from_file(datacube_path, wavelength_grid, config.remote)
+session = AttachedPythonSession.from_host_id(config.remote)
+if config.remote is not None: datacube = RemoteDataCube.from_file(datacube_path, wavelength_grid, session)
 else: datacube = DataCube.from_file(datacube_path, wavelength_grid)
 
 x = []
@@ -166,7 +167,7 @@ wavelength_unit = "micron"
 datacube.to_wavelength_density(new_unit, wavelength_unit)
 
 # Created observed images
-filters = [Filter.from_string(filter_name) for filter_name in sorted_filter_names]
+filters = [BroadBandFilter(filter_name) for filter_name in sorted_filter_names]
 
 # Do the filter convolution
 frames = datacube.convolve_with_filters(filters, nprocesses=config.nprocesses)
@@ -190,8 +191,8 @@ for filter_name in images:
     conversion_factor *= (wavelength ** 2 / speed_of_light).to("micron/Hz").value
 
     # From W / (m2 * arcsec2 * Hz) to MJy / sr
-    # conversion_factor *= (Unit("W/(m2 * arcsec2 * Hz)") / Unit("MJy/sr")).to("")
-    conversion_factor *= 1e26 * 1e-6 * (Unit("sr") / Unit("arcsec2")).to("")
+    # conversion_factor *= (u("W/(m2 * arcsec2 * Hz)") / u("MJy/sr")).to("")
+    conversion_factor *= 1e26 * 1e-6 * (u("sr") / u("arcsec2")).to("")
 
     # Multiply the frame with the conversion factor
     frame *= conversion_factor
@@ -222,7 +223,7 @@ for filter_name in images:
     frame_path = fs.join(new_path, filter_name + ".fits")
 
     # Save the frame
-    frame.save(frame_path)
+    frame.saveto(frame_path)
 
 # Plotting difference in total flux
 plt.plot(x, y)

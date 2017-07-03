@@ -21,9 +21,9 @@ from ....core.tools import filesystem as fs
 from ....core.launch.batchlauncher import BatchLauncher
 from ....core.simulation.definition import SingleSimulationDefinition
 from ....core.tools.logging import log
-from ...core.emissionlines import EmissionLines
+from ....core.basics.emissionlines import EmissionLines
 from ....core.basics.range import RealRange
-from ...fitting.wavelengthgrids import create_one_logarithmic_wavelength_grid
+from ....core.prep.wavelengthgrids import create_one_logarithmic_wavelength_grid
 from ....core.simulation.parallelization import Parallelization
 from ....core.advanced.runtimeestimator import RuntimeEstimator
 from ....core.launch.options import SchedulingOptions
@@ -44,16 +44,16 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(DustHeatingContributionLauncher, self).__init__(config)
+        super(DustHeatingContributionLauncher, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 
@@ -83,15 +83,16 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Create the wavelength grid
         self.create_wavelength_grid()
@@ -122,15 +123,16 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(DustHeatingContributionLauncher, self).setup()
+        super(DustHeatingContributionLauncher, self).setup(**kwargs)
 
         # Load the analysis run
         self.load_run()
@@ -192,7 +194,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         emission_lines = EmissionLines()
 
         # Fixed wavelengths in the grid
-        fixed = [self.i1_filter.pivotwavelength(), self.fuv_filter.pivotwavelength()] # in micron, for normalization of stellar components
+        fixed = [self.i1_filter.pivot, self.fuv_filter.pivot] # in micron, for normalization of stellar components
 
         # Range in micron
         micron_range = RealRange(self.config.wg.range.min.to("micron").value, self.config.wg.range.max.to("micron").value)
@@ -451,7 +453,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
         log.info("Writing the wavelength grid ...")
 
         # Save the wavelength grid
-        self.wavelength_grid.save(self.analysis_run.heating_wavelength_grid_path)
+        self.wavelength_grid.saveto(self.analysis_run.heating_wavelength_grid_path)
 
     # -----------------------------------------------------------------
 
@@ -472,7 +474,7 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
             path = fs.join(self.analysis_run.heating_instruments_path, name + ".instr")
 
             # Save
-            self.instruments[name].save(path)
+            self.instruments[name].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -595,10 +597,10 @@ class DustHeatingContributionLauncher(DustHeatingAnalysisComponent):
             if self.uses_scheduler: self.launcher.set_scheduling_options(self.remote_host_id, simulation_name, self.scheduling_options[contribution])
 
         # Run the launcher, schedules the simulations
-        simulations = self.launcher.run()
+        self.launcher.run()
 
         # Loop over the scheduled simulations
-        for simulation in simulations:
+        for simulation in self.launcher.launched_simulations:
 
             # Add the path to the modeling directory to the simulation object
             simulation.analysis.modeling_path = self.config.path

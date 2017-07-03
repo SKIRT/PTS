@@ -19,13 +19,17 @@ from scipy import ndimage
 from scipy.ndimage.interpolation import shift, zoom
 
 # Import astronomical modules
-from astropy.modeling import models, fitting
-from photutils.morphology import centroid_com, centroid_1dg, centroid_2dg
+#from astropy.modeling import models, fitting
+from photutils.centroids import centroid_com, centroid_1dg, centroid_2dg
+from astropy.modeling.models import Gaussian2D, AiryDisk2D
+from astropy.convolution.kernels import Gaussian2DKernel, AiryDisk2DKernel
 
 # Import the relevant PTS classes and modules
 from .frame import Frame
 from ...core.tools.logging import log
 from ..tools import statistics
+from ...core.filter.filter import parse_filter
+from ..tools import fitting
 
 # -----------------------------------------------------------------
 
@@ -41,7 +45,16 @@ class ConvolutionKernel(Frame):
 
         """
         This function ...
+        :param data:
+        :param args:
+        :param kwargs:
         """
+
+        # Set kwargs into meta so that they can be read more below in this constructor
+        if "meta" not in kwargs: kwargs["meta"] = dict()
+        if "from_filter" in kwargs: kwargs["meta"]["frmfltr"] = str(kwargs.pop("from_filter"))
+        if "to_filter" in kwargs: kwargs["meta"]["tofltr"] = str(kwargs.pop("to_filter"))
+        if "prepared" in kwargs: kwargs["meta"]["prepared"] = str(kwargs.pop("prepared"))
 
         # Call the constructor of the base class
         super(ConvolutionKernel, self).__init__(data, *args, **kwargs)
@@ -61,11 +74,80 @@ class ConvolutionKernel(Frame):
 
         # Prepared
         self._prepared = False
+        if "prepared" in self.metadata: self._prepared = self.metadata["prepared"]
 
-        if "prepared" in self.meta: self._prepared = self.meta["prepared"]
+        # Get from and to filter, set PSF filter
+        self.from_filter = parse_filter(self.metadata["frmfltr"]) if "frmfltr" in self.metadata else None
+        self.to_filter = parse_filter(self.metadata["tofltr"])
+        self._psf_filter = self.to_filter
 
         # Make sure that the data is in 64 bit floating-point precision (the reason is the precision of Astropy's normalization criterion)
         self._data = self._data.astype("float64")
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, path, fwhm=None, from_filter=None, to_filter=None):
+
+        """
+        This function ...
+        :param path: 
+        :param fwhm: 
+        :param from_filter: 
+        :param to_filter: 
+        :return: 
+        """
+
+        # Set extra meta
+        extra_meta = dict()
+        if from_filter is not None: extra_meta["frmfltr"] = str(from_filter)
+        if to_filter is not None: extra_meta["tofltr"] = str(to_filter)
+
+        # Call the from_file function of the base class
+        return super(ConvolutionKernel, cls).from_file(path, fwhm=fwhm, add_meta=True, extra_meta=extra_meta)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_model(cls, model, from_filter=None, to_filter=None):
+
+        """
+        This function ...
+        :param model: 
+        :param from_filter:
+        :param to_filter:
+        :return: 
+        """
+
+        # Get properties
+        #center =
+        #sigma = fitting.sigma_symmetric(model)
+
+        # Create a kernel
+        #kernel = Gaussian2DKernel(sigma, x_size=kernel_size, y_size=kernel_size)
+        #kernel.normalize()  # to suppress warning
+
+        if isinstance(model, Gaussian2D):
+            x_stddev = model.x_stddev
+            y_stddev = model.y_stddev
+            if not np.isclose(x_stddev, y_stddev): raise ValueError("Model is not symmetric")
+            kernel = Gaussian2DKernel(x_stddev)
+        elif isinstance(model, AiryDisk2D):
+            radius = model.radius
+            kernel = AiryDisk2DKernel(radius)
+        else: raise ValueError("Model not supported")
+        kernel.normalize()
+
+        # Get the FWHM
+        fwhm = fitting.fwhm_symmetric(model)
+
+        # Set metadata
+        extra_meta = dict()
+        if from_filter is not None: extra_meta["frmfltr"] = str(from_filter)
+        if to_filter is not None: extra_meta["tofltr"] = str(to_filter)
+
+        # Create instance of this class
+        return cls(kernel.array, fwhm=fwhm, extra_meta=extra_meta, prepared=True)
 
     # -----------------------------------------------------------------
 
@@ -317,7 +399,8 @@ class ConvolutionKernel(Frame):
         log.debug("Shifting the kernel center by (" + str(shift_x) + ", " + str(shift_y) + ") pixels ...")
 
         # Shift
-        self._data = shift(self._data, [shift_x, shift_y])
+        #self._data = shift(self._data, [shift_x, shift_y])
+        self._data = shift(self._data, [shift_y, shift_x])
 
         # CHECK AGAIN
 
@@ -372,11 +455,11 @@ class ConvolutionKernel(Frame):
         :return:
         """
 
-        from .box import Box
+        from .cutout import Cutout
         from ..basics.vector import Position
 
         # Box
-        box = Box(self._data, 0, self.xsize, 0, self.ysize)
+        box = Cutout(self._data, 0, self.xsize, 0, self.ysize)
 
         # Fit model
         model = box.fit_model(Position(0.5*(self.xsize-1), 0.5*(self.ysize-1)), "Gaussian")
@@ -385,60 +468,6 @@ class ConvolutionKernel(Frame):
         x_mean = model.x_mean.value
         y_mean = model.y_mean.value
         return x_mean, y_mean
-
-    # -----------------------------------------------------------------
-
-    def center_aniano(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Debugging
-        log.debug("Centering the kernel ...")
-
-        # FROM CONVOLVE_IMAGE.PRO (G. Aniano)
-
-        center_x = int(0.5 * (self.xsize - 1))
-        center_y = int(0.5 * (self.ysize - 1))
-
-        # get_maximun,image,x_max,y_max
-
-        x_max, y_max = self.get_maximum()
-
-        # ; determine the needed shifts
-        shift_x = center_x - x_max
-        shift_y = center_y - y_max
-
-        # ; make the shift if nonzero
-        if (shift_x != 0) or (shift_y != 0):
-
-            # Debugging
-            log.debug("Shifting the kernel center by (" + str(shift_x) + ", " + str(shift_y) + ") pixels ...")
-
-            self._data = shift(self._data, [shift_x,shift_y])
-
-            # Y
-            self._data[:abs(shift_y),:] = 0.0
-            self._data[self.ysize-1-abs(shift_y):self.ysize,:] = 0.0
-
-            # X
-            self._data[:,:abs(shift_x)] = 0.0
-            self._data[:,self.xsize-1-abs(shift_x):] = 0.0
-
-        # CHECK
-
-        # Calculate shift again
-        x_max, y_max = self.get_maximum()
-        new_shift_x = center_x - x_max
-        new_shift_y = center_y - y_max
-
-        # Raise exception if there is still a shift
-        if (new_shift_x != 0) or (new_shift_y != 0): raise RuntimeError("Something went wrong during the kernel centering: "
-                                                                "new shift x = " + str(new_shift_x) + ", new shift y = "
-                                                                + str(new_shift_y) + " (previous shift x = " + str(shift_x)
-                                                                        + ", previous shift y = " + str(shift_y))
 
     # -----------------------------------------------------------------
 
@@ -513,15 +542,35 @@ class ConvolutionKernel(Frame):
 
     # -----------------------------------------------------------------
 
-    def save(self, path):
+    def save(self, path=None):
 
         """
         This function ...
         :param path:
+        :param path:
         :return:
         """
 
+        if path is None: path = self.path
+        self.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
+
+        """
+        This function ...
+        :param path: 
+        :return: 
+        """
+
+        # Set extra header info
+        extra_header_info = dict()
+        extra_header_info["PREPARED"] = self.prepared
+        extra_header_info["FRMFLTR"] = str(self.from_filter)
+        extra_header_info["TOFLTR"] = str(self.to_filter)
+
         # Call the save function of the base class
-        super(ConvolutionKernel, self).save(path, extra_header_info={"PREPARED": self.prepared})
+        super(ConvolutionKernel, self).saveto(path, extra_header_info=extra_header_info)
 
 # -----------------------------------------------------------------

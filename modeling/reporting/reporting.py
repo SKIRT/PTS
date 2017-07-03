@@ -33,28 +33,29 @@ class Reporter(ReportingComponent):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(Reporter, self).__init__(config)
+        super(Reporter, self).__init__(*args, **kwargs)
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Make a report for the data
         if self.config.step == steps[0]: self.report_data()
@@ -88,15 +89,16 @@ class Reporter(ReportingComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(Reporter, self).setup()
+        super(Reporter, self).setup(**kwargs)
 
     # -----------------------------------------------------------------
 
@@ -152,7 +154,7 @@ class Reporter(ReportingComponent):
                 instrument_column.append(instrument)
                 band_column.append(band)
                 unit_column.append(str(image.unit))
-                pixelscale_column.append(image.average_pixelscale.to("arcsec/pix").value)
+                pixelscale_column.append(image.average_pixelscale.to("arcsec").value)
                 has_errors_column.append(has_errors)
                 prep_names_column.append(prep_name)
 
@@ -321,10 +323,10 @@ class Reporter(ReportingComponent):
                 result = Image.from_file(result_path)
 
                 unit = str(result.unit)
-                pixelscale = result.average_pixelscale.to("arcsec/pix").value
+                pixelscale = result.average_pixelscale.to("arcsec").value
                 fwhm = result.fwhm.to("arcsec").value if result.fwhm is not None else None
-                has_errors = "errors" in result.frames.keys() and not result.frames.errors.all_zero
-                has_sky = "sky" in result.frames.keys() and not result.frames.sky.all_zero
+                has_errors = "errors" in result.frames.keys() and not result.frames["errors"].all_zero
+                has_sky = "sky" in result.frames.keys() and not result.frames["sky"].all_zero
                 has_sources = "sources" in result.masks.keys()
 
             else:

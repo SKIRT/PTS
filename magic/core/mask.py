@@ -21,6 +21,7 @@ from astropy.io import fits
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ..basics.mask import MaskBase
+from ..basics.mask import Mask as oldMask
 
 # -----------------------------------------------------------------
 
@@ -44,6 +45,9 @@ class Mask(MaskBase):
         # Set the WCS
         self.wcs = kwargs.pop("wcs", None)
 
+        # The path
+        self.path = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -64,10 +68,18 @@ class Mask(MaskBase):
         fwhm = None
         add_meta = False
 
-        from . import io  # Import here because io imports SegmentationMap
+        from . import fits as pts_fits  # Import here because io imports SegmentationMap
 
-        # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
-        return io.load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta)
+        try:
+            # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!
+            mask = pts_fits.load_frame(cls, path, index, name, description, plane, hdulist_index, no_filter, fwhm, add_meta=add_meta)
+        except TypeError: raise IOError("The file is possibly damaged")
+
+        # Set the path
+        mask.path = path
+
+        # Return the mask
+        return mask
 
     # -----------------------------------------------------------------
 
@@ -95,7 +107,25 @@ class Mask(MaskBase):
 
     # -----------------------------------------------------------------
 
-    def save(self, path, header=None):
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Saving the mask ...")
+
+        # Check whether the path is valid
+        if self.path is None: raise RuntimeError("Path is not defined")
+
+        # Save
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path, header=None):
 
         """
         This function ...
@@ -107,9 +137,82 @@ class Mask(MaskBase):
         # If a header is not specified, created it from the WCS
         if header is None: header = self.header
 
-        from . import io  # Import here because io imports SegmentationMap
+        # FITS format
+        if path.endswith(".fits"):
 
-        # Write to a FITS file
-        io.write_frame(self._data.astype(int), header, path)
+            from .fits import write_frame  # Import here because io imports Mask
+
+            # Write to a FITS file
+            write_frame(self._data.astype(int), header, path)
+
+        # ASDF format
+        elif path.endswith(".asdf"):
+
+            # Import
+            from asdf import AsdfFile
+
+            # Create the tree
+            tree = dict()
+
+            tree["data"] = self._data
+            tree["header"] = header
+
+            # Create the asdf file
+            ff = AsdfFile(tree)
+
+            # Write
+            ff.write_to(path)
+
+        # Only FITS or ASDF format is allowed
+        else: raise ValueError("Only the FITS or ASDF filetypes are supported")
+
+        # Update the path
+        self.path = path
+
+# -----------------------------------------------------------------
+
+def union(*args):
+
+    """
+    This function ...
+    :param args:
+    :return:
+    """
+
+    # UNION = 0 + first + second + ... (0 is neutral element for sum)
+    # so for one mask, union = 0 + mask = mask
+
+    if len(args) == 1: return Mask(args[0])
+
+    #arrays = [arg.data for arg in args]
+    arrays = []
+    for arg in args:
+        if isinstance(arg, MaskBase): arrays.append(arg.data)
+        elif isinstance(arg, oldMask): arrays.append(arg)
+        else: arrays.append(arg)
+    return Mask(np.sum(arrays, axis=0))
+
+# -----------------------------------------------------------------
+
+def intersection(*args):
+
+    """
+    This function ...
+    :param args:
+    :return:
+    """
+
+    # INTERSECTION = 1 * first * second * ... (1 is neutral element for multiplication)
+    # so for one mask, intersection = 1 * mask = mask
+
+    if len(args) == 1: return Mask(args[0])
+
+    #arrays = [arg.data for arg in args]
+    arrays = []
+    for arg in args:
+        if isinstance(arg, MaskBase): arrays.append(arg.data)
+        elif isinstance(arg, oldMask): arrays.append(arg)
+        else: arrays.append(arg)
+    return Mask(np.product(arrays, axis=0))
 
 # -----------------------------------------------------------------

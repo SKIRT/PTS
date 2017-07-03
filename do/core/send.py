@@ -12,25 +12,48 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import argparse
-
 # Import the relevant PTS classes and modules
-from pts.core.tools import logging, time
+from pts.core.tools import logging
+from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.remote.host import find_host_ids
+from pts.core.remote.remote import Remote
+from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-# Create the command-line parser
-parser = argparse.ArgumentParser()
+definition = ConfigurationDefinition()
+definition.add_required("local_path", "string", "path or name of the file or directory to send")
+definition.add_required("remote", "string", "the remote host to send to", choices=find_host_ids())
+definition.add_optional("remote_path", "string", "path of the remote directory to send to")
 
-parser.add_argument("filename", type=str, help="the name (or path) of the file or directory to send")
-parser.add_argument("remote", type=str, help="the remote host to send to")
-parser.add_argument("--path", type=str, help="the path to the remote directory to send to")
-
-# Parse the command line arguments
-arguments = parser.parse_args()
+setter = ArgumentConfigurationSetter("send")
+config = setter.run(definition)
 
 # -----------------------------------------------------------------
 
+# Determine the log level
+level = "DEBUG" if config.debug else "INFO"
+
+# Initialize the logger
+log = logging.setup_log(level=level)
+log.start("Starting send ...")
+
+# -----------------------------------------------------------------
+
+# Create remote
+remote = Remote(host_id=config.remote)
+
+# -----------------------------------------------------------------
+
+# Set full path of origin
+origin = fs.absolute_or_in_cwd(config.local_path)
+name = fs.name(origin)
+
+# Set full path to the destination
+if config.path is not None: destination = fs.join(remote.home_directory, name)
+else: destination = remote.absolute_path(config.remote_path)
+
+# Upload
+remote.upload(origin, destination)
 
 # -----------------------------------------------------------------

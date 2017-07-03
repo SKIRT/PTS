@@ -6,8 +6,8 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from .fetch import definition
-from pts.magic.misc.seds import catalog_names
+from pts.modeling.config.fetch import definition
+from pts.magic.services.seds import catalog_names
 
 # -----------------------------------------------------------------
 

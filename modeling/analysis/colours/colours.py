@@ -22,7 +22,7 @@ from ....core.tools import filesystem as fs
 from ....magic.core.frame import Frame
 from ....magic.plot.imagegrid import ResidualImageGridPlotter
 from ....core.basics.distribution import Distribution
-from ....core.basics.filter import Filter
+from ....core.filter.broad import BroadBandFilter
 
 # -----------------------------------------------------------------
 
@@ -40,16 +40,16 @@ class ColourAnalyser(ColourAnalysisComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(ColourAnalyser, self).__init__(config)
+        super(ColourAnalyser, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 
@@ -131,7 +131,7 @@ class ColourAnalyser(ColourAnalysisComponent):
         for key in keys:
 
             # Get the corresponding filter
-            fltr = Filter.from_string(filter_names[key])
+            fltr = BroadBandFilter(filter_names[key])
 
             # Get the observed image for this filter
             frame = self.dataset.get_frame_for_filter(fltr)
@@ -370,7 +370,7 @@ class ColourAnalyser(ColourAnalysisComponent):
             path = fs.join(self.colours_observed_path, colour_name.replace("/", "-") + ".fits")
 
             # Save the image
-            self.observed_colours[colour_name].save(path)
+            self.observed_colours[colour_name].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -391,7 +391,7 @@ class ColourAnalyser(ColourAnalysisComponent):
             path = fs.join(self.colours_simulated_path, colour_name.replace("/", "-") + ".fits")
 
             # Save the image
-            self.simulated_colours[colour_name].save(path)
+            self.simulated_colours[colour_name].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -412,7 +412,7 @@ class ColourAnalyser(ColourAnalysisComponent):
             path = fs.join(self.colours_residuals_path, colour_name.replace("/", "-") + ".fits")
 
             # Save the image
-            self.residual_colours[colour_name].save(path)
+            self.residual_colours[colour_name].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -433,7 +433,7 @@ class ColourAnalyser(ColourAnalysisComponent):
             path = fs.join()
 
             # Save the distribution data
-            self.residual_distributions[colour_name].save(path)
+            self.residual_distributions[colour_name].saveto(path)
 
     # -----------------------------------------------------------------
 

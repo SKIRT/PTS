@@ -14,13 +14,138 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os
 from abc import ABCMeta
 
 # Import the relevant PTS classes and modules
-from ..tools import configuration
 from ..tools import filesystem as fs
-from ..tools.logging import log
+from .configuration import find_command
+
+# -----------------------------------------------------------------
+
+def write_input(input_dict, path, light=False):
+
+    """
+    This function ...
+    :param input_dict:
+    :param path:
+    :param light:
+    :return:
+    """
+
+    # Import things
+    from ..tools.serialization import write_dict
+    from ..tools import introspection
+
+    # Dictionary for remainder input (not saved as file)
+    remainder = dict()
+
+    # Dictionary for the class paths
+    classes = dict()
+
+    # Loop over the input items
+    for name in input_dict:
+
+        # Get the class
+        cls = input_dict[name].__class__
+
+        # Should be saved as a file
+        if hasattr(cls, "default_extension"):
+
+            # Determine the filename
+            filename = name + "." + input_dict[name].default_extension
+            filepath = fs.join(path, filename)  # local temporary path
+
+            # If 'light' is enabled, don't write out files that can't get stringifyied
+            if not light:
+
+                # Save the object, but don't change its internal path
+                original_path = input_dict[name].path
+                input_dict[name].saveto(filepath)
+                input_dict[name].path = original_path
+
+            subproject, relative_class_subproject = introspection.get_class_path(input_dict[name].__class__)
+            classes[name] = subproject + "." + relative_class_subproject
+
+        # Add to remainder dict
+        else: remainder[name] = input_dict[name]
+
+    # Write the remainder dictionary
+    remainder_path = fs.join(path, "input.dat")
+    write_dict(remainder, remainder_path)
+
+    # Write the classes dictionary, if necessary
+    if len(classes) > 0:
+        classes_path = fs.join(path, "classes.dat")
+        write_dict(classes, classes_path)
+
+# -----------------------------------------------------------------
+
+class NotSavedPlaceHolder(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, filepath):
+
+        """
+        This function ...
+        :param filepath:
+        """
+
+        self.filepath = filepath
+
+# -----------------------------------------------------------------
+
+def load_input(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    # Import things
+    from ..tools.serialization import load_dict
+    from ..tools import introspection
+
+    input_dict = dict()
+
+    # Add the input.dat input
+    input_file_path = fs.join(path, "input.dat")
+    if fs.is_file(input_file_path):
+        remainder = load_dict(input_file_path)
+        for key in remainder: input_dict[key] = remainder[key]
+
+    # Load the classes data
+    classes_path = fs.join(path, "classes.dat")
+    #classes = load_dict(classes_path)
+
+    if fs.is_file(classes_path):
+
+        classes = load_dict(classes_path)
+
+        # Loop over the names
+        for name in classes:
+
+            # Get the class path
+            class_path = classes[name]
+
+            # Get the class
+            cls = introspection.get_class_from_path(class_path)
+
+            # Get the default extension
+            filename = name + "." + cls.default_extension
+
+            # Determine the full file path
+            filepath = fs.join(path, filename)
+
+            # Check whether present, and load
+            if fs.is_file(filepath): input_dict[name] = cls.from_file(filepath)
+            else: input_dict[name] = NotSavedPlaceHolder(filepath) # print("Input file '" + filepath + "' not present")
+
+    # Return the input
+    return input_dict
 
 # -----------------------------------------------------------------
 
@@ -34,108 +159,82 @@ class Configurable(object):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config):
+    _command_name = None
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def command_name(cls):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if cls._command_name is not None: return cls._command_name
+
+        # Find the corresponding command
+        command_name, class_name, configuration_module_path, description = find_command(cls)
+
+        # Check if found
+        if command_name is None: raise ValueError("Could not find the command name for the " + cls.__name__ + " class")
+
+        # Set the command name
+        cls._command_name = command_name
+
+        # Return the command
+        return command_name
+
+    # -----------------------------------------------------------------
+
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param args:
+        :param kwargs:
         """
 
-        if config is not None: self.config = config
+        # Set configuration
+        self.config = self.get_config(*args, **kwargs)
 
-        # Look for the config
-        else:
+        # Set the detached calculations flag
+        self.detached = False
 
-            from ..tools import introspection
+    # -----------------------------------------------------------------
 
-            tables = introspection.get_arguments_tables()
-            #table_matches = introspection.find_matches_tables(script_name, tables)
+    @classmethod
+    def get_config(cls, *args, **kwargs):
 
-            import inspect
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
 
-            class_name = self.__class__.__name__
+        # Get config from positional args
+        if len(args) == 0: config = None
+        elif len(args) == 1: config = args[0]
+        else: raise ValueError("Can only one positional argument, which is the configuration (dictionary)")
 
-            class_path = inspect.getfile(self.__class__).split(".py")[0]
+        # Get config from kwargs
+        if "config" in kwargs:
+            if config is not None: raise ValueError("Config was passed as positional argument, so cannot be passed as keyword argument as well")
+            else: config = kwargs.pop("config")
 
-            relative_class_path = class_path.rsplit("pts/")[1]
+        # Get other settings from kwargs
+        interactive = kwargs.pop("interactive", False)
+        unlisted = kwargs.pop("unlisted", False)
+        cwd = kwargs.pop("cwd", None)
 
-            relative_class_pts = relative_class_path.replace("/", ".") + "." + class_name
+        from .configuration import get_config_for_class
 
-            subproject, relative_class_subproject = relative_class_pts.split(".", 1)
-
-            #print(subproject, relative_class_subproject)
-
-            #exit()
-
-            # Get the correct table
-            table = tables[subproject]
-
-            command_name = None
-            description = None
-            configuration_name = None
-            configuration_module_path = None
-
-            #print(table)
-
-            for i in range(len(table["Path"])):
-
-                #print(table["Path"][i], relative_class_subproject)
-
-                if table["Path"][i] == relative_class_subproject:
-
-                    command_name = table["Command"][i]
-                    description = table["Description"][i]
-
-                    configuration_name = table["Configuration"][i]
-                    if configuration_name == "--": configuration_name = command_name
-                    configuration_module_path = "pts." + subproject + ".config." + configuration_name
-
-                    break
-
-            if command_name is not None:
-
-                #print(configuration_module_path)
-
-                import importlib
-
-                # Import things
-                #from pts.core.tools import logging
-                from pts.core.basics.configuration import ConfigurationDefinition, PassiveConfigurationSetter
-
-                ## GET THE CONFIGURATION DEFINITION
-                try:
-                    configuration_module = importlib.import_module(configuration_module_path)
-                    # has_configuration = True
-                    definition = getattr(configuration_module, "definition")
-                except ImportError:
-                    log.warning("No configuration definition found for the " + class_name + " class")
-                    # has_configuration = False
-                    definition = ConfigurationDefinition(write_config=False)  # Create new configuration definition
-
-                #print(definition.sections)
-
-                ## CREATE THE CONFIGURATION
-
-                # If not specified on the command line (before the command name), then use the default specified in the commands.dat file
-                #if configuration_method is None: configuration_method = configuration_method_table
-
-                setter = PassiveConfigurationSetter(class_name, add_logging=False)
-
-                # Create the configuration from the definition
-                self.config = setter.run(definition)
-
-                #log.warning("The object has not been configured yet")
-
-            else:
-
-                from .configuration import ConfigurationDefinition
-                from .configuration import InteractiveConfigurationSetter
-
-                definition = ConfigurationDefinition(write_config=False)
-                setter = InteractiveConfigurationSetter(class_name, add_logging=False)
-
-                # Create new config
-                self.config = setter.run(definition, prompt_optional=False)
+        # Get the config
+        if unlisted:
+            from .map import Map
+            assert isinstance(config, Map)
+            return config
+        else: return get_config_for_class(cls, config, interactive=interactive, cwd=cwd)
 
     # -----------------------------------------------------------------
 
@@ -147,8 +246,8 @@ class Configurable(object):
         :return:
         """
 
-        # nothing is (yet) required here
-        pass
+        # NEW: WRITE THE CONFIGURATION
+        if self.config.write_config: self.config.saveto(self.config.config_file_path(self.command_name()))
 
     # -----------------------------------------------------------------
 
@@ -220,7 +319,7 @@ class Configurable(object):
         """
 
         # If 'output' is defined in the config
-        if "output" in self.config:
+        if "output" in self.config and self.config.output is not None:
 
             full_output_path = fs.absolute_or_in(self.config.output, self.config.path)
             if not fs.is_directory(full_output_path): fs.create_directory(full_output_path)
@@ -241,6 +340,19 @@ class Configurable(object):
 
         return fs.join(self.output_path, name)
 
+    # -----------------------------------------------------------------
+
+    def output_path_directory(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Create and return path
+        return fs.create_directory_in(self.output_path, name)
+
 # -----------------------------------------------------------------
 
 class HierarchicConfigurable(Configurable):
@@ -249,15 +361,15 @@ class HierarchicConfigurable(Configurable):
     This class ...
     """
 
-    def __init__(self, config):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(HierarchicConfigurable, self).__init__(config)
+        super(HierarchicConfigurable, self).__init__(*args, **kwargs)
 
         # The children
         self.children = dict()
@@ -331,159 +443,5 @@ class HierarchicConfigurable(Configurable):
         """
 
         pass
-
-# -----------------------------------------------------------------
-
-class OldConfigurable(object):
-
-    """
-    This class ...
-    """
-
-    def __init__(self, config, subpackage):
-
-        """
-        The constructor ...
-        :param config:
-        :param subpackage:
-        :return:
-        """
-
-        # Call the constructor of the base class
-        super(OldConfigurable, self).__init__()
-
-        # -- Attributes --
-
-        # Set the configuration object
-        self.config = configuration.set(subpackage, self.name, config)
-
-        # The children of the object
-        self.children = dict()
-
-    # -----------------------------------------------------------------
-
-    def __getattr__(self, attr):
-
-        """
-        This function ...
-        Overriding __getattr__ should be fine (will not break the default behaviour) -- __getattr__ is only called
-        as a last resort i.e. if there are no attributes in the instance that match the name.
-        :param name:
-        :return:
-        """
-
-        if attr.startswith("__") and attr.endswith("__"): raise AttributeError("Can't delegate this attribute")
-        return self.children[attr]
-
-    # -----------------------------------------------------------------
-
-    def clear(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Delete its children
-        self.children = dict()
-
-    # -----------------------------------------------------------------
-
-    def setup(self):
-        
-        """
-        This function ...
-        """
-
-        pass
-
-    # -----------------------------------------------------------------
-
-    def add_child(self, name, type, config=None):
-
-        """
-        This function ...
-        :param name:
-        :param type:
-        :param config:
-        :return:
-        """
-
-        if name in self.children: raise ValueError("Child with this name already exists")
-
-        # new ...
-        if config is None: config = {}
-        config["output_path"] = self.config.output_path
-        config["input_path"] = self.config.input_path
-
-        self.children[name] = type(config)
-
-    # -----------------------------------------------------------------
-
-    def setup_before(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        pass
-
-    # -----------------------------------------------------------------
-
-    def setup_after(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        pass
-
-    # -----------------------------------------------------------------
-
-    def full_input_path(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
-        if name is None: return None
-
-        if os.path.isabs(name): return name
-        elif "input_path" in self.config and self.config.input_path is not None: return os.path.join(self.config.input_path, name)
-        else: return os.path.join(os.getcwd(), name)
-
-    # -----------------------------------------------------------------
-
-    def full_output_path(self, name):
-
-        """
-        This function ...
-        :param name:
-        :return:
-        """
-
-        if name is None: return None
-
-        if os.path.isabs(name): return name
-        elif "output_path" in self.config and self.config.output_path is not None: return os.path.join(self.config.output_path, name)
-        else: return os.path.join(os.getcwd(), name)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        name = type(self).__name__.lower()
-        if "plotter" in name: return "plotter"
-        else: return name
 
 # -----------------------------------------------------------------

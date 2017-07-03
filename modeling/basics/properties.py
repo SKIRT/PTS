@@ -29,15 +29,26 @@ class GalaxyProperties(SimplePropertyComposite):
         The constructor ...
         """
 
-        self.name = kwargs.pop("name", None)
-        self.ngc_id = kwargs.pop("ngc_id", None)
-        self.center = kwargs.pop("center", None)
-        self.major = kwargs.pop("major", None)
-        self.major_arcsec = kwargs.pop("major_arcsec", None)
-        self.ellipticity = kwargs.pop("ellipticity", None)
-        self.position_angle = kwargs.pop("position_angle", None)
-        self.distance = kwargs.pop("distance", None)
-        self.distance_error = kwargs.pop("distance_error", None)
-        self.inclination = kwargs.pop("inclination", None)
+        # Call the constructor of the base class
+        super(GalaxyProperties, self).__init__()
+
+        # Define properties
+        self.add_property("name", "string", "name of the galaxy", None)
+        self.add_property("ngc_name", "string", "NGC name of the galaxy", None)
+        self.add_property("hyperleda_name", "string", "HYPERLEDA name of the galaxy", None)
+        self.add_property("galaxy_type", "string", "galaxy type", None)
+        self.add_property("center", "skycoordinate", "center coordinate", None)
+        self.add_property("major", "quantity", "major axis length", None)
+        self.add_property("major_arcsec", "quantity", "major axis length (arcseconds)", None)
+        self.add_property("ellipticity", "real", "ellipticity", None)
+        self.add_property("position_angle", "angle", "position angle", None)
+        self.add_property("distance", "quantity", "distance", None)
+        self.add_property("distance_error", "quantity", "distance error", None)
+        self.add_property("inclination", "angle", "inclination", None)
+        self.add_property("redshift", "real", "redshift", None)
+        self.add_property("common_name", "string", "common name", None)
+
+        # Set values
+        self.set_properties(kwargs)
 
 # -----------------------------------------------------------------

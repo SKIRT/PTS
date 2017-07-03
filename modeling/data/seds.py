@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from .component import DataComponent
-from ...magic.misc.seds import SEDFetcher as _SEDFetcher
+from ...magic.services.seds import SEDFetcher as _SEDFetcher
 
 # -----------------------------------------------------------------
 
@@ -30,14 +30,15 @@ class SEDFetcher(DataComponent):
     This class ...
     """
     
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
     
         """
         The constructor ...
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(SEDFetcher, self).__init__(config)
+        super(SEDFetcher, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 
@@ -49,14 +50,14 @@ class SEDFetcher(DataComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Get the SEDs
         self.get_seds()
@@ -66,19 +67,22 @@ class SEDFetcher(DataComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(SEDFetcher, self).setup()
+        super(SEDFetcher, self).setup(**kwargs)
 
         # Configure the SED fetcher
-        self.fetcher.catalogs = self.config.catalogs
-        self.fetcher.write = False
+        self.fetcher.config.galaxy_name = self.galaxy_name
+        self.fetcher.config.catalogs = self.config.catalogs
+        self.fetcher.config.list = False
+        self.fetcher.config.write = False
 
     # -----------------------------------------------------------------
 
@@ -93,7 +97,7 @@ class SEDFetcher(DataComponent):
         log.info("Fetching the SEDs ...")
 
         # Run the SED fetcher
-        self.fetcher.run()
+        self.fetcher.run(ngc_name=self.ngc_name)
 
         # Get the seds
         self.seds = self.fetcher.seds
@@ -135,6 +139,6 @@ class SEDFetcher(DataComponent):
             sed_path = fs.join(self.data_seds_path, label + ".dat")
 
             # Save the SED at the specified location
-            self.seds[label].save(sed_path)
+            self.seds[label].saveto(sed_path)
 
 # -----------------------------------------------------------------

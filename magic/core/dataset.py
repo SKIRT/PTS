@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import copy
 import numpy as np
 from collections import OrderedDict
 
@@ -22,16 +23,71 @@ from astropy.io import fits
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from .frame import Frame
-from .io import get_frame_names, get_mask_names, get_plane_names
+from .fits import get_frame_names, get_mask_names, get_plane_names
 from ...core.tools.logging import log
 from .datacube import DataCube
 from .image import Image
 from .mask import Mask
 from ..basics.coordinatesystem import CoordinateSystem
 from ...core.basics.configurable import Configurable
-from ...core.tools import tables
-from ..basics.skyregion import SkyRegion
+from ..region.list import SkyRegionList
 from ..tools import headers
+from .list import NamedImageList, NamedFrameList, FrameList, ImageList
+from ...core.tools import types
+from ...core.filter.filter import parse_filter
+from .mask import intersection, union
+from ..region.rectangle import SkyRectangleRegion
+from ..basics.coordinate import SkyCoordinate
+from ..basics.stretch import SkyStretch
+from ...core.basics.map import Map
+from ..tools import coordinates
+from ...core.units.parsing import parse_unit as u
+from ...core.basics.table import SmartTable
+from ...core.basics.containers import FileList, NamedFileList
+
+# -----------------------------------------------------------------
+
+class DataSetTable(SmartTable):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        #print(args)
+        #print(kwargs)
+
+        # Call the constructor of the base class
+        super(DataSetTable, self).__init__(*args, **kwargs)
+
+        # Add column info
+        self.add_column_info("Name", str, None, "Name for the fitting run")
+        self.add_column_info("Path", str, None, "Name of the model used")
+        self.add_column_info("Error path", str, None, "Path of the error map")
+        self.add_column_info("Mask path", str, None, "Path of the mask")
+
+    # -----------------------------------------------------------------
+
+    def add_entry(self, name, path, error_path, mask_path):
+
+        """
+        THis function ...
+        :param name: 
+        :param path: 
+        :param error_path: 
+        :param mask_path: 
+        :return: 
+        """
+
+        values = [name, path, error_path, mask_path]
+        self.add_row(values)
 
 # -----------------------------------------------------------------
 
@@ -40,6 +96,10 @@ class DataSet(object):
     """
     This class...
     """
+
+    default_extension = "dat"
+
+    # -----------------------------------------------------------------
 
     def __init__(self):
 
@@ -88,11 +148,12 @@ class DataSet(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path):
+    def from_file(cls, path, check=True):
 
         """
         This function ...
         :param path:
+        :param check:
         :return:
         """
 
@@ -100,7 +161,8 @@ class DataSet(object):
         dataset = cls()
 
         # Load the table
-        table = tables.from_file(path)
+        #table = tables.from_file(path)
+        table = DataSetTable.from_file(path)
 
         # Loop over the entries in the table
         for i in range(len(table)):
@@ -112,12 +174,45 @@ class DataSet(object):
             mask_path = table["Mask path"][i] if not table["Mask path"].mask[i] else None
 
             # Add the paths to the dataset
-            dataset.add_path(name, path)
-            if error_path is not None: dataset.add_error_path(name, error_path)
-            if mask_path is not None: dataset.add_mask_path(name, mask_path)
+            dataset.add_path(name, path, check=check)
+            if error_path is not None: dataset.add_error_path(name, error_path, check=check)
+            if mask_path is not None: dataset.add_mask_path(name, mask_path, check=check)
 
         # Return the dataset
         return dataset
+
+    # -----------------------------------------------------------------
+
+    def __iter__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.paths: yield name
+
+    # -----------------------------------------------------------------
+
+    def __len__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.paths)
+
+    # -----------------------------------------------------------------
+
+    def copy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return copy.deepcopy(self)
 
     # -----------------------------------------------------------------
 
@@ -133,17 +228,18 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def add_path(self, name, path):
+    def add_path(self, name, path, check=True):
 
         """
         This function ...
         :param name:
         :param path:
+        :param check:
         :return:
         """
 
         # Check if the file exists
-        if not fs.is_file(path): raise IOError("File doesn't exist: '" + path + "'")
+        if check and not fs.is_file(path): raise IOError("File doesn't exist: '" + path + "'")
 
         # Check if already such a name
         if name in self.paths: raise ValueError("Already a path in the dataset with the name " + name)
@@ -153,17 +249,18 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def add_error_path(self, name, path):
+    def add_error_path(self, name, path, check=True):
 
         """
         This function ...
         :param name:
         :param path:
+        :param check:
         :return:
         """
 
         # Check if the file exists
-        if not fs.is_file(path): raise IOError("File doesn't exist: '" + path + "'")
+        if check and not fs.is_file(path): raise IOError("File doesn't exist: '" + path + "'")
 
         # Check if corresponding frame exists
         if name not in self.paths: raise ValueError("Corresponding image with name " + name + " has not been added")
@@ -176,17 +273,18 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def add_mask_path(self, name, path):
+    def add_mask_path(self, name, path, check=True):
 
         """
         This function ...
         :param name:
         :param path:
+        :param check:
         :return:
         """
 
         # Check if the file exists
-        if not fs.is_file(path): raise IOError("File does not exist: '" + path + "'")
+        if check and not fs.is_file(path): raise IOError("File does not exist: '" + path + "'")
 
         # Check if the corresponding frame exists
         if name not in self.paths: raise ValueError("Corresponding image with name " + name + " has not been added")
@@ -207,7 +305,7 @@ class DataSet(object):
         """
 
         # Initialize
-        fltrs = dict()
+        fltrs = OrderedDict()
 
         # Loop over the images
         for name in self.paths: fltrs[name] = self.get_frame(name, masked=False).filter
@@ -229,6 +327,18 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    def get_wavelength(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.get_frame(name).wavelength
+
+    # -----------------------------------------------------------------
+
     def get_header(self, name):
 
         """
@@ -239,6 +349,18 @@ class DataSet(object):
 
         # Load the header and return it
         return fits.getheader(self.paths[name])
+
+    # -----------------------------------------------------------------
+
+    def get_frame_path(self, name):
+
+        """
+        This function ...
+        :param name: 
+        :return: 
+        """
+
+        return self.paths[name]
 
     # -----------------------------------------------------------------
 
@@ -262,7 +384,7 @@ class DataSet(object):
             if name in self.mask_paths:
                 mask = self.get_mask(name)
                 frame[mask] = mask_value
-            else: log.warning("No mask available for " + name + " frame")
+            #else: log.warning("No mask available for " + name + " frame")
 
         # Set the name
         frame.name = name
@@ -272,40 +394,348 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def get_frames(self, masked=True, mask_value=0.0):
+    def get_directory_paths(self, min_wavelength=None, max_wavelength=None, exclude=None):
+
+        """
+        This function ...
+        :param min_wavelength:
+        :param max_wavelength:
+        :param exclude:
+        :return:
+        """
+
+        # Make sure exclude is a list
+        if types.is_string_type(exclude): exclude = [exclude]
+        elif exclude is None: exclude = []
+
+        # Initialize a dictionary
+        paths = OrderedDict()
+
+        # Loop over the frame paths
+        for name in self.paths:
+
+            # Skip if name is in the exclude list
+            if exclude is not None and name in exclude: continue
+
+            # Check wavelength of the frame if necessary
+            if min_wavelength is not None or max_wavelength is not None:
+
+                # Load the frame
+                frame = self.get_frame(name)
+                #header = self.get_header(name)
+
+                # Skip images of wavelength smaller than the minimum or greater than the maximum
+                if min_wavelength is not None and frame.wavelength < min_wavelength: continue
+                if max_wavelength is not None and frame.wavelength > max_wavelength: continue
+
+            # Determine the path of the directory where the frame is in
+            directory_path = fs.directory_of(self.paths[name])
+
+            # Set the directory path
+            paths[name] = directory_path
+
+        # Return the dictionary of directory paths
+        return paths
+
+    # -----------------------------------------------------------------
+
+    def get_frames(self, masked=True, mask_value=0.0, min_wavelength=None, max_wavelength=None, exclude=None, returns="dict", keys="name"):
 
         """
         This function ...
         :param masked:
         :param mask_value:
+        :param min_wavelength:
+        :param max_wavelength:
+        :param exclude:
+        :param returns:
+        :param keys:
         :return:
         """
 
+        # Make sure exclude is a list
+        if types.is_string_type(exclude): exclude = [exclude]
+        elif exclude is None: exclude = []
+
         # Initialize a dictionary for the frames
-        frames = dict()
+        frames = OrderedDict()
 
         # Loop over the frame paths
         for name in self.paths:
 
+            # Skip if name is in the exclude list
+            if exclude is not None and name in exclude: continue
+
             # Load the frame
             frame = self.get_frame(name, masked, mask_value)
 
+            # Skip images of wavelength smaller than the minimum or greater than the maximum
+            if min_wavelength is not None and frame.wavelength < min_wavelength: continue
+            if max_wavelength is not None and frame.wavelength > max_wavelength: continue
+
+            # Set the key
+            if keys == "name": key = name
+            elif keys == "filter": key = frame.filter
+            elif keys == "wavelength": key = frame.wavelength
+            else: raise ValueError("Invalid value for 'keys'")
+
+            # Check if the key is not None
+            if key is None: raise ValueError("Cannot use '" + keys + "' as key, because it cannot be obtained for frame '" + name + "'")
+
             # Add the frame
-            frames[name] = frame
+            frames[key] = frame
 
         # Return the dictionary of frames
-        return frames
+        if returns == "dict": return frames
+        elif returns == "list": return frames.values()
+        else: raise ValueError("Invalid value for 'returns'")
 
     # -----------------------------------------------------------------
 
-    def get_frame_for_filter(self, fltr, masked=True):
+    def get_frame_paths(self, min_wavelength=None, max_wavelength=None, exclude=None, returns="dict", keys="name"):
+
+        """
+        This function ...
+        :param min_wavelength:
+        :param max_wavelength:
+        :param exclude:
+        :param returns:
+        :param keys: 'name' or 'filter'
+        :return:
+        """
+
+        # Make sure exclude is a list
+        if types.is_string_type(exclude): exclude = [exclude]
+        elif exclude is None: exclude = []
+
+        # Initialize a dictionary for the frames
+        paths = OrderedDict()
+
+        # Loop over the frame paths
+        for name in self.paths:
+
+            # Skip if name is in the exclude list
+            if exclude is not None and name in exclude: continue
+
+            # Skip images of wavelength smaller than the minimum or greater then the maximum
+            if min_wavelength is not None or max_wavelength is not None: wavelength = self.get_wavelength(name)
+            else: wavelength = None
+            if min_wavelength is not None and wavelength < min_wavelength: continue
+            if max_wavelength is not None and wavelength > max_wavelength: continue
+
+            # Set the key
+            if keys == "name": key = name
+            elif keys == "filter": key = self.get_filter(name)
+            elif keys == "wavelength": key = wavelength if wavelength is not None else self.get_wavelength(name)
+            else: raise ValueError("Invalid value for 'keys'")
+
+            # Check if the key is not None
+            if key is None: raise ValueError("Cannot use '" + keys + "' as key, because it cannot be obtained for frame '" + name + "'")
+
+            # Add the path
+            paths[key] = self.paths[name]
+
+        # Return the dictionary of paths
+        if returns == "dict": return paths
+        elif returns == "list": return paths.values()
+        else: raise ValueError("Invalid value for 'returns'")
+
+    # -----------------------------------------------------------------
+
+    def get_errormaps(self, masked=True, mask_value=0.0, min_wavelength=None, max_wavelength=None, exclude=None, returns="dict", keys="name"):
+
+        """
+        This function ...
+        :param masked:
+        :param mask_value:
+        :param min_wavelength:
+        :param max_wavelength:
+        :param exclude:
+        :param returns:
+        :param keys:
+        :return:
+        """
+
+        # Make sure exclude is a list
+        if types.is_string_type(exclude): exclude = [exclude]
+        elif exclude is None: exclude = []
+
+        # Initialize a dictionary for the error maps
+        errormaps = OrderedDict()
+
+        # Loop over the frame paths
+        for name in self.paths:
+
+            # Skip if name is in the exclude list
+            if exclude is not None and name in exclude: continue
+
+            # Load the error map
+            errormap = self.get_errormap(name, masked, mask_value)
+
+            # Skip images of wavelength smaller than the minimum or greater than the maximum
+            if min_wavelength is not None and errormap.wavelength < min_wavelength: continue
+            if max_wavelength is not None and errormap.wavelength > max_wavelength: continue
+
+            # Set the key
+            if keys == "name": key = name
+            elif keys == "filter": key = errormap.filter
+            elif keys == "wavelength": key = errormap.wavelength
+            else: raise ValueError("Invalid value for 'keys'")
+
+            # Check if the key is not None
+            if key is None: raise ValueError("Cannot use '" + keys + "' as key, because it cannot be obtained for frame '" + name + "'")
+
+            # Add the error map
+            errormaps[key] = errormap
+
+        # Return the dictionary of error maps
+        if returns == "dict": return errormaps
+        elif returns == "list": return errormaps.values()
+        else: raise ValueError("Invalid value for 'returns'")
+
+    # -----------------------------------------------------------------
+
+    def get_images(self, exclude=None, min_wavelength=None, max_wavelength=None, returns="dict", keys="name"):
+
+        """
+        This function ...
+        :param exclude:
+        :param min_wavelength:
+        :param max_wavelength:
+        :param returns:
+        :param keys:
+        :return: 
+        """
+
+        # Make sure exclude is a list
+        if types.is_string_type(exclude): exclude = [exclude]
+        elif exclude is None: exclude = []
+
+        # Initialize a dictionary for the images
+        images = OrderedDict()
+
+        # Loop over the frame paths
+        for name in self.paths:
+
+            # Skip if name is in the exclude list
+            if exclude is not None and name in exclude: continue
+
+            # Load the image
+            image = self.get_image(name)
+
+            # Skip images of wavelengths smaller than the minimum or greater than the maximum
+            if min_wavelength is not None and image.wavelength < min_wavelength: continue
+            if max_wavelength is not None and image.wavelength > max_wavelength: continue
+
+            # Set the key
+            if keys == "name": key = name
+            elif keys == "filter": key = image.filter
+            elif keys == "wavelength": key = image.wavelength
+            else: raise ValueError("Invalid value for 'keys'")
+
+            # Check if the key is not None
+            if key is None: raise ValueError("Cannot use '" + keys + "' as key, because it cannot be obtained for frame '" + name + "'")
+
+            # Add the image
+            images[key] = image
+
+        # Return the dictionary of images
+        if returns == "dict": return images
+        elif returns == "list": return images.values()
+        else: raise ValueError("Invalid value for 'returns'")
+
+    # -----------------------------------------------------------------
+
+    def get_framelist(self, masked=True, mask_value=0.0, min_wavelength=None, max_wavelength=None, exclude=None, named=True):
+
+        """
+        This function ...
+        :param masked:
+        :param mask_value:
+        :param min_wavelength:
+        :param max_wavelength:
+        :param exclude:
+        :param named:
+        :return: 
+        """
+
+        if named: return NamedFrameList.from_dictionary(self.get_frames(masked, mask_value, min_wavelength, max_wavelength, exclude))
+        else: return FrameList(*self.get_frames(masked, mask_value, min_wavelength, max_wavelength, exclude, returns="list"))
+
+    # -----------------------------------------------------------------
+
+    get_frame_list = get_framelist
+
+    # -----------------------------------------------------------------
+
+    def get_frame_path_list(self, min_wavelength=None, max_wavelength=None, exclude=None, named=True):
+
+        """
+        This function ...
+        :param min_wavelength:
+        :param max_wavelength:
+        :param exclude:
+        :param named:
+        :return:
+        """
+
+        # Keyed on name or filter
+        if named: return NamedFileList(**self.get_frame_paths(min_wavelength, max_wavelength, exclude))
+        else: return FileList(**self.get_frame_paths(min_wavelength, max_wavelength, exclude, keys="filter"))
+
+    # -----------------------------------------------------------------
+
+    def get_errormaplist(self, masked=True, mask_value=0.0, min_wavelength=None, max_wavelength=None, exclude=None, named=True):
+
+        """
+        This function ...
+        :param masked:
+        :param mask_value:
+        :param min_wavelength:
+        :param max_wavelength:
+        :param exclude:
+        :param named:
+        :return: 
+        """
+
+        if named: return NamedFrameList.from_dictionary(self.get_errormaps(masked, mask_value, min_wavelength, max_wavelength, exclude))
+        else: return FrameList(*self.get_errormaps(masked, mask_value, min_wavelength, max_wavelength, exclude, returns="list"))
+
+    # -----------------------------------------------------------------
+
+    get_errormap_list = get_errormaplist
+
+    # -----------------------------------------------------------------
+
+    def get_imagelist(self, exclude=None, min_wavelength=None, max_wavelength=None, named=True):
+
+        """
+        This function ...
+        :param exclude: 
+        :param min_wavelength: 
+        :param max_wavelength:
+        :param named:
+        :return: 
+        """
+
+        if named: return NamedImageList.from_dictionary(self.get_images(exclude, min_wavelength, max_wavelength))
+        else: return ImageList(*self.get_images(exclude, min_wavelength, max_wavelength, returns="list"))
+
+    # -----------------------------------------------------------------
+
+    get_image_list = get_imagelist
+
+    # -----------------------------------------------------------------
+
+    def get_name_for_filter(self, fltr):
 
         """
         This function ...
         :param fltr:
-        :param masked:
         :return:
         """
+
+        if types.is_string_type(fltr): fltr = parse_filter(fltr)
 
         filter_string = str(fltr)
 
@@ -315,14 +745,237 @@ class DataSet(object):
         # Loop over the filters dictionary
         for name in fltrs:
 
-            # Get the frame
-            frame = self.get_frame(name, masked=masked)
+            # Get the filter
+            frame_filter = self.get_filter(name)
 
             # Check the filter
-            if str(frame.filter) == filter_string: return frame
+            if str(frame_filter) == filter_string: return name
 
-        # No frame found
+        # No frame found for this filter
         return None
+
+    # -----------------------------------------------------------------
+
+    def get_frame_path_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr: 
+        :return: 
+        """
+
+        name = self.get_name_for_filter(fltr)
+        return self.get_frame_path(name)
+
+    # -----------------------------------------------------------------
+
+    def get_errormap_path_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr: 
+        :return: 
+        """
+
+        name = self.get_name_for_filter(fltr)
+        return self.get_errormap_path(name)
+
+    # -----------------------------------------------------------------
+
+    def get_names_for_filters(self, filters):
+
+        """
+        This function ...
+        :param filters: 
+        :return: 
+        """
+
+        names = []
+        for fltr in filters: names.append(self.get_name_for_filter(fltr))
+        return names
+
+    # -----------------------------------------------------------------
+
+    def get_frame_paths_for_filters(self, filters):
+
+        """
+        This function ...
+        :param filters: 
+        :return: 
+        """
+
+        paths = []
+        for fltr in filters: paths.append(self.get_frame_path_for_filter(fltr))
+        return paths
+
+    # -----------------------------------------------------------------
+
+    def get_frame_names_and_paths_for_filters(self, filters):
+
+        """
+        This function ...
+        :param filters: 
+        :return: 
+        """
+
+        result = OrderedDict()
+        for fltr in filters:
+            result[self.get_name_for_filter(fltr)] = self.get_frame_path_for_filter(fltr)
+        return result
+
+    # -----------------------------------------------------------------
+
+    def get_framelist_for_filters(self, filters):
+
+        """
+        This function ...
+        :param filters: 
+        :return: 
+        """
+
+        return NamedFrameList.from_paths(**self.get_frame_names_and_paths_for_filters(filters))
+
+    # -----------------------------------------------------------------
+
+    def get_errormap_paths_for_filters(self, filters):
+
+        """
+        This function ...
+        :param filters: 
+        :return: 
+        """
+
+        paths = []
+        for fltr in filters: paths.append(self.get_errormap_path_for_filter(fltr))
+        return paths
+
+    # -----------------------------------------------------------------
+
+    def get_errormap_names_and_paths_for_filters(self, filters):
+
+        """
+        This funtion ...
+        :param filters: 
+        :return: 
+        """
+
+        result = OrderedDict()
+        for fltr in filters:
+            result[self.get_name_for_filter(fltr)] = self.get_errormap_path_for_filter(fltr)
+        return result
+
+    # -----------------------------------------------------------------
+
+    def get_errormaplist_for_filters(self, filters):
+
+        """
+        This function ...
+        :param filters: 
+        :return: 
+        """
+
+        return NamedFrameList.from_paths(**self.get_errormap_names_and_paths_for_filters(filters))
+
+    # -----------------------------------------------------------------
+
+    def has_frame_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr: 
+        :return: 
+        """
+
+        # Get the name
+        name = self.get_name_for_filter(fltr)
+
+        if name is None: return False
+        else: return True
+
+    # -----------------------------------------------------------------
+
+    def get_frame_for_filter(self, fltr, masked=True, mask_value=0.0):
+
+        """
+        This function ...
+        :param fltr:
+        :param masked:
+        :param mask_value:
+        :return:
+        """
+
+        # Get the name
+        name = self.get_name_for_filter(fltr)
+
+        # No frame found for this filter
+        if name is None: return None
+
+        # Return the frame
+        return self.get_frame(name, masked=masked, mask_value=mask_value)
+
+    # -----------------------------------------------------------------
+
+    def has_errormap_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr: 
+        :return: 
+        """
+
+        # Get the name
+        name = self.get_name_for_filter(fltr)
+
+        # If name, return False
+        if name is None: return False
+
+        # Check whether error map is present
+        return name in self.error_paths
+
+    # -----------------------------------------------------------------
+
+    def get_errormap_for_filter(self, fltr, masked=True, mask_value=0.0):
+
+        """
+        THis function ...
+        :param fltr: 
+        :param masked: 
+        :param mask_value:
+        :return: 
+        """
+
+        # Get the name
+        name = self.get_name_for_filter(fltr)
+
+        # No frame is found for this filter
+        if name is None: return None
+
+        # Return the error map
+        return self.get_errormap(name, masked=masked, mask_value=mask_value)
+
+    # -----------------------------------------------------------------
+
+    def get_coordinate_system(self, name):
+
+        """
+        This function ...
+        :param name: 
+        :return: 
+        """
+
+        return self.get_wcs(name)
+
+    # -----------------------------------------------------------------
+
+    def get_coordinate_system_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param filter: 
+        :return: 
+        """
+
+        return self.get_wcs_for_filter(fltr)
 
     # -----------------------------------------------------------------
 
@@ -338,6 +991,30 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    def get_wcs_for_filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return self.get_wcs(self.get_name_for_filter(fltr))
+
+    # -----------------------------------------------------------------
+
+    def get_coordinate_box(self, name):
+
+        """
+        This function ...
+        :param name: 
+        :return: 
+        """
+
+        return self.get_wcs(name).bounding_box
+
+    # -----------------------------------------------------------------
+
     def get_bounding_box(self):
 
         """
@@ -346,13 +1023,140 @@ class DataSet(object):
         """
 
         # Region of all the bounding boxes
-        boxes_region = SkyRegion()
+        boxes_region = SkyRegionList()
 
         # Add the bounding boxes as sky rectangles
-        for name in self.paths: boxes_region.append(self.get_wcs(name).bounding_box)
+        for name in self.paths: boxes_region.append(self.get_coordinate_box(name))
 
         # Return the bounding box of the region of rectangles
         return boxes_region.bounding_box
+
+    # -----------------------------------------------------------------
+
+    def get_bounding_data(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def get_overlap_box(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        min_ra = None
+        max_ra = None
+        min_dec = None
+        max_dec = None
+
+        # Loop over the frames
+        for name in self.paths:
+
+            # Get wcs
+            wcs = self.get_coordinate_system(name)
+
+            # Adjust
+            if min_ra is None or wcs.min_ra > min_ra: min_ra = wcs.min_ra
+            if max_ra is None or wcs.max_ra < max_ra: max_ra = wcs.max_ra
+            if min_dec is None or wcs.min_dec > min_dec: min_dec = wcs.min_dec
+            if max_dec is None or wcs.max_dec < max_dec: max_dec = wcs.max_dec
+
+        center_ra = 0.5 * (min_ra + max_ra)
+        center_dec = 0.5 * (min_dec + max_dec)
+
+        # NO:
+        #ra_radius = 0.5 * (max_ra - min_ra)
+        dec_radius = 0.5 * (max_dec - min_dec)
+
+        # BUT:
+        ra_span = abs(coordinates.ra_distance(center_dec.to("deg").value, min_ra.to("deg").value, max_ra.to("deg").value))
+        ra_radius = 0.5 * ra_span * u("deg")
+
+        # Determine center and radius
+        # Get center and radius of the new bounding box
+        center = SkyCoordinate(center_ra, center_dec)
+        radius = SkyStretch(ra_radius, dec_radius)
+
+        # Return the bounding box
+        return SkyRectangleRegion(center, radius)
+
+    # -----------------------------------------------------------------
+
+    def get_overlap_data(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        min_ra = None
+        min_ra_name = None
+        max_ra = None
+        max_ra_name = None
+        min_dec = None
+        min_dec_name = None
+        max_dec = None
+        max_dec_name = None
+
+        # Loop over the images
+        for name in self.paths:
+
+            # Get wcs
+            wcs = self.get_coordinate_system(name)
+
+            #
+            if min_ra is None or wcs.min_ra > min_ra:
+                min_ra = wcs.min_ra
+                min_ra_name = name
+
+            if max_ra is None or wcs.max_ra < max_ra:
+                max_ra = wcs.max_ra
+                max_ra_name = name
+
+            if min_dec is None or wcs.min_dec > min_dec:
+                min_dec = wcs.min_dec
+                min_dec_name = name
+
+            if max_dec is None or wcs.max_dec < max_dec:
+                max_dec = wcs.max_dec
+                max_dec_name = name
+
+        # Create the data
+        data = Map()
+        data.ra = Map()
+        data.dec = Map()
+        data.ra.min = min_ra_name
+        data.ra.max = max_ra_name
+        data.dec.min = min_dec_name
+        data.dec.max = max_dec_name
+
+        center_ra = 0.5 * (min_ra + max_ra)
+        center_dec = 0.5 * (min_dec + max_dec)
+
+        # NO:
+        #ra_radius = 0.5 * (max_ra - min_ra)
+        dec_radius = 0.5 * (max_dec - min_dec)
+
+        # BUT:
+        ra_span = abs(coordinates.ra_distance(center_dec.to("deg").value, min_ra.to("deg").value, max_ra.to("deg").value))
+        ra_radius = 0.5 * ra_span * u("deg")
+
+        # Determine center and radius
+        # Get center and radius of the new bounding box
+        center = SkyCoordinate(center_ra, center_dec)
+        radius = SkyStretch(ra_radius, dec_radius)
+
+        box = SkyRectangleRegion(center, radius)
+
+        # Return the box, and the data
+        return box, data
 
     # -----------------------------------------------------------------
 
@@ -395,6 +1199,78 @@ class DataSet(object):
 
         # Return the maximum pixelscale
         return pixelscale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_pixelscale_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_wcs(self.min_pixelscale_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_pixelscale_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_wcs(self.max_pixelscale_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def min_pixelscale_name(self):
+
+        """
+        This property ...
+        :return:
+        """
+
+        pixelscale = None
+        frame_name = None
+
+        # Loop over the images
+        for name in self.paths:
+
+            wcs = self.get_wcs(name)
+            if pixelscale is None or wcs.average_pixelscale < pixelscale:
+                pixelscale = wcs.average_pixelscale
+                frame_name = name
+
+        # Return the name for the frame with the minimum pixelscale
+        return frame_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def max_pixelscale_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pixelscale = None
+        frame_name = None
+
+        # Loop over the images
+        for name in self.paths:
+
+            wcs = self.get_wcs(name)
+            if pixelscale is None or wcs.average_pixelscale > pixelscale:
+                pixelscale = wcs.average_pixelscale
+                frame_name = name
+
+        # Return the name for the frame with the maximum pixelscale
+        return frame_name
 
     # -----------------------------------------------------------------
 
@@ -490,7 +1366,19 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
-    def get_errors(self, name, masked=True, mask_value=0.0):
+    def get_errormap_path(self, name):
+
+        """
+        This function ...
+        :param name: 
+        :return: 
+        """
+
+        return self.error_paths[name]
+
+    # -----------------------------------------------------------------
+
+    def get_errormap(self, name, masked=True, mask_value=0.0):
 
         """
         This function ...
@@ -515,7 +1403,7 @@ class DataSet(object):
             if name in self.mask_paths:
                 mask = self.get_mask(name)
                 errors[mask] = mask_value
-            else: log.warning("No mask available for " + name + " frame")
+            #else: log.warning("No mask available for " + name + " frame")
 
         # Set the name
         errors.name = name
@@ -542,7 +1430,7 @@ class DataSet(object):
         frame = self.get_frame(name)
 
         # Get the errors
-        errors = self.get_errors(name)
+        errors = self.get_errormap(name)
         if errors is None: return None
 
         # Calculate the relative error map
@@ -555,7 +1443,7 @@ class DataSet(object):
             if name in self.mask_paths:
                 mask = self.get_mask(name)
                 rel_errors[mask] = mask_value
-            else: log.warning("No mask available for " + name + " frame")
+            #else: log.warning("No mask available for " + name + " frame")
 
         # Return the relative error map
         return rel_errors
@@ -579,7 +1467,7 @@ class DataSet(object):
         frame = self.get_frame(name)
 
         # Get the errors
-        errors = self.get_errors(name)
+        errors = self.get_errormap(name)
         if errors is None: return None
 
         # If level bins are specified
@@ -653,6 +1541,93 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    def get_image_mask(self, name, mask_name):
+
+        """
+        This function ...
+        :param name: 
+        :param mask_name
+        :return: 
+        """
+
+        image = self.get_image(name)
+        return image.masks[mask_name]
+
+    # -----------------------------------------------------------------
+
+    def get_image_masks(self, name, mask_names, strict=False):
+
+        """
+        This function ...
+        :param name: 
+        :param mask_names: 
+        :param strict: 
+        :return: 
+        """
+
+        present_mask_names = self.masks_in_image(name)
+
+        masks = []
+        for mask_name in mask_names:
+            if mask_name not in present_mask_names:
+                if strict:
+                    raise ValueError("Mask '" + mask_name + "' not present in image '" + name + "'")
+                else:
+                    continue
+
+            # Get the mask
+            mask = self.get_image_mask(name, mask_name)
+
+            # Add the mask
+            masks.append(mask)
+
+        # Return the list of masks
+        return masks
+
+    # -----------------------------------------------------------------
+
+    def get_image_masks_union(self, name, mask_names, strict=False):
+
+        """
+        This function ...
+        :param name: 
+        :param mask_names: 
+        :param strict: 
+        :return: 
+        """
+
+        # Get the masks
+        masks = self.get_image_masks(name, mask_names, strict=strict)
+
+        # No masks
+        if len(masks) == 0: return None
+
+        # Create the intersection
+        return union(*masks)
+
+    # -----------------------------------------------------------------
+
+    def get_image_masks_intersection(self, name, mask_names, strict=False):
+
+        """
+        This function ...
+        :param name: 
+        :param mask_names: 
+        :param strict:
+        :return: 
+        """
+
+        # Get the masks
+        masks = self.get_image_masks(name, mask_names, strict=strict)
+
+        # No masks
+        if len(masks) == 0: return None
+
+        # Create the intersection
+        return intersection(*masks)
+
+    # -----------------------------------------------------------------
+
     def planes_in_image(self, name):
 
         """
@@ -689,6 +1664,18 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    def get_mask_path(self, name):
+
+        """
+        This function ...
+        :param name: 
+        :return: 
+        """
+
+        return self.mask_paths[name]
+
+    # -----------------------------------------------------------------
+
     def get_mask(self, name):
 
         """
@@ -719,39 +1706,18 @@ class DataSet(object):
         :return:
         """
 
+        # Get the frames
+        frames = self.get_frames(min_wavelength=min_wavelength, max_wavelength=max_wavelength, exclude=exclude)
+
+        # Debugging
+        log.debug("Frames to be used for constructing the datacube:")
+        for name in frames: log.debug(" - " + name)
+
         # Inform the user
         log.info("Determining which image will be used as the reference for rebinning all other images ...")
 
-        # Make sure exclude is a list
-        if isinstance(exclude, basestring): exclude = [exclude]
-
-        # The image frames
-        frames = dict()
-
-        # Open the image frames
-        for name in self.paths:
-
-            # Skip if name is in the exclude list
-            if exclude is not None and name in exclude: continue
-
-            # Open the frame
-            frame = self.get_frame(name)
-
-            # Skip images of wavelength smaller than the minimum or greater than the maximum
-            if min_wavelength is not None and frame.wavelength < min_wavelength: continue
-            if max_wavelength is not None and frame.wavelength > max_wavelength: continue
-
-            # Add the frame
-            frames[name] = frame
-
-        # Get the name of the image with the lowest resolution
-        lowest_resolution = None
-        reference_name = None
-        for name in frames:
-            pixelscale = frames[name].pixelscale.average
-            if lowest_resolution is None or pixelscale > lowest_resolution:
-                lowest_resolution = pixelscale
-                reference_name = name
+        # Get the name of the frame with the lowest spatial resolution
+        reference_name = get_lowest_resolution_name(frames)
 
         # Inform the user
         log.info("The reference image used for the rebinning is the " + reference_name + " image")
@@ -762,11 +1728,59 @@ class DataSet(object):
             # Don't rebin the reference image
             if name == reference_name: continue
 
+            # Debugging
+            log.debug("Rebinning the " + name + " frame to the pixel grid of the " + reference_name + " image ...")
+
             # Rebin this frame to the lower resolution pixel grid
             frames[name].rebin(frames[reference_name].wcs)
 
         # Create the datacube and return it
+        # NOTE: the frames are sorted by wavelength by the DataCube constructor
         return DataCube.from_frames(frames.values())
+
+    # -----------------------------------------------------------------
+
+    def create_errorcube(self, min_wavelength=None, max_wavelength=None, exclude=None):
+
+        """
+        This function ...
+        :param min_wavelength:
+        :param max_wavelength:
+        :param exclude:
+        :return:
+        """
+
+        # Get the error maps
+        maps = self.get_errormaps(min_wavelength=min_wavelength, max_wavelength=max_wavelength, exclude=exclude)
+
+        # Debugging
+        log.debug("Error maps to be used for constructing the errorcube:")
+        for name in maps: log.debug(" - " + name)
+
+        # Inform the user
+        log.info("Determining which error map will be used as the reference for rebinning all other error maps ...")
+
+        # Get the name of the error map with the lowest spatial resolution
+        reference_name = get_lowest_resolution_name(maps)
+
+        # Inform the user
+        log.info("The reference error map used for the rebinning is the " + reference_name + " error map")
+
+        # Loop over all images
+        for name in maps:
+
+            # Don't rebin the reference map
+            if name == reference_name: continue
+
+            # Debugging
+            log.debug("Rebinning the " + name + " error map to the pixel grid of the " + reference_name + " image ...")
+
+            # Rebin this error map to the lower resolution pixel grid
+            maps[name].rebin(maps[reference_name].wcs)
+
+        # Create the datacube and return it
+        # NOTE: the maps are sorted by wavelength by the DataCube constructor
+        return DataCube.from_frames(maps.values())
 
     # -----------------------------------------------------------------
 
@@ -796,28 +1810,17 @@ class DataSet(object):
         # Inform the user
         log.info("Saving the dataset to " + path + " ...")
 
-        # Create a table
-        column_names = ["Name", "Path", "Error path", "Mask path"]
-
-        # Set the entries
-        names = []
-        paths = []
-        error_paths = []
-        mask_paths = []
+        # Create the table
+        table = DataSetTable()
 
         for name in self.paths:
-
-            names.append(name)
-            paths.append(self.paths[name])
-            error_paths.append(self.error_paths[name] if name in self.error_paths else None)
-            mask_paths.append(self.mask_paths[name] if name in self.mask_paths else None)
-
-        # Construct the table
-        data = [names, paths, error_paths, mask_paths]
-        table = tables.new(data, column_names)
+            frame_path = self.paths[name]
+            error_path = self.error_paths[name] if name in self.error_paths else None
+            mask_path = self.mask_paths[name] if name in self.mask_paths else None
+            table.add_entry(name, frame_path, error_path, mask_path)
 
         # Save the table
-        tables.write(table, path)
+        table.saveto(path)
 
         # Update the path
         self.path = path
@@ -842,7 +1845,7 @@ class DataSet(object):
 
             # Open the frame and error map
             frame = self.get_frame(name)
-            errors = self.get_errors(name)
+            errors = self.get_errormap(name)
 
             # Create the header
             header = frame.header
@@ -879,15 +1882,15 @@ class DataSetCreator(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(DataSetCreator, self).__init__(config)
+        super(DataSetCreator, self).__init__(*args, **kwargs)
 
         # The list of image paths
         self.image_paths = None
@@ -964,13 +1967,13 @@ class DataSetCreator(Configurable):
         log.info("Loading interactive prompt for image paths ...")
 
         # The configuration setter
-        setter = InteractiveConfigurationSetter("datasetcreator_images")
+        setter = InteractiveConfigurationSetter("datasetcreator_images", add_cwd=False, add_logging=False)
 
         definition = ConfigurationDefinition()
         definition.add_required("image_paths", "filepath_list", "paths to the images")
 
         # Create the configuration and get the paths
-        config = setter.run(definition)
+        config = setter.run(definition, prompt_optional=False)
         self.image_paths = config.image_paths
 
         self.error_paths = dict()
@@ -980,12 +1983,12 @@ class DataSetCreator(Configurable):
             name = fs.strip_extension(fs.name(path))
 
             definition = ConfigurationDefinition()
-            definition.add_optional("error_path", "filepath", "path to the error map for " + name)
+            definition.add_optional("error_path", "file_path", "path to the error map for " + name)
 
-            setter = InteractiveConfigurationSetter("datasetcreator_errors")
+            setter = InteractiveConfigurationSetter("datasetcreator_errors", add_cwd=False, add_logging=False)
 
             # Get the error path
-            config = setter.run(definition)
+            config = setter.run(definition, prompt_optional=True)
             error_path = config.error_path
 
             if error_path is not None: self.error_paths[name] = error_path
@@ -1061,5 +2064,26 @@ class DataSetCreator(Configurable):
 
         path = fs.join(self.config.path, "dataset.dat")
         self.dataset.saveto(path)
+
+# -----------------------------------------------------------------
+
+def get_lowest_resolution_name(frames):
+
+    """
+    This function ...
+    :param frames:
+    :return:
+    """
+
+    # Get the name of the image with the lowest resolution
+    lowest_resolution = None
+    reference_name = None
+    for name in frames:
+        pixelscale = frames[name].pixelscale.average
+        if lowest_resolution is None or pixelscale > lowest_resolution:
+            lowest_resolution = pixelscale
+            reference_name = name
+
+    return reference_name
 
 # -----------------------------------------------------------------

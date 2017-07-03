@@ -12,22 +12,24 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import astronomical modules
 from astroquery.vizier import Vizier
 from astropy.coordinates import Angle
-from astropy.units import Unit, dimensionless_angles
+from astropy.units import dimensionless_angles
+from astroquery.ned import Ned
 
 # Import the relevant PTS classes and modules
-from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from .component import DataComponent
-from ..preparation import unitconversion
-from ...core.basics.errorbar import ErrorBar
-from ...magic.basics.skygeometry import SkyCoordinate
-from ...magic.tools import catalogs
+from ...magic.basics.coordinate import SkyCoordinate
 from ..basics.properties import GalaxyProperties
 from ...core.tools import tables
 from ...dustpedia.core.database import DustPediaDatabase, get_account
+from ...core.units.parsing import parse_unit as u
+from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -37,16 +39,16 @@ class PropertyFetcher(DataComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(PropertyFetcher, self).__init__(config)
+        super(PropertyFetcher, self).__init__(*args, **kwargs)
 
         # The Vizier querying object
         self.vizier = Vizier()
@@ -73,11 +75,14 @@ class PropertyFetcher(DataComponent):
         # 1. Setup
         self.setup()
 
-        # 2. Get the NGC ID
-        self.get_ngc_id()
+        # 2. Get the NGC name
+        self.get_ngc_name()
 
         # 3. Get the basic galaxy information listed on the database
         self.get_dustpedia_info()
+
+        # 4. Get properties from NED
+        self.get_ned_properties()
 
         # 4. Get the basic properties from S4G
         self.get_s4g_properties()
@@ -87,6 +92,9 @@ class PropertyFetcher(DataComponent):
 
         # 6. Get spiral properties
         #self.get_spiral_properties()
+
+        # Show
+        self.show()
 
         # 7. Writing
         self.write()
@@ -113,11 +121,11 @@ class PropertyFetcher(DataComponent):
         self.database.login(username, password)
 
         # Create the galaxy properties object
-        self.properties = GalaxyProperties()
+        self.properties = GalaxyProperties(name=self.galaxy_name)
 
     # -----------------------------------------------------------------
 
-    def get_ngc_id(self):
+    def get_ngc_name(self):
 
         """
         This function ...
@@ -125,7 +133,7 @@ class PropertyFetcher(DataComponent):
         """
 
         # Get the NGC name of the galaxy
-        self.properties.ngc_id = catalogs.get_ngc_name(self.galaxy_name)
+        self.properties.ngc_name = self.ngc_name
 
     # -----------------------------------------------------------------
 
@@ -140,7 +148,47 @@ class PropertyFetcher(DataComponent):
         log.info("Fetching galaxy info from the DustPedia database ...")
 
         # Get the info
-        self.info = self.database.get_galaxy_info(self.ngc_id_nospaces)
+        self.info = self.database.get_galaxy_info(self.ngc_name_nospaces)
+
+        # Get the HYPERLEDA (or DustPedia) name
+        self.properties.hyperleda_name = self.hyperleda_name
+
+    # -----------------------------------------------------------------
+
+    def get_ned_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Querying the NASA/IPAC Extragalactic Database ...")
+
+        # Search on NED
+        ned_result = Ned.query_object(self.galaxy_name)
+        ned_entry = ned_result[0]
+
+        # Get a more common name for this galaxy (sometimes, the name obtained from NED is one starting with 2MASX .., use the PGC name in this case)
+        if ned_entry["Object Name"].startswith("2MASX "): gal_name = self.ngc_name
+        else: gal_name = ned_entry["Object Name"]
+
+        # Get the redshift
+        gal_redshift = ned_entry["Redshift"]
+        if isinstance(gal_redshift, np.ma.core.MaskedConstant): gal_redshift = None
+
+        # Get the type (G=galaxy, HII ...)
+        gal_type = ned_entry["Type"]
+        if isinstance(gal_type, np.ma.core.MaskedConstant): gal_type = None
+
+        # Get the distance
+        #ned_distance = ned_entry["Distance (arcmin)"]
+        #if isinstance(ned_distance, np.ma.core.MaskedConstant): ned_distance = None
+
+        # Set properties
+        self.properties.common_name = gal_name
+        self.properties.redshift = gal_redshift
+        self.properties.galaxy_type = gal_type
 
     # -----------------------------------------------------------------
 
@@ -159,7 +207,7 @@ class PropertyFetcher(DataComponent):
         table = result[0]
 
         # Galaxy name for S4G catalog
-        self.properties.galaxy_name = table["Name"][0]
+        self.properties.name = table["Name"][0]
 
         # Galaxy center from decomposition (?)
         ra_center = table["_RAJ2000"][0]
@@ -171,16 +219,16 @@ class PropertyFetcher(DataComponent):
         #self.properties.center = SkyCoordinate(ra=self.info["RA"][0], dec=self.info["DEC"][0], unit="deg") # center position from DustPedia
 
         # Distance
-        self.properties.distance = table["Dmean"][0] * Unit("Mpc")
-        self.properties.distance_error = table["e_Dmean"][0] * Unit("Mpc")
+        self.properties.distance = table["Dmean"][0] * u("Mpc")
+        self.properties.distance_error = table["e_Dmean"][0] * u("Mpc")
 
         # Major axis, ellipticity, position angle
-        self.properties.major_arcsec = table["amaj"][0] * Unit("arcsec")
+        self.properties.major_arcsec = table["amaj"][0] * u("arcsec")
         self.properties.major = (self.properties.distance * self.properties.major_arcsec).to("pc", equivalencies=dimensionless_angles())
 
         # Ellipticity
         self.properties.ellipticity = table["ell"][0]
-        self.properties.position_angle = Angle(table["PA"][0] + 90.0, Unit("deg"))
+        self.properties.position_angle = Angle(table["PA"][0] + 90.0, u("deg"))
 
         # Magnitudes
         asymptotic_ab_magnitude_i1 = table["__3.6_"][0]
@@ -188,31 +236,32 @@ class PropertyFetcher(DataComponent):
         asymptotic_ab_magnitude_i1_error = table["e__3.6_"][0]
         asymptotic_ab_magnitude_i2_error = table["e__4.5_"][0]
 
-        self.properties.i1_mag = asymptotic_ab_magnitude_i1
-        self.properties.i1_mag_error = asymptotic_ab_magnitude_i1_error
-        self.properties.i2_mag = asymptotic_ab_magnitude_i2
-        self.properties.i2_mag_error = asymptotic_ab_magnitude_i2_error
+        # I CAN ADD THESE ATTRIBUTES BACK TO THE GALAXYPROPERTIES CLASS IF I WANT
+        #self.properties.i1_mag = asymptotic_ab_magnitude_i1
+        #self.properties.i1_mag_error = asymptotic_ab_magnitude_i1_error
+        #self.properties.i2_mag = asymptotic_ab_magnitude_i2
+        #self.properties.i2_mag_error = asymptotic_ab_magnitude_i2_error
 
-        self.properties.i1_fluxdensity = unitconversion.ab_to_jansky(self.properties.i1_mag) * Unit("Jy")
-        i1_fluxdensity_lower = unitconversion.ab_to_jansky(
-            self.properties.i1_mag + self.properties.i1_mag_error) * Unit("Jy")
-        i1_fluxdensity_upper = unitconversion.ab_to_jansky(
-            self.properties.i1_mag - self.properties.i1_mag_error) * Unit("Jy")
-        i1_error = ErrorBar(i1_fluxdensity_lower, i1_fluxdensity_upper, at=self.properties.i1_fluxdensity)
-        self.properties.i1_error = i1_error.average
+        #self.properties.i1_fluxdensity = unitconversion.ab_to_jansky(self.properties.i1_mag) * u("Jy")
+        #i1_fluxdensity_lower = unitconversion.ab_to_jansky(
+        #    self.properties.i1_mag + self.properties.i1_mag_error) * u("Jy")
+        #i1_fluxdensity_upper = unitconversion.ab_to_jansky(
+        #    self.properties.i1_mag - self.properties.i1_mag_error) * u("Jy")
+        #i1_error = ErrorBar(i1_fluxdensity_lower, i1_fluxdensity_upper, at=self.properties.i1_fluxdensity)
+        #self.properties.i1_error = i1_error.average
 
-        self.properties.i2_fluxdensity = unitconversion.ab_to_jansky(self.properties.i2_mag) * Unit("Jy")
-        i2_fluxdensity_lower = unitconversion.ab_to_jansky(
-            self.properties.i2_mag + self.properties.i2_mag_error) * Unit("Jy")
-        i2_fluxdensity_upper = unitconversion.ab_to_jansky(
-            self.properties.i2_mag - self.properties.i2_mag_error) * Unit("Jy")
-        i2_error = ErrorBar(i2_fluxdensity_lower, i2_fluxdensity_upper, at=self.properties.i2_fluxdensity)
-        self.properties.i2_error = i2_error.average
+        #self.properties.i2_fluxdensity = unitconversion.ab_to_jansky(self.properties.i2_mag) * u("Jy")
+        #i2_fluxdensity_lower = unitconversion.ab_to_jansky(
+        #    self.properties.i2_mag + self.properties.i2_mag_error) * u("Jy")
+        #i2_fluxdensity_upper = unitconversion.ab_to_jansky(
+        #    self.properties.i2_mag - self.properties.i2_mag_error) * u("Jy")
+        #i2_error = ErrorBar(i2_fluxdensity_lower, i2_fluxdensity_upper, at=self.properties.i2_fluxdensity)
+        #self.properties.i2_error = i2_error.average
 
         # Other ...
         # absolute_magnitude_i1 = table["M3.6"][0]
         # absolute_magnitude_i2 = table["M4.5"][0]
-        # stellar_mass = 10.0**table["logM_"][0] * u.Unit("Msun")
+        # stellar_mass = 10.0**table["logM_"][0] * u("Msun")
 
     # -----------------------------------------------------------------
 
@@ -283,6 +332,25 @@ class PropertyFetcher(DataComponent):
 
     # -----------------------------------------------------------------
 
+    def show(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Showing galaxy properties ...")
+
+        print("")
+        print("Galaxy properties: ")
+        print(" - Name: " + self.properties.name)
+        print(" - Distance: " + tostr(self.properties.distance, scientific=True, fancy=True, ndigits=3))
+        print(" - Constellation: " + self.properties.center.get_constellation())
+        print("")
+
+    # -----------------------------------------------------------------
+
     def write(self):
 
         """
@@ -327,6 +395,6 @@ class PropertyFetcher(DataComponent):
         log.info("Writing the galaxy properties ...")
 
         # Write
-        self.properties.save(self.galaxy_properties_path)
+        self.properties.saveto(self.galaxy_properties_path)
 
 # -----------------------------------------------------------------

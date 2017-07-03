@@ -17,22 +17,21 @@
 
 # -----------------------------------------------------------------
 
-__all__ = ["Consts", "Crossovers", "DBAdapters", "FunctionSlot",
-           "G1DBinaryString", "G1DList", "G2DBinaryString",
-           "G2DList", "GAllele", "GenomeBase", "GPopulation",
-           "SimpleGeneticAlgorithm", "GTree", "Initializators",
-           "Migration", "Mutators", "Network", "Scaling", "Selectors",
-           "Statistics", "Util"]
+#__all__ = ["constants", "crossovers", "dbadapters", "functionslot",
+#           "genomes", "allele", "genome", "population",
+#           "engine", "tree", "initializators",
+#           "migration", "mutators", "network", "scaling", "selectors",
+#           "statistics", "utils"]
 
-__version__ = '0.6'
+#__version__ = '0.6'
 __author__ = 'Christian S. Perone'
 
-import constants
-import sys
+#from . import constants
+#import sys
 
-if sys.version_info[:2] < constants.CDefPythonRequire:
-   raise Exception("Python 2.5+ required, the version %s was found on your system !" % (sys.version_info[:2],))
+#if sys.version_info[:2] < constants.CDefPythonRequire:
+#   raise Exception("Python 2.5+ required, the version %s was found on your system !" % (sys.version_info[:2],))
 
-del sys
+#del sys
 
 # -----------------------------------------------------------------

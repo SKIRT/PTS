@@ -14,11 +14,86 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 from operator import itemgetter
+import time as _time
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import introspection
 from pts.core.tools import filesystem as fs
 from pts.core.tools import formatting as fmt
+
+# -----------------------------------------------------------------
+
+class Command(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, command, description, settings, input_dict, cwd=None, finish=None):
+
+        """
+        This function ...
+        :param command:
+        :param settings:
+        :param input_dict:
+        :param cwd:
+        :param finish:
+        """
+
+        # Set working directory
+        if cwd is None:
+            self.cwd_specified = False
+            cwd = fs.cwd()
+        else: self.cwd_specified = True
+
+        # Set attributes
+        self.command = command
+        self.description = description
+        self.settings = settings
+        self.input_dict = input_dict
+        self.cwd = cwd
+        self.finish = finish
+
+# -----------------------------------------------------------------
+
+def start_and_clear(command_name, target, **kwargs):
+
+    """
+    This function ...
+    :param command_name: 
+    :param target: 
+    :param kwargs: 
+    :return: 
+    """
+
+    # Start
+    start_target(command_name, target, **kwargs)
+
+    # Remove temp
+    print("Clearing temporary data ...")
+    introspection.remove_temp_dirs()
+
+# -----------------------------------------------------------------
+
+def start_target(command_name, target, **kwargs):
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Record starting time
+    start = _time.time()
+
+    # Run
+    target(**kwargs)
+
+    # Record end time
+    end = _time.time()
+    seconds = end - start
+
+    # Succesfully finished
+    print("Finished " + command_name + " in " + str(seconds) + " seconds")
 
 # -----------------------------------------------------------------
 
@@ -30,8 +105,6 @@ def show_all_available(scripts, tables=None):
     :param tables:
     :return:
     """
-
-    print("Available PTS do commands:")
 
     # The list that will contain the info about all the scripts / table commands
     info = []
@@ -51,52 +124,82 @@ def show_all_available(scripts, tables=None):
         description = get_description(path, subproject, command[:-3])
 
         # Add entry to the info
-        info.append((subproject, command[:-3], description, "arguments"))
+        title = None
+        configuration_module_path = None
+        info.append((subproject, command[:-3], description, "arguments", title, configuration_module_path))
 
     # Tables
     for subproject in tables:
+
         table = tables[subproject]
+
+        # Loop over the entries
         for i in range(len(table["Command"])):
+
             command = table["Command"][i]
+            hidden = False
+            if command.startswith("*"):
+                hidden = True
+                command = command[1:]
+            if hidden: continue # skip hidden
             description = table["Description"][i]
             configuration_method = table["Configuration method"][i]
-            info.append((subproject, command, description, configuration_method))
+
+            configuration_name = table["Configuration"][i]
+            if configuration_name == "--": configuration_name = command
+            configuration_module_path = "pts." + subproject + ".config." + configuration_name
+            real_configuration_module_path = introspection.pts_root_dir + "/" + configuration_module_path.replace(".", "/") + ".py"
+            if not fs.is_file(real_configuration_module_path): real_configuration_module_path = None
+
+            title = table["Title"][i]
+            info.append((subproject, command, description, configuration_method, title, real_configuration_module_path))
 
     # Sort on the 'do' subfolder name
     info = sorted(info, key=itemgetter(0))
 
-    lengths = dict()
-    lengths_config_methods = dict()
-    for script in info:
-        subproject = script[0]
-        command = script[1]
-        if subproject not in lengths or len(command) > lengths[subproject]: lengths[subproject] = len(command)
+    # Print in columns
+    with fmt.print_in_columns(6) as print_row:
 
-        config_method = script[3] if len(script) == 4 else ""
-        if subproject not in lengths_config_methods or len(config_method) > lengths_config_methods[subproject]:
-            lengths_config_methods[subproject] = len(config_method)
+        previous_subproject = None
+        previous_title = None
 
-    current_dir = None
-    for script in info:
+        for script in info:
 
-        from_table = len(script) == 4
+            configuration_method = script[3]
+            description = script[2]
 
-        configuration_method = script[3] if from_table else ""
-        description = script[2] if from_table else ""
+            # Get the title
+            title = script[4]
 
-        nspaces = lengths[script[0]] - len(script[1]) + 3
-        pre_config_infix = " " * nspaces + "[" if from_table else ""
-        after_config_infix = "]   " + " " *(lengths_config_methods[script[0]] - len(configuration_method)) if from_table else ""
+            # Get the configuration module path
+            has_configuration = script[5] is not None
+            if has_configuration: has_configuration_string = fmt.green + "C" + fmt.reset
+            else: has_configuration_string = fmt.red + "NC" + fmt.reset
 
-        coloured_subproject = fmt.green + script[0] + fmt.reset
-        coloured_name = fmt.bold + fmt.underlined + fmt.red + script[1] + fmt.reset
-        coloured_config_method = fmt.yellow + pre_config_infix + configuration_method + after_config_infix + fmt.reset
+            # Transform title
+            if title is None: title = ""
 
-        if current_dir == script[0]:
-            print(" " * len(current_dir) + "/" + coloured_name + coloured_config_method + description)
-        else:
-            print(coloured_subproject + "/" + coloured_name + coloured_config_method + description)
-            current_dir = script[0]
+            coloured_subproject = fmt.green + script[0] + fmt.reset
+            coloured_name = fmt.bold + fmt.underlined + fmt.red + script[1] + fmt.reset
+            coloured_config_method = fmt.yellow + "[" + configuration_method + "]" + fmt.reset
+
+            coloured_title = fmt.blue + fmt.bold + title + fmt.reset
+
+            if previous_subproject is None or previous_subproject != script[0]:
+
+                previous_subproject = script[0]
+                print_row(coloured_subproject, "/")
+
+            if previous_title is None or previous_title != title:
+
+                previous_title = title
+
+                if title != "":
+                    print_row()
+                    print_row("", "", coloured_title)
+
+            # Print command
+            print_row("", "/", coloured_name, coloured_config_method, description, has_configuration_string)
 
 # -----------------------------------------------------------------
 
@@ -109,8 +212,6 @@ def show_possible_matches(matches, table_matches=None, tables=None):
     :param tables:
     :return:
     """
-
-    print("The command you provided is ambiguous. Possible matches:")
 
     # The list that will contain the info about all the scripts / table commands
     info = []
@@ -130,50 +231,76 @@ def show_possible_matches(matches, table_matches=None, tables=None):
         description = get_description(path, subproject, command[:-3])
 
         # Add entry to the info
-        info.append((subproject, command[:-3], description, "arguments"))
+        title = None
+        configuration_module_path = None
+        info.append((subproject, command[:-3], description, "arguments", title, configuration_module_path))
 
     # Tables
     for subproject, index in table_matches:
+
         command = tables[subproject]["Command"][index]
+        hidden = False
+        if command.startswith("*"):
+            hidden = True
+            command = command[1:]
+        if hidden: continue # skip if hidden
         description = tables[subproject]["Description"][index]
         configuration_method = tables[subproject]["Configuration method"][index]
-        info.append((subproject, command, description, configuration_method))
+
+        configuration_name = tables[subproject]["Configuration"][index]
+        if configuration_name == "--": configuration_name = command
+        configuration_module_path = "pts." + subproject + ".config." + configuration_name
+        real_configuration_module_path = introspection.pts_root_dir + "/" + configuration_module_path.replace(".", "/") + ".py"
+        if not fs.is_file(real_configuration_module_path): real_configuration_module_path = None
+
+        title = tables[subproject]["Title"][index]
+        info.append((subproject, command, description, configuration_method, title, real_configuration_module_path))
 
     # Sort on the 'do' subfolder name
     info = sorted(info, key=itemgetter(0))
 
-    lengths = dict()
-    lengths_config_methods = dict()
-    for script in info:
-        subproject = script[0]
-        command = script[1]
-        if subproject not in lengths or len(command) > lengths[subproject]: lengths[subproject] = len(command)
+    # Print in columns
+    with fmt.print_in_columns(6) as print_row:
 
-        config_method = script[3] if len(script) == 4 else ""
-        if subproject not in lengths_config_methods or len(config_method) > lengths_config_methods[subproject]:
-            lengths_config_methods[subproject] = len(config_method)
+        previous_subproject = None
+        previous_title = None
 
-    current_dir = None
-    for script in info:
+        for script in info:
 
-        from_table = len(script) == 4
+            configuration_method = script[3]
+            description = script[2]
 
-        configuration_method = script[3] if from_table else ""
-        description = script[2] if from_table else ""
+            # Get the title
+            title = script[4]
 
-        nspaces = lengths[script[0]] - len(script[1]) + 3
-        pre_config_infix = " " * nspaces + "[" if from_table else ""
-        after_config_infix = "]   " + " " * (lengths_config_methods[script[0]] - len(configuration_method)) if from_table else ""
+            # Transform title
+            if title is None: title = ""
 
-        coloured_subproject = fmt.green + script[0] + fmt.reset
-        coloured_name = fmt.bold + fmt.underlined + fmt.red + script[1] + fmt.reset
-        coloured_config_method = fmt.yellow + pre_config_infix + configuration_method + after_config_infix + fmt.reset
+            # Get the configuration module path
+            has_configuration = script[5] is not None
+            if has_configuration: has_configuration_string = fmt.green + "C" + fmt.reset
+            else: has_configuration_string = fmt.red + "NC" + fmt.reset
 
-        if current_dir == script[0]:
-            print(" " * len(current_dir) + "/" + coloured_name + coloured_config_method + description)
-        else:
-            print(coloured_subproject + "/" + coloured_name + coloured_config_method + description)
-            current_dir = script[0]
+            coloured_subproject = fmt.green + script[0] + fmt.reset
+            coloured_name = fmt.bold + fmt.underlined + fmt.red + script[1] + fmt.reset
+            coloured_config_method = fmt.yellow + "[" + configuration_method + "]" + fmt.reset
+
+            coloured_title = fmt.blue + fmt.bold + title + fmt.reset
+
+            if previous_subproject is None or previous_subproject != script[0]:
+                previous_subproject = script[0]
+                print_row(coloured_subproject, "/")
+
+            if previous_title is None or previous_title != title:
+
+                previous_title = title
+
+                if title != "":
+                    print_row()
+                    print_row("", "", coloured_title)
+
+            # Print command
+            print_row("", "/", coloured_name, coloured_config_method, description, has_configuration_string)
 
 # -----------------------------------------------------------------
 
@@ -201,6 +328,8 @@ def get_description(script_path, subproject, command):
 
                 if len(splitted) > 1: description = splitted[1]
                 break
+
+    description = description.replace("\c", "")
 
     # Return description
     return description

@@ -36,17 +36,17 @@ class TruncationPlotter(PlottingComponent, TruncationComponent):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructors of the base classes
-        PlottingComponent.__init__(self, config)
-        TruncationComponent.__init__(self, config)
+        PlottingComponent.__init__(self, *args, **kwargs)
+        TruncationComponent.__init__(self, *args, **kwargs)
 
         # -- Attributes --
 
@@ -55,15 +55,16 @@ class TruncationPlotter(PlottingComponent, TruncationComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the images
         self.load_images()

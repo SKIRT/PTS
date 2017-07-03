@@ -5,88 +5,61 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.magic.catalog_to_region Create a region file from a catalog file
+## \package pts.do.magic.catalog_to_regions Create a regions file from a catalog file.
 
 # -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import os
-import argparse
-
 # Import the relevant PTS classes and modules
 from pts.core.tools import tables
-from pts.magic.basics.skygeometry import SkyCoordinate
+from pts.magic.basics.coordinate import SkyCoordinate
 from pts.magic.core.frame import Frame
 from pts.magic.tools import statistics
+from pts.core.tools import filesystem as fs
+from pts.magic.catalog.extended import ExtendedSourceCatalog
+from pts.magic.catalog.point import PointSourceCatalog
+from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
 
 # -----------------------------------------------------------------
 
-# Create the command-line parser
-parser = argparse.ArgumentParser()
-parser.add_argument("catalog", type=str, help="the name of the region file")
-parser.add_argument("image", type=str, help="the name of the image file for which to create the region")
-parser.add_argument("fwhm", type=float, help="the FWHM of the stars (in pixels)")
-parser.add_argument("sigma_level", type=float, nargs='?', help="the sigma level", default=3.0)
-parser.add_argument("--color", type=str, help="the color", default="blue")
+# Create the configuration definition
+definition = ConfigurationDefinition()
+definition.add_required("type", "string", "type of catalog (extended/point)", choices=["extended", "point"])
+definition.add_required("path", "file_path", "name of the region file")
+definition.add_required("frame", "file_path", "name of an image file")
 
-# Parse the command line arguments
-arguments = parser.parse_args()
+#parser.add_argument("image", type=str, help="the name of the image file for which to create the region")
+#parser.add_argument("fwhm", type=float, help="the FWHM of the stars (in pixels)")
+#parser.add_argument("sigma_level", type=float, nargs='?', help="the sigma level", default=3.0)
+#parser.add_argument("--color", type=str, help="the color", default="blue")
+
+setter = ArgumentConfigurationSetter("catalog_to_regions")
+config = setter.run(definition)
 
 # -----------------------------------------------------------------
 
 # Load the catalog
-catalog_name = os.path.splitext(os.path.basename(arguments.catalog))[0]
-catalog = tables.from_file(arguments.catalog)
+#catalog_name = os.path.splitext(os.path.basename(arguments.catalog))[0]
+#catalog = tables.from_file(arguments.catalog)
 
 # Open the frame
-frame = Frame.from_file(arguments.image)
+#frame = Frame.from_file(arguments.image)
 
 # -----------------------------------------------------------------
 
-# Determine the path to the region file
-path = os.path.join(os.getcwd(), catalog_name + ".reg")
+catalog_name = fs.strip_extension(fs.name(config.path))
 
-# Create a file
-f = open(path, 'w')
+# -----------------------------------------------------------------
 
-# Initialize the region string
-print("# Region file format: DS9 version 4.1", file=f)
+# Load the catalog
+if config.type == "extended": catalog = ExtendedSourceCatalog.from_file(config.path)
+elif config.type == "point": catalog = PointSourceCatalog.from_file(config.path)
+else: raise ValueError("Invalid catalog type")
 
-# Create the list of stars
-for i in range(len(catalog)):
+# -----------------------------------------------------------------
 
-    # Get the star properties
-    #catalog = self.catalog["Catalog"][i]
-    star_id = catalog["Id"][i]
-    ra = catalog["Right ascension"][i]
-    dec = catalog["Declination"][i]
-    #ra_error = catalog["Right ascension error"][i] * u.mas
-    #dec_error = catalog["Declination error"][i] * u.mas
-    #confidence_level = catalog["Confidence level"][i]
 
-    # Create a sky coordinate for the star position
-    position = SkyCoordinate(ra=ra, dec=dec, unit="deg", frame="fk5")
-
-    # To pixel position
-    center = position.to_pixel(frame.wcs)
-
-    # Determine the radius
-    radius = arguments.fwhm * statistics.fwhm_to_sigma * arguments.sigma_level
-
-    # Determine the text (=star index)
-    text = star_id.split("/")[1]
-
-    # Show a circle for the star
-    suffix = " # "
-    color_suffix = "color = " + arguments.color
-    text_suffix = "text = {" + text + "}"
-    suffix += color_suffix + " " + text_suffix
-    print("image;circle({},{},{})".format(center.x+1, center.y+1, radius) + suffix, file=f)
-
-# Close the file
-f.close()
 
 # -----------------------------------------------------------------

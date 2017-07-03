@@ -38,18 +38,18 @@ class HostConfigurer(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(HostConfigurer, self).__init__(config)
+        super(HostConfigurer, self).__init__(*args, **kwargs)
 
         # The configuration setter
-        self.setter = InteractiveConfigurationSetter("host")
+        self.setter = InteractiveConfigurationSetter("host", add_cwd=False, add_logging=False)
 
         # The configuration definition
         self.definition = None
@@ -142,6 +142,6 @@ class HostConfigurer(Configurable):
         path = fs.join(hosts_directory, self.config.name + ".cfg")
 
         # Write the host configuration
-        self.host_config.save(path)
+        self.host_config.saveto(path)
 
 # -----------------------------------------------------------------

@@ -212,7 +212,7 @@ class WavelengthGridPlotter(object):
 
             # Get the wavelengths and fluxes array
             wavelengths = self.seds[label].wavelengths(asarray=True)
-            fluxes = self.seds[label].fluxes(asarray=True)
+            fluxes = self.seds[label].photometry(asarray=True)
 
             nonzero = fluxes != 0
             wavelengths = wavelengths[nonzero]
@@ -227,7 +227,7 @@ class WavelengthGridPlotter(object):
 
             # Get the wavelength points
             grid = self.grids[label]
-            wavelengths = grid.wavelengths(asarray=True)
+            wavelengths = grid.wavelengths("micron", asarray=True)
             nwavelengths = grid.nwavelengths
 
             # Plot the grid points

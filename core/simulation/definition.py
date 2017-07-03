@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import copy
+
 # Import the relevant PTS classes and modules
 from ..tools import filesystem as fs
 from .skifile import SkiFile
@@ -35,7 +38,7 @@ def create_definitions(path, output_path, input_path, recursive=False):
     if not recursive:
         # Create an 'out' directory if the output directory is not specified
         if output_path is None: output_path = fs.create_directory_in(path, "out")
-        else: output_path = fs.absolute(output_path)
+        else: output_path = fs.absolute_path(output_path)
     else: output_path = None
 
     # Keep track of the directories where ski files were found
@@ -95,7 +98,18 @@ class SimulationDefinition(object):
 
         pass
 
-# -----------------------------------------------------------------
+    # -----------------------------------------------------------------
+
+    def copy(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return copy.deepcopy(self)
+
+    # -----------------------------------------------------------------
 
 class SingleSimulationDefinition(SimulationDefinition):
 

@@ -14,22 +14,28 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import math
+import traceback
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
-from ..basics.remote import Remote
+from ..remote.remote import Remote
 from .options import LoggingOptions
 from ..tools import introspection, time
 from ..tools import filesystem as fs
 from ..tools.logging import log
-from ..basics.host import Host
+from ..remote.host import Host
 from .analyser import SimulationAnalyser
 from .options import AnalysisOptions
 from ..simulation.definition import create_definitions
 from ..advanced.parallelizationtool import ParallelizationTool
 from ..basics.handle import ExecutionHandle
+from ..tools import parallelization as par
+from ..simulation.execute import SkirtExec
+from ..simulation.input import SimulationInput
+from ..simulation.skifile import SkiFile
+from ..simulation.arguments import SkirtArguments
 
 # -----------------------------------------------------------------
 
@@ -39,18 +45,21 @@ class BatchLauncher(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(BatchLauncher, self).__init__(config)
+        super(BatchLauncher, self).__init__(*args, **kwargs)
 
         # -- Attributes --
+
+        # The local SKIRT execution context
+        self.skirt = SkirtExec()
 
         # Initialize a list to contain different SkirtRemote instances for the different remote hosts
         self.remotes = []
@@ -58,6 +67,9 @@ class BatchLauncher(Configurable):
         # For some remote hosts, if they use a scheduling system, defines the name of the cluster to be used
         # (the default cluster will be used if not defined)
         self.cluster_names = dict()
+
+        # The queue for locally executed simulations
+        self.local_queue = []
 
         # The queues for the different remote hosts
         self.queues = defaultdict(list)
@@ -69,6 +81,9 @@ class BatchLauncher(Configurable):
 
         # The assignment from items in the queue to the different remote hosts
         self.assignment = None
+
+        # The parallelization scheme for local execution
+        self.parallelization_local = None
 
         # The parallelization scheme for the different remote hosts
         self.parallelization_hosts = dict()
@@ -82,6 +97,9 @@ class BatchLauncher(Configurable):
         # The list of remote hosts for which the screen output should be saved remotely (for debugging)
         self.save_screen_output = []
 
+        # The simulations that have been launched
+        self.launched_simulations = []
+
         # The simulations that have been retrieved
         self.simulations = []
 
@@ -90,6 +108,36 @@ class BatchLauncher(Configurable):
 
         # The logging options
         self.logging_options = None
+
+        # Create temporary local directory
+        self.temp_path = introspection.create_temp_dir(time.unique_name("BatchLauncher"))
+
+        # Original definitions of local simulations (when definitions are changed because of shared input)
+        self.original_local_definitions = dict()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def uses_remotes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.config.remotes) > 0 or len(self.remotes) > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def only_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.config.remotes) == 0 and len(self.remotes) == 0
 
     # -----------------------------------------------------------------
 
@@ -127,7 +175,7 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def add_to_queue(self, definition, name, host_id=None, parallelization=None, analysis_options=None):
+    def add_to_queue(self, definition, name, host_id=None, parallelization=None, analysis_options=None, local=False):
 
         """
         This function ...
@@ -136,14 +184,27 @@ class BatchLauncher(Configurable):
         :param host_id: the host on which this simulation should be executed
         :param parallelization: individual parallelization scheme for this particular simulation (only allowed if host_id is also specified)
         :param analysis_options: analysis options (if None, analysis options will be created from batch launcher configuration)
+        :param local:
         :return:
         """
+
+        # Debugging
+        log.debug("Adding simulation '" + name + "' to the queue ...")
 
         # Check whether the simulation name doesn't contain spaces
         if " " in name: raise ValueError("The simulation name cannot contain spaces")
 
+        # Local execution
+        if local or self.nremotes == 0:
+
+            # Add to the local queue
+            self.local_queue.append((definition, name, analysis_options))
+
+            # If parallelization is specified, set it
+            if parallelization is not None: self.set_parallelization_for_simulation(name, parallelization)
+
         # If a host ID is specified
-        if host_id is not None:
+        elif host_id is not None:
 
             # Check if this is a valid host ID
             if not host_id in self.host_ids: raise ValueError("Invalid host ID")
@@ -203,9 +264,82 @@ class BatchLauncher(Configurable):
         :return:
         """
 
-        total_in_queue = 0
-        for host_id in self.host_ids: total_in_queue += self.in_queue_for_host(host_id)
-        return total_in_queue
+        # Return the total number of simulations in the queues
+        return self.in_local_queue + self.in_remote_queues
+
+    # -----------------------------------------------------------------
+
+    @property
+    def in_local_queue(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.local_queue)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def in_remote_queues(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        total = 0
+        for host_id in self.host_ids: total += self.in_remote_queue(host_id)
+        return total
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_queued_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.in_local_queue > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_queued_remotes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.in_remote_queues > 0
+
+    # -----------------------------------------------------------------
+
+    def has_queued_remote(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        return self.in_remote_queue(host_id) > 0
+
+    # -----------------------------------------------------------------
+
+    def in_remote_queue(self, host_id):
+
+        """
+        This function ...
+        :param host_id:
+        :return:
+        """
+
+        self.in_queue_for_host(host_id)
 
     # -----------------------------------------------------------------
 
@@ -467,6 +601,31 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nremotes(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.remotes)
+
+    # -----------------------------------------------------------------
+
+    def set_parallelization_for_local(self, parallelization):
+
+        """
+        This function ...
+        :param parallelization:
+        :return:
+        """
+
+        # Set
+        self.parallelization_local = parallelization
+
+    # -----------------------------------------------------------------
+
     def set_parallelization_for_host(self, host_id, parallelization):
 
         """
@@ -530,20 +689,23 @@ class BatchLauncher(Configurable):
         # 1. Call the setup function
         self.setup(**kwargs)
 
+        # 2. Check the input files for all simulations
+        self.check_input()
+
         # 2. Set the parallelization scheme for the remote hosts for which this was not specified by the user
         self.set_parallelization()
 
         # 3. Launch the simulations
-        simulations = self.launch()
+        self.launch()
 
         # 4. Retrieve the simulations that are finished
-        self.retrieve()
+        self.try_retrieving()
 
         # 5. Analyse the output of the retrieved simulations
-        self.analyse()
+        self.try_analysing()
 
-        # 6. Return the simulations that are just scheduled
-        return simulations
+        # Write
+        self.write()
 
     # -----------------------------------------------------------------
 
@@ -564,6 +726,7 @@ class BatchLauncher(Configurable):
         self.cluster_names = dict()
 
         # Clear the queues
+        self.local_queue = []
         self.queues = defaultdict(list)
 
         # Clear the scheduling options
@@ -572,11 +735,26 @@ class BatchLauncher(Configurable):
         # Clear the assignment
         self.assignment = None
 
+        # Clear the launched simulations
+        self.launched_simulations = []
+
         # Clear the simulations
         self.simulations = []
 
         # Clear the script path dictionary
         self.script_paths = dict()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_remotes(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return len(self.remotes) > 0
 
     # -----------------------------------------------------------------
 
@@ -592,7 +770,7 @@ class BatchLauncher(Configurable):
         super(BatchLauncher, self).setup(**kwargs)
 
         # Setup the remote instances
-        if len(self.remotes) == 0: self.setup_remotes()
+        if not self.has_remotes: self.setup_remotes()
 
         # Create the logging options
         self.logging_options = LoggingOptions()
@@ -603,6 +781,9 @@ class BatchLauncher(Configurable):
 
         # If attached mode is enabled, check whether all remotes are non-schedulers
         if self.config.attached and self.uses_schedulers: raise ValueError("Cannot use attached mode when remotes with scheduling system are used")
+
+        # If dry mode is enabled, check whether all remotes are non-schedulers
+        if self.config.dry and self.uses_schedulers: log.warning("Using dry mode when remotes with scheduling system are used can be impractical, since it requires uploading and submitting each seperate job script")
 
     # -----------------------------------------------------------------
 
@@ -615,9 +796,10 @@ class BatchLauncher(Configurable):
 
         # If a list of remotes is defined
         if self.config.remotes is not None: host_ids = self.config.remotes
+        else: host_ids = []
 
-        # If a list of remotes is not defined, create a remote for all of the hosts that have a configuration file
-        else: host_ids = introspection.remote_host_ids()
+        # If a list of remotes is not defined, execute locally
+        if len(host_ids) == 0: log.warning("No remote set: simulations will be performed locally")
 
         # Loop over all the remote host ids
         for host_id in host_ids:
@@ -628,11 +810,16 @@ class BatchLauncher(Configurable):
             # Check whether a cluster name is defined
             cluster_name = self.cluster_names[host_id] if host_id in self.cluster_names else None
 
-            # Setup the remote for the specified host
-            remote.setup(host_id, cluster_name=cluster_name)
+            # Setup the remote for the specified host, check if succesful
+            if not remote.setup(host_id, cluster_name=cluster_name):
+                log.warning("Remote host '" + host_id + "' is down")
+                continue
 
             # Add the remote to the list of remote objects
             self.remotes.append(remote)
+
+        # Check if any remotes are initialized
+        if len(host_ids) > 0 and len(self.remotes) == 0: raise RuntimeError("None of the remotes are available")
 
     # -----------------------------------------------------------------
 
@@ -654,6 +841,150 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    def get_definition_for_local_simulation(self, simulation_name):
+
+        """
+        This function ...
+        :param simulation_name:
+        :return:
+        """
+
+        for definition, name, _ in self.local_queue:
+            if name == simulation_name: return definition
+
+        raise ValueError("No simulation found in the local queue with the name '" + simulation_name + "'")
+
+    # -----------------------------------------------------------------
+
+    def check_input(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the input of the simulations that are run locally ...")
+
+        # A dictionary with the simulation names for each input file that is shared
+        shared_input = defaultdict(list)
+
+        # Check which definitions in the local queue use the same input
+        for definition, simulation_name, analysis_options in self.local_queue:
+
+            # Skip simulations without input
+            if definition.input_path is None: continue
+
+            # Convert definition input to actual SimulationInput object
+            simulation_input = SimulationInput.from_any(definition.input_path)
+
+            # Loop over the input files
+            for filename, filepath in simulation_input:
+
+                # Set
+                shared_input[filepath].append((simulation_name, filename))
+
+            # Set the simulation input object
+            definition.input_path = simulation_input
+
+        # New paths for each shared input file
+        new_paths = dict()
+
+        # List of participating simulations
+        participating_simulations = set()
+
+        # Loop over the filepaths that are shared
+        for filepath in shared_input:
+
+            # Not shared
+            if len(shared_input[filepath]) < 2: continue
+
+            # Add all corresponding simulations to the list of participating simulations
+            for simulation_name, _ in shared_input[filepath]: participating_simulations.add(simulation_name)
+
+            # Generate a unique filename for this file
+            original_filename = fs.name(filepath)
+            extension = fs.get_extension(original_filename)
+            bare_original_filename = fs.strip_extension(original_filename)
+            new_filename = time.unique_name(bare_original_filename, precision="micro") + "." + extension
+
+            # Copy the file to the temporary directory
+            fs.copy_file(filepath, self.temp_path, new_name=new_filename)
+            new_filepath = fs.join(self.temp_path, new_filename)
+
+            # Set the new path
+            new_paths[filepath] = new_filepath
+
+        # Copy the rest of the input files of the participating simulations
+        for simulation_name in participating_simulations:
+
+            # Get the definition
+            definition = self.get_definition_for_local_simulation(simulation_name)
+
+            # Set the original definition
+            self.original_local_definitions[simulation_name] = definition.copy()
+
+            # Get the original simulation input specification
+            original_simulation_input = definition.input_path
+
+            # Set the input path to the temporary directory path
+            definition.input_path = self.temp_path
+
+            # Open the ski file
+            ski = SkiFile(definition.ski_path)
+
+            # List of shared filenames for this simulation
+            shared_filenames_for_simulation = []
+
+            # Loop over the shared input files, set the new file name
+            for filepath in shared_input:
+
+                ski_filename = None
+                for sim_name, filename in shared_input[filepath]:
+                    if sim_name == simulation_name:
+                        ski_filename = filename
+                        break
+                else: continue
+
+                # Get the new filepath
+                new_filepath = new_paths[filepath]
+                new_filename = fs.name(new_filepath)
+
+                # Change in the ski file
+                ski.change_input_filename(ski_filename, new_filename)
+
+                # Add to list
+                shared_filenames_for_simulation.append(new_filename)
+
+            # Loop over other input files for this simulation, also copy them to the temporary directory with a unique name
+            for filename in ski.input_files:
+
+                # Already changed
+                if filename in shared_filenames_for_simulation: continue
+
+                # Get path for this filename
+                filepath = original_simulation_input[filename]
+
+                # Generate unique filename
+                extension = fs.get_extension(filename)
+                bare_filename = fs.strip_extension(filename)
+                new_filename = time.unique_name(bare_filename, precision="micro") + "." + extension
+
+                # Save to temporary directory
+                fs.copy_file(filepath, self.temp_path, new_name=new_filename)
+
+                # Change filename in ski
+                ski.change_input_filename(filename, new_filename)
+
+            # Save the ski file
+            new_ski_path = fs.join(self.temp_path, time.unique_name(simulation_name, precision="micro") + ".ski")
+            ski.saveto(new_ski_path)
+
+            # Set the new ski path to the definition
+            definition.ski_path = new_ski_path
+
+    # -----------------------------------------------------------------
+
     def set_parallelization(self):
 
         """
@@ -662,8 +993,86 @@ class BatchLauncher(Configurable):
         """
 
         # Inform the user
-        log.info("Setting the parallelization scheme for the different remote hosts (for hosts and simulation for which"
-                 "the parallelization scheme has not been defined yet) ...")
+        log.info("Setting parallelization schemes ...")
+
+        # Set parallelization scheme for local execution
+        if self.parallelization_local is None: self.set_parallelization_local()
+
+        # Set parallelization schemes for remote execution
+        self.set_parallelization_remote()
+
+    # -----------------------------------------------------------------
+
+    def set_parallelization_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the parallelization scheme for local execution ...")
+
+        # Get properties of the local machine
+        nnodes = par.nnodes()
+        nsockets = par.sockets_per_node()
+        ncores = par.cores_per_socket()
+        memory = par.virtual_memory().to("Gbyte")
+        threads_per_core = par.nthreads_per_core()
+        hyperthreading = threads_per_core > 1
+        mpi = introspection.has_mpi()
+
+        # Loop over the simulations in the local queue
+        for definition, simulation_name, _ in self.local_queue:
+
+            # Create the parallelization tool
+            tool = ParallelizationTool()
+
+            # Set configuration options
+            tool.config.ski = definition.ski_path
+            tool.config.input = definition.input_path
+
+            # Set host properties
+            tool.config.nnodes = nnodes
+            tool.config.nsockets = nsockets
+            tool.config.ncores = ncores
+            tool.config.memory = memory
+
+            # MPI available and used
+            tool.config.mpi = mpi
+            tool.config.hyperthreading = hyperthreading
+            tool.config.threads_per_core = threads_per_core
+
+            # Number of dust cells
+            tool.config.ncells = None  # number of dust cells (relevant if ski file uses a tree dust grid)
+
+            # Don't show
+            tool.config.show = False
+
+            # Run the parallelization tool
+            tool.run()
+
+            # Get the parallelization scheme
+            parallelization = tool.parallelization
+
+            # Debugging
+            log.debug("The parallelization scheme for simulation '" + simulation_name + "' is " + str(parallelization))
+
+            # Set the parallelization scheme for this host
+            self.set_parallelization_for_simulation(simulation_name, parallelization)
+
+    # -----------------------------------------------------------------
+
+    def set_parallelization_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the parallelization schemes for the different remote hosts (for hosts and simulation for which"
+                 " the parallelization scheme has not been defined yet) ...")
 
         # Loop over the different remote hosts
         for remote in self.remotes:
@@ -692,7 +1101,7 @@ class BatchLauncher(Configurable):
 
                 # Get host properties
                 nnodes = 1
-                nsockets = math.floor(remote.free_sockets)
+                nsockets = int(math.floor(remote.free_sockets))
                 ncores = remote.cores_per_socket
                 memory = remote.free_memory
 
@@ -730,24 +1139,11 @@ class BatchLauncher(Configurable):
                 # Number of dust cells
                 tool.config.ncells = None  # number of dust cells (relevant if ski file uses a tree dust grid)
 
+                # Don't show
+                tool.config.show = False
+
                 # Run the parallelization tool
                 tool.run()
-
-                # Get the flag indicating whether data parallelization mode should be enabled
-                #data_parallel = self.config.data_parallel
-
-                # Get the amount of (currently) free cores on the remote host
-                #cores = int(remote.free_cores)
-
-                # Determine the number of thread to be used per core
-                #threads_per_core = remote.threads_per_core if remote.use_hyperthreading else 1
-
-                # Create the parallelization object
-                #parallelization = Parallelization.from_free_cores(cores, cores_per_process, threads_per_core, data_parallel)
-
-                # Debugging
-                #log.debug("Using " + str(parallelization.processes) + " processes and " + str(parallelization.threads) + " threads per process on this remote")
-                #log.debug("Parallelization scheme: " + str(parallelization))
 
                 # Get the parallelization scheme
                 parallelization = tool.parallelization
@@ -803,47 +1199,199 @@ class BatchLauncher(Configurable):
         # Inform the user
         log.info("Launching the simulations ...")
 
-        # The remote input path
-        remote_input_path = None
-
         # The complete list of simulations
+        simulations = []
+
+        # Launch locally
+        if self.has_queued_local: simulations += self.launch_local()
+
+        # Launch remotely
+        if self.has_queued_remote: simulations += self.launch_remote()
+
+        # Set the launched simulations
+        self.launched_simulations = simulations
+
+    # -----------------------------------------------------------------
+
+    def launch_local(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Launching simulations locally ...")
+
+        # Initialize a list of simulations
+        simulations = []
+
+        # Loop over the simulation in the queue for this remote host
+        total_queued = len(self.local_queue)
+        for index in range(total_queued):
+
+            # Get the last item from the queue (it is removed)
+            definition, name, analysis_options_item = self.local_queue.pop()
+
+            # Get the parallelization scheme that has been defined for this simulation
+            parallelization_item = self.parallelization_for_simulation(name)
+            if parallelization_item is not None: pass # OK
+            elif self.parallelization_local is not None: parallelization_item = self.parallelization_local
+            else: raise RuntimeError("Parallelization has not been defined for local simulation '" + name + "' and no general parallelization scheme has been set for local execution")
+
+            # Get original definition if applicable
+            if name in self.original_local_definitions: original_definition = self.original_local_definitions[name]
+            else: original_definition = None
+
+            # Generate the analysis options: THIS DOES NOT MODIFY THE DEFINITION
+            options_definition = original_definition if original_definition is not None else definition
+            logging_options, analysis_options = self.generate_options(name, options_definition, analysis_options_item, local=True)
+
+            # Perform the simulation locally
+            try:
+
+                # Inform the user
+                log.info("Launching simulation " + str(index + 1) + " out of " + str(total_queued) + " in the local queue ...")
+
+                # Run the simulation
+                simulation = self.skirt.run(definition, logging_options=logging_options, parallelization=parallelization_item, silent=(not log.is_debug()), progress_bar=self.config.progress_bar)
+
+                # Overwrite the simulation object when the definition had been altered by this class
+                if original_definition is not None:
+
+                    # Get modified prefix and original prefix
+                    prefix = simulation.prefix()
+                    original_prefix = original_definition.prefix
+
+                    # Change the names of the output files so that they start with the right prefix (and not the timestamped prefix of the temporarily created ski file)
+                    for filename in fs.files_in_path(simulation.output_path, returns="name", extensions=True):
+                        if not filename.startswith(prefix): continue
+                        original_filename = filename.replace(prefix, original_prefix)
+                        fs.rename_file(simulation.output_path, filename, original_filename)
+
+                    # Create new simulation object
+                    arguments = SkirtArguments.from_definition(original_definition, logging_options, parallelization_item)
+                    simulation = arguments.simulations(simulation_name=name)
+
+                # Success
+                log.success("Finished simulation " + str(index + 1) + " out of " + str(total_queued) + " in the local queue ...")
+
+                # Set the parallelization scheme
+                simulation.parallelization = parallelization_item
+
+                # Set the analysis options
+                simulation.set_analysis_options(analysis_options)
+
+                # Add analyser classes
+                if self.config.analysers is not None:
+                    for class_path in self.config.analysers: simulation.add_analyser(class_path)
+
+                # Add the simulation to the list
+                simulations.append(simulation)
+
+                # Also add the simulation directly to the list of simulations to be analysed
+                self.simulations.append(simulation)
+
+            # Error occured during simulation
+            except Exception:
+
+                # Show error messages and traceback; cancel all following simulations
+                log.error("Launching simulation '" + name + "' failed:")
+                traceback.print_exc()
+                log.error("Cancelling following simulations in the queue ...")
+                break
+
+        # Return the list of simulations
+        return simulations
+
+    # -----------------------------------------------------------------
+
+    def launch_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Launching simulations on the remote hosts ...")
+
+        # Initialize a list of simulations
         simulations = []
 
         # Loop over the different remotes
         for remote in self.remotes:
 
-            # Get the parallelization scheme for this remote host
-            parallelization_host = self.parallelization_for_host(remote.host_id)
+            # Schedule simulations for the current remote host
+            simulations_remote = self.schedule_simulations(remote)
 
-            # Cache the simulation objects scheduled to the current remote
-            simulations_remote = []
+            # Start the simulations
+            self.start_simulations(remote, simulations_remote)
 
-            # Loop over the simulation in the queue for this remote host
-            for _ in range(len(self.queues[remote.host_id])):
+            # Add the simulations of this remote to the total list of simulations
+            simulations += simulations_remote
 
-                # Get the last item from the queue (it is removed)
-                definition, name, analysis_options_item = self.queues[remote.host_id].pop()
+        # Return the list of simulations
+        return simulations
 
-                # Get the parallelization scheme that has been defined for this simulation
-                parallelization_item = self.parallelization_for_simulation(name)
+    # -----------------------------------------------------------------
 
-                # If no parallelization scheme has been defined for this simulation, use the parallelization scheme
-                # defined for the current remote host
-                if parallelization_item is None: parallelization_item = parallelization_host
+    def schedule_simulations(self, remote):
 
-                # Check whether scheduling options are defined for this simulation and for this remote host
-                if remote.host_id in self.scheduling_options and name in self.scheduling_options[remote.host_id]:
-                    scheduling_options = self.scheduling_options[remote.host_id][name]
-                else: scheduling_options = None
+        """
+        This function ...
+        :param remote
+        :return: 
+        """
 
-                # Generate the analysis options
-                logging_options, analysis_options = self.generate_options(name, definition, analysis_options_item)
+        # Inform the user
+        log.info("Scheduling simulations on remote host '" + remote.host_id + "' ...")
 
-                # Queue the simulation
+        # The remote input path
+        remote_input_path = None
+
+        # Get the parallelization scheme for this remote host
+        parallelization_host = self.parallelization_for_host(remote.host_id)
+
+        # Cache the simulation objects scheduled to the current remote
+        simulations_remote = []
+
+        # Loop over the simulation in the queue for this remote host
+        total_queued_host = len(self.queues[remote.host_id])
+        for index in range(total_queued_host):
+
+            # Get the last item from the queue (it is removed)
+            definition, name, analysis_options_item = self.queues[remote.host_id].pop()
+
+            # Get the parallelization scheme that has been defined for this simulation
+            parallelization_item = self.parallelization_for_simulation(name)
+
+            # If no parallelization scheme has been defined for this simulation, use the parallelization scheme
+            # defined for the current remote host
+            if parallelization_item is None: parallelization_item = parallelization_host
+
+            # Check whether scheduling options are defined for this simulation and for this remote host
+            if remote.host_id in self.scheduling_options and name in self.scheduling_options[remote.host_id]:
+                scheduling_options = self.scheduling_options[remote.host_id][name]
+            else: scheduling_options = None
+
+            # Generate the analysis options
+            logging_options, analysis_options = self.generate_options(name, definition, analysis_options_item)
+
+            # Queue the simulation
+            try:
+
+                # Inform the user
+                log.info("Adding simulation " + str(index + 1) + " out of " + str(total_queued_host) + " to the queue of remote host " + remote.host_id + " ...")
+
+                # Add to the queue
                 simulation = remote.add_to_queue(definition, logging_options, parallelization_item, name=name,
                                                  scheduling_options=scheduling_options, remote_input_path=remote_input_path,
                                                  analysis_options=analysis_options, emulate=self.config.emulate)
                 simulations_remote.append(simulation)
+
+                # Success
+                log.success("Added simulation " + str(index + 1) + " out of " + str(total_queued_host) + " to the queue of remote host " + remote.host_id)
 
                 # Set the parallelization scheme of the simulation (important since SkirtRemote does not know whether
                 # hyperthreading would be enabled if the user provided the parallelization_item when adding the
@@ -863,73 +1411,110 @@ class BatchLauncher(Configurable):
                 # Retrieval
                 simulation.retrieve_types = self.config.retrieve_types
 
+                # Add analyser classes
+                if self.config.analysers is not None:
+                    for class_path in self.config.analysers: simulation.add_analyser(class_path)
+
                 # Save the simulation object
                 simulation.save()
 
-            # Set a path for the script file to be saved to locally (for manual inspection)
-            if remote.host_id in self.script_paths:
-                local_script_path = fs.join(self.script_paths[remote.host_id], time.unique_name() + ".sh")
-            else: local_script_path = None
+            # Exception was raised
+            except Exception:
 
-            # Determine screen name
-            screen_name = time.unique_name("batch_launcher")
+                log.error("Adding simulation '" + name + "' to the queue failed:")
+                traceback.print_exc()
+                log.error("Cancelling following simulations in the queue for remote host '" + remote.host_id + "' ...")
+                break
 
-            # Set a path for the screen output to be saved remotely (for debugging)
-            if remote.host_id in self.save_screen_output:
-                remote_skirt_dir_path = remote.skirt_dir
-                remote_skirt_screen_output_path = fs.join(remote_skirt_dir_path, "screen output")
-                if not remote.is_directory(remote_skirt_screen_output_path): remote.create_directory(remote_skirt_screen_output_path)
-                this_screen_output_path = fs.join(remote_skirt_screen_output_path, screen_name)
-                remote.create_directory(this_screen_output_path)
-                screen_output_path = this_screen_output_path
-            else: screen_output_path = None
-
-            # Start the queue
-            jobscripts_path = self.script_paths[remote.host_id] if remote.host_id in self.script_paths else None
-            handles = remote.start_queue(screen_name=screen_name, group_simulations=self.config.group_simulations, group_walltime=self.config.group_walltime, local_script_path=local_script_path, screen_output_path=screen_output_path, jobscripts_path=jobscripts_path, attached=self.config.attached)
-
-            # SET THE EXECUTION HANDLES
-            # Loop over the simulation for this remote
-            for simulation in simulations_remote:
-
-                # If all simulations should have the same handle
-                if isinstance(handles, ExecutionHandle): simulation.handle = handles
-                else: simulation.handle = handles[simulation.name] # get the handle for this particular simulation
-
-            # Add the simulations of this remote to the total list of simulations
-            simulations += simulations_remote
-
-        # Return the list of simulations
-        return simulations
+        # Return the simulations scheduled for the host
+        return simulations_remote
 
     # -----------------------------------------------------------------
 
-    def generate_options(self, name, definition, analysis_options_item):
+    def start_simulations(self, remote, simulations_remote):
+
+        """
+        This function ...
+        :param remote:
+        :param simulations_remote:
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Starting the simulations on remote host '" + remote.host_id + "' ...")
+
+        # Determine queue name (name of the screen session or the remote simulation queue)
+        queue_name = time.unique_name("batch_launcher")
+
+        # Set a path for the script file to be saved to locally (for manual inspection)
+        if remote.host_id in self.script_paths: local_script_path = fs.join(self.script_paths[remote.host_id], queue_name + "_" + remote.host_id  + ".sh")
+        else: local_script_path = None
+
+        # Set a path for the screen output to be saved remotely (for debugging)
+        if remote.host_id in self.save_screen_output:
+            remote_skirt_dir_path = remote.skirt_dir
+            remote_skirt_screen_output_path = fs.join(remote_skirt_dir_path, "screen")
+            if not remote.is_directory(remote_skirt_screen_output_path): remote.create_directory(remote_skirt_screen_output_path)
+            this_screen_output_path = fs.join(remote_skirt_screen_output_path, queue_name)
+            remote.create_directory(this_screen_output_path)
+            screen_output_path = this_screen_output_path
+        else: screen_output_path = None
+
+        # Start the queue
+        jobscripts_path = self.script_paths[remote.host_id] if remote.host_id in self.script_paths else None
+        handles = remote.start_queue(queue_name=queue_name, group_simulations=self.config.group_simulations,
+                                     group_walltime=self.config.group_walltime, use_pts=self.config.use_pts,
+                                     local_script_path=local_script_path, screen_output_path=screen_output_path,
+                                     jobscripts_path=jobscripts_path, attached=self.config.attached, dry=self.config.dry)
+
+        # SET THE EXECUTION HANDLES
+        # Loop over the simulation for this remote
+        for simulation in simulations_remote:
+
+            # If all simulations should have the same handle
+            if isinstance(handles, ExecutionHandle): simulation.handle = handles
+            else: simulation.handle = handles[simulation.name] # get the handle for this particular simulation
+            simulation.save()
+
+    # -----------------------------------------------------------------
+
+    def generate_options(self, name, definition, analysis_options_item, local=False):
 
         """
         This function ...
         :param name:
         :param definition:
         :param analysis_options_item:
+        :param local:
         :return:
         """
+
+        # Set add_timing and add_memory settings
+        if local:
+            add_timing = self.config.add_timing_local
+            add_memory = self.config.add_memory_local
+        else: add_timing = add_memory = True
 
         # Check whether analysis options are specified
         if analysis_options_item is None:
 
             # Get a copy of the default logging options, create the default analysis options and adjust logging options according to the analysis options
             logging_options = self.logging_options.copy()
-            analysis_options_item = self.create_analysis_options(definition, name, logging_options)
 
+            # Create analysis options
+            analysis_options_item = self.create_analysis_options(definition, name, logging_options, add_timing=add_timing, add_memory=add_memory)
+
+        # AnalysisOptions object
         elif isinstance(analysis_options_item, AnalysisOptions):
 
             # Get the default logging options
             logging_options = self.logging_options
 
+        # Dict-like analysis options
         elif isinstance(analysis_options_item, dict):
 
             # Create the default analysis options from the configuration of the batch launcher
-            default_analysis_options = self.create_analysis_options(definition, name)
+            default_analysis_options = self.create_analysis_options(definition, name, add_timing=add_timing, add_memory=add_memory)
 
             # Set the options specified in the analysis_options_item dictionary
             default_analysis_options.set_options(analysis_options_item)
@@ -948,6 +1533,20 @@ class BatchLauncher(Configurable):
 
         # Return the logging and analysis options
         return logging_options, analysis_options_item
+
+    # -----------------------------------------------------------------
+
+    def try_retrieving(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        try: self.retrieve()
+        except Exception, err:
+            log.error("Retrieving simulations failed:")
+            traceback.print_exc()
 
     # -----------------------------------------------------------------
 
@@ -973,6 +1572,20 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
+    def try_analysing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        try: self.analyse()
+        except Exception, err:
+            log.error("Analysing finished simulations failed:")
+            traceback.print_exc()
+
+    # -----------------------------------------------------------------
+
     def analyse(self):
 
         """
@@ -994,13 +1607,27 @@ class BatchLauncher(Configurable):
 
     # -----------------------------------------------------------------
 
-    def create_analysis_options(self, definition, simulation_name, logging_options=None):
+    def write(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Writing ...")
+
+    # -----------------------------------------------------------------
+
+    def create_analysis_options(self, definition, simulation_name, logging_options=None, add_timing=True, add_memory=True):
 
         """
         This function ...
         :param definition:
         :param simulation_name:
         :param logging_options:
+        :param add_timing:
+        :param add_memory:
         :return:
         """
 
@@ -1057,8 +1684,26 @@ class BatchLauncher(Configurable):
         else: analysis_options.misc.path = None
 
         # Set timing and memory table paths (if specified for this batch launcher)
-        if self.config.timing_table_path is not None: analysis_options.timing_table_path = self.config.timing_table_path
-        if self.config.memory_table_path is not None: analysis_options.memory_table_path = self.config.memory_table_path
+        if self.config.timing_table_path is not None and add_timing:
+
+            # Set the table path
+            analysis_options.timing_table_path = self.config.timing_table_path
+
+            # Check whether the extract timing option has been enabled
+            if not analysis_options.extraction.timeline:
+                log.warning("Timeline extraction will be enabled for writing to the timing table ...")
+                analysis_options.extraction.timeline = True
+
+        # Set memory table path
+        if self.config.memory_table_path is not None and add_memory:
+
+            # Set
+            analysis_options.memory_table_path = self.config.memory_table_path
+
+            # Check whether the extract memory option has been enabled
+            if not analysis_options.extraction.memory:
+                log.warning("Memory extraction will be enabled for writing to the mrmory table ...")
+                analysis_options.extraction.memory = True
 
         # Check the analysis options
         if logging_options is not None: analysis_options.check(logging_options)

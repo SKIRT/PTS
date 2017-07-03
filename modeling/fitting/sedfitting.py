@@ -19,7 +19,7 @@ from matplotlib import pyplot as plt
 
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
-from ...core.tools import tables, time
+from ...core.tools import time
 from ...core.tools import filesystem as fs
 from ...core.tools.logging import log
 from ...core.basics.distribution import Distribution
@@ -34,18 +34,21 @@ class SEDFitter(FittingComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(SEDFitter, self).__init__(config)
+        super(SEDFitter, self).__init__(*args, **kwargs)
 
         # -- Attributes --
+
+        # The fitting run
+        self.fitting_run = None
 
         # The model probabilities tables
         self.model_probabilities = dict()
@@ -107,10 +110,18 @@ class SEDFitter(FittingComponent):
         # Call the setup function of the base class
         super(SEDFitter, self).setup()
 
-        # The directory with the probability tables for all finished generations
-        self.prob_generations_path = fs.create_directory_in(self.fit_prob_path, "generations")
+        # Load the fitting run
+        self.fitting_run = self.load_fitting_run(self.config.name)
 
-        for generation_name in self.finished_generations:
+        # The directory with the probability tables for all finished generations
+        self.prob_generations_path = fs.create_directory_in(self.fitting_run.prob_path, "generations")
+
+        # Check if there are finished generations
+        if len(self.fitting_run.finished_generations) == 0: raise RuntimeError("There are no finished generations")
+
+        # For each finished generation, determine the path to the probability table
+        for generation_name in self.fitting_run.finished_generations:
+
             path = fs.join(self.prob_generations_path, generation_name + ".dat")
             self.prob_generations_table_paths[generation_name] = path
 
@@ -123,19 +134,19 @@ class SEDFitter(FittingComponent):
         """
 
         # Inform the user
-        log.info("Getting the parameter values of the best model for the finished generations (if not already done)")
+        log.info("Getting the parameter values of the best model for the finished generations (if not already done) ...")
 
         # Loop over the finished generations
-        for generation_name in self.finished_generations:
+        for generation_name in self.fitting_run.finished_generations:
 
             # Check if the generation is already in the best parameters table
-            if generation_name in self.best_parameters_table.generation_names: continue
+            if generation_name in self.fitting_run.best_parameters_table.generation_names: continue
 
             # Otherwise, add the best parameter values
-            values, chi_squared = self.best_parameter_values_for_generation(generation_name, return_chi_squared=True)
+            values, chi_squared = self.fitting_run.best_parameter_values_for_generation(generation_name, return_chi_squared=True)
 
             # Add an entry to the best parameters table file
-            self.best_parameters_table.add_entry(generation_name, values, chi_squared)
+            self.fitting_run.best_parameters_table.add_entry(generation_name, values, chi_squared)
 
     # -----------------------------------------------------------------
 
@@ -168,7 +179,7 @@ class SEDFitter(FittingComponent):
         log.info("Calculating the model probabilities for the finished generations (if not already done) ...")
 
         # Loop over the finished generations
-        for generation_name in self.finished_generations:
+        for generation_name in self.fitting_run.finished_generations:
 
             # Check whether the probabilities table is already present for this generation
             if fs.is_file(self.prob_generations_table_paths[generation_name]):
@@ -186,10 +197,10 @@ class SEDFitter(FittingComponent):
             else:
 
                 # Load the parameter table
-                parameter_table = self.parameters_table_for_generation(generation_name)
+                parameter_table = self.fitting_run.parameters_table_for_generation(generation_name)
 
                 # Load the chi squared table
-                chi_squared_table = self.chi_squared_table_for_generation(generation_name)
+                chi_squared_table = self.fitting_run.chi_squared_table_for_generation(generation_name)
 
                 # Sort the table for decreasing chi squared value
                 chi_squared_table.sort("Chi squared")
@@ -202,7 +213,7 @@ class SEDFitter(FittingComponent):
                 probabilities = np.exp(-0.5 * chi_squared_values)
 
                 # Create the probabilities table
-                probabilities_table = ModelProbabilitiesTable.initialize(self.free_parameter_labels, self.parameter_units)
+                probabilities_table = ModelProbabilitiesTable(parameters=self.fitting_run.free_parameter_labels, units=self.fitting_run.parameter_units)
 
                 # Add the entries to the model probabilities table
                 for i in range(len(chi_squared_table)):
@@ -235,7 +246,7 @@ class SEDFitter(FittingComponent):
         log.info("Calculating the probabilities of the different parameter values ...")
 
         # Loop over the free parameters
-        for label in self.free_parameter_labels:
+        for label in self.fitting_run.free_parameter_labels:
 
             # Create a set for the unique values
             unique_values = set()
@@ -250,7 +261,7 @@ class SEDFitter(FittingComponent):
             unique_values = sorted(list(unique_values))
 
             # Initialize a ParameterProbabilitiesTable instance for this parameter
-            table = ParameterProbabilitiesTable.initialize()
+            table = ParameterProbabilitiesTable()
 
             # Add an entry for each unique parameter value that has been encountered
             for value in unique_values:
@@ -285,7 +296,7 @@ class SEDFitter(FittingComponent):
         log.info("Creating the probability distributions ...")
 
         # Loop over the free parameters
-        for label in self.free_parameter_labels:
+        for label in self.fitting_run.free_parameter_labels:
 
             # Convert the probability lists into NumPy arrays and normalize them
             normalized_probabilities = np.array(self.parameter_probabilities[label]["Probability"]) / sum(self.parameter_probabilities[label]["Probability"])
@@ -309,7 +320,7 @@ class SEDFitter(FittingComponent):
         self.animation = Animation()
 
         # Loop over the generations
-        for generation_name in self.finished_generations:
+        for generation_name in self.fitting_run.finished_generations:
 
             # Get the model probabilities table for this generation
             model_probabilities_table = self.model_probabilities[generation_name]
@@ -321,7 +332,7 @@ class SEDFitter(FittingComponent):
                 simulation_name = model_probabilities_table["Simulation name"][i]
 
                 # Determine the path to the corresponding SED plot file
-                path = fs.join(self.fit_generations_path, generation_name, simulation_name, "plot", "sed.png")
+                path = fs.join(self.fitting_run.generations_path, generation_name, simulation_name, "plot", "sed.png")
 
                 # Load the image (as a NumPy array)
                 image = imageio.imread(path)
@@ -369,10 +380,10 @@ class SEDFitter(FittingComponent):
         log.info("Writing the parameter probabilities ...")
 
         # Loop over the probability tables for the different free parameter
-        for label in self.free_parameter_labels:
+        for label in self.fitting_run.free_parameter_labels:
 
             # Save the table
-            self.parameter_probabilities[label].saveto(self.get_parameter_probabilities_path(label))
+            self.parameter_probabilities[label].saveto(self.fitting_run.get_parameter_probabilities_path(label))
 
     # -----------------------------------------------------------------
 
@@ -387,7 +398,7 @@ class SEDFitter(FittingComponent):
         log.info("Writing the best model parameters table ...")
 
         # Save the best parameters table
-        self.best_parameters_table.save()
+        self.fitting_run.best_parameters_table.save()
 
     # -----------------------------------------------------------------
 
@@ -405,10 +416,10 @@ class SEDFitter(FittingComponent):
         for label in self.distributions:
 
             # Debugging
-            log.debug("Writing the probability distribution of the " + self.parameter_descriptions[label] + " parameter ...")
+            log.debug("Writing the probability distribution of the " + self.fitting_run.parameter_descriptions[label] + " ...")
 
             # Write the table of probabilities for this parameter
-            self.distributions[label].save(self.get_parameter_distribution_path(label))
+            self.distributions[label].saveto(self.fitting_run.get_parameter_distribution_path(label))
 
     # -----------------------------------------------------------------
 
@@ -426,15 +437,16 @@ class SEDFitter(FittingComponent):
         for parameter_name in self.distributions:
 
             # Debugging
-            log.debug("Plotting the probability distribution of the " + self.parameter_descriptions[parameter_name] + " ...")
+            log.debug("Plotting the probability distribution of the " + self.fitting_run.parameter_descriptions[parameter_name] + " ...")
 
             # Get the probability distribution for this parameter
             distribution = self.distributions[parameter_name]
-            description = self.parameter_descriptions[parameter_name]
+            description = self.fitting_run.parameter_descriptions[parameter_name]
 
             # Create a plot file for the probability distribution
-            path = fs.join(self.prob_distributions_path, parameter_name + ".pdf")
-            distribution.plot(title="Probability of the " + description, path=path, logscale=True)
+            path = fs.join(self.fitting_run.prob_distributions_path, parameter_name + ".pdf")
+            try: distribution.plot(title="Probability of the " + description, path=path, logscale=True)
+            except ValueError: log.warning("Could not create the distribution plot for parameter '" + parameter_name + "'")
 
     # -----------------------------------------------------------------
 
@@ -452,7 +464,7 @@ class SEDFitter(FittingComponent):
         path = fs.join(self.visualisation_path, time.unique_name("sedfitter") + ".gif")
 
         # Write the animation
-        self.animation.save(path)
+        self.animation.saveto(path)
 
 # -----------------------------------------------------------------
 

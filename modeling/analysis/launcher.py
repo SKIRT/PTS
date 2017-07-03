@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
-from astropy.units import Unit, dimensionless_angles
+from astropy.units import dimensionless_angles
 
 # Import the relevant PTS classes and modules
 from .component import AnalysisComponent
@@ -27,13 +27,16 @@ from ...core.launch.options import LoggingOptions
 from ...core.advanced.runtimeestimator import RuntimeEstimator
 from ...core.simulation.parallelization import Parallelization
 from ...core.simulation.remote import SkirtRemote
-from ...magic.misc.kernels import AnianoKernels
-from ..core.emissionlines import EmissionLines
-from ..fitting.wavelengthgrids import create_one_subgrid_wavelength_grid
-from ..fitting.dustgrids import create_one_dust_grid
+from ...magic.convolution.aniano import AnianoKernels
+from ...core.basics.emissionlines import EmissionLines
+from ...core.prep.wavelengthgrids import create_one_subgrid_wavelength_grid
+from ...core.prep.dustgrids import create_one_dust_grid
 from .info import AnalysisRunInfo
-from ..fitting.component import get_best_model_for_generation, get_ski_file_for_simulation
 from ...core.advanced.dustgridtool import DustGridTool
+from ...core.units.parsing import parse_unit as u
+from ...core.basics.configuration import prompt_string
+from ..fitting.run import get_best_model_for_generation, get_ski_file_for_simulation
+from ..fitting.component import load_fitting_run
 
 # -----------------------------------------------------------------
 
@@ -43,21 +46,27 @@ class AnalysisLauncher(AnalysisComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(AnalysisLauncher, self).__init__(config)
+        super(AnalysisLauncher, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 
+        # The fitting run
+        self.fitting_run = None
+
         # The remote SKIRT environment
         self.remote = SkirtRemote()
+
+        # The name of the generation
+        self.generation_name = None
 
         # The name of the analysis run
         self.analysis_run_name = None
@@ -124,15 +133,16 @@ class AnalysisLauncher(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the ski file
         self.load_ski()
@@ -169,15 +179,24 @@ class AnalysisLauncher(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(AnalysisLauncher, self).setup()
+        super(AnalysisLauncher, self).setup(**kwargs)
+
+        # Prompt for generation name
+        self.fitting_run = load_fitting_run(self.config.path, self.config.fitting_run)
+
+        # Get the generation name
+        self.generation_name = prompt_string("generation", "name of the (finished) generation for which to launch the "
+                                                           "best simulation for analysis",
+                                             default=self.fitting_run.last_finished_generation, choices=self.fitting_run.finished_generations)
 
         # Setup the remote execution environment
         self.remote.setup(self.config.remote)
@@ -192,7 +211,7 @@ class AnalysisLauncher(AnalysisComponent):
         self.ski_file_path = fs.join(self.analysis_run_path, self.galaxy_name + ".ski")
 
         # Set the path to the wavelength grid file
-        self.wavelength_grid_path = fs.join(self.analysis_run_path, "wavelenth_grid.dat")
+        self.wavelength_grid_path = fs.join(self.analysis_run_path, "wavelength_grid.dat")
 
         # Set the path to the dust grid file
         self.dust_grid_path = fs.join(self.analysis_run_path, "dust_grid.dg")
@@ -201,13 +220,25 @@ class AnalysisLauncher(AnalysisComponent):
         self.run_info_path = fs.join(self.analysis_run_path, "info.dat")
 
         # Load the best model for the specified generation
-        self.best_model = get_best_model_for_generation(self.config.path, self.config.generation)
+        self.best_model = get_best_model_for_generation(self.config.path, self.fitting_run_name, self.generation_name)
 
         # Create the analysis run info
         self.create_info()
 
         # Create the necessary directories
         self.create_directories()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_run_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.name
 
     # -----------------------------------------------------------------
 
@@ -227,7 +258,8 @@ class AnalysisLauncher(AnalysisComponent):
         # Set the info
         self.analysis_run_info.name = self.analysis_run_name
         self.analysis_run_info.path = self.analysis_run_path
-        self.analysis_run_info.generation_name = self.config.generation
+        self.analysis_run_info.fitting_run = self.config.fitting_run
+        self.analysis_run_info.generation_name = self.generation_name
         self.analysis_run_info.simulation_name = self.best_model.simulation_name
         self.analysis_run_info.parameter_values = self.best_model.parameter_values
         self.analysis_run_info.chi_squared = self.best_model.chi_squared
@@ -272,7 +304,7 @@ class AnalysisLauncher(AnalysisComponent):
         log.info("Loading the ski file ...")
 
         # Load the ski file
-        self.ski = get_ski_file_for_simulation(self.config.path, self.config.generation, self.best_model.simulation_name)
+        self.ski = get_ski_file_for_simulation(self.config.path, self.fitting_run_name, self.generation_name, self.best_model.simulation_name)
 
     # -----------------------------------------------------------------
 
@@ -290,10 +322,11 @@ class AnalysisLauncher(AnalysisComponent):
         emission_lines = EmissionLines()
 
         # Fixed wavelengths in the grid
-        fixed = [self.i1_filter.pivotwavelength(), self.fuv_filter.pivotwavelength()]
+        fixed = [self.i1_filter.pivot, self.fuv_filter.pivot]
 
         # Create the grid
-        grid, subgrid_npoints, emission_npoints, fixed_npoints = create_one_subgrid_wavelength_grid(self.config.nwavelengths, emission_lines, fixed)
+        # grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added
+        grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added = create_one_subgrid_wavelength_grid(self.config.nwavelengths, emission_lines, fixed)
 
         # Set the grid
         self.wavelength_grid = grid
@@ -311,17 +344,17 @@ class AnalysisLauncher(AnalysisComponent):
         log.info("Creating the dust grid ...")
 
         # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
-        major_angular = self.truncation_ellipse.major  # major axis length of the sky ellipse
-        radius_physical = (major_angular * self.galaxy_properties.distance).to("pc", equivalencies=dimensionless_angles())
+        semimajor_angular = self.truncation_ellipse.semimajor  # major axis length of the sky ellipse
+        radius_physical = (semimajor_angular * self.galaxy_properties.distance).to("pc", equivalencies=dimensionless_angles())
 
         # Get the pixelscale in physical units
         distance = self.galaxy_properties.distance
-        pixelscale_angular = self.reference_wcs.average_pixelscale * Unit("pix")  # in deg
+        pixelscale_angular = self.reference_wcs.average_pixelscale #* u("pix")  # in deg
         pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
 
         x_radius = radius_physical
         y_radius = radius_physical
-        z_radius = 3. * Unit("kpc")
+        z_radius = 3. * u("kpc")
 
         x_min = - x_radius
         x_max = x_radius
@@ -602,7 +635,7 @@ class AnalysisLauncher(AnalysisComponent):
         log.info("Writing the analysis run info to " + self.run_info_path + "...")
 
         # Write the analysis run info
-        self.analysis_run_info.save(self.run_info_path)
+        self.analysis_run_info.saveto(self.run_info_path)
 
     # -----------------------------------------------------------------
 
@@ -632,7 +665,7 @@ class AnalysisLauncher(AnalysisComponent):
         log.info("Writing the dust grid " + self.dust_grid_path + " ...")
 
         # Write the dust grid
-        self.dust_grid.save(self.dust_grid_path)
+        self.dust_grid.saveto(self.dust_grid_path)
 
     # -----------------------------------------------------------------
 
@@ -653,7 +686,7 @@ class AnalysisLauncher(AnalysisComponent):
             path = fs.join(self.run_instruments_path, name + ".instr")
 
             # Save the instrument
-            self.instruments[name].save(path)
+            self.instruments[name].saveto(path)
 
     # -----------------------------------------------------------------
 

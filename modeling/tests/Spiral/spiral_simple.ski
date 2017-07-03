@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--SKIRT radiative transfer simulations - © 2012-2014 Astronomical Observatory, Ghent University-->
+<skirt-simulation-hierarchy type="MonteCarloSimulation" format="6.1" producer="SKIRT v7.3 (git 704-c937b9c built on Mar 9 2016 at 11:00:14)" time="2016-03-09T20:00:42">
+    <PanMonteCarloSimulation packages="1e4" minWeightReduction="1e4" minScattEvents="0" scattBias="0.5" continuousScattering="false">
+        <random type="Random">
+            <Random seed="4357"/>
+        </random>
+        <units type="Units">
+            <ExtragalacticUnits fluxOutputStyle="Neutral"/>
+        </units>
+        <instrumentSystem type="InstrumentSystem">
+            <InstrumentSystem>
+                <instruments type="Instrument">
+                    <SimpleInstrument instrumentName="earth" distance="3.63 Mpc" inclination="59 deg" azimuth="0 deg" positionAngle="67 deg" fieldOfViewX="40039.10068 pc" pixelsX="1024" centerX="0 pc" fieldOfViewY="40039.10068 pc" pixelsY="1024" centerY="0 pc"/>
+                </instruments>
+            </InstrumentSystem>
+        </instrumentSystem>
+        <wavelengthGrid type="PanWavelengthGrid">
+            <LogWavelengthGrid writeWavelengths="true" minWavelength="0.1 micron" maxWavelength="1000 micron" points="50"/>
+        </wavelengthGrid>
+        <stellarSystem type="StellarSystem">
+            <StellarSystem emissionBias="0.5">
+                <components type="StellarComp">
+                    <PanStellarComp>
+                        <geometry type="Geometry">
+                            <SpheroidalGeometryDecorator flattening="0.7">
+                                <geometry type="SpheGeometry">
+                                    <SersicGeometry index="3.8" radius="1000 pc"/>
+                                </geometry>
+                            </SpheroidalGeometryDecorator>
+                        </geometry>
+                        <sed type="StellarSED">
+                            <BruzualCharlotSED metallicity="0.02" age="10"/>
+                        </sed>
+                        <normalization type="StellarCompNormalization">
+                            <BolLuminosityStellarCompNormalization luminosity="2.2e10"/>
+                        </normalization>
+                    </PanStellarComp>
+                    <PanStellarComp>
+                        <geometry type="Geometry">
+                            <SpiralStructureGeometryDecorator arms="2" pitch="18 deg" radius="500 pc" phase="0 deg" perturbWeight="0.3" index="1">
+                                <geometry type="AxGeometry">
+                                    <ExpDiskGeometry radialScale="2600 pc" axialScale="260 pc" radialTrunc="2e4 pc" axialTrunc="1e4 pc" innerRadius="0 pc"/>
+                                </geometry>
+                            </SpiralStructureGeometryDecorator>
+                        </geometry>
+                        <sed type="StellarSED">
+                            <BruzualCharlotSED metallicity="0.02" age="6"/>
+                        </sed>
+                        <normalization type="StellarCompNormalization">
+                            <BolLuminosityStellarCompNormalization luminosity="2.4e10"/>
+                        </normalization>
+                    </PanStellarComp>
+                    <PanStellarComp>
+                        <geometry type="Geometry">
+                            <RingGeometry radius="6000 pc" width="3000 pc" height="150 pc"/>
+                        </geometry>
+                        <sed type="StellarSED">
+                            <StarburstSED metallicity="0.02"/>
+                        </sed>
+                        <normalization type="StellarCompNormalization">
+                            <BolLuminosityStellarCompNormalization luminosity="2e9"/>
+                        </normalization>
+                    </PanStellarComp>
+                    <PanStellarComp>
+                        <geometry type="Geometry">
+                            <SpiralStructureGeometryDecorator arms="2" pitch="18 deg" radius="500 pc" phase="0 deg" perturbWeight="1" index="1">
+                                <geometry type="AxGeometry">
+                                    <ExpDiskGeometry radialScale="2600 pc" axialScale="150 pc" radialTrunc="2e4 pc" axialTrunc="1e4 pc" innerRadius="0 pc"/>
+                                </geometry>
+                            </SpiralStructureGeometryDecorator>
+                        </geometry>
+                        <sed type="StellarSED">
+                            <StarburstSED metallicity="0.02"/>
+                        </sed>
+                        <normalization type="StellarCompNormalization">
+                            <BolLuminosityStellarCompNormalization luminosity="3e9"/>
+                        </normalization>
+                    </PanStellarComp>
+                </components>
+            </StellarSystem>
+        </stellarSystem>
+        <dustSystem type="PanDustSystem">
+            <PanDustSystem sampleCount="100" writeConvergence="true" writeDensity="true" writeDepthMap="false" writeQuality="false" writeCellProperties="false" writeCellsCrossed="false" emissionBias="0.5" emissionBoost="1" selfAbsorption="true" cycles="2" writeEmissivity="false" writeTemperature="true" writeISRF="false">
+                <dustDistribution type="DustDistribution">
+                    <CompDustDistribution>
+                        <components type="DustComp">
+                            <DustComp>
+                                <geometry type="Geometry">
+                                    <RingGeometry radius="6000 pc" width="3000 pc" height="150 pc"/>
+                                </geometry>
+                                <mix type="DustMix">
+                                    <ZubkoDustMix writeMix="false" writeMeanMix="false" writeSize="false" graphitePops="7" silicatePops="7" PAHPops="5"/>
+                                </mix>
+                                <normalization type="DustCompNormalization">
+                                    <DustMassDustCompNormalization dustMass="136e5 Msun"/>
+                                </normalization>
+                            </DustComp>
+                            <DustComp>
+                                <geometry type="Geometry">
+                                    <SpiralStructureGeometryDecorator arms="2" pitch="18 deg" radius="500 pc" phase="0 deg" perturbWeight="1" index="1">
+                                        <geometry type="AxGeometry">
+                                            <ExpDiskGeometry radialScale="2600 pc" axialScale="150 pc" radialTrunc="2e4 pc" axialTrunc="1e4 pc" innerRadius="0 pc"/>
+                                        </geometry>
+                                    </SpiralStructureGeometryDecorator>
+                                </geometry>
+                                <mix type="DustMix">
+                                    <ZubkoDustMix writeMix="false" writeMeanMix="false" writeSize="false" graphitePops="7" silicatePops="7" PAHPops="5"/>
+                                </mix>
+                                <normalization type="DustCompNormalization">
+                                    <DustMassDustCompNormalization dustMass="204e5 Msun"/>
+                                </normalization>
+                            </DustComp>
+                        </components>
+                    </CompDustDistribution>
+                </dustDistribution>
+                <dustGrid type="DustGrid">
+                    <CartesianDustGrid writeGrid="true" minX="-2e4 pc" maxX="2e4 pc" minY="-2e4 pc" maxY="2e4 pc" minZ="-500 pc" maxZ="500 pc">
+                        <meshX type="MoveableMesh">
+                            <SymPowMesh numBins="80" ratio="25"/>
+                        </meshX>
+                        <meshY type="MoveableMesh">
+                            <SymPowMesh numBins="80" ratio="25"/>
+                        </meshY>
+                        <meshZ type="MoveableMesh">
+                            <SymPowMesh numBins="40" ratio="45"/>
+                        </meshZ>
+                    </CartesianDustGrid>
+                </dustGrid>
+                <dustEmissivity type="DustEmissivity">
+                    <TransientDustEmissivity/>
+                </dustEmissivity>
+                <dustLib type="DustLib">
+                    <AllCellsDustLib/>
+                </dustLib>
+            </PanDustSystem>
+        </dustSystem>
+    </PanMonteCarloSimulation>
+</skirt-simulation-hierarchy>

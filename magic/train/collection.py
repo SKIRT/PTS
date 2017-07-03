@@ -20,9 +20,9 @@ from matplotlib.widgets import Button
 # Import the relevant PTS classes and modules
 from ..core.image import Image
 from ..core.source import Source
-from ...core.basics.configurable import OldConfigurable
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
+from ...core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
@@ -30,22 +30,22 @@ description = {"star": "star", "saturation": "saturated star / diffraction patte
 
 # -----------------------------------------------------------------
 
-class Collector(OldConfigurable):
+class Collector(Configurable):
 
     """
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(Collector, self).__init__(config, "magic")
+        super(Collector, self).__init__(*args, **kwargs)
 
         # The current and previous source
         self.previous_source = None
@@ -87,15 +87,16 @@ class Collector(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Collect
         self.collect()
@@ -117,15 +118,16 @@ class Collector(OldConfigurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(Collector, self).setup()
+        super(Collector, self).setup(**kwargs)
 
         # Get description
         self.description = description[self.config.mode]
@@ -245,7 +247,7 @@ class Collector(OldConfigurable):
 
         # Inform the user and save the source object
         self.log.info("Saving the " + self.description + " to " + path)
-        self.current_source.save(path)
+        self.current_source.saveto(path)
 
         self.last_path = path
 
@@ -270,7 +272,7 @@ class Collector(OldConfigurable):
 
         # Inform the user and save the source object
         self.log.info("Saving the source to " + path)
-        self.current_source.save(path)
+        self.current_source.saveto(path)
 
         self.last_path = path
 

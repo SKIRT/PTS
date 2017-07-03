@@ -30,7 +30,7 @@ definition.add_required("message", "string", "the commit message")
 
 # Optional parameters
 definition.add_positional_optional("git_remotes", "string_list", "the remote(s) to commit to", default="origin")
-definition.add_optional("remote", "string", "the remote on which to pull the changes")
+definition.add_optional("host_id", "string", "the remote on which to pull the changes")
 
 # -----------------------------------------------------------------
 
@@ -55,7 +55,7 @@ subprocess.call(["git", "commit", "-m", config.message], cwd=skirt_repo_path)
 for remote in config.git_remotes: subprocess.call(["git", "push", remote, "master"], cwd=skirt_repo_path)
 
 # If a remote host id is specified
-if config.remote is not None:
+if config.host_id is not None:
 
     # Create the SKIRT updater
     updater = SKIRTUpdater(config)

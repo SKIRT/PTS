@@ -13,27 +13,48 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..core.component import ModelingComponent
+from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import filesystem as fs
+from ...core.tools import strings
 
 # -----------------------------------------------------------------
 
-class DataComponent(ModelingComponent):
+data_origins = ["GALEX", "SDSS", "Halpha", "2MASS", "Spitzer", "WISE", "Herschel", "Planck", "Other"]
+
+# -----------------------------------------------------------------
+
+def instrument_to_origin(instrument):
+
+    """
+    This function ...
+    :param instrument:
+    :return:
+    """
+
+    if instrument.lower() == "pacs": return "Herschel"
+    elif instrument.lower() == "spire": return "Herschel"
+    elif instrument.lower() == "lfi": return "Planck"
+    elif instrument.lower() == "hfi": return "Planck"
+    else: return strings.find_any_case(instrument, data_origins)
+
+# -----------------------------------------------------------------
+
+class DataComponent(GalaxyModelingComponent):
     
     """
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(DataComponent, self).__init__(config)
+        super(DataComponent, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 
@@ -41,14 +62,14 @@ class DataComponent(ModelingComponent):
         self.galaxy_info_path = None
 
         # Different origins
-        self.data_origins = ["GALEX", "SDSS", "Halpha", "2MASS", "Spitzer", "WISE", "Herschel", "Planck"]
+        self.data_origins = data_origins
 
         # The paths to the data/images/ directories for the different origins
         self.data_images_paths = dict()
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
@@ -56,7 +77,7 @@ class DataComponent(ModelingComponent):
         """
 
         # Call the setup function of the base class
-        super(DataComponent, self).setup()
+        super(DataComponent, self).setup(**kwargs)
 
         # Set the path to the galaxy info file
         self.galaxy_info_path = fs.join(self.data_path, "info.dat")

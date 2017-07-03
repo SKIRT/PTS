@@ -66,6 +66,16 @@ class Map(dict):
 
     # -----------------------------------------------------------------
 
+    def __len__(self):
+
+        count = 0
+        for label in self:
+            if label.startswith("_"): continue
+            count += 1
+        return count
+
+    # -----------------------------------------------------------------
+
     def __eq__(self, other):
 
         """
@@ -80,6 +90,8 @@ class Map(dict):
 
         for label in self:
 
+            if label.startswith("_"): continue
+
             value = self[label]
             other_value = other[label]
 
@@ -92,8 +104,8 @@ class Map(dict):
 
             elif value != other_value:
 
-                try: keys = value.keys() # if mapping-like
-                except AttributeError: print("value " + str(value) + " and " + str(other_value) + " are not equal")
+                #try: keys = value.keys() # if mapping-like
+                #except AttributeError: print("value " + str(value) + " and " + str(other_value) + " are not equal")
                 return False
 
         return True
@@ -122,6 +134,8 @@ class Map(dict):
 
         # Loop over all the items in the 'items' dictionary
         for key in items:
+
+            if key.startswith("_"): continue
 
             # Check whether an item with this key exists in this Map
             if key in self:

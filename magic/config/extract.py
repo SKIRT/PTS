@@ -14,7 +14,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 definition = ConfigurationDefinition()
 
 # Required
-definition.add_required("image", "file_path", "name/path of the input image")
+definition.add_positional_optional("image", "file_path", "name/path of the input image")
 
 # Input and output
 definition.add_optional("input", "directory_path", "input directory path", letter="i")
@@ -37,5 +37,9 @@ definition.add_optional("saturation_dilation_factor", "real", "saturation dilati
 
 definition.add_flag("dilate_other", "dilate other sources")
 definition.add_optional("other_dilation_factor", "real", "dilation factor for other sources", 2.0)
+
+definition.add_flag("only_foreground", "only interpolate over the stars that are in the foreground of the galaxy", False)
+
+definition.add_flag("write", "do writing", True)
 
 # -----------------------------------------------------------------

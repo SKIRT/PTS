@@ -12,70 +12,61 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from abc import ABCMeta
+
 # Import the relevant PTS classes and modules
-from ..core.component import ModelingComponent
-from ...core.tools import tables
+from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
-class PreparationComponent(ModelingComponent):
+class PreparationComponent(GalaxyModelingComponent):
     
     """
     This class...
     """
 
-    def __init__(self, config=None):
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(PreparationComponent, self).__init__(config)
-
-        # -- Attributes --
-
-        # The names of the different images for the preparation components
-        self.prep_names = dict()
-
-        # The paths to the preparation subdirectories for each image
-        self.prep_paths = dict()
-
-        # The original paths of the different images
-        self.original_paths = dict()
+        super(PreparationComponent, self).__init__(*args, **kwargs)
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(PreparationComponent, self).setup()
+        super(PreparationComponent, self).setup(**kwargs)
 
-        # Check for presence of dataset
-        if not fs.is_file(self.initial_dataset_path): raise RuntimeError("Dataset has not been created yet. Run create_dataset first.")
+    # -----------------------------------------------------------------
 
-        # Set the image names
-        for prep_name in self.initial_dataset.paths:
+    def get_prep_path(self, prep_name):
 
-            # Path
-            image_path = self.initial_dataset.paths[prep_name]
+        """
+        This function ...
+        :param prep_name:
+        :return:
+        """
 
-            # Name
-            image_name = fs.strip_extension(fs.name(image_path))
-
-            self.prep_names[image_name] = prep_name
-            self.prep_paths[prep_name] = fs.join(self.prep_path, prep_name)
-            self.original_paths[prep_name] = image_path
-
-        # Create the preparation subdirectories for each image
-        #fs.create_directories(self.prep_paths.values())
+        path = fs.join(self.prep_path, prep_name)
+        if not fs.is_directory(path): fs.create_directory(path)
+        return path
 
 # -----------------------------------------------------------------

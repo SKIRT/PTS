@@ -15,8 +15,6 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 from collections import OrderedDict
 
-#from ...core.basics.indexed import IndexedOrderedDict
-
 # -----------------------------------------------------------------
 
 class Layers(OrderedDict):

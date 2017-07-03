@@ -89,6 +89,7 @@ class GalaxyList(object):
 
         """
         This function ...
+        :param frame_or_wcs:
         :return:
         """
 
@@ -96,7 +97,7 @@ class GalaxyList(object):
         mask = Mask.empty_like(frame_or_wcs)
 
         # Add the principal galaxy's mask to the total mask
-        mask[self.principal.source.cutout.y_slice, self.principal.source.cutout.x_slice] = self.principal.source.mask
+        mask[self.principal.detection.cutout.y_slice, self.principal.detection.cutout.x_slice] = self.principal.detection.mask
 
         # Return the mask
         return mask
@@ -117,7 +118,7 @@ class GalaxyList(object):
         for galaxy in self.companions:
 
             # Check if the galaxy has a source and add its mask to the total mask
-            if galaxy.has_source: mask[galaxy.source.cutout.y_slice, galaxy.source.cutout.x_slice] = galaxy.source.mask
+            if galaxy.has_detection: mask[galaxy.detection.cutout.y_slice, galaxy.detection.cutout.x_slice] = galaxy.detection.mask
 
         # Return the mask
         return mask

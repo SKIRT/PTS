@@ -67,14 +67,15 @@ class ScalingTest(Configurable):
     An instance of the ScalingTest class represents a SKIRT scaling benchmark test for a particular ski file.
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
+        :param interactive:
         """
 
         # Call the constructor of the base class
-        super(ScalingTest, self).__init__(config)
+        super(ScalingTest, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 
@@ -141,14 +142,14 @@ class ScalingTest(Configurable):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         When this function is called, the scaling test is started.
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load (and create) the info tables
         self.create_info_table()
@@ -161,15 +162,16 @@ class ScalingTest(Configurable):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(ScalingTest, self).setup()
+        super(ScalingTest, self).setup(**kwargs)
 
         # Basic setup
         self.setup_basic()
@@ -201,14 +203,14 @@ class ScalingTest(Configurable):
         # Set the path to the timing table and initialize it if necessary
         self.timing_table_path = fs.join(self.base_path, "timing.dat")
         if not fs.is_file(self.timing_table_path):
-            timing_table = TimingTable.initialize()
-            timing_table.save(self.timing_table_path)
+            timing_table = TimingTable()
+            timing_table.saveto(self.timing_table_path)
 
         # Set the path to the memory table and initialize it if necessary
         self.memory_table_path = fs.join(self.base_path, "memory.dat")
         if not fs.is_file(self.memory_table_path):
-            memory_table = MemoryTable.initialize()
-            memory_table.save(self.memory_table_path)
+            memory_table = MemoryTable()
+            memory_table.saveto(self.memory_table_path)
 
     # -----------------------------------------------------------------
 
@@ -499,10 +501,10 @@ class ScalingTest(Configurable):
         if not self.scheduler: self.launcher.enable_screen_output(self.config.remote)
 
         # Run the launcher, schedules or initiates the simulations
-        simulations = self.launcher.run()
+        self.launcher.run()
 
         # Loop over the scheduled simulations
-        for simulation in simulations:
+        for simulation in self.launcher.launched_simulations:
 
             # Set scaling test characteristics
             simulation.analysis.scaling_path = self.base_path

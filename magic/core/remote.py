@@ -16,71 +16,50 @@ from __future__ import absolute_import, division, print_function
 import tempfile
 from itertools import count, izip
 
-# Import astronomical modules
-from astropy.units import Unit
-
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
-from ...core.basics.remote import Remote, connected_remotes
 from .frame import Frame # IMPORTANT THAT THESE ARE IMPORTED !!
 from .image import Image # IMPORTANT THAT THESE ARE IMPORTED !!
 from .datacube import DataCube # IMPORTANT THAT THESE ARE IMPORTED !!
-from ...core.basics.filter import Filter
+from ...core.filter.filter import parse_filter
 from ...core.tools import parsing
 from ..basics.coordinatesystem import CoordinateSystem
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
-prepared = [] # the list of host IDs for which the remote has been prepared
+prepared_sessions = [] # the list of session IDs that have been prepared
 
 # -----------------------------------------------------------------
 
-def prepare_remote(host_id):
+def prepare_session(session):
 
     """
     This function ...
-    :param host_id:
+    :param session:
     :return:
     """
 
     # If this host has already been prepared, just return the prepared remote
-    if host_id in prepared: return connected_remotes[host_id]
-
-    # Check whether we are already connected to the specified remote host
-    if host_id in connected_remotes and connected_remotes[host_id] is not None:
-        remote = connected_remotes[host_id]
-    else:
-
-        # Debugging
-        log.debug("Logging in to remote host ...")
-
-        # Create a remote instance for the specified host ID
-        remote = Remote()
-        remote.setup(host_id)
-
-    # Initiate python session
-    if not remote.in_python_session: remote.start_python_session()
+    if session.session_id in prepared_sessions: return
 
     # Import
-    import_necessary_modules(remote)
+    import_necessary_modules(session)
 
     # Set log level to debug
-    if log.is_debug(): set_debug_log_level(remote)
+    if log.is_debug(): set_debug_log_level(session)
 
     # Add the host ID to the 'prepared' list
-    prepared.append(host_id)
-
-    # Return the remote instance
-    return remote
+    prepared_sessions.append(session.session_id)
 
 # -----------------------------------------------------------------
 
-def import_necessary_modules(remote):
+def import_necessary_modules(session):
 
     """
     This function ...
-    :param remote:
+    :param session:
     :return:
     """
 
@@ -88,27 +67,27 @@ def import_necessary_modules(remote):
     log.info("Importing necessary modules ...")
 
     # Import standard modules
-    #remote.import_python_package("tempfile")  ## doesn't work: we seem to have no permissions in this directory on nancy
-    remote.import_python_package("urllib")
-    remote.import_python_package("numpy", as_name="np")
+    #session.import_package("tempfile")  ## doesn't work: we seem to have no permissions in this directory on nancy
+    session.import_package("urllib")
+    session.import_package("numpy", as_name="np")
 
     # Import the necessary PTS classes and modules
-    remote.import_python_package("Frame", from_name="pts.magic.core.frame")
-    remote.import_python_package("Image", from_name="pts.magic.core.image")
-    remote.import_python_package("DataCube", from_name="pts.magic.core.datacube")
-    remote.import_python_package("ConvolutionKernel", from_name="pts.magic.core.kernel")
-    remote.import_python_package("CoordinateSystem", from_name="pts.magic.basics.coordinatesystem")
-    remote.import_python_package("archive", from_name="pts.core.tools")
-    remote.import_python_package("parsing", from_name="pts.core.tools")
-    remote.import_python_package("Filter", from_name="pts.core.basics.filter")
+    session.import_package("Frame", from_name="pts.magic.core.frame")
+    session.import_package("Image", from_name="pts.magic.core.image")
+    session.import_package("DataCube", from_name="pts.magic.core.datacube")
+    session.import_package("ConvolutionKernel", from_name="pts.magic.core.kernel")
+    session.import_package("CoordinateSystem", from_name="pts.magic.basics.coordinatesystem")
+    session.import_package("archive", from_name="pts.core.tools")
+    session.import_package("parsing", from_name="pts.core.tools")
+    session.import_package("parse_filter", from_name="pts.core.filter.filter")
 
 # -----------------------------------------------------------------
 
-def set_debug_log_level(remote):
+def set_debug_log_level(session):
 
     """
     This function ...
-    :param remote:
+    :param session:
     :return:
     """
 
@@ -116,8 +95,8 @@ def set_debug_log_level(remote):
     log.debug("Setting debug logging level remotely ...")
 
     # Import logging module and setup logger to DEBUG level
-    remote.import_python_package("setup_log", from_name="pts.core.tools.logging")
-    remote.send_python_line("setup_log(level='DEBUG')")
+    session.import_package("setup_log", from_name="pts.core.tools.logging")
+    session.send_line("setup_log(level='DEBUG')")
 
 # -----------------------------------------------------------------
 
@@ -138,16 +117,16 @@ def get_first_missing_integer(integers):
 
 # -----------------------------------------------------------------
 
-def get_labels(classname, remote):
+def get_labels(classname, session):
 
     """
     This function ...
     :param classname:
-    :param remote:
+    :param session:
     :return:
     """
 
-    variables = remote.python_variables()
+    variables = session.variables()
 
     labels = []
 
@@ -159,29 +138,29 @@ def get_labels(classname, remote):
 
 # -----------------------------------------------------------------
 
-def get_indices(classname, remote):
+def get_indices(classname, session):
 
     """
     This function ...
     :param classname:
-    :param remote:
+    :param session:
     :return:
     """
 
-    return sorted([int(label.split(classname.lower())[1]) for label in get_labels(classname, remote)])
+    return sorted([int(label.split(classname.lower())[1]) for label in get_labels(classname, session)])
 
 # -----------------------------------------------------------------
 
-def get_new_label(classname, remote):
+def get_new_label(classname, session):
 
     """
     This function ...
     :param classname:
-    :param remote:
+    :param session:
     :return:
     """
 
-    current_indices = get_indices(classname, remote)
+    current_indices = get_indices(classname, session)
     return classname.lower() + str(get_first_missing_integer(current_indices))
 
 # -----------------------------------------------------------------
@@ -222,16 +201,19 @@ class RemoteFrame(object):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, label, remote):
+    def __init__(self, label, session):
 
         """
         This function ...
         :param label
-        :param remote:
+        :param session:
         """
 
         self.label = label
-        self.remote = remote
+        self.session = session
+
+        # The path
+        self.path = None
 
     # -----------------------------------------------------------------
 
@@ -242,7 +224,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        return self.remote.get_simple_python_property(self.label, "__str__()")
+        return self.session.get_simple_property(self.label, "__str__()")
 
     # -----------------------------------------------------------------
 
@@ -253,7 +235,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        return self.remote.get_simple_python_property(self.label, "__repr__()")
+        return self.session.get_simple_property(self.label, "__repr__()")
 
     # -----------------------------------------------------------------
 
@@ -265,7 +247,7 @@ class RemoteFrame(object):
         """
 
         # Delete the Frame on the remote from the global namespace
-        self.remote.remove_python_variable(self.label)
+        self.session.remove_variable(self.label)
 
     # -----------------------------------------------------------------
 
@@ -281,7 +263,7 @@ class RemoteFrame(object):
         if not isinstance(value, float): raise ValueError("Value must be float (is " + str(type(value)) + ")")
 
         # Multiply remotely
-        self.remote.send_python_line(self.label + " *= " + repr(value))
+        self.session.send_line(self.label + " *= " + repr(value))
 
         # Return self
         return self
@@ -300,7 +282,7 @@ class RemoteFrame(object):
         if not isinstance(value, float): raise ValueError("Value must be float (is " + str(type(value)) + ")")
 
         # Divide remotely
-        self.remote.send_python_line(self.label + " /= " + repr(value))
+        self.session.send_line(self.label + " /= " + repr(value))
 
         # Return self
         return self
@@ -327,7 +309,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        return Unit(self.remote.get_python_string("str(" + self.label + ".unit)"))
+        return u(self.session.get_string("str(" + self.label + ".unit)"))
 
     # -----------------------------------------------------------------
 
@@ -340,7 +322,19 @@ class RemoteFrame(object):
         :return:
         """
 
-        self.remote.send_python_line(self.label + ".unit = '" + str(unit) + "'")
+        self.session.send_line(self.label + ".unit = '" + str(unit) + "'")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.session.evaluate_boolean_expression(self.label + ".has_wcs")
 
     # -----------------------------------------------------------------
 
@@ -352,7 +346,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        return CoordinateSystem(self.remote.get_python_string(self.label + ".wcs.to_header_string()"))
+        return CoordinateSystem(self.session.get_string(self.label + ".wcs.to_header_string()"))
 
     # -----------------------------------------------------------------
 
@@ -366,7 +360,7 @@ class RemoteFrame(object):
         """
 
         # Set the WCS remotely
-        self.remote.send_python_line(self.label + '.wcs = CoordinateSystem("' + wcs.to_header_string() + '")')
+        self.session.send_line(self.label + '.wcs = CoordinateSystem("' + wcs.to_header_string() + '")')
 
     # -----------------------------------------------------------------
 
@@ -379,10 +373,24 @@ class RemoteFrame(object):
         """
 
         # Get the filter
-        fltr = Filter.from_string(self.remote.get_python_string("str(" + self.label + ".filter)"))
+        fltr = parse_filter(self.session.get_string("str(" + self.label + ".filter)"))
 
         # Return the filter
         return fltr
+
+    # -----------------------------------------------------------------
+
+    @filter.setter
+    def filter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        # Set the filter
+        self.session.send_line(self.label + ".filter = '" + str(fltr) + "'")
 
     # -----------------------------------------------------------------
 
@@ -394,7 +402,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        fwhm = parsing.quantity(self.remote.get_simple_python_property(self.label, "fwhm"))
+        fwhm = parsing.quantity(self.session.get_simple_property(self.label, "fwhm"))
         return fwhm
 
     # -----------------------------------------------------------------
@@ -407,18 +415,18 @@ class RemoteFrame(object):
         :return:
         """
 
-        self.remote.send_python_line(self.label + ".fwhm = parsing.quantity(" + str(fwhm) + ")")
+        self.session.send_line(self.label + ".fwhm = parsing.quantity(" + str(fwhm) + ")")
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_url(cls, url, host_id, index=None, name=None, description=None, plane=None, hdulist_index=None,
+    def from_url(cls, url, session, index=None, name=None, description=None, plane=None, hdulist_index=None,
                  no_filter=False, fwhm=None, add_meta=True):
 
         """
         This function ...
         :param url:
-        :param host_id:
+        :param session:
         :param index:
         :param name:
         :param description:
@@ -431,45 +439,45 @@ class RemoteFrame(object):
         """
 
         # Get remote instance
-        remote = prepare_remote(host_id)
+        prepare_session(session)
 
         # Inform the user
         log.info("Downloading file " + url + " ...")
 
         # Local path
-        remote_temp_path = remote.session_temp_directory
-        remote.send_python_line("filename = fs.name(url)")
-        remote.send_python_line("local_path = fs.join('" + remote_temp_path + "', filename)")
+        remote_temp_path = session.session_temp_directory
+        session.send_line("filename = fs.name(url)")
+        session.send_line("local_path = fs.join('" + remote_temp_path + "', filename)")
 
         # Download
-        remote.send_python_line("urllib.urlretrieve(url, local_path)")
+        session.send_line("urllib.urlretrieve(url, local_path)")
 
         # Get local path (on remote)
-        local_path = remote.get_python_string("local_path")
+        local_path = session.get_string("local_path")
 
-        if local_path.endswith(".fits"): remote.send_python_line("fits_path = local_path")
+        if local_path.endswith(".fits"): session.send_line("fits_path = local_path")
         else:
 
             # Inform the user
             log.info("Decompressing kernel file ...")
 
             # Fits path
-            remote.send_python_line("fits_path = fs.join(temp_path, fs.strip_extension(filename))")
+            session.send_line("fits_path = fs.join(temp_path, fs.strip_extension(filename))")
 
             # Decompress the kernel FITS file
-            remote.send_python_line("archive.decompress_file(local_path, fits_path)")
+            session.send_line("archive.decompress_file(local_path, fits_path)")
 
             # Remove the compressed file
-            remote.send_python_line("fs.remove_file(local_path)")
+            session.send_line("fs.remove_file(local_path)")
 
         # Find label
-        label = get_new_label(cls.local_classname(), remote)
+        label = get_new_label(cls.local_classname(), session)
 
         # Create RemoteFrame instance
-        remoteframe = cls(label, remote)
+        remoteframe = cls(label, session)
 
         # Actually create the frame remotely
-        remote.send_python_line(label + " = " + cls.local_classname() + ".from_file(fits_path)")
+        session.send_line(label + " = " + cls.local_classname() + ".from_file(fits_path)")
 
         # Return the remoteframe instance
         return remoteframe
@@ -477,13 +485,13 @@ class RemoteFrame(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, host_id, index=None, name=None, description=None, plane=None, hdulist_index=None,
+    def from_file(cls, path, session, index=None, name=None, description=None, plane=None, hdulist_index=None,
                   no_filter=False, fwhm=None, add_meta=True):
 
         """
         This function ...
         :param path:
-        :param host_id:
+        :param session:
         :param index:
         :param name:
         :param description:
@@ -498,11 +506,11 @@ class RemoteFrame(object):
         # Show which image we are importing
         log.info("Reading in file " + path + " ...")
 
-        # Get the remote instance
-        remote = prepare_remote(host_id)
+        # Prepare session if necessary
+        prepare_session(session)
 
         # Remote temp path
-        remote_temp_path = remote.session_temp_directory
+        remote_temp_path = session.session_temp_directory
 
         # Get file name
         filename = fs.name(path)
@@ -510,19 +518,22 @@ class RemoteFrame(object):
         # Upload the frame file
         remote_frame_path = fs.join(remote_temp_path, filename)
         log.info("Uploading the frame to " + remote_frame_path + " ...")
-        remote.upload(path, remote_temp_path, compress=True, show_output=True)
+        session.remote.upload(path, remote_temp_path, compress=True, show_output=True)
 
         # Find label
-        label = get_new_label(cls.local_classname(), remote)
+        label = get_new_label(cls.local_classname(), session)
 
         # Create RemoteFrame instance
-        remoteframe = cls(label, remote)
+        remoteframe = cls(label, session)
 
         # Open the frame remotely
         log.info("Loading the frame on the remote host ...")
 
         # Actually create the frame remotely
-        remote.send_python_line(label + " = " + cls.local_classname() + ".from_file('" + remote_frame_path + "')")
+        session.send_line(label + " = " + cls.local_classname() + ".from_file('" + remote_frame_path + "')")
+
+        # Set the path
+        remoteframe.path = path
 
         # Return the remoteframe instance
         return remoteframe
@@ -540,13 +551,13 @@ class RemoteFrame(object):
         log.info("Copying the remote frame ...")
 
         # Find new remote label
-        label = get_new_label(self.local_classname(), self.remote)
+        label = get_new_label(self.local_classname(), self.session)
 
         # Copy the frame remotely
-        self.remote.send_python_line(label + " = " + self.label + ".copy()")
+        self.session.send_line(label + " = " + self.label + ".copy()")
 
         # Create new RemoteFrame instance
-        newremoteframe = self.__class__(label, self.remote)
+        newremoteframe = self.__class__(label, self.session)
 
         # Return the new remoteframe instance
         return newremoteframe
@@ -561,7 +572,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        return self.remote.get_simple_python_property(self.label, "xsize")
+        return self.session.get_simple_property(self.label, "xsize")
 
     # -----------------------------------------------------------------
 
@@ -573,7 +584,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        return self.remote.get_simple_python_property(self.label, "ysize")
+        return self.session.get_simple_property(self.label, "ysize")
 
     # -----------------------------------------------------------------
 
@@ -585,7 +596,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        return self.remote.get_simple_python_property(self.label, "fwhm_pix")
+        return self.session.get_simple_property(self.label, "fwhm_pix")
 
     # -----------------------------------------------------------------
 
@@ -596,7 +607,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        return self.remote.get_simple_python_property(self.label, "sum()")
+        return self.session.get_simple_property(self.label, "sum()")
 
     # -----------------------------------------------------------------
 
@@ -609,7 +620,7 @@ class RemoteFrame(object):
         """
 
         # Call the function on the remote
-        self.remote.send_python_line(self.label + ".normalize(" + str(to) + ")")
+        self.session.send_line(self.label + ".normalize(" + str(to) + ")")
 
     # -----------------------------------------------------------------
 
@@ -620,7 +631,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        return self.remote.get_simple_python_property(self.label, "is_constant()")
+        return self.session.get_simple_property(self.label, "is_constant()")
 
     # -----------------------------------------------------------------
 
@@ -637,7 +648,7 @@ class RemoteFrame(object):
 
     # -----------------------------------------------------------------
 
-    def convolve(self, kernel, allow_huge=False, fft=True):
+    def convolve(self, kernel, allow_huge=True, fft=True):
 
         """
         This function ...
@@ -664,29 +675,29 @@ class RemoteFrame(object):
         local_path = fs.join(temp_path, "kernel.fits")
 
         # Save the kernel locally
-        kernel.save(local_path)
+        kernel.saveto(local_path)
 
         # UPLOAD KERNEL
 
         # Remote temp path
-        remote_temp_path = self.remote.session_temp_directory
+        remote_temp_path = self.session.session_temp_directory
 
         # Upload the kernel file
         remote_kernel_path = fs.join(remote_temp_path, "kernel.fits")
         log.info("Uploading the kernel to " + remote_kernel_path + " ...")
-        self.remote.upload(local_path, remote_temp_path, compress=True, show_output=True)
+        self.session.remote.upload(local_path, remote_temp_path, compress=True, show_output=True)
 
         # Open the kernel remotely
-        self.remote.send_python_line("kernel = ConvolutionKernel.from_file('" + remote_kernel_path + "')")
+        self.session.send_line("kernel = ConvolutionKernel.from_file('" + remote_kernel_path + "')")
 
         # Prepare the kernel if necessary
-        #self.remote.send_python_line("if not kernel.prepared: kernel.prepare_for(" + self.label + ")")
+        #self.remote.send_line("if not kernel.prepared: kernel.prepare_for(" + self.label + ")")
 
         # Check where the NaNs are at
-        #self.remote.send_python_line("nans_mask = np.isnan(" + self.label + "._data)")
+        #self.remote.send_line("nans_mask = np.isnan(" + self.label + "._data)")
 
         # Assert that the kernel is normalized
-        #self.remote.send_python_line("assert kernel.normalized")
+        #self.remote.send_line("assert kernel.normalized")
 
         # Do the convolution
         #self.remote. .... ETC
@@ -695,7 +706,7 @@ class RemoteFrame(object):
         # OR JUST: (does constant check again and creates copy for the prepared kernel, but... much more maintainable in this way)
 
         # Do the convolution on the remote frame
-        self.remote.send_python_line(self.label + ".convolve(kernel, allow_huge=" + str(allow_huge) + ", fft=" + str(fft) + ")", show_output=True, timeout=None)
+        self.session.send_line(self.label + ".convolve(kernel, allow_huge=" + str(allow_huge) + ", fft=" + str(fft) + ")", show_output=True, timeout=None)
 
     # -----------------------------------------------------------------
 
@@ -723,17 +734,20 @@ class RemoteFrame(object):
         :return:
         """
 
+        # Check whether the remote frame has a WCS
+        if not self.has_wcs: raise RuntimeError("Cannot rebin a frame without coordinate system")
+
         # Upload the WCS
-        self.remote.send_python_line('reference_wcs = CoordinateSystem("' + reference_wcs.to_header_string() + '")')
+        self.session.send_line('reference_wcs = CoordinateSystem("' + reference_wcs.to_header_string() + '")')
 
         # Create remote frame label for the footprint
-        footprint_label = get_new_label("Frame", self.remote)
+        footprint_label = get_new_label("Frame", self.session)
 
         # Rebin, get the footprint
-        self.remote.send_python_line(footprint_label + " = " + self.label + ".rebin(reference_wcs, exact=" + str(exact) + ", parallel=" + str(parallel) + ")", timeout=None, show_output=True)
+        self.session.send_line(footprint_label + " = " + self.label + ".rebin(reference_wcs, exact=" + str(exact) + ", parallel=" + str(parallel) + ")", timeout=None, show_output=True)
 
         # Create a new remoteframe instance for the footprint
-        remote_footprint_frame = RemoteFrame(footprint_label, self.remote)
+        remote_footprint_frame = RemoteFrame(footprint_label, self.session)
 
         # Return the remoteframe footprint
         return remote_footprint_frame
@@ -769,7 +783,7 @@ class RemoteFrame(object):
         """
 
         # Crop remotely
-        self.remote.send_python_line(self.label + ".crop(" + str(x_min) + ", " + str(x_max) + ", " + str(y_min) + ", " + str(y_max))
+        self.session.send_line(self.label + ".crop(" + str(x_min) + ", " + str(x_max) + ", " + str(y_min) + ", " + str(y_max))
 
     # -----------------------------------------------------------------
 
@@ -798,7 +812,7 @@ class RemoteFrame(object):
         """
 
         # Pad remotely
-        self.remote.send_python_line(self.label + ".pad(" + str(nx) + ", " + str(ny) + ")")
+        self.session.send_line(self.label + ".pad(" + str(nx) + ", " + str(ny) + ")")
 
     # -----------------------------------------------------------------
 
@@ -811,7 +825,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        self.remote.send_python_line(self.label + ".unpad(" + str(nx) + ", " + str(ny) + ")")
+        self.session.send_line(self.label + ".unpad(" + str(nx) + ", " + str(ny) + ")")
 
     # -----------------------------------------------------------------
 
@@ -837,7 +851,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        self.remote.send_python_line(self.label + ".downsample(" + str(factor) + ", " + str(order) + ")")
+        self.session.send_line(self.label + ".downsample(" + str(factor) + ", " + str(order) + ")")
 
     # -----------------------------------------------------------------
 
@@ -865,7 +879,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        self.remote.send_python_line(self.label + ".upsample(" + str(factor) + ", " + str(integers) + ")")
+        self.session.send_line(self.label + ".upsample(" + str(factor) + ", " + str(integers) + ")")
 
     # -----------------------------------------------------------------
 
@@ -877,7 +891,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        self.remote.send_python_line(self.label + ".fill(" + str(value) + ")")
+        self.session.send_line(self.label + ".fill(" + str(value) + ")")
 
     # -----------------------------------------------------------------
 
@@ -889,7 +903,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        self.remote.send_python_line(self.label + ".replace_nans(" + repr(value) + ")")
+        self.session.send_line(self.label + ".replace_nans(" + repr(value) + ")")
 
     # -----------------------------------------------------------------
 
@@ -901,7 +915,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        self.remote.send_python_line(self.label + ".replace_infs(" + repr(value) + ")")
+        self.session.send_line(self.label + ".replace_infs(" + repr(value) + ")")
 
     # -----------------------------------------------------------------
 
@@ -913,7 +927,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        self.remote.send_python_line(self.label + ".replace_negatives(" + repr(value) + ")")
+        self.session.send_line(self.label + ".replace_negatives(" + repr(value) + ")")
 
     # -----------------------------------------------------------------
 
@@ -934,7 +948,7 @@ class RemoteFrame(object):
         local_path = fs.join(temp_path, "newframe_fromlocal.fits")
 
         # Save the frame locally
-        frame.save(local_path)
+        frame.saveto(local_path)
 
         # Create the remoteframe from the locally saved frame
         remoteframe = cls.from_file(local_path, host_id)
@@ -961,7 +975,7 @@ class RemoteFrame(object):
         local_path = fs.join(temp_path, self.label + ".fits")
 
         # Save the remote frame locally to the temp path
-        self.save(local_path)
+        self.saveto(local_path)
 
         # Create the local frame
         frame = self.local_class().from_file(local_path)
@@ -974,7 +988,25 @@ class RemoteFrame(object):
 
     # -----------------------------------------------------------------
 
-    def save(self, path):
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Saving the remote frame ...")
+
+        # Check whether the path is valid
+        if self.path is None: raise RuntimeError("Path is not defined")
+
+        # Save
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
 
         """
         This function ...
@@ -989,7 +1021,7 @@ class RemoteFrame(object):
         local_directory = fs.directory_of(path)
 
         # Determine remote temp path
-        remote_temp_path = self.remote.session_temp_directory
+        remote_temp_path = self.session.session_temp_directory
 
         # Remote file path
         remote_file_path = fs.join(remote_temp_path, filename)
@@ -998,16 +1030,19 @@ class RemoteFrame(object):
         log.debug("Saving the frame remotely ...")
 
         # Save the frame remotely
-        self.remote.send_python_line(self.label + ".save('" + remote_file_path + "')")
+        self.session.send_line(self.label + ".saveto('" + remote_file_path + "')")
 
         # Debugging
         log.debug("Downloading the frame ...")
 
         # Download
-        self.remote.download(remote_file_path, local_directory, compress=True, show_output=True)
+        self.session.remote.download(remote_file_path, local_directory, compress=True, show_output=True)
 
         # Remove the remote file
-        self.remote.remove_file(remote_file_path)
+        self.session.remove_file(remote_file_path)
+
+        # Update the path
+        self.path = path
 
 # -----------------------------------------------------------------
 
@@ -1037,6 +1072,7 @@ class RemoteImage(object):
 
     @classmethod
     def local_classname(cls):
+
         """
         This function ...
         :return:
@@ -1046,16 +1082,19 @@ class RemoteImage(object):
 
     # -----------------------------------------------------------------
 
-    def __init__(self, label, remote):
+    def __init__(self, label, session):
 
         """
         The constructor ...
         :param label:
-        :param remote:
+        :param session:
         """
 
         self.label = label
-        self.remote = remote
+        self.session = session
+
+        # The path
+        self.path = None
 
     # -----------------------------------------------------------------
 
@@ -1066,9 +1105,9 @@ class RemoteImage(object):
         :return:
         """
 
-        return self.remote.get_simple_python_property(self.label, "__str__()")
+        return self.session.get_simple_property(self.label, "__str__()")
 
-        # -----------------------------------------------------------------
+    # -----------------------------------------------------------------
 
     def __repr__(self):
 
@@ -1077,7 +1116,7 @@ class RemoteImage(object):
         :return:
         """
 
-        return self.remote.get_simple_python_property(self.label, "__repr__()")
+        return self.session.get_simple_property(self.label, "__repr__()")
 
     # -----------------------------------------------------------------
 
@@ -1089,7 +1128,7 @@ class RemoteImage(object):
         """
 
         # Delete the Image on the remote from the global namespace
-        self.remote.remove_python_variable(self.label)
+        self.session.remove_variable(self.label)
 
     # -----------------------------------------------------------------
 
@@ -1105,7 +1144,7 @@ class RemoteImage(object):
         if not isinstance(value, float): raise ValueError("Value must be float (is " + str(type(value)) + ")")
 
         # Multiply remotely
-        self.remote.send_python_line(self.label + " *= " + repr(value))
+        self.session.send_line(self.label + " *= " + repr(value))
 
         # Return self
         return self
@@ -1124,7 +1163,7 @@ class RemoteImage(object):
         if not isinstance(value, float): raise ValueError("Value must be float (is " + str(type(value)) + ")")
 
         # Divide remotely
-        self.remote.send_python_line(self.label + " /= " + repr(value))
+        self.session.send_line(self.label + " /= " + repr(value))
 
         # Return self
         return self
@@ -1144,12 +1183,12 @@ class RemoteImage(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, host_id):
+    def from_file(cls, path, session):
 
         """
         This function ...
         :param path:
-        :param host_id:
+        :param session:
         :return:
         """
 
@@ -1157,10 +1196,10 @@ class RemoteImage(object):
         log.info("Reading in file " + path + " ...")
 
         # Get the remote instance
-        remote = prepare_remote(host_id)
+        prepare_session(session)
 
         # Remote temp path
-        remote_temp_path = remote.session_temp_directory
+        remote_temp_path = session.session_temp_directory
 
         # Get file name
         filename = fs.name(path)
@@ -1168,19 +1207,22 @@ class RemoteImage(object):
         # Upload the image file
         remote_image_path = fs.join(remote_temp_path, filename)
         log.info("Uploading the image to '" + remote_image_path + "' ...")
-        remote.upload(path, remote_temp_path, compress=True, show_output=True)
+        session.remote.upload(path, remote_temp_path, compress=True, show_output=True)
 
         # Find label
-        label = get_new_label(cls.local_classname(), remote)
+        label = get_new_label(cls.local_classname(), session)
 
         # Create RemoteImage instance
-        remoteimage = cls(label, remote)
+        remoteimage = cls(label, session)
 
         # Open the frame remotely
         log.info("Loading the image on the remote host ...")
 
         # Actually create the frame remotely
-        remote.send_python_line(label + " = " + cls.local_classname() + ".from_file('" + remote_image_path + "')")
+        session.send_line(label + " = " + cls.local_classname() + ".from_file('" + remote_image_path + "')")
+
+        # Set the path
+        remoteimage.path = path
 
         # Return the remoteimage instance
         return remoteimage
@@ -1198,13 +1240,13 @@ class RemoteImage(object):
         log.info("Copying the remote image ...")
 
         # Find new remote label
-        label = get_new_label(self.local_classname(), self.remote)
+        label = get_new_label(self.local_classname(), self.session)
 
         # Copy the frame remotely
-        self.remote.send_python_line(label + " = " + self.label + ".copy()")
+        self.session.send_line(label + " = " + self.label + ".copy()")
 
         # Create new RemoteImage instance
-        newremoteimage = self.__class__(label, self.remote)
+        newremoteimage = self.__class__(label, self.session)
 
         # Return the new remoteimage instance
         return newremoteimage
@@ -1220,13 +1262,13 @@ class RemoteImage(object):
         """
 
         # Assign a remote variable to the primary frame of this remote image
-        label = get_new_label("Frame", self.remote)
+        label = get_new_label("Frame", self.session)
 
         # Reference the primary frame to the new variable
-        self.remote.send_python_line(label + " = " + self.label + ".primary")
+        self.session.send_line(label + " = " + self.label + ".primary")
 
         # Create a new RemoteFrame instance
-        newremoteframe = RemoteFrame(label, self.remote) # We assume the frame of the remote image is not of a type derived from Frame
+        newremoteframe = RemoteFrame(label, self.session) # We assume the frame of the remote image is not of a type derived from Frame
 
         # Return the new remoteframe instance
         return newremoteframe
@@ -1241,7 +1283,7 @@ class RemoteImage(object):
         :return:
         """
 
-        return self.remote.get_simple_python_property(self.label, "has_frames")
+        return self.session.get_simpl_property(self.label, "has_frames")
 
     # -----------------------------------------------------------------
 
@@ -1253,7 +1295,7 @@ class RemoteImage(object):
         :return:
         """
 
-        return self.remote.get_simple_python_property(self.label, "nframes")
+        return self.session.get_simple_property(self.label, "nframes")
 
     # -----------------------------------------------------------------
 
@@ -1265,7 +1307,7 @@ class RemoteImage(object):
         :return:
         """
 
-        return self.remote.get_simple_python_property(self.label, "nmasks")
+        return self.session.get_simple_property(self.label, "nmasks")
 
     # -----------------------------------------------------------------
 
@@ -1277,7 +1319,7 @@ class RemoteImage(object):
         :return:
         """
 
-        return self.remote.get_simple_python_property(self.label, "nregions")
+        return self.session.get_simple_property(self.label, "nregions")
 
     # -----------------------------------------------------------------
 
@@ -1289,7 +1331,7 @@ class RemoteImage(object):
         :return:
         """
 
-        return self.remote.get_simple_python_property(self.label, "shape")
+        return self.session.get_simple_property(self.label, "shape")
 
     # -----------------------------------------------------------------
 
@@ -1301,7 +1343,7 @@ class RemoteImage(object):
         :return:
         """
 
-        return Unit(self.remote.get_python_string("str(" + self.label + ".unit)"))
+        return u(self.session.get_string("str(" + self.label + ".unit)"))
 
     # -----------------------------------------------------------------
 
@@ -1314,7 +1356,19 @@ class RemoteImage(object):
         :return:
         """
 
-        self.remote.send_python_line(self.label + ".unit = '" + str(unit) + "'")
+        self.session.send_line(self.label + ".unit = '" + str(unit) + "'")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.session.evaluate_boolean_expression(self.label + ".has_wcs")
 
     # -----------------------------------------------------------------
 
@@ -1326,7 +1380,7 @@ class RemoteImage(object):
         :return:
         """
 
-        return CoordinateSystem(self.remote.get_python_string(self.label + ".wcs.to_header_string()"))
+        return CoordinateSystem(self.session.get_string(self.label + ".wcs.to_header_string()"))
 
     # -----------------------------------------------------------------
 
@@ -1340,7 +1394,7 @@ class RemoteImage(object):
         """
 
         # Set the WCS remotely
-        self.remote.send_python_line(self.label + '.wcs = CoordinateSystem("' + wcs.to_header_string() + '")')
+        self.session.send_line(self.label + '.wcs = CoordinateSystem("' + wcs.to_header_string() + '")')
 
     # -----------------------------------------------------------------
 
@@ -1352,7 +1406,7 @@ class RemoteImage(object):
         :return:
         """
 
-        fwhm = parsing.quantity(self.remote.get_simple_python_property(self.label, "fwhm"))
+        fwhm = parsing.quantity(self.session.get_simple_property(self.label, "fwhm"))
         return fwhm
 
     # -----------------------------------------------------------------
@@ -1365,11 +1419,29 @@ class RemoteImage(object):
         :return:
         """
 
-        self.remote.send_python_line(self.label + ".fwhm = parsing.quantity(" + str(fwhm) + ")")
+        self.session.send_line(self.label + ".fwhm = parsing.quantity(" + str(fwhm) + ")")
 
     # -----------------------------------------------------------------
 
-    def save(self, path):
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Saving the remote image ...")
+
+        # Check whether the path is valid
+        if self.path is None: raise RuntimeError("Path is not defined")
+
+        # Save
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
 
         """
         This function ...
@@ -1385,7 +1457,7 @@ class RemoteImage(object):
         local_directory = fs.directory_of(path)
 
         # Determine remote temp path
-        remote_temp_path = self.remote.session_temp_directory
+        remote_temp_path = self.session.session_temp_directory
 
         # Determine remote path for the image
         remote_image_path = fs.join(remote_temp_path, filename)
@@ -1397,26 +1469,29 @@ class RemoteImage(object):
         log.debug("Remote temporary path of image: " + remote_image_path)
 
         # Save the image remotely
-        self.remote.send_python_line(self.label + ".save('" + remote_image_path + "')", show_output=True)
+        self.session.send_line(self.label + ".saveto('" + remote_image_path + "')", show_output=True)
 
         # Debugging
         log.debug("Downloading the image ...")
 
         # Download
-        self.remote.download(remote_image_path, local_directory, compress=True, show_output=True)
+        self.session.remote.download(remote_image_path, local_directory, compress=True, show_output=True)
 
         # Remove the remote file
-        self.remote.remove_file(remote_image_path)
+        self.session.remove_file(remote_image_path)
+
+        # Update the path
+        self.path = path
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_local(cls, image, host_id):
+    def from_local(cls, image, session):
 
         """
         This function ...
         :param image:
-        :param host_id:
+        :param session:
         :return:
         """
 
@@ -1427,13 +1502,16 @@ class RemoteImage(object):
         local_path = fs.join(temp_path, "newimage_fromlocal.fits")
 
         # Save the image locally
-        image.save(local_path)
+        image.saveto(local_path)
 
         # Create the remoteimage from the locally saved image
-        remoteimage = cls.from_file(local_path, host_id)
+        remoteimage = cls.from_file(local_path, session)
 
         # Remove the local file
         fs.remove_file(local_path)
+
+        # Set the path
+        remoteimage.path = image.path
 
         # Return the new remoteimage
         return remoteimage
@@ -1454,7 +1532,7 @@ class RemoteImage(object):
         local_path = fs.join(temp_path, self.label + ".fits")
 
         # Save the remote image locally to the temp path
-        self.save(local_path)
+        self.saveto(local_path)
 
         # Create the image
         image = self.local_class().from_file(local_path)
@@ -1462,12 +1540,15 @@ class RemoteImage(object):
         # Remove the local temporary file
         fs.remove_file(local_path)
 
+        # Set the path
+        image.path = self.path
+
         # Return the image
         return image
 
     # -----------------------------------------------------------------
 
-    def convolve(self, kernel, allow_huge=False, fft=True):
+    def convolve(self, kernel, allow_huge=True, fft=True):
 
         """
         This function ...
@@ -1489,23 +1570,23 @@ class RemoteImage(object):
         local_path = fs.join(temp_path, "kernel.fits")
 
         # Save the kernel locally
-        kernel.save(local_path)
+        kernel.saveto(local_path)
 
         # UPLOAD KERNEL
 
         # Remote temp path
-        remote_temp_path = self.remote.session_temp_directory
+        remote_temp_path = self.session.session_temp_directory
 
         # Upload the kernel file
         remote_kernel_path = fs.join(remote_temp_path, "kernel.fits")
         log.info("Uploading the kernel to " + remote_kernel_path + " ...")
-        self.remote.upload(local_path, remote_temp_path, compress=True, show_output=True)
+        self.session.remote.upload(local_path, remote_temp_path, compress=True, show_output=True)
 
         # Open the kernel remotely
-        self.remote.send_python_line("kernel = ConvolutionKernel.from_file('" + remote_kernel_path + "')", show_output=True)
+        self.session.send_line("kernel = ConvolutionKernel.from_file('" + remote_kernel_path + "')", show_output=True)
 
         # Convolve the image remotely
-        self.remote.send_python_line(self.label + ".convolve(kernel, allow_huge=" + str(allow_huge) + ", fft=" + str(fft) + ")", show_output=True, timeout=None)
+        self.session.send_line(self.label + ".convolve(kernel, allow_huge=" + str(allow_huge) + ", fft=" + str(fft) + ")", show_output=True, timeout=None)
 
     # -----------------------------------------------------------------
 
@@ -1519,11 +1600,14 @@ class RemoteImage(object):
         :return:
         """
 
+        # Check whether the remote image has a WCS
+        if not self.has_wcs: raise RuntimeError("Cannot rebin a frame without coordinate system")
+
         # Upload the WCS
-        self.remote.send_python_line('reference_wcs = CoordinateSystem("' + reference_wcs.to_header_string() + '")')
+        self.session.send_line('reference_wcs = CoordinateSystem("' + reference_wcs.to_header_string() + '")')
 
         # Rebin remotely
-        self.remote.send_python_line(self.label + ".rebin(reference_wcs, exact=" + str(exact) + ", parallel=" + str(parallel) + ")", show_output=True, timeout=None)
+        self.session.send_line(self.label + ".rebin(reference_wcs, exact=" + str(exact) + ", parallel=" + str(parallel) + ")", show_output=True, timeout=None)
 
 # -----------------------------------------------------------------
 
@@ -1539,13 +1623,13 @@ class RemoteDataCube(RemoteImage):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path, wavelength_grid, host_id):
+    def from_file(cls, path, wavelength_grid, session):
 
         """
         This function ...
         :param path:
         :param wavelength_grid:
-        :param host_id:
+        :param session:
         :return:
         """
 
@@ -1553,10 +1637,10 @@ class RemoteDataCube(RemoteImage):
         log.info("Reading in file " + path + " ...")
 
         # Get the remote instance
-        remote = prepare_remote(host_id)
+        prepare_session(session)
 
         # Remote temp path
-        remote_temp_path = remote.session_temp_directory
+        remote_temp_path = session.session_temp_directory
 
         # Get file name
         filename = fs.name(path)
@@ -1566,7 +1650,7 @@ class RemoteDataCube(RemoteImage):
         # Upload the datacube file
         remote_datacube_path = fs.join(remote_temp_path, filename)
         log.info("Uploading the datacube to '" + remote_datacube_path + "' ...")
-        remote.upload(path, remote_temp_path, compress=True, show_output=True)
+        session.remote.upload(path, remote_temp_path, compress=True, show_output=True)
 
         ### SAVE AND UPLOAD WAVELENGTH GRID
 
@@ -1575,33 +1659,33 @@ class RemoteDataCube(RemoteImage):
         log.debug("Saving the wavelength grid locally to '" + local_wavelength_grid_path + "' ...")
 
         # Save
-        wavelength_grid.save(local_wavelength_grid_path)
+        wavelength_grid.saveto(local_wavelength_grid_path)
 
         # Upload
         remote_wavelength_grid_path = fs.join(remote_temp_path, "wavelength_grid.dat")
         log.info("Uploading the wavelength grid to '" + remote_wavelength_grid_path + "' ...")
-        remote.upload(local_wavelength_grid_path, remote_temp_path, show_output=True)
+        session.remote.upload(local_wavelength_grid_path, remote_temp_path, show_output=True)
 
         ###
 
         # Find label
-        label = get_new_label(cls.local_classname(), remote)
+        label = get_new_label(cls.local_classname(), session)
 
         # Create RemoteDataCube instance
-        remotedatacube = cls(label, remote)
+        remotedatacube = cls(label, session)
 
         # Open the wavelength grid remotely
         log.info("Loading the wavelength grid on the remote host ...")
 
         # Import the WavelengthGrid class remotely
-        remote.import_python_package("WavelengthGrid", from_name="pts.core.simulation.wavelengthgrid")
-        remote.send_python_line("wavelength_grid = WavelengthGrid.from_file('" + remote_wavelength_grid_path + "')")
+        session.import_package("WavelengthGrid", from_name="pts.core.simulation.wavelengthgrid")
+        session.send_line("wavelength_grid = WavelengthGrid.from_file('" + remote_wavelength_grid_path + "')")
 
         # Open the frame remotely
         log.info("Loading the datacube on the remote host ...")
 
         # Actually create the frame remotely
-        remote.send_python_line(label + " = " + cls.local_classname() + ".from_file('" + remote_datacube_path + "', wavelength_grid)", show_output=True)
+        session.send_line(label + " = " + cls.local_classname() + ".from_file('" + remote_datacube_path + "', wavelength_grid)", show_output=True)
 
         # Return the remotedatacube instance
         return remotedatacube
@@ -1609,12 +1693,12 @@ class RemoteDataCube(RemoteImage):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_local(cls, datacube, host_id):
+    def from_local(cls, datacube, session):
 
         """
         This function ...
         :param datacube:
-        :param host_id:
+        :param session:
         :return:
         """
 
@@ -1625,10 +1709,10 @@ class RemoteDataCube(RemoteImage):
         local_path = fs.join(temp_path, "newdatacube_fromlocal.fits")
 
         # Save the image locally
-        datacube.save(local_path)
+        datacube.saveto(local_path)
 
         # Create the remotedatacube from the locally saved FITS file
-        remotedatacube = cls.from_file(local_path, datacube.wavelength_grid, host_id)
+        remotedatacube = cls.from_file(local_path, datacube.wavelength_grid, session)
 
         # Remove the local file
         fs.remove_file(local_path)
@@ -1648,28 +1732,28 @@ class RemoteDataCube(RemoteImage):
         """
 
         # Initialize filter list remotely
-        self.remote.send_python_line("filters = []")
+        self.session.send_line("filters = []")
 
         # Reconstruct the list of filters remotely
-        for fltr in filters: self.remote.send_python_line("filters.append(Filter.from_string('" + str(fltr) + "'))")
+        for fltr in filters: self.session.send_line("filters.append(BroadBand('" + str(fltr) + "'))")
 
         # Initialize a list with remoteframes
         remoteframes = []
 
         # Do the convolution remotely
-        self.remote.send_python_line("filterconvolvedframes = " + self.label + ".convolve_with_filters(filters, nprocesses=" + str(nprocesses) + ")", timeout=None, show_output=True)
+        self.session.send_line("filterconvolvedframes = " + self.label + ".convolve_with_filters(filters, nprocesses=" + str(nprocesses) + ")", timeout=None, show_output=True)
 
         # Create a remoteframe pointing to each of the frames in 'filterconvolvedframes'
         for i in range(len(filters)):
 
             # Assign a remote label to this result frame
-            label_i = get_new_label("Frame", self.remote)
+            label_i = get_new_label("Frame", self.session)
 
             # Do the assignment remotely
-            self.remote.send_python_line(label_i + " = filterconvolvedframes[" + str(i) + "]")
+            self.session.send_line(label_i + " = filterconvolvedframes[" + str(i) + "]")
 
             # Create remoteframe and add it to the list
-            remoteframe = RemoteFrame(label_i, self.remote)
+            remoteframe = RemoteFrame(label_i, self.session)
             remoteframes.append(remoteframe)
 
         # Return the list of remoteframes
@@ -1687,6 +1771,6 @@ class RemoteDataCube(RemoteImage):
         """
 
         # Convert to wavelength density remotely
-        self.remote.send_python_line(self.label + ".to_wavelength_density('" + new_unit + "', '" + wavelength_unit + "')")
+        self.session.send_line(self.label + ".to_wavelength_density('" + new_unit + "', '" + wavelength_unit + "')")
 
 # -----------------------------------------------------------------

@@ -36,7 +36,7 @@ class ProgressTable(Table):
         :return:
         """
 
-        names = ["Process rank", "Simulation phase", "Time", "Progress"]
+        names = ["Process rank", "Phase", "Time", "Progress"]
         data = [process_list, phase_list, seconds_list, progress_list]
 
         # Call the constructor of the base class

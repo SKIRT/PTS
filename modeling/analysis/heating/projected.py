@@ -34,16 +34,16 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(ProjectedDustHeatingAnalyser, self).__init__(config)
+        super(ProjectedDustHeatingAnalyser, self).__init__(*args, **kwargs)
 
         # -- Attributes --
 
@@ -76,15 +76,16 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # 2. Load the wavelength grid
         self.load_wavelength_grid()
@@ -109,10 +110,11 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
@@ -327,9 +329,9 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         all_wavelengths = self.wavelength_grid.wavelengths(asarray=True, unit="micron")
         dust_wavelengths = all_wavelengths > 10.
 
-        total_fluxes = self.total_sed.fluxes(asarray=True)
-        evolved_fluxes = self.evolved_sed.fluxes(asarray=True)
-        unevolved_fluxes = self.unevolved_sed.fluxes(asarray=True)
+        total_fluxes = self.total_sed.photometry(asarray=True)
+        evolved_fluxes = self.evolved_sed.photometry(asarray=True)
+        unevolved_fluxes = self.unevolved_sed.photometry(asarray=True)
 
         # Calculate the heating fractions
         unevolved_fractions = 0.5 * (unevolved_fluxes + total_fluxes - evolved_fluxes) / total_fluxes
@@ -504,19 +506,19 @@ class ProjectedDustHeatingAnalyser(DustHeatingAnalysisComponent):
         path = fs.join(self.projected_heating_path, "tir_total.fits")
 
         # Write the total TIR map
-        self.total_tir_map.save(path)
+        self.total_tir_map.saveto(path)
 
         # Determine the path to the unevolved TIR map
         path = fs.join(self.projected_heating_path, "tir_unevolved.fits")
 
         # Write the unevolved TIR map
-        self.unevolved_tir_map.save(path)
+        self.unevolved_tir_map.saveto(path)
 
         # Determine the path to the evolved TIR map
         path = fs.join(self.projected_heating_path, "tir_evolved.fits")
 
         # Write the evolved TIR map
-        self.evolved_tir_map.save(path)
+        self.evolved_tir_map.saveto(path)
 
     # -----------------------------------------------------------------
 

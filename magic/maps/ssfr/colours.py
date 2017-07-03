@@ -1,0 +1,171 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+# *****************************************************************
+# **       PTS -- Python Toolkit for working with SKIRT          **
+# **       © Astronomical Observatory, Ghent University          **
+# *****************************************************************
+
+## \package pts.magic.maps.ssfr.colours Contains the ColoursSSFRMapMaker class.
+
+# -----------------------------------------------------------------
+
+# Ensure Python 3 compatibility
+from __future__ import absolute_import, division, print_function
+
+# Import the relevant PTS classes and modules
+from ....core.tools.logging import log
+from ....core.tools import filesystem as fs
+from ....core.basics.configurable import Configurable
+
+# -----------------------------------------------------------------
+
+ssfr_colours = ["FUV-H", "FUV-i", "FUV-r", "FUV-g", "FUV-B"]
+
+# -----------------------------------------------------------------
+
+def make_map(**kwargs):
+
+    """
+    This function ...
+    :param:
+    :return: 
+    """
+
+    # Create the sSFR map maker
+    maker = ColoursSSFRMapsMaker()
+
+    # Make
+    maker.run(colours=kwargs)
+
+    # Get the maps
+    #maps = maker.maps
+
+    return maker.single_map
+
+# -----------------------------------------------------------------
+
+class ColoursSSFRMapsMaker(Configurable):
+
+    """
+    This class...
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param interactive:
+        :return:
+        """
+
+        # Call the constructor of the base class
+        super(ColoursSSFRMapsMaker, self).__init__(*args, **kwargs)
+
+        # Input
+        self.colours = dict()
+        self.colours_origins = None
+
+        # The sSFR maps
+        self.maps = dict()
+
+        # The origins
+        self.origins = dict()
+
+    # -----------------------------------------------------------------
+
+    def run(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # 1. Call the setup function
+        self.setup(**kwargs)
+
+        # 3. Make maps
+        self.make_maps()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(ColoursSSFRMapsMaker, self).setup(**kwargs)
+
+        # Get the colours
+        self.colours = kwargs.pop("colours")
+
+        # Get origins
+        self.colours_origins = kwargs.pop("colours_origins", None)
+
+        # Get maps that have already been created
+        if "maps" in kwargs: self.maps = kwargs.pop("maps")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.colours_origins is not None
+
+    # -----------------------------------------------------------------
+
+    def make_maps(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        # Inform the user
+        log.info("Making the sSFR maps ...")
+
+        # Loop over the colour maps
+        for colour in self.colours:
+
+            # Set origin
+            # Set the origins
+            if self.has_origins:
+
+                # Set the origins
+                origins = self.colours_origins[colour]
+                self.origins[colour] = origins
+
+            # Check whether a colour map is already present
+            if colour in self.maps:
+                log.warning("The " + colour + " sSFR map is already created: not creating again")
+                continue
+
+            # Get the map
+            colour_map = self.colours[colour]
+
+            # Set as sSFR map
+            self.maps[colour] = colour_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if len(self.maps) != 1: raise ValueError("Not a single map")
+        return self.maps[self.maps.keys()[0]]
+
+# -----------------------------------------------------------------

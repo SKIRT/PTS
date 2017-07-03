@@ -18,6 +18,17 @@ from datetime import datetime
 
 # -----------------------------------------------------------------
 
+def time():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return _time.time()
+
+# -----------------------------------------------------------------
+
 def wait(seconds):
 
     """
@@ -27,6 +38,20 @@ def wait(seconds):
     """
 
     _time.sleep(seconds)
+
+# -----------------------------------------------------------------
+
+def iterate(seconds):
+
+    """
+    This function ...
+    :param seconds:
+    :return:
+    """
+
+    while True:
+        yield now()
+        wait(seconds)
 
 # -----------------------------------------------------------------
 
@@ -74,7 +99,7 @@ def parse_date_time(date, time):
     try: day, month, year = date.split('/')
     except ValueError: return None
     hour, minute, second = time.split(':')
-    second, microsecond = second.split('.')
+    second, millisecond = second.split('.')
 
     # Convert the strings to integers
     year = int(year)
@@ -83,7 +108,9 @@ def parse_date_time(date, time):
     hour = int(hour)
     minute = int(minute)
     second = int(second)
-    microsecond = int(microsecond)
+    millisecond = int(millisecond)
+
+    microsecond = millisecond * 1000
 
     # Create and return a datetime object
     return datetime(year=year, month=month, day=day, hour=hour, minute=minute, second=second, microsecond=microsecond)
@@ -113,6 +140,17 @@ def timestamp():
 
 # -----------------------------------------------------------------
 
+def filename_timestamp():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return datetime.now().strftime("%Y-%m-%d--%H-%M-%S-%f")
+
+# -----------------------------------------------------------------
+
 def day_and_time_as_string():
 
     """
@@ -121,6 +159,86 @@ def day_and_time_as_string():
     """
 
     return datetime.now().strftime("%A, %d. %B %Y %I:%M%p")
+
+# -----------------------------------------------------------------
+
+def is_unique_name(name):
+
+    """
+    This function ...
+    :param name: 
+    :return: 
+    """
+
+    try:
+        name, time = get_name_and_time_from_unique_name(name)
+        return True
+    except Exception: return False
+
+# -----------------------------------------------------------------
+
+def get_name_and_time_from_unique_name(name):
+
+    """
+    This function ...
+    :param name: 
+    :return: 
+    """
+
+    splitted = name.split("_")
+    if len(splitted) > 2:
+        return "_".join(splitted[:-1]), time_from_timestamp(splitted[-1])
+    elif len(splitted) == 2: return splitted[0], time_from_timestamp(splitted[1])
+    else: raise ValueError("Not a timestamped unique name")
+
+# -----------------------------------------------------------------
+
+def get_name_from_unique_name(name):
+
+    """
+    This function ...
+    :param name: 
+    :return: 
+    """
+
+    splitted = name.split("_")
+    if len(splitted) > 2: return "_".join(splitted[:-1])
+    elif len(splitted) == 2: return splitted[0]
+    else: raise ValueError("Not a timestamped unique name")
+
+# -----------------------------------------------------------------
+
+def get_time_from_unique_name(name):
+
+    """
+    This function ...
+    :param name: 
+    :return: 
+    """
+
+    splitted = name.split("_")
+    last = splitted[-1]
+    return time_from_timestamp(last)
+
+# -----------------------------------------------------------------
+
+def time_from_timestamp(stamp):
+
+    """
+    This function ...
+    :param stamp: 
+    :return: 
+    """
+
+    # Millisecond precision
+    if len(stamp) == 24: stamp = stamp + "000"
+    # Microsecond precision
+    elif len(stamp) == 27: pass
+    # Else
+    else: raise ValueError("The timestamp '" + stamp + "' could not be recognized")
+
+    # Parse
+    return datetime.strptime(stamp, "%Y-%m-%d--%H-%M-%S-%f")
 
 # -----------------------------------------------------------------
 
@@ -138,11 +256,11 @@ def unique_name(name=None, separator="_", precision="milli"):
     elif precision == "micro" or precision == "microsecond": ndigits = 0
     else: raise ValueError("Invalid precision")
 
-    if name is None: return strip_last_digits(datetime.now().strftime("%Y-%m-%d--%H-%M-%S-%f"), ndigits)
+    if name is None: return strip_last_digits(filename_timestamp(), ndigits)
     else:
 
         # Add a timestamp accurate up to the millisecond to the passed name
-        return name + separator + strip_last_digits(datetime.now().strftime("%Y-%m-%d--%H-%M-%S-%f"), ndigits)
+        return name + separator + strip_last_digits(filename_timestamp(), ndigits)
 
 # -----------------------------------------------------------------
 

@@ -35,15 +35,15 @@ class SkiFiller(Configurable):
     This class ...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         """
 
         # Call the constructor of the base class
-        super(SkiFiller, self).__init__(config)
+        super(SkiFiller, self).__init__(*args, **kwargs)
 
         # The ski file
         self.ski = None
@@ -94,7 +94,7 @@ class SkiFiller(Configurable):
         else: raise ValueError("Invalid option for 'ski_path': must be ski file or ski file path")
 
         # Create temporary directory and set the path
-        self.temp_path = fs.create_directories_in(introspection.pts_temp_dir, time.unique_name("fill"))
+        self.temp_path = introspection.create_temp_dir(time.unique_name("fill"))
 
     # -----------------------------------------------------------------
 

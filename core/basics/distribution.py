@@ -19,12 +19,14 @@ from scipy.interpolate import interp1d
 from scipy.signal import argrelextrema
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.integrate import quad, simps
-from textwrap import wrap
 #import seaborn as sns
 
 # Import astronomical modules
 from astropy.table import Table
 from astropy.modeling import models, fitting
+
+# Import the relevant PTS classes and modules
+from ..tools import strings
 
 # -----------------------------------------------------------------
 
@@ -56,6 +58,9 @@ class Distribution(object):
         self.name = name
 
         self._cum_smooth = None # Not a good solution to cache this, function can be called with different x_min and x_max ...
+
+        # The path
+        self.path = None
 
     # -----------------------------------------------------------------
 
@@ -152,11 +157,32 @@ class Distribution(object):
         percentile_16 = table.meta["percentile16"]
         percentile_84 = table.meta["percentile84"]
 
-        return cls(probabilities, edges, centers, mean, median, percentile_16, percentile_84)
+        distribution = cls(probabilities, edges, centers, mean, median, percentile_16, percentile_84)
+
+        # Set the path
+        distribution.path = path
+
+        # Return the distribution
+        return distribution
 
     # -----------------------------------------------------------------
 
-    def save(self, path):
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether the path is valid
+        if self.path is None: raise RuntimeError("Path is not defined")
+
+        # Save
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
 
         """
         This function ...
@@ -177,6 +203,9 @@ class Distribution(object):
 
         # Save the table
         table.write(path, format="ascii.ecsv")
+
+        # Update the path
+        self.path = path
 
     # -----------------------------------------------------------------
 
@@ -858,7 +887,7 @@ class Distribution(object):
         #sp1.spines['right'].set_color('r')
 
         # Put the title and labels
-        if title is not None: sp1.set_title("\n".join(wrap(title, 60)))
+        if title is not None: sp1.set_title(strings.split_in_lines(title))
         sp1.set_xlabel('Values')
         sp1.set_ylabel('Probability')
 
@@ -1092,6 +1121,9 @@ class Distribution2D(object):
         self.x_name = x_name
         self.y_name = y_name
 
+        # The path
+        self.path = None
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -1131,14 +1163,33 @@ class Distribution2D(object):
 
     # -----------------------------------------------------------------
 
-    def save(self, path):
+    def save(self):
 
         """
         This function ...
         :return:
         """
 
-        pass
+        # Check whether the path is valid
+        if self.path is None: raise RuntimeError("Path is not defined")
+
+        # Save
+        self.saveto(self.path)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        print("Saving Distribution2D not implemented yet!")
+
+        # Update the path
+        #self.path = path
 
     # -----------------------------------------------------------------
 

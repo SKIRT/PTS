@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
-from astropy.units import Unit, dimensionless_angles
+from astropy.units import dimensionless_angles
 
 # Import the relevant PTS classes and modules
 from .component import DeprojectionComponent
@@ -25,6 +25,7 @@ from ...core.tools import introspection
 from ...core.simulation.skifile import LabeledSkiFile
 from ..basics.instruments import FrameInstrument
 from ...magic.core.frame import Frame
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -38,16 +39,16 @@ class Deprojector(DeprojectionComponent):
     This class...
     """
 
-    def __init__(self, config=None):
+    def __init__(self, *args, **kwargs):
 
         """
         The constructor ...
-        :param config:
+        :param kwargs:
         :return:
         """
 
         # Call the constructor of the base class
-        super(Deprojector, self).__init__(config)
+        super(Deprojector, self).__init__(*args, **kwargs)
 
         # The SKIRT execution environment
         self.skirt = SkirtExec()
@@ -65,15 +66,16 @@ class Deprojector(DeprojectionComponent):
 
     # -----------------------------------------------------------------
 
-    def run(self):
+    def run(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # 1. Call the setup function
-        self.setup()
+        self.setup(**kwargs)
 
         # Create the deprojection models
         self.create_deprojection_models()
@@ -89,15 +91,16 @@ class Deprojector(DeprojectionComponent):
 
     # -----------------------------------------------------------------
 
-    def setup(self):
+    def setup(self, **kwargs):
 
         """
         This function ...
+        :param kwargs:
         :return:
         """
 
         # Call the setup function of the base class
-        super(Deprojector, self).setup()
+        super(Deprojector, self).setup(**kwargs)
 
         self.ski_paths["old stars"] = fs.join(self.deprojection_path, "old_stars.ski")
         self.ski_paths["young stars"] = fs.join(self.deprojection_path, "young_stars.ski")
@@ -151,7 +154,7 @@ class Deprojector(DeprojectionComponent):
         yc = pixel_center.y
 
         # Get the pixelscale in physical units
-        pixelscale_angular = self.reference_wcs.average_pixelscale * Unit("pix")  # in deg
+        pixelscale_angular = self.reference_wcs.average_pixelscale #* u("pix")  # in deg
         pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
 
         # Get the number of x and y pixels
@@ -175,7 +178,7 @@ class Deprojector(DeprojectionComponent):
 
         # Does not really matter
         #scale_height = self.disk2d_model.scalelength / 8.26
-        scale_height = 100. * Unit("pc")
+        scale_height = 100. * u("pc")
 
         # Set the parameters of the evolved stellar component
         deprojection = default.copy()
@@ -193,7 +196,7 @@ class Deprojector(DeprojectionComponent):
         """
 
         # Does not really matter
-        scale_height = 100. * Unit("pc")
+        scale_height = 100. * u("pc")
 
         # Set the parameters of the young stellar component
         deprojection = default.copy()
@@ -211,7 +214,7 @@ class Deprojector(DeprojectionComponent):
         """
 
         # Does not really matter
-        scale_height = 100. * Unit("pc")
+        scale_height = 100. * u("pc")
 
         # Set the parameters of the ionizing stellar component
         deprojection = default.copy()
@@ -230,7 +233,7 @@ class Deprojector(DeprojectionComponent):
         """
 
         # Does not really matter
-        scale_height = 100. * Unit("pc")
+        scale_height = 100. * u("pc")
 
         # Set the parameters of the ionizing stellar component
         deprojection = default.copy()
@@ -258,7 +261,7 @@ class Deprojector(DeprojectionComponent):
         self.ski_template = LabeledSkiFile(template_ski_path)
 
         # Convert to oligochromatic simulation
-        self.ski_template.to_oligochromatic(1. * Unit("micron"))
+        self.ski_template.to_oligochromatic(1. * u("micron"))
 
         # Remove the dust system
         self.ski_template.remove_dust_system()
@@ -269,8 +272,6 @@ class Deprojector(DeprojectionComponent):
         # Add one instrument
         self.ski_template.remove_all_instruments()
         self.ski_template.add_instrument("faceon", self.instrument)
-
-
 
         # Old
 
@@ -366,6 +367,6 @@ class Deprojector(DeprojectionComponent):
             frame.wcs = self.reference_wcs
 
             # Save frame
-            frame.save(frame_path)
+            frame.saveto(frame_path)
 
 # -----------------------------------------------------------------

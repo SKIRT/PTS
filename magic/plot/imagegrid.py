@@ -24,12 +24,11 @@ import glob
 from matplotlib import colors
 from matplotlib import cm
 from matplotlib.colors import LogNorm
-import pyfits
 from collections import OrderedDict
 from textwrap import wrap
+from abc import ABCMeta
 
 from astropy.io import fits
-from pyfits import PrimaryHDU, Header
 from astropy.visualization import SqrtStretch, LogStretch
 from astropy.visualization.mpl_normalize import ImageNormalize
 
@@ -43,11 +42,27 @@ from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 
+# EXISTS:
+
+# astropy.visualization.wcsaxes.WCSAxesSubplot(fig, *args, **kwargs)[source] [edit on github]¶
+# For making subplots with WCS
+
+# A subclass class for WCSAxes
+# fig is a matplotlib.figure.Figure instance.
+# args is the tuple (numRows, numCols, plotNum), where the array of subplots in the figure has dimensions numRows, numCols, and where plotNum is the number of the subplot being created. plotNum starts at 1 in the upper left corner and increases to the right.
+# If numRows <= numCols <= plotNum < 10, args can be the decimal integer numRows * 100 + numCols * 10 + plotNum.
+
+# -----------------------------------------------------------------
+
 class ImageGridPlotter(object):
 
     """
     This class ...
     """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
 
     def __init__(self, title=None):
 
@@ -117,16 +132,31 @@ class StandardImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
-    def run(self, output_path):
+    def run(self, **kwargs):
 
         """
         This function ...
-        :param output_path:
+        :param kwargs:
         :return:
         """
 
+        # Call the setup function
+        self.setup(**kwargs)
+
         # Make the plot
-        self.plot(output_path)
+        self.plot()
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        self.output_path = kwargs.pop("output_path", None)
 
     # -----------------------------------------------------------------
 
@@ -159,11 +189,10 @@ class StandardImageGridPlotter(ImageGridPlotter):
 
     # -----------------------------------------------------------------
 
-    def plot(self, path):
+    def plot(self):
 
         """
         This function ...
-        :param path:
         :return:
         """
 
@@ -255,7 +284,7 @@ class StandardImageGridPlotter(ImageGridPlotter):
             #f1.show_beam(major=0.01, minor=0.01, angle=0, fill=True, color='white')
             ## f1.axis_labels.show_y()
             #f1.tick_labels.set_xposition('top')
-            #f1.tick_labels.show()
+            #f1.tick_labels.show()r
 
             ax.set_xticks([])
             ax.set_yticks([])
@@ -358,13 +387,13 @@ class StandardImageGridPlotter(ImageGridPlotter):
         #plt.tight_layout()
 
         # Debugging
-        if type(path).__name__ == "BytesIO": log.debug("Saving the SED plot to a buffer ...")
-        elif path is None: log.debug("Showing the SED plot ...")
-        else: log.debug("Saving the SED plot to " + str(path) + " ...")
+        if type(self.output_path).__name__ == "BytesIO": log.debug("Saving the image grid plot to a buffer ...")
+        elif self.output_path is None: log.debug("Showing the image grid plot ...")
+        else: log.debug("Saving the image grid plot to " + str(self.output_path) + " ...")
 
-        if path is not None:
+        if self.output_path is not None:
             # Save the figure
-            plt.savefig(path, bbox_inches='tight', pad_inches=0.25, transparent=self.transparent, format=self.format)
+            plt.savefig(self.output_path, bbox_inches='tight', pad_inches=0.25, transparent=self.transparent, format=self.format)
         else: plt.show()
         plt.close()
 
