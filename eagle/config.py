@@ -53,7 +53,7 @@ def absolutepath(path):
 
 # provide a dictionary of configuration values for the Cosma6 cluster in Durham
 configuration = {
-    'skirt_path': absolutepath("~/SKIRT/release/SKIRTmain/skirt"),
+    'skirt_path': absolutepath("~/SKIRT8/release/SKIRT/main/skirt"),
     'eagledata_path': {
         # Lowres simulations
         'RefL0100N1504':    "/cosma5/data/Eagle/ScienceRuns/Planck1/L0100N1504/PE/REFERENCE/data/",
