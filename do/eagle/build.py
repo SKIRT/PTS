@@ -118,11 +118,13 @@ if vistype=='greybodyfit':
 
 # build info files
 if vistype=='infofile':
+    from pts.eagle.database import Database
     from pts.eagle.makeinfofile import makeinfofile
     print "Building info files for {} SKIRT-runs".format(len(skirtruns))
     for skirtrun in skirtruns:
         print "Building info file for SKIRT-run {}...".format(skirtrun.runid())
-        makeinfofile(skirtrun)
+        record = Database().select("runid = ?", (skirtrun.runid(),))[0]
+        makeinfofile(skirtrun, record['snaptag'])
 
 # -----------------------------------------------------------------
 
