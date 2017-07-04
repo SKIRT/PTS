@@ -2158,7 +2158,7 @@ class SkiFile:
 
             elif base_geometry.tag == "ExpDiskGeometry":
 
-                raise ExponentialDiskModel3D()
+                return ExponentialDiskModel3D()
 
             elif base_geometry.tag == "SpheroidalGeometryDecorator":
 

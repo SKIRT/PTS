@@ -154,6 +154,18 @@ def is_sequence(value):
 
 # -----------------------------------------------------------------
 
+def is_list(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    return isinstance(value, list)
+
+# -----------------------------------------------------------------
+
 def is_string_sequence(value):
 
     """

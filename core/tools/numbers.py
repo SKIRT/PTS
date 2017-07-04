@@ -17,7 +17,7 @@ import math
 import random
 import numpy as np
 from itertools import cycle
-from math import log10, floor
+from math import log10, floor, ceil
 
 # Import the relevant PTS classes and modules
 from . import sequences
@@ -911,5 +911,29 @@ def unscale(value, scale):
     if scale == "linear": return value
     elif scale == "logarithmic": return 10**value
     else: raise ValueError("Invalid scale " + scale)
+
+# -----------------------------------------------------------------
+
+def round_down_to_int(number):
+
+    """
+    This function ...
+    :param number:
+    :return:
+    """
+
+    return int(floor(number))
+
+# -----------------------------------------------------------------
+
+def round_up_to_int(number):
+
+    """
+    This function ...
+    :param number:
+    :return:
+    """
+
+    return int(ceil(number))
 
 # -----------------------------------------------------------------

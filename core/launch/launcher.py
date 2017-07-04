@@ -689,3 +689,31 @@ class SingleImageSKIRTLauncher(object):
         return simulated_frame
 
 # -----------------------------------------------------------------
+
+def launch_single_image():
+
+    """
+    This function ...
+    :return:
+    """
+
+    pass
+
+# -----------------------------------------------------------------
+
+def generate_frame(ski, projection):
+
+    """
+    This function ...
+    :param ski:
+    :param projection:
+    :return:
+    """
+
+    # Create instrument
+    from ...modeling.basics.instruments import FrameInstrument
+    instrument = FrameInstrument.from_projection(projection)
+
+
+
+# -----------------------------------------------------------------

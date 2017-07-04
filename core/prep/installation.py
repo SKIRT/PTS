@@ -1256,6 +1256,7 @@ class PTSInstaller(Installer):
         self.conda_installation_path = None
         self.conda_executable_path = None
         self.conda_pip_path = None
+        self.conda_jupyter_path = None
         self.conda_activate_path = None
         self.conda_python_path = None
         self.conda_easy_install_path = None
@@ -1476,6 +1477,7 @@ class PTSInstaller(Installer):
         if not fs.is_directory(environment_bin_path): raise RuntimeError("Creating the environment failed")
         self.conda_executable_path = fs.join(environment_bin_path, "conda")
         self.conda_pip_path = fs.join(environment_bin_path, "pip")
+        self.conda_jupyter_path = fs.join(environment_bin_path, "jupyter")
         self.conda_activate_path = fs.join(environment_bin_path, "activate")
         self.conda_python_path = fs.join(environment_bin_path, "python")
         self.conda_easy_install_path = fs.join(environment_bin_path, "easy_install")
@@ -1487,9 +1489,12 @@ class PTSInstaller(Installer):
         assert fs.is_file(self.conda_python_path)
         assert fs.is_file(self.conda_easy_install_path)
 
+        # Jupyter: optional
+        if not fs.is_file(self.conda_jupyter_path): self.conda_jupyter_path = None
+
         # Setup the environment
         # environment_name, pip_name, pts_root_path, python_path
-        setup_conda_environment_local(self.config.python_name, self.config.pip_name, self.pts_root_path, self.conda_python_path, self.conda_pip_path)
+        setup_conda_environment_local(self.config.python_name, self.config.pip_name, self.pts_root_path, self.conda_python_path, self.conda_pip_path, self.conda_jupyter_path)
 
     # -----------------------------------------------------------------
 
@@ -1910,7 +1915,7 @@ class PTSInstaller(Installer):
         # Create the environment
         # # conda_executable_path, conda_pip_path, conda_activate_path, conda_python_path, conda_easy_install_path
         self.conda_executable_path, self.conda_pip_path, self.conda_activate_path, self.conda_python_path, \
-        self.conda_easy_install_path = create_conda_environment_remote(self.remote, self.config.python_name,
+        self.conda_easy_install_path, self.conda_jupyter_path = create_conda_environment_remote(self.remote, self.config.python_name,
                                                                        self.conda_installation_path, self.pts_root_path,
                                                                        self.config.python_version,
                                                                        self.conda_main_executable_path)
@@ -1929,6 +1934,7 @@ class PTSInstaller(Installer):
         if not self.remote.is_directory(environment_bin_path): raise RuntimeError("Creating the environment failed")
         self.conda_executable_path = fs.join(environment_bin_path, "conda")
         self.conda_pip_path = fs.join(environment_bin_path, "pip")
+        self.conda_jupyter_path = fs.join(environment_bin_path, "jupyter")
         self.conda_activate_path = fs.join(environment_bin_path, "activate")
         self.conda_python_path = fs.join(environment_bin_path, "python")
         self.conda_easy_install_path = fs.join(environment_bin_path, "easy_install")
@@ -1940,9 +1946,12 @@ class PTSInstaller(Installer):
         assert self.remote.is_file(self.conda_python_path)
         assert self.remote.is_file(self.conda_easy_install_path)
 
+        # Jupyter is not required
+        if not self.remote.is_file(self.conda_jupyter_path): self.conda_jupyter_path = None
+
         # Setup
         # remote, environment_name, pip_name, pts_root_path, python_path, pip_path
-        setup_conda_environment_remote(self.remote, self.config.python_name, self.config.pip_name, self.pts_root_path, self.conda_python_path, self.conda_pip_path)
+        setup_conda_environment_remote(self.remote, self.config.python_name, self.config.pip_name, self.config.jupyter_name, self.pts_root_path, self.conda_python_path, self.conda_pip_path, self.conda_jupyter_path)
 
     # -----------------------------------------------------------------
 
@@ -2808,15 +2817,17 @@ def create_conda_environment_local(environment_name, conda_installation_path, pt
 
 # -----------------------------------------------------------------
 
-def setup_conda_environment_local(environment_name, pip_name, pts_root_path, python_path, pip_path):
+def setup_conda_environment_local(environment_name, pip_name, jupyter_name, pts_root_path, python_path, pip_path, jupyter_path):
 
     """
     This function ...
     :param environment_name:
     :param pip_name:
+    :param jupyter_name:
     :param pts_root_path:
     :param python_path:
     :param pip_path:
+    :param jupyter_path:
     :return:
     """
 
@@ -2831,6 +2842,9 @@ def setup_conda_environment_local(environment_name, pip_name, pts_root_path, pyt
 
     # Add an alias for pip
     terminal.define_alias(pip_name, pip_path, comment=comment, in_shell=True)
+
+    # Add an alias for jupyter
+    terminal.define_alias(jupyter_name, jupyter_path, comment=comment, in_shell=True)
 
     # Add PTS to shell configuration file
     terminal.add_to_python_path_variable(pts_root_path, comment=comment, in_shell=True)
@@ -2872,6 +2886,7 @@ def create_conda_environment_remote(remote, environment_name, conda_installation
     conda_activate_path = fs.join(environment_bin_path, "activate")
     conda_python_path = fs.join(environment_bin_path, "python")
     conda_easy_install_path = fs.join(environment_bin_path, "easy_install")
+    conda_jupyter_path = fs.join(environment_bin_path, "jupyter")
 
     # Clear previous things
     #comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
@@ -2888,20 +2903,22 @@ def create_conda_environment_remote(remote, environment_name, conda_installation
     #remote.define_alias("ipts", conda_python_path + " -im pts.do", comment=comment, in_shell=True)
 
     # Return the paths
-    return conda_executable_path, conda_pip_path, conda_activate_path, conda_python_path, conda_easy_install_path
+    return conda_executable_path, conda_pip_path, conda_activate_path, conda_python_path, conda_easy_install_path, conda_jupyter_path
 
 # -----------------------------------------------------------------
 
-def setup_conda_environment_remote(remote, environment_name, pip_name, pts_root_path, python_path, pip_path):
+def setup_conda_environment_remote(remote, environment_name, pip_name, jupyter_name, pts_root_path, python_path, pip_path, jupyter_path=None):
 
     """
     This function ...
     :param remote:
     :param environment_name:
     :param pip_name:
+    :param jupyter_name:
     :param pts_root_path:
     :param python_path:
     :param pip_path:
+    :param jupyter_path:
     :return:
     """
 
@@ -2916,6 +2933,9 @@ def setup_conda_environment_remote(remote, environment_name, pip_name, pts_root_
 
     # Add an alias for pip
     remote.define_alias(pip_name, pip_path, comment=comment, in_shell=True)
+
+    # Add an alias for jupyter
+    if jupyter_path is not None: terminal.define_alias(jupyter_name, jupyter_path, comment=comment, in_shell=True)
 
     # Add PTS to shell configuration file
     remote.add_to_python_path_variable(pts_root_path, comment=comment, in_shell=True)

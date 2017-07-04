@@ -1098,8 +1098,12 @@ class PhotometricUnit(CompositeUnit):
         if self.is_neutral_density:
 
             # Convert into new unit by dividing by wavelength or by frequency
-            if to_unit.is_wavelength_density: new_unit = photometric_unit_from_divide_unit_and_quantity(self, wavelength)
-            elif to_unit.is_frequency_density: new_unit = photometric_unit_from_divide_unit_and_quantity(self, frequency)
+            if to_unit.is_wavelength_density:
+                if wavelength is None: raise ValueError("Wavelength should be specified for conversion from neutral density to wavelength density")
+                new_unit = photometric_unit_from_divide_unit_and_quantity(self, wavelength)
+            elif to_unit.is_frequency_density:
+                if frequency is None: raise ValueError("Frequency should be specified for conversion from neutral density to frequency density")
+                new_unit = photometric_unit_from_divide_unit_and_quantity(self, frequency)
             elif to_unit.is_neutral_density: new_unit = self
             else: raise ValueError("Cannot convert from spectral density to integrated quantity") # asked to convert to not a spectral density
 
@@ -1107,8 +1111,13 @@ class PhotometricUnit(CompositeUnit):
         elif self.is_wavelength_density:
 
             # Convert into new unit by multiplying with wavelength or with wavelength / frequency
-            if to_unit.is_neutral_density: new_unit = photometric_unit_from_multiply_unit_and_quantity(self, wavelength)
-            elif to_unit.is_frequency_density: new_unit = photometric_unit_from_multiply_unit_and_quantity(self, wavelength / frequency)
+            if to_unit.is_neutral_density:
+                if wavelength is None: raise ValueError("Wavelength should be specified for conversion from wavelength density to neutral density")
+                new_unit = photometric_unit_from_multiply_unit_and_quantity(self, wavelength)
+            elif to_unit.is_frequency_density:
+                if wavelength is None: raise ValueError("Wavelength should be specified for conversion from wavelength density to frequency density")
+                if frequency is None: raise ValueError("Frequency should be specified for conversion from wavelength density to frequency density")
+                new_unit = photometric_unit_from_multiply_unit_and_quantity(self, wavelength / frequency)
             elif to_unit.is_wavelength_density: new_unit = self
             else: raise ValueError("Cannot convert from spectral density to integrated quantity")
 
@@ -1116,9 +1125,14 @@ class PhotometricUnit(CompositeUnit):
         elif self.is_frequency_density:
 
             # Convert into new unit by multiplying with frequency or with frequency / wavelength
-            if to_unit.is_neutral_density: new_unit = photometric_unit_from_multiply_unit_and_quantity(self, frequency)
+            if to_unit.is_neutral_density:
+                if frequency is None: raise ValueError("Frequency should be specified for conversion from frequency density to neutral density")
+                new_unit = photometric_unit_from_multiply_unit_and_quantity(self, frequency)
             elif to_unit.is_frequency_density: new_unit = self
-            elif to_unit.is_wavelength_density: new_unit = photometric_unit_from_multiply_unit_and_quantity(self, frequency / wavelength)
+            elif to_unit.is_wavelength_density:
+                if frequency is None: raise ValueError("Frequency should be specified for conversion from frequency density to wavelength density")
+                if wavelength is None: raise ValueError("Wavelength should be specified for conversion from frequency density to wavelength density")
+                new_unit = photometric_unit_from_multiply_unit_and_quantity(self, frequency / wavelength)
             else: raise ValueError("Cannot convert from spectral density to integrated quantity")
 
         # Not a spectral density

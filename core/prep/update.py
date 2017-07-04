@@ -32,6 +32,7 @@ from ..remote.modules import Modules
 from ..tools import conda
 from .installation import montage_url, imfit_macos_binary_url, imfit_linux_binary_url
 from .installation import get_installation_commands, install_module_remote
+from ..tools import types
 
 # -----------------------------------------------------------------
 
@@ -692,6 +693,7 @@ class PTSUpdater(Updater):
         self.conda_main_executable_path = None
         self.conda_executable_path = None
         self.conda_pip_path = None
+        self.conda_jupyter_path = None
         self.conda_activate_path = None
         self.conda_python_path = None
         self.conda_easy_install_path = None
@@ -699,6 +701,7 @@ class PTSUpdater(Updater):
         # The conda environment
         self.conda_environment = None
         self.pip_name = None
+        self.jupyter_name = None
         self.python_version = None
 
         # Path to the Montage installation directory
@@ -1099,6 +1102,55 @@ class PTSUpdater(Updater):
 
     # -----------------------------------------------------------------
 
+    @property
+    def conda_environments_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.conda_installation_path, "envs")
+
+    # -----------------------------------------------------------------
+
+    def get_conda_environment_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.conda_environments_path, name)
+
+    # -----------------------------------------------------------------
+
+    def get_conda_environment_bin_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.get_conda_environment_path(name), "bin")
+
+    # -----------------------------------------------------------------
+
+    def get_conda_environment_executable_path(self, name, executable_name):
+
+        """
+        This function ...
+        :param name:
+        :param executable_name:
+        :return:
+        """
+
+        return fs.join(self.get_conda_environment_bin_path(name), executable_name)
+
+    # -----------------------------------------------------------------
+
     def check_conda_remote(self):
 
         """
@@ -1111,6 +1163,8 @@ class PTSUpdater(Updater):
 
         # Find conda
         self.conda_installation_path, self.conda_main_executable_path = self.remote.find_conda()
+
+        comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
 
         # If conda is present
         if self.conda_main_executable_path is not None:
@@ -1132,8 +1186,17 @@ class PTSUpdater(Updater):
                 # Add an alias for pip
                 environment_bin_path = fs.join(self.conda_installation_path, "envs", self.conda_environment, "bin")
                 pip_path = fs.join(environment_bin_path, "pip")
-                comment = "For PTS, added by PTS (Python Toolkit for SKIRT)"
                 self.remote.define_alias("pip_pts", pip_path, comment=comment, in_shell=True)
+
+            # Determine jupyter alias
+            self.jupyter_name = self.remote.conda_jupyter_name_for_pts
+
+            # Create jupyter alias if necessary
+            if self.jupyter_name is None:
+
+                # Add an alias for jupyter
+                jupyter_path = self.get_conda_environment_executable_path(self.conda_environment, "jupyter")
+                if self.remote.is_file(jupyter_path): self.remote.define_alias("jupyter_pts", jupyter_path, comment=comment, in_shell=True)
 
         # Conda not found
         else:
@@ -1144,6 +1207,7 @@ class PTSUpdater(Updater):
             # Set the conda environment name
             self.conda_environment = "python_pts"
             self.pip_name = "pip_pts"
+            self.jupyter_name = "jupyter_pts"
             self.python_version = "2.7"
 
     # -----------------------------------------------------------------
@@ -1175,13 +1239,13 @@ class PTSUpdater(Updater):
 
         # Create the environment
         # conda_executable_path, conda_pip_path, conda_activate_path, conda_python_path, conda_easy_install_path
-        self.conda_executable_path, self.conda_pip_path, self.conda_activate_path, self.conda_python_path, self.conda_easy_install_path = \
+        self.conda_executable_path, self.conda_pip_path, self.conda_activate_path, self.conda_python_path, self.conda_easy_install_path, self.conda_jupyter_path = \
             create_conda_environment_remote(self.remote, self.conda_environment, self.conda_installation_path,
                                         self.remote.pts_root_path, self.python_version, self.conda_main_executable_path)
 
         # Setup the environment
         # remote, environment_name, pip_name, pts_root_path, python_path, pip_path
-        setup_conda_environment_remote(self.remote, self.conda_environment, self.pip_name, self.remote.pts_root_path, self.conda_python_path, self.conda_pip_path)
+        setup_conda_environment_remote(self.remote, self.conda_environment, self.pip_name, self.jupyter_name, self.remote.pts_root_path, self.conda_python_path, self.conda_pip_path, self.conda_jupyter_path)
 
     # -----------------------------------------------------------------
 
@@ -1200,6 +1264,7 @@ class PTSUpdater(Updater):
         self.conda_activate_path = fs.join(environment_bin_path, "activate")
         self.conda_python_path = fs.join(environment_bin_path, "python")
         self.conda_easy_install_path = fs.join(environment_bin_path, "easy_install")
+        self.conda_jupyter_path = fs.join(environment_bin_path, "jupyter")
 
         # Check if paths exist
         assert self.remote.is_file(self.conda_executable_path)
@@ -1207,6 +1272,9 @@ class PTSUpdater(Updater):
         assert self.remote.is_file(self.conda_activate_path)
         assert self.remote.is_file(self.conda_python_path)
         assert self.remote.is_file(self.conda_easy_install_path)
+
+        # Jupyter: optional
+        if not self.remote.is_file(self.conda_jupyter_path): self.conda_jupyter_path = None
 
     # -----------------------------------------------------------------
 
@@ -1316,8 +1384,8 @@ class PTSUpdater(Updater):
                         real_module_name = real_names[module_name] if module_name in real_names else module_name
 
                         # Debugging
-                        if isinstance(command, list): log.debug("Installation command: '" + command[0] + "'")
-                        elif isinstance(command, basestring): log.debug("Installation_command: '" + command + "'")
+                        if types.is_list(command): log.debug("Installation command: '" + command[0] + "'")
+                        elif types.is_string_type(command): log.debug("Installation_command: '" + command + "'")
                         else: raise ValueError("Invalid installation command: " + str(command))
 
                         # Install remotely

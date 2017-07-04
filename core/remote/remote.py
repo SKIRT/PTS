@@ -4314,7 +4314,7 @@ class Remote(object):
 
         aliases = self.aliases
 
-        pip_path = None
+        #pip_path = None
         name = None
         for alias in aliases:
 
@@ -4322,9 +4322,34 @@ class Remote(object):
 
             if not target.endswith("pip"): continue
 
-            pip_path = None
+            #pip_path = None
             name = alias
 
+        return name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def conda_jupyter_name_for_pts(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        aliases = self.aliases
+
+        #jupyter_path = None
+        name = None
+        for alias in aliases:
+
+            target = aliases[alias]
+
+            if not target.endswith("jupyter"): continue
+
+            name = alias
+
+        # Return the name
         return name
 
     # -----------------------------------------------------------------

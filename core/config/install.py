@@ -30,6 +30,7 @@ definition.add_flag("force_conda", "force installation of conda and creation of 
 # For PTS:
 definition.add_optional("python_name", "string_no_spaces", "name for the python environment for PTS (also the alias for the python executable)", "python_pts")
 definition.add_optional("pip_name", "string_no_spaces", "name for the pip alias", "pip_pts")
+definition.add_optional("jupyter_name", "string_no_spaces", "name for the jupyter executable", "jupyter_pts")
 definition.add_optional("python_version", "string", "version number for python", "2.7")
 
 # -----------------------------------------------------------------
