@@ -1226,7 +1226,7 @@ def load_svo(filterspec):
             wavelengths *= 1e-4
 
             # determine the filter type (there seems to be no better heuristic than using the instrument name)
-            photon_counter = not any(["/" + x in filterid.lower() for x in ("mips", "pacs", "spire")])
+            photon_counter = not any(["/" + x in filterid.lower() for x in ("pacs", "spire")])
 
             # Return the properties
             return min_wavelength, max_wavelength, center_wavelength, mean_wavelength, eff_wavelength, filterid, \
