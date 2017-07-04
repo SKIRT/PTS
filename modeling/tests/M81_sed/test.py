@@ -729,7 +729,7 @@ class M81SEDTest(M81TestBase):
         settings_model["fitting_attached"] = self.config.attached
 
         # Set the random seed
-        settings_model["seed"] = self.config.seed
+        #settings_model["seed"] = self.config.seed
 
         # RECURRENCE SETTINGS
         settings_model["check_recurrence"] = self.config.check_recurrence
