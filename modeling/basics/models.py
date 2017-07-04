@@ -17,6 +17,7 @@ import math
 import numpy as np
 from abc import ABCMeta
 from scipy.special import gammaincinv
+from scipy import ndimage
 
 # Import astronomical modules
 from astropy.coordinates import Angle
@@ -32,6 +33,7 @@ from ..basics.projection import GalaxyProjection, FaceOnProjection, EdgeOnProjec
 from ..basics.instruments import FrameInstrument, SEDInstrument, SimpleInstrument, FullInstrument
 from ...magic.basics.pixelscale import Pixelscale
 from ...core.tools import numbers
+from ...magic.basics.vector import PixelShape
 
 # -----------------------------------------------------------------
 
@@ -1326,6 +1328,30 @@ class DeprojectionModel3D(Model):
 
     # -----------------------------------------------------------------
 
+    @property
+    def shape(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return PixelShape(self.ysize, self.xsize)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def npixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.shape.ntotalpixels
+
+    # -----------------------------------------------------------------
+
     def density_function(self, unit="pc"):
 
         """
@@ -1340,6 +1366,9 @@ class DeprojectionModel3D(Model):
         deltay_scalar = self.deltay.to(unit).value
         deltax_scalar = self.deltax.to(unit).value
 
+        scale_height_scalar = self.scale_height.to(unit).value
+
+
         def deprojection(x, y, z):
 
             """
@@ -1350,15 +1379,100 @@ class DeprojectionModel3D(Model):
             :return:
             """
 
-            i_array = numbers.round_down_to_int((x - xmin_scalar) / deltay_scalar)
-            j_array = numbers.round_down_to_int((y - ymin_scalar) / deltay_scalar)
+            #i_array = numbers.round_down_to_int((x - xmin_scalar) / deltay_scalar)
+            #j_array = numbers.round_down_to_int((y - ymin_scalar) / deltay_scalar)
 
             # grid = mapping
             #grid = np.array([yy1.reshape(outshape), xx1.reshape(outshape)])
             # Use Scipy to create the new image
             #data = scipy.ndimage.map_coordinates(frame, mapping, **kwargs)
 
-            return None
+            # Determine the coordinate mapping
+            #x_mapping = (x - xmin_scalar) / deltay_scalar - 0.5
+            #y_mapping = (y - ymin_scalar) / deltay_scalar - 0.5
+            x_mapping = ((x - xmin_scalar) / deltay_scalar - 0.5).astype(int)
+            y_mapping = ((y - ymin_scalar) / deltay_scalar - 0.5).astype(int)
+
+            #x_mapping = x_mapping.flatten()
+            #y_mapping = y_mapping.flatten()
+
+            xy = x_mapping + self.xsize * y_mapping
+
+            #print("xy", xy)
+
+            #print("x_mapping", x_mapping)
+            #print("y_mapping", y_mapping)
+
+            #mapping = np.array([np.array([xi, yi]) for xi, yi in zip(x_mapping.flat, y_mapping.flat)])
+            #mapping = np.array([x_mapping, y_mapping])
+            #mapping = np.vstack((x_mapping,y_mapping))
+
+            #print("mapping", mapping)
+            #print(mapping.shape)
+
+            #print("output shape", mapping.shape[1:])
+            #print("input.ndim", self.map.data.ndim)
+
+            # output_shape = coordinates.shape[1:]
+            # input.ndim < 1 or len(output_shape) < 1:
+
+            #print(xy)
+            #print(xy.shape)
+
+            nx = xy.shape[0]
+            ny = xy.shape[1]
+            nz = xy.shape[2]
+
+            #print(xy[:,:,0])
+            xy = xy[:,:,0]
+            #print(xy)
+
+            #xy = np.array(list(xy.flatten()))
+
+            #print(xy)
+
+            import itertools
+
+            arrangement_x = range(self.xsize) * self.ysize
+            lists = [[value] * self.xsize for value in range(self.ysize)]
+            #print(lists)
+            #arrangement_y = itertools.chain(*lists)
+            arrangement_y = list(itertools.chain.from_iterable(lists))
+
+            #print(xy.shape)
+
+            #print("output shape", xy.shape[1:])
+            #print("input.ndim", self.map.data.flatten().ndim)
+
+            # Create mapping
+            #mapping = [[arrangement_y[yi], arrangement_x[xi]] for xi, yi in xy]
+            #print("mapping", mapping)
+
+            #print([k for k in xy])
+
+            xy_flattened = xy.flatten()
+            #print(arrangement_x)
+            #print(arrangement_y.shape)
+            x_mapping = [arrangement_x[k] if 0<=k<self.npixels else -1 for k in xy_flattened]
+            y_mapping = [arrangement_y[k] if 0<=k<self.npixels else -1 for k in xy_flattened]
+            mapping = [x_mapping, y_mapping]
+
+            #cval = float('nan')
+            cval = 0.0
+            data = ndimage.map_coordinates(self.map.data, mapping, mode='constant', cval=cval)
+            #data = ndimage.map_coordinates(self.map.data.flatten(), xy, mode="constant", cval=cval)
+
+            #nx = x.shape[2]
+            #ny = y.shape[1]
+
+            #print("nx", nx)
+            #print("")
+
+            deprojected = data.reshape((ny, nx, 1))
+
+            # Return
+            z = abs(z)
+            return deprojected * np.exp(- z / scale_height_scalar) / (2. * scale_height_scalar) / (deltax_scalar * deltay_scalar)
 
         # Return the function
         return deprojection

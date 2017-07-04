@@ -230,8 +230,12 @@ dust_deprojection = DeprojectionModel3D.from_wcs(wcs, properties.center, propert
 filename = "render.html"
 filepath = fs.join(introspection.pts_temp_dir, filename)
 
-components = {"disk": disk, "bulge": bulge}
+#components = {"disk": disk, "bulge": bulge}
+
+components = {"old": old_deprojection}
+
 box = plot_galaxy_components(components)
+
 embed_html(filepath, box)
 
 # -----------------------------------------------------------------
