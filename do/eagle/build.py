@@ -68,13 +68,13 @@ skirtruns = [ SkirtRun(runid) for runid in runids ]
 # build band-integrated images
 if vistype=='bandimages':
     from pts.core.plot.rgbimages import makeintegratedrgbimages
-    from pts.core.basics.filter import Filter
-    print "Building RGB images for {} SKIRT-runs".format(len(skirtruns))
-    filterR = Filter('SDSS.i')
-    filterG = Filter('SDSS.r')
-    filterB = Filter('SDSS.g')
-    filterIR = Filter('Pacs.green')
-    filterUV = Filter('GALEX.FUV')
+    from pts.core.filter.broad import BroadBandFilter
+    print "Building band-integrated images for {} SKIRT-runs".format(len(skirtruns))
+    filterR = BroadBandFilter('SDSS.i')
+    filterG = BroadBandFilter('SDSS.r')
+    filterB = BroadBandFilter('SDSS.g')
+    filterIR = BroadBandFilter('Pacs.green')
+    filterUV = BroadBandFilter('GALEX.FUV')
     for skirtrun in skirtruns:
         print "Building band-integrated images for SKIRT-run {}...".format(skirtrun.runid())
         fmin,fmax = makeintegratedrgbimages(skirtrun.simulation(),
@@ -101,7 +101,7 @@ if vistype=='fastimages':
     from pts.core.plot.rgbimages import makergbimages
     print "Building fast optical images for {} SKIRT-runs".format(len(skirtruns))
     for skirtrun in skirtruns:
-        print "Building RGB images for SKIRT-run {}...".format(skirtrun.runid())
+        print "Building fast optical images for SKIRT-run {}...".format(skirtrun.runid())
         makergbimages(skirtrun.simulation(), wavelength_tuples=((0.753,0.617,0.470),), output_path=skirtrun.vispath())
 
 # -----------------------------------------------------------------
@@ -133,27 +133,6 @@ if vistype=='particles':
     for skirtrun in skirtruns:
         print "Building gas particle plot for SKIRT-run {}...".format(skirtrun.runid())
         plotgasparticles(skirtrun)
-
-# -----------------------------------------------------------------
-
-# build RGB images
-if vistype=='rgbimages':
-    from pts.core.plot.rgbimages import makeintegratedrgbimages
-    from pts.core.filter.broad import BroadBandFilter
-    print "Building RGB images for {} SKIRT-runs".format(len(skirtruns))
-    filterR = BroadBandFilter('SDSS.i')
-    filterG = BroadBandFilter('SDSS.r')
-    filterB = BroadBandFilter('SDSS.g')
-    filterIR = BroadBandFilter('Pacs.green')
-    filterUV = BroadBandFilter('GALEX.FUV')
-    for skirtrun in skirtruns:
-        print "Building RGB images for SKIRT-run {}...".format(skirtrun.runid())
-        fmin,fmax = makeintegratedrgbimages(skirtrun.simulation(),
-            [ (filterR, 1,0,0), (filterG, 0,1,0), (filterB, 0,0,1) ], postfix="_optical")
-        makeintegratedrgbimages(skirtrun.simulation(),
-            [ (filterR, 1,0,0), (filterG, 0,1,0), (filterB, 0,0,1), (filterIR, 0.02,0,0), (filterUV, 0,0,4) ],
-            postfix="_augmented", fmin=fmin, fmax=fmax)
-        move_visualization_files(skirtrun, filenames)
 
 # -----------------------------------------------------------------
 
