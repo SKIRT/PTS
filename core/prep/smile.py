@@ -66,6 +66,31 @@ skirt_quantities_to_pts_quantities["wavelength"] = "length_quantity"
 
 # -----------------------------------------------------------------
 
+# random type="Random"
+# dustDistribution type="DustDistribution"
+# units type="Units"
+# instrumentSystem type="InstrumentSystem"
+# instruments type="Instrument"
+# wavelengthGrid type="OligoWavelengthGrid"
+# stellarSystem type="StellarSystem"
+# components type="StellarComp"
+# geometry type="Geometry"
+
+expected_types = dict()
+expected_types["random"] = "Random"
+expected_types["dustDistribution"] = "DustDistribution"
+expected_types["units"] = "Units"
+expected_types["instrumentSystem"] = "InstrumentSystem"
+expected_types["instruments"] = "Instrument"
+expected_types["wavelengthGrid"] = "OligoWavelengthGrid"
+expected_types["stellarSystem"] = "StellarSystem"
+#expected_types["components"] = "StellarComp"
+expected_types["geometry"] = "Geometry"
+expected_types["dustSystem"] = "OligoDustSystem"
+expected_types["dustGrid"] = "DustGrid"
+
+# -----------------------------------------------------------------
+
 class SKIRTSmileSchema(object):
 
     """
@@ -323,6 +348,40 @@ class SKIRTSmileSchema(object):
 
         # Return the dictionary
         return normalizations
+
+    # -----------------------------------------------------------------
+
+    def get_concrete_dust_grids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [grid for grid in self.get_concrete_types() if grid.attrib["name"].endswith("DustGrid")]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def concrete_dust_grids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        grids = dict()
+
+        for grid in self.get_concrete_dust_grids():
+
+            name = grid.attrib["name"]
+            description = grid.attrib["title"]
+
+            # Add to dictionary
+            grids[name] = description
+
+        # Return the dictionary
+        return grids
 
     # -----------------------------------------------------------------
 
@@ -873,6 +932,10 @@ class SKIRTSmileSchema(object):
 
         # Construct the tree
         root = etree.Element(self.ski_root_name)
+
+        # Set type
+        root.set("type", "MonteCarloSimulation")
+
         tree = etree.ElementTree(root)
 
         # DOESN'T WORK
@@ -912,6 +975,10 @@ class SKIRTSmileSchema(object):
 
         # Construct the tree
         root = etree.Element(self.ski_root_name)
+
+        # Set type
+        root.set("type", "MonteCarloSimulation")
+
         tree = etree.ElementTree(root)
 
         # DOESN'T WORK
@@ -919,12 +986,117 @@ class SKIRTSmileSchema(object):
         # WORKS
         root.addprevious(comment)
 
+        # default_parameters_for_type
+        parameters = self.default_parameters_for_type("OligoMonteCarloSimulation", merge=True)
+
+        # Create ski
+        ski = SkiFile(tree=tree)
+
         # Add the simulation
-        simulation = etree.Element("OligoMonteCarloSimulation")
-        root.insert(0, simulation)
+        #simulation = etree.Element("OligoMonteCarloSimulation")
+        #root.insert(0, simulation)
+
+        simulation = ski.create_element("OligoMonteCarloSimulation", parameters)
+        ski.root.append(simulation)
+
+        # Set wavelength
+        ski.set_wavelengths(1. * u("micron"))
 
         # Create and return ski file
-        return SkiFile(tree=tree)
+        return ski
+
+    # -----------------------------------------------------------------
+
+    def has_property(self, name, property_name):
+        
+        """
+        This function ...
+        :param name: 
+        :param property_name: 
+        :return: 
+        """
+
+        properties = self.properties_for_type(name)
+        return property_name in properties
+
+    # -----------------------------------------------------------------
+
+    def has_type(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.concrete_types
+
+    # -----------------------------------------------------------------
+
+    def has_dust_grid_type(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.concrete_dust_grids
+
+    # -----------------------------------------------------------------
+
+    def has_dust_normalization_type(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.concrete_dust_normalizations
+
+    # -----------------------------------------------------------------
+
+    def has_dust_mix_type(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.concrete_dust_mixes
+
+    # -----------------------------------------------------------------
+
+    def has_stellar_sed_type(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return name in self.concrete_stellar_seds
+
+    # -----------------------------------------------------------------
+
+    @property
+    def supports_file_tree_grids(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check #1
+        if not self.has_dust_grid_type("FileTreeDustGrid"): return False
+
+        # Check #2
+        if not self.has_property("TreeDustGrid", "writeTree"): return False
+
+        # 2 checks passed
+        return True
 
 # -----------------------------------------------------------------
 

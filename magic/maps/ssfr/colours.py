@@ -23,7 +23,7 @@ ssfr_colours = ["FUV-H", "FUV-i", "FUV-r", "FUV-g", "FUV-B"]
 
 # -----------------------------------------------------------------
 
-def make_map():
+def make_map(**kwargs):
 
     """
     This function ...
@@ -34,12 +34,13 @@ def make_map():
     # Create the sSFR map maker
     maker = ColoursSSFRMapsMaker()
 
-    colours = dict()
-
-    maker.run(colours=colours)
+    # Make
+    maker.run(colours=kwargs)
 
     # Get the maps
-    maps = maker.maps
+    #maps = maker.maps
+
+    return maker.single_map
 
 # -----------------------------------------------------------------
 
@@ -153,5 +154,18 @@ class ColoursSSFRMapsMaker(Configurable):
 
             # Set as sSFR map
             self.maps[colour] = colour_map
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if len(self.maps) != 1: raise ValueError("Not a single map")
+        return self.maps[self.maps.keys()[0]]
 
 # -----------------------------------------------------------------

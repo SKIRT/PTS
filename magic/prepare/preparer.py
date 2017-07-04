@@ -24,7 +24,7 @@ from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
 from ...core.basics.configurable import Configurable
 from ..misc.calibration import CalibrationError
-from ..services.extinction import GalacticExtinction
+from ..services.attenuation import GalacticAttenuation
 from ..core.frame import Frame, sum_frames_quadratically
 from ..core.image import Image
 from ..core.dataset import DataSet
@@ -244,8 +244,8 @@ class ImagePreparer(Configurable):
         # Inform the user
         log.info("Getting the galactic extinction ...")
 
-        # Create the galactic extinction calculator
-        extinction = GalacticExtinction(self.images.center_coordinate)
+        # Create the galactic attenuation calculator
+        attenuation = GalacticAttenuation(self.images.center_coordinate)
 
         # Loop over the images
         for label in self.images:
@@ -254,7 +254,7 @@ class ImagePreparer(Configurable):
             fltr = self.images[label].filter
 
             # Get the extinction
-            self.attenuations[label] = extinction.extinction_for_filter(fltr)
+            self.attenuations[label] = attenuation.extinction_for_filter(fltr)
 
     # -----------------------------------------------------------------
 

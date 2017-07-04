@@ -84,9 +84,6 @@ class RepresentationGenerator(BuildComponent, GalaxyModelingComponent):
         # 3. Build the representations
         self.build_representations()
 
-        # 4. Generate the dust grids (can only be done now after the RepresentationBuilders have written out)
-        self.generate_dust_grids()
-
         # 5. Writing
         self.write()
 
@@ -201,59 +198,58 @@ class RepresentationGenerator(BuildComponent, GalaxyModelingComponent):
             builder.run(dust_grid=grid)
 
             # Set the path for this representation
-            #self.representation_paths[name] = builder.representation_path
             self.representations[name] = builder.representation
 
     # -----------------------------------------------------------------
 
-    def generate_dust_grids(self):
+    #def generate_dust_grids(self):
 
-        """
-        This function ...
-        :return: 
-        """
+        #"""
+        #This function ...
+        #:return:
+        #"""
 
-        # Inform the user
-        log.info("Generating the dust grids ...")
+        ## Inform the user
+        #log.info("Generating the dust grids ...")
 
-        # Loop over the representations
-        for name in self.representations:
+        ## Loop over the representations
+        #for name in self.representations:
             
-            # Get info
-            representation = self.representations[name]
-            dust_grid_path = representation.dust_grid_path
-            grid_out_path = representation.grid_out_path
+        #    # Get info
+        #    representation = self.representations[name]
+        #    dust_grid_path = representation.dust_grid_path
+        #    grid_out_path = representation.grid_out_path
 
-            # Load the dust grid
-            grid = load_grid(dust_grid_path)
+        #    # Load the dust grid
+        #    grid = load_grid(dust_grid_path)
 
-            # Create ski file template
-            ski = get_pan_template()
+        #    # Create ski file template
+        #    ski = get_pan_template()
 
-            # Add the dust grid geometry
-            deprojection = self.definition.dust_deprojection
+        #    # Add the dust grid geometry
+        #    deprojection = self.definition.dust_deprojection
 
-            # Create list of input paths
-            input_paths = []
+        #    # Create list of input paths
+        #    input_paths = []
 
-            # Add the model input paths
-            input_paths.extend(self.definition.input_paths)
+        #    # Add the model input paths
+        #    input_paths.extend(self.definition.input_paths)
 
-            # Generate the grid
-            prefix = generate_grid(ski, grid, grid_out_path, input_paths)
+        #    # Generate the grid
+        #    prefix = generate_grid(ski, grid, grid_out_path, input_paths)
 
-            # If there is a tree data file, copy it to the main grid directory of the representation
-            tree_out_path = fs.join(grid_out_path, prefix + "_ds_tree.dat")
-            if fs.is_file(tree_out_path):
+        #    # If there is a tree data file, copy it to the main grid directory of the representation
+        #    tree_out_path = fs.join(grid_out_path, prefix + "_ds_tree.dat")
+        #    if fs.is_file(tree_out_path):
 
-                # Debugging
-                log.debug("Copying dust grid tree data for representation '" + name + "' ...")
+        #        # Debugging
+        #        log.debug("Copying dust grid tree data for representation '" + name + "' ...")
 
-                # Copy
-                new_tree_path = fs.copy_file(tree_out_path, representation.grid_path, new_name="tree.dat")
+        #        # Copy
+        #        new_tree_path = fs.copy_file(tree_out_path, representation.grid_path, new_name="tree.dat")
 
-            # No tree data
-            else: log.debug("No tree data for representation '" + name + "'")
+        #    # No tree data
+        #    else: log.debug("No tree data for representation '" + name + "'")
 
     # -----------------------------------------------------------------
 

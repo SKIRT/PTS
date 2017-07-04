@@ -29,7 +29,7 @@ def add_stellar_component(ski, name, component):
     """
 
     # Debugging
-    log.debug("Adding stellar component " + name + " to the ski file ...")
+    log.debug("Adding stellar component '" + name + "' to the ski file ...")
 
     # If an input map is required
     if "map_path" in component: filename = set_stellar_input_map(name, component)
@@ -41,14 +41,23 @@ def add_stellar_component(ski, name, component):
     # Set deprojection
     elif "deprojection" in component: set_stellar_component_deprojection(ski, component)
 
-    # Check if this is a new component, add geometry, SED and normalization all at once
-    if "geometry" in component.parameters: set_stellar_component_geometry_sed_and_normalization(ski, component)
+    # From parameters
+    if component.parameters is not None:
 
-    # Existing component, with MAPPINGS template
-    elif "sfr" in component.parameters: set_stellar_component_mappings(ski, component)
+        # Check if this is a new component, add geometry, SED and normalization all at once
+        if "geometry" in component.parameters: set_stellar_component_geometry_sed_and_normalization(ski, component)
 
-    # Existing component, no MAPPINGS
-    else: set_stellar_component(ski, component)
+        # Existing component, with MAPPINGS template
+        elif "sfr" in component.parameters: set_stellar_component_mappings(ski, component)
+
+        # Existing component, no MAPPINGS
+        else: set_stellar_component(ski, component)
+
+    # From properties
+    if component.properties is not None:
+
+        # Add component
+        ski.add_stellar_component(component.properties, name)
 
     # Return the map filename
     return filename
@@ -65,17 +74,19 @@ def set_stellar_input_map(name, component):
     """
 
     # Generate a filename for the map
-    filename = "stars_" + name + ".fits"
+    map_filename = "stars_" + name + ".fits"
 
     # Set the filename
-    if "deprojection" in component: component.deprojection.filename = filename
-    elif "geometry" in component.parameters: component.properties["geometry"].filename = filename
+    if "deprojection" in component: component.deprojection.filename = map_filename
+    #elif "geometry" in component.parameters: component.properties["geometry"].filename = filename # HOW IT WAS
+    elif component.parameters is not None and "geometry" in component.parameters: component.parameters["geometry"].filename = map_filename
+    elif component.properties is not None: component.properties["children"]["geometry"]["children"]["ReadFitsGeometry"]["filename"] = map_filename
     else: raise RuntimeError("Stellar component based on an input map should either have a deprojection or geometry properties")
 
     # Add entry to the input maps dictionary
     #self.input_map_paths[filename] = component.map_path
 
-    return filename
+    return map_filename
 
 # -----------------------------------------------------------------
 
@@ -221,7 +232,7 @@ def add_dust_component(ski, name, component):
     """
 
     # Debugging
-    log.debug("Adding dust component " + name + " to the ski file ...")
+    log.debug("Adding dust component '" + name + "' to the ski file ...")
 
     # If an input map is required
     if "map_path" in component: filename = set_dust_input_map(name, component)
@@ -233,14 +244,32 @@ def add_dust_component(ski, name, component):
     # Set deprojection
     elif "deprojection" in component: set_dust_component_deprojection(ski, component)
 
-    # Check if this is a new dust component, add geometry, mix and normalization all at once
-    if "geometry" in component.parameters: set_dust_component_geometry_mix_and_normalization(ski, component)
+    # From parameters
+    if component.parameters is not None:
 
-    # Existing component, THEMIS dust mix
-    elif "hydrocarbon_pops" in component.parameters: set_dust_component_themis_mix(ski, component)
+        # Check if this is a new dust component, add geometry, mix and normalization all at once
+        if "geometry" in component.parameters: set_dust_component_geometry_mix_and_normalization(ski, component)
 
-    # Existing component, not THEMIS dust mix
-    else: raise NotImplementedError("Only THEMIS dust mixes are implemented at this moment")
+        # Existing component, THEMIS dust mix
+        elif "hydrocarbon_pops" in component.parameters: set_dust_component_themis_mix(ski, component)
+
+        # Existing component, not THEMIS dust mix
+        else: raise NotImplementedError("Only THEMIS dust mixes are implemented at this moment")
+
+        # TODO: implement 'Existing component, no THEMIX'
+        #else: set_dust_component(ski, component)
+
+    # From properties
+    if component.properties is not None:
+
+        # From unicode
+        #if isinstance(name, unicode): name = name.encode('ascii','ignore')
+        #print(name)
+        # Create element
+        #element = ski.create_element(element_name, component.properties)
+        #print(element)
+
+        ski.add_dust_component(component.properties, name)
 
     # Return the map filename
     return filename
@@ -261,7 +290,9 @@ def set_dust_input_map(name, component):
 
     # Set the filename
     if "deprojection" in component: component.deprojection.filename = map_filename
-    elif "geometry" in component.parameters: component.properties["geometry"].filename = map_filename
+    #elif "geometry" in component.parameters: component.properties["geometry"].filename = map_filename # HOW IT WAS
+    elif component.parameters is not None and "geometry" in component.parameters: component.parameters["geometry"].filename = map_filename
+    elif component.properties is not None: component.properties["children"]["geometry"]["children"]["ReadFitsGeometry"]["filename"] = map_filename
     else: raise RuntimeError("Dust component based on an input map should either have a deprojection or geometry properties")
 
     # Add entry to the input maps dictionary

@@ -28,7 +28,7 @@ class Recurrence(object):
     This class ...
     """
 
-    def __init__(self, index, individual, generation, original, score, parameters, original_parameters):
+    def __init__(self, index, individual, generation, original, score, parameters, original_parameters, name=None, original_name=None):
 
         """
         This function ...
@@ -48,6 +48,8 @@ class Recurrence(object):
         self.score = score
         self.parameters = parameters
         self.original_parameters = original_parameters
+        self.name = name
+        self.original_name = original_name
 
     # -----------------------------------------------------------------
 
@@ -72,5 +74,17 @@ class Recurrence(object):
         """
 
         return [self.individual.genes[i] != self.original.genes[i] for i in range(self.genome_size)]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ndifferences(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sum(self.differences)
 
 # -----------------------------------------------------------------

@@ -803,7 +803,7 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return np.all(self._data == 0)
+        return np.all(np.equal(self._data, 0))
 
     # -----------------------------------------------------------------
 
@@ -815,7 +815,69 @@ class Frame(NDDataArray):
         :return:
         """
 
-        return not np.any(self._data == 0)
+        return not np.any(np.equal(self._data, 0))
+
+    # -----------------------------------------------------------------
+
+    def where(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return newMask(np.equal(self._data, value))
+        #return newMask(self._data == value)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unique_values(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the unique values in the gridded data
+        values = np.unique(self._data)
+        return list(values)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unique_value_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        masks = []
+
+        for value in self.unique_values:
+            where = self.where(value)
+            masks.append(where)
+
+        return masks
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unique_value_and_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        returns = []
+        for value in self.unique_values:
+            where = self.where(value)
+            returns.append((value, where))
+
+        return returns
 
     # -----------------------------------------------------------------
 

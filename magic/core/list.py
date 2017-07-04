@@ -29,7 +29,7 @@ from ...core.tools import filesystem as fs
 from ..convolution.aniano import AnianoKernels
 from ..convolution.matching import MatchingKernels
 from ..convolution.kernels import get_fwhm
-from ...core.tools import sequences
+from ...core.tools import sequences, types
 
 # -----------------------------------------------------------------
 
@@ -847,16 +847,19 @@ class FrameList(FilterBasedList):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_directory(cls, path):
+    def from_directory(cls, path, recursive=False, contains=None, not_contains=None):
 
         """
         This function ...
-        :param path: 
+        :param path:
+        :param recursive:
+        :param contains:
+        :param not_contains:
         :return: 
         """
 
         new = cls()
-        for path in fs.files_in_path(path, extension="fits"): new.append(Frame.from_file(path))
+        for path in fs.files_in_path(path, extension="fits", recursive=recursive, contains=contains, not_contains=not_contains): new.append(Frame.from_file(path))
         return new
 
     # -----------------------------------------------------------------
@@ -896,11 +899,30 @@ class FrameList(FilterBasedList):
 
         if fltr is None: fltr = frame.filter
 
+        # Check if not None
+        if fltr is None: raise ValueError("Filter cannot be determined")
+
+        # Parse filter
+        if types.is_string_type(fltr): fltr = parse_filter(fltr)
+
         # Check keys
         if fltr in self.frames: raise ValueError("Already a frame for the '" + str(fltr) + "' filter")
 
         # Call the function of the base class
         super(FrameList, self).append(fltr, frame)
+
+    # -----------------------------------------------------------------
+
+    def append_from_file(self, path, fltr=None):
+
+        """
+        This function ...
+        :param path:
+        :param fltr:
+        :return:
+        """
+
+        self.append(Frame.from_file(path), fltr=fltr)
 
     # -----------------------------------------------------------------
 
@@ -1457,6 +1479,19 @@ class FrameList(FilterBasedList):
 
     # -----------------------------------------------------------------
 
+    @wcs.setter
+    def wcs(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        for key in self.keys: self[key].wcs = value
+
+    # -----------------------------------------------------------------
+
     @property
     def pixelscale(self):
 
@@ -1466,6 +1501,18 @@ class FrameList(FilterBasedList):
         """
 
         return check_pixelscale(*self.values)
+
+    # -----------------------------------------------------------------
+
+    @pixelscale.setter
+    def pixelscale(self, value):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for key in self.keys: self[key].pixelscale = value
 
     # -----------------------------------------------------------------
 
@@ -1481,6 +1528,19 @@ class FrameList(FilterBasedList):
 
     # -----------------------------------------------------------------
 
+    @unit.setter
+    def unit(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        for key in self.keys: self[key].unit = value
+
+    # -----------------------------------------------------------------
+
     @property
     def psf_filter(self):
 
@@ -1490,6 +1550,19 @@ class FrameList(FilterBasedList):
         """
 
         return check_psf_filter(*self.values)
+
+    # -----------------------------------------------------------------
+
+    @psf_filter.setter
+    def psf_filter(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        for key in self.keys: self[key].psf_filter = value
 
     # -----------------------------------------------------------------
 
@@ -1505,6 +1578,19 @@ class FrameList(FilterBasedList):
 
     # -----------------------------------------------------------------
 
+    @fwhm.setter
+    def fwhm(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        for key in self.keys: self[key].fwhm = value
+
+    # -----------------------------------------------------------------
+
     @property
     def distance(self):
 
@@ -1514,6 +1600,31 @@ class FrameList(FilterBasedList):
         """
 
         return check_distance(*self.values)
+
+    # -----------------------------------------------------------------
+
+    @distance.setter
+    def distance(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+        #print(self.keys)
+        for key in self.keys: self[key].distance = value
+
+    # -----------------------------------------------------------------
+
+    def normalize(self, to=1.0):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Normalize each frame
+        for key in self.keys: self[key].normalize(to=to)
 
 # -----------------------------------------------------------------
 
@@ -1801,8 +1912,46 @@ class NamedFrameList(NamedList):
         :return:
         """
 
-        unit, wcs, pixelscale, psf_filter, fwhm, distance = check_uniformity(*self.values)
-        return unit, wcs, pixelscale, psf_filter, fwhm, distance
+        return self.get_uniform_properties()
+
+    # -----------------------------------------------------------------
+
+    def get_uniform_properties(self, strict=True):
+
+        """
+        This function ...
+        :param strict:
+        :return:
+        """
+
+        return check_uniformity(*self.values, strict=strict)
+
+    # -----------------------------------------------------------------
+
+    def set_uniform_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get properties that are uniform (or only defined for one)
+        unit, wcs, pixelscale, psf_filter, fwhm, distance = self.get_uniform_properties(strict=False)
+
+        #print("unit", unit)
+        #print("wcs", wcs)
+        #print("pixelscale", pixelscale)
+        #print("psf_filter", psf_filter)
+        #print("fwhm", fwhm)
+        #print("distance", distance)
+
+        # Set
+        self.unit = unit
+        self.wcs = wcs
+        self.pixelscale = pixelscale
+        self.psf_filter = psf_filter
+        self.fwhm = fwhm
+        self.distance = distance
 
     # -----------------------------------------------------------------
 
@@ -1818,6 +1967,19 @@ class NamedFrameList(NamedList):
 
     # -----------------------------------------------------------------
 
+    @wcs.setter
+    def wcs(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        for key in self.keys: self[key].wcs = value
+
+    # -----------------------------------------------------------------
+
     @property
     def pixelscale(self):
 
@@ -1827,6 +1989,19 @@ class NamedFrameList(NamedList):
         """
 
         return check_pixelscale(*self.values)
+
+    # -----------------------------------------------------------------
+
+    @pixelscale.setter
+    def pixelscale(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        for key in self.keys: self[key].pixelscale = value
 
     # -----------------------------------------------------------------
 
@@ -1842,6 +2017,19 @@ class NamedFrameList(NamedList):
 
     # -----------------------------------------------------------------
 
+    @unit.setter
+    def unit(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        for key in self.keys: self[key].unit = value
+
+    # -----------------------------------------------------------------
+
     @property
     def psf_filter(self):
 
@@ -1851,6 +2039,19 @@ class NamedFrameList(NamedList):
         """
 
         return check_psf_filter(*self.values)
+
+    # -----------------------------------------------------------------
+
+    @psf_filter.setter
+    def psf_filter(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        for key in self.keys: self[key].psf_filter = value
 
     # -----------------------------------------------------------------
 
@@ -1866,6 +2067,19 @@ class NamedFrameList(NamedList):
 
     # -----------------------------------------------------------------
 
+    @fwhm.setter
+    def fwhm(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        for key in self.keys: self[key].fwhm = value
+
+    # -----------------------------------------------------------------
+
     @property
     def distance(self):
 
@@ -1875,6 +2089,58 @@ class NamedFrameList(NamedList):
         """
 
         return check_distance(*self.values)
+
+    # -----------------------------------------------------------------
+
+    @distance.setter
+    def distance(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        for key in self.keys: self[key].distance = value
+
+    # -----------------------------------------------------------------
+
+    def normalize(self, to=1.0):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Normalize each frame
+        for key in self.keys: self[key].normalize(to=to)
+
+    # -----------------------------------------------------------------
+
+    def replace_nans(self, value):
+
+        """
+        THis function ...
+        :param value:
+        :return:
+        """
+
+        for key in self.keys: self[key].replace_nans(value)
+
+    # -----------------------------------------------------------------
+
+    def show_coordinate_systems(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Print wcss:
+        print("")
+        for name in self.names:
+            print(name, self[name].wcs)
+            print("")
 
 # -----------------------------------------------------------------
 
@@ -2272,6 +2538,8 @@ def get_highest_pixelscale_name(*frames, **kwargs):
 
         wcs = frame.wcs
 
+        if wcs is None: raise ValueError("Coordinate system of the " + name + " image is not defined")
+
         # SKIP?
         if below is not None and wcs.average_pixelscale > below: continue
         if below_npixels is not None and min(frame.xsize, frame.ysize) > below_npixels: continue
@@ -2281,6 +2549,9 @@ def get_highest_pixelscale_name(*frames, **kwargs):
             highest_pixelscale = wcs.average_pixelscale
             highest_pixelscale_wcs = wcs
             highest_pixelscale_name = name
+
+    # Debugging
+    log.debug("The frame with the highest FWHM is the '" + highest_pixelscale_name + "' frame ...")
 
     # Return the name
     return highest_pixelscale_name
@@ -2304,15 +2575,23 @@ def rebin_to_highest_pixelscale(*frames, **kwargs):
 
     highest_pixelscale = None
     highest_pixelscale_wcs = None
+    highest_pixelscale_index = None
 
     # Loop over the frames
-    for frame in frames:
+    for index, frame in enumerate(frames):
 
         wcs = frame.wcs
+        if wcs is None:
+            if names is not None: raise ValueError("Coordinate system of the " + names[index] + " image is not defined")
+            else: raise ValueError("Coordinate system of the image is not defined")
         if highest_pixelscale is None or wcs.average_pixelscale > highest_pixelscale:
 
             highest_pixelscale = wcs.average_pixelscale
             highest_pixelscale_wcs = wcs
+            highest_pixelscale_index = index
+
+    # Debugging
+    if names is not None: log.debug("The frame with the highest pixelscale is the '" + names[highest_pixelscale_index] + "' frame ...")
 
     # Rebin
     return rebin_to_pixelscale(*frames, names=names, pixelscale=highest_pixelscale, wcs=highest_pixelscale_wcs)
@@ -2393,7 +2672,14 @@ def rebin_to_pixelscale(*frames, **kwargs):
                 log.debug("Rebinning frame " + name + "and multiplying with a factor of " + str(ratio) + " to correct for the changing pixelscale ...")
 
                 # Rebin and multiply
-                rebinned = frame.rebinned(highest_pixelscale_wcs)
+                try: rebinned = frame.rebinned(highest_pixelscale_wcs)
+                except ValueError as e:
+                    print("")
+                    print("INPUT WCS:", frame.wcs)
+                    print("")
+                    print("OUTPUT WCS:", highest_pixelscale_wcs)
+                    print("")
+                    raise RuntimeError("Rebinning the " + name + " image failed: " + str(e))
                 rebinned *= ratio
 
                 #print(rebinned)
@@ -2437,6 +2723,9 @@ def get_highest_fwhm_name(*frames, **kwargs):
         if frame_fwhm is None: frame_fwhm = get_fwhm(frame.filter)
         frame.fwhm = frame_fwhm
 
+        # Check again
+        if frame.fwhm is None: raise ValueError("FWHM of the " + name + " image cannot be determined")
+
         # SKIP
         if below is not None and frame.fwhm > below: continue
 
@@ -2445,6 +2734,9 @@ def get_highest_fwhm_name(*frames, **kwargs):
             highest_fwhm = frame.fwhm
             highest_fwhm_filter = frame.psf_filter
             highest_fwhm_name = name
+
+    # Debugging
+    log.debug("The frame with the highest FWHM is the '" + highest_fwhm_name + "' frame ...")
 
     # Return the name
     return highest_fwhm_name
@@ -2467,19 +2759,29 @@ def convolve_to_highest_fwhm(*frames, **kwargs):
 
     highest_fwhm = None
     highest_fwhm_filter = None
+    highest_fwhm_index = None
 
     # Loop over the frames
-    for frame in frames:
+    for index, frame in enumerate(frames):
 
         # Search and set frame FWHM
         frame_fwhm = frame.fwhm
         if frame_fwhm is None: frame_fwhm = get_fwhm(frame.filter)
         frame.fwhm = frame_fwhm
 
+        # Check again
+        if frame.fwhm is None:
+            if names is not None: raise ValueError("FWHM of the " + names[index] + " image cannot be determined")
+            else: raise ValueError("FWHM of the image cannot be determined")
+
         if highest_fwhm is None or frame.fwhm > highest_fwhm:
 
             highest_fwhm = frame.fwhm
             highest_fwhm_filter = frame.psf_filter
+            highest_fwhm_index = index
+
+    # Debugging
+    if names is not None: log.debug("The frame with the highest FWHM is the '" + names[highest_fwhm_index] + "' frame ...")
 
     # Convolve
     return convolve_to_fwhm(*frames, names=names, fwhm=highest_fwhm, filter=highest_fwhm_filter)
@@ -2565,48 +2867,50 @@ def convolve_to_fwhm(*frames, **kwargs):
 
 # -----------------------------------------------------------------
 
-def check_uniformity(*frames):
+def check_uniformity(*frames, **kwargs):
 
     """
     This function ...
     :param frames:
+    :param kwargs:
     :return:
     """
 
     # Get unit
-    unit = check_unit(*frames)
+    unit = check_unit(*frames, **kwargs)
 
     # Get the wcs
-    wcs = check_wcs(*frames)
+    wcs = check_wcs(*frames, **kwargs)
 
     # Get the pixelscale
-    pixelscale = check_pixelscale(*frames)
+    pixelscale = check_pixelscale(*frames, **kwargs)
 
     # Get the PSF filter
-    psf_filter = check_psf_filter(*frames)
+    psf_filter = check_psf_filter(*frames, **kwargs)
 
     # Get the FWHM
-    fwhm = check_fwhm(*frames)
+    fwhm = check_fwhm(*frames, **kwargs)
 
     # Get the distance
-    distance = check_distance(*frames)
+    distance = check_distance(*frames, **kwargs)
 
     # Return the common properties
     return unit, wcs, pixelscale, psf_filter, fwhm, distance
 
 # -----------------------------------------------------------------
 
-def check_unit(*frames):
+def check_unit(*frames, **kwargs):
 
     """
     This function ...
     :param frames:
+    :param strict:
     :return:
     """
 
     # Check units
     units = [frame.unit for frame in frames]
-    if not sequences.all_equal(units, ignore_none=True):
+    if kwargs.pop("strict", True) and not sequences.all_equal(units, ignore_none=True):
         # raise ValueError("Frames have to be in the same unit")
         log.error("Frames have to be in the same unit")
         log.error("Units:")
@@ -2619,41 +2923,45 @@ def check_unit(*frames):
 
 # -----------------------------------------------------------------
 
-def check_wcs(*frames):
+def check_wcs(*frames, **kwargs):
 
     """
     This function ...
     :param frames:
+    :param strict:
     :return:
     """
 
     # Get WCS
     wcss = [frame.wcs for frame in frames]
     # print(wcss)
-    if not sequences.all_equal(wcss, ignore_none=True):
+    if kwargs.pop("strict", True) and not sequences.all_equal(wcss, ignore_none=True):
         # raise ValueError("Frames have to be transformed to same pixel grid")
         log.error("Frames have to be transformed to the same pixel grid")
         log.error("Coordinate systems:")
         print("")
-        for frame in frames: print(" - " + frame.name + ": " + str(frame.wcs))
-        print("")
+        for frame in frames:
+            print(" - " + frame.name + ": " + str(frame.wcs))
+            print("")
+        #print("")
         exit()
     wcs = sequences.find_first_not_none(wcss)
     return wcs
 
 # -----------------------------------------------------------------
 
-def check_pixelscale(*frames):
+def check_pixelscale(*frames, **kwargs):
 
     """
     This function ...
     :param frames:
+    :param strict:
     :return:
     """
 
     # Get pixelscale
     pixelscales = [frame.average_pixelscale for frame in frames]
-    if not sequences.all_close(pixelscales, ignore_none=True):
+    if kwargs.pop("strict", True) and not sequences.all_close(pixelscales, ignore_none=True):
         # raise ValueError("Frames must have the same pixelscale")
         log.error("Frames must have the same pixelscale")
         log.error("Pixelscales:")
@@ -2666,17 +2974,18 @@ def check_pixelscale(*frames):
 
 # -----------------------------------------------------------------
 
-def check_psf_filter(*frames):
+def check_psf_filter(*frames, **kwargs):
 
     """
     This function ...
     :param frames:
+    :param strict:
     :return:
     """
 
     # Get PSF filter
     psf_filters = [frame.psf_filter for frame in frames]
-    if not sequences.all_equal(psf_filters):
+    if kwargs.pop("strict", True) and not sequences.all_equal(psf_filters):
         # raise ValueError("Frames have to be convolved to the same resolution")
         log.error("Frames have to be convolved to the same resolution")
         log.error("PSF filters:")
@@ -2689,17 +2998,18 @@ def check_psf_filter(*frames):
 
 # -----------------------------------------------------------------
 
-def check_fwhm(*frames):
+def check_fwhm(*frames, **kwargs):
 
     """
     This function ...
     :param frames:
+    :param strict:
     :return:
     """
 
     # Get FWHM
     fwhms = [frame.fwhm for frame in frames]
-    if not sequences.all_close(fwhms, ignore_none=True):
+    if kwargs.pop("strict", True) and not sequences.all_close(fwhms, ignore_none=True):
         # raise ValueError("Frames have to have the same FWHM")
         log.error("Frames have to have the same FWHM")
         log.error("FWHMs:")
@@ -2712,18 +3022,19 @@ def check_fwhm(*frames):
 
 # -----------------------------------------------------------------
 
-def check_distance(*frames):
+def check_distance(*frames, **kwargs):
 
     """
     This function ...
     :param frames:
+    :param strict:
     :return:
     """
 
     # Get distance
     distances = [frame.distance for frame in frames]
     # print(distances)
-    if not sequences.all_close(distances, ignore_none=True):
+    if kwargs.pop("strict", True) and not sequences.all_close(distances, ignore_none=True):
         # raise ValueError("Frames have to have the same distance to the object")
         log.error("Frames have to have the same distance to the object")
         log.error("Distances:")

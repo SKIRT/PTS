@@ -28,7 +28,7 @@ class Elitism(object):
     This class ...
     """
 
-    def __init__(self, index, replaced, replacement, replaced_score, replacement_score):
+    def __init__(self, index, replaced, replacement, replaced_score, replacement_score, name=None, replacement_name=None):
 
         """
         This function ...
@@ -39,5 +39,7 @@ class Elitism(object):
         self.replacement = replacement
         self.replaced_score = replaced_score
         self.replacement_score = replacement_score
+        self.name = name
+        self.replacement_name = replacement_name
 
 # -----------------------------------------------------------------

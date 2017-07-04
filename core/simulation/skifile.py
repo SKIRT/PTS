@@ -93,7 +93,7 @@ class SkiFile:
     ## This function saves the (possibly updated) contents of the SkiFile instance into the specified file.
     # The filename \em must end with ".ski". Saving to and thus replacing the ski file from which this
     # SkiFile instance was originally constructed is allowed, but often not the intention.
-    def saveto(self, filepath, update_path=True):
+    def saveto(self, filepath, update_path=True, fix=False):
         if not filepath.lower().endswith(".ski"):
             raise ValueError("Invalid filename extension for ski file")
         # update the producer and time attributes on the root element
@@ -108,8 +108,11 @@ class SkiFile:
         # Update the ski file path
         if update_path: self.path = filepath
 
+        # Fix, if requested
+        if fix: fix_ski_file(filepath)
+
     ## This function saves the ski file to the original path
-    def save(self): self.saveto(self.path)
+    def save(self, fix=False): self.saveto(self.path, fix=fix)
 
     ## This function returns a copy (a deep copy) of this ski file
     def copy(self):
@@ -1085,13 +1088,19 @@ class SkiFile:
         parent = dust_system.getparent()
         parent.getparent().remove(parent)
 
+    ## THis function removes the complete stellar system
+    def remove_stellar_system(self):
+        stellar_system = self.get_stellar_system()
+        parent = stellar_system.getparent()
+        parent.getparent().remove(parent)
+
     ## This property returns the number of stellar components
     @property
     def nstellar_components(self):
         return len(self.get_stellar_component_ids())
 
-    ## This function returns the list of stellar components
-    def get_stellar_components(self, include_comments=False):
+    ##
+    def get_stellar_components_object(self):
 
         # Get the stellar system
         stellar_system = self.get_stellar_system()
@@ -1100,9 +1109,18 @@ class SkiFile:
         stellar_components_parents = stellar_system.xpath("components")
 
         # Check if only one 'components' element is present
-        if len(stellar_components_parents) == 0: raise ValueError("Stellar system is not composed of components")
-        elif len(stellar_components_parents) > 1: raise ValueError("Invalid ski file: multiple 'components' objects within stellar system")
+        if len(stellar_components_parents) == 0:
+            raise ValueError("Stellar system is not composed of components")
+        elif len(stellar_components_parents) > 1:
+            raise ValueError("Invalid ski file: multiple 'components' objects within stellar system")
         stellar_components = stellar_components_parents[0]
+
+        return stellar_components
+
+    ## This function returns the list of stellar components
+    def get_stellar_components(self, include_comments=False):
+
+        stellar_components = self.get_stellar_components_object()
 
         # Return the stellar components as a list
         if include_comments: return stellar_components.getchildren()
@@ -1149,22 +1167,32 @@ class SkiFile:
         # Return the dust distribution
         return xml.get_unique_element(dust_system, "dustDistribution")
 
-    ## This function returns the list of dust components
-    def get_dust_components(self, include_comments=False):
+    ## This fucntion
+    def get_dust_components_object(self):
 
         # Get the dust distribution
         dust_distribution = self.get_dust_distribution()
 
         # Check whether the dust distribution is a CompDustDistribution
-        if not dust_distribution.tag == "CompDustDistribution": raise ValueError("Dust distribution is not composed of components")
+        if not dust_distribution.tag == "CompDustDistribution": raise ValueError(
+            "Dust distribution is not composed of components")
 
         # Get the 'components' element
         dust_components_parents = dust_distribution.xpath("components")
 
         # Check if only one 'components' element is present
-        if len(dust_components_parents) == 0: raise ValueError("Dust distribution is not composed of components")
-        elif len(dust_components_parents) > 1: raise ValueError("Invalid ski file: multiple 'components' objects within dust distribution")
+        if len(dust_components_parents) == 0:
+            raise ValueError("Dust distribution is not composed of components")
+        elif len(dust_components_parents) > 1:
+            raise ValueError("Invalid ski file: multiple 'components' objects within dust distribution")
+
         dust_components = dust_components_parents[0]
+        return dust_components
+
+    ## This function returns the list of dust components
+    def get_dust_components(self, include_comments=False):
+
+        dust_components = self.get_dust_components_object()
 
         # Return the dust components as a list
         if include_comments: return dust_components.getchildren()
@@ -1678,7 +1706,7 @@ class SkiFile:
         parent.append(parent.makeelement("ThemisDustMix", attrs))
 
     ## This function sets a Zubko dust mix model for the dust component with the specified id
-    def set_dust_component_zubko_mix(self, component_id, graphite_populations=7, silicate_populations=7, pah_poulations=5, write_mix=True, write_mean_mix=True, write_size=True):
+    def set_dust_component_zubko_mix(self, component_id, graphite_populations=7, silicate_populations=7, pah_populations=5, write_mix=True, write_mean_mix=True, write_size=True):
         # writeMix="false" writeMeanMix="false" writeSize="false" graphitePops="7" silicatePops="7" PAHPops="5"
 
         # Remove current mix, return the parent
@@ -3777,14 +3805,50 @@ class SkiFile:
         #from ..tools.stringify import stringify_not_list
         from ..tools.stringify import tostr
 
+        direct_children = []
+
         children = dict()
+        children_types = dict()
 
         attrs = {}
 
         #print(properties)
 
+        if "children" in properties:
+
+            # Loop over the children
+            for property_name in properties["children"]:
+
+                #print("PROPERTY NAME:", property_name)
+                #print("PARAMETERS:", properties["children"][property_name])
+
+                element = self.create_element(property_name, properties["children"][property_name])
+
+                # Add child
+                direct_children.append(element)
+
         # Loop over the properties, create the children
         for property_name in properties:
+
+            # Children are defined now
+            if property_name == "children": continue
+
+                # Loop over the child properties
+                #for child_property in properties["children"]: # e.g. geometry, mix, etc.
+                #for child_name in properties["children"]:
+                #    child_element = self.create_element(child_name, properties["children"][child_name])
+                #    children[child_name] = child_element
+                #    if "type" in properties["children"][child_name]: children_types[child_name] = properties["children"][child_name]["type"]
+                #    children[child_property] = children
+                #continue
+
+                # Loop over
+                #for child_property_name in properties["children"]
+
+                #print("PROPERTY NAME:", property_name)
+                #print("PARAMETERS:", properties["children"][property_name])
+
+                #element = self.create_element(property_name, properties["children"][property_name])
 
             #print(property_name)
             value = properties[property_name]
@@ -3802,11 +3866,15 @@ class SkiFile:
                 # Create multiple children
                 for key in value:
                     child = self.create_element(key, value[key])
+                    if "type" in value[key]:
+                        child_type = value[key]["type"]
+                        if property_name not in children_types: children_types[property_name] = child_type
+                        elif children_types[property_name] != child_type: raise ValueError("Child with type '" + child_type + "' but previous type was '" + children_types[property_name] + "'")
                     children[property_name].append(child)
 
             # Regular value (string, int, float, quantity)
             else:
-                attrs[property_name] = tostr(value) #stringify_not_list(value)
+                attrs[property_name] = tostr(value, scientific_int=False) #stringify_not_list(value) # can also be 'type'
                 #print(property_name, value, type(value))
 
         # Make element
@@ -3821,22 +3889,69 @@ class SkiFile:
         #print(attrs)
         element = self.root.makeelement(tag, attrs)
 
+        #print(children)
+        #print(children_types)
+
         # Make children
         for property_name in children:
 
-            attrs = {"type": ""}
+            if property_name in children_types: attrs = {"type": children_types[property_name]}
+            else: attrs = {"type": ""}
+
             list_element = element.makeelement(property_name, attrs)
 
             # Add child elements
             for child in children[property_name]:
+
                 # Add to parent
                 list_element.append(child)
 
             # Add the list element to the base element
             element.append(list_element)
 
+        # Add direct children
+        for child in direct_children: element.append(child)
+
         # Return the new element
         return element
+
+    # -----------------------------------------------------------------
+
+    def add_stellar_component(self, properties, title=None):
+
+        """
+        This function ...
+        :param properties:
+        :param title:
+        :return:
+        """
+
+        tag = "PanStellarComp" if self.panchromatic() else "OligoStellarComp"
+        #element = self.create_element(tag, properties)
+        element = self.create_element(tag, properties)
+
+        # Add the component
+        components = self.get_stellar_components_object()
+        components.append(element)
+
+    # -----------------------------------------------------------------
+
+    def add_dust_component(self, properties, title=None):
+
+        """
+        This function ...
+        :param properties:
+        :param title:
+        :return:
+        """
+
+        tag = "DustComp"
+        #element = self.create_element(tag, properties)
+        element = self.create_element(tag, properties)
+
+        # Add the component
+        components = self.get_dust_components_object()
+        components.append(element)
 
     # -----------------------------------------------------------------
 
@@ -4318,5 +4433,72 @@ class LabeledSkiFile(SkiFile):
 
         # Set the value
         self.set_value(element, name, string)
+
+# -----------------------------------------------------------------
+
+def fix_ski_file(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    from ...core.prep.smile import expected_types
+
+    # Set replacement dictionary
+    replacements = dict()
+    for a, b in expected_types.items():
+        from_string = a + ' type=""'
+        to_string = a + ' type="' + b + '"'
+        replacements[from_string] = to_string
+
+    # Replace lines
+    replace_ski_file_lines(path, replacements)
+
+# -----------------------------------------------------------------
+
+def replace_ski_file_lines(path, replacement_dict):
+
+    """
+    This function ...
+    :param path:
+    :param replacement_dict:
+    :return:
+    """
+
+    new_lines = []
+
+    which_system = None
+
+    # Read the lines
+    for line in fs.read_lines(path):
+
+        if "<dustSystem" in line: which_system = "dust"
+        elif "/dustSystem" in line: which_system = None
+
+        if "<stellarSystem" in line: which_system = "stellar"
+        elif "/stellarSystem" in line: which_system = None
+
+        # Loop over the replacements
+        for from_string in replacement_dict:
+            to_string = replacement_dict[from_string]
+
+            # Determine the new line
+            if from_string in line: line = line.replace(from_string, to_string)
+
+            if 'components type=""' in line:
+                if which_system == "dust": line = line.replace('components type=""', 'components type="DustComp"')
+                elif which_system == "stellar": line = line.replace('components type=""', 'components type="StellarComp"')
+                else: raise RuntimeError("Something went wrong")
+
+        # Add the line
+        new_lines.append(line)
+
+    # Remove the file
+    fs.remove_file(path)
+
+    # Write lines
+    fs.write_lines(path, new_lines)
 
 # -----------------------------------------------------------------

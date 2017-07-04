@@ -147,7 +147,10 @@ def is_sequence(value):
     :return: 
     """
 
-    return isinstance(value, collections.Iterable) and not is_string_type(value)
+    #print(type(value))
+
+    #return isinstance(value, collections.Iterable) and not is_string_type(value) and not is_dictionary(value)
+    return isinstance(value, collections.Sequence) and not is_string_type(value) and not is_tuple(value) # NEW
 
 # -----------------------------------------------------------------
 

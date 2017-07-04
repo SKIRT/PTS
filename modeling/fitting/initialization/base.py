@@ -21,6 +21,7 @@ from ....core.tools.logging import log
 from ....core.prep.wavelengthgrids import WavelengthGridGenerator
 from ..tables import WeightsTable
 from ....core.tools.serialization import write_dict
+from ....core.prep.smile import SKIRTSmileSchema
 
 # -----------------------------------------------------------------
 
@@ -41,6 +42,9 @@ class FittingInitializerBase(FittingComponent):
 
         # Call the constructor of the base class
         super(FittingInitializerBase, self).__init__(*args, **kwargs)
+
+        # The INITIAL model representation
+        self.representation = None
 
         # The fitting run
         self.fitting_run = None
@@ -93,6 +97,49 @@ class FittingInitializerBase(FittingComponent):
 
     # -----------------------------------------------------------------
 
+    def load_representation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the model representation ...")
+
+        # Load the initial representation
+        self.representation = self.fitting_run.initial_representation
+
+    # -----------------------------------------------------------------
+
+    def set_dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting the dust grid ...")
+
+        # Check whether we can use the file tree dust grid
+        smile = SKIRTSmileSchema()
+        if smile.supports_file_tree_grids and self.representation.has_dust_grid_tree:
+
+            # Create file tree dust grid
+            dust_grid = self.representation.create_file_tree_dust_grid(write=False)
+
+            # Make sure it is only the file name, not a complete path
+            dust_grid.filename = fs.name(dust_grid.filename)
+
+        # Just take the real dust grid object
+        else: dust_grid = self.representation.dust_grid
+
+        # Set the lowest-resolution dust grid
+        self.ski.set_dust_grid(dust_grid)
+
+    # -----------------------------------------------------------------
+
     def create_wavelength_grids(self):
 
         """
@@ -118,7 +165,6 @@ class FittingInitializerBase(FittingComponent):
 
     # -----------------------------------------------------------------
 
-    
     def calculate_weights(self):
 
         """

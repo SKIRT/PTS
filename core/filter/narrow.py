@@ -9,13 +9,16 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
+from collections import defaultdict
+
 # Import astronomical modules
 from astropy.units import spectral
 
 # Import the relevant PTS classes and modules
 from .filter import Filter
 from ..basics.map import Map
-from ..tools import strings
+from ..tools import strings, types
 
 # -----------------------------------------------------------------
 
@@ -23,6 +26,65 @@ from ..tools import strings
 identifiers = dict()
 identifiers["Halpha"] = Map(bands=["Ha", "H alpha", "H-alpha", "H-a", "Halpha", "H_alpha", "Mosaic Halpha", "H_alph", "H-alph"], wavelength="656.28 nm")
 identifiers["ALMA"] = Map(observatories=["ALMA", "APEX"], frequency_range="84 GHz > 950 GHz")
+
+# -----------------------------------------------------------------
+
+def get_filters_for_regime(regime, subregime=None, categorize=False):
+
+    """
+    This function ...
+    :param regime:
+    :param subregime:
+    :return:
+    """
+
+    from ...magic.tools.wavelengths import wavelength_range_for_regime
+    wavelength_range = wavelength_range_for_regime(regime, subregime=subregime)
+    return get_filters(wavelength_range.min, wavelength_range.max, categorize=categorize)
+
+# -----------------------------------------------------------------
+
+def get_filters(min_wavelength=None, max_wavelength=None, categorize=False):
+
+    """
+    This function ...
+    :param min_wavelength:
+    :param max_wavelength:
+    :param categorize:
+    :return:
+    """
+
+    filters = []
+
+
+
+# -----------------------------------------------------------------
+
+def categorize_filters():
+
+    """
+    This function ...
+    :return:
+    """
+
+    narrow = defaultdict(list)
+
+    # Categorize
+    for spec in identifiers: narrow[spec].append(spec)
+
+    return narrow
+
+# -----------------------------------------------------------------
+
+def categorized_filters_sorted_labels(narrow):
+
+    """
+    Ths function ...
+    :param narrow:
+    :return:
+    """
+
+    return sorted(narrow.keys(), key=lambda x: identifiers.keys().index(narrow[x][0]))
 
 # -----------------------------------------------------------------
 
@@ -220,7 +282,7 @@ class NarrowBandFilter(Filter):
         instrument = None
 
         # String is passed
-        if isinstance(filterspec, basestring):
+        if types.is_string_type(filterspec):
 
             # Find exact match
             if filterspec not in identifiers:
@@ -245,7 +307,7 @@ class NarrowBandFilter(Filter):
                     else:  raise ValueError("Could not recognize the filter: " + filterspec)
 
         # String is converted to a valid filterspec
-        if isinstance(filterspec, basestring):
+        if types.is_string_type(filterspec):
 
             identifier = identifiers[filterspec]
             wavelength = identifier.wavelength

@@ -1522,6 +1522,8 @@ def get_modules(import_statement, script_path, return_unresolved=False, debug=Fa
     :return:
     """
 
+    #print("IMPORT STATEMENT", import_statement)
+
     unresolved = []
 
     multiple = None
@@ -1618,6 +1620,7 @@ def get_modules(import_statement, script_path, return_unresolved=False, debug=Fa
                     else:
                         if name == "*": name = None
                         if name == "__version__": name = None
+                        #print(module_path)
                         which[module_path].add(name)
                 else: unresolved.append((subpackage_path, name))
 
@@ -2264,6 +2267,32 @@ def try_importing_module(path, in_globals=False):
 
 # -----------------------------------------------------------------
 
+def try_importing_variable(path, variable_name, in_globals=False):
+
+    """
+    This function ...
+    :param path:
+    :param variable_name:
+    :param in_globals:
+    :return:
+    """
+
+    #print("module path", path)
+
+    # Import the module
+    module = try_importing_module(path)
+
+    # Get the variable
+    variable = getattr(module, variable_name)
+
+    # Add the class to the globals
+    if in_globals: globals()[variable_name] = variable
+
+    # Return the variable
+    return variable
+
+# -----------------------------------------------------------------
+
 def try_importing_class(name, path, in_globals=False):
 
     """
@@ -2356,5 +2385,21 @@ def get_class_path(cls):
 
     # Return
     return subproject, relative_class_subproject
+
+# -----------------------------------------------------------------
+
+def get_class_from_path(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    class_module_path = "pts." + path.rsplit(".", 1)[0]
+    class_name = path.rsplit(".", 1)[1]
+
+    # Import and return the class
+    return try_importing_class(class_name, class_module_path)
 
 # -----------------------------------------------------------------

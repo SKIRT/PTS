@@ -888,8 +888,14 @@ class DustPediaDatabase(object):
             # Remove potential file with same name
             if fs.is_file(compressed_path): fs.remove_file(compressed_path)
 
+            # Debugging
+            log.debug("Downloading ...")
+
             # Download compressed file
             network.download_file(url, compressed_path, progress_bar=log.is_debug(), stream=True, session=self.session)
+
+            # Debugging
+            log.debug("Decompressing ...")
 
             # Decompress
             archive.decompress_file(compressed_path, path)
@@ -899,13 +905,15 @@ class DustPediaDatabase(object):
 
     # -----------------------------------------------------------------
 
-    def download_images(self, galaxy_name, path, error_maps=True):
+    def download_images(self, galaxy_name, path, error_maps=True, instruments=None, not_instruments=None):
 
         """
         This function ...
         :param galaxy_name:
         :param path: directory
         :param error_maps:
+        :param instruments:
+        :param not_instruments:
         :return:
         """
 
@@ -915,12 +923,20 @@ class DustPediaDatabase(object):
         # Loop over the image URLS found for this galaxy
         for url in self.get_image_urls(galaxy_name, error_maps=error_maps):
 
+            # Determine instrument
+            instrument = url.split("&instrument=")[1].strip()
+            if instruments is not None and instrument not in instruments: continue
+            if not_instruments is not None and instrument in not_instruments: continue
+
             # Determine path
             image_name = url.split("imageName=")[1].split("&instrument")[0]
-            image_path = fs.join(path, image_name)
+            #image_path = fs.join(path, image_name)
 
             # Download this image
-            network.download_file(url, image_path, progress_bar=log.is_debug(), stream=True, session=self.session)
+            #network.download_file(url, image_path, progress_bar=log.is_debug(), stream=True, session=self.session)
+
+            # Download (and decompress)
+            self.download_image_from_url(url, path)
 
     # -----------------------------------------------------------------
 
@@ -1207,7 +1223,7 @@ class DustPediaDatabase(object):
         log.info("Downloading the photometry cutouts for galaxy '" + galaxy_name + "' ...")
 
         url = self.get_photometry_cutouts_url(galaxy_name)
-        network.download_file(url, dir_path, session=self.session, progress_bar=log.is_debug())
+        return network.download_file(url, dir_path, session=self.session, progress_bar=log.is_debug())
 
     # -----------------------------------------------------------------
 

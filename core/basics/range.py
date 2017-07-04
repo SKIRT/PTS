@@ -498,6 +498,18 @@ class Range(object):
 
         return self.max - self.min
 
+    # -----------------------------------------------------------------
+
+    def __contains__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.min <= value <= self.max
+
 # -----------------------------------------------------------------
 
 class IntegerRange(Range):
@@ -764,63 +776,89 @@ class QuantityRange(Range):
 
     # -----------------------------------------------------------------
 
-    def linear(self, npoints, as_list=False):
+    def linear(self, npoints, as_list=False, add_unit=True):
 
         """
         This function ...
         :param npoints:
         :param as_list:
+        :param add_unit:
         :return:
         """
 
         real = super(QuantityRange, self).linear(npoints)
 
         if as_list:
-            result = []
-            for num in real: result.append(num * self.unit)
-        else: result = real * self.unit
+
+            if add_unit:
+                result = []
+                for num in real: result.append(num * self.unit)
+            else: result = list(real)
+
+        else:
+
+            if add_unit: result = real * self.unit
+            else: result = real
 
         # Return the result (list or quantity)
         return result
 
     # -----------------------------------------------------------------
 
-    def log(self, npoints, as_list=False):
+    def log(self, npoints, as_list=False, add_unit=True):
 
         """
         This function ...
         :param npoints:
         :param as_list:
+        :param add_unit:
         :return:
         """
 
         real = super(QuantityRange, self).log(npoints)
 
         if as_list:
-            result = []
-            for num in real: result.append(num * self.unit)
-        else: result = real * self.unit
+
+            if add_unit:
+                result = []
+                for num in real: result.append(num * self.unit)
+            else: result = list(real)
+
+        else:
+
+            if add_unit: result = real * self.unit
+            else: result = real
 
         # Return the result (list or quantity)
         return result
 
     # -----------------------------------------------------------------
 
-    def sqrt(self, npoints, as_list=False):
+    def sqrt(self, npoints, as_list=False, add_unit=True):
 
         """
         This function ...
         :param npoints:
         :param as_list:
+        :param add_unit:
         :return:
         """
 
         real = super(QuantityRange, self).sqrt(npoints)
 
         if as_list:
-            result = []
-            for num in real: result.append(num * self.unit)
-        else: result = real * self.unit
+
+            if add_unit:
+
+                result = []
+                for num in real: result.append(num * self.unit)
+
+            else: result = list(real)
+
+        else:
+
+            if add_unit: result = real * self.unit
+            else: result = real
 
         # Return the result (list or quantity)
         return result

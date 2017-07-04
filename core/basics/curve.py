@@ -71,6 +71,42 @@ class Curve(SmartTable):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_data_file(cls, path, x_name="x", x_description="x values", x_unit=None, y_name="y", y_description="y values", y_unit=None, usecols=(0,1)):
+
+        """
+        This function ...
+        :param path:
+        :param x_name:
+        :param x_description:
+        :param x_unit:
+        :param y_name:
+        :param y_description:
+        :param y_unit:
+        :param usecols:
+        :return:
+        """
+
+        kwargs = dict()
+
+        kwargs["x_name"] = x_name
+        kwargs["x_description"] = x_description
+        kwargs["x_unit"] = x_unit
+
+        kwargs["y_name"] = y_name
+        kwargs["y_description"] = y_description
+        kwargs["y_unit"] = y_unit
+
+        # Create the curve
+        curve = cls(**kwargs)
+        x_values, y_values = np.loadtxt(path, unpack=True, usecols=usecols)
+        for x_value, y_value in zip(x_values, y_values): curve.add_point(x_value, y_value)
+
+        # Return the curve
+        return curve
+
+    # -----------------------------------------------------------------
+
     @property
     def x_unit(self):
 
@@ -95,6 +131,30 @@ class Curve(SmartTable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def x_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self[self.x_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_data(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self[self.y_name]
+
+    # -----------------------------------------------------------------
+
     def add_point(self, x_value, y_value):
 
         """
@@ -111,7 +171,7 @@ class Curve(SmartTable):
         self.add_row(values)
 
         # Sort the table by the x values
-        self.sort(self.colnames[0])
+        self.sort(self.x_name)
 
     # -----------------------------------------------------------------
 
@@ -372,6 +432,9 @@ class FilterCurve(WavelengthCurve):
 
         values = [fltr.observatory, fltr.instrument, fltr.band, fltr.wavelength, value]
         self.add_row(values)
+
+        # Sort the table by the x values
+        self.sort(self.x_name)
 
     # -----------------------------------------------------------------
 

@@ -331,6 +331,17 @@ def nthreads_per_core():
 
 # -----------------------------------------------------------------
 
+def has_hyperthreading():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return nthreads_per_core() > 1
+
+# -----------------------------------------------------------------
+
 def virtual_memory():
 
     """

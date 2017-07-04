@@ -59,6 +59,64 @@ class ModelDefinition(object):
     # -----------------------------------------------------------------
 
     @property
+    def stellar_component_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.directories_in_path(self.stellar_path, returns="name")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_component_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.directories_in_path(self.dust_path, returns="name")
+
+    # -----------------------------------------------------------------
+
+    def get_stellar_component(self, name, add_map=False):
+
+        """
+        This function ...
+        :param name:
+        :param add_map:
+        :return:
+        """
+
+        # Determine component_path
+        component_path = fs.join(self.stellar_path, name)
+
+        from .component import load_component
+        return load_component(component_path, add_map=add_map)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_component(self, name, add_map=False):
+
+        """
+        This function ...
+        :param name:
+        :param add_map:
+        :return:
+        """
+
+        # Determine component path
+        component_path = fs.join(self.dust_path, name)
+
+        from .component import load_component
+        return load_component(component_path, add_map=add_map)
+
+    # -----------------------------------------------------------------
+
+    @property
     def stellar_map_paths(self):
 
         """

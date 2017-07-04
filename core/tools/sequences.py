@@ -629,3 +629,88 @@ def unpack(zipped, default_size=None):
     return sequences
 
 # -----------------------------------------------------------------
+
+def is_sorted(sequence, invert=False):
+
+    """
+    This function ...
+    :param sequence:
+    :param invert:
+    :return:
+    """
+
+    if invert: return all(sequence[i] >= sequence[i+1] for i in xrange(len(sequence)-1))
+    else: return all(sequence[i] <= sequence[i+1] for i in xrange(len(sequence)-1))
+
+# -----------------------------------------------------------------
+
+def is_minimum(sequence, value):
+
+    """
+    This function ...
+    :param sequence:
+    :param value:
+    :return:
+    """
+
+    for item in sequence:
+        if item < value: return False
+    else: return True
+
+# -----------------------------------------------------------------
+
+def is_maximum(sequence, value):
+
+    """
+    This function ...
+    :param sequence:
+    :param value:
+    :return:
+    """
+
+    for item in sequence:
+        if item > value: return False
+    else: return True
+
+# -----------------------------------------------------------------
+
+def same_contents(sequence_a, sequence_b):
+
+    """
+    This function ...
+    :param sequence_a:
+    :param sequence_b:
+    :return:
+    """
+
+    if len(sequence_a) != len(sequence_b): return False
+
+    for item in sequence_a:
+
+        if item not in sequence_b: return False
+
+    return True
+
+# -----------------------------------------------------------------
+
+def find_differences(sequence_a, sequence_b):
+
+    """
+    This function ...
+    :param sequence_a:
+    :param sequence_b:
+    :return:
+    """
+
+    # Sort both: NO, THEN WHAT DO THE INDICES MEAN?
+    #sequence_a = sorted(sequence_a)
+    #sequence_b = sorted(sequence_b)
+
+    indices = []
+
+    for index in range(min(len(sequence_a), len(sequence_b))):
+        if sequence_a[index] != sequence_b[index]: indices.append(index)
+
+    return indices
+
+# -----------------------------------------------------------------

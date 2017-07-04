@@ -45,6 +45,44 @@ local_table_path = fs.join(introspection.pts_dat_dir("modeling"), "s4g", "s4g_p4
 
 # -----------------------------------------------------------------
 
+def get_properties(galaxy_name):
+
+    """
+    This function ...
+    :param galaxy_name:
+    :return:
+    """
+
+    s4g = S4G()
+
+    s4g.config.galaxy_name = galaxy_name
+
+    s4g.run()
+
+    # Return the properties
+    return s4g.properties
+
+# -----------------------------------------------------------------
+
+def get_components(galaxy_name):
+
+    """
+    This function ...
+    :param galaxy_name:
+    :return:
+    """
+
+    s4g = S4G()
+
+    s4g.config.galaxy_name = galaxy_name
+
+    s4g.run()
+
+    # Return the components
+    return s4g.components
+
+# -----------------------------------------------------------------
+
 class S4G(Configurable):
 
     """

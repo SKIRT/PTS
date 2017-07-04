@@ -38,6 +38,7 @@ from ...core.tools import parallelization as par
 from .generation import GenerationInfo, Generation
 from ...core.tools.stringify import tostr
 from ...core.basics.configuration import prompt_proceed
+from ...core.prep.smile import SKIRTSmileSchema
 
 # -----------------------------------------------------------------
 
@@ -75,6 +76,9 @@ class ParameterExplorer(FittingComponent):
 
         # The generation object
         self.generation = None
+
+        # The model representation to use
+        self.representation = None
 
         # The individuals table
         self.individuals_table = None
@@ -887,7 +891,10 @@ class ParameterExplorer(FittingComponent):
         #if self.config.refine_dust:
         #    if dust_grid_level == self.fitting_run.highest_dust_grid_level: log.warning("Cannot refine dust grid: highest level reached (" + str(dust_grid_level) + ")")
         #    else: dust_grid_level += 1
-        if self.config.refine_spatial: pass
+        # DETERMINE THE REPRESENTATION
+        if self.config.refine_spatial: self.representation = self.fitting_run.next_model_representation # GET NEXT REPRESENTATION (THEY ARE NAMED IN ORDER OF SPATIAL RESOLUTION)
+        # Get the previous (current because this generation is just
+        else: self.representation = self.fitting_run.current_model_representation # GET LAST REPRESENTATION #self.fitting_run.initial_representation
 
         # Determine the number of photon packages
         if self.config.increase_npackages: npackages = int(self.fitting_run.current_npackages * self.config.npackages_factor)
@@ -906,10 +913,24 @@ class ParameterExplorer(FittingComponent):
         self.generation_info.index = self.generation_index
         self.generation_info.method = self.config.generation_method
         self.generation_info.wavelength_grid_level = wavelength_grid_level
+        self.generation_info.model_representation_name = self.representation.name
         #self.generation.nsimulations = self.config.nsimulations # DON'T DO IT HERE YET, GET THE NUMBER OF ACTUAL MODELS SPITTED OUT BY THE MODELGENERATOR (RECURRENCE)
         self.generation_info.npackages = npackages
         self.generation_info.selfabsorption = selfabsorption
         self.generation_info.transient_heating = transient_heating
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def use_file_tree_dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        smile = SKIRTSmileSchema()
+        return smile.supports_file_tree_grids and self.representation.has_dust_grid_tree
 
     # -----------------------------------------------------------------
 
@@ -931,7 +952,8 @@ class ParameterExplorer(FittingComponent):
             path = self.fitting_run.input_map_paths[name]
             self.simulation_input.add_file(path, name)
 
-        # TODO: DETERMINE AND SET THE PATH TO THE APPROPRIATE DUST GRID TREE FILE
+        # NEW: DETERMINE AND SET THE PATH TO THE APPROPRIATE DUST GRID TREE FILE
+        if self.use_file_tree_dust_grid: self.simulation_input.add_file(self.representation.dust_grid_tree_path)
 
         # Determine and set the path to the appropriate wavelength grid file
         wavelength_grid_path = self.fitting_run.wavelength_grid_path_for_level(self.generation_info.wavelength_grid_level)
@@ -1083,6 +1105,21 @@ class ParameterExplorer(FittingComponent):
 
         # Debugging
         log.debug("Setting the model representation ...")
+
+        # GET DUST GRID
+        if self.use_file_tree_dust_grid:
+
+            # Get the file tree dust grid object
+            dust_grid = self.representation.create_file_tree_dust_grid(write=False)
+
+            # Make sure it is only the file name, not a complete path
+            dust_grid.filename = fs.name(dust_grid.filename)
+
+        # REGULAR DUST GRID OBJECT
+        else: dust_grid = self.representation.dust_grid
+
+        # Set the dust grid
+        self.ski.set_dust_grid(dust_grid)
 
     # -----------------------------------------------------------------
 

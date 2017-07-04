@@ -139,7 +139,10 @@ class SkirtExec:
         return self.run(arguments, wait=wait, silent=silent)
 
     ## This function does the same as the execute function, but obtains its arguments from a SkirtArguments object
-    def run(self, definition_or_arguments, logging_options=None, parallelization=None, emulate=False, wait=True, silent=False, progress_bar=False):
+    def run(self, definition_or_arguments, logging_options=None, parallelization=None, emulate=False, wait=True,
+            silent=False, progress_bar=False, finish_at=None, finish_after=None):
+
+        if finish_at is not None or finish_after is not None: progress_bar = True
 
         # The simulation names for different ski paths
         simulation_names = dict()
@@ -185,10 +188,20 @@ class SkirtExec:
         command_string = " ".join(command)
         log.debug("The command to launch SKIRT is: '" + command_string + "'")
 
+        #print(command)
+
+        # Create a temporary file
+        output_file = tempfile.TemporaryFile()
+        error_file = tempfile.TemporaryFile()
+
+        #import sys
+        #output_file = sys.stdout
+        #error_file = sys.stderr
+
         # Launch the SKIRT command
         if wait:
             self._process = None
-            if silent: subprocess.call(command, stdout=open(os.devnull,'w'), stderr=open(os.devnull,'w'))
+            if silent: subprocess.call(command, stdout=output_file, stderr=error_file)
             else: subprocess.call(command)
         #else: self._process = subprocess.Popen(command, stdout=open(os.path.devnull, 'w'), stderr=subprocess.STDOUT)
 
@@ -197,10 +210,7 @@ class SkirtExec:
         #else: self._process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, bufsize=1)
 
         # PROPER:
-        else:
-            # Create a temporary file
-            output_file = tempfile.TemporaryFile()
-            self._process = subprocess.Popen(command, stdout=output_file, stderr=output_file)
+        else: self._process = subprocess.Popen(command, stdout=output_file, stderr=error_file)
 
         # Show progress bar with progress
         if progress_bar:
@@ -210,8 +220,10 @@ class SkirtExec:
             log_path = fs.join(out_path, prefix + "_log.txt")
             status = SimulationStatus(log_path)
 
+            #print("HERE", finish_at, finish_after)
+
             # Show the simulation progress
-            with no_debugging(): success = status.show_progress(self._process)
+            with no_debugging(): success = status.show_progress(self._process, finish_at=finish_at, finish_after=finish_after)
 
             # Check whether not crashed
             if not success:
@@ -220,14 +232,34 @@ class SkirtExec:
                 log.error("SKIRT error output:")
                 log.error("------------------")
                 out, err = self._process.communicate()
-                for line in out:
-                    if "*** Error" in line:
-                        line = line.split("*** Error: ")[1].split("\n")[0]
-                        log.error(line)
-                for line in err:
-                    if "*** Error" in line:
-                        line = line.split("*** Error: ")[1].split("\n")[0]
-                        log.error(line)
+                #print("OUT", out)
+                #print("ERR", err)
+
+                if out is None:
+
+                    #for line in fs.read_lines(output_file):
+
+                    if output_file is not None:
+                        for line in output_file: log.error(line)
+
+                else:
+
+                    for line in out:
+                        if "*** Error" in line:
+                            line = line.split("*** Error: ")[1].split("\n")[0]
+                            log.error(line)
+
+                if err is None:
+
+                    if error_file is not None:
+                        for line in error_file: log.error(line)
+
+                else:
+
+                    for line in err:
+                        if "*** Error" in line:
+                            line = line.split("*** Error: ")[1].split("\n")[0]
+                            log.error(line)
                 raise RuntimeError("The simulation crashed")
 
         # Return the list of simulations so that their results can be followed up

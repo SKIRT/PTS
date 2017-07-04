@@ -33,6 +33,7 @@ from ..component.galaxy import GalaxyModelingComponent
 from ...core.prep.dustgrids import create_one_dust_grid_for_galaxy_from_deprojection, smallest_scale_for_dust_grid
 from ...core.simulation.grids import FileTreeDustGrid
 from ...core.simulation.tree import DustGridTree
+from .dustgrid import DustGridBuilder
 
 # -----------------------------------------------------------------
 
@@ -77,18 +78,8 @@ class Representation(object):
         # Dust grid SKIRT output path
         self.grid_out_path = fs.create_directory_in(self.grid_path, "out")
 
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def dust_grid_tree_path(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        path = fs.join(self.grid_path, "tree.dat")
-        return fs.is_file(path)
+        # Dust grid tree path
+        self.dust_grid_tree_path = fs.join(self.grid_path, "tree.dat")
 
     # -----------------------------------------------------------------
 
@@ -126,7 +117,7 @@ class Representation(object):
         :return: 
         """
 
-        return self.dust_grid_tree_path is not None
+        return fs.is_file(self.dust_grid_tree_path)
 
     # -----------------------------------------------------------------
 
@@ -226,7 +217,121 @@ class Representation(object):
 
 # -----------------------------------------------------------------
 
-class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
+class RepresentationBuilderBase(BuildComponent):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Call the constructor of the base class
+        super(RepresentationBuilderBase, self).__init__(*args, **kwargs)
+
+        # The model definition
+        self.definition = None
+
+        # The representation
+        self.representation = None
+
+        # The projections
+        self.projections = dict()
+
+        # The instruments
+        self.instruments = dict()
+
+        # The dust grid
+        self.dust_grid = None
+
+    # -----------------------------------------------------------------
+
+    def setup(self, **kwargs):
+
+        """
+        This function ...
+        :param kwargs:
+        :return:
+        """
+
+        # Call the setup function of the base class
+        super(RepresentationBuilderBase, self).setup(**kwargs)
+
+        # Create the model definition
+        self.definition = self.get_model_definition(self.config.model_name)
+
+        # Create the representation
+        path = fs.create_directory_in(self.representations_path, self.config.name)
+        self.representation = Representation(self.config.name, self.config.model_name, path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def representation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.representation.name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def representation_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.representation.path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.representation.model_name
+
+    # -----------------------------------------------------------------
+
+    def build_dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Building the dust grid ...")
+
+        # Create the builder
+        builder = DustGridBuilder()
+
+        # Set output path
+        builder.config.output = self.representation.grid_path
+
+        # Set simulation path
+        builder.config.simulation_path = self.representation.grid_out_path
+
+        # Run the builder
+        builder.run(definition=self.definition, dust_grid=self.dust_grid)
+
+# -----------------------------------------------------------------
+
+class RepresentationBuilder(RepresentationBuilderBase, GalaxyModelingComponent):
     
     """
     This class...
@@ -242,26 +347,11 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
 
         # Call the constructor of the base class
         #super(RepresentationBuilder, self).__init__(*args, **kwargs)
-        BuildComponent.__init__(self, *args, **kwargs)
+        RepresentationBuilderBase.__init__(self, *args, **kwargs)
         GalaxyModelingComponent.__init__(self, *args, **kwargs)
-
-        # The model definition
-        self.definition = None
-
-        # The representation
-        self.representation = None
 
         # The deprojections
         self.deprojections = dict()
-
-        # The projections
-        self.projections = dict()
-
-        # The instruments
-        self.instruments = dict()
-
-        # The dust grid
-        self.dust_grid = None
 
     # -----------------------------------------------------------------
 
@@ -288,6 +378,9 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
         # 5. Create the instruments
         self.create_instruments()
 
+        # Build the dust grid
+        self.build_dust_grid()
+
         # 7. Writing
         self.write()
 
@@ -303,54 +396,11 @@ class RepresentationBuilder(BuildComponent, GalaxyModelingComponent):
 
         # Call the setup function of the base class
         #super(RepresentationBuilder, self).setup(**kwargs)
-        BuildComponent.setup(self, **kwargs)
+        RepresentationBuilderBase.setup(self, **kwargs)
         GalaxyModelingComponent.setup(self, **kwargs)
-
-        # Create the model definition
-        self.definition = self.get_model_definition(self.config.model_name)
-
-        # Create the representation
-        path = fs.create_directory_in(self.representations_path, self.config.name)
-        self.representation = Representation(self.config.name, self.config.model_name, path)
 
         # Get the dust grid, if passed
         if "dust_grid" in kwargs: self.dust_grid = kwargs.pop("dust_grid")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def representation_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.representation.name
-
-    # -----------------------------------------------------------------
-
-    @property
-    def representation_path(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-        return self.representation.path
-
-    # -----------------------------------------------------------------
-
-    @property
-    def model_name(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.representation.model_name
 
     # -----------------------------------------------------------------
 

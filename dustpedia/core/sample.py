@@ -18,6 +18,7 @@ import numpy as np
 # Import astronomical modules
 from astropy.table import Table
 from astroquery.vizier import Vizier
+from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
 from ...core.tools import introspection
@@ -25,6 +26,7 @@ from ...core.tools import filesystem as fs
 from ...magic.basics.coordinate import SkyCoordinate
 from ...magic.tools import catalogs
 from ...core.units.parsing import parse_unit as u
+from ...core.tools import tables
 
 # -----------------------------------------------------------------
 
@@ -80,6 +82,79 @@ filter_names = {"GALEX FUV": "GALEX_FUV",
 # -----------------------------------------------------------------
 
 # naming convention: [galaxy] [telescope] [band].fits.
+
+# -----------------------------------------------------------------
+
+def resolve_name(galaxy_name):
+
+    """
+    This function ...
+    :param galaxy_name:
+    :return:
+    """
+
+    sample = DustPediaSample()
+    name = sample.get_name(galaxy_name)
+    return name
+
+# -----------------------------------------------------------------
+
+properties_table_path = fs.join(dustpedia_data_path, "DustPedia_HyperLEDA_Herschel.csv")
+
+# -----------------------------------------------------------------
+
+def get_center(galaxy_name):
+
+    """
+    This function ...
+    :param galaxy_name:
+    :return:
+    """
+
+    sample = DustPediaSample()
+    return sample.get_position(galaxy_name)
+
+# -----------------------------------------------------------------
+
+def get_distance(galaxy_name):
+
+    """
+    This fucntion ...
+    :param galaxy_name:
+    :return:
+    """
+
+    name = resolve_name(galaxy_name)
+
+    # Load the table
+    properties = Table.read(properties_table_path)
+
+    # Find galaxy
+    index = tables.find_index(properties, name)
+
+    # Return the distance
+    return properties["dist_best"][index] * u("Mpc")
+
+# -----------------------------------------------------------------
+
+def get_inclination(galaxy_name):
+
+    """
+    This function ...
+    :param galaxy_name:
+    :return:
+    """
+
+    name = resolve_name(galaxy_name)
+
+    # Load the table
+    properties = Table.read(properties_table_path)
+
+    # Find galaxy
+    index = tables.find_index(properties, name)
+
+    # Return the inclination
+    return Angle(properties["incl"][index], "deg")
 
 # -----------------------------------------------------------------
 

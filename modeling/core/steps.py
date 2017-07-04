@@ -16,8 +16,7 @@ from __future__ import absolute_import, division, print_function
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
-from ...core.basics.table import SmartTable
-from ...core.tools import time, tables
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -41,14 +40,14 @@ single_commands["inspect_preparation"] = galaxy_modeling
 single_commands["decompose"] = galaxy_modeling
 single_commands["truncate"] = galaxy_modeling
 single_commands["photometry"] = galaxy_modeling
-single_commands["make_colour_maps"] = galaxy_modeling
+single_commands["make_colours_maps"] = galaxy_modeling
 single_commands["make_ssfr_maps"] = galaxy_modeling
 single_commands["make_tir_maps"] = galaxy_modeling
 single_commands["make_attenuation_maps"] = galaxy_modeling
 single_commands["make_dust_map"] = galaxy_modeling
-single_commands["make_old_stars_map"] = galaxy_modeling
-single_commands["make_young_stars_map"] = galaxy_modeling
-single_commands["make_ionizing_stars_map"] = galaxy_modeling
+single_commands["make_old_stellar_maps"] = galaxy_modeling
+single_commands["make_young_stellar_maps"] = galaxy_modeling
+single_commands["make_ionizing_stellar_maps"] = galaxy_modeling
 single_commands["create_significance_masks"] = galaxy_modeling
 single_commands["plot_sed"] = sed_modeling # only for SEDModeler
 single_commands["build_model"] = all_modeling
@@ -103,7 +102,7 @@ def output_paths_for_single_command(environment, command_name):
     elif command_name == "photometry": return [environment.phot_path]
 
     # Make colour maps
-    elif command_name == "make_colour_maps": return [environment.maps_colours_path]
+    elif command_name == "make_colours_maps": return [environment.maps_colours_path]
 
     # sSFR MAPS
     elif command_name == "make_ssfr_maps": return [environment.maps_ssfr_path]
@@ -118,13 +117,13 @@ def output_paths_for_single_command(environment, command_name):
     elif command_name == "make_dust_map": return [environment.maps_dust_path]
 
     # Old stars
-    elif command_name == "make_old_stars_map": return [environment.maps_old_path]
+    elif command_name == "make_old_stellar_maps": return [environment.maps_old_path]
 
     # Young stars
-    elif command_name == "make_young_stars_map": return [environment.maps_young_path]
+    elif command_name == "make_young_stellar_maps": return [environment.maps_young_path]
 
     # Ionizing stars
-    elif command_name == "make_ionizing_stars_map": return [environment.maps_ionizing_path]
+    elif command_name == "make_ionizing_stellar_maps": return [environment.maps_ionizing_path]
 
     #
     elif command_name == "create_significance_masks": return []
@@ -179,13 +178,13 @@ def cached_directory_name_for_single_command(environment, command_name):
     elif command_name == "inspect_data": return None
 
     # Initialize preparation
-    elif command_name == "initialize_preparation": return None
+    elif command_name == "initialize_preparation": return galaxy_name + "_data"
 
     # Inspect initialization
     elif command_name == "inspect_initialization": return None
 
     # Prepare data
-    elif command_name == "prepare_data": return "_preparation"
+    elif command_name == "prepare_data": return galaxy_name + "_preparation"
 
     # Inspect preparation
     elif command_name == "inspect_preparation": return None
@@ -200,7 +199,7 @@ def cached_directory_name_for_single_command(environment, command_name):
     elif command_name == "photometry": return None
 
     # Make colour maps
-    elif command_name == "make_colour_maps": return None
+    elif command_name == "make_colours_maps": return None
 
     # sSFR MAPS
     elif command_name == "make_ssfr_maps": return None
@@ -215,13 +214,13 @@ def cached_directory_name_for_single_command(environment, command_name):
     elif command_name == "make_dust_map": return None
 
     # Old stars
-    elif command_name == "make_old_stars_map": return None
+    elif command_name == "make_old_stellar_maps": return None
 
     # Young stars
-    elif command_name == "make_young_stars_map": return None
+    elif command_name == "make_young_stellar_maps": return None
 
     # Ionizing stars
-    elif command_name == "make_ionizing_stars_map": return None
+    elif command_name == "make_ionizing_stellar_maps": return None
 
     #
     elif command_name == "create_significance_masks": return None
@@ -249,6 +248,22 @@ def cached_directory_name_for_single_command(environment, command_name):
 
     # Other
     else: raise ValueError("Invalid command: '" + command_name + "'")
+
+# -----------------------------------------------------------------
+
+def cached_directory_path_for_single_command(environment, command_name, remote):
+
+    """
+    This function ...
+    :param environment:
+    :param command_name:
+    :param remote:
+    :return:
+    """
+
+    name = cached_directory_name_for_single_command(environment, command_name)
+    if name is None: return None
+    else: return fs.join(remote.home_directory, name)
 
 # -----------------------------------------------------------------
 

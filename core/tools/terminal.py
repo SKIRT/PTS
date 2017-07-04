@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 from cStringIO import StringIO
 import sys
+import psutil
 import subprocess
 
 # Import the relevant PTS classes and modules
@@ -682,5 +683,20 @@ def remove_from_python_path_variable(path):
 
     # Write lines
     fs.write_lines(introspection.shell_configuration_path(), lines)
+
+# -----------------------------------------------------------------
+
+def kill(proc_pid):
+
+    """
+    This function ...
+    :param proc_pid:
+    :return:
+    """
+
+    process = psutil.Process(proc_pid)
+    for proc in process.children(recursive=True):
+        proc.kill()
+    process.kill()
 
 # -----------------------------------------------------------------

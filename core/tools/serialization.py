@@ -120,6 +120,7 @@ def write_dict_impl(dictfile, dct, indent=""):
         else:
 
             ptype, string = stringify.stringify(dct[name])
+            if ":" in string: string = string.replace(":", "*colon*")
             print(indent + "[" + name_ptype + "] " + name_string + " [" + ptype + "]: " + string, file=dictfile)
 
         if index != length - 1: print("", file=dictfile)
@@ -191,11 +192,17 @@ def load_dict_impl(dictfile, dct, indent=""):
                 ptype = line.split(name_string + " [")[1].split("]")[0]
                 string = line.split(":")[1].strip()
 
+                # Replace
+                string = string.replace("*colon*", ":")
+
                 #print(string)
                 #print(list(name))
                 #print(list(indent))
                 #name = name.split(indent)[1]
                 #string = string.split(indent)[1]
+
+                #print("PTYPE", ptype)
+                #print("STRING", string)
 
                 if ptype == "None":
                     value = None
@@ -206,10 +213,12 @@ def load_dict_impl(dictfile, dct, indent=""):
                         parsing_function = getattr(parsing, ptype)
                         value = parsing_function(string)
 
+                        #print("VALUE", value)
+
                     except AttributeError:
 
                         # Special case: list of lists of something
-                        if ptype.endswith("list_list"):
+                        if ptype.endswith("_list_list"):
 
                             single_parsing_function = getattr(parsing, ptype.split("_list_list")[0])
                             list_parsing_function = getattr(parsing, ptype.split("_list_list")[0] + "_list")
@@ -217,13 +226,18 @@ def load_dict_impl(dictfile, dct, indent=""):
                             for item in string.split(", "): result.append(list_parsing_function(item))
                             value = result
 
+                            #print("LIST_LIST value", value)
+
                         # List
                         elif ptype.endswith("_list"):
 
-                            single_parsing_function = getattr(parsing, ptype.split("_list")[0])
+                            base_type = ptype.split("_list")[0]
+                            single_parsing_function = getattr(parsing, base_type)
                             result = []
                             for item in string.split(","): result.append(single_parsing_function(item))
                             value = result
+
+                            #print("LIST VALUE", value)
 
                         # Tuple
                         elif ptype.endswith("_tuple"):
@@ -232,6 +246,8 @@ def load_dict_impl(dictfile, dct, indent=""):
                             result = []
                             for item in string.split(","): result.append(single_parsing_function(item))
                             value = tuple(result)
+
+                            #print("TUPLE VALUE", value)
 
                         # Don't know what to do
                         else: raise AttributeError("Could not find the type '" + ptype + "'")

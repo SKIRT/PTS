@@ -15,6 +15,27 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import filesystem as fs
+from ...core.tools import strings
+
+# -----------------------------------------------------------------
+
+data_origins = ["GALEX", "SDSS", "Halpha", "2MASS", "Spitzer", "WISE", "Herschel", "Planck", "Other"]
+
+# -----------------------------------------------------------------
+
+def instrument_to_origin(instrument):
+
+    """
+    This function ...
+    :param instrument:
+    :return:
+    """
+
+    if instrument.lower() == "pacs": return "Herschel"
+    elif instrument.lower() == "spire": return "Herschel"
+    elif instrument.lower() == "lfi": return "Planck"
+    elif instrument.lower() == "hfi": return "Planck"
+    else: return strings.find_any_case(instrument, data_origins)
 
 # -----------------------------------------------------------------
 
@@ -41,7 +62,7 @@ class DataComponent(GalaxyModelingComponent):
         self.galaxy_info_path = None
 
         # Different origins
-        self.data_origins = ["GALEX", "SDSS", "Halpha", "2MASS", "Spitzer", "WISE", "Herschel", "Planck", "Other"]
+        self.data_origins = data_origins
 
         # The paths to the data/images/ directories for the different origins
         self.data_images_paths = dict()

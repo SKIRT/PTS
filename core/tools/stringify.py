@@ -37,6 +37,8 @@ def tostr(value, **kwargs):
     # Get the 'scientific' flag
     scientific = kwargs.get("scientific", None)
 
+    scientific_int = kwargs.pop("scientific_int", True) # also represent integers in scientific notation
+
     # Set default number of decimal places
     decimal_places = 2
 
@@ -44,7 +46,7 @@ def tostr(value, **kwargs):
     if scientific is None:
 
         # Integer value
-        if types.is_integer_type(value) or (types.is_real_type(value) and numbers.is_integer(value)):
+        if (scientific_int and types.is_integer_type(value)) or (types.is_real_type(value) and numbers.is_integer(value)):
 
             # Convert to be certain (if from float)
             value = int(value)
@@ -90,6 +92,10 @@ def tostr(value, **kwargs):
         # Set the options
         kwargs["scientific"] = scientific
         kwargs["decimal_places"] = decimal_places
+
+    # Set scientific for integers
+    elif types.is_integer_type(value):
+        kwargs["scientific"] = scientific_int
 
     # Stringify
     #return stringify(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, delimiter=delimiter, **kwargs)[1].strip()
@@ -199,14 +205,27 @@ def stringify_list(value, **kwargs):
     from ..basics.configuration import parent_type
     from .logging import log
 
-    # Investigate the different ptypes
-    parent_types = [parent_type(type_name) for type_name in ptypes]
-    #print("Parent types:", parent_types)
-    if sequences.all_equal(parent_types) and parent_types[0] is not None: ptype = parent_types[0]
-    elif ptype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_types)[1] + "'")
+    #print("PTYPES", ptypes)
+
+    ptypes = list(ptypes)
+
+    if len(ptypes) == 1: ptype = ptypes[0]
+    elif sequences.all_equal(ptypes): ptype = ptypes[0]
+    else:
+
+        # Investigate the different ptypes
+        parent_types = [parent_type(type_name) for type_name in ptypes]
+        # Check
+        for i in range(len(parent_types)):
+            if parent_types[i] is None: log.warning("Could not determine the parent type for '" + ptypes[i] + "'. All parent types: " + str(parent_types))
+        #print("Parent types:", parent_types)
+        if sequences.all_equal(parent_types) and parent_types[0] is not None: ptype = parent_types[0]
+        elif ptype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_types)[1] + "'")
 
     # Get delimiter for list
     delimiter = kwargs.pop("delimiter", ",")
+
+    #print("PTYPE", ptype)
 
     # Return the type and the string
     if ptype.endswith("list"):
@@ -274,14 +293,23 @@ def stringify_dict(value, **kwargs):
     from ..basics.configuration import parent_type
     from .logging import log
 
+    keytypes = list(keytypes)
+    ptypes = list(ptypes)
+
     # Investigate the different keytypes
     parent_key_types = [parent_type(type_name) for type_name in keytypes]
     #print("Parent key types:", parent_key_types)
+    # Check
+    for i in range(len(parent_key_types)):
+        if parent_key_types[i] is None: log.warning("Could not determine the parent type for '" + keytypes[i] + "'. All parent types: " + str(parent_key_types))
     if sequences.all_equal(parent_key_types) and parent_key_types[0] is not None: ptype = parent_key_types[0]
     elif keytype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_key_types)[1] + "'")
 
     # Investigate the different value types
     parent_value_types = [parent_type(type_name) for type_name in ptypes]
+    # Check
+    for i in range(len(parent_value_types)):
+        if parent_value_types[i] is None: log.warning("Could not determine the parent type for '" + ptypes[i] + "'. All parent types: " + str(parent_value_types))
     #print("Parent value types:", parent_value_types)
     if sequences.all_equal(parent_value_types) and parent_value_types[0] is not None: ptype = parent_value_types[0]
     elif ptype == "mixed": log.warning("Could not determine a common type for '" + stringify(parent_value_types)[1] + "'")

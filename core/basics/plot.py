@@ -64,7 +64,7 @@ class Plot(object):
     This class ...
     """
 
-    def __init__(self, size):
+    def __init__(self, size=(10,6)):
 
         """
         This function ...
@@ -83,6 +83,28 @@ class Plot(object):
         self.add_borders = False
         self.transparent = False
         self.format = None
+
+    # -----------------------------------------------------------------
+
+    def set_x_log_scale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        plt.xscale("log")
+
+    # -----------------------------------------------------------------
+
+    def set_y_log_scale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        plt.yscale("log")
 
     # -----------------------------------------------------------------
 
@@ -153,6 +175,22 @@ class Plot(object):
 
     # -----------------------------------------------------------------
 
+    def set_labels(self, x_label, y_label, fontsize=18):
+
+        """
+        This function ...
+        :param x_label:
+        :param y_label:
+        :param fontsize:
+        :return:
+        """
+
+        # Labels
+        plt.xlabel(x_label, fontsize=fontsize)
+        plt.ylabel(y_label, fontsize=fontsize)
+
+    # -----------------------------------------------------------------
+
     def set_ticks(self, config, x_range, nxticks):
 
         """
@@ -204,6 +242,39 @@ class Plot(object):
             # Set transparent background
             for item in [self.figure, self.ax]:
                 item.patch.set_visible(False)
+
+    # -----------------------------------------------------------------
+
+    def add_curve(self, curve, label=None):
+
+        """
+        This function ...
+        :param curve:
+        :param label:
+        :return:
+        """
+
+        self.ax.plot(curve.x_data, curve.y_data, label=label)
+
+    # -----------------------------------------------------------------
+
+    def finish(self, out=None):
+
+        """
+        This function ...
+        :param out:
+        :return:
+        """
+
+        # Set tight layout
+        plt.tight_layout()
+
+        # Save the plot
+        if out is None: self.show()
+        else: self.saveto(out)
+
+        # Close
+        self.close()
 
     # -----------------------------------------------------------------
 

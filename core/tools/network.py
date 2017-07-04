@@ -37,6 +37,8 @@ def exists(url):
     conn = httplib.HTTPConnection(p.netloc)
     conn.request('HEAD', p.path)
     resp = conn.getresponse()
+    conn.close()
+    # alternative: return response.status == 200
     return resp.status < 400
 
 # -----------------------------------------------------------------

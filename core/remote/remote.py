@@ -2855,7 +2855,7 @@ class Remote(object):
 
         if recursive:
 
-            command = "ls -R /path | awk '/:$/&&f{s=$0;f=0}\n/:$/&&!f{sub(/:$/,"
+            command = "ls -R '" + path + "' | awk '/:$/&&f{s=$0;f=0}\n/:$/&&!f{sub(/:$/,"
             command += '"");s=$0;f=1;next}\n'
             command += "NF&&f{ print "
             command += 's"/"$0 }'
@@ -2863,7 +2863,7 @@ class Remote(object):
 
             output = self.execute(command, cwd=path)
 
-            paths = output
+            paths = [line for line in output if not line.startswith(">")]
 
             # Return the paths
             return paths
@@ -2911,7 +2911,8 @@ class Remote(object):
             command += 's"/"$0 }'
             command += "'"
             output = self.execute(command, cwd=path)
-            paths = [dirpath for dirpath in output if self.is_directory(dirpath)]
+            paths = [line for line in output if not line.startswith(">")]
+            paths = [dirpath for dirpath in paths if self.is_directory(dirpath)]
         else:
             #print(path)
             output = self.execute("for i in $(ls -d */); do echo ${i%%/}; done", cwd=path)
@@ -3039,12 +3040,14 @@ class Remote(object):
 
         # List the files in the provided path
         if recursive:
-            command = "ls -R " + path + " | awk '\n/:$/&&f{s=$0;f=0}\n/:$/&&!f{sub(/:$/,"
+            command = "ls -R '" + path + "' | awk '\n/:$/&&f{s=$0;f=0}\n/:$/&&!f{sub(/:$/,"
             command += '"");s=$0;f=1;next}\nNF&&f{ print '
             command += 's"/"$0 }'
             command += "'"
             output = self.execute(command, cwd=path)
-            paths = [filepath for filepath in output if self.is_file(filepath)]
+            #print(output)
+            paths = [line for line in output if not line.startswith(">")]
+            paths = [filepath for filepath in paths if self.is_file(filepath)]
         else:
             output = self.execute("for f in *; do [[ -d $f ]] || echo $f; done", cwd=path)
             paths = [fs.join(path, name) for name in output]
@@ -3053,6 +3056,8 @@ class Remote(object):
             returns = ["name", "path"]
             return_dict = True
         else: return_dict = False
+
+        #print(paths)
 
         # Filter
         result = []
@@ -3775,6 +3780,7 @@ class Remote(object):
         :param filepath:
         :param destination:
         :param remove:
+        :param new_name:
         :return:
         """
 
@@ -4708,6 +4714,32 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def absolute_or_in(self, path, in_path):
+
+        """
+        This function ...
+        :param path:
+        :param in_path:
+        :return:
+        """
+
+        if fs.is_absolute(path): return path
+        else: return fs.join(in_path, path)
+
+    # -----------------------------------------------------------------
+
+    def absolute_or_in_home(self, path):
+        
+        """
+        This function ...
+        :param path: 
+        :return: 
+        """
+
+        return self.absolute_or_in(path, self.home_directory)
+
+    # -----------------------------------------------------------------
+
     def relative_to_home(self, path):
 
         """
@@ -5492,6 +5524,8 @@ class Remote(object):
         :param path:
         :return:
         """
+
+        #print("path,", path)
 
         # Launch a bash command to check whether the path exists as a regular file on the remote file system
         return self.evaluate_boolean_expression("-f '" + path + "'")

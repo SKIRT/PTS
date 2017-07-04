@@ -18,16 +18,25 @@ from ....core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------
 
-def make_map():
+def make_map(attenuation):
 
     """
     This function ...
+    :param attenuation:
     :return: 
     """
 
+    # Initialize the map maker
     maker = AttenuationDustMapsMaker()
 
-    maker.run()
+    # Set input
+    attenuations = {"attenuation": attenuation}
+
+    # Run the map maker
+    maker.run(attenuation=attenuations)
+
+    # Run the map
+    return maker.single_map
 
 # -----------------------------------------------------------------
 
@@ -144,5 +153,18 @@ class AttenuationDustMapsMaker(Configurable):
 
             # Set as dust map
             self.maps[name] = dust
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if len(self.maps) != 1: raise ValueError("Not a single map")
+        return self.maps[self.maps.keys()[0]]
 
 # -----------------------------------------------------------------

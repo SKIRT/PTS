@@ -182,7 +182,7 @@ class CorteseAttenuationMapsMaker(Configurable):
             for ssfr_colour in self.ssfrs:
 
                 # Determine name
-                key = name + "_" + ssfr_colour
+                key = name + "__" + ssfr_colour
 
                 # Set origins
                 if self.has_origins:

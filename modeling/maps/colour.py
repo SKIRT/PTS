@@ -24,7 +24,11 @@ from ...magic.core.list import FrameList
 
 # -----------------------------------------------------------------
 
-class ColourMapMaker(MapsComponent):
+methods = None
+
+# -----------------------------------------------------------------
+
+class ColoursMapMaker(MapsComponent):
 
     """
     This class ...
@@ -38,7 +42,7 @@ class ColourMapMaker(MapsComponent):
         """
 
         # Call the constructor of the base class
-        super(ColourMapMaker, self).__init__(*args, **kwargs)
+        super(ColoursMapMaker, self).__init__(*args, **kwargs)
 
         # The frames
         self.frames = None
@@ -88,7 +92,7 @@ class ColourMapMaker(MapsComponent):
         """
 
         # Call the setup fucntion of the base class
-        super(ColourMapMaker, self).setup(**kwargs)
+        super(ColoursMapMaker, self).setup(**kwargs)
 
     # -----------------------------------------------------------------
 

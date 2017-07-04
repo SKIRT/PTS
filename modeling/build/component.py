@@ -210,6 +210,7 @@ class BuildComponent(ModelingComponent):
 
         path = self.get_representation_path(representation_name)
         if not fs.is_directory(path): raise ValueError("Representation does not exist")
+        else: return get_representation(self.config.path, representation_name)
 
     # -----------------------------------------------------------------
 
@@ -500,7 +501,7 @@ def load_component(path, add_map=False):
 
     # Load the properties
     properties_path = fs.join(path, properties_filename)
-    if fs.is_file(model_path):
+    if fs.is_file(properties_path):
         properties = load_dict(properties_path)
         component.properties = properties
 

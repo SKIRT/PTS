@@ -532,6 +532,9 @@ class GalaxyDecomposer(DecompositionComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Loading the simulated bulge-2D image ...")
+
         # Open the simulated frame
         simulated_frame = Frame.from_file(self.simulated_bulge2d_image_path)
         fluxdensity = self.components["bulge"].fluxdensity
@@ -562,6 +565,9 @@ class GalaxyDecomposer(DecompositionComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Loading the simulated bulge image ...")
 
         # Open the simulated frame
         simulated_frame = Frame.from_file(self.simulated_bulge_image_path)
@@ -594,6 +600,9 @@ class GalaxyDecomposer(DecompositionComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Loading the simulated disk image ...")
+
         # Open the simulated frame
         simulated_frame = Frame.from_file(self.simulated_disk_image_path)
         fluxdensity = self.components["disk"].fluxdensity
@@ -624,6 +633,9 @@ class GalaxyDecomposer(DecompositionComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Loading the simulated model image ...")
 
         # Open the simulated frame
         simulated_frame = Frame.from_file(self.simulated_model_image_path)
@@ -714,6 +726,9 @@ class GalaxyDecomposer(DecompositionComponent):
         fluxdensity = self.components["bulge"].fluxdensity
         self.bulge2d_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf, progress_bar=True)
 
+        # Check WCS
+        if self.bulge2d_image.wcs != self.wcs: raise RuntimeError("Something went wrong setting the coordinate system")
+
     # -----------------------------------------------------------------
 
     def simulate_bulge(self):
@@ -758,6 +773,9 @@ class GalaxyDecomposer(DecompositionComponent):
         fluxdensity = self.components["bulge"].fluxdensity
         self.bulge_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf, instrument_name=instrument_name, progress_bar=True)
 
+        # Check WCS
+        if self.bulge_image.wcs != self.wcs: raise RuntimeError("Something went wrong setting the coordinate system")
+
     # -----------------------------------------------------------------
 
     def simulate_disk(self):
@@ -801,6 +819,9 @@ class GalaxyDecomposer(DecompositionComponent):
         # Simulate the disk image
         fluxdensity = self.components["disk"].fluxdensity
         self.disk_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf, instrument_name=instrument_name, progress_bar=True)
+
+        # Check WCS
+        if self.disk_image.wcs != self.wcs: raise RuntimeError("Something went wrong setting the coordinate system")
 
     # -----------------------------------------------------------------
 
@@ -852,6 +873,9 @@ class GalaxyDecomposer(DecompositionComponent):
         # Simulate the model image
         fluxdensity = self.components["bulge"].fluxdensity + self.components["disk"].fluxdensity  # sum of bulge and disk component flux density
         self.model_image = self.launcher.run(ski_path, out_path, self.wcs, fluxdensity, self.psf, instrument_name=instrument_name, progress_bar=True)
+
+        # Check WCS
+        if self.model_image.wcs != self.wcs: raise RuntimeError("Something went wrong setting the coordinate system")
 
     # -----------------------------------------------------------------
 
@@ -907,15 +931,75 @@ class GalaxyDecomposer(DecompositionComponent):
         # Inform the user
         log.info("Writing the images ...")
 
+        # Write bulge 2D image
+        self.write_bulge2d_image()
+
+        # Write bulge image
+        self.write_bulge_image()
+
+        # Write disk image
+        self.write_disk_image()
+
+        # Write model image
+        self.write_model_image()
+
+    # -----------------------------------------------------------------
+
+    def write_bulge2d_image(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the bulge 2D image ...")
+
         # Determine the path to the bulge 2D image and save it
-        bulge_2d_path = fs.join(self.components_images_path, "bulge2D.fits")
+        bulge_2d_path = fs.join(self.bulge2d_image_path)
         self.bulge2d_image.saveto(bulge_2d_path)
+
+    # -----------------------------------------------------------------
+
+    def write_bulge_image(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the bulge image ...")
 
         # Determine the path to the bulge image and save it
         self.bulge_image.saveto(self.bulge_image_path)
 
+    # -----------------------------------------------------------------
+
+    def write_disk_image(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the disk image ...")
+
         # Determine the path to the disk image and save it
         self.disk_image.saveto(self.disk_image_path)
+
+    # -----------------------------------------------------------------
+
+    def write_model_image(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the model image ...")
 
         # Determine the path to the model image and save it
         self.model_image.saveto(self.model_image_path)

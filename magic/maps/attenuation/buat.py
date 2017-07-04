@@ -25,6 +25,34 @@ from ....core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
+def make_map(fuv_or_nuv, tir):
+
+    """
+    This function ...
+    :param fuv_or_nuv:
+    :param tir:
+    :return:
+    """
+
+    # Initialize the map maker
+    maker = BuatAttenuationMapsMaker()
+
+    input_dict = dict()
+    if fuv_or_nuv.filter == "GALEX FUV": input_dict["fuv"] = fuv_or_nuv
+    elif fuv_or_nuv.filter == "GALEX NUV": input_dict["nuv"] = fuv_or_nuv
+    else: raise ValueError("First argument must be NUV or FUV map")
+
+    # Set TIR
+    input_dict["tirs"] = {"tir": tir}
+
+    # Run the maker
+    maker.run(**input_dict)
+
+    # Return the map
+    return maker.single_map
+
+# -----------------------------------------------------------------
+
 class BuatAttenuationMapsMaker(Configurable):
 
     """

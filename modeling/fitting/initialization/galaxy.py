@@ -17,7 +17,6 @@ from ....core.data.sun import Sun
 from ....core.tools.logging import log
 from ...component.galaxy import GalaxyModelingComponent
 from ...build.component import get_stellar_component_names, get_dust_component_names, load_stellar_component, load_dust_component
-from ....core.filter.filter import parse_filter
 from .base import FittingInitializerBase
 from ...build.construct import add_dust_component, add_stellar_component
 
@@ -41,9 +40,6 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         # Call the constructors of the base classes
         FittingInitializerBase.__init__(self, *args, **kwargs)
         GalaxyModelingComponent.__init__(self, *args, **kwargs)
-
-        # The INITIAL model representation
-        self.representation = None
 
         # Solar luminosity units
         self.sun_fuv = None
@@ -116,21 +112,6 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
 
         # Load the ski template
         self.ski = self.fitting_run.ski_template
-
-    # -----------------------------------------------------------------
-
-    def load_representation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the model representation ...")
-
-        # Load the initial representation
-        self.representation = self.fitting_run.initial_representation
 
     # -----------------------------------------------------------------
 
@@ -250,8 +231,8 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         # Set the dust emissivityex
         self.set_dust_emissivity()
 
-        # Set the lowest-resolution dust grid
-        self.ski.set_dust_grid(self.representation.dust_grid)
+        # Set the dust grid
+        self.set_dust_grid()
 
         # Set all-cells dust library
         self.ski.set_allcells_dust_lib()

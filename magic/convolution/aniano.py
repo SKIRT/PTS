@@ -27,6 +27,7 @@ from ...core.filter.filter import parse_filter
 from ...core.units.parsing import parse_unit
 from .kernels import Kernels, kernels_path, get_fwhm, has_variable_fwhm
 from ...core.tools import types
+from ...core.tools import network
 
 # -----------------------------------------------------------------
 
@@ -253,7 +254,12 @@ class AnianoKernels(Kernels):
         kernel_path, to_psf_name = self.get_kernel_path(from_filter, to_filter, high_res=high_res, from_fwhm=from_fwhm, to_fwhm=to_fwhm, return_name=True)
 
         # Load the kernel frame
-        kernel = ConvolutionKernel.from_file(kernel_path, from_filter=from_filter, to_filter=to_filter)
+        try: kernel = ConvolutionKernel.from_file(kernel_path, from_filter=from_filter, to_filter=to_filter)
+        except IOError:
+            log.warning("The kernel image was probably damaged. Removing it and downloading it again ...")
+            fs.remove_file(kernel_path)
+            kernel_path, to_psf_name = self.get_kernel_path(from_filter, to_filter, high_res=high_res, from_fwhm=from_fwhm, to_fwhm=to_fwhm, return_name=True)
+            kernel = ConvolutionKernel.from_file(kernel_path, from_filter=from_filter, to_filter=to_filter)
 
         # Get the FWHM of the kernel (should have been done already!)
         if kernel.fwhm is None:
@@ -350,6 +356,9 @@ class AnianoKernels(Kernels):
         :param fltr:
         :return:
         """
+
+        # Parse filter
+        if types.is_string_type(fltr): fltr = parse_filter(fltr)
 
         # Get the local path to the PSF file (will be downloaded if necessary)
         psf_path, psf_name = self.get_psf_path(fltr, return_name=True)
@@ -492,6 +501,10 @@ class AnianoKernels(Kernels):
         link = aniano_kernels_highres_link if "HiRes" in kernel_basename else aniano_kernels_lowres_link
         kernel_link = link + kernel_gzname
 
+        # NEW: Check whether the link exists!!
+        if not network.exists(kernel_link): raise ValueError("The '" + kernel_basename + "' does not exist!")
+
+        # Determine filepath
         gz_path = fs.join(self.kernels_path, kernel_gzname)
         fits_path = fs.join(self.kernels_path, kernel_fitsname)
 

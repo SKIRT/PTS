@@ -22,6 +22,10 @@ from ..basics.range import QuantityRange
 
 # -----------------------------------------------------------------
 
+column_names = ["ID",  "Cell index", "Min x", "Max x", "Min y", "Max y", "Min z", "Max z", "Parent ID", "Child 0 ID", "Child 1 ID", "Child 2 ID", "Child 3 ID", "Child 4 ID", "Child 5 ID", "Child 6 ID", "Child 7 ID"]
+
+# -----------------------------------------------------------------
+
 class TreeNode(object):
 
     """
@@ -204,7 +208,7 @@ class DustGridTree(object):
         # Get the unit of length
         length_unit = units[2]
 
-        # Create tre
+        # Create the tree
         tree = cls()
         tree.path = path
 
@@ -225,23 +229,13 @@ class DustGridTree(object):
         # column 15: ID of child node 5
         # column 16: ID of child node 6
         # column 17: ID of child node 7
-        table.rename_column("col1", "ID")
-        table.rename_column("col2", "Cell index")
-        table.rename_column("col3", "Min x")
-        table.rename_column("col4", "Max x")
-        table.rename_column("col5", "Min y")
-        table.rename_column("col6", "Max y")
-        table.rename_column("col7", "Min z")
-        table.rename_column("col8", "Max z")
-        table.rename_column("col9", "Parent ID")
-        table.rename_column("col10", "Child 0 ID")
-        table.rename_column("col11", "Child 1 ID")
-        table.rename_column("col12", "Child 2 ID")
-        table.rename_column("col13", "Child 3 ID")
-        table.rename_column("col14", "Child 4 ID")
-        table.rename_column("col15", "child 5 ID")
-        table.rename_column("col16", "child 6 ID")
-        table.rename_column("col17", "child 7 ID")
+
+        # Rename the columns
+        for index in range(len(table.colnames)):
+
+            column_name = "col" + str(index+1)
+            new_column_name = column_names[index]
+            table.rename_column(column_name, new_column_name)
 
         # Loop over the rows
         for index in range(len(table)):
@@ -294,7 +288,90 @@ class DustGridTree(object):
         :return: 
         """
 
-        raise NotImplementedError("Not implemented")
+        # Inform the user
+        #log.info("Saving the dust grid tree to '" + path + "' ...")
+
+        id_column = []
+        index_column = []
+        min_x_column = []
+        max_x_column = []
+        min_y_column = []
+        max_y_column = []
+        min_z_column = []
+        max_z_column = []
+        parent_id_column = []
+        child0_column = []
+        child1_column = []
+        child2_column = []
+        child3_column = []
+        child4_column = []
+        child5_column = []
+        child6_column = []
+        child7_column = []
+
+        length_unit = None
+
+        # Loop over the nodes
+        for node in self.nodes:
+
+            id_column.append(node.id)
+            index_column.append(node.cell)
+
+            if length_unit is None: length_unit = node.x_range.min.unit
+            elif length_unit != node.x_range.min.unit: raise ValueError("Something went wrong")
+
+            min_x_column.append(node.x_range.min.to(length_unit).value)
+            max_x_column.append(node.x_range.max.to(length_unit).value)
+            min_y_column.append(node.y_range.min.to(length_unit).value)
+            max_y_column.append(node.y_range.max.to(length_unit).value)
+            min_z_column.append(node.z_range.min.to(length_unit).value)
+            max_z_column.append(node.z_range.max.to(length_unit).value)
+
+            # Parent
+            parent_id = node.parent if node.parent is not None else -1
+            parent_id_column.append(parent_id)
+
+            # Children
+            if len(node.children) > 0:
+                child0_column.append(node.children[0])
+                child1_column.append(node.children[1])
+            else:
+                child0_column.append(-1)
+                child1_column.append(-1)
+
+            if len(node.children) > 2:
+
+                child2_column.append(node.children[2])
+                child3_column.append(node.children[3])
+
+            else:
+                child2_column.append(-1)
+                child3_column.append(-1)
+
+            if len(node.children) > 4:
+
+                child4_column.append(node.children[4])
+                child5_column.append(node.children[5])
+                child6_column.append(node.children[6])
+                child7_column.append(node.children[7])
+
+            else:
+                child4_column.append(-1)
+                child5_column.append(-1)
+                child6_column.append(-1)
+                child7_column.append(-1)
+
+        # Fill the columns
+        data = [id_column, index_column, min_x_column, max_x_column, min_y_column, max_y_column, min_z_column, max_z_column, parent_id_column, child0_column, child1_column, child2_column, child3_column, child4_column, child5_column, child6_column, child7_column]
+
+        # Create table
+        table = tables.new(data, column_names)
+
+        # Save the table
+        tables.write(table, path)
+
+        # Set the path
+        self.path = path
 
     # -----------------------------------------------------------------
 
@@ -305,6 +382,7 @@ class DustGridTree(object):
         :return: 
         """
 
+        # Save the path
         self.saveto(self.path)
 
 # -----------------------------------------------------------------

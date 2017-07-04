@@ -28,7 +28,7 @@ from ..maps.old import OldStellarMapMaker
 from ..maps.young import YoungStellarMapMaker
 from ..maps.ionizing import IonizingStellarMapMaker
 from ..maps.dust import DustMapMaker
-from ..maps.colour import ColourMapMaker
+from ..maps.colour import ColoursMapMaker
 from ..maps.attenuation import AttenuationMapMaker
 from ..maps.tir import TIRMapMaker
 from ..fitting.configuration import FittingConfigurer
@@ -551,6 +551,9 @@ class GalaxyModeler(ModelerBase):
         config["sources"]["nprocesses"] = self.config.nprocesses
         config["manual"] = self.config.sources_manual
 
+        # CACHE DATA/IMAGES
+        config["cache"] = self.config.cache
+
         # Create the initializer
         initializer = PreparationInitializer(config)
 
@@ -827,7 +830,7 @@ class GalaxyModeler(ModelerBase):
         log.info("Making the maps describing the model geometries ...")
 
         # Create colour maps
-        if not self.history.finished("make_colour_maps"): self.make_colour_maps()
+        if not self.history.finished("make_colours_maps"): self.make_colour_maps()
 
         # Create sSFR maps
         if not self.history.finished("make_ssfr_maps"): self.make_ssfr_maps()
@@ -839,16 +842,16 @@ class GalaxyModeler(ModelerBase):
         if not self.history.finished("make_attenuation_maps"): self.make_attenuation_maps()
 
         # Create the map of the old stellar disk
-        if not self.history.finished("make_old_stars_map"): self.make_old_stellar_maps()
+        if not self.history.finished("make_old_stellar_maps"): self.make_old_stellar_maps()
 
         # Create the dust map
         if not self.history.finished("make_dust_map"): self.make_dust_maps()
 
         # Create the map of the young stellar population
-        if not self.history.finished("make_young_stars_map"): self.make_young_stellar_maps()
+        if not self.history.finished("make_young_stellar_maps"): self.make_young_stellar_maps()
 
         # Create the map of the ionizing stellar population
-        if not self.history.finished("make_ionizing_stars_map"): self.make_ionizing_stellar_maps()
+        if not self.history.finished("make_ionizing_stellar_maps"): self.make_ionizing_stellar_maps()
 
         # Calculate the significance masks
         if not self.history.finished("create_significance_masks"): self.create_significance_masks()
@@ -866,7 +869,7 @@ class GalaxyModeler(ModelerBase):
         log.info("Making the colour maps ...")
 
         # Create the colour maps
-        maker = ColourMapMaker()
+        maker = ColoursMapMaker()
 
         # Set the working directory
         maker.config.path = self.modeling_path

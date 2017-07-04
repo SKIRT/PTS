@@ -770,6 +770,7 @@ def integer_list(argument):
     if "-" in argument and "," in argument:
 
         parts = argument.split(",")
+        #print("PARTS", parts)
         total_int_list = []
         for part in parts: total_int_list += integer_list(part)
         return total_int_list
@@ -777,17 +778,22 @@ def integer_list(argument):
     # Split the string
     splitted = argument.split('-')
 
+    #print("SPLITTED", splitted)
+
     if len(splitted) == 0: raise ValueError("No range given")
     elif len(splitted) == 1:
 
         splitted = splitted[0].split(",")
 
+        #print("SPLITTED 2", splitted)
+
         # Check if the values are valid
         for value in splitted:
             if not value.isdigit(): raise ValueError("Argument contains unvalid characters")
 
-        # Only leave unique values
-        return list(set([int(value) for value in splitted]))
+        # Only leave unique values: NO!!!!!!??? WHY WAS THIS EVER HERE???
+        #return list(set([int(value) for value in splitted]))
+        return [integer(value) for value in splitted]
 
     elif len(splitted) == 2:
 
@@ -1098,6 +1104,26 @@ def mass_density_quantity(argument):
     from ..units.parsing import parse_quantity
     qty = parse_quantity(argument)
     if qty.unit.physical_type != "mass density": raise ValueError("Not a mass density")
+    return qty
+
+# -----------------------------------------------------------------
+
+def mass_surface_density_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..units.parsing import parse_quantity
+    qty = parse_quantity(argument)
+
+    # Check
+    b = qty.unit / "m"
+    if b.physical_type != "mass density": raise ValueError("Not a mass surface density")
+
+    # Return
     return qty
 
 # -----------------------------------------------------------------

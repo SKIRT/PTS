@@ -35,12 +35,6 @@ class WavelengthGrid(object):
         The constructor ...
         """
 
-        # Attributes
-        #self.table = Table(names=["Wavelength", "Delta"], dtype=('f8', 'f8'))
-        #self.table = Table(names=["Wavelength"], dtype=['f8'])
-        #self.table["Wavelength"].unit = Unit("micron")
-        #self.table["Delta"].unit = Unit("micron")
-
         self.table = None
 
         # The path

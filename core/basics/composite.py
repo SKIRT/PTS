@@ -318,7 +318,7 @@ class SimplePropertyComposite(object):
         """
 
         # Inform the user
-        log.info("Loading " + cls.__name__ + " from " + path + " ...")
+        log.debug("Loading " + cls.__name__ + " from " + path + " ...")
 
         properties = dict()
 

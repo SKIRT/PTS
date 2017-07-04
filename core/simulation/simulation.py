@@ -29,6 +29,8 @@ from ..tools import archive as arch
 from ..launch.options import AnalysisOptions
 from .status import SimulationStatus
 from .input import SimulationInput
+from ..tools import types
+from ..tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -112,10 +114,11 @@ class SkirtSimulation(object):
 
         # Set the full path to the input directory or the paths to the input files
         if inpath is not None:
-            if isinstance(inpath, list): self._inpath = inpath
-            elif isinstance(inpath, basestring): self._inpath = os.path.realpath(os.path.expanduser(inpath))
+            if types.is_sequence(inpath): self._inpath = inpath
+            elif types.is_string_type(inpath): self._inpath = os.path.realpath(os.path.expanduser(inpath))
             elif isinstance(inpath, SimulationInput): self._inpath = inpath
-            else: raise ValueError("Invalid value for 'inpath'")
+            elif types.is_dictionary(inpath): self._inpath = SimulationInput(**inpath)
+            else: raise ValueError("Invalid value for 'inpath': " + tostr(inpath) + " (" + str(type(inpath)) + ")")
         else: self._inpath = None
         self._outpath = os.path.realpath(os.path.expanduser(outpath if outpath is not None else ""))
         self._prefix = prefix

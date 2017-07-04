@@ -5,7 +5,6 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
@@ -13,15 +12,16 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 from collections import defaultdict
-from textwrap import wrap
 
 # Import the relevant PTS classes and modules
 from .broad import BroadBandFilter
 from .broad import identifiers as broad_identifiers
 from .broad import generate_aliases as broad_generate_aliases
+from .broad import categorize_filters as categorize_broad
 from .narrow import NarrowBandFilter, defines_wavelength, wavelengths_for_spec, wavelength_range_for_spec
 from .narrow import identifiers as narrow_identifiers
 from .narrow import generate_aliases as narrow_generate_aliases
+from .narrow import categorize_filters as categorize_narrow
 from ..tools import formatting as fmt
 from pts.core.tools import stringify
 from pts.core.plot.transmission import TransmissionPlotter
@@ -30,6 +30,8 @@ from pts.core.units.stringify import represent_quantity
 from ..basics.configurable import Configurable
 from ..tools.logging import log
 from ..tools import parsing
+from .broad import categorized_filters_sorted_labels as sorted_broad_labels
+from .narrow import categorized_filters_sorted_labels as sorted_narrow_labels
 
 # -----------------------------------------------------------------
 
@@ -118,27 +120,15 @@ class FilterShower(Configurable):
         # Inform the user
         log.info("Categorizing broad band filters ...")
 
+        # If filters should match with a certain string
         if self.config.matching is not None:
 
             filters = parsing.lazy_broad_band_filter_list(self.config.matching)
             #self.broad[self.config.matching] = filters
             for fltr in filters: self.broad[fltr.spec].append(fltr.spec)
 
-        else:
-
-            # Categorize
-            for spec in broad_identifiers:
-
-                identifier = broad_identifiers[spec]
-                if "instruments" in identifier:
-                    if "observatories" in identifier:
-                        self.broad[identifier.observatories[0] + " " + identifier.instruments[0]].append(spec)
-                    else: self.broad[identifier.instruments[0]].append(spec)
-                elif "observatories" in identifier:
-                    self.broad[identifier.observatories[0]].append(spec)
-                elif "system" in identifier:
-                    self.broad[identifier.system].append(spec)
-                else: self.broad[spec].append(spec)
+        # ALl broad band filters
+        else: self.broad = categorize_broad()
 
     # -----------------------------------------------------------------
 
@@ -152,16 +142,15 @@ class FilterShower(Configurable):
         # Inform the user
         log.info("Categorizing narrow band filters ...")
 
+        # If filters should match with a certain string
         if self.config.matching is not None:
 
             filters = parsing.lazy_narrow_band_filter_list(self.config.matching)
             #self.narrow[self.config.matching] = filters
             for fltr in filters: self.narrow[fltr.spec].append(fltr.spec)
 
-        else:
-
-            # Categorize
-            for spec in narrow_identifiers: self.narrow[spec].append(spec)
+        # All narrow band filters
+        else: self.narrow = categorize_narrow()
 
     # -----------------------------------------------------------------
 
@@ -195,7 +184,7 @@ class FilterShower(Configurable):
         print("")
 
         #for label in sorted(self.narrow.keys(), key=lambda x: narrow_identifiers.keys().index(self.narrow[x][0])):
-        for label in sorted(self.narrow.keys(), key=lambda x: narrow_identifiers.keys().index(self.narrow[x][0])):
+        for label in sorted_narrow_labels(self.narrow):
 
             print(fmt.yellow + fmt.bold + label + fmt.reset)
             if not self.config.short: print("")
@@ -247,7 +236,7 @@ class FilterShower(Configurable):
         print("")
 
         # Loop over the labels
-        for label in sorted(self.broad.keys(), key=lambda x: broad_identifiers.keys().index(self.broad[x][0])):
+        for label in sorted_broad_labels(self.broad):
 
             print(fmt.yellow + fmt.bold + label + fmt.reset)
             if not self.config.short: print("")

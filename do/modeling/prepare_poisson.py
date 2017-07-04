@@ -20,7 +20,7 @@ from pts.core.filter.broad import BroadBandFilter
 from pts.magic.core.frame import Frame
 from pts.magic.core.remote import RemoteFrame
 from pts.magic.basics.coordinatesystem import CoordinateSystem
-from pts.magic.services.extinction import GalacticExtinction
+from pts.magic.services.attenuation import GalacticAttenuation
 from pts.magic.convolution.aniano import AnianoKernels
 from pts.magic.core.kernel import ConvolutionKernel
 from pts.core.tools import parsing
@@ -70,8 +70,8 @@ center_coordinate = reference_wcs.coordinate_range[0]
 
 # -----------------------------------------------------------------
 
-# Create the galactic extinction calculator
-extinction = GalacticExtinction(center_coordinate)
+# Create the galactic attenuation calculator
+attenuation = GalacticAttenuation(center_coordinate)
 
 # -----------------------------------------------------------------
 
@@ -104,10 +104,10 @@ for path in paths:
     poisson = Frame.from_file(path)
 
     # Get the attenuation
-    attenuation = extinction.extinction_for_filter(fltr)
+    att = attenuation.extinction_for_filter(fltr)
 
     # CORRECT FOR GALACTIC EXTINCTION
-    poisson *= 10**(0.4 * attenuation)
+    poisson *= 10**(0.4 * att)
 
     # CONVERT UNIT to MJy/sr
     poisson *= 1e-6

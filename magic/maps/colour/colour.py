@@ -17,6 +17,7 @@ from ....core.basics.configurable import Configurable
 from ....core.tools.logging import log
 from ...tools.colours import make_colour_map, get_filters_for_colour
 from ...core.list import FrameList
+from ...tools import colours
 
 # -----------------------------------------------------------------
 
@@ -40,8 +41,14 @@ def make_map(*args, **kwargs):
     # Create frame list
     frames = FrameList(*args) # indexed on filter
 
+    # Check length is 2
+    if len(frames) != 2: raise ValueError("Need 2 frames")
+
+    # Determine the colour
+    colour = colours.get_colour_name_for_filters(frames[0].filter, frames[1].filter)
+
     # Run the map maker
-    maker.run(frames=frames)
+    maker.run(frames=frames, colours=[colour])
 
     # Get the maps
     return maker.single_map
@@ -161,6 +168,7 @@ class ColourMapsMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
     def single_map(self):
 
         """

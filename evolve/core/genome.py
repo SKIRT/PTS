@@ -286,74 +286,74 @@ class G1DBase(GenomeBase):
 
     def __iadd__(self, item):
 
-      """
-      To add more items using the += operator
-      """
+        """
+        To add more items using the += operator
+        """
 
-      self.genomeList.append(item)
-      return self
+        self.genomeList.append(item)
+        return self
 
     # -----------------------------------------------------------------
 
     def __eq__(self, other):
 
-      """
-      Compares one chromosome with another
-      """
+        """
+        Compares one chromosome with another
+        """
 
-      cond1 = (self.genomeList == other.genomeList)
-      cond2 = (self.genomeSize == other.genomeSize)
-      return True if cond1 and cond2 else False
+        cond1 = (self.genomeList == other.genomeList)
+        cond2 = (self.genomeSize == other.genomeSize)
+        return True if cond1 and cond2 else False
 
     # -----------------------------------------------------------------
 
     def __contains__(self, value):
 
-      """
-      Used on: *value in genome*
-      """
+        """
+        Used on: *value in genome*
+        """
 
-      return value in self.genomeList
+        return value in self.genomeList
 
     # -----------------------------------------------------------------
 
     def __getslice__(self, a, b):
 
-      """
-      Return the sliced part of chromosome
-      """
+        """
+        Return the sliced part of chromosome
+        """
 
-      return self.genomeList[a:b]
+        return self.genomeList[a:b]
 
     # -----------------------------------------------------------------
 
     def __setslice__(self, a, b, val):
 
-      """
-      Sets the slice part of chromosome
-      """
+        """
+        Sets the slice part of chromosome
+        """
 
-      self.genomeList[a:b] = val
+        self.genomeList[a:b] = val
 
     # -----------------------------------------------------------------
 
     def __getitem__(self, key):
 
-      """
-      Return the specified gene of List
-      """
+        """
+        Return the specified gene of List
+        """
 
-      return self.genomeList[key]
+        return self.genomeList[key]
 
     # -----------------------------------------------------------------
 
     def __setitem__(self, key, value):
 
-      """
-      Set the specified value for an gene of List
-      """
+        """
+        Set the specified value for an gene of List
+        """
 
-      self.genomeList[key] = value
+        self.genomeList[key] = value
 
     # -----------------------------------------------------------------
 
@@ -454,6 +454,17 @@ class G1DBase(GenomeBase):
         """
 
         self.genomeList.remove(value)
+
+    # -----------------------------------------------------------------
+
+    def clear(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        self.genomeList = []
 
     # -----------------------------------------------------------------
 

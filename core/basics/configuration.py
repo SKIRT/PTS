@@ -27,10 +27,11 @@ from functools import partial
 from .map import Map
 from ..tools import parsing, stringify
 from ..tools import filesystem as fs
-from ..tools.logging import log
+from ..tools.logging import log, setup_log
 from .composite import SimplePropertyComposite
 from ..tools import introspection
 from ..tools import numbers, types
+from ..tools import time
 
 # -----------------------------------------------------------------
 
@@ -40,6 +41,8 @@ subtypes["real"] = ["fraction", "positive_real", "negative_real"]
 subtypes["string"] = ["file_path"]
 subtypes["quantity"] = ["photometric_quantity", "photometric_density_quantity"]
 subtypes["unit"] = ["photometric_unit", "photometric_density_unit"]
+subtypes["filter"] = ["broad_band_filter", "narrow_band_filter"]
+subtypes["list"] = ["integer_list", "real_list", "quantity_list"]
 
 related_types = []
 related_types.append(["integer", "positive_integer", "negative_integer", "even_integer", "even_positive_integer", "even_negative_integer", "odd_integer", "odd_positive_integer", "odd_negative_integer"])
@@ -49,6 +52,54 @@ related_types.append(["quantity", "photometric_quantity", "photometric_density_q
 related_types.append(["unit", "photometric_unit", "photometric_density_unit"])
 related_types.append(["filter", "narrow_band_filter", "broad_band_filter"])
 related_types.append(["broad_band_filter_list", "lazy_filter_list", "narrow_band_list"])
+
+# -----------------------------------------------------------------
+
+def initialize_log(config, remote=None):
+
+    """
+    This function ...
+    :parma remote:
+    :return:
+    """
+
+    # Determine the log level
+    level = "INFO"
+    if config.debug: level = "DEBUG"
+    if config.brief: level = "SUCCESS"
+
+    # Determine log path
+    #if args.remote is None: logfile_path = fs.join(config.log_path, time.unique_name("log") + ".txt") if config.report else None
+    #else: logfile_path = None
+
+    # Determine the log file path
+    if remote is None: logfile_path = fs.join(config.log_path, time.unique_name("log") + ".txt") if config.report else None
+    else: logfile_path = None
+
+    # Initialize the logger
+    log = setup_log(level=level, path=logfile_path)
+
+    # Return the logger
+    return log
+
+# -----------------------------------------------------------------
+
+def parse_arguments(name, definition):
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Create the configuration
+    setter = ArgumentConfigurationSetter(name)
+    config = setter.run(definition)
+
+    # Initialize the logger
+    log = initialize_log(config)
+
+    # Return the configuration
+    return config
 
 # -----------------------------------------------------------------
 
@@ -3672,7 +3723,7 @@ def construct_type(real_type, min_value, max_value, forbidden):
     """
 
     # List type
-    if real_type.__name__.endswith("list"):
+    if real_type.__name__.endswith("list") and not hasattr(parsing, real_type.__name__):
 
         # Determine base type parsing function
         base_type = getattr(parsing, real_type.__name__.split("_list")[0])

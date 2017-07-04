@@ -33,6 +33,8 @@ from ...dustpedia.core.properties import DustPediaProperties
 from ...magic.tools import statistics
 from ...magic.sources.marker import SourceMarker
 from ...core.units.parsing import parse_unit as u
+from ...core.remote.remote import Remote
+from ..core.steps import cached_directory_name_for_single_command
 
 # -----------------------------------------------------------------
 
@@ -66,7 +68,7 @@ class PreparationInitializer(PreparationComponent):
         self.finder = None
 
         # The initial dataset
-        self.set = DataSet()
+        self.set = None
 
         # Create the PTS remote launcher
         self.launcher = PTSRemoteLauncher()
@@ -83,6 +85,12 @@ class PreparationInitializer(PreparationComponent):
 
         # Ignore source finding
         self.ignore_images = []
+
+        # The caching remote
+        self.remote = None
+
+        # The remote caching directory
+        self.remote_data_path = None
 
     # -----------------------------------------------------------------
 
@@ -102,9 +110,6 @@ class PreparationInitializer(PreparationComponent):
 
         # 3. Create the initialized images
         self.initialize_images()
-
-        # 4. Create the dataset
-        self.create_dataset()
 
         # Create directories
         self.create_directories()
@@ -130,6 +135,22 @@ class PreparationInitializer(PreparationComponent):
 
         # Call the setup function of the base class
         super(PreparationInitializer, self).setup(**kwargs)
+
+        # Load the dataset
+        if fs.is_file(self.initial_dataset_path): self.set = DataSet.from_file(self.initial_dataset_path)
+        else: self.set = DataSet() # create new dataset
+
+        # Set dataset path (so that we can do 'save')
+        self.set.path = self.initial_dataset_path
+
+        # Setup the remote
+        self.remote = Remote(host_id=self.environment.cache_host_id)
+
+        # Create the cache directory
+        directory_name = cached_directory_name_for_single_command(self.environment, self.command_name())
+        self.remote_data_path = fs.join(self.remote.home_directory, directory_name)
+        if self.config.cache:
+            if not self.remote.is_directory(self.remote_data_path): self.remote.create_directory(self.remote_data_path)
 
         # Set the path for the source finder to the preparation path
         self.config.sources.path = self.prep_path
@@ -174,6 +195,9 @@ class PreparationInitializer(PreparationComponent):
             # Get the image path
             image_path = self.paths[prep_name]
 
+            # Determine error path
+            error_path = self.error_paths[prep_name] if prep_name in self.error_paths else None
+
             # Determine the output path for this image
             output_path = self.get_prep_path(prep_name)
 
@@ -183,7 +207,27 @@ class PreparationInitializer(PreparationComponent):
 
             # Check whether this image already has an initialized image
             if fs.is_file(initialized_path):
+
+                # Already present
                 log.success("Initialized '" + prep_name + "' is already present")
+
+                # Check wether the sources directory is present
+                # -> NO, we are going to loop over self.paths again anyway in the create_directories and get_sources functions ...
+
+                # Check whether in dataset
+                if prep_name not in self.set.names:
+
+                    # Give a warning
+                    log.warning("Initialized '" + prep_name + "' was not yet in the dataset: adding it now ...")
+                    # Add to the dataset
+                    # Add entry to the dataset
+                    self.set.add_path(prep_name, initialized_path)
+                    self.set.save() # Save
+
+                # Cache
+                self.cache_image(prep_name, image_path, error_path)
+
+                # Now skip the rest
                 continue
 
             # Debugging
@@ -232,32 +276,71 @@ class PreparationInitializer(PreparationComponent):
             # Success
             log.success("Initialized the '" + prep_name + "' image")
 
+            # NEW: ADD TO THE DATASET NOW AND SAVE IT IMMEDIATELY
+
+            # Inform the user
+            log.info("Adding the '" + prep_name + "' image to the dataset ...")
+
+            # Add entry to the dataset
+            self.set.add_path(prep_name, initialized_path)
+
+            # Cache the original image
+            self.cache_image(prep_name, image_path, error_path)
+
     # -----------------------------------------------------------------
 
-    def create_dataset(self):
+    def cache_image(self, prep_name, image_path, error_path=None):
 
         """
         This function ...
+        :param prep_name:
+        :param image_path:
+        :param error_path:
         :return:
         """
 
         # Inform the user
-        log.info("Creating the initial dataset ...")
+        log.info("Caching the original '" + prep_name + "' image from '" + image_path + "' to remote host '" + self.remote.host_id + "' ...")
 
-        # Loop over the image paths
-        for prep_name in self.paths:
+        # Determine filename
+        filename = fs.strip_extension(fs.name(image_path))
+
+        # Determine directory name
+        dirname = fs.name(fs.directory_of(image_path))
+
+        # Debugging
+        log.debug("Caching " + filename + " image ...")
+
+        # Determine the remote directory for this image
+        remote_directory_path = fs.join(self.remote_data_path, dirname)
+        if not self.remote.is_directory(remote_directory_path): self.remote.create_directory(remote_directory_path)
+
+        # Debugging
+        log.debug("Uploading the file to '" + remote_directory_path + "' ...")
+
+        # Upload
+        self.remote.upload(image_path, remote_directory_path)
+
+        # Debugging
+        log.debug("Removing the local file (" + image_path + ") ...")
+
+        # Remove the file
+        fs.remove_file(image_path)
+
+        # Cache the error map
+        if error_path is not None:
 
             # Debugging
-            log.debug("Adding the initialized " + prep_name + " image to the dataset ...")
+            log.debug("Caching the " + prep_name + " error map ...")
 
-            # Get initialized path
-            path = self.initialized_paths[prep_name]
+            # Upload
+            self.remote.upload(error_path, remote_directory_path)
 
             # Debugging
-            log.debug("Path: " + path)
+            log.debug("Removing the local file (" + error_path + ") ...")
 
-            # Add entry to the dataset
-            self.set.add_path(prep_name, path)
+            # Remove the file
+            fs.remove_file(error_path)
 
     # -----------------------------------------------------------------
 
@@ -659,10 +742,13 @@ class PreparationInitializer(PreparationComponent):
         # Inform the user
         log.info("Writing the dataset ...")
 
+        # Save the dataset
+        self.set.save()
+
         # If already present
-        if fs.is_file(self.initial_dataset_path): fs.remove_file(self.initial_dataset_path)
+        #if fs.is_file(self.initial_dataset_path): fs.remove_file(self.initial_dataset_path)
 
         # Save the dataset
-        self.set.saveto(self.initial_dataset_path)
+        #self.set.saveto(self.initial_dataset_path)
 
 # -----------------------------------------------------------------

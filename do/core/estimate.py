@@ -14,8 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.advanced.resources import ResourceEstimator
-from pts.do.commandline import initialize_log
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter, initialize_log
 
 # -----------------------------------------------------------------
 
