@@ -15,7 +15,7 @@
 # Import standard modules
 import os
 import os.path
-import types
+import types as systypes
 import numpy as np
 import importlib
 import warnings
@@ -44,9 +44,9 @@ from ..tools.stringify import tostr
 #
 def createsimulations(source="", single=False):
     simulations = []
-    sourcelist = source if isinstance(source, (types.TupleType,types.ListType)) else [ source ]
+    sourcelist = source if isinstance(source, (systypes.TupleType,systypes.ListType)) else [ source ]
     for source in sourcelist:
-        if isinstance(source, types.StringTypes):
+        if isinstance(source, systypes.StringTypes):
             if source == "" or "/" in source:
                 dirpath = os.path.realpath(os.path.expanduser(source))
                 logfiles = arch.listdir(dirpath, "_log.txt")
