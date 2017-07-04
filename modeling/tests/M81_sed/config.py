@@ -10,7 +10,6 @@ from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.remote.host import find_host_ids
 from pts.modeling.tests.base import possible_free_parameters, default_free_parameters
 from pts.evolve.solve.extremizer import genetic_definition
-from pts.core.tools.random import skirt_seed
 
 # -----------------------------------------------------------------
 
