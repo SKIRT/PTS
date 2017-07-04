@@ -14,11 +14,13 @@
 
 # -----------------------------------------------------------------
 
+# Import standard modules
 import os.path
 import numpy as np
 import pyfits
 from scipy.ndimage.filters import gaussian_filter
 
+# Import the relevant PTS classes and modules
 from ..core.tools import archive as arch
 from ..core.filter.broad import BroadBandFilter
 
@@ -27,9 +29,9 @@ from ..core.filter.broad import BroadBandFilter
 # private list of standard filters for which integrated fluxes should be calculated
 _filterspecs = ( \
                 "GALEX.FUV","GALEX.NUV",
-                "MCPS.U","MCPS.B","MCPS.V","MCPS.I",
                 "SDSS.u","SDSS.g","SDSS.r","SDSS.i","SDSS.z",
                 "UKIDSS.Z","UKIDSS.Y","UKIDSS.J","UKIDSS.H","UKIDSS.K",
+                "Johnson.U","Johnson.B","Johnson.V","Johnson.R","Johnson.I","Johnson.J","Johnson.M",
                 "2MASS.J", "2MASS.H", "2MASS.K",
                 "IRAS.12","IRAS.25","IRAS.60","IRAS.100",
                 "IRAC.I1","IRAC.I2","IRAC.I3","IRAC.I4",
@@ -61,19 +63,51 @@ def _loadfilters():
 
 # -----------------------------------------------------------------
 
-# This function creates an information file with statistics on the results of an EAGLE SKIRT-run.
+## This function creates an information file with statistics on the results of an EAGLE SKIRT-run.
 # The information file has a simple text format and includes statistics on the data exported from the EAGLE snapshot
 # (i.e. the input data for the SKIRT simulation), on the SKIRT setup (such as the dust grid), and on the results
 # of the SKIRT simulation (such as fluxes in various bands).
 #
-# The information file is placed in the simulation's output directory, and is named "prefix_info.txt".
+# The information file is placed in the SKIRT-run visualization directory, and is named "prefix_info.txt".
 #
-def makeinfofile(skirtrun):
+def makeinfofile(skirtrun, snaptag):
     simulation = skirtrun.simulation()
 
-    # the info dict that will be saved at the end
+    # get the redshift corresponding to the snapshot tag
+    redshift = { 28:   0.0000,
+                 27:   0.1006,
+                 26:   0.1827,
+                 25:   0.2709,
+                 24:   0.3657,
+                 23:   0.5031,
+                 22:   0.6152,
+                 21:   0.7356,
+                 20:   0.8651,
+                 19:   1.0041,
+                 18:   1.2593,
+                 17:   1.4867,
+                 16:   1.7370,
+                 15:   2.0124,
+                 14:   2.2370,
+                 13:   2.4784,
+                 12:   3.0165,
+                 11:   3.5280,
+                 10:   3.9837,
+                  9:   4.4852,
+                  8:   5.0372,
+                  7:   5.4874,
+                  6:   5.9712,
+                  5:   7.0496,
+                  4:   8.0746,
+                  3:   8.9879,
+                  2:   9.9930,
+                  1:  15.1323,
+                  0:  20.0000 } [snaptag]
+
+    # create the info dict that will be saved at the end
     info = { }
     info["skirt_run_id"] = skirtrun.runid()
+    info["original_redshift"] = redshift
 
     # load statistics on the EAGLE data from the info file in the input folder
     inpath = skirtrun.inpath()
@@ -108,6 +142,8 @@ def makeinfofile(skirtrun):
     # load filters and wavelength grid
     _loadfilters()
     wavelengths = simulation.wavelengths()
+    shifted_wavelengths = wavelengths * (1 + redshift)
+
     # create a mask that removes the carbon line emission peaks from the dust continuum emission
     cmask = (np.abs(wavelengths-157.5)>3) & (np.abs(wavelengths-360)>20) & (np.abs(wavelengths-600)>20)
 
@@ -145,11 +181,19 @@ def makeinfofile(skirtrun):
         for filterspec,filterobject in _filters.iteritems():
             fluxdensity = regularfluxdensity(simulation, name, [1], wavelengths, None, filterobject)
             addfluxinfo(info, simulation, name, filterspec, fluxdensity)
+            if redshift>0.01:
+                fluxdensity = regularfluxdensity(simulation, name, [1], shifted_wavelengths, None, filterobject)
+                fluxdensity = distantflux(fluxdensity, simulation.instrumentdistance(unit='m'), redshift)
+            addfluxinfo(info, simulation, name, filterspec, fluxdensity, "observer")
 
         # for the Herschel filters, calculate flux and magnitude excluding the carbon line emission peaks
         for filterspec in ("Pacs.blue","Pacs.green","Pacs.red","SPIRE.PSW","SPIRE.PMW","SPIRE.PLW"):
             fluxdensity = regularfluxdensity(simulation, name, [1], wavelengths, cmask, _filters[filterspec])
             addfluxinfo(info, simulation, name, filterspec, fluxdensity, "continuum")
+            if redshift>0.01:
+                fluxdensity = regularfluxdensity(simulation, name, [1], shifted_wavelengths, cmask, _filters[filterspec])
+                fluxdensity = distantflux(fluxdensity, simulation.instrumentdistance(unit='m'), redshift)
+            addfluxinfo(info, simulation, name, filterspec, fluxdensity, "continuum_observer")
             fluxdensity = regularfluxdensity(simulation, name, [2,3], wavelengths, cmask, _filters[filterspec])
             addfluxinfo(info, simulation, name, filterspec, fluxdensity, "hii_continuum")
             fluxdensity = regularfluxdensity(simulation, name, [4], wavelengths, cmask, _filters[filterspec])
@@ -157,9 +201,10 @@ def makeinfofile(skirtrun):
 
         # for the Herschel filters used in determining dust temperature, calculate the "limited" flux and magnitude
         # (i.e. ignoring pixels with a flux under a specific limit, and still excluding the carbon line emission peaks)
-        for filterspec,fwhm,fluxlimit in zip(h_filterspecs, h_beam_fwhms, h_flux_limits):
-            fluxdensity = limitedfluxdensity(simulation, name, wavelengths, cmask, _filters[filterspec], fwhm, fluxlimit)
-            addfluxinfo(info, simulation, name, filterspec, fluxdensity, "limited")
+        if (simulation.nsimpleinstruments() + simulation.nfullinstruments()) > 0:
+            for filterspec,fwhm,fluxlimit in zip(h_filterspecs, h_beam_fwhms, h_flux_limits):
+                fluxdensity = limitedfluxdensity(simulation, name, wavelengths, cmask, _filters[filterspec], fwhm, fluxlimit)
+                addfluxinfo(info, simulation, name, filterspec, fluxdensity, "limited")
 
         # calculate the H-alpha flux density
         fluxdensities = simulation.fluxdensities(name, unit='W/m2/micron')
@@ -175,7 +220,7 @@ def makeinfofile(skirtrun):
     info["probe_skew_temperature_dust"], info["probe_kurtosis_temperature_dust"] = dusttemperature(simulation)
 
     # save the info file
-    infofilepath = simulation.outfilepath("info.txt")
+    infofilepath = os.path.join(skirtrun.vispath(), simulation.prefix() + "_info.txt")
     infofile = open(infofilepath, 'w')
     infofile.write('# Information file for SKIRT-run {}\n'.format(skirtrun.runid()))
     infofile.write('# cells : 1\n')
@@ -197,7 +242,7 @@ def makeinfofile(skirtrun):
 
 # -----------------------------------------------------------------
 
-# This function calculates and returns the positive and negative cold and metallic gas masses
+## This function calculates and returns the positive and negative cold and metallic gas masses
 # from the specified gas input file and maximum temperature; it returns a tuple
 # (positive cold gas mass, negative cold gas mass, positive metallic gas mass, negative metallic gas mass)
 
@@ -213,7 +258,7 @@ def loadgasmasses(inpath, Tmax):
 
 # -----------------------------------------------------------------
 
-# This function adds the specified flux density and the corresponding magnitude to the info dictionary.
+## This function adds the specified flux density and the corresponding magnitude to the info dictionary.
 # The function takes the following arguments:
 #  - \em info: the info dictionary in which to store the information.
 #  - \em simulation: a SkirtSimulation instance representing the simulation for which to perform the action.
@@ -233,7 +278,7 @@ def addfluxinfo(info, simulation, instrumentname, filterspec, fluxdensity, fluxt
 
 # -----------------------------------------------------------------
 
-# This function calculates and returns the flux density (in Jy) in a given band based on the total sed or on some of
+## This function calculates and returns the flux density (in Jy) in a given band based on the total sed or on some of
 # the component seds of a particular instrument. The function convolves the sed over the wavelengths of the specified
 # filter to obtain an average value.
 #
@@ -275,7 +320,7 @@ def regularfluxdensity(simulation, instrumentname, columns, wavelengths, cmask, 
 
 # -----------------------------------------------------------------
 
-# This function calculates and returns the "limited" flux density (in Jy) in a given band
+## This function calculates and returns the "limited" flux density (in Jy) in a given band
 # based on the data cube of a particular instrument. The function first convolves the data cube over
 # the wavelengths of the specified filter to obtain an averaged image, then convolves the image with
 # a Gaussion PSF, and finally integrates over the image ignoring any pixels with a value under the
@@ -327,7 +372,7 @@ def limitedfluxdensity(simulation, instrumentname, wavelengths, cmask, filterobj
     fluxdensity = frame[frame>fluxlimit].sum() * bin_pixelarea * 1e6
     return fluxdensity
 
-# This function returns the integer divisor of the first (integer) argument that is nearest to the second (float) argument
+## This function returns the integer divisor of the first (integer) argument that is nearest to the second (float) argument
 def find_nearest_divisor(n, d):
     divisors = np.asarray(sorted(set( x for tup in ((i, n//i) for i in range(1, int(n**0.5)+1) if n % i == 0) for x in tup )))
     index = np.argmin(np.abs(divisors-d))
@@ -335,8 +380,8 @@ def find_nearest_divisor(n, d):
 
 # -----------------------------------------------------------------
 
-# Calculate and return statistics for the indicative temperature (weighted by mass) as a tuple:
-#  (average, standard deviation, skew, excess curtosis).
+## This function calculates and returns statistics for the indicative temperature (weighted by mass) as a tuple:
+# (average, standard deviation, skew, excess curtosis).
 # The data is extracted from the <prefix>_ds_celltemps.dat file generated by SKIRT.
 # If this file is not present, the procedure fails.
 def dusttemperature(simulation):
@@ -356,5 +401,37 @@ def dusttemperature(simulation):
     # otherwise return dummy values
     else:
         return ( 0, 0, 0, 0 )
+
+# -----------------------------------------------------------------
+
+## This helper function is part of the calculation of the luminosity distance for given redshift using the
+# approximation presented by Adachi & Kasai 2012.
+def T(x):
+    b1 = 2.64086441
+    b2 = 0.883044401
+    b3 = 0.0531249537
+    c1 = 1.39186078
+    c2 = 0.512094674
+    c3 = 0.0394382061
+    x3 = x*x*x
+    return np.sqrt(x) * (2.0+b1*x3+b2*x3*x3+b3*x3*x3*x3) / (1.0+c1*x3+c2*x3*x3+c3*x3*x3*x3)
+
+## This function returns the luminosity distance in m for a given redshift using the
+# approximation presented by Adachi & Kasai 2012.
+def DL(z):
+    c = 299792458.                  # in m/s
+    Mpc = 3.08567758e22             # in m
+    km = 1e3                        # in m
+    H0 = 0.6777 * 100*km/Mpc        # in 1/s
+    Omegam = 0.307
+    s = ((1.0-Omegam)/Omegam) ** (1.0/3.0)
+    return c*(1+z)/H0/((s*Omegam)**0.5)*(T(s)-T(s/(1+z)))
+
+## This function corrects the given redshifted flux f in Jy, calculated for a local observation at given distance in m,
+# for the luminosity distance corresponding to the given redshift.
+def distantflux(f, d, z):
+    # expect flux in Jy, instrument distance in m, redshift ; return corrected flux in Jy
+    # see e.g. https://ned.ipac.caltech.edu/level5/Hogg/Hogg7.html
+    return f * (d/DL(z))**2 * (1+z)
 
 # -----------------------------------------------------------------

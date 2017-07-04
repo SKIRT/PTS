@@ -82,7 +82,7 @@ def makergbimages(simulation, wavelength_tuples=None, from_percentile=30, to_per
 
 ## This function creates an RGB image for each "total.fits" file in the output of the specified simulation,
 # integrating the pixel values for each color over multiple output frames according to the specified filters.
-# The images are saved in PNG format and are placed next to the original file(s) with the same name
+# The images are saved in PNG format and by default are placed next to the original file(s) with the same name
 # but a different extension, and optionally including an extra postfix.
 #
 # The function takes the following arguments:
@@ -97,8 +97,9 @@ def makergbimages(simulation, wavelength_tuples=None, from_percentile=30, to_per
 #        using the formula \f$f_\mathrm{range}=\log_{10}(f_\mathrm{max}/f_\mathrm{min})\f$.
 #  - \em frange: the dynamic range for the flux values, expressed in order of magnitudes (decades);
 #        the default value is 3. If \em fmin is specified, the value of \em frange is ignored.
+#  - \em output_path: path to the PNG output directory; default is next to the fits files.
 #
-def makeintegratedrgbimages(simulation, filterspecs, postfix="", fmax=None, fmin=None, frange=3):
+def makeintegratedrgbimages(simulation, filterspecs, postfix="", fmax=None, fmin=None, frange=3, output_path=None):
 
     # get the wavelength grid
     wavelengths = simulation.wavelengths()
@@ -144,6 +145,7 @@ def makeintegratedrgbimages(simulation, filterspecs, postfix="", fmax=None, fmin
             im.applylog()
             im.applycurve()
             savename = outname[:-5] + postfix + ".png"
+            if output_path is not None: savename = os.path.join(output_path, os.path.basename(savename))
             im.saveto(savename)
             print("Created integrated RGB image file " + savename)
 

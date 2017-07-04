@@ -27,7 +27,7 @@ import subprocess
 # to specify the filename and the movie format, insert the images one at a time with the add() function, and finally
 # write the movie header information to the file with the close() function.
 #
-# This class requires MEncoder to be installed as \c /usr/local/bin/mencoder (the location is hard-coded).
+# This class requires MEncoder to be installed and in the PATH.
 # See the Installation Guide for more information.
 #
 # This class can generate movies in two distinct formats:
@@ -67,7 +67,7 @@ class MovieFile:
 
         # construct the first part of the command line for raw video input (identical for both output formats)
         # note: type '$ mencoder -vf format=fmt=help' for a list of valid pixel formats / byte orderings
-        cmdline = [ '/usr/local/bin/mencoder', '/dev/stdin', '-demuxer', 'rawvideo',
+        cmdline = [ 'mencoder', '/dev/stdin', '-demuxer', 'rawvideo',
                     '-rawvideo', 'w=%i:h=%i'%shape + ':fps=%i:format=rgba'%rate,
                     '-really-quiet', '-o', filepath ]
 

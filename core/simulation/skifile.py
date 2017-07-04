@@ -801,8 +801,9 @@ class SkiFile:
         # get the first instrument element
         instruments = self.tree.xpath("//instruments/*[1]")
         if len(instruments) != 1: raise ValueError("No instruments in ski file")
-        # get its shape
-        return ( int(instruments[0].get("pixelsX")), int(instruments[0].get("pixelsY")) )
+        # get its shape (for SKIRT7 and SKIRT8)
+        return ( int(instruments[0].get("pixelsX", instruments[0].get("numPixelsX"))),
+                 int(instruments[0].get("pixelsY", instruments[0].get("numPixelsY"))) )
 
     ## This function returns the angular area (in sr) of a single pixel in the first instrument's frame.
     def angularpixelarea(self):
@@ -815,9 +816,9 @@ class SkiFile:
         # get the field of view in m
         fovx = self.units().convert(instrument.get("fieldOfViewX"), to_unit='m', quantity='length')
         fovy = self.units().convert(instrument.get("fieldOfViewY"), to_unit='m', quantity='length')
-        # get the number of pixels
-        nx = int(instrument.get("pixelsX"))
-        ny = int(instrument.get("pixelsY"))
+        # get the number of pixels (for SKIRT7 and SKIRT8)
+        nx = int(instrument.get("pixelsX", instrument.get("numPixelsX")))
+        ny = int(instrument.get("pixelsY", instrument.get("numPixelsY")))
         # calculate the angular pixel area
         sx = 2 * arctan(fovx / nx / d / 2)
         sy = 2 * arctan(fovy / ny / d / 2)
@@ -954,8 +955,11 @@ class SkiFile:
         # get the MonteCarloSimulation element
         elems = self.tree.xpath("//OligoMonteCarloSimulation | //PanMonteCarloSimulation")
         if len(elems) != 1: raise ValueError("No MonteCarloSimulation in ski file")
-        # set the attribute value
-        elems[0].set("packages", str(int(number)))
+        # set the attribute value, using the appropriate name for SKIRT7 or SKIRT8
+        if "packages" in elems[0].keys():
+            elems[0].set("packages", str(int(number)))
+        else:
+            elems[0].set("numPackages", str(number))
 
     ## This function sets the number of wavelengths
     def setnwavelengths(self, number):
