@@ -79,6 +79,8 @@ identifiers["Johnson.B"] = Map(system="Johnson", bands=["B"])
 identifiers["Johnson.V"] = Map(system="Johnson", bands=["V"])
 identifiers["Johnson.R"] = Map(system="Johnson", bands=["R"])
 identifiers["Johnson.I"] = Map(system="Johnson", bands=["I"])
+identifiers["Johnson.J"] = Map(system="Johnson", bands=["J"])
+identifiers["Johnson.M"] = Map(system="Johnson", bands=["M"])
 identifiers["IRAS.12mu"] = Map(instruments=["IRAS"], wavelength="12 micron")
 identifiers["IRAS.25mu"] = Map(instruments=["IRAS"], wavelength="25 micron")
 identifiers["IRAS.60mu"] = Map(instruments=["IRAS"], wavelength="60 micron")
@@ -174,13 +176,13 @@ alma_ranges[10] = (320, 380)
 # -----------------------------------------------------------------
 
 def get_filters_for_regime(regime, subregime=None, categorize=False):
-    
+
     """
     This function ...
-    :param regime: 
+    :param regime:
     :param subregime:
     :param categorize:
-    :return: 
+    :return:
     """
 
     from ...magic.tools.wavelengths import wavelength_range_for_regime

@@ -29,7 +29,6 @@ from ..core.filter.broad import BroadBandFilter
 # private list of standard filters for which integrated fluxes should be calculated
 _filterspecs = ( \
                 "GALEX.FUV","GALEX.NUV",
-                "MCPS.U","MCPS.B","MCPS.V","MCPS.I",
                 "SDSS.u","SDSS.g","SDSS.r","SDSS.i","SDSS.z",
                 "UKIDSS.Z","UKIDSS.Y","UKIDSS.J","UKIDSS.H","UKIDSS.K",
                 "Johnson.U","Johnson.B","Johnson.V","Johnson.R","Johnson.I","Johnson.J","Johnson.M",
