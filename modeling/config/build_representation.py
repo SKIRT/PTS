@@ -45,4 +45,7 @@ definition.sections["dg"].add_optional("octtree_min_level", "integer", "minimum 
 definition.sections["dg"].add_optional("max_mass_fraction", "real", "maximum mass fraction in each cell", 0.5e-6)
 definition.sections["dg"].add_optional("scale_heights", "real", "number of times to take the dust scale height as the vertical radius of the dust grid", 10.)
 
+# Whether quality has to be calculated
+definition.add_flag("check_dust_grid_quality", "check the quality of the dust grid in various ways", True)
+
 # -----------------------------------------------------------------

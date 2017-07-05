@@ -194,6 +194,9 @@ class RepresentationGenerator(BuildComponent, GalaxyModelingComponent):
             # Set model name
             builder.config.model_name = self.config.model_name
 
+            # Set option to calculate the quality of the dust grid
+            builder.config.check_dust_grid_quality = self.config.check_dust_grid_quality
+
             # Build, passing the dust grid that has been created
             builder.run(dust_grid=grid)
 

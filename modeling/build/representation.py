@@ -326,6 +326,9 @@ class RepresentationBuilderBase(BuildComponent):
         # Set simulation path
         builder.config.simulation_path = self.representation.grid_out_path
 
+        # Set whether quality has to be calculated
+        builder.config.quality = self.config.check_dust_grid_quality
+
         # Run the builder
         builder.run(definition=self.definition, dust_grid=self.dust_grid)
 

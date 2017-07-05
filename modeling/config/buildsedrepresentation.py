@@ -31,4 +31,7 @@ if len(model_names) == 0: raise RuntimeError("No models found: first run build_m
 elif len(model_names) == 1: definition.add_fixed("model_name", "name of the model", model_names[0])
 else: definition.add_required("model_name", "string", "name of the model", choices=model_names)
 
+# Whether quality has to be calculated
+definition.add_flag("check_dust_grid_quality", "check the quality of the dust grid in various ways", False)
+
 # -----------------------------------------------------------------
