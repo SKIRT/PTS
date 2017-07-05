@@ -18,6 +18,7 @@ import numpy as np
 from abc import ABCMeta
 from scipy.special import gammaincinv
 from scipy import ndimage
+import itertools
 
 # Import astronomical modules
 from astropy.coordinates import Angle
@@ -1246,8 +1247,29 @@ class DeprojectionModel3D(Model):
         yorig = y
 
         # Calculate the coordinates in the plane of the image
-        x = (self.sinpa * xorig)  + (self.cospa * yorig)
-        y = (-self.cospa * xorig) + (self.sinpa * yorig)
+        x = self.sinpa * xorig  + self.cospa * yorig
+        y = -self.cospa * xorig + self.sinpa * yorig
+
+        # Return
+        return x, y
+
+    # -----------------------------------------------------------------
+
+    def rotate_arrays(self, x, y):
+
+        """
+        This function ...
+        :param x:
+        :param y:
+        :return:
+        """
+
+        xorig = np.copy(x)
+        yorig = np.copy(y)
+
+        # Calculate the coordinates in the plane of the image
+        x = self.sinpa * xorig + self.cospa * yorig
+        y = -self.cospa * xorig + self.sinpa * yorig
 
         # Return
         return x, y
@@ -1280,6 +1302,18 @@ class DeprojectionModel3D(Model):
 
         """
         This function ...
+        :return:
+        """
+
+        return x * self.cosi
+
+    # -----------------------------------------------------------------
+
+    def project_array(self, x):
+
+        """
+        This function ...
+        :param x:
         :return:
         """
 
@@ -1360,15 +1394,14 @@ class DeprojectionModel3D(Model):
         :return:
         """
 
+        # Get properties as scalars (no units)
         xmin_scalar = self.xmin.to(unit).value
         ymin_scalar = self.ymin.to(unit).value
-
         deltay_scalar = self.deltay.to(unit).value
         deltax_scalar = self.deltax.to(unit).value
-
         scale_height_scalar = self.scale_height.to(unit).value
 
-
+        # Define the density function
         def deprojection(x, y, z):
 
             """
@@ -1378,6 +1411,10 @@ class DeprojectionModel3D(Model):
             :param z:
             :return:
             """
+
+            # Project and rotate coordinates
+            x = self.project_array(x)
+            x, y = self.rotate_arrays(x, y)
 
             #i_array = numbers.round_down_to_int((x - xmin_scalar) / deltay_scalar)
             #j_array = numbers.round_down_to_int((y - ymin_scalar) / deltay_scalar)
@@ -1421,17 +1458,11 @@ class DeprojectionModel3D(Model):
 
             nx = xy.shape[0]
             ny = xy.shape[1]
-            nz = xy.shape[2]
+            #nz = xy.shape[2]
 
             #print(xy[:,:,0])
             xy = xy[:,:,0]
             #print(xy)
-
-            #xy = np.array(list(xy.flatten()))
-
-            #print(xy)
-
-            import itertools
 
             arrangement_x = range(self.xsize) * self.ysize
             lists = [[value] * self.xsize for value in range(self.ysize)]
@@ -1455,7 +1486,8 @@ class DeprojectionModel3D(Model):
             #print(arrangement_y.shape)
             x_mapping = [arrangement_x[k] if 0<=k<self.npixels else -1 for k in xy_flattened]
             y_mapping = [arrangement_y[k] if 0<=k<self.npixels else -1 for k in xy_flattened]
-            mapping = [x_mapping, y_mapping]
+            #mapping = [x_mapping, y_mapping]
+            mapping = [y_mapping, x_mapping]
 
             #cval = float('nan')
             cval = 0.0
@@ -1468,6 +1500,7 @@ class DeprojectionModel3D(Model):
             #print("nx", nx)
             #print("")
 
+            # Reshape into the
             deprojected = data.reshape((ny, nx, 1))
 
             # Return
