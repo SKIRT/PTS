@@ -33,6 +33,9 @@ default_nelite_individuals = 1
 default_scaling_method = "linear"
 default_selector_method = "roulette_wheel"
 
+default_binary_mutation_method = "flip"
+binary_mutation_methods = ["flip", "swap"]
+
 # -----------------------------------------------------------------
 
 # Create the genetic definition
@@ -48,6 +51,7 @@ genetic_definition.add_optional("crossover_rate", "real", "crossover rate", defa
 genetic_definition.add_optional("crossover_method", "string", "crossover method", default_crossover_method, choices=crossover_methods)
 genetic_definition.add_optional("round_decimal", "integer", "round everything to this decimal place", default_round_decimal)
 genetic_definition.add_optional("mutation_method", "string", "mutation method", default_mutation_method, choices=mutation_methods)
+genetic_definition.add_optional("binary_mutation_method", "string", "mutation method for binary string genomes", default_binary_mutation_method, choices=binary_mutation_methods)
 genetic_definition.add_optional("scaling_method", "string", "scaling method", default_scaling_method, choices=scaling_methods)
 genetic_definition.add_optional("selector_method", "string", "selector method", default_selector_method, choices=selector_methods)
 
