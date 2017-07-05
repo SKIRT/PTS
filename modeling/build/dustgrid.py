@@ -34,6 +34,7 @@ from ...core.tools import parsing
 from ...core.basics.map import Map
 from ...core.basics.configuration import save_mapping
 from ...core.plot.grids import plotgrids
+from ...magic.core.list import NamedFrameList
 
 # -----------------------------------------------------------------
 
@@ -94,13 +95,16 @@ class DustGridBuilder(Configurable):
         self.out_path = None
 
         # ...
-        self.ratio = None
-        self.mean_ratio = None
-        self.median_ratio = None
-        self.std = None
+        #self.ratio = None
+        #self.mean_ratio = None
+        #self.median_ratio = None
+        #self.std = None
 
         # Quality measures
-        self.quality = dict()
+        self.projected_quality = None
+        self.optical_depth_quality = None
+        self.density_quality = None
+        self.dust_mass_quality = None
 
     # -----------------------------------------------------------------
 
@@ -122,7 +126,7 @@ class DustGridBuilder(Configurable):
         self.launch()
 
         # Check
-        self.get_quality()
+        if self.config.quality: self.get_quality()
 
         # 7. Writing
         if self.config.write: self.write()
@@ -382,17 +386,17 @@ class DustGridBuilder(Configurable):
         # Inform the user
         log.info("Getting the quality of the dust grid ...")
 
-        # Get the projected quality
-        self.get_projected_quality()
+        # 1. Get the projected quality
+        if self.config.projected_quality: self.get_projected_quality()
 
-        # Get the optical depth quality
-        self.get_optical_depth_quality()
+        # 2. Get the optical depth quality
+        if self.config.optical_depth_quality: self.get_optical_depth_quality()
 
-        # Density
-        self.get_density_quality()
+        # 3. Density
+        if self.config.density_quality: self.get_density_quality()
 
-        # Mass
-        self.get_dust_mass_quality()
+        # 4. Mass
+        if self.config.dust_mass_quality: self.get_dust_mass_quality()
 
     # -----------------------------------------------------------------
 
@@ -411,10 +415,10 @@ class DustGridBuilder(Configurable):
         geometryxy = Frame.from_file(self.geometry_xy_path)
 
         # Determine ratio
-        self.ratio = Frame(gridxy / geometryxy)
-        self.mean_ratio = Frame.zeros_like(gridxy)
-        self.median_ratio = Frame.zeros_like(gridxy)
-        self.std = Frame.zeros_like(gridxy)
+        ratio_frame = Frame(gridxy / geometryxy)
+        mean_ratio_frame = Frame.zeros_like(gridxy)
+        median_ratio_frame = Frame.zeros_like(gridxy)
+        std_frame = Frame.zeros_like(gridxy)
 
         # Loop over the unique values and their corresponding patches (masks)
         for value, where in gridxy.unique_values_and_masks:
@@ -430,9 +434,16 @@ class DustGridBuilder(Configurable):
             # Print check
             #print(value, mean, median, std)
 
-            self.mean_ratio[where] = mean / value
-            self.median_ratio[where] = median / value
-            self.std[where] = std
+            mean_ratio_frame[where] = mean / value
+            median_ratio_frame[where] = median / value
+            std_frame[where] = std
+
+        # Create named frame list
+        self.projected_quality = NamedFrameList()
+        self.projected_quality.append(ratio_frame, "ratio")
+        self.projected_quality.append(mean_ratio_frame, "mean_ratio")
+        self.projected_quality.append(median_ratio_frame, "median_ratio")
+        self.projected_quality.append(std_frame, "std")
 
     # -----------------------------------------------------------------
 
@@ -499,10 +510,10 @@ class DustGridBuilder(Configurable):
         #log.debug("90% of the cells have an optical depth smaller than " + str(optical_depth))
 
         # Create
-        self.quality["optical_depth"] = Map()
-        self.quality["optical_depth"]["tau90"] = self.optical_depth_90
-        self.quality["optical_depth"]["mean"] = self.optical_depth_quality[0]
-        self.quality["optical_depth"]["stddev"] = self.optical_depth_quality[1]
+        self.optical_depth_quality = Map()
+        self.optical_depth_quality.tau90= self.optical_depth_90
+        self.optical_depth_quality.mean = self.optical_depth_quality[0]
+        self.optical_depth_quality.stddev = self.optical_depth_quality[1]
 
     # -----------------------------------------------------------------
 
@@ -516,20 +527,24 @@ class DustGridBuilder(Configurable):
         # Inform theuser
         log.info("Getting the density quality ...")
 
-        self.quality["density"] = Map()
+        # Set the quality measures
+        self.density_quality = Map()
+        self.density_quality.mean = self.density_quality[0]
+        self.density_quality.stddev = self.density_quality[1]
 
-        self.quality["density"]["mean"] = self.density_quality[0]
-        self.quality["density"]["stddev"] = self.density_quality[1]
-        self.quality["density"]["surface"] = Map()
-        self.quality["density"]["surface"].x = Map()
-        self.quality["density"]["surface"].x.expected = self.surface_density_convergence[0]
-        self.quality["density"]["surface"].x.actual = self.surface_density_convergence[1]
-        self.quality["density"]["surface"].y = Map()
-        self.quality["density"]["surface"].y.expected = self.surface_density_convergence[2]
-        self.quality["density"]["surface"].y.actual = self.surface_density_convergence[3]
-        self.quality["density"]["surface"].z = Map()
-        self.quality["density"]["surface"].z.expected = self.surface_density_convergence[4]
-        self.quality["density"]["surface"].z.actual = self.surface_density_convergence[5]
+        self.density_quality.surface = Map()
+
+        self.density_quality.surface.x = Map()
+        self.density_quality.surface.x.expected = self.surface_density_convergence[0]
+        self.density_quality.surface.x.actual = self.surface_density_convergence[1]
+
+        self.density_quality.surface.y = Map()
+        self.density_quality.surface.y.expected = self.surface_density_convergence[2]
+        self.density_quality.surface.y.actual = self.surface_density_convergence[3]
+
+        self.density_quality.surface.z = Map()
+        self.density_quality.surface.z.expected = self.surface_density_convergence[4]
+        self.density_quality.surface.z.actual = self.surface_density_convergence[5]
 
     # -----------------------------------------------------------------
 
@@ -543,9 +558,10 @@ class DustGridBuilder(Configurable):
         # Inform the user
         log.info("Getting the dust mass quality ...")
 
-        self.quality["mass"] = Map()
-        self.quality["mass"].expected = self.dust_mass_convergence[0]
-        self.quality["mass"].actual = self.dust_mass_convergence[1]
+        # Set the quality measures
+        self.dust_mass_quality = Map()
+        self.dust_mass_quality.expected = self.dust_mass_convergence[0]
+        self.dust_mass_quality.actual = self.dust_mass_convergence[1]
 
     # -----------------------------------------------------------------
 
@@ -850,16 +866,16 @@ class DustGridBuilder(Configurable):
         log.info("Writing the quality measures ...")
 
         # Write projected quality
-        self.write_projected_quality()
+        if self.projected_quality is not None: self.write_projected_quality()
 
         # Optical depth
-        self.write_optical_depth_quality()
+        if self.optical_depth_quality is not None: self.write_optical_depth_quality()
 
         # Density
-        self.write_density_quality()
+        if self.density_quality is not None: self.write_density_quality()
 
         # Dust mass
-        self.write_dust_mass_quality()
+        if self.dust_mass_quality is not None: self.write_dust_mass_quality()
 
     # -----------------------------------------------------------------
 
@@ -875,20 +891,23 @@ class DustGridBuilder(Configurable):
         log.info("Writing the quality maps ...")
 
         # Ratio
-        path = self.output_path_file("ratio.fits")
-        self.ratio.saveto(path)
+        #path = self.output_path_file("ratio.fits")
+        #self.ratio.saveto(path)
 
         # Ratio of mean in each projected dust cell
-        mean_path = self.output_path_file("ratio_mean.fits")
-        self.mean_ratio.saveto(mean_path)
+        #mean_path = self.output_path_file("ratio_mean.fits")
+        #self.mean_ratio.saveto(mean_path)
 
         # Ratio of median in each projected dust cell
-        median_path = self.output_path_file("ratio_median.fits")
-        self.median_ratio.saveto(median_path)
+        #median_path = self.output_path_file("ratio_median.fits")
+        #self.median_ratio.saveto(median_path)
 
         # Standard deviation of theoretical density in each dust cell
-        std_path = self.output_path_file("std.fits")
-        self.std.saveto(std_path)
+        #std_path = self.output_path_file("std.fits")
+        #self.std.saveto(std_path)
+
+        # Write all frames to the output directory
+        self.projected_quality.write_to_directory(self.output_path)
 
     # -----------------------------------------------------------------
 
@@ -906,7 +925,7 @@ class DustGridBuilder(Configurable):
         path = self.output_path_file("optical_depth_quality.dat")
 
         # Save
-        save_mapping(path, self.quality["optical_depth"])
+        save_mapping(path, self.optical_depth_quality)
 
     # -----------------------------------------------------------------
 
@@ -924,7 +943,7 @@ class DustGridBuilder(Configurable):
         path = self.output_path_file("density_quality.dat")
 
         # Save
-        save_mapping(path, self.quality["density"])
+        save_mapping(path, self.density_quality)
 
     # -----------------------------------------------------------------
 
@@ -960,7 +979,7 @@ class DustGridBuilder(Configurable):
         path = self.output_path_file("mass_quality.dat")
 
         # Save
-        save_mapping(path, self.quality["mass"])
+        save_mapping(path, self.dust_mass_quality)
 
     # -----------------------------------------------------------------
 

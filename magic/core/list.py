@@ -864,6 +864,31 @@ class FrameList(FilterBasedList):
 
     # -----------------------------------------------------------------
 
+    def write_to_directory(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing all frames to the '" + path + "' directory ...")
+
+        # Loop over the frames
+        for fltr in self.filters:
+
+            # Get the frame
+            frame = self[fltr]
+
+            # Determine the filepath
+            filepath = fs.join(path, str(fltr) + ".fits")
+
+            # Save the frame
+            frame.saveto(filepath, update_path=False)
+
+    # -----------------------------------------------------------------
+
     @property
     def filters(self):
 
@@ -1674,6 +1699,31 @@ class NamedFrameList(NamedList):
         new = cls()
         for path, name in fs.files_in_path(path, returns=["path", "name"], extension="fits", contains=contains): new.append(Frame.from_file(path), name=name)
         return new
+
+    # -----------------------------------------------------------------
+
+    def write_to_directory(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing all frames to the '" + path + "' directory ...")
+
+        # Loop over the frames
+        for name in self.names:
+
+            # Get the frame
+            frame = self[name]
+
+            # Determine the path
+            filepath = fs.join(path, name + ".fits")
+
+            # Save the frame
+            frame.saveto(filepath, update_path=False)
 
     # -----------------------------------------------------------------
 

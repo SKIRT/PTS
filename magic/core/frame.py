@@ -2213,7 +2213,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def saveto(self, path, header=None, origin=None, extra_header_info=None, add_meta=True):
+    def saveto(self, path, header=None, origin=None, extra_header_info=None, add_meta=True, update_path=True):
 
         """
         This function ...
@@ -2222,6 +2222,7 @@ class Frame(NDDataArray):
         :param origin:
         :param extra_header_info:
         :param add_meta:
+        :param update_path:
         """
 
         if header is None: header = self.header
@@ -2292,7 +2293,7 @@ class Frame(NDDataArray):
         else: raise ValueError("Only the FITS or ASDF filetypes are supported")
 
         # Replace the path
-        self.path = path
+        if update_path: self.path = path
 
 # -----------------------------------------------------------------
 
