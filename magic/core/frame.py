@@ -832,6 +832,138 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def where_not(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return newMask(np.not_equal(self._data, value))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nans(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.where(float("nan"))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nans_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [Pixel(x, y) for y, x in np.transpose(np.where(np.isnan(self._data)))]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def zeros(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.where(0.0)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nonzeros(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.where_not(0.0)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def zeros_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [Pixel(x, y) for y, x in np.transpose(np.where(self.zeros))]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def zeros_x(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.where(self.zeros)[1]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def zeros_y(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.where(self.zeros)[0]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nonzeros_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [Pixel(x, y) for y, x in np.transpose(np.nonzero(self._data))]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nonzeros_x(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.nonzero(self._data)[1]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nonzeros_y(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.nonzero(self._data)[0]
+
+    # -----------------------------------------------------------------
+
     @property
     def unique_values(self):
 

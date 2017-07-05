@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import math
 import numpy as np
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod, abstractproperty
 from scipy.special import gammaincinv
 from scipy import ndimage
 import itertools
@@ -35,6 +35,11 @@ from ..basics.instruments import FrameInstrument, SEDInstrument, SimpleInstrumen
 from ...magic.basics.pixelscale import Pixelscale
 from ...core.tools import numbers
 from ...magic.basics.vector import PixelShape
+from ...core.basics.range import QuantityRange
+
+# -----------------------------------------------------------------
+
+default_truncation = 2.0
 
 # -----------------------------------------------------------------
 
@@ -45,6 +50,134 @@ class Model(SimplePropertyComposite):
     """
 
     __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def xmin(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def xmax(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def xrange(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def ymin(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def ymax(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def yrange(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+# -----------------------------------------------------------------
+
+class Model2D(Model):
+
+    """
+    This function ...
+    """
+
+    __metaclass__ = ABCMeta
+
+# -----------------------------------------------------------------
+
+class Model3D(Model):
+
+    """
+    This function ...
+    """
+
+    __metaclass__ = ABCMeta
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def zmin(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def zmax(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def zrange(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
 # -----------------------------------------------------------------
 #
@@ -134,7 +267,54 @@ def load_3d_model(path):
 
 # -----------------------------------------------------------------
 
-class SersicModel3D(Model):
+# FROM GalSIM:
+# https://github.com/GalSim-developers/GalSim/blob/4a2a281f96d11eab63c7584b34e2598a978e5b86/src/SBSersic.cpp
+
+# // Find what radius encloses (1-missing_flux_frac) of the total flux in a Sersic profile,
+# // in units of half-light radius re.
+# double SBSersic::SersicInfo::findMaxR(double missing_flux_frac, double gamma2n)
+# {
+#     // int(exp(-b r^1/n) r, r=R..inf) = x * int(exp(-b r^1/n) r, r=0..inf)
+#     //                                = x n b^-2n Gamma(2n)    [x == missing_flux_frac]
+#     // Change variables: u = b r^1/n,
+#     // du = b/n r^(1-n)/n dr
+#     //    = b/n r^1/n dr/r
+#     //    = u/n dr/r
+#     // r dr = n du r^2 / u
+#     //      = n du (u/b)^2n / u
+#     // n b^-2n int(u^(2n-1) exp(-u), u=bR^1/n..inf) = x n b^-2n Gamma(2n)
+#     // Let z = b R^1/n
+#     //
+#     // int(u^(2n-1) exp(-u), u=z..inf) = x Gamma(2n)
+#     //
+#     // The lhs is an incomplete gamma function: Gamma(2n,z), which according to
+#     // Abramowitz & Stegun (6.5.32) has a high-z asymptotic form of:
+#     // Gamma(2n,z) ~= z^(2n-1) exp(-z) (1 + (2n-2)/z + (2n-2)(2n-3)/z^2 + ... )
+#     // ln(x Gamma(2n)) = (2n-1) ln(z) - z + 2(n-1)/z + 2(n-1)(n-2)/z^2
+#     // z = -ln(x Gamma(2n) + (2n-1) ln(z) + 2(n-1)/z + 2(n-1)(n-2)/z^2
+#     // Iterate this until it converges.  Should be quick.
+#     dbg<<"Find maxR for missing_flux_frac = "<<missing_flux_frac<<std::endl;
+#     double z0 = -std::log(missing_flux_frac * gamma2n);
+#     // Successive approximation method:
+#     double z = 4.*(_n+1.);  // A decent starting guess for a range of n.
+#     double oldz = 0.;
+#     const int MAXIT = 15;
+#     dbg<<"Start with z = "<<z<<std::endl;
+#     for(int niter=0; niter < MAXIT; ++niter) {
+#         oldz = z;
+#         z = z0 + (2.*_n-1.) * std::log(z) + 2.*(_n-1.)/z + 2.*(_n-1.)*(_n-2.)/(z*z);
+#         dbg<<"z = "<<z<<", dz = "<<z-oldz<<std::endl;
+#         if (std::abs(z-oldz) < 0.01) break;
+#     }
+#     dbg<<"Converged at z = "<<z<<std::endl;
+#     double R=std::pow(z/_b, _n);
+#     dbg<<"R = (z/b)^n = "<<R<<std::endl;
+#     return R;
+# }
+
+# -----------------------------------------------------------------
+
+class SersicModel3D(Model3D):
 
     """
     This function ...
@@ -158,6 +338,9 @@ class SersicModel3D(Model):
         self.add_property("z_flattening", "real", "flattening along z direction", 1.)
         self.add_property("azimuth", "angle", "azimuth angle", Angle(0.0, "deg"))
         self.add_property("tilt", "angle", "tilt angle", Angle(0.0, "deg"))
+
+        # Truncation
+        self.add_property("truncation", "real", "truncation limit (in units of effective_radius)", default_truncation)
 
         # Set properties
         self.set_properties(kwargs)
@@ -216,6 +399,114 @@ class SersicModel3D(Model):
         # Create a new Sersic model and return it
         return cls(effective_radius=effective_radius, index=index, y_flattening=y_flattening, z_flattening=z_flattening,
                    azimuth=azimuth, tilt=tilt)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xmin(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return - self.truncation * self.effective_radius
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xmax(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.truncation * self.effective_radius
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xrange(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return QuantityRange(self.xmin, self.xmax)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ymin(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return - self.truncation * self.effective_radius * self.y_flattening
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ymax(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.truncation * self.effective_radius * self.y_flattening
+
+    # -----------------------------------------------------------------
+
+    @property
+    def yrange(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
+        return QuantityRange(self.ymin, self.ymax)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def zmin(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return - self.truncation * self.effective_radius * self.z_flattening
+
+    # -----------------------------------------------------------------
+
+    @property
+    def zmax(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.truncation * self.effective_radius * self.z_flattening
+
+    # -----------------------------------------------------------------
+
+    @property
+    def zrange(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return QuantityRange(self.zmin, self.zmax)
 
     # -----------------------------------------------------------------
 
@@ -338,11 +629,12 @@ class SersicModel3D(Model):
 
     # -----------------------------------------------------------------
 
-    def density_function(self, unit="pc"):
+    def density_function(self, unit="pc", normalize=False):
 
         """
         This function ...
         :param unit:
+        :param normalize:
         :return:
         """
 
@@ -371,7 +663,9 @@ class SersicModel3D(Model):
             """
 
             t = np.sqrt((x / a) ** 2 + (y / b) ** 2 + (z / c) ** 2)
-            return amplitude * np.exp(-bn * (t ** (1 / self.index) - 1))
+            result = amplitude * np.exp(-bn * (t ** (1 / self.index) - 1))
+            if normalize: result /= np.sum(result)
+            return result
 
         # Return the function
         return sersic
@@ -388,7 +682,7 @@ class SersicModel3D(Model):
 
 # -----------------------------------------------------------------
 
-class ExponentialDiskModel3D(Model):
+class ExponentialDiskModel3D(Model3D):
 
     """
     This function ...
@@ -412,6 +706,9 @@ class ExponentialDiskModel3D(Model):
         self.add_property("axial_truncation", "real", "axial truncation", 0)
         self.add_property("inner_radius", "real", "inner radius", 0)
         self.add_property("tilt", "angle", "tilt", Angle(0.0, "deg"))
+
+        # Truncation
+        self.add_property("truncation", "real", "truncation limit (in units of the radial and axial scales", default_truncation)
 
         # Set properties
         self.set_properties(kwargs)
@@ -445,6 +742,120 @@ class ExponentialDiskModel3D(Model):
 
         # Create a new exponential disk model and return it
         return cls(radial_scale=radial_scale, axial_scale=axial_scale, tilt=tilt)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xmin(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.radial_truncation > 0: return - self.radial_truncation
+        else: return - self.truncation * self.radial_scale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xmax(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.radial_truncation > 0: return self.radial_truncation
+        else: return self.truncation * self.radial_scale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xrange(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return QuantityRange(self.xmin, self.xmax)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ymin(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.radial_truncation > 0: return - self.radial_truncation
+        else: return - self.truncation * self.radial_scale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ymax(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.radial_truncation > 0: return self.radial_truncation
+        else: return self.truncation * self.radial_scale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def yrange(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return QuantityRange(self.ymin, self.ymax)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def zmin(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.axial_truncation > 0: return - self.axial_truncation
+        else: return - self.truncation * self.axial_scale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def zmax(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.axial_truncation > 0: return self.axial_truncation
+        else: return self.truncation * self.axial_scale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def zrange(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return QuantityRange(self.zmin, self.zmax)
 
     # -----------------------------------------------------------------
 
@@ -548,11 +959,12 @@ class ExponentialDiskModel3D(Model):
 
     # -----------------------------------------------------------------
 
-    def density_function(self, unit="pc"):
+    def density_function(self, unit="pc", normalize=False):
 
         """
         This function ...
         :param unit:
+        :param normalize:
         :return:
         """
 
@@ -588,6 +1000,7 @@ class ExponentialDiskModel3D(Model):
             if axialtrunc is not None: density[height > axialtrunc] = 0.0
             if innerradius is not None: density[radius < innerradius] = 0.0
 
+            if normalize: density /= np.sum(density)
             return density
 
         # Return the function
@@ -621,7 +1034,7 @@ class RingModel3D(Model):
 
 # -----------------------------------------------------------------
 
-class DeprojectionModel3D(Model):
+class DeprojectionModel3D(Model3D):
 
     """
     This class ...
@@ -658,6 +1071,12 @@ class DeprojectionModel3D(Model):
 
         # Distance (if not defined in the map)
         self.add_property("distance", "quantity", "distance to the galaxy")
+
+        # Truncation
+        self.add_property("axial_truncation", "real", "truncation in units of the scale height", default_truncation)
+
+        # Truncate zero values around the luminosity of the map
+        self.add_property("truncate_zeros", "boolean", "truncate in the xy plane around where the map is above zero", True)
 
         # Set the properties
         self.set_properties(kwargs)
@@ -733,6 +1152,178 @@ class DeprojectionModel3D(Model):
 
         # Return
         return frame
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def map_zeros(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.map.zeros
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def map_nonzeros(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.map.nonzeros
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def map_zeros_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.map.zeros_pixels
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def map_nonzeros_pixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.map.nonzeros_pixels
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def map_nonzeros_x(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.map.nonzeros_x
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def map_nonzeros_y(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.map.nonzeros_y
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def min_nonzero_x(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.min(self.map_nonzeros_x)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def max_nonzero_x(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.max(self.map_nonzeros_x)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def min_nonzero_y(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.min(self.map_nonzeros_y)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def max_nonzero_y(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return np.max(self.map_nonzeros_y)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ntruncated_min_x(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.truncate_zeros: return self.min_nonzero_x
+        else: return 0.
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ntruncated_max_x(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.truncate_zeros: return self.xsize - self.max_nonzero_x
+        else: return 0.
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ntruncated_min_y(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.truncate_zeros: return self.min_nonzero_y
+        else: return 0.
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ntruncated_max_y(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.truncate_zeros: return self.ysize - self.max_nonzero_y
+        else: return 0.0
 
     # -----------------------------------------------------------------
 
@@ -1034,7 +1625,19 @@ class DeprojectionModel3D(Model):
         :return:
         """
 
-        # Calculate the boundaries of the image in physical coordinates
+        #print("ntruncated max x: " + str(self.ntruncated_max_x) + " of " + str(self.xsize))
+        return (self.x_size - self.x_center - self.ntruncated_max_x) * self.pixelscale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def map_xmax(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         return (self.x_size - self.x_center) * self.pixelscale
 
     # -----------------------------------------------------------------
@@ -1047,12 +1650,50 @@ class DeprojectionModel3D(Model):
         :return:
         """
 
+        #print("ntruncated min x: " + str(self.ntruncated_min_x) + " of " + str(self.xsize))
+        return - (self.x_center - self.ntruncated_min_x) * self.pixelscale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def map_xmin(self):
+
+        """
+        THis function ...
+        :return:
+        """
+
         return - self.x_center * self.pixelscale
 
     # -----------------------------------------------------------------
 
     @property
+    def xrange(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return QuantityRange(self.xmin, self.xmax)
+
+    # -----------------------------------------------------------------
+
+    @property
     def ymax(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #print("ntruncated max y: " + str(self.ntruncated_max_y) + " of " + str(self.ysize))
+        return (self.y_size - self.y_center - self.ntruncated_max_y) * self.pixelscale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def map_ymax(self):
 
         """
         This function ...
@@ -1071,7 +1712,68 @@ class DeprojectionModel3D(Model):
         :return:
         """
 
+        #print("ntruncated min y: " + str(self.ntruncated_min_y) + " of " + str(self.ysize))
+        return - (self.y_center - self.ntruncated_min_y) * self.pixelscale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def map_ymin(self):
+
+        """
+        This function ...
+        :return:
+        """
+
         return - self.y_center * self.pixelscale
+
+    # -----------------------------------------------------------------
+
+    @property
+    def yrange(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return QuantityRange(self.ymin, self.ymax)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def zmin(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return - self.axial_truncation * self.scale_height
+
+    # -----------------------------------------------------------------
+
+    @property
+    def zmax(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.axial_truncation * self.scale_height
+
+    # -----------------------------------------------------------------
+
+    @property
+    def zrange(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return QuantityRange(self.zmin, self.zmax)
 
     # -----------------------------------------------------------------
 
@@ -1181,10 +1883,6 @@ class DeprojectionModel3D(Model):
         :return:
         """
 
-        #// Calculate the coordinates of the 4 corners of the image in the rotated plane
-        #_C1x = _xmax
-        #_C1y = _ymax
-
         return self.derotate(self.xmax, self.ymax)
 
     # -----------------------------------------------------------------
@@ -1196,9 +1894,6 @@ class DeprojectionModel3D(Model):
         This function ...
         :return:
         """
-
-        #_C2x = _xmin
-        #_C2y = _ymax
 
         return self.derotate(self.xmin, self.ymax)
 
@@ -1212,9 +1907,6 @@ class DeprojectionModel3D(Model):
         :return:
         """
 
-        #_C3x = _xmin
-        #_C3y = _ymin
-
         return self.derotate(self.xmin, self.ymin)
 
     # -----------------------------------------------------------------
@@ -1226,9 +1918,6 @@ class DeprojectionModel3D(Model):
         This function ...
         :return:
         """
-
-        #_C4x = _xmax
-        #_C4y = _ymin
 
         return self.derotate(self.xmax, self.ymin)
 
@@ -1350,8 +2039,8 @@ class DeprojectionModel3D(Model):
         # Find the corresponding pixel in the image
         #i = int(floor(x-_xmin) / _deltay)
         #j = int(floor(y-_ymin) / _deltay)
-        i = numbers.round_down_to_int((x - self.xmin) / self.deltay)
-        j = numbers.round_down_to_int((y - self.ymin) / self.deltay)
+        i = numbers.round_down_to_int((x - self.map_xmin) / self.deltay)
+        j = numbers.round_down_to_int((y - self.map_ymin) / self.deltay)
 
         # Not on the image
         if i < 0 or i >= self.x_size or j < 0 or j >= self.y_size: return 0.0
@@ -1386,17 +2075,18 @@ class DeprojectionModel3D(Model):
 
     # -----------------------------------------------------------------
 
-    def density_function(self, unit="pc"):
+    def density_function(self, unit="pc", normalize=False):
 
         """
         This function ...
         :param unit:
+        :param normalize:
         :return:
         """
 
         # Get properties as scalars (no units)
-        xmin_scalar = self.xmin.to(unit).value
-        ymin_scalar = self.ymin.to(unit).value
+        xmin_scalar = self.map_xmin.to(unit).value
+        ymin_scalar = self.map_ymin.to(unit).value
         deltay_scalar = self.deltay.to(unit).value
         deltax_scalar = self.deltax.to(unit).value
         scale_height_scalar = self.scale_height.to(unit).value
@@ -1505,7 +2195,11 @@ class DeprojectionModel3D(Model):
 
             # Return
             z = abs(z)
-            return deprojected * np.exp(- z / scale_height_scalar) / (2. * scale_height_scalar) / (deltax_scalar * deltay_scalar)
+            result = deprojected * np.exp(- z / scale_height_scalar) / (2. * scale_height_scalar) / (deltax_scalar * deltay_scalar)
+
+            # Normalize?
+            if normalize: result /= np.sum(result)
+            return result
 
         # Return the function
         return deprojection
@@ -1704,7 +2398,7 @@ def load_2d_model(path):
 
 # -----------------------------------------------------------------
 
-class SersicModel2D(Model):
+class SersicModel2D(Model2D):
 
     """
     This class ...
@@ -1728,8 +2422,83 @@ class SersicModel2D(Model):
         self.add_property("effective_radius", "quantity", "effective radius")
         self.add_property("index", "real", "sersic index")
 
+        # Truncation
+        self.add_property("truncation", "real", "truncation radius relative to the effective radius", default_truncation)
+
         # Set properties
         self.set_properties(kwargs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xmin(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return - self.truncation * self.effective_radius
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xmax(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.truncation * self.effective_radius
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xrange(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return QuantityRange(self.xmin, self.xmax)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ymin(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return - self.truncation * self.effective_radius
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ymax(self):
+
+        """
+        This ufnction ...
+        :return:
+        """
+
+        return self.truncation * self.effective_radius
+
+    # -----------------------------------------------------------------
+
+    @property
+    def yrange(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return QuantityRange(self.ymin, self.ymax)
 
     # -----------------------------------------------------------------
 
@@ -1775,7 +2544,7 @@ class SersicModel2D(Model):
 
 # -----------------------------------------------------------------
 
-class ExponentialDiskModel2D(Model):
+class ExponentialDiskModel2D(Model2D):
 
     """
     This class ...
@@ -1798,7 +2567,82 @@ class ExponentialDiskModel2D(Model):
         self.add_property("mu0", "quantity", "surface brightness at center")
         self.add_property("scalelength", "quantity", "scale length")
 
+        # The truncation
+        self.add_property("truncation", "real", "truncation length in units of the scalelength", default_truncation)
+
         # Set properties
         self.set_properties(kwargs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xmin(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return - self.truncation * self.scalelength
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xmax(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.truncation * self.scalelength
+
+    # -----------------------------------------------------------------
+
+    @property
+    def xrange(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return QuantityRange(self.xmin, self.xmax)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ymin(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return - self.truncation * self.scalelength
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ymax(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.truncation * self.scalelength
+
+    # -----------------------------------------------------------------
+
+    @property
+    def yrange(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return QuantityRange(self.ymin, self.ymax)
 
 # -----------------------------------------------------------------
