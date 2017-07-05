@@ -29,7 +29,7 @@ from .general import GeneralBuilder
 from .component import model_map_filename
 from ...core.tools import filesystem as fs
 from ...magic.core.frame import Frame
-from ..maps.component import get_old_stars_maps_path, get_young_stars_maps_path, get_ionizing_stars_maps_path
+#from ..maps.component import get_old_stars_maps_path, get_young_stars_maps_path, get_ionizing_stars_maps_path
 from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import types
 from ...magic.tools import extinction

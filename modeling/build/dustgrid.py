@@ -285,7 +285,7 @@ class DustGridBuilder(Configurable):
         self.ski.enable_all_writing_options()
 
         # Disable writing stellar density (we don't have a stellar system)
-        self.ski.set_write_stellar_density(False)
+        #self.ski.set_write_stellar_density(False)
 
     # -----------------------------------------------------------------
 

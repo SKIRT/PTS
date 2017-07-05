@@ -22,7 +22,7 @@ from .general import GeneralBuilder
 from .component import model_map_filename
 from ...core.tools import filesystem as fs
 from ...magic.core.frame import Frame
-from ..maps.component import get_dust_maps_path
+#from ..maps.component import get_dust_maps_path
 from ..component.galaxy import GalaxyModelingComponent
 
 # -----------------------------------------------------------------
