@@ -1111,6 +1111,18 @@ class SKIRTSmileSchema(object):
         # Check
         return self.has_property("DustSystem", "writeStellarDensity")
 
+    # -----------------------------------------------------------------
+
+    @property
+    def supports_writing_absorption(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.has_property("PanDustSystem", "writeAbsorption")
+
 # -----------------------------------------------------------------
 
 def get_ptype(tag):
