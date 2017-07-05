@@ -18,11 +18,11 @@ import numpy as np
 from skimage.measure import compare_ssim
 
 # Import the relevant PTS classes and modules
-from pts.core.tools.logging import setup_log
+from pts.core.tools.logging import log
 from pts.core.tools import filesystem as fs
 from pts.core.tools import introspection
 from pts.modeling.core.environment import GalaxyModelingEnvironment
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.magic.core.frame import Frame
 from pts.modeling.maps.collection import MapsCollection
 from pts.core.tools import formatting as fmt
@@ -44,12 +44,7 @@ definition = ConfigurationDefinition()
 definition.add_optional("maps", "string_list", "maps for which to show the similarity", choices=maps, default=maps)
 
 # Create the configuration
-setter = ArgumentConfigurationSetter("maps_similarity")
-config = setter.run(definition)
-
-# -----------------------------------------------------------------
-
-log = setup_log(level="DEBUG")
+config = parse_arguments("maps_similarity", definition)
 
 # -----------------------------------------------------------------
 

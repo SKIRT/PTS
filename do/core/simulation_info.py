@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.remote.host import find_host_ids
 
 # -----------------------------------------------------------------
@@ -28,8 +28,7 @@ definition.add_required("simulation_id", "integer", "ID of the simulation")
 # -----------------------------------------------------------------
 
 # Parse the arguments into a configuration
-setter = ArgumentConfigurationSetter("simulation_info", "Show information about a certain remote simulation")
-config = setter.run(definition)
+config = parse_arguments("simulation_info", definition, description="Show information about a certain remote simulation")
 
 # -----------------------------------------------------------------
 

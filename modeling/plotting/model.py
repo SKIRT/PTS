@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.modeling.plot_truncated Plot the truncated images for a certain factor.
+## \package pts.do.modeling.plotting.model Plot the model.
 
 # -----------------------------------------------------------------
 
@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import os
 import numpy as np
 import ipywidgets as widgets
 from IPython.display import display
@@ -22,12 +23,15 @@ import matplotlib.pyplot as plt
 from ipyvolume.transferfunction import TransferFunctionWidgetJs3
 from ipyvolume.style import dark, light
 
+import json
+import ipywidgets
+
 # Import astronomical modules
 from astropy.io.fits import Header
 
 import ipyvolume.pylab as p3
 import ipyvolume
-from ipyvolume.embed import embed_html #, template, widget_view_template
+from ipyvolume.embed import embed_html, template, widget_view_template, get_state, add_referring_widgets
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import logging, time
@@ -40,13 +44,6 @@ from pts.magic.core.frame import Frame
 from pts.magic.basics.coordinatesystem import CoordinateSystem
 from pts.modeling.basics.models import DeprojectionModel3D
 from pts.modeling.basics.properties import GalaxyProperties
-
-# -----------------------------------------------------------------
-
-# Create log
-definition = ConfigurationDefinition()
-definition.add_optional("style", "string", "style: light or dark", "light", choices=["light", "dark"])
-config = parse_arguments("test_m81_model_plot", definition)
 
 # -----------------------------------------------------------------
 
@@ -248,6 +245,64 @@ def plot_galaxy_components(components, draw=True, show=True, shape=128, unit="pc
 
 # -----------------------------------------------------------------
 
+def generate_html(widgets, drop_defaults=False, all=False, title="ipyvolume embed example", external_json=False, template=template, widget_view_template=widget_view_template, **kwargs):
+
+    """
+    This function ...
+    :param widgets:
+    :param drop_defaults:
+    :param all:
+    :param title:
+    :param external_json:
+    :param template:
+    :param widget_view_template:
+    :param kwargs:
+    :return:
+    """
+
+    try:
+        widgets[0]
+    except (IndexError, TypeError):
+        widgets = [widgets]
+
+    # collect the state of all relevant widgets
+    state = {}
+    previous = 0 + ipyvolume.serialize.performance
+    try:
+        # we cannot serialize binary buffers yet into the json format, so go back to json
+        # style, and afterwards set it back
+        ipyvolume.serialize.performance = 0
+        if all:
+            state = ipywidgets.Widget.get_manager_state(drop_defaults=drop_defaults)["state"]
+        for widget in widgets:
+            if not all:
+                get_state(widget, state, drop_defaults=drop_defaults)
+        # it may be that other widgets refer to the collected widgets, such as layouts, include those as well
+        while add_referring_widgets(state):
+            pass
+    finally:
+        ipyvolume.serialize.performance = previous
+
+    values = dict(extra_script_head="", body_pre="", body_post="")
+    values.update(kwargs)
+    widget_views = ""
+    for widget in widgets:
+        widget_views += widget_view_template.format(**dict(model_id=widget.model_id))
+    json_data = dict(version_major=1, version_minor=0, state=state)
+    if external_json:
+        filename_base = os.path.splitext(filename)[0]
+        with open(filename_base+".json", "w") as fjson:
+            json.dump(json_data, fjson)
+        values.update(dict(title=title, widget_views=widget_views))
+    else:
+        values.update(dict(title=title,
+                  json_data=json.dumps(json_data),
+                       widget_views=widget_views))
+    html_code = template.format(**values)
+    return html_code
+
+# -----------------------------------------------------------------
+
 instrument_name = "earth"
 
 # -----------------------------------------------------------------
@@ -372,8 +427,5 @@ embed_html(filepath, box)
 fs.open_file(filepath)
 
 # -----------------------------------------------------------------
-
-# Remove
-#fs.remove_file(filepath)
 
 # -----------------------------------------------------------------

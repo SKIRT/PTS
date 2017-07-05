@@ -16,8 +16,7 @@ from __future__ import absolute_import, division, print_function
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
-from pts.core.tools.logging import setup_log
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.tools import filesystem as fs
 from pts.modeling.fitting.component import get_run_names, get_populations
 from pts.modeling.fitting.run import get_generations_table, get_generation_path
@@ -39,11 +38,7 @@ elif len(run_names) == 1: definition.add_fixed("fitting_run", "string", run_name
 else: definition.add_required("fitting_run", "string", "name of the fitting run to use", choices=run_names)
 
 # Create the configuration
-setter = ArgumentConfigurationSetter("check_populations")
-config = setter.run(definition)
-
-# Set logging
-log = setup_log("DEBUG")
+config = parse_arguments("check_populations", definition)
 
 # -----------------------------------------------------------------
 

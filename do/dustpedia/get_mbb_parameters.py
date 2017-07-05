@@ -13,7 +13,7 @@ from pts.dustpedia.core.database import DustPediaDatabase, get_account
 from pts.dustpedia.core.sample import DustPediaSample
 from pts.core.tools import filesystem as fs
 from pts.core.tools.stringify import tostr
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 
 # -----------------------------------------------------------------
 
@@ -21,8 +21,7 @@ definition = ConfigurationDefinition()
 definition.add_required("galaxy_name", "string", "galaxy name")
 
 # Set
-setter = ArgumentConfigurationSetter("get_mbb_parameters")
-config = setter.run(definition)
+config = parse_arguments("get_mbb_parameters", definition)
 
 # -----------------------------------------------------------------
 

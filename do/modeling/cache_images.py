@@ -13,13 +13,13 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.tools.logging import setup_log
+from pts.core.tools.logging import log
 from pts.core.tools import filesystem as fs
 from pts.modeling.core.environment import GalaxyModelingEnvironment
 from pts.core.remote.remote import Remote
 from pts.modeling.core.steps import cached_directory_path_for_single_command
 from pts.modeling.component.galaxy import get_data_image_and_error_paths, get_initial_dataset
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.data.component import instrument_to_origin
 
 # -----------------------------------------------------------------
@@ -29,13 +29,7 @@ definition = ConfigurationDefinition()
 definition.add_flag("reset", "reset everything: retrieve images and remove remote data folder", False)
 
 # Create configuration
-setter = ArgumentConfigurationSetter("cache_images")
-config = setter.run(definition)
-
-# -----------------------------------------------------------------
-
-# Setup logger
-log = setup_log(level="DEBUG")
+config = parse_arguments("cache_images", definition)
 
 # -----------------------------------------------------------------
 

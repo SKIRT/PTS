@@ -18,7 +18,7 @@ import numpy as np
 # Import the relevant PTS classes and modules
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.core.environment import GalaxyModelingEnvironment
 from pts.magic.plot.imagegrid import StandardImageGridPlotter
 from pts.core.filter.filter import parse_filter
@@ -34,8 +34,7 @@ definition = ConfigurationDefinition()
 definition.add_required("factor", "real", "truncation ellipse factor for which to plot")
 
 # Get configuration
-setter = ArgumentConfigurationSetter("plot_truncated")
-config = setter.run(definition)
+config = parse_arguments("plot_truncated", definition)
 
 # -----------------------------------------------------------------
 

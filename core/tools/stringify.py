@@ -36,7 +36,6 @@ def tostr(value, **kwargs):
 
     # Get the 'scientific' flag
     scientific = kwargs.get("scientific", None)
-
     scientific_int = kwargs.pop("scientific_int", True) # also represent integers in scientific notation
 
     # Set default number of decimal places
@@ -103,7 +102,6 @@ def tostr(value, **kwargs):
 
 # -----------------------------------------------------------------
 
-#def stringify(value, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False, delimiter=",", **kwargs):
 def stringify(value, **kwargs):
 
     """
@@ -112,9 +110,6 @@ def stringify(value, **kwargs):
     :param kwargs:
     :return:
     """
-
-    #print("strdelimiter", delimiter)
-    #print("strkwargs", kwargs)
 
     # List or derived from list
     if isinstance(value, list): return stringify_list(value, **kwargs)
@@ -377,7 +372,6 @@ def stringify_tuple(value, **kwargs):
 
 # -----------------------------------------------------------------
 
-#def stringify_not_list(value, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False, **kwargs):
 def stringify_not_list(value, **kwargs):
 
     """
@@ -554,7 +548,6 @@ def str_from_integer_range(the_range, **kwargs):
 
 # -----------------------------------------------------------------
 
-#def str_from_real(real, scientific=False, decimal_places=2, fancy=False, ndigits=None, unicode=False, **kwargs):
 def str_from_real(real, **kwargs):
 
     """
@@ -570,6 +563,7 @@ def str_from_real(real, **kwargs):
     fancy = kwargs.pop("fancy", False)
     ndigits = kwargs.pop("ndigits", None)
     unicode = kwargs.pop("unicode", False)
+    doround = kwargs.pop("round", False)
 
     # Check input
     if ndigits is not None and ndigits < 1: raise ValueError("Number of digits cannot be smaller than 1")
@@ -606,7 +600,9 @@ def str_from_real(real, **kwargs):
             if ndigits is not None: decimal_places = ndigits - 1
             return ("{:." + str(decimal_places) + "e}").format(real).replace("+", "").replace("e0", "e")
 
-    else: return repr(real)
+    else:
+        if doround: return repr(numbers.round_to_n_significant_digits(real, ndigits))
+        else: return repr(real)
 
 # -----------------------------------------------------------------
 

@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.remote.host import find_host_ids
 
 # -----------------------------------------------------------------
@@ -28,8 +28,7 @@ definition.add_required("task_id", "integer", "ID of the PTS task")
 # -----------------------------------------------------------------
 
 # Parse the arguments into a configuration
-setter = ArgumentConfigurationSetter("task_info", "Show information about a certain remote PTS task")
-config = setter.run(definition)
+config = parse_arguments("task_info", definition, description="Show information about a certain remote PTS task")
 
 # -----------------------------------------------------------------
 

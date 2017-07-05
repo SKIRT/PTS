@@ -17,7 +17,7 @@ from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.core.tools import introspection
 from pts.dustpedia.core.database import DustPediaDatabase, get_account
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 
 # -----------------------------------------------------------------
 
@@ -25,20 +25,7 @@ from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfi
 definition = ConfigurationDefinition()
 
 # Get configuration
-setter = ArgumentConfigurationSetter("plot_galaxies")
-config = setter.run(definition)
-
-# -----------------------------------------------------------------
-
-# Determine the log file path
-logfile_path = fs.join(fs.cwd(), time.unique_name("log") + ".txt") if config.report else None
-
-# Determine the log level
-level = "DEBUG" if config.debug else "INFO"
-
-# Initialize the logger
-log = logging.setup_log(level=level, path=logfile_path)
-log.start("Starting plot_galaxies ...")
+setter = parse_arguments("plot_galaxies", definition)
 
 # -----------------------------------------------------------------
 

@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.remote.remote import Remote
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.tools import introspection
 from pts.core.tools.logging import log
 
@@ -30,8 +30,7 @@ definition.add_required("remote", "string", "the remote host ID")
 definition.add_flag("versions", "compare versions", "v")
 
 # Get configuration
-setter = ArgumentConfigurationSetter("compare_python_packages")
-config = setter.run(definition)
+config = parse_arguments("compare_python_packages", definition)
 
 # -----------------------------------------------------------------
 

@@ -18,8 +18,8 @@ import os
 from subprocess import call, STDOUT
 
 # Import the relevant PTS classes and modules
-from pts.core.tools.logging import setup_log
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.tools.logging import log
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.tools import filesystem as fs
 from pts.core.tools import time
 from pts.core.tools import introspection
@@ -37,8 +37,7 @@ definition.add_required("suite_name", "string", "name of the scaling test suite 
 definition.add_flag("small", "make plots smaller so that they fit in one column of a publication and have a suiting resolution")
 
 # Get configuration
-setter = ArgumentConfigurationSetter("scaling_plots")
-config = setter.run(definition)
+config = parse_arguments("scaling_plots", definition)
 
 # -----------------------------------------------------------------
 
@@ -72,10 +71,6 @@ memory_path = fs.create_directory_in(output_path, "Memory scaling")
 # -----------------------------------------------------------------
 
 pts_path = introspection.pts_executable_path
-
-# -----------------------------------------------------------------
-
-log = setup_log("INFO")
 
 # -----------------------------------------------------------------
 

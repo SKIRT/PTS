@@ -1521,70 +1521,7 @@ class M81TestBase(TestImplementation):
         # Inform the user
         log.info("Checking the database ...")
 
-        # Loop over the generations
-        for index in range(self.config.ngenerations):
-
-            # Determine the generation name
-            generation_name = self.get_generation_name(index)
-
-            # Debugging
-            log.debug("Checking generation '" + generation_name + "' ...")
-
-            # Load the elitism table
-            if fs.is_file(self.elitism_table_path_for_generation(generation_name)): elitism_table = self.elitism_table_for_generation(generation_name)
-            else:
-                elitism_table = None
-                log.warning("No elitism data found for generation '" + generation_name + "'")
-
-            # Load the scores table
-            scores_table = self.chi_squared_table_for_generation(generation_name)
-
-            # Load the individuals table
-            individuals_table = self.individuals_table_for_generation(generation_name)
-
-            # Get the scores from the database
-            database_index = index + 1
-            scores_database = get_scores_named_individuals(self.database_path, self.fitting_run_name, database_index)
-
-            # Keep track of the number of elitisms
-            nelitisms = 0
-
-            # Keep track of the mismatches
-            mismatches = []
-
-            # Loop over the individual names
-            for name in scores_database:
-
-                # Check whether name in elitism table as replaced individual, in this case don't check the score
-                if elitism_table is not None and name in elitism_table.replaced_names:
-                    nelitisms += 1
-                    continue
-
-                # Get the score from the database
-                score_database = scores_database[name]
-
-                # Get the simulation name
-                if individuals_table.has_individual(name):
-
-                    # Get simulation name
-                    simulation_name = individuals_table.get_simulation_name(name)
-
-                    # Get the chi squared value
-                    score = scores_table.chi_squared_for(simulation_name)
-
-                    # Check if equal
-                    equal = np.isclose(score, score_database, rtol=1.e-4)
-                    if not equal: mismatches.append((score, score_database))
-
-                # Recurrent
-                else: log.debug("Individual '" + name + "' is recurrent, so not present in the individuals table of generation '" + generation_name + "'")
-
-            # Report
-            if len(mismatches) == 0: log.success(generation_name + ": OK")
-            else:
-                log.error(generation_name + ": " + str(len(mismatches)) + " mismatch(es):")
-                for score, score_database in mismatches: log.error("   " + str(score) + " , " + str(score_database))
-            log.info("Number of elitism replacements: " + str(nelitisms))
+        # TODO: use GenerationPlatform.check_database()
 
     # -----------------------------------------------------------------
 
@@ -1598,34 +1535,7 @@ class M81TestBase(TestImplementation):
         # Inform the user
         log.info("Checking the statistics table ...")
 
-        # Loop over the generations
-        print("")
-        for index in range(self.config.ngenerations):
-
-            # Determine the generation name
-            generation_name = self.get_generation_name(index)
-
-            # Debugging
-            log.debug("Checking generation '" + generation_name + "' ...")
-
-            # Get the best score from the statistics
-            statistics_index = index + 1
-            score_statistics = get_best_score_for_generation(self.statistics_path, self.fitting_run_name, statistics_index, minmax="min")
-
-            # Get the best score from the scores table
-            score_table = self.get_best_score_for_generation(generation_name)
-
-            # Rel diff
-            rel_diff = abs(score_table - score_statistics) / score_statistics
-
-            print(generation_name + ":")
-            print("")
-
-            print(" - Best score from statistics: " + tostr(score_statistics))
-            print(" - Best score from scores table: " + tostr(score_table))
-            print(" - Relative difference: " + tostr(rel_diff) + " (" + tostr(rel_diff * 100) + "%)")
-
-            print("")
+        # TODO: use GenerationPlatform.check_database()
 
     # -----------------------------------------------------------------
 

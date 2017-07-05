@@ -50,12 +50,68 @@ single_commands["make_young_stellar_maps"] = galaxy_modeling
 single_commands["make_ionizing_stellar_maps"] = galaxy_modeling
 single_commands["create_significance_masks"] = galaxy_modeling
 single_commands["plot_sed"] = sed_modeling # only for SEDModeler
-single_commands["build_model"] = all_modeling
+single_commands["build_model"] = galaxy_modeling
+single_commands["build_sed"] = sed_modeling
+single_commands["build_images"] = images_modeling
 single_commands["generate_representations"] = galaxy_modeling
 single_commands["buildsedrepresentation"] = sed_modeling
 single_commands["configure_fit"] = all_modeling
 single_commands["initialize_fit_sed"] = sed_modeling # for sed modeling
 single_commands["initialize_fit_galaxy"] = galaxy_modeling # for galaxy modeling
+
+# -----------------------------------------------------------------
+
+def commands_for_modeling_type(modeling_type):
+
+    """
+    This function ...
+    :param modeling_type:
+    :return:
+    """
+
+    # Initialize a list for the
+    commands = []
+    for command in single_commands:
+
+        type_for_command = single_commands[command]
+        if type_for_command == modeling_type or type_for_command == all_modeling:
+            commands.append(command)
+
+    # Return the commands
+    return commands
+
+# -----------------------------------------------------------------
+
+def galaxy_modeling_commands():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return commands_for_modeling_type(galaxy_modeling)
+
+# -----------------------------------------------------------------
+
+def sed_modeling_commands():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return commands_for_modeling_type(sed_modeling)
+
+# -----------------------------------------------------------------
+
+def images_modeling_commands():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return commands_for_modeling_type(images_modeling)
 
 # -----------------------------------------------------------------
 

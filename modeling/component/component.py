@@ -402,10 +402,19 @@ class ModelingComponent(Configurable):
         :return:
         """
 
-        # Open the modeling history
-        history = ModelingHistory.from_file(self.history_file_path)
-        history.clean()
-        return history
+        return self.environment.history
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def status(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.status
 
     # -----------------------------------------------------------------
 
@@ -530,6 +539,19 @@ def load_modeling_configuration(modeling_path):
 
 # -----------------------------------------------------------------
 
+def get_modeling_type(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    configuration = load_modeling_configuration(modeling_path)
+    return configuration.modeling_type
+
+# -----------------------------------------------------------------
+
 def get_default_fitting_method(modeling_path):
 
     """
@@ -593,5 +615,18 @@ def load_modeling_history(modeling_path):
 
     #fitting_configuration = load_fitting_configuration(modeling_path)
     #return fitting_configuration.spectral_convolution
+
+# -----------------------------------------------------------------
+
+def load_modeling_status(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    from ..core.status import ModelingStatus
+    return ModelingStatus(modeling_path)
 
 # -----------------------------------------------------------------

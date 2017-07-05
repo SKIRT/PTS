@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import subprocess
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.tools import introspection
 from pts.core.prep.update import SKIRTUpdater
 
@@ -34,11 +34,8 @@ definition.add_optional("host_id", "string", "the remote on which to pull the ch
 
 # -----------------------------------------------------------------
 
-# Create configuration setter
-setter = ArgumentConfigurationSetter("push_changes", "Add all, commit and push to remote repositories, and pull again on remote systems")
-
-# Get the configuration
-config = setter.run(definition)
+# Create configuration
+config = parse_arguments("push_changes", definition, description="Add all, commit and push to remote repositories, and pull again on remote systems")
 
 # -----------------------------------------------------------------
 

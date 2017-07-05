@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.core.environment import GalaxyModelingEnvironment
 from pts.magic.plot.imagegrid import StandardImageGridPlotter
 from pts.magic.core.frame import Frame
@@ -32,8 +32,7 @@ definition.add_required("sub_name", "string", "maps sub name for plotting", map_
 definition.add_positional_optional("method", "string", "method for plotting")
 
 # Get configuration
-setter = ArgumentConfigurationSetter("plot_maps")
-config = setter.run(definition)
+config = parse_arguments("plot_maps", definition)
 
 # -----------------------------------------------------------------
 

@@ -13,16 +13,14 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.magic.services.ukidss import UKIDSS
 
 # -----------------------------------------------------------------
 
 definition = ConfigurationDefinition()
 definition.add_required("galaxy_name", "string", "galaxy name")
-
-setter = ArgumentConfigurationSetter("list_ukidss")
-config = setter.run(definition)
+config = parse_arguments("list_ukidss", definition)
 
 # -----------------------------------------------------------------
 

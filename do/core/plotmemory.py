@@ -18,7 +18,7 @@ from pts.core.simulation.simulation import createsimulations
 from pts.core.extract.memory import MemoryExtractor, MemoryUsageTable
 from pts.core.plot.memory import MemoryPlotter
 from pts.core.tools import filesystem as fs
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 
 # -----------------------------------------------------------------
 
@@ -29,8 +29,7 @@ definition = ConfigurationDefinition()
 definition.add_flag("table", "save the extracted memory table")
 
 # Get the configuration
-setter = ArgumentConfigurationSetter("plotmemory")
-config = setter.run(definition)
+config = parse_arguments("plotmemory", definition)
 
 # -----------------------------------------------------------------
 

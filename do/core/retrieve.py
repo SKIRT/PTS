@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import logging
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.remote.host import find_host_ids
 from pts.core.remote.remote import Remote
 from pts.core.tools import filesystem as fs
@@ -26,17 +26,7 @@ definition.add_required("remote_path", "string", "remote path of the file or dir
 definition.add_required("remote", "string", "remote host to retrieve from", choices=find_host_ids())
 definition.add_optional("local_path", "string", "path of the local directory to store the file/directory")
 
-setter = ArgumentConfigurationSetter("retrieve")
-config = setter.run(definition)
-
-# -----------------------------------------------------------------
-
-# Determine the log level
-level = "DEBUG" if config.debug else "INFO"
-
-# Initialize the logger
-log = logging.setup_log(level=level)
-log.start("Starting retrieve ...")
+config = parse_arguments("retrieve", definition)
 
 # -----------------------------------------------------------------
 

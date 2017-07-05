@@ -21,6 +21,7 @@ from astropy.utils import lazyproperty
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from .history import ModelingHistory
+from .status import ModelingStatus
 from ...core.basics.configuration import Configuration
 from ...core.data.sed import ObservedSED
 from ...core.filter.filter import parse_filter
@@ -42,6 +43,7 @@ config_name = "config"
 show_name = "show"
 build_name = "build"
 in_name = "in"
+html_name = "html"
 
 # -----------------------------------------------------------------
 
@@ -87,6 +89,7 @@ class ModelingEnvironment(object):
         self.in_path = fs.create_directory_in(self.path, in_name)
         self.show_path = fs.create_directory_in(self.path, show_name)
         self.build_path = fs.create_directory_in(self.path, build_name)
+        self.html_path = fs.create_directory_in(self.path, html_name)
 
     # -----------------------------------------------------------------
 
@@ -115,6 +118,35 @@ class ModelingEnvironment(object):
         """
 
         return self.modeling_configuration.modeling_type
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def history(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Open the modeling history
+        history = ModelingHistory.from_file(self.history_file_path)
+        history.clean()
+        return history
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def status(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Open the modeling status
+        status = ModelingStatus(self.path)
+        return status
 
 # -----------------------------------------------------------------
 

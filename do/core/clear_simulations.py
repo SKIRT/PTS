@@ -13,9 +13,10 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.remote.host import find_host_ids
-from pts.core.tools import logging, introspection
+from pts.core.tools.logging import log
+from pts.core.tools import introspection
 from pts.core.tools import filesystem as fs
 from pts.core.simulation.simulation import RemoteSimulation
 from pts.core.remote.remote import Remote
@@ -37,17 +38,7 @@ definition.add_flag("full", "fully clear the simulations, also remove remote sim
 # -----------------------------------------------------------------
 
 # Parse the arguments into a configuration
-setter = ArgumentConfigurationSetter("clear_tasks", "Clear PTS tasks for a certain remote host")
-config = setter.run(definition)
-
-# -----------------------------------------------------------------
-
-# Determine the log level
-level = "DEBUG" if config.debug else "INFO"
-
-# Initialize the logger
-log = logging.setup_log(level=level)
-log.start("Starting clear_simulations ...")
+setter = parse_arguments("clear_tasks", definition, description="Clear PTS tasks for a certain remote host")
 
 # -----------------------------------------------------------------
 

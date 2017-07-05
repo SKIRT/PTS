@@ -16,9 +16,9 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import logging, time
+from pts.core.tools import time
 from pts.core.tools import filesystem as fs
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.core.environment import GalaxyModelingEnvironment
 from pts.core.remote.remote import Remote
 from pts.core.tools.parsing import real
@@ -37,8 +37,7 @@ definition.add_required("filter", "filter", "filter for which to show the trunca
 definition.add_required("factor", "real", "truncation ellipse factor for which to plot")
 
 # Get configuration
-setter = ArgumentConfigurationSetter("plot_truncated")
-config = setter.run(definition)
+config = parse_arguments("plot_truncated", definition)
 
 # -----------------------------------------------------------------
 

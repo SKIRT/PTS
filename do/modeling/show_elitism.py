@@ -13,8 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
-from pts.core.tools.logging import setup_log
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.tools import filesystem as fs
 from pts.modeling.fitting.component import get_run_names
 from pts.modeling.core.environment import GalaxyModelingEnvironment
@@ -34,15 +33,11 @@ if len(run_names) == 0: raise RuntimeError("There are no fitting runs")
 elif len(run_names) == 1: definition.add_fixed("fitting_run", "string", run_names[0])
 else: definition.add_required("fitting_run", "string", "name of the fitting run to use", choices=run_names)
 
-# Generation
+# Generations
 definition.add_positional_optional("generations", "string_list", "name of the generations for which to show the elitism")
 
 # Create the configuration
-setter = ArgumentConfigurationSetter("show_elitism")
-config = setter.run(definition)
-
-# Set logging
-log = setup_log("DEBUG")
+config = parse_arguments("show_elitism", definition)
 
 # -----------------------------------------------------------------
 
