@@ -99,7 +99,6 @@ class DustGridBuilder(Configurable):
         self.median_ratio = None
         self.std = None
 
-
         # Quality measures
         self.quality = dict()
 
@@ -285,7 +284,8 @@ class DustGridBuilder(Configurable):
         self.ski.enable_all_writing_options()
 
         # Disable writing stellar density (we don't have a stellar system)
-        #self.ski.set_write_stellar_density(False)
+        # BUT DON'T CALL THE FUNCTION WHEN THE SKIRT VERSION DOES NOT SUPPORT WRITING STELLAR DENSITY
+        if self.smile.supports_writing_stellar_density: self.ski.set_write_stellar_density(False)
 
     # -----------------------------------------------------------------
 

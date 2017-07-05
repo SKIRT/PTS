@@ -1098,6 +1098,19 @@ class SKIRTSmileSchema(object):
         # 2 checks passed
         return True
 
+    # -----------------------------------------------------------------
+
+    @property
+    def supports_writing_stellar_density(self):
+
+        """
+        his function ...
+        :return:
+        """
+
+        # Check
+        return self.has_property("DustSystem", "writeStellarDensity")
+
 # -----------------------------------------------------------------
 
 def get_ptype(tag):
