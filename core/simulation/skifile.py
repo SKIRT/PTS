@@ -3112,7 +3112,11 @@ class SkiFile:
                  "maxZ": str(max_z), "writeGrid": str_from_bool(write_grid, lower=True), "minLevel": str(min_level),
                  "maxLevel": str(max_level), "searchMethod": search_method, "sampleCount": str(sample_count),
                  "maxOpticalDepth": str(max_optical_depth), "maxMassFraction": str(max_mass_fraction),
-                 "maxDensDispFraction": str(max_dens_disp_fraction), "directionMethod": direction_method, "writeTree": str_from_bool(write_tree, lower=True)}
+                 "maxDensDispFraction": str(max_dens_disp_fraction), "directionMethod": direction_method} #"writeTree": str_from_bool(write_tree, lower=True)}
+
+        from ..prep.smile import SKIRTSmileSchema
+        smile = SKIRTSmileSchema()
+        if smile.supports_file_tree_grids: attrs["writeTree"] = str_from_bool(write_tree, lower=True)
 
         # Create and add the grid
         parent.append(parent.makeelement("BinTreeDustGrid", attrs))
@@ -3151,8 +3155,12 @@ class SkiFile:
                  "maxZ": str(max_z), "writeGrid": str_from_bool(write_grid, lower=True), "minLevel": str(min_level),
                  "maxLevel": str(max_level), "searchMethod": search_method, "sampleCount": sample_count,
                  "maxOpticalDepth": str(max_optical_depth), "maxMassFraction": str(max_mass_fraction),
-                 "maxDensDispFraction": str(max_dens_disp_fraction), "barycentric": str_from_bool(barycentric, lower=True),
-                 "writeTree": str_from_bool(write_tree, lower=True)}
+                 "maxDensDispFraction": str(max_dens_disp_fraction), "barycentric": str_from_bool(barycentric, lower=True)}
+                 #"writeTree": str_from_bool(write_tree, lower=True)}
+
+        from ..prep.smile import SKIRTSmileSchema
+        smile = SKIRTSmileSchema()
+        if smile.supports_file_tree_grids: attrs["writeTree"] = str_from_bool(write_tree, lower=True)
 
         # Create and add the grid
         parent.append(parent.makeelement("OctTreeDustGrid", attrs))
