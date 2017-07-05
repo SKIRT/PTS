@@ -997,7 +997,7 @@ class Frame(NDDataArray):
     # -----------------------------------------------------------------
 
     @property
-    def unique_value_and_masks(self):
+    def unique_values_and_masks(self):
 
         """
         This function ...

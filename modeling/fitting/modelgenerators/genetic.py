@@ -664,6 +664,7 @@ def set_optimizer_settings(optimizer, fitting_run, ngenerations=None, nmodels=No
     # User
     optimizer.config.round_decimal = fitting_run.genetic_settings.round_decimal
     optimizer.config.mutation_method = fitting_run.genetic_settings.mutation_method
+    optimizer.config.binary_mutation_method = fitting_run.genetic_settings.binary_mutation_method
 
     # User, scaling
     optimizer.config.scaling_method = fitting_run.genetic_settings.scaling_method
