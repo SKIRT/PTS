@@ -1510,6 +1510,19 @@ def write_lines(filepath, lines):
 
 # -----------------------------------------------------------------
 
+def write_text(filepath, text):
+
+    """
+    This function ...
+    :param filepath:
+    :param text:
+    :return:
+    """
+
+    with open(filepath, 'w') as fh: fh.write(text + "\n")
+
+# -----------------------------------------------------------------
+
 def write_data(filepath, title, *cols):
 
     """

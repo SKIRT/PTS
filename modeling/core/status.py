@@ -24,7 +24,7 @@ from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
-class ModelingStatus(object):
+class ModelingStatus(list):
         
     """
     This class ...
@@ -36,6 +36,9 @@ class ModelingStatus(object):
         This function ...
         """
 
+        # Call the constructor of the base class
+        super(ModelingStatus, self).__init__()
+
         # Set the modeling path
         self.modeling_path = modeling_path
 
@@ -43,7 +46,6 @@ class ModelingStatus(object):
         self.modeling_type = get_modeling_type(modeling_path)
 
         # Data
-        self.status = []
         self.ntotal = 0
         self.nfinished = 0
 
@@ -59,10 +61,8 @@ class ModelingStatus(object):
         :return:
         """
 
-        # Reset attributes
-        self.status = []
-        self.ntotal = 0
-        self.nfinished = 0
+        # Clear
+        self.clear()
 
         # Get the history
         history = load_modeling_history(self.modeling_path)
@@ -74,10 +74,26 @@ class ModelingStatus(object):
             self.ntotal += 1
 
             if history.finished(command):
-                self.status.append((command, "finished"))
+                self.append((command, "finished"))
                 self.nfinished += 1
-            elif command in history: self.status.append((command, "started"))
-            else: self.status.append((command, "not_started"))
+            elif command in history: self.append((command, "started"))
+            else: self.append((command, "not_started"))
+
+    # -----------------------------------------------------------------
+
+    def clear(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Clear the list
+        del self[:]
+
+        # Reset attributes
+        self.ntotal = 0
+        self.nfinished = 0
 
     # -----------------------------------------------------------------
 
@@ -117,6 +133,50 @@ class ModelingStatus(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def commands(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for command, status in self: yield command
+
+    # -----------------------------------------------------------------
+
+    @property
+    def statuses(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for command, status in self: yield status
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colors(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #colours = []
+        for command, status in self:
+            if status == "finished": color = "green"
+            elif status == "started": color = "yellow"
+            elif status == "not_started": color = "red"
+            else: color = "red"
+            yield color
+            #colours.append(color)
+        #return colours
+
+    # -----------------------------------------------------------------
+
     def show(self):
 
         """
@@ -129,7 +189,7 @@ class ModelingStatus(object):
         print("")
 
         # Loop over the command
-        for command, status in self.status:
+        for command, status in self:
 
             # Print status
             if status == "finished": print(fmt.green + " - " + command + ": finished" + fmt.reset)

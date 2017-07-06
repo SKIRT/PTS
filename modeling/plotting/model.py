@@ -31,7 +31,7 @@ from astropy.io.fits import Header
 
 import ipyvolume.pylab as p3
 import ipyvolume
-from ipyvolume.embed import embed_html, template, widget_view_template, get_state, add_referring_widgets
+from ipyvolume.embed import embed_html, template, get_state, add_referring_widgets
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import logging, time
@@ -44,6 +44,23 @@ from pts.magic.core.frame import Frame
 from pts.magic.basics.coordinatesystem import CoordinateSystem
 from pts.modeling.basics.models import DeprojectionModel3D
 from pts.modeling.basics.properties import GalaxyProperties
+from pts.core.basics.map import Map
+
+# -----------------------------------------------------------------
+
+body_template = """<script src="https://unpkg.com/jupyter-js-widgets@~2.0.20/dist/embed.js"></script>
+<script type="application/vnd.jupyter.widget-state+json">
+{json_data}
+</script>
+{widget_views}"""
+
+# -----------------------------------------------------------------
+
+widget_view_template = """<script type="application/vnd.jupyter.widget-view+json">
+{{
+    "model_id": "{model_id}"
+}}
+</script>"""
 
 # -----------------------------------------------------------------
 
@@ -85,7 +102,12 @@ def xyz(shape=128, limits=[-3, 3], spherical=False, sparse=True, centers=False):
 
 # -----------------------------------------------------------------
 
-def plot_galaxy_components(components, draw=True, show=True, shape=128, unit="pc"):
+config = Map()
+config.style = "light"
+
+# -----------------------------------------------------------------
+
+def plot_galaxy_components(components, draw=True, show=True, shape=128, unit="pc", width=700, height=800, **kwargs):
 
     """
     This function ....
@@ -188,13 +210,14 @@ def plot_galaxy_components(components, draw=True, show=True, shape=128, unit="pc
         # level=[0.1, 0.5, 0.9], opacity=[0.01, 0.05, 0.1], level_width=0.1,
 
         level = [0.2]
-        opacity = [0.05, 0.0, 0.0]
+        #opacity = [0.05, 0.0, 0.0]
+        opacity = [0.08, 0.0, 0.0]
         level_width = 0.2
         level_width = [level_width] * 3
 
         kwargs = dict()
-        kwargs["width"] = 700
-        kwargs["height"] = 800
+        kwargs["width"] = width
+        kwargs["height"] = height
         kwargs["stereo"] = False
         kwargs["level"] = level
         kwargs["opacity"] = opacity
@@ -245,7 +268,7 @@ def plot_galaxy_components(components, draw=True, show=True, shape=128, unit="pc
 
 # -----------------------------------------------------------------
 
-def generate_html(widgets, drop_defaults=False, all=False, title="ipyvolume embed example", external_json=False, template=template, widget_view_template=widget_view_template, **kwargs):
+def generate_html(widgets, drop_defaults=False, all=False, title="ipyvolume embed example", template=template, widget_view_template=widget_view_template, as_dict=False, only_body=False, **kwargs):
 
     """
     This function ...
@@ -256,6 +279,8 @@ def generate_html(widgets, drop_defaults=False, all=False, title="ipyvolume embe
     :param external_json:
     :param template:
     :param widget_view_template:
+    :param as_dict:
+    :param only_body:
     :param kwargs:
     :return:
     """
@@ -289,143 +314,170 @@ def generate_html(widgets, drop_defaults=False, all=False, title="ipyvolume embe
     for widget in widgets:
         widget_views += widget_view_template.format(**dict(model_id=widget.model_id))
     json_data = dict(version_major=1, version_minor=0, state=state)
-    if external_json:
-        filename_base = os.path.splitext(filename)[0]
-        with open(filename_base+".json", "w") as fjson:
-            json.dump(json_data, fjson)
-        values.update(dict(title=title, widget_views=widget_views))
+    values.update(dict(title=title,
+              json_data=json.dumps(json_data),
+                   widget_views=widget_views))
+
+    # Return
+    if as_dict: return values
+    elif only_body: return body_template.format(**values)
     else:
-        values.update(dict(title=title,
-                  json_data=json.dumps(json_data),
-                       widget_views=widget_views))
-    html_code = template.format(**values)
-    return html_code
+        html_code = template.format(**values)
+        return html_code
 
 # -----------------------------------------------------------------
 
-instrument_name = "earth"
+def render_components_html(components, **kwargs):
+
+    """
+    This function ...
+    :param components:
+    :param as_dict:
+    :param only_body:
+    :return:
+    """
+
+    box = plot_galaxy_components(components, draw=True, show=False, **kwargs)
+    return generate_html(box, **kwargs)
 
 # -----------------------------------------------------------------
 
-# Determine the path to the dropbox path and the path of the directory with the data for M81
-m81_data_path = fs.join(introspection.get_dropbox_tests_pts_path_for_subproject("modeling"), "M81")
+def load_test_components():
+
+    """
+    This function ...
+    :return:
+    """
+
+    instrument_name = "earth"
+
+    # -----------------------------------------------------------------
+
+    # Determine the path to the dropbox path and the path of the directory with the data for M81
+    m81_data_path = fs.join(introspection.get_dropbox_tests_pts_path_for_subproject("modeling"), "M81")
+
+    # -----------------------------------------------------------------
+
+    # Determine the path
+    path = fs.join(m81_data_path, "properties.dat")
+
+    # Load
+    properties = GalaxyProperties.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    models_path = fs.join(m81_data_path, "models")
+    disk2d_path = fs.join(models_path, "disk.mod")
+    bulge2d_path = fs.join(models_path, "bulge.mod")
+
+    # -----------------------------------------------------------------
+
+    # Load the models
+    disk2d_model = load_2d_model(disk2d_path)
+    bulge2d_model = load_2d_model(bulge2d_path)
+
+    # Get the scale heights
+    old_scale_height = disk2d_model.scalelength / 8.26  # De Geyter et al. 2014
+    young_scale_height = 0.5 * old_scale_height
+    ionizing_scale_height = 0.25 * old_scale_height
+    dust_scale_height = 0.25 * old_scale_height
+
+    # -----------------------------------------------------------------
+
+    old_filename = "old_stars.fits"
+    young_filename = "young_stars.fits"
+    ionizing_filename = "ionizing_stars.fits"
+    dust_filename = "dust.fits"
+
+    # -----------------------------------------------------------------
+
+    # Determine paths
+    path = fs.join(m81_data_path, "components")
+    bulge_path = fs.join(path, "bulge.mod")
+    disk_path = fs.join(path, "disk.mod")
+
+    # -----------------------------------------------------------------
+
+    # Load bulge model
+    bulge = load_3d_model(bulge_path)
+
+    # Load disk model
+    disk = load_3d_model(disk_path)
+
+    # No y flattening: this is a mistake in the file
+    bulge.y_flattening = 1.
+
+    #print("bulge:")
+    #print(bulge)
+
+    #print("disk:")
+    #print(disk)
+
+    # -----------------------------------------------------------------
+
+    # Determine path to maps directory
+    maps_path = fs.join(m81_data_path, "maps")
+
+    # Determine the path to the header file
+    header_path = fs.join(maps_path, "header.txt")
+    header = Header.fromtextfile(header_path)
+    wcs = CoordinateSystem(header=header)
+
+    # Old stars
+    old_map_path = fs.join(maps_path, old_filename)
+    old_map = Frame.from_file(old_map_path)
+    old_map.wcs = wcs
+
+    # young stars
+    young_map_path = fs.join(maps_path, young_filename)
+    young_map = Frame.from_file(young_map_path)
+    young_map.wcs = wcs
+
+    # Ionizing stars
+    ionizing_map_path = fs.join(maps_path, ionizing_filename)
+    ionizing_map = Frame.from_file(ionizing_map_path)
+    ionizing_map.wcs = wcs
+
+    # Dust
+    dust_map_path = fs.join(maps_path, dust_filename)
+    dust_map = Frame.from_file(dust_map_path)
+    dust_map.wcs = wcs
+
+    # -----------------------------------------------------------------
+
+    # CREATE DEPROEJCTIONS (also sets the distance)
+    old_deprojection = DeprojectionModel3D.from_wcs(wcs, properties.center, properties.distance, properties.position_angle, properties.inclination, old_map_path, old_scale_height)
+    young_deprojection = DeprojectionModel3D.from_wcs(wcs, properties.center, properties.distance, properties.position_angle, properties.inclination, young_map_path, young_scale_height)
+    ionizing_deprojection = DeprojectionModel3D.from_wcs(wcs, properties.center, properties.distance, properties.position_angle, properties.inclination, ionizing_map_path, ionizing_scale_height)
+    dust_deprojection = DeprojectionModel3D.from_wcs(wcs, properties.center, properties.distance, properties.position_angle, properties.inclination, dust_map_path, dust_scale_height)
+
+    # -----------------------------------------------------------------
+
+    #
+    components = {"disk": disk, "bulge": bulge, "old": old_deprojection, "ionizing": ionizing_deprojection, "young": young_deprojection, "dust": dust_deprojection}
+    return components
 
 # -----------------------------------------------------------------
 
-# Determine the path
-path = fs.join(m81_data_path, "properties.dat")
+def show_test():
 
-# Load
-properties = GalaxyProperties.from_file(path)
+    """
+    This function ...
+    :return:
+    """
 
-# -----------------------------------------------------------------
+    components = load_test_components()
 
-models_path = fs.join(m81_data_path, "models")
-disk2d_path = fs.join(models_path, "disk.mod")
-bulge2d_path = fs.join(models_path, "bulge.mod")
+    old_components = {"disk": components["disk"], "bulge": components["bulge"]}
 
-# -----------------------------------------------------------------
+    #Path for rendering
+    filename = "render.html"
+    filepath = fs.join(introspection.pts_temp_dir, filename)
 
-# Load the models
-disk2d_model = load_2d_model(disk2d_path)
-bulge2d_model = load_2d_model(bulge2d_path)
+    box = plot_galaxy_components(old_components, draw=True, show=False)
+    embed_html(filepath, box)
 
-# Get the scale heights
-old_scale_height = disk2d_model.scalelength / 8.26  # De Geyter et al. 2014
-young_scale_height = 0.5 * old_scale_height
-ionizing_scale_height = 0.25 * old_scale_height
-dust_scale_height = 0.25 * old_scale_height
-
-# -----------------------------------------------------------------
-
-old_filename = "old_stars.fits"
-young_filename = "young_stars.fits"
-ionizing_filename = "ionizing_stars.fits"
-dust_filename = "dust.fits"
-
-# -----------------------------------------------------------------
-
-# Determine paths
-path = fs.join(m81_data_path, "components")
-bulge_path = fs.join(path, "bulge.mod")
-disk_path = fs.join(path, "disk.mod")
-
-# -----------------------------------------------------------------
-
-# Load bulge model
-bulge = load_3d_model(bulge_path)
-
-# Load disk model
-disk = load_3d_model(disk_path)
-
-# No y flattening: this is a mistake in the file
-bulge.y_flattening = 1.
-
-print("bulge:")
-print(bulge)
-
-print("disk:")
-print(disk)
-
-# -----------------------------------------------------------------
-
-# Determine path to maps directory
-maps_path = fs.join(m81_data_path, "maps")
-
-# Determine the path to the header file
-header_path = fs.join(maps_path, "header.txt")
-header = Header.fromtextfile(header_path)
-wcs = CoordinateSystem(header=header)
-
-# Old stars
-old_map_path = fs.join(maps_path, old_filename)
-old_map = Frame.from_file(old_map_path)
-old_map.wcs = wcs
-
-# young stars
-young_map_path = fs.join(maps_path, young_filename)
-young_map = Frame.from_file(young_map_path)
-young_map.wcs = wcs
-
-# Ionizing stars
-ionizing_map_path = fs.join(maps_path, ionizing_filename)
-ionizing_map = Frame.from_file(ionizing_map_path)
-ionizing_map.wcs = wcs
-
-# Dust
-dust_map_path = fs.join(maps_path, dust_filename)
-dust_map = Frame.from_file(dust_map_path)
-dust_map.wcs = wcs
-
-# -----------------------------------------------------------------
-
-# CREATE DEPROEJCTIONS (also sets the distance)
-old_deprojection = DeprojectionModel3D.from_wcs(wcs, properties.center, properties.distance, properties.position_angle, properties.inclination, old_map_path, old_scale_height)
-young_deprojection = DeprojectionModel3D.from_wcs(wcs, properties.center, properties.distance, properties.position_angle, properties.inclination, young_map_path, young_scale_height)
-ionizing_deprojection = DeprojectionModel3D.from_wcs(wcs, properties.center, properties.distance, properties.position_angle, properties.inclination, ionizing_map_path, ionizing_scale_height)
-dust_deprojection = DeprojectionModel3D.from_wcs(wcs, properties.center, properties.distance, properties.position_angle, properties.inclination, dust_map_path, dust_scale_height)
-
-# -----------------------------------------------------------------
-
-# Path for rendering
-filename = "render.html"
-filepath = fs.join(introspection.pts_temp_dir, filename)
-
-#components = {"disk": disk, "bulge": bulge}
-#components = {"old": old_deprojection, "bulge": bulge}
-#components = {"ionizing": ionizing_deprojection}
-#components = {"young": young_deprojection}
-components = {"dust": dust_deprojection}
-
-box = plot_galaxy_components(components, draw=True, show=False)
-
-embed_html(filepath, box)
-
-# -----------------------------------------------------------------
-
-# Open HTML
-fs.open_file(filepath)
-
-# -----------------------------------------------------------------
+    # Open HTML
+    fs.open_file(filepath)
 
 # -----------------------------------------------------------------

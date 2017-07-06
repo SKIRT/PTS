@@ -20,8 +20,6 @@ from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
-from .history import ModelingHistory
-from .status import ModelingStatus
 from ...core.basics.configuration import Configuration
 from ...core.data.sed import ObservedSED
 from ...core.filter.filter import parse_filter
@@ -75,6 +73,7 @@ class ModelingEnvironment(object):
 
         # Initialize the history file
         if not fs.is_file(self.history_file_path):
+            from .history import ModelingHistory
             history = ModelingHistory()
             history.saveto(self.history_file_path)
 
@@ -129,6 +128,9 @@ class ModelingEnvironment(object):
         :return:
         """
 
+        # Import the class
+        from .history import ModelingHistory
+
         # Open the modeling history
         history = ModelingHistory.from_file(self.history_file_path)
         history.clean()
@@ -143,6 +145,9 @@ class ModelingEnvironment(object):
         This function ...
         :return:
         """
+
+        # Import the class
+        from .status import ModelingStatus
 
         # Open the modeling status
         status = ModelingStatus(self.path)
@@ -173,6 +178,13 @@ dust_name = "dust"
 # -----------------------------------------------------------------
 
 map_sub_names = [colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name]
+
+# -----------------------------------------------------------------
+
+fluxes_name = "fluxes.dat"
+properties_name = "properties.dat"
+info_name = "info.dat"
+status_name = "status.html"
 
 # -----------------------------------------------------------------
 
@@ -210,10 +222,13 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         # FROM DATACOMPONENT:
 
         # Set the path to the DustPedia observed SED
-        self.observed_sed_dustpedia_path = fs.join(self.data_path, "fluxes.dat")
+        self.observed_sed_dustpedia_path = fs.join(self.data_path, fluxes_name)
 
         # Set the path to the galaxy properties file
-        self.galaxy_properties_path = fs.join(self.data_path, "properties.dat")
+        self.galaxy_properties_path = fs.join(self.data_path, properties_name)
+
+        # Set the path to the galaxy info file
+        self.galaxy_info_path = fs.join(self.data_path, info_name)
 
         # Set the ...
         self.data_seds_path = fs.create_directory_in(self.data_path, "SEDs")
@@ -246,6 +261,10 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
         # Set the path to the maps/dust directory
         self.maps_dust_path = fs.create_directory_in(self.maps_path, dust_name)
+
+        # NEW
+
+        self.html_status_path = fs.join(self.html_path, status_name)
 
     # -----------------------------------------------------------------
 

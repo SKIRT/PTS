@@ -43,8 +43,14 @@
 
 # -----------------------------------------------------------------
 
+# Ensure Python 3 functionality
+from __future__ import absolute_import, division, print_function
+
 # Import standard modules
 import codecs
+
+# Import the relevant PTS classes and modules
+from .stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -55,7 +61,7 @@ class SimpleTableCell(object):
     cell = SimpleTableCell('Hello, world!')
     """
 
-    def __init__(self, text, header=False):
+    def __init__(self, text, header=False, bgcolor=None):
 
         """
         Table cell constructor.
@@ -66,6 +72,7 @@ class SimpleTableCell(object):
 
         self.text = text
         self.header = header
+        self.bgcolor = bgcolor
 
     # -----------------------------------------------------------------
 
@@ -73,10 +80,15 @@ class SimpleTableCell(object):
 
         """Return the HTML code for the table cell."""
 
+        #if self.header: return '<th>%s</th>' % (self.text)
+        #else: return '<td>%s</td>' % (self.text)
+
         if self.header:
-            return '<th>%s</th>' % (self.text)
-        else:    
-            return '<td>%s</td>' % (self.text)
+            if self.bgcolor is not None: return "<th bgcolor='" + self.bgcolor + "'>" + tostr(self.text) + "</th>"
+            else: return "<th>" + tostr(self.text) + "</th>"
+        else:
+            if self.bgcolor is not None: return "<td bgcolor='" + self.bgcolor + "'>" + tostr(self.text) + "</td>"
+            else: return "<td>" + tostr(self.text) + "</td>"
 
 # -----------------------------------------------------------------
 
@@ -94,7 +106,7 @@ class SimpleTableRow(object):
     row = SimpleTableRow([cell1, cell2])
     """
 
-    def __init__(self, cells=[], header=False):
+    def __init__(self, cells, header=False, bgcolors=None):
 
         """Table row constructor.
 
@@ -105,11 +117,14 @@ class SimpleTableRow(object):
                   responsibility to verify whether it was created with the
                   header flag set to True.
         """
-        if isinstance(cells[0], SimpleTableCell):
-            self.cells = cells
+
+        # Set cells
+        if isinstance(cells[0], SimpleTableCell): self.cells = cells
         else:
-            self.cells = [SimpleTableCell(cell, header=header) for cell in cells]
-        
+            if bgcolors is not None: self.cells = [SimpleTableCell(cell, header=header, bgcolor=bgcolor) for cell, bgcolor in zip(cells, bgcolors)]
+            else: self.cells = [SimpleTableCell(cell, header=header) for cell in cells]
+
+        # Set header
         self.header = header
 
     # -----------------------------------------------------------------
@@ -121,10 +136,7 @@ class SimpleTableRow(object):
         row = []
 
         row.append('<tr>')
-
-        for cell in self.cells:
-            row.append(str(cell))
-
+        for cell in self.cells: row.append(str(cell))
         row.append('</tr>')
         
         return '\n'.join(row)
@@ -133,7 +145,9 @@ class SimpleTableRow(object):
 
     def __iter__(self):
 
-        """Iterate through row cells"""
+        """
+        Iterate through row cells
+        """
 
         for cell in self.cells:
             yield cell
@@ -142,7 +156,9 @@ class SimpleTableRow(object):
 
     def add_cell(self, cell):
 
-        """Add a SimpleTableCell object to the list of cells."""
+        """
+        Add a SimpleTableCell object to the list of cells.
+        """
 
         self.cells.append(cell)
 
@@ -150,7 +166,9 @@ class SimpleTableRow(object):
 
     def add_cells(self, cells):
 
-        """Add a list of SimpleTableCell objects to the list of cells."""
+        """
+        Add a list of SimpleTableCell objects to the list of cells.
+        """
 
         for cell in cells: self.cells.append(cell)
 
@@ -174,11 +192,10 @@ class SimpleTable(object):
     table = SimpleTable(rows)
     """
 
-    def __init__(self, rows=[], header_row=None, css_class=None):
+    def __init__(self, rows, header_row=None, css_class=None, bgcolors=None):
 
         """
         Table constructor.
-
         Keyword arguments:
         rows -- iterable of SimpleTableRow
         header_row -- row that will be displayed at the beginning of the table.
@@ -187,18 +204,18 @@ class SimpleTable(object):
                       header flag set to True.
         css_class -- table CSS class
         """
-        if isinstance(rows[0], SimpleTableRow):
-            self.rows = rows
-        else:
-            self.rows = [SimpleTableRow(row) for row in rows]
 
-        if header_row is None:
-            self.header_row = None
-        elif isinstance(header_row, SimpleTableRow):
-            self.header_row = header_row
+        if isinstance(rows[0], SimpleTableRow): self.rows = rows
         else:
-            self.header_row = SimpleTableRow(header_row, header=True)
+            if bgcolors is not None: self.rows = [SimpleTableRow(row, bgcolors=bcolors) for row, bcolors in zip(rows, bgcolors)]
+            else: self.rows = [SimpleTableRow(row) for row in rows]
 
+        # Set header row
+        if header_row is None: self.header_row = None
+        elif isinstance(header_row, SimpleTableRow): self.header_row = header_row
+        else: self.header_row = SimpleTableRow(header_row, header=True)
+
+        # Set CSS class
         self.css_class = css_class
 
     # -----------------------------------------------------------------
@@ -211,16 +228,12 @@ class SimpleTable(object):
 
         table = []
 
-        if self.css_class:
-            table.append('<table class=%s>' % self.css_class)
-        else:
-            table.append('<table>')
+        if self.css_class: table.append('<table class=%s>' % self.css_class)
+        else: table.append('<table>')
 
-        if self.header_row:
-            table.append(str(self.header_row))
+        if self.header_row: table.append(str(self.header_row))
 
-        for row in self.rows:
-            table.append(str(row))
+        for row in self.rows: table.append(str(row))
 
         table.append('</table>')
         
@@ -261,9 +274,11 @@ class SimpleTable(object):
 
 class HTMLPage(object):
 
-    """A class to create HTML pages containing CSS and tables."""
+    """
+    A class to create HTML pages containing CSS and tables.
+    """
 
-    def __init__(self, tables=[], css=None, encoding="utf-8"):
+    def __init__(self, tables, css=None, encoding="utf-8"):
 
         """
         HTML page constructor.
@@ -278,6 +293,8 @@ class HTMLPage(object):
         self.css = css
         self.encoding = encoding
 
+        self.path = None
+
     # -----------------------------------------------------------------
 
     def __str__(self):
@@ -286,8 +303,7 @@ class HTMLPage(object):
 
         page = []
 
-        if self.css:
-            page.append('<style type="text/css">\n%s\n</style>' % self.css)
+        if self.css: page.append('<style type="text/css">\n%s\n</style>' % self.css)
 
         # Set encoding
         page.append('<meta http-equiv="Content-Type" content="text/html;'
@@ -297,6 +313,7 @@ class HTMLPage(object):
             page.append(str(table))
             page.append('<br />')
 
+        # Create the page and return
         return '\n'.join(page)
 
     # -----------------------------------------------------------------
@@ -310,19 +327,38 @@ class HTMLPage(object):
 
     # -----------------------------------------------------------------
 
-    def save(self, filename):
+    def saveto(self, filepath):
 
-        """Save HTML page to a file using the proper encoding"""
+        """
+        Save HTML page to a file using the proper encoding
+        """
 
-        with codecs.open(filename, 'w', self.encoding) as outfile:
+        with codecs.open(filepath, 'w', self.encoding) as outfile:
             for line in str(self):
                 outfile.write(line)
+
+        # Set filepath
+        self.path = filepath
+
+    # -----------------------------------------------------------------
+
+    def save(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.path is None: raise ValueError("Path not defined")
+        self.saveto(self.path)
 
     # -----------------------------------------------------------------
 
     def add_table(self, table):
 
-        """Add a SimpleTable to the page list of tables"""
+        """
+        Add a SimpleTable to the page list of tables
+        """
 
         self.tables.append(table)
 

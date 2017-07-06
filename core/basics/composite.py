@@ -365,6 +365,30 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def property_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = []
+
+        # Loop over the variables
+        for name in vars(self):
+
+            # Skip internal variables
+            if name.startswith("_"): continue
+
+            # Add the name
+            names.append(name)
+
+        # Return the names
+        return names
+
+    # -----------------------------------------------------------------
+
     def saveto(self, path):
 
         """
@@ -382,11 +406,8 @@ class SimplePropertyComposite(object):
             # Print the type
             print("Type:", self.__class__.__name__, file=fh)
 
-            # Loop over the variables
-            for name in vars(self):
-
-                # Skip internal variables
-                if name.startswith("_"): continue
+            # Loop over the properties
+            for name in self.property_names:
 
                 dtype, value = stringify(getattr(self, name))
                 actual_dtype = self._ptypes[name]
@@ -394,6 +415,24 @@ class SimplePropertyComposite(object):
 
         # Update the path
         self._path = path
+
+    # -----------------------------------------------------------------
+
+    def as_tuples(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        tuples = []
+
+        for name in self.property_names:
+            value = getattr(self, name)
+            tuples.append((name, value))
+
+        # Retunr the tuples
+        return tuples
 
     # -----------------------------------------------------------------
 

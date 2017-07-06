@@ -58,9 +58,6 @@ class DataComponent(GalaxyModelingComponent):
 
         # -- Attributes --
 
-        # The path to the galaxy info file
-        self.galaxy_info_path = None
-
         # Different origins
         self.data_origins = data_origins
 
@@ -78,9 +75,6 @@ class DataComponent(GalaxyModelingComponent):
 
         # Call the setup function of the base class
         super(DataComponent, self).setup(**kwargs)
-
-        # Set the path to the galaxy info file
-        self.galaxy_info_path = fs.join(self.data_path, "info.dat")
 
         # Set ...
         for origin in self.data_origins: self.data_images_paths[origin] = fs.create_directory_in(self.data_images_path, origin)

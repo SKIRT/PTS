@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 import math
 import gc
 from abc import ABCMeta
+from collections import OrderedDict
 
 # Import astronomical modules
 from astropy.utils import lazyproperty
@@ -36,6 +37,7 @@ from ...magic.region.ellipse import SkyEllipseRegion
 from ...magic.basics.stretch import SkyStretch
 from ...core.tools import types
 from ...core.filter.filter import parse_filter
+from ...core.tools import tables
 
 # -----------------------------------------------------------------
 
@@ -237,6 +239,18 @@ class GalaxyModelingComponent(ModelingComponent):
         """
 
         return self.environment.galaxy_properties_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def galaxy_info_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.galaxy_info_path
 
     # -----------------------------------------------------------------
 
@@ -1043,6 +1057,29 @@ class GalaxyModelingComponent(ModelingComponent):
 
         # Return the property map
         return properties
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def galaxy_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether the file is present
+        if not fs.is_file(self.galaxy_info_path): raise IOError("The galaxy info file is not present. Perform 'fetch_")
+
+        # Load the info table
+        table = tables.from_file(self.galaxy_info_path)
+
+        # To ordered dict
+        info = OrderedDict()
+        for name in table.colnames: info[name] = table[name][0]
+
+        # Return the info
+        return info
 
     # -----------------------------------------------------------------
 
