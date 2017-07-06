@@ -107,6 +107,36 @@ def decompress_directory_in_place(filepath, remove=False, into_root=False):
 
 # -----------------------------------------------------------------
 
+def compress_directory_in_place(directory_path, remove=False):
+
+    """
+    This function ...
+    :param directory_path:
+    :param remove:
+    :return:
+    """
+
+    from .logging import log
+
+    # Determine filename
+    name = fs.name(directory_path)
+    filename = name + ".tar.gz"
+    filepath = fs.join(fs.directory_of(directory_path), filename)
+
+    # Inform the user
+    log.info("Compressing '" + directory_path + "' ...")
+    command = "tar -zcvf " + filepath + " " + directory_path
+    log.debug("Decompress command: '" + command + "'")
+    subprocess.call(command, shell=True)
+
+    # Remove the file
+    if remove: fs.remove_directory(directory_path)
+
+    # Return the new path
+    return filepath
+
+# -----------------------------------------------------------------
+
 def decompress_file_in_place(path, remove=False):
 
     """

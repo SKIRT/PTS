@@ -13,38 +13,32 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import os
 import numpy as np
-import ipywidgets as widgets
 from IPython.display import display
 #from ipywidgets import embed_snippet, embed_minimal_html
 import matplotlib.pyplot as plt
 #from IPython.terminal.embed import embed_snippet
 from ipyvolume.transferfunction import TransferFunctionWidgetJs3
-from ipyvolume.style import dark, light
+from ipyvolume.style import dark, light, minimal
+from ipyvolume.style import create as create_style
 
 import json
 import ipywidgets
 
 # Import astronomical modules
 from astropy.io.fits import Header
-
 import ipyvolume.pylab as p3
 import ipyvolume
 from ipyvolume.embed import embed_html, template, get_state, add_referring_widgets
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import logging, time
 from pts.core.tools.logging import log
 from pts.core.tools import filesystem as fs
-from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.tools import introspection
 from pts.modeling.basics.models import load_2d_model, load_3d_model
-from pts.magic.core.frame import Frame
 from pts.magic.basics.coordinatesystem import CoordinateSystem
 from pts.modeling.basics.models import DeprojectionModel3D
 from pts.modeling.basics.properties import GalaxyProperties
-from pts.core.basics.map import Map
 
 # -----------------------------------------------------------------
 
@@ -102,25 +96,15 @@ def xyz(shape=128, limits=[-3, 3], spherical=False, sparse=True, centers=False):
 
 # -----------------------------------------------------------------
 
-config = Map()
-config.style = "light"
-
-# -----------------------------------------------------------------
-
-def plot_galaxy_components(components, draw=True, show=True, shape=128, unit="pc", width=700, height=800, **kwargs):
+def determine_model_limits(components, unit, symmetric=False):
 
     """
-    This function ....
+    This function ...
     :param components:
-    :param draw:
-    :param show:
-    :param shape:
     :param unit:
-    :param kwargs:
+    :param symmetric:
     :return:
     """
-
-    #limits = [-10000., 10000.]
 
     x_min = 0.0
     x_max = 0.0
@@ -129,7 +113,7 @@ def plot_galaxy_components(components, draw=True, show=True, shape=128, unit="pc
     z_min = 0.0
     z_max = 0.0
 
-    #print("")
+    # print("")
     # Determine limits, loop over components
     for name in components:
 
@@ -148,20 +132,84 @@ def plot_galaxy_components(components, draw=True, show=True, shape=128, unit="pc
         if z_min_scalar < z_min: z_min = z_min_scalar
         if z_max_scalar > z_max: z_max = z_max_scalar
 
-        #print(name + " limits: ")
-        #print("")
-        #print(" - x: " + str(component.xrange))
-        #print(" - y: " + str(component.yrange))
-        #print(" - z: " + str(component.zrange))
-        #print("")
+        # print(name + " limits: ")
+        # print("")
+        # print(" - x: " + str(component.xrange))
+        # print(" - y: " + str(component.yrange))
+        # print(" - z: " + str(component.zrange))
+        # print("")
 
     minvalue = min(x_min, y_min, z_min)
     maxvalue = max(x_max, y_max, z_max)
 
     # Define limits
-    #limits = [[x_min, x_max], [y_min, y_max], [z_min, z_max]]
+    if symmetric: limits = [minvalue, maxvalue]
+    else: limits = [[x_min, x_max], [y_min, y_max], [z_min, z_max]]
 
-    limits = [minvalue, maxvalue]
+    # Return the limits
+    return limits
+
+# -----------------------------------------------------------------
+
+minimal_test = create_style("minimal", {
+		'background-color': 'white',
+        'box' : {
+            'color': 'pink',
+            'visible': False,
+        },
+        'axes': {
+            'color': 'black',
+            'visible': False,
+            'x': {
+                'color': '#f00',
+                'label': {
+                    'color': '#0f0'
+                },
+                'ticklabel': {
+                    'color': '#00f'
+                },
+            },
+            'y': {
+                'color': '#0f0',
+                'label': {
+                    'color': '#00f'
+                },
+                'ticklabel': {
+                    'color': '#f00'
+                }
+            },
+            'z': {
+                    'color': '#00f',
+                    'label': {
+                        'color': '#f00'
+                    },
+                    'ticklabel': {
+                        'color': '#0f0'
+                    }
+            }
+        }
+})
+
+# -----------------------------------------------------------------
+
+def plot_galaxy_components(components, draw=True, show=True, shape=128, unit="pc", width=700, height=800, style='light', **kwargs):
+
+    """
+    This function ....
+    :param components:
+    :param draw:
+    :param show:
+    :param shape:
+    :param unit:
+    :param width:
+    :param height:
+    :param style:
+    :param kwargs:
+    :return:
+    """
+
+    # Detemrine the limits
+    limits = determine_model_limits(components, unit, symmetric=True)
 
     # Debugging
     log.debug("Plot limits: " + str(limits))
@@ -249,9 +297,10 @@ def plot_galaxy_components(components, draw=True, show=True, shape=128, unit="pc
         kwargs["tf"] = tf
 
         # Set style
-        if config.style == "dark": kwargs["style"] = dark
-        elif config.style == "light": kwargs["style"] = light
-        else: raise ValueError("Invalid style: " + config.style)
+        if style == "dark": kwargs["style"] = dark
+        elif style == "light": kwargs["style"] = light
+        elif style == "minimal": kwargs["style"] = minimal
+        else: raise ValueError("Invalid style: " + style)
 
         # Create the volume plot
         vol = ipyvolume.quickvolshow(data=data.T, **kwargs)
@@ -349,8 +398,6 @@ def load_test_components():
     :return:
     """
 
-    instrument_name = "earth"
-
     # -----------------------------------------------------------------
 
     # Determine the path to the dropbox path and the path of the directory with the data for M81
@@ -407,12 +454,6 @@ def load_test_components():
     # No y flattening: this is a mistake in the file
     bulge.y_flattening = 1.
 
-    #print("bulge:")
-    #print(bulge)
-
-    #print("disk:")
-    #print(disk)
-
     # -----------------------------------------------------------------
 
     # Determine path to maps directory
@@ -425,23 +466,23 @@ def load_test_components():
 
     # Old stars
     old_map_path = fs.join(maps_path, old_filename)
-    old_map = Frame.from_file(old_map_path)
-    old_map.wcs = wcs
+    #old_map = Frame.from_file(old_map_path)
+    #old_map.wcs = wcs
 
     # young stars
     young_map_path = fs.join(maps_path, young_filename)
-    young_map = Frame.from_file(young_map_path)
-    young_map.wcs = wcs
+    #young_map = Frame.from_file(young_map_path)
+    #young_map.wcs = wcs
 
     # Ionizing stars
     ionizing_map_path = fs.join(maps_path, ionizing_filename)
-    ionizing_map = Frame.from_file(ionizing_map_path)
-    ionizing_map.wcs = wcs
+    #ionizing_map = Frame.from_file(ionizing_map_path)
+    #ionizing_map.wcs = wcs
 
     # Dust
     dust_map_path = fs.join(maps_path, dust_filename)
-    dust_map = Frame.from_file(dust_map_path)
-    dust_map.wcs = wcs
+    #dust_map = Frame.from_file(dust_map_path)
+    #dust_map.wcs = wcs
 
     # -----------------------------------------------------------------
 
@@ -470,10 +511,11 @@ def show_test():
 
     old_components = {"disk": components["disk"], "bulge": components["bulge"]}
 
-    #Path for rendering
+    # Determine the filepath for rendering
     filename = "render.html"
     filepath = fs.join(introspection.pts_temp_dir, filename)
 
+    # Plot, create HTML
     box = plot_galaxy_components(old_components, draw=True, show=False)
     embed_html(filepath, box)
 

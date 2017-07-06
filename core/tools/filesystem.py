@@ -1276,7 +1276,11 @@ def copy_from_directory(from_directory, to_directory, **kwargs):
     :return: 
     """
 
+    # Copy files
     copy_files(files_in_path(from_directory, **kwargs), to_directory)
+
+    # Copy directories
+    copy_directories(directories_in_path(from_directory, **kwargs), to_directory)
 
 # -----------------------------------------------------------------
 
@@ -1290,6 +1294,19 @@ def copy_files(file_paths, directory_path):
     """
 
     for file_path in file_paths: copy_file(file_path, directory_path)
+
+# -----------------------------------------------------------------
+
+def copy_directories(directory_paths, directory_path):
+
+    """
+    This function ...
+    :param directory_paths:
+    :param directory_path:
+    :return:
+    """
+
+    for dirpath in directory_paths: copy_directory(dirpath, directory_path)
 
 # -----------------------------------------------------------------
 

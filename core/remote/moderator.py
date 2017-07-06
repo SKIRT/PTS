@@ -308,7 +308,7 @@ class PlatformModerator(object):
         host_ids = []
         for host_id in self.host_ids_for_ensemble(name):
 
-            host = Host(host_id)
+            host = Host.from_host_id(host_id)
 
             # Skip schedulers
             if host.scheduler: continue
@@ -329,7 +329,7 @@ class PlatformModerator(object):
         host_ids = []
         for host_id in self.host_ids_for_ensemble(name):
 
-            host = Host(host_id)
+            host = Host.from_host_id(host_id)
 
             # Skip non-schedulers
             if not host.scheduler: continue

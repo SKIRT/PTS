@@ -188,7 +188,12 @@ class Remote(object):
         """
 
         # Create the host object
-        self.host = Host(host_id, cluster_name)
+        if isinstance(host_id, Host): self.host = host_id
+        elif types.is_string_type(host_id): self.host = Host.from_host_id(host_id, cluster_name)
+        else: raise ValueError("Invalid value for 'host_id'")
+
+        # Set the host ID
+        host_id = self.host.id
 
         # If a VPN connection is required for the remote host
         if self.host.requires_vpn: self.connect_to_vpn()

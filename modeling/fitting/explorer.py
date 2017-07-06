@@ -273,7 +273,7 @@ class ParameterExplorer(FittingComponent):
         remote_host_ids = []
         if self.fitting_run.ngenerations == 0:
             for host_id in self.config.remotes:
-                if Host(host_id).scheduler:
+                if Host.from_host_id(host_id).scheduler:
                     log.warning("Not using remote host '" + host_id + "' for the initial generation because it uses a scheduling system for launching jobs")
                 else: remote_host_ids.append(host_id)
         else: remote_host_ids = self.config.remotes

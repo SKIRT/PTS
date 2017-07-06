@@ -42,7 +42,7 @@ if not introspection.is_macos(): raise RuntimeError("This command only works on 
 # -----------------------------------------------------------------
 
 # Get host
-host = Host(config.remote)
+host = Host.from_host_id(config.remote)
 
 # If a VPN connection is required for the remote host
 #if host.requires_vpn: self.connect_to_vpn(host)

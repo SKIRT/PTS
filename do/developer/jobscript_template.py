@@ -57,7 +57,7 @@ else: log = setup_log()
 
 # -----------------------------------------------------------------
 
-host = Host(config.remote, config.cluster)
+host = Host.from_host_id(config.remote, config.cluster)
 
 modules = []
 modules.append("iimpi/2016b")

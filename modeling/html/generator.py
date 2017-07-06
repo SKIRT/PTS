@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ..component.galaxy import GalaxyModelingComponent
@@ -30,6 +27,7 @@ page_template = """<!DOCTYPE html>
     <meta charset="UTF-8">
     <title>{title}</title>
 {head}
+<link rel="stylesheet" type="text/css" href="http://users.ugent.be/~sjversto/stylesheet.css">
 </head>
 <body>
 {body}
@@ -189,6 +187,80 @@ class HTMLGenerator(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def make_geometry_tables(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making geometry tables ...")
+
+        # Old bulge
+        self.make_old_bulge_geometry_table()
+
+        # Old disk
+        self.make_old_disk_geometry_table()
+
+        # Young stars
+        self.make_young_geometry_table()
+
+        # Ionizing stars
+        self.make_ionizing_geometry_table()
+
+        # Dust
+        self.make_dust_geometry_table()
+
+    # -----------------------------------------------------------------
+
+    def make_old_bulge_geometry_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+
+
+    # -----------------------------------------------------------------
+
+    def make_old_disk_geometry_table(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+    # -----------------------------------------------------------------
+
+    def make_young_geometry_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def make_ionizing_geometry_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    def make_dust_geometry_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
     def make_plots(self):
 
         """
@@ -218,16 +290,15 @@ class HTMLGenerator(GalaxyModelingComponent):
         components = load_test_components()
 
         old_components = {"disk": components["old"], "bulge": components["bulge"]}
-        #old_components = {"disk": components["disk"]}
         young_components = {"young": components["young"]}
         ionizing_components = {"ionizing": components["ionizing"]}
         dust_components = {"dust": components["dust"]}
 
         # Generate HTML
-        self.old_model = render_components_html(old_components, only_body=True, width=400, height=500)
-        self.young_model = render_components_html(young_components, only_body=True, width=400, height=500)
-        self.ionizing_model = render_components_html(ionizing_components, only_body=True, width=400, height=500)
-        self.dust_model = render_components_html(dust_components, only_body=True, width=400, height=500)
+        self.old_model = render_components_html(old_components, only_body=True, width=400, height=500, style="minimal")
+        self.young_model = render_components_html(young_components, only_body=True, width=400, height=500, style="minimal")
+        self.ionizing_model = render_components_html(ionizing_components, only_body=True, width=400, height=500, style="minimal")
+        self.dust_model = render_components_html(dust_components, only_body=True, width=400, height=500, style="minimal")
 
     # -----------------------------------------------------------------
 
@@ -306,6 +377,9 @@ class HTMLGenerator(GalaxyModelingComponent):
         # Write status page
         self.write_status_page()
 
+        # Write models page
+        self.write_models_page()
+
     # -----------------------------------------------------------------
 
     @property
@@ -317,6 +391,18 @@ class HTMLGenerator(GalaxyModelingComponent):
         """
 
         return self.environment.html_status_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def models_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, "models.html")
 
     # -----------------------------------------------------------------
 
@@ -332,5 +418,17 @@ class HTMLGenerator(GalaxyModelingComponent):
 
         # Write
         fs.write_text(self.status_page_path, self.status_page)
+
+    # -----------------------------------------------------------------
+
+    def write_models_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the models page ...")
 
 # -----------------------------------------------------------------

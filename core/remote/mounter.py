@@ -21,6 +21,7 @@ from ..tools.logging import log
 from ..tools import filesystem as fs
 from ..tools import introspection
 from .remote import active_keys, add_key
+from ..tools import types
 
 # -----------------------------------------------------------------
 
@@ -121,13 +122,20 @@ class RemoteMounter(object):
         :return:
         """
 
+        # Get host ID
+        if isinstance(host_id, Host): the_host_id = host_id.id
+        elif types.is_string_type(host_id): the_host_id = host_id
+        else: raise ValueError("Invalid value for 'host_id'")
+
         # Check if already mounted
-        if self.is_mounted(host_id):
-            log.warning("The remote host '" + host_id + "' is already mounted")
-            return self.mount_paths[host_id]
+        if self.is_mounted(the_host_id):
+            log.warning("The remote host '" + the_host_id + "' is already mounted")
+            return self.mount_paths[the_host_id]
 
         # Get host
-        host = Host(host_id)
+        if isinstance(host_id, Host): host = host_id
+        elif types.is_string_type(host_id): host = Host.from_host_id(host_id)
+        else: raise ValueError("Invalid value for 'host_id'")
 
         # If a VPN connection is required for the remote host
         if host.requires_vpn: self.connect_to_vpn(host)
@@ -143,8 +151,17 @@ class RemoteMounter(object):
         # Debug flags for sshfs
         debug_flags = "-f -d " if log.is_debug() else ""
 
+        # If mount point is defined
+        if host.mount_point is not None: mount_point_string = "/" + host.mount_point
+        else: mount_point_string = ""
+
         # e.g. sshfs xxx@nancy.ugent.be: ~/PTS/remotes/nancy -C -o volname=nancy
-        command = "sshfs " + debug_flags + host.user + "@" + host.name + ": " + mount_path + " -C -o volname=" + host.id
+        # SMB EXAMPLE: mount_smbfs //sjversto:ellen184@files.ugent.be/sjversto/www/users ~/Remotes/WWW
+        if host.protocol == "ssh": command = "sshfs " + debug_flags + host.user + "@" + host.name + ":" + mount_point_string + " " + mount_path + " -C -o volname=" + host.id
+        elif host.protocol == "smb":
+            #fs.remove_directory(mount_path)
+            command = "mount_smbfs //" + host.user + "@" + host.name + mount_point_string + " " + mount_path
+        else: raise ValueError("Unknown host protocol: " + host.protocol)
 
         # Debugging
         log.debug("Mounting command: '" + command + "'")
@@ -152,7 +169,7 @@ class RemoteMounter(object):
         # Create the pexpect child instance
         child = pexpect.spawn(command, timeout=30)
         if host.password is not None:
-            child.expect(['password: '])
+            child.expect(['password: ', 'Password for ' + host.name + ": "])
             child.sendline(host.password)
 
         child.logfile = sys.stdout
@@ -164,7 +181,7 @@ class RemoteMounter(object):
         if not fs.is_mount_point(mount_path): raise RuntimeError("An error occured during the mounting")
 
         # Set the path
-        self.mount_paths[host_id] = mount_path
+        self.mount_paths[the_host_id] = mount_path
 
         # Return the path
         return mount_path
@@ -178,13 +195,20 @@ class RemoteMounter(object):
         :return:
         """
 
+        # Get host ID
+        if isinstance(host_id, Host): the_host_id = host_id.id
+        elif types.is_string_type(host_id): the_host_id = host_id
+        else: raise ValueError("Invalid value for 'host_id'")
+
         # If not yet mounted
-        if not self.is_mounted(host_id):
-            log.warning(host_id + " was not mounted")
+        if not self.is_mounted(the_host_id):
+            log.warning(the_host_id + " was not mounted")
             return
 
         # Get host
-        host = Host(host_id)
+        if isinstance(host_id, Host): host = host_id
+        elif types.is_string_type(host_id): host = Host.from_host_id(host_id)
+        else: raise ValueError("Invalid value for 'host_id'")
 
         # Create directory for remote
         path = fs.join(pts_remotes_path, host.id)

@@ -19,6 +19,7 @@ import os
 from ..tools import introspection, network
 from ..tools import filesystem as fs
 from ..basics.configuration import Configuration
+from ..basics.map import Map
 
 # -----------------------------------------------------------------
 
@@ -51,7 +52,7 @@ def find_host_ids(schedulers=None):
 
         # If schedulers is specified (False or True)
         if schedulers is not None:
-            host = Host(host_id)
+            host = Host.from_host_id(host_id)
             if schedulers != host.scheduler: continue
 
         # Add the id to the list
@@ -106,18 +107,22 @@ def has_tasks(host_id):
 
 # -----------------------------------------------------------------
 
+protocols = ["ssh", "smb"]
+
+# -----------------------------------------------------------------
+
 class Host(object):
 
     """
     This class ...
     """
 
-    def __init__(self, host_id, clustername=None):
+    def __init__(self, host_id, **kwargs):
 
         """
         The constructor ...
         :param host_id:
-        :param clustername:
+        :param **kwargs
         :return:
         """
 
@@ -127,7 +132,40 @@ class Host(object):
         self.id = host_id
 
         # The name of the cluster
-        self.cluster_name = None
+        self.cluster_name = kwargs.pop("cluster_name", None)
+
+        # Set the entries in the configuration object as attributes of this object
+        self.name = kwargs.pop("name")
+        self.user = kwargs.pop("user")
+        self.password = kwargs.pop("password")
+        self.scheduler = kwargs.pop("scheduler", False)
+        self.scratch_path = kwargs.pop("scratch_path", None)
+        self.output_path = kwargs.pop("output_path", None)
+        self.mount_point = kwargs.pop("mount_point", None)
+        self.mpi_command = kwargs.pop("mpi_command", None)
+        self.force_process_binding = kwargs.pop("force_process_binding", False)
+        self.use_hyperthreading = kwargs.pop("use_hyperthreading", False)
+        self.maximum_walltime = kwargs.pop("maximal_walltime", None)
+        self.preferred_walltime = kwargs.pop("preferred_waltime", None)
+        self.clusters = kwargs.pop("clusters", Map()) # mapping
+        self.vpn = kwargs.pop("vpn", Map()) # mapping
+        self.port = kwargs.pop("port", None)
+        self.key = kwargs.pop("key", None)
+        self.key_password = kwargs.pop("key_password", None)
+        self.quota_command = kwargs.pop("quota_command", None)
+        self.protocol = kwargs.pop("protocol", "ssh")
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_host_id(cls, host_id, clustername=None):
+
+        """
+        This function ...
+        :param host_id:
+        :param clustername:
+        :return:
+        """
 
         ## Read the host configuration file
 
@@ -135,36 +173,44 @@ class Host(object):
         host_file_path = fs.join(introspection.pts_user_dir, "hosts", host_id + ".cfg")
         if not os.path.isfile(host_file_path): raise ValueError("The configuration settings for remote host " + host_id + " could not be found in the PTS/user/hosts directory")
 
+        # Create and return the host object
+        return cls.from_file(host_file_path, clustername=clustername)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_file(cls, filepath, clustername=None):
+
+        """
+        This function ...
+        :param filepath:
+        :param clustername:
+        :return:
+        """
+
+        # Determine the host ID
+        host_id = fs.strip_extension(fs.name(filepath))
+
         # Open the host configuration file
-        config = Configuration.from_file(host_file_path)
+        config = Configuration.from_file(filepath)
 
         # Set the host ID and cluster name (if a scheduling system is used)
         if config.scheduler:
 
             # If no cluster name is given, use the default cluster (defined in the configuration file)
-            if clustername is None: self.cluster_name = config.clusters.default
+            if clustername is None: cluster_name = config.clusters.default
 
             # If a cluster name is given, use that one
-            else: self.cluster_name = clustername
+            else: cluster_name = clustername
 
-        # Set the entries in the configuration object as attributes of this object
-        self.name = config.name
-        self.user = config.user
-        self.password = config.password
-        self.scheduler = config.scheduler
-        self.scratch_path = config.scratch_path
-        self.output_path = config.output_path
-        self.mpi_command = config.mpi_command
-        self.force_process_binding = config.force_process_binding
-        self.use_hyperthreading = config.use_hyperthreading
-        self.maximum_walltime = config.maximal_walltime
-        self.preferred_walltime = config.preferred_waltime
-        self.clusters = config.clusters # mapping
-        self.vpn = config.vpn # mapping
-        self.port = config.port
-        self.key = config.key
-        self.key_password = config.key_password
-        self.quota_command = config.quota_command
+        # Not a scheduling system
+        else: cluster_name = None
+
+        # Set cluster name
+        config["cluster_name"] = cluster_name
+
+        # Create and return
+        return cls(host_id, **config)
 
     # -----------------------------------------------------------------
 

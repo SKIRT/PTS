@@ -451,7 +451,7 @@ class BatchLauncher(Configurable):
 
             # Create the list of hosts
             hosts = []
-            for host_id in self.host_ids: hosts.append(Host(host_id))
+            for host_id in self.host_ids: hosts.append(Host.from_host_id(host_id))
 
             # Return the list of hosts
             return hosts
@@ -481,7 +481,7 @@ class BatchLauncher(Configurable):
             for host_id in self.host_ids:
 
                 # Create Host instance
-                host = Host(host_id)
+                host = Host.from_host_id(host_id)
 
                 # If it's a scheduler, add it to the list
                 if host.scheduler: host_ids.append(host_id)
@@ -513,7 +513,7 @@ class BatchLauncher(Configurable):
             for host_id in self.host_ids:
 
                 # Create a Host instance
-                host = Host(host_id)
+                host = Host.from_host_id(host_id)
 
                 # If it's a scheulder, add it to the list
                 if host.scheduler: hosts.append(host)
@@ -544,7 +544,7 @@ class BatchLauncher(Configurable):
             for host_id in self.host_ids:
 
                 # Create Host instance
-                host = Host(host_id)
+                host = Host.from_host_id(host_id)
 
                 # If it's not a scheduler, add it to the list
                 if not host.scheduler: host_ids.append(host_id)
@@ -576,7 +576,7 @@ class BatchLauncher(Configurable):
             for host_id in self.host_ids:
 
                 # Create a Host instance
-                host = Host(host_id)
+                host = Host.from_host_id(host_id)
 
                 # If it's a not scheulder, add it to the list
                 if not host.scheduler: hosts.append(host)
