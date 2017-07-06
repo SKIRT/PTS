@@ -1016,12 +1016,12 @@ class SkiFile:
         elems = self.tree.xpath("//BinTreeDustGrid | //OctTreeDustGrid")
         if len(elems) != 1: raise ValueError("No tree dust grid in ski file")
         # set the attribute value
-        set_quantity(elems[0], "minX", -extent)
-        set_quantity(elems[0], "minY", -extent)
-        set_quantity(elems[0], "minZ", -extent)
-        set_quantity(elems[0], "maxX", extent)
-        set_quantity(elems[0], "maxY", extent)
-        set_quantity(elems[0], "maxZ", extent)
+        self.set_quantity(elems[0], "minX", -extent)
+        self.set_quantity(elems[0], "minY", -extent)
+        self.set_quantity(elems[0], "minZ", -extent)
+        self.set_quantity(elems[0], "maxX", extent)
+        self.set_quantity(elems[0], "maxY", extent)
+        self.set_quantity(elems[0], "maxZ", extent)
 
     ## This function sets the dust fraction of the SPH dust distribution in the ski file
     # to the specified value

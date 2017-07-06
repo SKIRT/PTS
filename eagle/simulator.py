@@ -39,7 +39,7 @@ def simulate(record):
 
     # get the extent of the dust distribution defined in the input gas particles files
     # with a limit of 30 kpc
-    dustextent = min(30., getdustextent(os.path.join(skirtrun.inpath(),filenameprefix+"gas.txt")))
+    dustextent = min(30., getdustextent(os.path.join(skirtrun.inpath(),filenameprefix+"gas.dat")))
 
     # get the rotation unit vector of the original galaxy from the info file in the input folder
     for line in open(os.path.join(skirtrun.inpath(),filenameprefix+"info.txt")):
