@@ -13,11 +13,10 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.remote.mounter import RemoteMounter
 from pts.core.remote.host import find_host_ids
 from pts.core.tools import filesystem as fs
-from pts.core.tools.logging import setup_log
 
 # -----------------------------------------------------------------
 
@@ -27,17 +26,7 @@ definition.add_required("remote", "string", "remote host to mount", choices=find
 definition.add_positional_optional("path", "directory_path", "path of directory in which to create the mount point")
 
 # Read the command line arguments
-setter = ArgumentConfigurationSetter("mount", "Mount a remote configured in PTS into the local filesystem")
-config = setter.run(definition)
-
-# -----------------------------------------------------------------
-
-# Determine the log level
-level = "DEBUG" if config.debug else "INFO"
-
-# Initialize the logger
-log = setup_log(level=level)
-log.start("Starting mount ...")
+config = parse_arguments("mount", definition, description="Mount a remote configured in PTS into the local filesystem")
 
 # -----------------------------------------------------------------
 

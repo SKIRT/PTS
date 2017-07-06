@@ -82,6 +82,8 @@ mounter.unmount(host)
 # -----------------------------------------------------------------
 
 # CHECK
-if config.check: webbrowser.open(url, new=2)
+if config.check:
+    webbrowser._tryorder = ["safari"]
+    webbrowser.open(url, new=2)
 
 # -----------------------------------------------------------------

@@ -57,10 +57,10 @@ remote.logout()
 mounter = RemoteMounter()
 
 # Mount and get the mount path
-path = mounter.mount(config.remote)
+mount_path = mounter.mount(config.remote)
 
 # Determine the local file path
-filepath = fs.join(path, relative_filepath)
+filepath = fs.join(mount_path, relative_filepath)
 
 # Open the file
 fs.open_file(filepath)

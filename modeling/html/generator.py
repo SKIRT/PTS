@@ -21,29 +21,7 @@ from ..plotting.model import load_test_components, render_components_html
 
 # -----------------------------------------------------------------
 
-page_template = """<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{title}</title>
-{head}
-<link rel="stylesheet" type="text/css" href="http://users.ugent.be/~sjversto/stylesheet.css">
-</head>
-<body>
-{body}
-</body>
-</html>
-"""
-
-# -----------------------------------------------------------------
-
-underline_template = "<span style='text-decoration: underline;'>{text}</span>"
-bold_template = "<span style='font-weight:bold'>{text}</span>"
-fontsize_template = "<span style='font-size:{size}px'>{text}</span>"
-
-# -----------------------------------------------------------------
-
-newline = "<br>"
+stylesheet_url = "http://users.ugent.be/~sjversto/stylesheet.css"
 
 # -----------------------------------------------------------------
 
@@ -328,39 +306,39 @@ class HTMLGenerator(GalaxyModelingComponent):
         log.info("Generating the status page ...")
 
         # Create title
-        title = fontsize_template.format(size=20, text=underline_template.format(text="Modeling of " + self.galaxy_name))
+        title = html.fontsize_template.format(size=20, text=html.underline_template.format(text="Modeling of " + self.galaxy_name))
 
         # Create titles
-        title_info = underline_template.format(text="GALAXY INFO")
-        title_properties = underline_template.format(text="GALAXY PROPERTIES")
-        title_status = underline_template.format(text="MODELING STATUS")
-        title_model = underline_template.format(text="3D MODEL GEOMETRY")
+        title_info = html.underline_template.format(text="GALAXY INFO")
+        title_properties = html.underline_template.format(text="GALAXY PROPERTIES")
+        title_status = html.underline_template.format(text="MODELING STATUS")
+        title_model = html.underline_template.format(text="3D MODEL GEOMETRY")
 
-        body = title + newline + newline + title_info + newline + newline + str(self.info_table) + newline + newline
-        body += title_properties + newline + newline + str(self.properties_table) + newline + newline
-        body += title_status + newline + newline + str(self.status_table) + newline + newline
+        body = title + html.newline + html.newline + title_info + html.newline + html.newline + str(self.info_table) + html.newline + html.newline
+        body += title_properties + html.newline + html.newline + str(self.properties_table) + html.newline + html.newline
+        body += title_status + html.newline + html.newline + str(self.status_table) + html.newline + html.newline
 
-        body += title_model + newline + newline
-        body += bold_template.format(text="Old stars") + newline + newline
-        body += self.old_model + newline + newline
+        body += title_model + html.newline + html.newline
+        body += html.bold_template.format(text="Old stars") + html.newline + html.newline
+        body += self.old_model + html.newline + html.newline
 
-        body += bold_template.format(text="Young stars") + newline + newline
-        body += self.young_model + newline + newline
+        body += html.bold_template.format(text="Young stars") + html.newline + html.newline
+        body += self.young_model + html.newline + html.newline
 
-        body += bold_template.format(text="Ionizing stars") + newline + newline
-        body += self.ionizing_model + newline + newline
+        body += html.bold_template.format(text="Ionizing stars") + html.newline + html.newline
+        body += self.ionizing_model + html.newline + html.newline
 
-        body += bold_template.format(text="Dust") + newline + newline
-        body += self.dust_model + newline + newline
+        body += html.bold_template.format(text="Dust") + html.newline + html.newline
+        body += self.dust_model + html.newline + html.newline
 
         # Create contents
         contents = dict()
         contents["title"] = "Modeling of " + self.galaxy_name
-        contents["head"] = ""
+        contents["head"] = html.link_stylesheet_header_template.format(url=stylesheet_url)
         contents["body"] = body
 
         # Create the status page
-        self.status_page = page_template.format(**contents)
+        self.status_page = html.page_template.format(**contents)
 
     # -----------------------------------------------------------------
 

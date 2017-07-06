@@ -54,6 +54,86 @@ from .stringify import tostr
 
 # -----------------------------------------------------------------
 
+line = "<hr>"
+newline = "<br>"
+item = "<li>"
+
+# -----------------------------------------------------------------
+
+underline_template = "<span style='text-decoration: underline;'>{text}</span>"
+bold_template = "<span style='font-weight:bold'>{text}</span>"
+fontsize_template = "<span style='font-size:{size}px'>{text}</span>"
+small_template = "<small>{text}</small>"
+center_template = "<div style='text-align:center;'>{text}</div>"
+
+# -----------------------------------------------------------------
+
+link_stylesheet_header_template = '<link rel="stylesheet" type="text/css" href="{url}">'
+
+# -----------------------------------------------------------------
+
+page_template = """<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{title}</title>
+{head}
+</head>
+<body>
+{body}
+</body>
+</html>
+"""
+
+# -----------------------------------------------------------------
+
+def image(url, alttext=None, height=None, width=None):
+
+    """
+    This function ...
+    :param url:
+    :param alttext:
+    :param height:
+    :param width:
+    :return:
+    """
+
+    code = '<img src="' + url + '"'
+    if alttext is not None: code += 'alt="' + alttext + '"'
+    if height is not None: code += " height=" + str(height)
+    if width is not None: code += " width=" + str(width)
+    code += ">"
+    return code
+
+# -----------------------------------------------------------------
+
+def hyperlink(url, text=None):
+
+    """
+    This function ...
+    :param url:
+    :param text:
+    :return:
+    """
+
+    return '<a href="' + url + '">' + text + '</a>'
+
+# -----------------------------------------------------------------
+
+def mailto(address, text=None):
+
+    """
+    This function ...
+    :param address:
+    :param text:
+    :return:
+    """
+
+    if text is None: text = address
+    return hyperlink("mailto:" + address, text)
+
+# -----------------------------------------------------------------
+
 class SimpleTableCell(object):
 
     """A table class to create table cells.

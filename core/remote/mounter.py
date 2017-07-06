@@ -214,10 +214,14 @@ class RemoteMounter(object):
         path = fs.join(pts_remotes_path, host.id)
 
         # Unmount
-        subprocess.call(["umount", path])
+        output = subprocess.check_output(["umount", path])
 
-        # Remove the directory for the remote
-        fs.remove_directory(path)
+        # Busy?
+        if "busy" in output: raise RuntimeError("Could not unmount: resource is busy")
+        else:
+
+            # Remove the directory for the remote
+            fs.remove_directory(path)
 
     # -----------------------------------------------------------------
 
