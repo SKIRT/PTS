@@ -13,9 +13,8 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.remote.host import find_host_ids
-from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.core.remote.remote import Remote
 from pts.core.tools import introspection
@@ -33,20 +32,7 @@ definition.add_required("id", "positive_integer", "simulation ID")
 # -----------------------------------------------------------------
 
 # Parse the arguments into a configuration
-setter = ArgumentConfigurationSetter("show_simulation_log", "Show the log output of a remote SKIRT simulation")
-config = setter.run(definition)
-
-# -----------------------------------------------------------------
-
-# Determine the log file path
-logfile_path = fs.join(fs.cwd(), time.unique_name("show_simulation_log") + ".txt") if config.report else None
-
-# Determine the log level
-level = "DEBUG" if config.debug else "INFO"
-
-# Initialize the logger
-log = logging.setup_log(level=level, path=logfile_path)
-log.start("Starting show_simulation_log ...")
+config = parse_arguments("show_simulation_log", definition, description="Show the log output of a remote SKIRT simulation")
 
 # -----------------------------------------------------------------
 

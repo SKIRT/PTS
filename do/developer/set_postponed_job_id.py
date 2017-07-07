@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.remote.host import find_host_ids
 from pts.core.tools import introspection
 from pts.core.tools import filesystem as fs
@@ -31,8 +31,7 @@ definition.add_required("simulation_id", "integer", "ID of the simulation")
 definition.add_required("job_id", "integer", "job ID")
 
 # Create config
-setter = ArgumentConfigurationSetter("set_postponed_job_id", add_cwd=False)
-config = setter.run(definition)
+config = parse_arguments("set_postponed_job_id", definition, add_cwd=False)
 
 # -----------------------------------------------------------------
 

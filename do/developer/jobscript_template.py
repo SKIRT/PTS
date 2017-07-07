@@ -14,13 +14,11 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.remote.host import find_host_ids
-from pts.core.tools.logging import setup_log
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.simulation.jobscript import SKIRTJobScript
 from pts.core.launch.options import LoggingOptions
 from pts.core.simulation.arguments import SkirtArguments
 from pts.core.simulation.definition import SingleSimulationDefinition
-from pts.core.tools import filesystem as fs
 from pts.core.remote.host import Host
 from pts.core.simulation.parallelization import Parallelization
 
@@ -46,14 +44,7 @@ definition.add_flag("data_parallel", "enable data parallelization", None)
 definition.import_section_from_composite_class("logging", "logging options", LoggingOptions)
 
 # Create the configuration
-setter = ArgumentConfigurationSetter("installation_commands")
-config = setter.run(definition)
-
-# -----------------------------------------------------------------
-
-# Setup log
-if config.debug: log = setup_log("DEBUG")
-else: log = setup_log()
+config = parse_arguments("installation_commands", definition)
 
 # -----------------------------------------------------------------
 

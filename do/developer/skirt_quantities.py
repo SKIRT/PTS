@@ -16,8 +16,7 @@ from __future__ import absolute_import, division, print_function
 from pts.core.prep.smile import SKIRTSmileSchema, skirt_quantities_to_pts_quantities
 from pts.core.tools import formatting as fmt
 from pts.core.tools import stringify
-from pts.core.basics.configuration import ConfigurationDefinition, write_definition
-from pts.core.basics.configuration import ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 
 # -----------------------------------------------------------------
 
@@ -26,8 +25,7 @@ definition = ConfigurationDefinition()
 definition.add_positional_optional("match", "string", "only show quantities with names that contain this string")
 
 # Parse
-setter = ArgumentConfigurationSetter("skirt_quantities")
-config = setter.run(definition)
+config = parse_arguments("skirt_quantities", definition)
 
 # -----------------------------------------------------------------
 

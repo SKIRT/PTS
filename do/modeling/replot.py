@@ -19,7 +19,7 @@ from pts.modeling.component.component import load_modeling_configuration
 from pts.modeling.component.galaxy import get_observed_sed as get_sed_galaxy
 from pts.modeling.component.sed import get_observed_sed as get_sed_other
 from pts.modeling.welcome import welcome
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.fitting.component import get_generation_names, get_simulations
 from pts.core.plot.sed import SEDPlotter
 from pts.core.data.sed import SED
@@ -41,8 +41,7 @@ definition.add_optional("generations", "string_list", "generations for which to 
 # -----------------------------------------------------------------
 
 # Create the configuration
-setter = ArgumentConfigurationSetter("replot", "replot the SEDs of individual simulations")
-config = setter.run(definition)
+config = parse_arguments("replot", definition, description="replot the SEDs of individual simulations")
 
 # Welcome message
 welcome()

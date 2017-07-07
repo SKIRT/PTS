@@ -13,10 +13,10 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.tools.logging import setup_log
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.remote.host import find_host_ids
 from pts.core.remote.remote import Remote
+from pts.core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -25,14 +25,7 @@ definition = ConfigurationDefinition()
 definition.add_positional_optional("remotes", "string_list", "remote hosts on which to clear", choices=find_host_ids(), default=find_host_ids())
 
 # Create setter
-setter = ArgumentConfigurationSetter("clear_sessions_and_temp")
-config = setter.run(definition)
-
-# -----------------------------------------------------------------
-
-# Set logger
-level = "DEBUG" if config.debug else "INFO"
-log = setup_log(level)
+config = parse_arguments("clear_sessions_and_temp", definition)
 
 # -----------------------------------------------------------------
 

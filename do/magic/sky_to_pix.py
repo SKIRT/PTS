@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.magic.basics.coordinatesystem import CoordinateSystem
 
 # -----------------------------------------------------------------
@@ -24,8 +24,7 @@ definition.add_required("coordinate", "skycoordinate", "the sky coordinate")
 definition.add_required("wcs_path", "file_path", "the path to the file holding the WCS info")
 
 # Get the configuration
-setter = ArgumentConfigurationSetter("pix_to_sky")
-config = setter.run(definition)
+config = parse_arguments("pix_to_sky", definition)
 
 # -----------------------------------------------------------------
 

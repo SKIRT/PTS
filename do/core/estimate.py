@@ -14,7 +14,8 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.advanced.resources import ResourceEstimator
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter, initialize_log
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments, initialize_log
+from pts.core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -25,14 +26,7 @@ definition.add_required("nthreads", "positive_integer", "number of parallel thre
 definition.add_required("nprocesses", "positive_integer", "number of parallel processes")
 
 # Parse
-setter = ArgumentConfigurationSetter("estimate")
-config = setter.run(definition)
-
-# -----------------------------------------------------------------
-
-# Initialize the logger
-log = initialize_log(config)
-log.info("Starting estimate ...")
+config = parse_arguments("estimate", definition)
 
 # -----------------------------------------------------------------
 

@@ -17,7 +17,7 @@ from code import InteractiveConsole
 #from IPython.core.interactiveshell import InteractiveShell
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.remote.host import find_host_ids
 from pts.core.tools import formatting as fmt
 from pts.core.tools import introspection
@@ -32,8 +32,7 @@ definition = ConfigurationDefinition()
 definition.add_positional_optional("host_id", "string", "remote host ID", choices=find_host_ids())
 
 # Read the command line arguments
-setter = ArgumentConfigurationSetter("python", "Open a python session with PTS modules loaded, and with remote capabilities if requested.")
-config = setter.run(definition)
+config = parse_arguments("python", definition, description="Open a python session with PTS modules loaded, and with remote capabilities if requested.")
 
 # -----------------------------------------------------------------
 

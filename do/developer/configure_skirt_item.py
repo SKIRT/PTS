@@ -14,8 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.prep.smile import SKIRTSmileSchema, show_parameters
-from pts.core.basics.configuration import ConfigurationDefinition
-from pts.core.basics.configuration import ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 
 # -----------------------------------------------------------------
 
@@ -24,8 +23,7 @@ definition = ConfigurationDefinition()
 definition.add_positional_optional("name", "string", "name of the configurable item")
 
 # Parse
-setter = ArgumentConfigurationSetter("configure_skirt_item")
-config = setter.run(definition)
+config = parse_arguments("configure_skirt_item", definition)
 
 # -----------------------------------------------------------------
 

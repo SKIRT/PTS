@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.remote.mounter import RemoteMounter
 from pts.core.remote.host import find_host_ids
 from pts.core.tools import filesystem as fs
@@ -28,8 +28,7 @@ definition.add_required("remote", "string", "remote host", choices=find_host_ids
 definition.add_required("filename", "string", "file name (or path)")
 
 # Read the command line arguments
-setter = ArgumentConfigurationSetter("open", "Open a file on a remote host")
-config = setter.run(definition)
+config = parse_arguments("open", definition, description="Open a file on a remote host")
 
 # -----------------------------------------------------------------
 

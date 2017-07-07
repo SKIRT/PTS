@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from abc import ABCMeta
+from abc import ABCMeta, abstractmethod
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
@@ -63,6 +63,30 @@ class HTMLPageComponent(GalaxyModelingComponent):
 
         # Call the setup function of the base class
         super(HTMLPageComponent, self).setup(**kwargs)
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def make_tables(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    @abstractmethod
+    def make_plots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
 
     # -----------------------------------------------------------------
 

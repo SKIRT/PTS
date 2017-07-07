@@ -19,8 +19,7 @@ import StringIO
 from pts.core.prep.smile import SKIRTSmileSchema
 from pts.core.tools import formatting as fmt
 from pts.core.tools import stringify
-from pts.core.basics.configuration import ConfigurationDefinition, write_definition
-from pts.core.basics.configuration import ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, write_definition, parse_arguments
 
 # -----------------------------------------------------------------
 
@@ -30,8 +29,7 @@ definition.add_positional_optional("match", "string", "only show types with name
 definition.add_flag("definitions", "format the properties for each item as a configuration definition")
 
 # Parse
-setter = ArgumentConfigurationSetter("skirt_items")
-config = setter.run(definition)
+config = parse_arguments("skirt_items", definition)
 
 # -----------------------------------------------------------------
 

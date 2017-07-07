@@ -15,8 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.tools import introspection
 from pts.core.tools import filesystem as fs
-from pts.core.tools.logging import setup_log
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.remote.host import find_host_ids
 from pts.core.remote.remote import Remote
 from pts.core.tools import time
@@ -29,14 +28,7 @@ definition.add_positional_optional("remote", "string", "remote host on which to 
 definition.add_optional("names", "string_list", "remove temporary directories matching these names (e.g. 'installation' matches 'installation_2017-05-03--08-45-44-410', 'installation_2017-05-03--13-52-28-371', etc. and also exact matches")
 
 # Create setter
-setter = ArgumentConfigurationSetter("clear_temp")
-config = setter.run(definition)
-
-# -----------------------------------------------------------------
-
-# Set logger
-level = "DEBUG" if config.debug else "INFO"
-log = setup_log(level)
+config = parse_arguments("clear_temp", definition)
 
 # -----------------------------------------------------------------
 

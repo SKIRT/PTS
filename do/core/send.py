@@ -13,8 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import logging
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.remote.host import find_host_ids
 from pts.core.remote.remote import Remote
 from pts.core.tools import filesystem as fs
@@ -25,18 +24,7 @@ definition = ConfigurationDefinition()
 definition.add_required("local_path", "string", "path or name of the file or directory to send")
 definition.add_required("remote", "string", "the remote host to send to", choices=find_host_ids())
 definition.add_optional("remote_path", "string", "path of the remote directory to send to")
-
-setter = ArgumentConfigurationSetter("send")
-config = setter.run(definition)
-
-# -----------------------------------------------------------------
-
-# Determine the log level
-level = "DEBUG" if config.debug else "INFO"
-
-# Initialize the logger
-log = logging.setup_log(level=level)
-log.start("Starting send ...")
+config = parse_arguments("send", definition)
 
 # -----------------------------------------------------------------
 

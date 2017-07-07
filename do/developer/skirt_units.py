@@ -17,7 +17,7 @@ from pts.core.prep.smile import SKIRTSmileSchema
 from pts.core.tools import formatting as fmt
 from pts.core.units.stringify import stringify_unit
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.core.basics.configuration import ArgumentConfigurationSetter
+from pts.core.basics.configuration import parse_arguments
 
 # -----------------------------------------------------------------
 
@@ -26,8 +26,7 @@ definition = ConfigurationDefinition()
 definition.add_positional_optional("match", "string", "only show unit systems with names that contain this string")
 
 # Parse
-setter = ArgumentConfigurationSetter("skirt_units")
-config = setter.run(definition)
+config = parse_arguments("skirt_units", definition)
 
 # -----------------------------------------------------------------
 

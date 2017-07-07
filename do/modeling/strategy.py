@@ -16,9 +16,9 @@ from __future__ import absolute_import, division, print_function
 from textwrap import wrap
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import logging, time
+from pts.core.tools import time
 from pts.core.tools import filesystem as fs
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.dustpedia.core.sample import DustPediaSample
 from pts.dustpedia.core.database import DustPediaDatabase, get_account
 from pts.core.tools import formatting as fmt
@@ -35,8 +35,7 @@ definition = ConfigurationDefinition()
 definition.add_required("galaxy", "string", "galaxy name")
 
 # Get configuration
-setter = ArgumentConfigurationSetter("strategy")
-config = setter.run(definition)
+config = parse_arguments("strategy", definition)
 
 # -----------------------------------------------------------------
 

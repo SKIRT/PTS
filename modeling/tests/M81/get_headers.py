@@ -13,15 +13,14 @@ from pts.dustpedia.core.database import DustPediaDatabase, get_account
 from pts.dustpedia.core.sample import DustPediaSample
 from pts.core.tools import filesystem as fs
 from pts.core.tools.logging import log
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 
 # -----------------------------------------------------------------
 
+# Create configuration
 definition = ConfigurationDefinition()
 definition.add_required("galaxy_name", "string", "name of the galaxy (will be resolved)")
-
-setter = ArgumentConfigurationSetter("get_headers")
-config = setter.run(definition)
+config = parse_arguments("get_headers", definition)
 
 # -----------------------------------------------------------------
 

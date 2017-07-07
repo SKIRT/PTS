@@ -14,16 +14,14 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.tools.logging import log
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.remote.remote import Remote
 
 # -----------------------------------------------------------------
 
 definition = ConfigurationDefinition()
 definition.add_required("remote", "string", "remote host ID")
-
-setter = ArgumentConfigurationSetter("sessions")
-config = setter.run(definition)
+setter = parse_arguments("sessions", definition)
 
 # -----------------------------------------------------------------
 

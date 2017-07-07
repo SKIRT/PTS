@@ -17,11 +17,9 @@ import numpy as np
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import formatting as fmt
-from pts.core.tools.logging import log
 from pts.core.tools import tables
 from pts.core.tools import filesystem as fs
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
-from pts.core.tools import stringify
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 
 # -----------------------------------------------------------------
 
@@ -29,8 +27,7 @@ definition = ConfigurationDefinition(write_config=False)
 definition.add_required("path_a", "file_path", "path of the first table")
 definition.add_required("path_b", "file_path", "path of the second table")
 
-setter = ArgumentConfigurationSetter("compare_tables", add_logging=False, add_cwd=False)
-config = setter.run(definition)
+config = parse_arguments("compare_tables", definition, add_logging=False, add_cwd=False)
 
 # -----------------------------------------------------------------
 

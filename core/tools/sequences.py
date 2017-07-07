@@ -714,3 +714,29 @@ def find_differences(sequence_a, sequence_b):
     return indices
 
 # -----------------------------------------------------------------
+
+def is_singleton(sequence):
+
+    """
+    This function ...
+    :param sequence:
+    :return:
+    """
+
+    return len(sequence) == 1
+
+# -----------------------------------------------------------------
+
+def get_singleton(sequence):
+
+    """
+    This function ...
+    :param sequence:
+    :return:
+    """
+
+    if len(sequence) == 0: raise ValueError("Empty sequence")
+    elif len(sequence) > 1: raise ValueError("Not a singleton")
+    else: return sequence[0]
+
+# -----------------------------------------------------------------

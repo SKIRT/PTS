@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.remote.remote import Remote
 
 # -----------------------------------------------------------------
@@ -21,9 +21,7 @@ from pts.core.remote.remote import Remote
 definition = ConfigurationDefinition()
 definition.add_required("remote", "string", "remote host ID")
 definition.add_required("line", "string", "line to be executed on the remote host")
-
-setter = ArgumentConfigurationSetter("sessions")
-config = setter.run(definition)
+config = parse_arguments("sessions", definition)
 
 # -----------------------------------------------------------------
 

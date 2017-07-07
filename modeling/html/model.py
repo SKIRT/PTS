@@ -18,6 +18,7 @@ from .component import HTMLPageComponent, stylesheet_url
 from ...core.tools import html
 from ...core.tools import filesystem as fs
 from ..plotting.model import load_test_components, render_components_html
+from ..fitting.run import load_fitting_run
 
 # -----------------------------------------------------------------
 
@@ -37,6 +38,9 @@ class ModelPageGenerator(HTMLPageComponent):
 
         # Call the constructor of the base class
         super(HTMLPageComponent, self).__init__(*args, **kwargs)
+
+        # The fitting run
+        self.fitting_run = None
 
         # Models
         self.old_model = None
@@ -81,6 +85,21 @@ class ModelPageGenerator(HTMLPageComponent):
 
         # Call the setup function of the base class
         super(ModelPageGenerator, self).setup(**kwargs)
+
+        # Load the fitting run
+        self.fitting_run = load_fitting_run(self.config.path, self.config.fitting_run)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def definition(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run.model_definition
 
     # -----------------------------------------------------------------
 

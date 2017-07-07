@@ -39,6 +39,8 @@ from .evaluate import get_parameter_values_from_genome
 from .platform import GenerationPlatform
 from ..config.parameters import parsing_types_for_parameter_types
 from ..build.component import get_representation
+from ...core.tools import sequences
+from ..build.component import get_model_definition
 
 # -----------------------------------------------------------------
 
@@ -580,6 +582,18 @@ class FittingRun(object):
         """
 
         return self.fitting_configuration.grid
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def model_definition(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+
+        return get_model_definition(self.modeling_path, self.model_name)
 
     # -----------------------------------------------------------------
 
@@ -2851,7 +2865,80 @@ def has_unevaluated_generations(modeling_path, fitting_run):
     return False
     
 # -----------------------------------------------------------------
-# NEW FROM MODELINGCOMPONENT
+
+def get_fit_path(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return fs.join(modeling_path, "fit")
+
+# -----------------------------------------------------------------
+
+def get_fitting_run_names(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return fs.directories_in_path(get_fit_path(modeling_path), returns="name")
+
+# -----------------------------------------------------------------
+
+def has_fitting_runs(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return len(get_fitting_run_names(modeling_path)) > 0
+
+# -----------------------------------------------------------------
+
+def has_single_fitting_run(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    names = get_fitting_run_names(modeling_path)
+    return sequences.is_singleton(names)
+
+# -----------------------------------------------------------------
+
+def get_single_fitting_run_name(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    names = get_fitting_run_names(modeling_path)
+    return sequences.get_singleton(names)
+
+# -----------------------------------------------------------------
+
+def get_single_fitting_run_path(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    name = get_single_fitting_run_name(modeling_path)
+    return get_fitting_run_path(modeling_path, name)
+
 # -----------------------------------------------------------------
 
 def get_fitting_run_path(modeling_path, fitting_run):
@@ -2864,6 +2951,33 @@ def get_fitting_run_path(modeling_path, fitting_run):
     """
 
     return fs.join(modeling_path, "fit", fitting_run)
+
+# -----------------------------------------------------------------
+
+def load_fitting_run(modeling_path, name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param name:
+    :return:
+    """
+
+    fitting_run_path = get_fitting_run_path(modeling_path, name)
+    return FittingRun.from_path(fitting_run_path)
+
+# -----------------------------------------------------------------
+
+def load_single_fitting_run(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    fitting_run_path = get_single_fitting_run_path(modeling_path)
+    return FittingRun.from_path(fitting_run_path)
 
 # -----------------------------------------------------------------
 

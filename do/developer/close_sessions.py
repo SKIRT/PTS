@@ -13,8 +13,8 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.tools.logging import setup_log
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.tools.logging import log
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.remote.remote import Remote
 from pts.core.remote.host import find_host_ids
 
@@ -22,15 +22,7 @@ from pts.core.remote.host import find_host_ids
 
 definition = ConfigurationDefinition()
 definition.add_optional("remotes", "string_list", "remote host ID", choices=find_host_ids(), default=find_host_ids())
-
-setter = ArgumentConfigurationSetter("sessions")
-config = setter.run(definition)
-
-# -----------------------------------------------------------------
-
-# Create logger
-level = "DEBUG" if config.debug else "INFO"
-log = setup_log(level)
+config = parse_arguments("sessions", definition)
 
 # -----------------------------------------------------------------
 

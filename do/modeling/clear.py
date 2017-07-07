@@ -13,9 +13,8 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 
 # -----------------------------------------------------------------
 
@@ -26,20 +25,7 @@ definition = ConfigurationDefinition()
 definition.add_required("step", "string", "the modeling step for which to clear the output")
 
 # Get the configuration
-setter = ArgumentConfigurationSetter("clear")
-config = setter.run(definition)
-
-# -----------------------------------------------------------------
-
-# Determine the log file path
-logfile_path = fs.join(fs.cwd(), "log", time.unique_name("log") + ".txt") if config.arguments.report else None
-
-# Determine the log level
-level = "DEBUG" if config.arguments.debug else "INFO"
-
-# Initialize the logger
-log = logging.setup_log(level=level, path=logfile_path)
-log.start("Starting clear ...")
+config = parse_arguments("clear", definition)
 
 # -----------------------------------------------------------------
 

@@ -15,9 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.prep.uninstaller import Uninstaller
 from pts.core.remote.host import find_host_ids
-from pts.core.tools.logging import setup_log
+from pts.core.tools.logging import log
 from pts.core.remote.remote import Remote
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 
 # -----------------------------------------------------------------
 
@@ -31,17 +31,7 @@ definition.add_flag("qt", "also remove Qt installation")
 definition.add_flag("one_attempt", "only perform one attempt at connecting to a remote")
 
 # Get the config
-setter = ArgumentConfigurationSetter("deinstall_all")
-config = setter.run(definition)
-
-# -----------------------------------------------------------------
-
-# Determine the log level
-level = "DEBUG" if config.debug else "INFO"
-
-# Initialize the logger
-log = setup_log(level=level)
-log.start("Starting deinstall_all ...")
+config = parse_arguments("deinstall_all", definition)
 
 # -----------------------------------------------------------------
 

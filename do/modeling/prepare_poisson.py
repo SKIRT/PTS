@@ -13,9 +13,8 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.filter.broad import BroadBandFilter
 from pts.magic.core.frame import Frame
 from pts.magic.core.remote import RemoteFrame
@@ -32,20 +31,7 @@ from pts.core.remote.python import AttachedPythonSession
 definition = ConfigurationDefinition()
 
 # Get configuration
-setter = ArgumentConfigurationSetter("prepare_poisson")
-config = setter.run(definition)
-
-# -----------------------------------------------------------------
-
-# Determine the log file path
-logfile_path = fs.join(fs.cwd(), "log", time.unique_name("log") + ".txt") if config.report else None
-
-# Determine the log level
-level = "DEBUG" if config.debug else "INFO"
-
-# Initialize the logger
-log = logging.setup_log(level=level, path=logfile_path)
-log.start("Starting prepare_poisson ...")
+config = parse_arguments("prepare_poisson", definition)
 
 # -----------------------------------------------------------------
 

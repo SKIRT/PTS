@@ -47,7 +47,6 @@ definition.add_optional("remote", "string", "remote host")
 definition.add_optional("nprocesses", "integer", "number of processes to use for the filter convolution calculation", 8)
 
 # Get configuration
-#setter = ArgumentConfigurationSetter("check_simulated_images")
 setter = InteractiveConfigurationSetter("check_simulated_images")
 config = setter.run(definition)
 

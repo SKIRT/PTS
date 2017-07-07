@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.remote.host import find_host_ids
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
@@ -38,8 +38,7 @@ definition.add_flag("full", "fully clear the tasks, also remove remote simulatio
 # -----------------------------------------------------------------
 
 # Parse the arguments into a configuration
-setter = ArgumentConfigurationSetter("clear_tasks", "Clear PTS tasks for a certain remote host")
-config = setter.run(definition)
+config = parse_arguments("clear_tasks", definition, description="Clear PTS tasks for a certain remote host")
 
 # -----------------------------------------------------------------
 

@@ -20,7 +20,7 @@ from pts.magic.tools import statistics
 from pts.core.tools import filesystem as fs
 from pts.magic.catalog.extended import ExtendedSourceCatalog
 from pts.magic.catalog.point import PointSourceCatalog
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 
 # -----------------------------------------------------------------
 
@@ -35,8 +35,7 @@ definition.add_required("frame", "file_path", "name of an image file")
 #parser.add_argument("sigma_level", type=float, nargs='?', help="the sigma level", default=3.0)
 #parser.add_argument("--color", type=str, help="the color", default="blue")
 
-setter = ArgumentConfigurationSetter("catalog_to_regions")
-config = setter.run(definition)
+config = parse_arguments("catalog_to_regions", definition)
 
 # -----------------------------------------------------------------
 

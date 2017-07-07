@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.tools import filesystem as fs
 from pts.magic.region.list import load_region_list
 
@@ -22,9 +22,7 @@ from pts.magic.region.list import load_region_list
 definition = ConfigurationDefinition()
 definition.add_required("path", "file_path", "region path list")
 definition.add_required("factor", "positive_real", "scale factor")
-
-setter = ArgumentConfigurationSetter("scale_regions")
-config = setter.run(definition)
+config = parse_arguments("scale_regions", definition)
 
 # -----------------------------------------------------------------
 

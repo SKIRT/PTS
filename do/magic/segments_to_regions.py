@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.magic.tools.segments import segments_to_regions
 from pts.magic.core.segmentationmap import SegmentationMap
 
@@ -37,8 +37,7 @@ definition.add_optional("offset", "real", "offset to make the regions larger or 
 # parser.add_argument("--fits_slice", nargs='?', const=1, help="Optional: Fits slice in the segmentation map to be used. Default 0.",type=str, default='0')
 
 # Get the configuration
-setter = ArgumentConfigurationSetter("pix_to_sky")
-config = setter.run(definition)
+config = parse_arguments("pix_to_sky", definition)
 
 # -----------------------------------------------------------------
 

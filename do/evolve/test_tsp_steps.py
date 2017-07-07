@@ -19,7 +19,7 @@ from pts.core.tools import time
 from pts.evolve.optimize.stepwise import StepWiseOptimizer
 from pts.evolve.optimize.optimizer import show_best
 from pts.evolve.tests.TravelingSalesman.test import settings_optimize, input_optimize, eval_func
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.tools.logging import setup_log
 
 # -----------------------------------------------------------------
@@ -29,8 +29,7 @@ definition = ConfigurationDefinition()
 definition.add_positional_optional("ngenerations", "positive_integer", "number of generations (steps)", 10)
 
 # Create the configuration
-setter = ArgumentConfigurationSetter("test_tsp_steps")
-config = setter.run(definition)
+config = parse_arguments("test_tsp_steps", definition)
 
 # Set logging
 log = setup_log("DEBUG")

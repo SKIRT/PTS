@@ -15,7 +15,7 @@ import imageio
 # Import the relevant PTS classes and modules
 from pts.core.basics.rgbimage import invert_colors
 from pts.core.tools import filesystem as fs
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 
 # -----------------------------------------------------------------
 
@@ -24,8 +24,7 @@ definition = ConfigurationDefinition()
 definition.add_required("filename", "file_path", "name of the input image file")
 
 # Parse the command line arguments
-setter = ArgumentConfigurationSetter("invert")
-config = setter.run(definition)
+config = parse_arguments("invert", definition)
 
 # -----------------------------------------------------------------
 

@@ -19,9 +19,8 @@ from collections import defaultdict
 from pts.core.remote.host import find_host_ids
 from pts.core.remote.remote import Remote
 from pts.core.remote.modules import Modules
-from pts.core.tools.logging import setup_log
-from pts.core.tools import formatting as fmt
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.tools.logging import log
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.tools import introspection
 from pts.core.tools import git
 from pts.core.prep.installation import qt_url, qt_configure_options
@@ -35,14 +34,7 @@ definition.add_required("remote", "string", "remote host ID", choices=find_host_
 definition.add_flag("private", "install SKIRT from private (development) repository")
 
 # Create the configuration
-setter = ArgumentConfigurationSetter("installation_commands")
-config = setter.run(definition)
-
-# -----------------------------------------------------------------
-
-# Setup log
-if config.debug: log = setup_log("DEBUG")
-else: log = setup_log()
+config = parse_arguments("installation_commands", definition)
 
 # -----------------------------------------------------------------
 

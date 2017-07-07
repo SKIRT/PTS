@@ -18,7 +18,7 @@ import collections
 # Import the relevant PTS classes and modules
 from pts.core.tools.logging import log
 from pts.core.tools import parsing
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 
 # -----------------------------------------------------------------
 
@@ -29,8 +29,7 @@ definition.add_required("string", "string", "string to be parsed")
 # -----------------------------------------------------------------
 
 # Get config
-setter = ArgumentConfigurationSetter("parse")
-config = setter.run(definition)
+config = parse_arguments("parse", definition)
 
 # -----------------------------------------------------------------
 

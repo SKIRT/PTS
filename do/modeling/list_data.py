@@ -19,7 +19,7 @@ import sys
 from telarchive import archive_search
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter, initialize_log
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 
 # -----------------------------------------------------------------
 
@@ -30,14 +30,7 @@ definition = ConfigurationDefinition(log_path="log")
 definition.add_required("galaxy", "string", "galaxy name")
 
 # Get configuration
-setter = ArgumentConfigurationSetter("list_data")
-config = setter.run(definition)
-
-# -----------------------------------------------------------------
-
-# Initialize the logger
-log = initialize_log(config)
-log.start("Starting list_data ...")
+config = parse_arguments("list_data", definition)
 
 # -----------------------------------------------------------------
 

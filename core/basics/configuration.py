@@ -84,18 +84,20 @@ def initialize_log(config, remote=None):
 
 # -----------------------------------------------------------------
 
-def parse_arguments(name, definition, description=None):
+def parse_arguments(name, definition, description=None, add_logging=True, add_cwd=True):
 
     """
     This function ...
     :param name:
     :param definition:
     :param description:
+    :param add_logging:
+    :param add_cwd:
     :return:
     """
 
     # Create the configuration
-    setter = ArgumentConfigurationSetter(name, description=description)
+    setter = ArgumentConfigurationSetter(name, description=description, add_logging=add_logging, add_cwd=add_cwd)
     config = setter.run(definition)
 
     # Initialize the logger

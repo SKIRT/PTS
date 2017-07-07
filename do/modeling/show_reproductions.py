@@ -13,8 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
-from pts.core.tools.logging import setup_log
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.tools import filesystem as fs
 from pts.modeling.fitting.component import get_run_names
 from pts.modeling.core.environment import GalaxyModelingEnvironment
@@ -38,11 +37,7 @@ else: definition.add_required("fitting_run", "string", "name of the fitting run 
 definition.add_positional_optional("generations", "string_list", "name of the generations for which to show the reproductions")
 
 # Create the configuration
-setter = ArgumentConfigurationSetter("show_reproductions")
-config = setter.run(definition)
-
-# Set logging
-log = setup_log("DEBUG")
+config = parse_arguments("show_reproductions", definition)
 
 # -----------------------------------------------------------------
 

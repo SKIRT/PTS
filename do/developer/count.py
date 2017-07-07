@@ -19,24 +19,21 @@ from collections import defaultdict
 from inspect import getmembers, isfunction, getdoc
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import parsing
 from pts.core.tools import formatting as fmt
 from pts.core.tools import introspection
-from pts.core.tools import filesystem as fs
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.tools.logging import setup_log
-
-# -----------------------------------------------------------------
-
-# Setup log
-setup_log("ERROR")
 
 # -----------------------------------------------------------------
 
 definition = ConfigurationDefinition()
 definition.add_flag("verbose", "verbose output", letter="v")
-setter = ArgumentConfigurationSetter("count")
-config = setter.run(definition)
+config = parse_arguments("count", definition)
+
+# -----------------------------------------------------------------
+
+# Setup log
+setup_log("ERROR")
 
 # -----------------------------------------------------------------
 

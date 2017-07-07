@@ -17,11 +17,10 @@ import subprocess
 import tempfile
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition, ArgumentConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.remote.host import find_host_ids, Host
 from pts.core.tools import filesystem as fs
 from pts.core.tools import introspection
-from pts.core.tools import terminal
 from pts.core.tools import time
 
 # -----------------------------------------------------------------
@@ -31,8 +30,7 @@ definition = ConfigurationDefinition()
 definition.add_required("remote", "string", "remote host to mount", choices=find_host_ids())
 
 # Read the command line arguments
-setter = ArgumentConfigurationSetter("login", "Login to a remote host configured in PTS")
-config = setter.run(definition)
+config = parse_arguments("login", definition, description="Login to a remote host configured in PTS")
 
 # -----------------------------------------------------------------
 
