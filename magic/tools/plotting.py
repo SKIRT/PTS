@@ -148,6 +148,10 @@ def plot_box(box, title=None, path=None, format=None, scale="log", interval="pts
         vmin = max(np.nanmin(box), 0.)
         vmax = 0.5 * (np.nanmax(box) + vmin)
 
+    elif interval == "minmax":
+
+        vmin, vmax = MinMaxInterval().get_limits(box)
+
     elif isinstance(interval, tuple):
 
         vmin = interval[0]
