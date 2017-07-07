@@ -487,7 +487,7 @@ class SkirtSimulation(object):
     def dustcellstats(self):
         # load the optical depths from the file
         filepath = self.outfilepath("ds_cellprops.dat")
-        depths = np.loadtxt(arch.opentext(filepath), usecols=(3,))
+        depths = np.loadtxt(arch.opentext(filepath), usecols=(8,))
         # calculate and return the statistics
         nonzerodepths = depths[depths>0]
         if len(nonzerodepths) > 0:
