@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.html.generator Contains the HTMLGenerator class.
+## \package pts.modeling.html.status Contains the StatusPageGenerator class.
 
 # -----------------------------------------------------------------
 
@@ -14,18 +14,13 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
-from ..component.galaxy import GalaxyModelingComponent
+from .component import HTMLPageComponent, stylesheet_url
 from ...core.tools import html
 from ...core.tools import filesystem as fs
-from ..plotting.model import load_test_components, render_components_html
 
 # -----------------------------------------------------------------
 
-stylesheet_url = "http://users.ugent.be/~sjversto/stylesheet.css"
-
-# -----------------------------------------------------------------
-
-class HTMLGenerator(GalaxyModelingComponent):
+class StatusPageGenerator(HTMLPageComponent):
 
     """
     This function ...
@@ -40,21 +35,12 @@ class HTMLGenerator(GalaxyModelingComponent):
         """
 
         # Call the constructor of the base class
-        super(HTMLGenerator, self).__init__(*args, **kwargs)
+        super(HTMLPageComponent, self).__init__(*args, **kwargs)
 
         # Tables
         self.info_table = None
         self.properties_table = None
         self.status_table = None
-
-        # Models
-        self.old_model = None
-        self.young_model = None
-        self.ionizing_model = None
-        self.dust_model = None
-
-        # Pages
-        self.status_page = None
 
     # -----------------------------------------------------------------
 
@@ -92,7 +78,7 @@ class HTMLGenerator(GalaxyModelingComponent):
         """
 
         # Call the setup function of the base class
-        super(HTMLGenerator, self).setup(**kwargs)
+        super(StatusPageGenerator, self).setup(**kwargs)
 
     # -----------------------------------------------------------------
 
@@ -165,118 +151,12 @@ class HTMLGenerator(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def make_geometry_tables(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making geometry tables ...")
-
-        # Old bulge
-        self.make_old_bulge_geometry_table()
-
-        # Old disk
-        self.make_old_disk_geometry_table()
-
-        # Young stars
-        self.make_young_geometry_table()
-
-        # Ionizing stars
-        self.make_ionizing_geometry_table()
-
-        # Dust
-        self.make_dust_geometry_table()
-
-    # -----------------------------------------------------------------
-
-    def make_old_bulge_geometry_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-
-
-    # -----------------------------------------------------------------
-
-    def make_old_disk_geometry_table(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-    # -----------------------------------------------------------------
-
-    def make_young_geometry_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-    # -----------------------------------------------------------------
-
-    def make_ionizing_geometry_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-    # -----------------------------------------------------------------
-
-    def make_dust_geometry_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-    # -----------------------------------------------------------------
-
     def make_plots(self):
 
         """
         This function ...
         :return:
         """
-
-        # Inform the user
-        log.info("Making plots ...")
-
-        # Model
-        self.make_model_plots()
-
-    # -----------------------------------------------------------------
-
-    def make_model_plots(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making model plots ...")
-
-        # TEMPORARY: LOAD TEST COMPONENTS
-        components = load_test_components()
-
-        old_components = {"disk": components["old"], "bulge": components["bulge"]}
-        young_components = {"young": components["young"]}
-        ionizing_components = {"ionizing": components["ionizing"]}
-        dust_components = {"dust": components["dust"]}
-
-        # Generate HTML
-        self.old_model = render_components_html(old_components, only_body=True, width=400, height=500, style="minimal")
-        self.young_model = render_components_html(young_components, only_body=True, width=400, height=500, style="minimal")
-        self.ionizing_model = render_components_html(ionizing_components, only_body=True, width=400, height=500, style="minimal")
-        self.dust_model = render_components_html(dust_components, only_body=True, width=400, height=500, style="minimal")
 
     # -----------------------------------------------------------------
 
@@ -312,24 +192,10 @@ class HTMLGenerator(GalaxyModelingComponent):
         title_info = html.underline_template.format(text="GALAXY INFO")
         title_properties = html.underline_template.format(text="GALAXY PROPERTIES")
         title_status = html.underline_template.format(text="MODELING STATUS")
-        title_model = html.underline_template.format(text="3D MODEL GEOMETRY")
 
         body = title + html.newline + html.newline + title_info + html.newline + html.newline + str(self.info_table) + html.newline + html.newline
         body += title_properties + html.newline + html.newline + str(self.properties_table) + html.newline + html.newline
         body += title_status + html.newline + html.newline + str(self.status_table) + html.newline + html.newline
-
-        body += title_model + html.newline + html.newline
-        body += html.bold_template.format(text="Old stars") + html.newline + html.newline
-        body += self.old_model + html.newline + html.newline
-
-        body += html.bold_template.format(text="Young stars") + html.newline + html.newline
-        body += self.young_model + html.newline + html.newline
-
-        body += html.bold_template.format(text="Ionizing stars") + html.newline + html.newline
-        body += self.ionizing_model + html.newline + html.newline
-
-        body += html.bold_template.format(text="Dust") + html.newline + html.newline
-        body += self.dust_model + html.newline + html.newline
 
         # Create contents
         contents = dict()
@@ -338,7 +204,7 @@ class HTMLGenerator(GalaxyModelingComponent):
         contents["body"] = body
 
         # Create the status page
-        self.status_page = html.page_template.format(**contents)
+        self.page = html.page_template.format(**contents)
 
     # -----------------------------------------------------------------
 
@@ -355,33 +221,6 @@ class HTMLGenerator(GalaxyModelingComponent):
         # Write status page
         self.write_status_page()
 
-        # Write models page
-        self.write_models_page()
-
-    # -----------------------------------------------------------------
-
-    @property
-    def status_page_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.environment.html_status_path
-
-    # -----------------------------------------------------------------
-
-    @property
-    def models_page_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.environment.html_path, "models.html")
-
     # -----------------------------------------------------------------
 
     def write_status_page(self):
@@ -395,18 +234,6 @@ class HTMLGenerator(GalaxyModelingComponent):
         log.info("Writing status page ...")
 
         # Write
-        fs.write_text(self.status_page_path, self.status_page)
-
-    # -----------------------------------------------------------------
-
-    def write_models_page(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the models page ...")
+        fs.write_text(self.status_page_path, self.page)
 
 # -----------------------------------------------------------------
