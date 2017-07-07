@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import imageio
 import numpy as np
+from matplotlib.cm import get_cmap
 
 # Import astronomical modules
 from astropy.visualization import SqrtStretch, LogStretch
@@ -120,7 +121,15 @@ elif config.colours == "green":
     green = normalized * 255
     alpha = transparency * 255
 
-else: raise NotImplementedError("Not impl")
+else:
+
+    # Get the colour map
+    cmap = get_cmap(config.colours)
+    rgba = cmap(normalized)
+    red = rgba[:,:,0] * 255
+    green = rgba[:,:,1] * 255
+    blue = rgba[:,:,2] * 255
+    alpha = transparency * 255
 
 # -----------------------------------------------------------------
 
