@@ -2188,6 +2188,107 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def to_rgba(self, interval="pts", scale="log", alpha=True, peak_alpha=1., colours="red"):
+
+        """
+        This function ...
+        :param interval:
+        :param scale:
+        :param alpha:
+        :param peak_alpha:
+        :param colours:
+        :return:
+        """
+
+        # Import standard modules
+        import numpy as np
+        from matplotlib.cm import get_cmap
+
+        # Import astronomical modules
+        from astropy.visualization import SqrtStretch, LogStretch
+        from astropy.visualization.mpl_normalize import ImageNormalize
+        from astropy.visualization import MinMaxInterval, ZScaleInterval
+
+        # -----------------------------------------------------------------
+
+        # Get data and replace nans and infs
+        data = np.copy(self.data)
+        data[np.isnan(data)] = 0.0
+        data[np.isinf(data)] = 0.0
+
+        # INTERVAL
+        if interval == "zscale": vmin, vmax = ZScaleInterval().get_limits(data)
+        elif interval == "pts":
+            # Determine the maximum value in the box and the mimimum value for plotting
+            #print("here")
+            vmin = max(np.nanmin(data), 0.)
+            vmax = 0.5 * (np.nanmax(data) + vmin)
+        elif interval == "minmax": vmin, vmax = MinMaxInterval().get_limits(data)
+        else:
+            from ...core.tools import parsing
+            try: vmin, xmax = parsing.real_tuple(interval)
+            except ValueError: raise ValueError("Cannot interpret the interval")
+
+        # Normalization
+        if scale == "log": norm = ImageNormalize(stretch=LogStretch(), vmin=vmin, vmax=vmax)
+        elif scale == "sqrt": norm = ImageNormalize(stretch=SqrtStretch(), vmin=vmin, vmax=vmax)
+        else: raise ValueError("Invalid option for 'scale'")
+
+        # Normalize
+        normalized = norm(data)
+
+        # Determine transparency
+        if alpha: transparency = peak_alpha * normalized / np.nanmax(normalized)
+        else: transparency = np.ones_like(normalized)
+
+        # CREATE THE CHANNEL ARRAYS
+
+        # Red image
+        if colours == "red":
+
+            # NxMx4
+            red = normalized * 255
+            blue = np.zeros_like(red)
+            green = np.zeros_like(red)
+            alpha = transparency * 255
+
+        # Blue image
+        elif colours == "blue":
+
+            red = np.zeros_like(normalized)
+            blue = normalized * 255
+            green = np.zeros_like(red)
+            alpha = transparency * 255
+
+        # Green image
+        elif colours == "green":
+
+            red = np.zeros_like(normalized)
+            blue = np.zeros_like(normalized)
+            green = normalized * 255
+            alpha = transparency * 255
+
+        # Colour map
+        else:
+
+            # Get the colour map
+            cmap = get_cmap(colours)
+            rgba = cmap(normalized)
+            red = rgba[:,:,0] * 255
+            green = rgba[:,:,1] * 255
+            blue = rgba[:,:,2] * 255
+            alpha = transparency * 255
+
+        # MAKE THE IMAGE ARRAY
+        # Stack, create the image array
+        arrays = [red, green, blue, alpha]
+        image = np.stack(arrays, axis=-1)
+
+        # Return
+        return image
+
+    # -----------------------------------------------------------------
+
     def save(self, header=None, origin=None, extra_header_info=None, add_meta=True):
 
         """
@@ -2223,6 +2324,25 @@ class Frame(NDDataArray):
         :param extra_header_info:
         :param add_meta:
         :param update_path:
+        """
+
+        if path.endswith("fits"): self.saveto_fits(path, header=header, origin=origin, extra_header_info=extra_header_info, add_meta=add_meta, update_path=update_path)
+        elif path.endswith("png"): self.saveto_png()
+        else: raise ValueError("Unknown file format: " + fs.get_extension(path))
+
+    # -----------------------------------------------------------------
+
+    def saveto_fits(self, path, header=None, origin=None, extra_header_info=None, add_meta=True, update_path=True):
+
+        """
+        This function ...
+        :param path:
+        :param header:
+        :param origin:
+        :param extra_header_info:
+        :param add_meta:
+        :param update_path:
+        :return:
         """
 
         if header is None: header = self.header
@@ -2294,6 +2414,30 @@ class Frame(NDDataArray):
 
         # Replace the path
         if update_path: self.path = path
+
+    # -----------------------------------------------------------------
+
+    def saveto_png(self, path, interval="pts", scale="log", alpha=True, peak_alpha=1., colours="red"):
+
+        """
+        This function ...
+        :param path:
+        :param interval:
+        :param scale:
+        :param alpha:
+        :param peak_alpha:
+        :param colours:
+        :return:
+        """
+
+        # Import
+        import imageio
+
+        # Get image values
+        image = self.to_rgba(interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha, colours=colours)
+
+        # Write
+        imageio.imwrite(path, image)
 
 # -----------------------------------------------------------------
 
