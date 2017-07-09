@@ -17,6 +17,7 @@ import os.path
 import shutil
 import numpy as np
 from astropy import units
+import warnings
 
 from ..core.tools.geometry import Transform
 from ..core.simulation.skifile import SkiFile
@@ -38,8 +39,8 @@ def simulate(record):
     filenameprefix = "{}_{}_".format(record["eaglesim"], record["galaxyid"])
 
     # get the extent of the dust distribution defined in the input gas particles files
-    # with a limit of 30 kpc
-    dustextent = min(30., getdustextent(os.path.join(skirtrun.inpath(),filenameprefix+"gas.dat")))
+    # limited within a range of [0.1 kpc, 30 kpc]
+    dustextent = max(0.1, min(30., getdustextent(os.path.join(skirtrun.inpath(),filenameprefix+"gas.dat"))))
 
     # get the rotation unit vector of the original galaxy from the info file in the input folder
     for line in open(os.path.join(skirtrun.inpath(),filenameprefix+"info.txt")):
@@ -112,18 +113,24 @@ def randomInstrumentAngles(a, b, c):
 ## This private helper function returns the extent of the dust distribution defined in the specified gas
 # particle file. Specifically it returns the largest half-size along the coordinate axes in kpc, rounded up to 100 pc.
 def getdustextent(gaspath):
-    x,y,z,h,T = np.loadtxt(gaspath, usecols=(0,1,2,3,6), unpack=True)
-    mask = (T <= 8000.)
+    extent = 0
 
-    xmin = np.min(x[mask] - h[mask])
-    ymin = np.min(y[mask] - h[mask])
-    zmin = np.min(z[mask] - h[mask])
-    xmax = np.max(x[mask] + h[mask])
-    ymax = np.max(y[mask] + h[mask])
-    zmax = np.max(z[mask] + h[mask])
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        data = np.loadtxt(gaspath, usecols=(0,1,2,3,6), unpack=True)
+    if data.shape[0]!=0:
+        x,y,z,h,T = data
+        mask = (T <= 8000.)
+        if np.any(mask):
+            xmin = np.min(x[mask] - h[mask])
+            ymin = np.min(y[mask] - h[mask])
+            zmin = np.min(z[mask] - h[mask])
+            xmax = np.max(x[mask] + h[mask])
+            ymax = np.max(y[mask] + h[mask])
+            zmax = np.max(z[mask] + h[mask])
+            extent = max(abs(xmin), abs(ymin), abs(zmin), abs(xmax), abs(xmax), abs(zmax))
+            extent = np.ceil(extent/100.) / 10.
 
-    extent = max(abs(xmin), abs(ymin), abs(zmin), abs(xmax), abs(xmax), abs(zmax))
-    extent = np.ceil(extent/100.) / 10.
     return extent
 
 # -----------------------------------------------------------------
