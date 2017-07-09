@@ -80,7 +80,9 @@ page_template = """<!DOCTYPE html>
 {head}
 </head>
 <body>
+<div class="{style}">
 {body}
+</div>
 </body>
 </html>
 """
@@ -379,7 +381,9 @@ class HTMLPage(object):
 
     def __str__(self):
 
-        """Return the HTML page as a string."""
+        """
+        Returns the HTML page as a string.
+        """
 
         page = []
 
@@ -400,7 +404,9 @@ class HTMLPage(object):
 
     def __iter__(self):
 
-        """Iterate through tables"""
+        """
+        Iterate through tables
+        """
 
         for table in self.tables:
             yield table

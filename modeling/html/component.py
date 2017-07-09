@@ -13,7 +13,8 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-from abc import ABCMeta, abstractmethod
+import webbrowser
+from abc import ABCMeta, abstractmethod, abstractproperty
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
@@ -24,6 +25,14 @@ from ..component.galaxy import GalaxyModelingComponent
 # -----------------------------------------------------------------
 
 stylesheet_url = "http://users.ugent.be/~sjversto/stylesheet.css"
+
+# -----------------------------------------------------------------
+
+table_class = "realtable"
+
+# -----------------------------------------------------------------
+
+page_style = "ugentstyle"
 
 # -----------------------------------------------------------------
 
@@ -136,5 +145,45 @@ class HTMLPageComponent(GalaxyModelingComponent):
 
         # Create title
         return html.fontsize_template.format(size=20, text=html.underline_template.format(text="Modeling of " + self.galaxy_name))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def style(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return page_style
+
+    # -----------------------------------------------------------------
+
+    @abstractproperty
+    def page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        pass
+
+    # -----------------------------------------------------------------
+
+    def show(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing the page ...")
+
+        # Open
+        webbrowser._tryorder = ["safari"]
+        webbrowser.open(self.page_path, new=2)
 
 # -----------------------------------------------------------------

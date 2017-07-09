@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
-from .component import HTMLPageComponent, stylesheet_url
+from .component import HTMLPageComponent, stylesheet_url, table_class
 from ...core.tools import html
 from ...core.tools import filesystem as fs
 
@@ -67,6 +67,9 @@ class StatusPageGenerator(HTMLPageComponent):
         # Write
         self.write()
 
+        # Show the page
+        if self.config.show: self.show()
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -114,7 +117,7 @@ class StatusPageGenerator(HTMLPageComponent):
         log.info("Making the info table ...")
 
         # Create the table
-        self.info_table = html.SimpleTable(self.galaxy_info.items(), header_row=["Property", "Value"])
+        self.info_table = html.SimpleTable(self.galaxy_info.items(), header_row=["Property", "Value"], css_class=table_class)
 
     # -----------------------------------------------------------------
 
@@ -129,7 +132,7 @@ class StatusPageGenerator(HTMLPageComponent):
         log.info("Making the properties table ...")
 
         # Create the table
-        self.properties_table = html.SimpleTable(self.galaxy_properties.as_tuples(), header_row=["Property", "Value"])
+        self.properties_table = html.SimpleTable(self.galaxy_properties.as_tuples(), header_row=["Property", "Value"], css_class=table_class)
 
     # -----------------------------------------------------------------
 
@@ -147,7 +150,7 @@ class StatusPageGenerator(HTMLPageComponent):
         bgcolors = [(None, color) for color in self.status.colors]
 
         # Create the table
-        self.status_table = html.SimpleTable(self.status, header_row=["Step", "Status"], bgcolors=bgcolors)
+        self.status_table = html.SimpleTable(self.status, header_row=["Step", "Status"], bgcolors=bgcolors, css_class=table_class)
 
     # -----------------------------------------------------------------
 
@@ -157,6 +160,9 @@ class StatusPageGenerator(HTMLPageComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Making plots ...")
 
     # -----------------------------------------------------------------
 
@@ -199,9 +205,10 @@ class StatusPageGenerator(HTMLPageComponent):
 
         # Create contents
         contents = dict()
-        contents["title"] = "Modeling of " + self.galaxy_name
+        contents["title"] = self.title
         contents["head"] = html.link_stylesheet_header_template.format(url=stylesheet_url)
         contents["body"] = body
+        contents["style"] = self.style
 
         # Create the status page
         self.page = html.page_template.format(**contents)
@@ -220,6 +227,18 @@ class StatusPageGenerator(HTMLPageComponent):
 
         # Write status page
         self.write_status_page()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.status_page_path
 
     # -----------------------------------------------------------------
 

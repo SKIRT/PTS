@@ -24,6 +24,21 @@ from . import sequences
 
 # -----------------------------------------------------------------
 
+def is_close(value, other_value, rtol=1.e-5, atol=1.e-8):
+
+    """
+    This function ...
+    :param value:
+    :param other_value:
+    :param rtol:
+    :param atol:
+    :return:
+    """
+
+    return np.isclose(value, other_value, rtol=rtol, atol=atol)
+
+# -----------------------------------------------------------------
+
 def is_even(integer):
 
     """

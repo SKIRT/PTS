@@ -13,4 +13,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
+# Flags
+definition.add_flag("show", "show the page", False)
+
 # -----------------------------------------------------------------

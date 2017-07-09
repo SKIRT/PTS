@@ -35,8 +35,11 @@ from ...core.filter.narrow import NarrowBandFilter
 
 # -----------------------------------------------------------------
 
-# The path to the PTS user/extinction directory
-extinction_path = fs.join(introspection.pts_user_dir, "extinction")
+# The path to the PTS user/attenuation directory
+attenuation_path = fs.join(introspection.pts_user_dir, "attenuation")
+
+# The path to the RFILTER table
+rfilter_table_path = fs.join(attenuation_path, "rfilter.dat")
 
 # -----------------------------------------------------------------
 
@@ -62,6 +65,30 @@ extinction_data_path = fs.join(introspection.pts_dat_dir("magic"), "Extinction")
 
 # Determine thbe path to the RV=3.1 curve file
 rv31_path = fs.join(extinction_data_path, "al_av3_1.dat")
+
+# -----------------------------------------------------------------
+
+class RFilterTable(FilterCurve):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, *args, **kwargs):
+
+        """
+        The constructor ...
+        :param args:
+        :param kwargs:
+        """
+
+        # Set kwargs
+        kwargs["y_name"] = "R"
+        kwargs["y_description"] = "R value"
+        kwargs["y_unit"] = None
+
+        # Call the constructor of the base class
+        super(RFilterTable, self).__init__(*args, **kwargs)
 
 # -----------------------------------------------------------------
 
@@ -193,15 +220,15 @@ class GalacticAttenuation(object):
         :return:
         """
 
-        # Check whether the user/extinction directory exists
-        if not fs.is_directory(extinction_path): fs.create_directory(extinction_path)
+        # Check whether the user/attenuation directory exists
+        if not fs.is_directory(attenuation_path): fs.create_directory(attenuation_path)
 
         # Get query
         if types.is_string_type(coordinate_or_galaxy): query = coordinate_or_galaxy
         else: query = coordinate_or_galaxy.to_astropy()
 
         # Determine the path to the local extinction table
-        path = fs.join(extinction_path, str(query))
+        path = fs.join(attenuation_path, str(query))
 
         # Check if the local file exists
         if not fs.is_file(path):
@@ -214,6 +241,75 @@ class GalacticAttenuation(object):
 
         # Load the table
         else: self.table = tables.from_file(path)
+
+        # Check whether the RFILTER table is present, load
+        if fs.is_file(rfilter_table_path): self.rfilter = RFilterTable.from_file(rfilter_table_path)
+        else: # or create new
+            self.rfilter = RFilterTable()
+            self.rfilter.path = rfilter_table_path
+            self.rfilter.save()
+
+    # -----------------------------------------------------------------
+
+    def has_rfilter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        # Parse filter
+        if types.is_string_type(fltr): fltr = parse_filter(fltr)
+
+        # CHeck in table
+        return self.rfilter.has_filter(fltr)
+
+    # -----------------------------------------------------------------
+
+    def set_rfilter(self, fltr, rfilter):
+
+        """
+        This function ...
+        :param fltr:
+        :param rfilter:
+        :return:
+        """
+
+        # Parse filter
+        if types.is_string_type(fltr): fltr = parse_filter(fltr)
+
+        # Add
+        self.rfilter.add_point(fltr, rfilter)
+
+        # Save the table
+        self.rfilter.save()
+
+    # -----------------------------------------------------------------
+
+    def get_rfilter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        return self.rfilter.value_for_filter(fltr)
+
+    # -----------------------------------------------------------------
+
+    def calculate_rfilter(self, fltr):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        r = calculate_r(fltr)
+        self.set_rfilter(fltr, r)
+        return r
 
     # -----------------------------------------------------------------
 
@@ -234,7 +330,8 @@ class GalacticAttenuation(object):
 
         #return self.extinction_for_filter_name(filter_name)
 
-        r = calculate_r(fltr)
+        if self.has_rfilter(fltr): r = self.get_rfilter(fltr)
+        else: r = self.calculate_rfilter(fltr)
 
         # reddening ratio Av / E(B-V) = 3.1
 

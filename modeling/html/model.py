@@ -220,10 +220,17 @@ class ModelPageGenerator(HTMLPageComponent):
         # TEMPORARY: LOAD TEST COMPONENTS
         components = load_test_components()
 
+        # Group the components
         old_components = {"disk": components["old"], "bulge": components["bulge"]}
         young_components = {"young": components["young"]}
         ionizing_components = {"ionizing": components["ionizing"]}
         dust_components = {"dust": components["dust"]}
+
+        # New
+        old = self.definition.old_stars_deprojection
+        young = self.definition.young_stars_deprojection
+        ionizing = self.definition.ionizing_stars_deprojection
+        dust = self.definition.dust_deprojection
 
         # Generate HTML
         self.old_model = render_components_html(old_components, only_body=True, width=400, height=500, style="minimal")
@@ -243,11 +250,12 @@ class ModelPageGenerator(HTMLPageComponent):
         # Inform the user
         log.info("Generating the HTML ...")
 
-
+        # Generate the page
+        self.generate_page()
 
     # -----------------------------------------------------------------
 
-    def generate_status(self):
+    def generate_page(self):
 
         """
         This function ...
@@ -276,9 +284,10 @@ class ModelPageGenerator(HTMLPageComponent):
 
         # Create contents
         contents = dict()
-        contents["title"] = "Modeling of " + self.galaxy_name
+        contents["title"] = self.title
         contents["head"] = html.link_stylesheet_header_template.format(url=stylesheet_url)
         contents["body"] = body
+        contents["style"] = self.style
 
         # Create the page
         self.page = html.page_template.format(**contents)

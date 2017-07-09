@@ -28,3 +28,8 @@ elif has_single_fitting_run(modeling_path): definition.add_fixed("fitting_run", 
 else: definition.add_required("fitting_run", "string", "name of the fitting run to use", choices=get_fitting_run_names(modeling_path))
 
 # -----------------------------------------------------------------
+
+# Flags
+definition.add_flag("show", "show the page", False)
+
+# -----------------------------------------------------------------
