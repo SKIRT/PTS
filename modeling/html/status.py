@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 from ...core.tools.logging import log
 from .component import HTMLPageComponent, stylesheet_url, table_class
 from ...core.tools import html
-from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -226,7 +225,7 @@ class StatusPageGenerator(HTMLPageComponent):
         log.info("Writing ...")
 
         # Write status page
-        self.write_status_page()
+        self.write_page()
 
     # -----------------------------------------------------------------
 
@@ -239,20 +238,5 @@ class StatusPageGenerator(HTMLPageComponent):
         """
 
         return self.status_page_path
-
-    # -----------------------------------------------------------------
-
-    def write_status_page(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing status page ...")
-
-        # Write
-        fs.write_text(self.status_page_path, self.page)
 
 # -----------------------------------------------------------------

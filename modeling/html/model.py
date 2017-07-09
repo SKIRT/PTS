@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 from ...core.tools.logging import log
 from .component import HTMLPageComponent, stylesheet_url
 from ...core.tools import html
-from ...core.tools import filesystem as fs
 from ..plotting.model import load_test_components, render_components_html
 from ..fitting.run import load_fitting_run
 
@@ -72,6 +71,9 @@ class ModelPageGenerator(HTMLPageComponent):
 
         # Write
         self.write()
+
+        # Show the page
+        if self.config.show: self.show()
 
     # -----------------------------------------------------------------
 
@@ -305,18 +307,18 @@ class ModelPageGenerator(HTMLPageComponent):
         log.info("Writing ...")
 
         # Write models page
-        self.write_models_page()
+        self.write_page()
 
     # -----------------------------------------------------------------
 
-    def write_models_page(self):
+    @property
+    def page_path(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Writing the models page ...")
+        return self.models_page_path
 
 # -----------------------------------------------------------------

@@ -124,6 +124,18 @@ class HTMLPageComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def maps_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, "maps.html")
+
+    # -----------------------------------------------------------------
+
+    @property
     def title(self):
 
         """
@@ -169,6 +181,21 @@ class HTMLPageComponent(GalaxyModelingComponent):
         """
 
         pass
+
+    # -----------------------------------------------------------------
+
+    def write_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the page ...")
+
+        # Write
+        fs.write_text(self.page_path, self.page)
 
     # -----------------------------------------------------------------
 
