@@ -1895,9 +1895,14 @@ def get_cached_data_image_paths(modeling_path, host_id, lazy=False):
         if lazy:
             #name = str(parse_filter(image_name))
             fltr = headers.get_filter(image_name)
-            if fltr is None: raise RuntimeError("Could not determine the filter for the '" + image_name + "' image")
+            if fltr is None:
+                #raise RuntimeError("Could not determine the filter for the '" + image_name + "' image")
+                log.warning("Could not determine the filter for the '" + image_name + "' image: skipping ...")
+                continue
             name = str(fltr)
         else: name = get_filter_name(image_path, session)
+
+        if name is None: raise RuntimeError("Could not determine the filter name for the '" + image_name + "' image")
 
         # Add the image path
         paths[name] = image_path
@@ -2010,8 +2015,14 @@ def get_cached_data_image_and_error_paths(modeling_path, host_id, lazy=False):
         # Get filter name
         if lazy:
             #name = str(parse_filter(image_name))
-            name = str(headers.get_filter(image_name))
+            #name = str(headers.get_filter(image_name))
+            fltr = headers.get_filter(image_name)
+            if fltr is None:
+                log.warning("Could not determine the filter of the '" + image_name + "' image: skipping ...")
+                continue
         else: name = get_filter_name(image_path, session)
+
+        if name is None: raise RuntimeError("Could not determine the filter name for the '" + image_name + "' image")
 
         # Add the image path
         paths[name] = image_path
