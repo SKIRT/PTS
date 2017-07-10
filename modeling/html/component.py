@@ -21,6 +21,7 @@ from ...core.tools.logging import log
 from ...core.tools import html
 from ...core.tools import filesystem as fs
 from ..component.galaxy import GalaxyModelingComponent
+from ...core.tools import time
 
 # -----------------------------------------------------------------
 
@@ -286,8 +287,10 @@ class HTMLPageComponent(GalaxyModelingComponent):
         :return:
         """
 
+        text = "Last updated " + time.pretty_date().lower()
+
         footing = ""
-        footing += html.newline + html.line + html.newline + html.center_template.format(text="2017")
+        footing += html.newline + html.line + html.newline + html.center_template.format(text=text)
         return footing
 
     # -----------------------------------------------------------------

@@ -18,7 +18,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
-from skimage.restoration import inpaint
 
 # -----------------------------------------------------------------
 
@@ -30,6 +29,8 @@ def inpaint_biharmonic(frame, mask):
     :param mask:
     :return:
     """
+
+    from skimage.restoration import inpaint
 
     maximum = np.nanmax(frame)
     normalized = frame / maximum
