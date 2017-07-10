@@ -174,7 +174,9 @@ def get_filter(frame_path, session):
     :return:
     """
 
-    return parse_filter(get_filter_name(frame_path, session))
+    name = get_filter_name(frame_path, session)
+    if name is None: return None
+    else: return parse_filter(name)
 
 # -----------------------------------------------------------------
 

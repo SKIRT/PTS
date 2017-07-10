@@ -1894,7 +1894,9 @@ def get_cached_data_image_paths(modeling_path, host_id, lazy=False):
         # Get filter name
         if lazy:
             #name = str(parse_filter(image_name))
-            name = str(headers.get_filter(image_name))
+            fltr = headers.get_filter(image_name)
+            if fltr is None: raise RuntimeError("Could not determine the filter for the '" + image_name + "' image")
+            name = str(fltr)
         else: name = get_filter_name(image_path, session)
 
         # Add the image path

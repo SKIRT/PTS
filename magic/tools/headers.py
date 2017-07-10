@@ -363,7 +363,18 @@ def get_filter(name, header=None):
     # Spitzer bands (IRAC and MIPS but "irac" and "mips" are not in filterid)
     elif "spitzer" in filterid:
 
-        if wavelength is not None:
+        # Look for IRAC wavelength
+        if "3.6" in filterid or "i1" in filterid: final_filter_name = "IRAC I1"
+        elif "4.5" in filterid or "i2" in filterid: final_filter_name = "IRAC I2"
+        elif "5.8" in filterid or "i3" in filterid: final_filter_name = "IRAC I3"
+        elif "8.0" in filterid or "i4" in filterid: final_filter_name = "IRAC I4"
+
+        # Look for MIPS wavelengths
+        elif "24" in filterid: final_filter_name = "MIPS 24"
+        elif "70" in filterid: final_filter_name = "MIPS 70"
+        elif "160" in filterid: final_filter_name = "MIPS 160"
+
+        elif wavelength is not None:
 
             if np.isclose(wavelength.to("micron").value, 3.6, rtol=0.05): final_filter_name = "IRAC I1"
             elif np.isclose(wavelength.to("micron").value, 4.5, rtol=0.05): final_filter_name = "IRAC I2"
