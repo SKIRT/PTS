@@ -29,6 +29,7 @@ from ..tools import conda
 from ..tools import time
 from ..remote.modules import Modules
 from ..units.parsing import parse_unit as u
+from ..tools import types
 
 # -----------------------------------------------------------------
 
@@ -1494,7 +1495,8 @@ class PTSInstaller(Installer):
 
         # Setup the environment
         # environment_name, pip_name, pts_root_path, python_path
-        setup_conda_environment_local(self.config.python_name, self.config.pip_name, self.pts_root_path, self.conda_python_path, self.conda_pip_path, self.conda_jupyter_path)
+        # environment_name, pip_name, jupyter_name, pts_root_path, python_path, pip_path, jupyter_path
+        setup_conda_environment_local(self.config.python_name, self.config.pip_name, self.config.jupyter_name, self.pts_root_path, self.conda_python_path, self.conda_pip_path, self.conda_jupyter_path)
 
     # -----------------------------------------------------------------
 
@@ -1654,7 +1656,7 @@ class PTSInstaller(Installer):
 
             # Debugging
             if isinstance(command, list): log.debug("Installation command: '" + command[0] + "'")
-            elif isinstance(command, basestring): log.debug("Installation_command: '" + command + "'")
+            elif types.is_string_type(command): log.debug("Installation_command: '" + command + "'")
             else: raise ValueError("Invalid installation command: " + str(command))
 
             # Launch the command
@@ -1665,7 +1667,7 @@ class PTSInstaller(Installer):
                     if command[0].startswith(self.conda_executable_path):
                         if conda.is_present_package(module, self.config.python_name, self.conda_executable_path): continue
                     output = terminal.execute_lines_expect_clone(*command, show_output=log.is_debug())
-                elif isinstance(command, basestring):
+                elif types.is_string_type(command):
                     if "setup.py" in command:
                         # special: for python setup.py, we must be in the directory or it won't work
                         dir_path = fs.directory_of(command.split()[1])
@@ -1704,21 +1706,21 @@ class PTSInstaller(Installer):
         if len(installed) > 0:
             log.info("Packages that were installed:")
             print("")
-            print(stringify.stringify_list_fancy(installed, 100, ", ", "    ")[1])
+            print(stringify.stringify_list_fancy(installed, width=100, delimiter=", ", lines_prefix="    ")[1])
             print("")
 
         # Show not installed packages
         if len(not_installed) > 0:
             log.info("Packages that could not be installed:")
             print("")
-            print(stringify.stringify_list_fancy(not_installed, 100, ", ", "    ")[1])
+            print(stringify.stringify_list_fancy(not_installed, width=100, delimiter=", ", lines_prefix="    ")[1])
             print("")
 
         # Show already present packages
         if len(already_installed) > 0:
             log.info("Packages that were already present:")
             print("")
-            print(stringify.stringify_list_fancy(already_installed, 100, ", ", "    ")[1])
+            print(stringify.stringify_list_fancy(already_installed, width=100, delimiter=", ", lines_prefix="    ")[1])
             print("")
 
         # Inform he user
@@ -2403,7 +2405,7 @@ def get_pts_dependencies_remote(remote, pts_package_path, conda_path="conda", pi
 
     # Get list of dependencies on the remote host
     dependencies_script_path = fs.join(pts_package_path, "dependencies.py")
-    dependencies = remote.execute("python " + dependencies_script_path)
+    dependencies = remote.execute("python " + dependencies_script_path)[1:] # FIRST LINE = "10/07/2017 17:25:59.973   Welcome to PTS"
 
     from ..tools import stringify
 
@@ -2490,7 +2492,7 @@ def get_pts_dependencies_remote(remote, pts_package_path, conda_path="conda", pi
 
         # Debugging
         if isinstance(command, list): log.debug("Installation command: '" + command[0] + "'")
-        elif isinstance(command, basestring): log.debug("Installation_command: '" + command + "'")
+        elif types.is_string_type(command): log.debug("Installation_command: '" + command + "'")
         else: raise ValueError("Invalid installation command: " + str(command))
 
         # Install remotely
@@ -2515,21 +2517,21 @@ def get_pts_dependencies_remote(remote, pts_package_path, conda_path="conda", pi
     if len(installed) > 0:
         log.info("Packages that were installed:")
         print("")
-        print(stringify.stringify_list_fancy(installed, 100, ", ", "    ")[1])
+        print(stringify.stringify_list_fancy(installed, width=100, delimiter=", ", lines_prefix="    ")[1])
         print("")
 
     # Show not installed packages
     if len(not_installed) > 0:
         log.info("Packages that could not be installed:")
         print("")
-        print(stringify.stringify_list_fancy(not_installed, 100, ", ", "    ")[1])
+        print(stringify.stringify_list_fancy(not_installed, width=100, delimiter=", ", lines_prefix="    ")[1])
         print("")
 
     # Show already present packages
     if len(already_installed) > 0:
         log.info("Packages that were already present:")
         print("")
-        print(stringify.stringify_list_fancy(already_installed, 100, ", ", "    ")[1])
+        print(stringify.stringify_list_fancy(already_installed, width=100, delimiter=", ", lines_prefix="    ")[1])
         print("")
 
     # Inform he user
