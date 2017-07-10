@@ -1009,6 +1009,20 @@ class SkiFile:
         # set the attribute value
         elems[0].set("maxMassFraction", str(number))
 
+    ## This function sets the extent (i.e. half-size in three dimensions) of the tree dust grid in the ski file
+    # to the specified value, which must be an astropy quantity expressed in a length unit
+    def setdustextent(self, extent):
+        # get the tree dust grid element
+        elems = self.tree.xpath("//BinTreeDustGrid | //OctTreeDustGrid")
+        if len(elems) != 1: raise ValueError("No tree dust grid in ski file")
+        # set the attribute value
+        self.set_quantity(elems[0], "minX", -extent)
+        self.set_quantity(elems[0], "minY", -extent)
+        self.set_quantity(elems[0], "minZ", -extent)
+        self.set_quantity(elems[0], "maxX", extent)
+        self.set_quantity(elems[0], "maxY", extent)
+        self.set_quantity(elems[0], "maxZ", extent)
+
     ## This function sets the dust fraction of the SPH dust distribution in the ski file
     # to the specified value
     def setdustfraction(self, number):
