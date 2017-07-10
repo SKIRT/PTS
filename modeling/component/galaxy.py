@@ -43,6 +43,7 @@ from ...core.remote.remote import Remote
 from ..core.steps import cached_directory_path_for_single_command
 from ..core.environment import GalaxyModelingEnvironment
 from ...magic.core.remote import get_filter_name
+from ...magic.tools import headers
 
 # -----------------------------------------------------------------
 
@@ -1520,14 +1521,15 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_data_image_paths_with_cached(self):
+    def get_data_image_paths_with_cached(self, lazy=False):
 
         """
         This function ...
+        :param lazy:
         :return:
         """
 
-        return get_data_image_paths_with_cached(self.config.path, self.cache_host_id)
+        return get_data_image_paths_with_cached(self.config.path, self.cache_host_id, lazy=lazy)
 
     # -----------------------------------------------------------------
 
@@ -1542,14 +1544,15 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_data_image_and_error_paths_with_cached(self):
+    def get_data_image_and_error_paths_with_cached(self, lazy=False):
 
         """
         This function ...
+        :param lazy:
         :return:
         """
 
-        return get_data_image_and_error_paths_with_cached(self.config.path, self.cache_host_id)
+        return get_data_image_and_error_paths_with_cached(self.config.path, self.cache_host_id, lazy=lazy)
 
 # -----------------------------------------------------------------
 
@@ -1843,33 +1846,36 @@ def get_data_image_paths(modeling_path):
 
 # -----------------------------------------------------------------
 
-def get_data_image_paths_with_cached(modeling_path, host_id):
+def get_data_image_paths_with_cached(modeling_path, host_id, lazy=False):
 
     """
     This function ...
     :param modeling_path:
     :param host_id:
+    :param lazy:
     :return:
     """
 
     paths = get_data_image_paths(modeling_path)
-    paths.update(**get_cached_data_image_paths(modeling_path, host_id))
+    paths.update(**get_cached_data_image_paths(modeling_path, host_id, lazy=lazy))
     return paths
 
 # -----------------------------------------------------------------
 
-def get_cached_data_image_paths(modeling_path, host_id):
+def get_cached_data_image_paths(modeling_path, host_id, lazy=False):
 
     """
     This function ...
     :param modeling_path:
     :param host_id:
+    :param lazy:
     :return:
     """
 
     # Create the remote and start (detached) python session
     remote = Remote(host_id=host_id)
-    session = remote.start_python_session()
+    if not lazy: session = remote.start_python_session(output_path=remote.pts_temp_path)
+    else: session = None
 
     # Load the environment
     environment = GalaxyModelingEnvironment(modeling_path)
@@ -1886,7 +1892,10 @@ def get_cached_data_image_paths(modeling_path, host_id):
                                                    returns=["path", "name"], recursive=True): #, recursion_level=1):
 
         # Get filter name
-        name = get_filter_name(image_path, session)
+        if lazy:
+            #name = str(parse_filter(image_name))
+            name = str(headers.get_filter(image_name))
+        else: name = get_filter_name(image_path, session)
 
         # Add the image path
         paths[name] = image_path
@@ -1945,35 +1954,38 @@ def get_data_image_and_error_paths(modeling_path):
 
 # -----------------------------------------------------------------
 
-def get_data_image_and_error_paths_with_cached(modeling_path, host_id):
+def get_data_image_and_error_paths_with_cached(modeling_path, host_id, lazy=False):
 
     """
     This function ...
     :param modeling_path:
     :param host_id:
+    :param lazy:
     :return:
     """
 
     paths, error_paths = get_data_image_and_error_paths(modeling_path)
-    cached_paths, cached_error_paths = get_cached_data_image_and_error_paths(modeling_path, host_id)
+    cached_paths, cached_error_paths = get_cached_data_image_and_error_paths(modeling_path, host_id, lazy=lazy)
     paths.update(**cached_paths)
     error_paths.update(**cached_error_paths)
     return paths, error_paths
 
 # -----------------------------------------------------------------
 
-def get_cached_data_image_and_error_paths(modeling_path, host_id):
+def get_cached_data_image_and_error_paths(modeling_path, host_id, lazy=False):
 
     """
     This function ...
     :param modeling_path:
     :param host_id:
+    :param lazy:
     :return:
     """
 
     # Create the remote and start (detached) python session
     remote = Remote(host_id=host_id)
-    session = remote.start_python_session()
+    if not lazy: session = remote.start_python_session(output_path=remote.pts_temp_path)
+    else: session = None
 
     # Load the environment
     environment = GalaxyModelingEnvironment(modeling_path)
@@ -1994,7 +2006,10 @@ def get_cached_data_image_and_error_paths(modeling_path, host_id):
         path = fs.directory_of(image_path)
 
         # Get filter name
-        name = get_filter_name(image_path, session)
+        if lazy:
+            #name = str(parse_filter(image_name))
+            name = str(headers.get_filter(image_name))
+        else: name = get_filter_name(image_path, session)
 
         # Add the image path
         paths[name] = image_path

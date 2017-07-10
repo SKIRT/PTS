@@ -517,6 +517,45 @@ class RemoteFrame(object):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_remote_file(cls, path, session):
+
+        """
+        This function ...
+        :param path:
+        :param session:
+        :return:
+        """
+
+        # Show which image we are importing
+        log.info("Reading in file " + path + " ...")
+
+        # Prepare session if necessary
+        prepare_session(session)
+
+        # Get file name
+        #filename = fs.name(path)
+
+        # Find label
+        label = get_new_label(cls.local_classname(), session)
+
+        # Create RemoteFrame instance
+        remoteframe = cls(label, session)
+
+        # Open the frame remotely
+        log.info("Loading the frame on the remote host ...")
+
+        # Actually create the frame remotely
+        session.send_line(label + " = " + cls.local_classname() + ".from_file('" + path + "')")
+
+        # Set the path
+        remoteframe.path = path
+
+        # Return the remoteframe instance
+        return remoteframe
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_file(cls, path, session, index=None, name=None, description=None, plane=None, hdulist_index=None,
                   no_filter=False, fwhm=None, add_meta=True):
 

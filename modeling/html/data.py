@@ -120,11 +120,11 @@ class DataPageGenerator(HTMLPageComponent):
         log.info("Making the image plots ...")
 
         # Start python session on cache remote
-        if self.has_cache_host: session = self.cache_remote.start_python_session()
+        if self.has_cache_host: session = self.cache_remote.start_python_session(output_path=self.cache_remote.pts_temp_path)
         else: session = None
 
         # Loop over the images
-        paths = self.get_data_image_paths_with_cached()
+        paths = self.get_data_image_paths_with_cached(lazy=True)
         print("paths", paths)
         for name in paths:
 
@@ -134,7 +134,7 @@ class DataPageGenerator(HTMLPageComponent):
             if fs.is_file(path): frame = Frame.from_file(paths[name])
 
             # Remote
-            elif session is not None: frame = RemoteFrame.from_file(path, session)
+            elif session is not None: frame = RemoteFrame.from_remote_file(path, session)
 
             # Not found!
             else: raise ValueError("File '" + path + "' not found")
