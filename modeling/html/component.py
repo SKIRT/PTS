@@ -166,6 +166,30 @@ class HTMLPageComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def preparation_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, "preparation.html")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def preparation_page_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.preparation_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def model_page_path(self):
 
         """

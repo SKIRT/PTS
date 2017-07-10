@@ -396,51 +396,27 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    #@lazyproperty
-    #def wcs_reference_filter(self):
+    @lazyproperty
+    def preparation_names(self):
 
-        #"""
-        #This function ...
-        #:return:
-        #"""
+        """
+        This function ...
+        :return:
+        """
 
-        #return self.preparation_statistics.rebinning_filter
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    #def wcs_reference_image_name(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        #return self.dataset.get_name_for_filter(self.wcs_reference_filter)
+        return self.environment.preparation_names
 
     # -----------------------------------------------------------------
 
-    #@lazyproperty
-    #def fwhm_reference_filter(self):
+    @lazyproperty
+    def preparation_paths(self):
 
-        #"""
-        #This function ...
-        #:return:
-        #"""
+        """
+        This function ...
+        :return:
+        """
 
-        #return self.preparation_statistics.convolution_filter
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    #def fwhm_reference_image_name(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        #return self.dataset.get_name_for_filter(self.fwhm_reference_filter)
+        return self.environment.preparation_paths
 
     # -----------------------------------------------------------------
 
@@ -867,31 +843,6 @@ class GalaxyModelingComponent(ModelingComponent):
         """
 
         return self.truncation_ellipse.bounding_box
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    #def reference_wcs_path(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        #reference_path = fs.join(self.prep_path, self.wcs_reference_image_name, "result.fits")
-        #return reference_path
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    #def reference_wcs(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        #return CoordinateSystem.from_file(self.reference_wcs_path)
 
     # -----------------------------------------------------------------
 

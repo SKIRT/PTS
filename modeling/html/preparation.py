@@ -16,6 +16,8 @@ from __future__ import absolute_import, division, print_function
 from ...core.tools.logging import log
 from .component import HTMLPageComponent, table_class
 from ...core.tools import html
+from ..preparation.preparer import load_statistics
+from ...core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
@@ -38,6 +40,7 @@ class PreparationPageGenerator(HTMLPageComponent):
 
         # Tables
         self.statistics_tables = None
+        self.statistics_table = None
 
     # -----------------------------------------------------------------
 
@@ -52,11 +55,11 @@ class PreparationPageGenerator(HTMLPageComponent):
         # Setup
         self.setup(**kwargs)
 
-        # Make tables
-        self.make_tables()
-
         # Make plots
         self.make_plots()
+
+        # Make tables
+        self.make_tables()
 
         # Generaet the html
         self.generate()
@@ -82,6 +85,18 @@ class PreparationPageGenerator(HTMLPageComponent):
 
     # -----------------------------------------------------------------
 
+    def make_plots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making plots ...")
+
+    # -----------------------------------------------------------------
+
     def make_tables(self):
 
         """
@@ -92,14 +107,27 @@ class PreparationPageGenerator(HTMLPageComponent):
         # Inform the user
         log.info("Making tables ...")
 
+        # Make statistics tables
+        self.make_statistics_tables()
 
+        # Make the table
+        self.make_statistics_table()
 
     # -----------------------------------------------------------------
 
+    @property
+    def prep_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sorted(self.statistics_tables.keys(), key=lambda filter_name: parse_filter(filter_name).wavelength)
 
     # -----------------------------------------------------------------
 
-    def make_plots(self):
+    def make_statistics_tables(self):
 
         """
         This function ...
@@ -107,7 +135,47 @@ class PreparationPageGenerator(HTMLPageComponent):
         """
 
         # Inform the user
-        log.info("Making plots ...")
+        log.info("Making the statistics tables ...")
+
+        # Loop over the preparation names
+        for prep_name in self.preparation_names:
+
+            # Load the statistics
+            statistics = load_statistics(self.config.path, prep_name)
+
+            # Convert to table
+            table = html.SimpleTable(statistics.as_tuples(), ["Property", "Value"], css_class=table_class, tostr_kwargs=self.tostr_kwargs)
+
+            # Set the table
+            self.statistics_tables[prep_name] = table
+
+    # -----------------------------------------------------------------
+
+    def make_statistics_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making the statistics table ...")
+
+        # Fill cells
+        cells = []
+        for name in self.prep_names:
+
+            # Set title
+            text = ""
+            text += html.center_template.format(text=html.bold_template.format(text=name))
+            text += html.newline + html.newline
+            text += str(self.statistics_tables[name])
+
+            # Add to cells
+            cells.append(text)
+
+        # Create the table
+        self.statistics_table = html.SimpleTable.rasterize(cells, 4, css_class=table_class, tostr_kwargs=self.tostr_kwargs)
 
     # -----------------------------------------------------------------
 
@@ -136,10 +204,13 @@ class PreparationPageGenerator(HTMLPageComponent):
         # Inform the user
         log.info("Generating the status page ...")
 
+        # Heading
         body = self.heading
 
+        # Add table
+        body += self.statistics_table
 
-
+        # Footing
         body += self.footing
 
         # Create the status page
@@ -170,6 +241,6 @@ class PreparationPageGenerator(HTMLPageComponent):
         :return:
         """
 
-        return self.status_page_path
+        return self.preparation_page_path
 
 # -----------------------------------------------------------------

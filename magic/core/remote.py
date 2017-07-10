@@ -1103,7 +1103,7 @@ class RemoteFrame(object):
         log.debug("Saving the frame remotely ...")
 
         # Save the frame remotely
-        self.session.send_line(self.label + ".saveto('" + remote_file_path + "')")
+        self.session.send_line(self.label + ".saveto('" + remote_file_path + "')", show_output=True)
 
         # Debugging
         log.debug("Downloading the frame ...")
@@ -1149,7 +1149,7 @@ class RemoteFrame(object):
         log.debug("Saving the frame remotely ...")
 
         # Save the frame remotely
-        self.session.send_line(self.label + ".saveto_png('" + remote_file_path + "', interval='" + interval + "', scale='" + scale + "', alpha=" + str(alpha) + ", peak_alpha=" + str(peak_alpha) + ", colours='" + colours + "')")
+        self.session.send_line(self.label + ".saveto_png('" + remote_file_path + "', interval='" + interval + "', scale='" + scale + "', alpha=" + str(alpha) + ", peak_alpha=" + str(peak_alpha) + ", colours='" + colours + "')", show_output=True)
 
         # Debugging
         log.debug("Downloading the image ...")

@@ -18,6 +18,7 @@ import webbrowser
 # Import the relevant PTS classes and modules
 from pts.modeling.html.status import StatusPageGenerator
 from pts.modeling.html.data import DataPageGenerator
+from pts.modeling.html.preparation import PreparationPageGenerator
 from pts.modeling.html.maps import MapsPageGenerator
 from pts.modeling.html.model import ModelPageGenerator
 from pts.core.tools.logging import log
@@ -58,6 +59,9 @@ class AllPagesGenerator(GalaxyModelingComponent):
 
         # Generate the data page
         if self.history.finished("fetch_images"): self.generate_data()
+
+        # Generate the preparation page
+        if self.history.finished("prepare_data"): self.generate_preparation()
 
         # Generate the maps page
         if self.history.finished_maps: self.generate_maps()
@@ -110,8 +114,28 @@ class AllPagesGenerator(GalaxyModelingComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Generating the data page ...")
+
         # Generate
         generator = DataPageGenerator()
+        generator.config.path = self.config.path
+        generator.run()
+
+    # -----------------------------------------------------------------
+
+    def generate_preparation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Generating the preparation page ...")
+
+        # Generate
+        generator = PreparationPageGenerator()
         generator.config.path = self.config.path
         generator.run()
 
@@ -123,6 +147,9 @@ class AllPagesGenerator(GalaxyModelingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Generating the maps page ...")
 
         # Generate
         generator = MapsPageGenerator()
@@ -137,6 +164,9 @@ class AllPagesGenerator(GalaxyModelingComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Generating the model page ...")
 
         # Generate the model page
         generator = ModelPageGenerator()

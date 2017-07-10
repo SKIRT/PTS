@@ -16,9 +16,6 @@ from __future__ import absolute_import, division, print_function
 from multiprocessing import Pool
 import numpy as np
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
@@ -41,7 +38,6 @@ from ...modeling.preparation import unitconversion
 from ..basics.mask import Mask
 from ...core.remote.python import AttachedPythonSession
 from ..core.list import NamedImageList
-from .statistics import PreparationStatistics
 
 # -----------------------------------------------------------------
 
@@ -858,20 +854,6 @@ class ImagePreparer(Configurable):
         """
 
         return self.images[label].unit != self.config.unit_conversion.to_unit
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def statistics(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # The statistics
-        statistics = PreparationStatistics(convolution_filter=self.convolution_filter, rebinning_filter=self.rebinning_filter, not_convolved=self.dont_convolve, not_rebinned=self.dont_rebin)
-        return statistics
 
     # -----------------------------------------------------------------
 

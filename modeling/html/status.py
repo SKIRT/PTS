@@ -191,6 +191,7 @@ class StatusPageGenerator(HTMLPageComponent):
         body += html.newline + "Pages:" + html.newline
         items = []
         if self.history.finished("fetch_images"): items.append(html.hyperlink(self.data_page_name, "data"))
+        if self.history.finished("prepare_data"): items.append(html.hyperlink(self.preparation_page_name, "preparation"))
         if self.history.finished_maps: items.append(html.hyperlink(self.maps_page_name, "maps"))
         if self.history.finished("configure_fit"): items.append(html.hyperlink(self.model_page_name, "model"))
         body += html.unordered_list(items, css_class="b")
