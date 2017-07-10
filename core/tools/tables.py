@@ -346,3 +346,30 @@ def columns_as_objects(columns, cls, add_unit=True, unit=None, column_units=None
     return result
 
 # -----------------------------------------------------------------
+
+def column_names(table):
+
+    """
+    This function ...
+    :param table:
+    :return:
+    """
+
+    return table.colnames
+
+# -----------------------------------------------------------------
+
+def as_tuples(table):
+
+    """
+    This function ...
+    :param table:
+    :return:
+    """
+
+    tuples = []
+    for i in range(len(table)):
+        tuples.append(tuple(list(table[i])))
+    return tuples
+
+# -----------------------------------------------------------------

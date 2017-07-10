@@ -38,6 +38,11 @@ from ...magic.basics.stretch import SkyStretch
 from ...core.tools import types
 from ...core.filter.filter import parse_filter
 from ...core.tools import tables
+from ...core.remote.host import Host
+from ...core.remote.remote import Remote
+from ..core.steps import cached_directory_path_for_single_command
+from ..core.environment import GalaxyModelingEnvironment
+from ...magic.core.remote import get_filter_name
 
 # -----------------------------------------------------------------
 
@@ -76,12 +81,6 @@ class GalaxyModelingComponent(ModelingComponent):
         # Call the constructor of the base class
         super(GalaxyModelingComponent, self).__init__(*args, **kwargs)
 
-        # NOW DEFINED IN GALAXY MODELING ENVIRONMENT
-        # The path to the DustPedia observed SED
-        #self.observed_sed_dustpedia_path = None
-        # The path to the galaxy properties file
-        #self.galaxy_properties_path = None
-
         # The path to the components/models directory
         self.components_models_path = None
 
@@ -101,19 +100,8 @@ class GalaxyModelingComponent(ModelingComponent):
         self.disk_image_path = None
         self.model_image_path = None
 
-        # The path to the truncation/masks directory
-        #self.truncation_masks_path = None
-
-        # NOW DEFINED IN GALAXY MODELING ENVIRONMENT
-        # The path to the data/seds directory
-        #self.data_seds_path = None
-
         # The path to the DustPedia observed SED for the galaxy
         self.dustpedia_sed_path = None
-
-        # NOW DEFINED IN GALAXY MODELING ENVIRONMENT
-        # The path to the data/images directory
-        #self.data_images_path = None
 
         # The path to the disk region file
         self.disk_region_path = None
@@ -141,12 +129,6 @@ class GalaxyModelingComponent(ModelingComponent):
 
         # -- Attributes --
 
-        # NOW DEFINED IN GALAXY MODELING ENVIRONMENT
-        # Set the path to the DustPedia observed SED
-        #self.observed_sed_dustpedia_path = fs.join(self.data_path, "fluxes.dat")
-        # Set the path to the galaxy properties file
-        #self.galaxy_properties_path = fs.join(self.data_path, "properties.dat")
-
         # Set the path to the components/models directory
         self.components_models_path = fs.create_directory_in(self.components_path, "models")
 
@@ -166,19 +148,8 @@ class GalaxyModelingComponent(ModelingComponent):
         self.disk_image_path = fs.join(self.components_images_path, "disk.fits")
         self.model_image_path = fs.join(self.components_images_path, "model.fits")
 
-        # Set the path to the truncation/masks directory
-        #self.truncation_masks_path = fs.create_directory_in(self.truncation_path, "masks")
-
-        # NOW DEFINED IN GALAXY MODELING ENVIRONMENT
-        # Set ...
-        #self.data_seds_path = fs.create_directory_in(self.data_path, "SEDs")
-
         # The DustPedia SED path
         self.dustpedia_sed_path = fs.join(self.data_seds_path, "DustPedia.dat")
-
-        # NOW DEFINED IN GALAXY MODELING ENVIRONMENT
-        # Set ...
-        #self.data_images_path = fs.create_directory_in(self.data_path, "images")
 
         # Set the path to the disk region file
         self.disk_region_path = fs.join(self.components_path, "disk.reg")
@@ -1490,6 +1461,76 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_cache_host(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.cache_host_id is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def cache_host_id(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.cache_host_id
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cache_host(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Host.from_host_id(self.cache_host_id)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cache_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Remote(host_id=self.cache_host_id)
+
+    # -----------------------------------------------------------------
+
+    def get_data_image_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_data_image_paths(self.config.path)
+
+    # -----------------------------------------------------------------
+
+    def get_data_image_paths_with_cached(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return get_data_image_paths_with_cached(self.config.path, self.cache_host_id)
+
+    # -----------------------------------------------------------------
+
     def get_data_image_and_error_paths(self):
 
         """
@@ -1501,32 +1542,14 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    def get_data_image_paths(self):
+    def get_data_image_and_error_paths_with_cached(self):
 
         """
         This function ...
-        :return: 
+        :return:
         """
 
-        paths = dict()
-
-        # Loop over the images
-        for image_path, image_name in fs.files_in_path(self.data_images_path, extension="fits", not_contains="poisson", returns=["path", "name"], recursive=True):
-
-            # Load the primary image frame
-            frame = load_image_frame(image_path)
-
-            # Determine name
-            name = frame.filter_name
-
-            # Add the image path
-            paths[name] = image_path
-
-            # Free memory
-            gc.collect()
-
-        # Return the image paths
-        return paths
+        return get_data_image_and_error_paths_with_cached(self.config.path, self.cache_host_id)
 
 # -----------------------------------------------------------------
 
@@ -1754,6 +1777,7 @@ def get_initial_dataset(modeling_path, check=True):
 
     """
     This function ...
+    :param modeling_path:
     :param check:
     :return:
     """
@@ -1783,6 +1807,92 @@ def get_prepared_dataset(modeling_path):
     """
 
     return DataSet.from_file(get_prepared_dataset_path(modeling_path))
+
+# -----------------------------------------------------------------
+
+def get_data_image_paths(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    data_images_path = get_data_images_path(modeling_path)
+
+    paths = dict()
+
+    # Loop over the images
+    for image_path, image_name in fs.files_in_path(data_images_path, extension="fits", not_contains="poisson",
+                                                   returns=["path", "name"], recursive=True, recursion_level=1):
+
+        # Load the primary image frame
+        frame = load_image_frame(image_path)
+
+        # Determine name
+        name = frame.filter_name
+
+        # Add the image path
+        paths[name] = image_path
+
+        # Free memory
+        gc.collect()
+
+    # Return the paths
+    return paths
+
+# -----------------------------------------------------------------
+
+def get_data_image_paths_with_cached(modeling_path, host_id):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param host_id:
+    :return:
+    """
+
+    paths = get_data_image_paths(modeling_path)
+    paths.update(**get_cached_data_image_paths(modeling_path, host_id))
+    return paths
+
+# -----------------------------------------------------------------
+
+def get_cached_data_image_paths(modeling_path, host_id):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param host_id:
+    :return:
+    """
+
+    # Create the remote and start (detached) python session
+    remote = Remote(host_id=host_id)
+    session = remote.start_python_session()
+
+    # Load the environment
+    environment = GalaxyModelingEnvironment(modeling_path)
+
+    paths = dict()
+
+    command_name = "initialize_preparation"
+
+    # Get the remote path
+    remote_data_path = cached_directory_path_for_single_command(environment, command_name, remote)
+
+    # Loop over the images
+    for image_path, image_name in remote.files_in_path(remote_data_path, extension="fits", not_contains="poisson",
+                                                   returns=["path", "name"], recursive=True): #, recursion_level=1):
+
+        # Get filter name
+        name = get_filter_name(image_path, session)
+
+        # Add the image path
+        paths[name] = image_path
+
+    # Return the paths
+    return paths
 
 # -----------------------------------------------------------------
 
@@ -1831,6 +1941,78 @@ def get_data_image_and_error_paths(modeling_path):
         gc.collect()
 
     # Return the paths and error paths
+    return paths, error_paths
+
+# -----------------------------------------------------------------
+
+def get_data_image_and_error_paths_with_cached(modeling_path, host_id):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param host_id:
+    :return:
+    """
+
+    paths, error_paths = get_data_image_and_error_paths(modeling_path)
+    cached_paths, cached_error_paths = get_cached_data_image_and_error_paths(modeling_path, host_id)
+    paths.update(**cached_paths)
+    error_paths.update(**cached_error_paths)
+    return paths, error_paths
+
+# -----------------------------------------------------------------
+
+def get_cached_data_image_and_error_paths(modeling_path, host_id):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param host_id:
+    :return:
+    """
+
+    # Create the remote and start (detached) python session
+    remote = Remote(host_id=host_id)
+    session = remote.start_python_session()
+
+    # Load the environment
+    environment = GalaxyModelingEnvironment(modeling_path)
+
+    paths = dict()
+    error_paths = dict()
+
+    command_name = "initialize_preparation"
+
+    # Get the remote path
+    remote_data_path = cached_directory_path_for_single_command(environment, command_name, remote)
+
+    # Loop over the images
+    for image_path, image_name in remote.files_in_path(remote_data_path, extension="fits", not_contains="poisson",
+                                                   returns=["path", "name"], recursive=True): #, recursion_level=1):
+
+        # Determine directory path
+        path = fs.directory_of(image_path)
+
+        # Get filter name
+        name = get_filter_name(image_path, session)
+
+        # Add the image path
+        paths[name] = image_path
+
+        # Determine path to poisson error map
+        poisson_path = fs.join(path, image_name + "_poisson.fits")
+
+        # Set the path to the poisson error map
+        if remote.is_file(poisson_path):
+
+            # Debugging
+            log.debug("Poisson error frame found for '" + name + "' image ...")
+            error_paths[name] = poisson_path
+
+        # Poisson frame not present
+        elif needs_poisson_errors(name): raise RuntimeError("Poisson error frame not found for the " + name + " image. Run the appropriate command to create the mosaics and poisson frames.")
+
+    # Return the paths
     return paths, error_paths
 
 # -----------------------------------------------------------------

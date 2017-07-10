@@ -5,21 +5,27 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.html.status Contains the StatusPageGenerator class.
+## \package pts.modeling.html.all Contains the AllPagesGenerator class.
 
 # -----------------------------------------------------------------
 
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import webbrowser
+
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log
-from .component import HTMLPageComponent, stylesheet_url, table_class
-from ...core.tools import html
+from pts.modeling.html.status import StatusPageGenerator
+from pts.modeling.html.data import DataPageGenerator
+from pts.modeling.html.maps import MapsPageGenerator
+from pts.modeling.html.model import ModelPageGenerator
+from pts.core.tools.logging import log
+from ..component.galaxy import GalaxyModelingComponent
 
 # -----------------------------------------------------------------
 
-class MapsPageGenerator(HTMLPageComponent):
+class AllPagesGenerator(GalaxyModelingComponent):
 
     """
     This function ...
@@ -28,13 +34,11 @@ class MapsPageGenerator(HTMLPageComponent):
     def __init__(self, *args, **kwargs):
 
         """
-        The constructor ...
-        :param args:
-        :param kwargs:
+        This function ...
         """
 
         # Call the constructor of the base class
-        super(MapsPageGenerator, self).__init__(*args, **kwargs)
+        super(AllPagesGenerator, self).__init__(*args, **kwargs)
 
     # -----------------------------------------------------------------
 
@@ -49,19 +53,22 @@ class MapsPageGenerator(HTMLPageComponent):
         # Setup
         self.setup(**kwargs)
 
-        # Make tables
-        self.make_tables()
+        # Generate the status page
+        if self.history.finished("fetch_properties"): self.generate_status()
 
-        # Make plots
-        self.make_plots()
+        # Generate the data page
+        if self.history.finished("fetch_images"): self.generate_data()
 
-        # Generaet the html
-        self.generate()
+        # Generate the maps page
+        if self.history.finished_maps: self.generate_maps()
+
+        # GEnerate the model page
+        if self.history.finished("configure_fit"): self.generate_model()
 
         # Write
         self.write()
 
-        # Show the page
+        # Show
         if self.config.show: self.show()
 
     # -----------------------------------------------------------------
@@ -75,11 +82,11 @@ class MapsPageGenerator(HTMLPageComponent):
         """
 
         # Call the setup function of the base class
-        super(MapsPageGenerator, self).setup(**kwargs)
+        super(AllPagesGenerator, self).setup(**kwargs)
 
     # -----------------------------------------------------------------
 
-    def make_tables(self):
+    def generate_status(self):
 
         """
         This function ...
@@ -87,48 +94,54 @@ class MapsPageGenerator(HTMLPageComponent):
         """
 
         # Inform the user
-        log.info("Making tables ...")
+        log.info("Generate the status page ...")
+
+        # Generate
+        generator = StatusPageGenerator()
+        generator.config.path = self.config.path
+        generator.run()
 
     # -----------------------------------------------------------------
 
-    def make_plots(self):
+    def generate_data(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Making plots ...")
+        # Generate
+        generator = DataPageGenerator()
+        generator.config.path = self.config.path
+        generator.run()
 
     # -----------------------------------------------------------------
 
-    def generate(self):
+    def generate_maps(self):
 
         """
         This function ...
         :return:
         """
 
-        # Inform the user
-        log.info("Generating the HTML ...")
-
-        # Genreate the page
-        self.generate_page()
+        # Generate
+        generator = MapsPageGenerator()
+        generator.config.path = self.config.path
+        generator.run()
 
     # -----------------------------------------------------------------
 
-    def generate_page(self):
+    def generate_model(self):
 
         """
         This function ...
         :return:
         """
 
-        body = self.heading
-
-        # Make page
-        self.make_page(body)
+        # Generate the model page
+        generator = ModelPageGenerator()
+        generator.config.path = self.config.path
+        generator.run()
 
     # -----------------------------------------------------------------
 
@@ -142,19 +155,20 @@ class MapsPageGenerator(HTMLPageComponent):
         # Inform the user
         log.info("Writing ...")
 
-        # Write status page
-        self.write_page()
-
     # -----------------------------------------------------------------
 
-    @property
-    def page_path(self):
+    def show(self):
 
         """
         This function ...
         :return:
         """
 
-        return self.maps_page_path
+        # Inform the user
+        log.info("Showing the pages ...")
+
+        # Open
+        webbrowser._tryorder = ["safari"]
+        webbrowser.open(self.environment.html_status_path, new=2)
 
 # -----------------------------------------------------------------

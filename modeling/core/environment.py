@@ -265,6 +265,7 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         # NEW
 
         self.html_status_path = fs.join(self.html_path, status_name)
+        self.html_images_path = fs.create_directory_in(self.html_path, "images")
 
     # -----------------------------------------------------------------
 

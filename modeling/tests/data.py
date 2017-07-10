@@ -446,6 +446,11 @@ class M81TestData(object):
     @lazyproperty
     def old_deprojection(self):
 
+        """
+        This function ...
+        :return:
+        """
+
         return DeprojectionModel3D.from_wcs(self.wcs, self.properties.center, self.properties.distance,
                                                         self.properties.position_angle, self.properties.inclination,
                                                         old_map_path,
@@ -456,6 +461,11 @@ class M81TestData(object):
     @lazyproperty
     def young_deprojection(self):
 
+        """
+        This function
+        :return:
+        """
+
         return DeprojectionModel3D.from_wcs(self.wcs, self.properties.center, self.properties.distance,
                                                           self.properties.position_angle, self.properties.inclination,
                                                           young_map_path, self.young_scale_height)
@@ -464,12 +474,24 @@ class M81TestData(object):
     @lazyproperty
     def ionizing_deprojection(self):
 
+        """
+        This function ...
+        :return:
+        """
+
         return DeprojectionModel3D.from_wcs(self.wcs, self.properties.center, self.properties.distance,
                                                              self.properties.position_angle, self.properties.inclination,
                                                              ionizing_map_path, self.ionizing_scale_height)
 
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def dust_deprojection(self):
+
+        """
+        This function ...
+        :return:
+        """
 
         return DeprojectionModel3D.from_wcs(self.wcs, self.properties.center, self.properties.distance,
                                                          self.properties.position_angle, self.properties.inclination,

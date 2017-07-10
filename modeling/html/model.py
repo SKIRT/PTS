@@ -14,10 +14,20 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
-from .component import HTMLPageComponent, stylesheet_url
+from .component import HTMLPageComponent, stylesheet_url, table_class
 from ...core.tools import html
-from ..plotting.model import load_test_components, render_components_html
 from ..fitting.run import load_fitting_run
+from ..tests.data import M81TestData
+
+# -----------------------------------------------------------------
+
+widget_width = 400
+widget_height = 500
+widget_style = "minimal"
+
+# -----------------------------------------------------------------
+
+data = M81TestData()
 
 # -----------------------------------------------------------------
 
@@ -36,7 +46,7 @@ class ModelPageGenerator(HTMLPageComponent):
         """
 
         # Call the constructor of the base class
-        super(HTMLPageComponent, self).__init__(*args, **kwargs)
+        super(ModelPageGenerator, self).__init__(*args, **kwargs)
 
         # The fitting run
         self.fitting_run = None
@@ -46,6 +56,13 @@ class ModelPageGenerator(HTMLPageComponent):
         self.young_model = None
         self.ionizing_model = None
         self.dust_model = None
+
+        # Tables
+        self.old_bulge_table = None
+        self.old_disk_table = None
+        self.young_table = None
+        self.ionizing_table = None
+        self.dust_table = None
 
     # -----------------------------------------------------------------
 
@@ -154,7 +171,7 @@ class ModelPageGenerator(HTMLPageComponent):
         :return:
         """
 
-
+        self.old_bulge_table = html.SimpleTable(data.bulge.as_tuples(), header_row=["Property", "Value"], css_class=table_class)
 
     # -----------------------------------------------------------------
 
@@ -165,6 +182,8 @@ class ModelPageGenerator(HTMLPageComponent):
         :return: 
         """
 
+        self.old_disk_table = html.SimpleTable(data.old_deprojection.as_tuples(), header_row=["Property", "Value"], css_class=table_class)
+
     # -----------------------------------------------------------------
 
     def make_young_geometry_table(self):
@@ -173,6 +192,8 @@ class ModelPageGenerator(HTMLPageComponent):
         This function ...
         :return:
         """
+
+        self.young_table = html.SimpleTable(data.young_deprojection.as_tuples(), header_row=["Property", "Value"], css_class=table_class)
 
     # -----------------------------------------------------------------
 
@@ -183,6 +204,8 @@ class ModelPageGenerator(HTMLPageComponent):
         :return:
         """
 
+        self.ionizing_table = html.SimpleTable(data.ionizing_deprojection.as_tuples(), header_row=["Property", "Value"], css_class=table_class)
+
     # -----------------------------------------------------------------
 
     def make_dust_geometry_table(self):
@@ -191,6 +214,8 @@ class ModelPageGenerator(HTMLPageComponent):
         This function ...
         :return:
         """
+
+        self.dust_table = html.SimpleTable(data.dust_deprojection.as_tuples(), header_row=["Property", "Value"], css_class=table_class)
 
     # -----------------------------------------------------------------
 
@@ -220,7 +245,7 @@ class ModelPageGenerator(HTMLPageComponent):
         log.info("Making model plots ...")
 
         # TEMPORARY: LOAD TEST COMPONENTS
-        components = load_test_components()
+        components = data.components
 
         # Group the components
         old_components = {"disk": components["old"], "bulge": components["bulge"]}
@@ -229,16 +254,16 @@ class ModelPageGenerator(HTMLPageComponent):
         dust_components = {"dust": components["dust"]}
 
         # New
-        old = self.definition.old_stars_deprojection
-        young = self.definition.young_stars_deprojection
-        ionizing = self.definition.ionizing_stars_deprojection
-        dust = self.definition.dust_deprojection
+        #old = self.definition.old_stars_deprojection
+        #young = self.definition.young_stars_deprojection
+        #ionizing = self.definition.ionizing_stars_deprojection
+        #dust = self.definition.dust_deprojection
 
         # Generate HTML
-        self.old_model = render_components_html(old_components, only_body=True, width=400, height=500, style="minimal")
-        self.young_model = render_components_html(young_components, only_body=True, width=400, height=500, style="minimal")
-        self.ionizing_model = render_components_html(ionizing_components, only_body=True, width=400, height=500, style="minimal")
-        self.dust_model = render_components_html(dust_components, only_body=True, width=400, height=500, style="minimal")
+        self.old_model = data.render_components_html(old_components, only_body=True, width=widget_width, height=widget_height, style=widget_style)
+        self.young_model = data.render_components_html(young_components, only_body=True, width=widget_width, height=widget_height, style=widget_style)
+        self.ionizing_model = data.render_components_html(ionizing_components, only_body=True, width=widget_width, height=widget_height, style=widget_style)
+        self.dust_model = data.render_components_html(dust_components, only_body=True, width=widget_width, height=widget_height, style=widget_style)
 
     # -----------------------------------------------------------------
 
@@ -267,10 +292,11 @@ class ModelPageGenerator(HTMLPageComponent):
         # Inform the user
         log.info("Generating the status page ...")
 
+        body = self.heading
+
         # Create titles
         title_model = html.underline_template.format(text="3D MODEL GEOMETRY")
 
-        body = ""
         body += title_model + html.newline + html.newline
         body += html.bold_template.format(text="Old stars") + html.newline + html.newline
         body += self.old_model + html.newline + html.newline
@@ -319,6 +345,6 @@ class ModelPageGenerator(HTMLPageComponent):
         :return:
         """
 
-        return self.models_page_path
+        return self.model_page_path
 
 # -----------------------------------------------------------------

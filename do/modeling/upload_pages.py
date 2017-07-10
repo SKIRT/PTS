@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.modeling.upload_status Upload the status page.
+## \package pts.do.modeling.upload_pages Upload the HTML pages.
 
 # -----------------------------------------------------------------
 
@@ -19,7 +19,7 @@ import webbrowser
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.tools import filesystem as fs
 from pts.modeling.core.environment import GalaxyModelingEnvironment
-from pts.modeling.html.generator import HTMLGenerator
+from pts.modeling.html.all import AllPagesGenerator
 from pts.core.remote.host import Host
 from pts.core.tools import introspection
 from pts.core.remote.mounter import RemoteMounter
@@ -53,7 +53,7 @@ url = "http://users.ugent.be/~sjversto/" + filename
 if config.generate:
 
     # Generate the HTML
-    generator = HTMLGenerator()
+    generator = AllPagesGenerator()
     generator.config.path = modeling_path
     generator.run()
 

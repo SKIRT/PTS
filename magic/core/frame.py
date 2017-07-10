@@ -66,6 +66,18 @@ def get_filter(frame_path):
 
 # -----------------------------------------------------------------
 
+def get_filter_name(frame_path):
+
+    """
+    This function ...
+    :param frame_path:
+    :return:
+    """
+
+    return str(get_filter(frame_path))
+
+# -----------------------------------------------------------------
+
 class Frame(NDDataArray):
 
     """

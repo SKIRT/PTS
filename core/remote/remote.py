@@ -4192,6 +4192,13 @@ class Remote(object):
 
         conda_exec_path = self.find_executable("conda")
 
+        if conda_exec_path is None:
+            try:
+                conda_installation_path = self.find_directory_in_path(self.home_directory, contains="conda")
+                conda_exec_path = fs.join(conda_installation_path, "bin", "conda")
+            except ValueError: pass
+        if conda_exec_path is None: conda_exec_path = self.find_file_in_path(self.home_directory, recursive=True, exact_name="conda")
+
         if fs.name(fs.directory_of(fs.directory_of(fs.directory_of(conda_exec_path)))) == "envs":
             return fs.directory_of(fs.directory_of(fs.directory_of(fs.directory_of(conda_exec_path))))
         else: return fs.directory_of(fs.directory_of(conda_exec_path))

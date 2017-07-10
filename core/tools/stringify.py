@@ -24,7 +24,6 @@ from . import numbers
 
 # -----------------------------------------------------------------
 
-#def tostr(value, scientific=None, decimal_places=2, fancy=False, ndigits=None, delimiter=", ", **kwargs):
 def tostr(value, **kwargs):
 
     """
@@ -92,9 +91,23 @@ def tostr(value, **kwargs):
         kwargs["scientific"] = scientific
         kwargs["decimal_places"] = decimal_places
 
-    # Set scientific for integers
-    elif types.is_integer_type(value):
-        kwargs["scientific"] = scientific_int
+    # Set scientific flag for integers
+    elif types.is_integer_type(value) or (types.is_real_type(value) and numbers.is_integer(value)):
+
+        if scientific:
+
+            # ONLY IF SICENTIFIC_INT IS TRUE
+            if scientific_int:
+
+                # ONLY IF NECESSARY
+                if -999 < value < 999: scientific = False
+                else: scientific = True
+
+            # Don't apply 'scientific' to integers
+            else: scientific = False
+
+        # Set flag
+        kwargs["scientific"] = scientific
 
     # Stringify
     #return stringify(value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, delimiter=delimiter, **kwargs)[1].strip()
@@ -397,8 +410,8 @@ def stringify_not_list(value, **kwargs):
     elif introspection.lazy_isinstance(value, "RealRange", "pts.core.basics.range"): return "real_range", str_from_real_range(value, **kwargs)
     elif introspection.lazy_isinstance(value, "IntegerRange", "pts.core.basics.range"): return "integer_range", str_from_integer_range(value, **kwargs)
     elif introspection.lazy_isinstance(value, "QuantityRange", "pts.core.basics.range"): return "quantity_range", introspection.lazy_call("str_from_quantity_range", "pts.core.units.stringify", value, **kwargs)
-    elif introspection.lazy_isinstance(value, "SkyCoordinate", "pts.magic.basics.coordinate"): return "skycoordinate", repr(value.ra.value) + " " + str(value.ra.unit) + "," + repr(value.dec.value) + " " + str(value.dec.unit)
-    elif introspection.lazy_isinstance(value, "SkyStretch", "pts.magic.basics.stretch"): return "skystretch", repr(value.ra.value) + " " + str(value.ra.unit) + "," + repr(value.dec.value) + " " + str(value.dec.unit)
+    elif introspection.lazy_isinstance(value, "SkyCoordinate", "pts.magic.basics.coordinate"): return "skycoordinate", str_from_coordinate(value, **kwargs)
+    elif introspection.lazy_isinstance(value, "SkyStretch", "pts.magic.basics.stretch"): return "skystretch", str_from_stretch(value, **kwargs)
     elif introspection.lazy_isinstance(value, "Filter", "pts.core.filter.filter"): return introspection.lazy_call("stringify_filter", "pts.core.filter.filter", value, **kwargs)
 
     # Other
@@ -502,6 +515,7 @@ def str_from_integer(integer, **kwargs):
     fancy = kwargs.pop("fancy", False)
     ndigits = kwargs.pop("ndigits", None)
     unicode = kwargs.pop("unicode", False)
+    html = kwargs.pop("html", False)
 
     # Check input
     if ndigits is not None and ndigits < 1: raise ValueError("Number of digits cannot be smaller than 1")
@@ -515,18 +529,24 @@ def str_from_integer(integer, **kwargs):
                 for i in range(ndigits):
                     digit = str_rounded[i]
                     digits.append(digit)
-                if unicode: return digits[0].decode("utf8") + u"." + u"".join(digits[1:]) + u" " + strings.multiplication + u" 10" + strings.superscript(power) # DOESN'T WORK??
+                if html: return digits[0] + "." + "".join(digits[1:]) + " &times; 10<sup>" + str(power) + "</sup>"
+                elif unicode: return digits[0].decode("utf8") + u"." + u"".join(digits[1:]) + u" " + strings.multiplication + u" 10" + strings.superscript(power) # DOESN'T WORK??
                 else: return digits[0] + "." + "".join(digits[1:]) + " x 10^" + str(power)
             else:
                 result = "{:.0e}".format(integer).replace("+", "").replace("e0", "e")
                 power = int(result.split("e")[1])
-                if unicode: result = result.split("e")[0].decode("utf8") + u" " + strings.multiplication + u" 10" + strings.superscript(power) # DOESN'T WORK
+                if html: result = result.split("e")[0] + " &times; 10<sup>" + str(power) + "</sup>"
+                elif unicode: result = result.split("e")[0].decode("utf8") + u" " + strings.multiplication + u" 10" + strings.superscript(power) # DOESN'T WORK
                 else: result = result.split("e")[0] + " x 10^" + str(power)
                 return result
         else:
             if ndigits is not None: decimal_places = ndigits - 1
             #return "{:.0e}".format(integer).replace("+", "").replace("e0", "e")
-            return ("{:." + str(decimal_places) + "e}").format(float(integer)).replace("+", "").replace("e0", "e")
+
+            if html: return ("{:." + str(decimal_places) + "e}").format(float(integer)).replace("+", "").replace("e0", " &times; 10<sup>") + "</sup>"
+            else: return ("{:." + str(decimal_places) + "e}").format(float(integer)).replace("+", "").replace("e0", "e")
+
+    # Not scientific
     else: return str(integer)
 
 # -----------------------------------------------------------------
@@ -564,6 +584,7 @@ def str_from_real(real, **kwargs):
     ndigits = kwargs.pop("ndigits", None)
     unicode = kwargs.pop("unicode", False)
     doround = kwargs.pop("round", False)
+    html = kwargs.pop("html", False)
 
     # Check input
     if ndigits is not None and ndigits < 1: raise ValueError("Number of digits cannot be smaller than 1")
@@ -586,19 +607,23 @@ def str_from_real(real, **kwargs):
                     #if digit == ".": continue # happens if rounded does stil contain dot
                     digits.append(digit)
                 #print("digits", digits)
-                if unicode: return digits[0].decode("utf8") + u"." + u"".join(digits[1:]) + u" " + strings.multiplication + u" 10" + strings.superscript(power).decode("utf8") # DOESN'T WORK??
+                if html: return digits[0] + "." + "".join(digits[1:]) + " &times; 10<sup>" + str(power) + "</sup>"
+                elif unicode: return digits[0].decode("utf8") + u"." + u"".join(digits[1:]) + u" " + strings.multiplication + u" 10" + strings.superscript(power).decode("utf8") # DOESN'T WORK??
                 else: return digits[0] + "." + "".join(digits[1:]) + " x 10^" + str(power)
             else:
                 result = ("{:." + str(decimal_places) + "e}").format(real).replace("+", "").replace("e0", "e")
                 power = int(result.split("e")[1])
                 #result = result.split("e")[0].decode("utf8") + u" " + strings.multiplication + u" 10" + strings.superscript(power).decode("utf8")
                 #result = result.split("e")[0].decode("utf8") + u" " + strings.multiplication + u" 10" + strings.superscript(power).decode("utf8")
-                if unicode: result = result.split("e")[0].decode("utf8") + u" " + u"x" + u" 10" + strings.superscript(power).decode("utf8") # SOMETHING LIKE THIS?? DOESN'T WORK??
+                if html: result = result.split("e")[0] + " &times; 10<sup>" + str(power) + "</sup>"
+                elif unicode: result = result.split("e")[0].decode("utf8") + u" " + u"x" + u" 10" + strings.superscript(power).decode("utf8") # SOMETHING LIKE THIS?? DOESN'T WORK??
                 else: result = result.split("e")[0] + " x 10^" + str(power)
                 return result
         else:
             if ndigits is not None: decimal_places = ndigits - 1
-            return ("{:." + str(decimal_places) + "e}").format(real).replace("+", "").replace("e0", "e")
+
+            if html: return ("{:." + str(decimal_places) + "e}").format(real).replace("+", "").replace("e0", " &times; 10<sup>") + "</sup>"
+            else: return ("{:." + str(decimal_places) + "e}").format(real).replace("+", "").replace("e0", "e")
 
     else:
         if doround: return repr(numbers.round_to_n_significant_digits(real, ndigits))
@@ -620,6 +645,41 @@ def str_from_real_range(the_range, **kwargs):
     max_str = str_from_real(the_range.max, **kwargs)
 
     return min_str + " > " + max_str
+
+# -----------------------------------------------------------------
+
+def str_from_coordinate(coordinate, **kwargs):
+
+    """
+    This function ...
+    :param coordinate:
+    :param kwargs:
+    :return:
+    """
+
+    delimiter = kwargs.pop("delimiter", ",")
+
+    # Return
+    return introspection.lazy_call("stringify_quantity", "pts.core.units.stringify", coordinate.ra, **kwargs)[1] + delimiter + introspection.lazy_call("stringify_quantity", "pts.core.units.stringify", coordinate.dec, **kwargs)[1]
+
+# -----------------------------------------------------------------
+
+def str_from_stretch(stretch, **kwargs):
+
+    """
+    This function ...
+    :param stretch:
+    :param kwargs:
+    :return:
+    """
+
+    delimiter = kwargs.pop("delimiter", ",")
+
+    # Return
+    return introspection.lazy_call("stringify_quantity", "pts.core.units.stringify", stretch.ra,
+                                   **kwargs)[1] + delimiter + introspection.lazy_call("stringify_quantity",
+                                                                                   "pts.core.units.stringify",
+                                                                                   stretch.dec, **kwargs)[1]
 
 # -----------------------------------------------------------------
 

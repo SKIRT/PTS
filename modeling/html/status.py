@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
-from .component import HTMLPageComponent, stylesheet_url, table_class
+from .component import HTMLPageComponent, table_class
 from ...core.tools import html
 
 # -----------------------------------------------------------------
@@ -34,11 +34,10 @@ class StatusPageGenerator(HTMLPageComponent):
         """
 
         # Call the constructor of the base class
-        super(HTMLPageComponent, self).__init__(*args, **kwargs)
+        super(StatusPageGenerator, self).__init__(*args, **kwargs)
 
         # Tables
         self.info_table = None
-        self.properties_table = None
         self.status_table = None
 
     # -----------------------------------------------------------------
@@ -97,9 +96,6 @@ class StatusPageGenerator(HTMLPageComponent):
         # Make info table
         self.make_info_table()
 
-        # Make properties table
-        self.make_properties_table()
-
         # Make status table
         self.make_status_table()
 
@@ -115,23 +111,18 @@ class StatusPageGenerator(HTMLPageComponent):
         # Inform the user
         log.info("Making the info table ...")
 
-        # Create the table
-        self.info_table = html.SimpleTable(self.galaxy_info.items(), header_row=["Property", "Value"], css_class=table_class)
-
-    # -----------------------------------------------------------------
-
-    def make_properties_table(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making the properties table ...")
+        # Create list of tuples
+        tuples = self.galaxy_info.items()
+        tuples.append(("Distance", self.galaxy_properties.distance))
+        tuples.append(("Redshift", self.galaxy_properties.redshift))
+        tuples.append(("Center coordinate", self.galaxy_properties.center))
+        tuples.append(("Major axis length", self.galaxy_properties.major))
+        tuples.append(("Ellipticity", self.galaxy_properties.ellipticity))
+        tuples.append(("Position angle", self.galaxy_properties.position_angle))
+        tuples.append(("Inclination", self.galaxy_properties.inclination))
 
         # Create the table
-        self.properties_table = html.SimpleTable(self.galaxy_properties.as_tuples(), header_row=["Property", "Value"], css_class=table_class)
+        self.info_table = html.SimpleTable(tuples, header_row=["Property", "Value"], css_class=table_class, tostr_kwargs=self.tostr_kwargs)
 
     # -----------------------------------------------------------------
 
@@ -176,11 +167,11 @@ class StatusPageGenerator(HTMLPageComponent):
         log.info("Generating the HTML ...")
 
         # Generate the status
-        self.generate_status()
+        self.generate_page()
 
     # -----------------------------------------------------------------
 
-    def generate_status(self):
+    def generate_page(self):
 
         """
         This function ...
@@ -190,27 +181,29 @@ class StatusPageGenerator(HTMLPageComponent):
         # Inform the user
         log.info("Generating the status page ...")
 
-        # Create title
-        title = html.fontsize_template.format(size=20, text=html.underline_template.format(text="Modeling of " + self.galaxy_name))
+        body = self.heading
 
         # Create titles
         title_info = html.underline_template.format(text="GALAXY INFO")
-        title_properties = html.underline_template.format(text="GALAXY PROPERTIES")
         title_status = html.underline_template.format(text="MODELING STATUS")
 
-        body = title + html.newline + html.newline + title_info + html.newline + html.newline + str(self.info_table) + html.newline + html.newline
-        body += title_properties + html.newline + html.newline + str(self.properties_table) + html.newline + html.newline
+        #body += html.newline + html.line
+        body += html.newline + "Pages:" + html.newline
+        items = []
+        if self.history.finished("fetch_images"): items.append(html.hyperlink(self.data_page_name, "data"))
+        if self.history.finished_maps: items.append(html.hyperlink(self.maps_page_name, "maps"))
+        if self.history.finished("configure_fit"): items.append(html.hyperlink(self.model_page_name, "model"))
+        body += html.unordered_list(items, css_class="b")
+        body += html.line + html.newline
+
+        body += title_info + html.newline + html.newline + str(self.info_table) + html.newline
+        body += html.line + html.newline
         body += title_status + html.newline + html.newline + str(self.status_table) + html.newline + html.newline
 
-        # Create contents
-        contents = dict()
-        contents["title"] = self.title
-        contents["head"] = html.link_stylesheet_header_template.format(url=stylesheet_url)
-        contents["body"] = body
-        contents["style"] = self.style
+        body += self.footing
 
         # Create the status page
-        self.page = html.page_template.format(**contents)
+        self.make_page(body)
 
     # -----------------------------------------------------------------
 

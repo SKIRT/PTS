@@ -165,6 +165,38 @@ def get_new_label(classname, session):
 
 # -----------------------------------------------------------------
 
+def get_filter(frame_path, session):
+
+    """
+    Ths function allows getting the filter of a frame without loading the entire frame
+    :param frame_path:
+    :param session:
+    :return:
+    """
+
+    return parse_filter(get_filter_name(frame_path, session))
+
+# -----------------------------------------------------------------
+
+def get_filter_name(frame_path, session):
+
+    """
+    This function ...
+    :param frame_path:
+    :param session:
+    :return:
+    """
+
+    # header = fits.getheader(frame_path)
+    session.import_package("getheader", from_name="astropy.io.fits")
+    session.send_line("header = getheader('" + frame_path + "')")
+    session.import_package("get_filter", from_name="pts.magic.tools.headers")
+    name = fs.name(frame_path[:-5])
+    # fltr = headers.get_filter(fs.name(frame_path[:-5]), header)
+    return session.get_simple_variable("str(headers.get_filter('" + name + "', header))")
+
+# -----------------------------------------------------------------
+
 class RemoteFrame(object):
 
     """
@@ -1037,6 +1069,52 @@ class RemoteFrame(object):
 
         # Download
         self.session.remote.download(remote_file_path, local_directory, compress=True, show_output=True)
+
+        # Remove the remote file
+        self.session.remove_file(remote_file_path)
+
+        # Update the path
+        self.path = path
+
+    # -----------------------------------------------------------------
+
+    def saveto_png(self, path, interval="pts", scale="log", alpha=True, peak_alpha=1., colours="red"):
+
+        """
+        This function ...
+        :param path:
+        :param interval:
+        :param scale:
+        :param alpha:
+        :param peak_alpha:
+        :param colours:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Saving the remote frame to '" + path + "' locally ...")
+
+        # Determine filename and local directory
+        filename = fs.name(path)
+        local_directory = fs.directory_of(path)
+
+        # Determine remote temp path
+        remote_temp_path = self.session.session_temp_directory
+
+        # Remote file path
+        remote_file_path = fs.join(remote_temp_path, filename)
+
+        # Debugging
+        log.debug("Saving the frame remotely ...")
+
+        # Save the frame remotely
+        self.session.send_line(self.label + ".saveto_png('" + remote_file_path + "', interval='" + interval + "', scale='" + scale + "', alpha=" + str(alpha) + ", peak_alpha=" + str(peak_alpha) + ", colours='" + colours + "')")
+
+        # Debugging
+        log.debug("Downloading the image ...")
+
+        # Download
+        self.session.remote.download(remote_file_path, local_directory, compress=False, show_output=True)
 
         # Remove the remote file
         self.session.remove_file(remote_file_path)

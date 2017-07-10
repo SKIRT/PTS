@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.tools import filesystem as fs
 from pts.modeling.core.environment import GalaxyModelingEnvironment
-from pts.modeling.html.generator import HTMLGenerator
+from pts.modeling.html.status import StatusPageGenerator
 
 # -----------------------------------------------------------------
 
@@ -40,7 +40,7 @@ environment = GalaxyModelingEnvironment(modeling_path)
 if config.generate:
 
     # Generate the HTML
-    generator = HTMLGenerator()
+    generator = StatusPageGenerator()
     generator.config.path = modeling_path
     generator.run()
 

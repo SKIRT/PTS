@@ -33,12 +33,6 @@ from ipyvolume.embed import embed_html, template, get_state, add_referring_widge
 
 # Import the relevant PTS classes and modules
 from pts.core.tools.logging import log
-from pts.core.tools import filesystem as fs
-from pts.core.tools import introspection
-from pts.modeling.basics.models import load_2d_model, load_3d_model
-from pts.magic.basics.coordinatesystem import CoordinateSystem
-from pts.modeling.basics.models import DeprojectionModel3D
-from pts.modeling.basics.properties import GalaxyProperties
 
 # -----------------------------------------------------------------
 

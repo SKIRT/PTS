@@ -51,6 +51,7 @@ import codecs
 
 # Import the relevant PTS classes and modules
 from .stringify import tostr
+from . import numbers
 
 # -----------------------------------------------------------------
 
@@ -86,6 +87,46 @@ page_template = """<!DOCTYPE html>
 </body>
 </html>
 """
+
+# -----------------------------------------------------------------
+
+def ordered_list(items, css_class=None):
+
+    """
+    This function ...
+    :param items:
+    :param css_class:
+    :return:
+    """
+
+    html = ""
+    if css_class is not None: html += '<ol class="' + css_class + '">'
+    else: html += '<ol>'
+
+    for item in items: html += '<li> ' + item
+    html += '</ol>'
+
+    return html
+
+# -----------------------------------------------------------------
+
+def unordered_list(items, css_class=None):
+
+    """
+    This function ...
+    :param items:
+    :param css_class:
+    :return:
+    """
+
+    html = ""
+    if css_class is not None: html += '<ul class="' + css_class + '">'
+    else: html += '<ul>'
+
+    for item in items: html += '<li> ' + item
+    html += '</ul>'
+
+    return html
 
 # -----------------------------------------------------------------
 
@@ -143,7 +184,7 @@ class SimpleTableCell(object):
     cell = SimpleTableCell('Hello, world!')
     """
 
-    def __init__(self, text, header=False, bgcolor=None):
+    def __init__(self, text, header=False, bgcolor=None, tostr_kwargs=None):
 
         """
         Table cell constructor.
@@ -155,6 +196,7 @@ class SimpleTableCell(object):
         self.text = text
         self.header = header
         self.bgcolor = bgcolor
+        self.tostr_kwargs = tostr_kwargs if tostr_kwargs is not None else {}
 
     # -----------------------------------------------------------------
 
@@ -167,10 +209,10 @@ class SimpleTableCell(object):
 
         if self.header:
             if self.bgcolor is not None: return "<th bgcolor='" + self.bgcolor + "'>" + tostr(self.text) + "</th>"
-            else: return "<th>" + tostr(self.text) + "</th>"
+            else: return "<th>" + tostr(self.text, **self.tostr_kwargs) + "</th>"
         else:
             if self.bgcolor is not None: return "<td bgcolor='" + self.bgcolor + "'>" + tostr(self.text) + "</td>"
-            else: return "<td>" + tostr(self.text) + "</td>"
+            else: return "<td>" + tostr(self.text, **self.tostr_kwargs) + "</td>"
 
 # -----------------------------------------------------------------
 
@@ -188,7 +230,7 @@ class SimpleTableRow(object):
     row = SimpleTableRow([cell1, cell2])
     """
 
-    def __init__(self, cells, header=False, bgcolors=None):
+    def __init__(self, cells, header=False, bgcolors=None, tostr_kwargs=None):
 
         """Table row constructor.
 
@@ -203,8 +245,8 @@ class SimpleTableRow(object):
         # Set cells
         if isinstance(cells[0], SimpleTableCell): self.cells = cells
         else:
-            if bgcolors is not None: self.cells = [SimpleTableCell(cell, header=header, bgcolor=bgcolor) for cell, bgcolor in zip(cells, bgcolors)]
-            else: self.cells = [SimpleTableCell(cell, header=header) for cell in cells]
+            if bgcolors is not None: self.cells = [SimpleTableCell(cell, header=header, bgcolor=bgcolor, tostr_kwargs=tostr_kwargs) for cell, bgcolor in zip(cells, bgcolors)]
+            else: self.cells = [SimpleTableCell(cell, header=header, tostr_kwargs=tostr_kwargs) for cell in cells]
 
         # Set header
         self.header = header
@@ -274,7 +316,7 @@ class SimpleTable(object):
     table = SimpleTable(rows)
     """
 
-    def __init__(self, rows, header_row=None, css_class=None, bgcolors=None):
+    def __init__(self, rows, header_row=None, css_class=None, bgcolors=None, tostr_kwargs=None):
 
         """
         Table constructor.
@@ -289,16 +331,50 @@ class SimpleTable(object):
 
         if isinstance(rows[0], SimpleTableRow): self.rows = rows
         else:
-            if bgcolors is not None: self.rows = [SimpleTableRow(row, bgcolors=bcolors) for row, bcolors in zip(rows, bgcolors)]
-            else: self.rows = [SimpleTableRow(row) for row in rows]
+            if bgcolors is not None: self.rows = [SimpleTableRow(row, bgcolors=bcolors, tostr_kwargs=tostr_kwargs) for row, bcolors in zip(rows, bgcolors)]
+            else: self.rows = [SimpleTableRow(row, tostr_kwargs=tostr_kwargs) for row in rows]
 
         # Set header row
         if header_row is None: self.header_row = None
         elif isinstance(header_row, SimpleTableRow): self.header_row = header_row
-        else: self.header_row = SimpleTableRow(header_row, header=True)
+        else: self.header_row = SimpleTableRow(header_row, header=True, tostr_kwargs=tostr_kwargs)
 
         # Set CSS class
         self.css_class = css_class
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def rasterize(cls, cells, ncolumns=None, header_row=None, css_class=None, tostr_kwargs=None):
+
+        """
+        This function ...
+        :param cells:
+        :param ncolumns:
+        :param header_row:
+        :param css_class:
+        :param tostr_kwargs:
+        :return:
+        """
+
+        if len(cells) == 0: raise ValueError("No cells given")
+
+        rows = []
+
+        cellsiter = iter(cells + [""] * ncolumns)
+
+        nrows = numbers.round_up_to_int(len(cells) / float(ncolumns))
+
+        #print("nrows", nrows)
+
+        for i in range(nrows):
+
+            row = []
+            for j in range(ncolumns): row.append(cellsiter.next())
+            rows.append(row)
+
+        # Create and return
+        return cls(rows, header_row=header_row, css_class=css_class, tostr_kwargs=tostr_kwargs)
 
     # -----------------------------------------------------------------
 

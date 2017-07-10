@@ -100,5 +100,8 @@ analyse_mosaic | -- | data.analyser.MosaicAnalyser | arguments | Analyse mosaics
 build_grid | -- | build.dustgrid.DustGridBuilder | arguments | Build dust grid
 
 # GENERATING THE HTML PAGES
+generate_all_pages | -- | html.all.AllPagesGenerator | arguments | Generate all the pages
 generate_status_page | -- | html.status.StatusPageGenerator | arguments | Generate the status page
-generate_model_page | -- | html.model.ModelPageGenerator  | arguments | Generate the model page
+generate_model_page | -- | html.model.ModelPageGenerator | arguments | Generate the model page
+generate_data_page | -- | html.data.DataPageGenerator | arguments | Generate the data page
+generate_maps_page | -- | html.maps.MapsPageGenerator | arguments | Generate the maps page

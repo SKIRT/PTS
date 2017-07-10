@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+import StringIO
 from collections import OrderedDict
 
 # Import astronomical modules
@@ -702,12 +703,65 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    def to_html(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Make string output
+        output = StringIO.StringIO()
+
+        # Write as HTML
+        self.write(output, format='html')
+        contents = output.getvalue()
+
+        # Close object and discard memory buffer --
+        # .getvalue() will now raise an exception.
+        output.close()
+
+        # Return the HTML string
+        return contents
+
+    # -----------------------------------------------------------------
+
+
+    @property
+    def column_names(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.colnames
+
+    # -----------------------------------------------------------------
+
+    def as_tuples(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        tuples = []
+        for index in range(len(self)):
+            values = self.get_row(index).values()
+            tuples.append(tuple(values))
+        return tuples
+
+    # -----------------------------------------------------------------
+
     def print_latex(self):
 
         """
         This function ...
         :return: 
         """
+
+        self.show_in_browser()
 
         header = " & ".join(self.colnames) + " \\\\"
         print(header)

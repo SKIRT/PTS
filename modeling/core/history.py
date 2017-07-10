@@ -219,6 +219,32 @@ class ModelingHistory(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def finished_commands(self, command_names):
+
+        """
+        This function ...
+        :param command_names:
+        :return:
+        """
+
+        for command in command_names:
+            if not self.finished(command): return False
+        return True
+
+    # -----------------------------------------------------------------
+
+    @property
+    def finished_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.finished_commands(["make_old_stellar_maps", "make_young_stellar_maps", "make_ionizing_stellar_maps", "make_dust_map"])
+
+    # -----------------------------------------------------------------
+
     @property
     def finished_maps_commmands(self):
 

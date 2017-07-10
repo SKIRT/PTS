@@ -92,6 +92,8 @@ def stringify_quantity(quantity, **kwargs):
     ndigits = kwargs.pop("ndigits", None)
     unicode = kwargs.pop("unicode", False)
     add_physical_type = kwargs.pop("add_physical_type", False)
+    doround = kwargs.pop("round", False)
+    html = kwargs.pop("html", False)
 
     # Stringify the unit
     unit_type, unit_string = stringify_unit(quantity.unit, add_physical_type=add_physical_type)
@@ -106,7 +108,7 @@ def stringify_quantity(quantity, **kwargs):
     from ..tools.stringify import str_from_real
 
     # Return parsing type and stringified quantity
-    return parsing_type, str_from_real(quantity.value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode) + " " + unit_string
+    return parsing_type, str_from_real(quantity.value, scientific=scientific, decimal_places=decimal_places, fancy=fancy, ndigits=ndigits, unicode=unicode, html=html, round=doround) + " " + unit_string
 
 # -----------------------------------------------------------------
 

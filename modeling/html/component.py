@@ -36,6 +36,11 @@ page_style = "ugentstyle"
 
 # -----------------------------------------------------------------
 
+top_title_size = 24
+title_size = 20
+
+# -----------------------------------------------------------------
+
 class HTMLPageComponent(GalaxyModelingComponent):
 
     """
@@ -100,6 +105,18 @@ class HTMLPageComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def images_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.html_images_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def status_page_path(self):
 
         """
@@ -112,14 +129,62 @@ class HTMLPageComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
-    def models_page_path(self):
+    def status_page_name(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.join(self.environment.html_path, "models.html")
+        return fs.name(self.status_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def data_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, "data.html")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def data_page_name(self):
+
+        """
+        THisn function ...
+        :return:
+        """
+
+        return fs.name(self.data_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, "model.html")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model_page_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.model_page_path)
 
     # -----------------------------------------------------------------
 
@@ -136,6 +201,43 @@ class HTMLPageComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def maps_page_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.maps_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def top_title(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Create title
+        return "High resolution 3D radiative transfer modeling of DustPedia galaxies"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def html_top_title(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return html.fontsize_template.format(size=top_title_size, text=html.underline_template.format(text=self.top_title))
+
+    # -----------------------------------------------------------------
+
+    @property
     def title(self):
 
         """
@@ -143,7 +245,8 @@ class HTMLPageComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return "Modeling of " + self.galaxy_name
+        #return "Modeling of " + self.galaxy_name
+        return self.galaxy_name + " (" + self.ngc_name_nospaces + ")"
 
     # -----------------------------------------------------------------
 
@@ -156,7 +259,36 @@ class HTMLPageComponent(GalaxyModelingComponent):
         """
 
         # Create title
-        return html.fontsize_template.format(size=20, text=html.underline_template.format(text="Modeling of " + self.galaxy_name))
+        return html.fontsize_template.format(size=title_size, text=html.underline_template.format(text=self.title))
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heading(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        heading = ""
+        heading += self.html_top_title + html.newline + html.newline + html.line + html.newline
+        heading += self.html_title + html.newline
+        return heading
+
+    # -----------------------------------------------------------------
+
+    @property
+    def footing(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        footing = ""
+        footing += html.newline + html.line + html.newline + html.center_template.format(text="2017")
+        return footing
 
     # -----------------------------------------------------------------
 
@@ -169,6 +301,44 @@ class HTMLPageComponent(GalaxyModelingComponent):
         """
 
         return page_style
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tostr_kwargs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        kwargs = dict()
+        kwargs["round"] = True
+        # kwargs["scientific"] = True  NO: let tostr decide
+        kwargs["ndigits"] = 3
+        kwargs["delimiter"] = ", "
+        kwargs["html"] = True
+        return kwargs
+
+    # -----------------------------------------------------------------
+
+    def make_page(self, body):
+
+        """
+        This function ...
+        :param body:
+        :return:
+        """
+
+        # Create contents
+        contents = dict()
+        contents["title"] = self.title
+        contents["head"] = html.link_stylesheet_header_template.format(url=stylesheet_url)
+        contents["body"] = body
+        contents["style"] = self.style
+
+        # Make page
+        self.page = html.page_template.format(**contents)
 
     # -----------------------------------------------------------------
 
