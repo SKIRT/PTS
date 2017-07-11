@@ -2533,6 +2533,41 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def execute_pts(self, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        if len(args) == 0: raise ValueError("No command specified")
+        command = args[0]
+        if len(args) > 1: positional = args[1:]
+        else: positional = []
+
+        # Get options
+        show_output = kwargs.pop("show_output", False)
+        cwd = kwargs.pop("cwd", None)
+
+        positional_string = " ".join([strings.add_quotes_if_spaces(item) for item in positional])
+        optional_parts = []
+        for name in kwargs:
+            if strings.is_character(name): option_name = "-" + name
+            else: option_name = "--" + name
+            value = strings.add_quotes_if_spaces(kwargs[name])
+            optional_parts.append(option_name + " " + value)
+        optional_string = " ".join(optional_parts)
+
+        # Create command string
+        command = self.pts_main_path + " " + command + " " + positional_string + " " + optional_string
+
+        # Execute
+        self.execute(command, show_output=show_output, cwd=cwd)
+
+    # -----------------------------------------------------------------
+
     def execute_lines(self, *args, **kwargs):
 
         """
@@ -2647,13 +2682,14 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
-    def start_python_session(self, assume_pts=True, output_path=None, attached=False):
+    def start_python_session(self, assume_pts=True, output_path=None, attached=False, new_connection_for_attached=False):
 
         """
         This function ...
         :param assume_pts: assume PTS is present, import some basic PTS tools
         :param output_path:
         :param attached:
+        :param new_connection_for_attached:
         :return:
         """
 
@@ -2663,7 +2699,11 @@ class Remote(object):
         else: python_path = "python"
 
         # Start python session and return it
-        if attached: return AttachedPythonSession(self, python_path, assume_pts=assume_pts, output_path=output_path)
+        if attached:
+            if new_connection_for_attached:
+                new_remote = Remote(host_id=self.host_id)
+                return AttachedPythonSession(new_remote, python_path, assume_pts=assume_pts, output_path=output_path)
+            else: return AttachedPythonSession(self, python_path, assume_pts=assume_pts, output_path=output_path)
         else: return DetachedPythonSession(self, python_path, assume_pts=assume_pts, output_path=output_path)
 
     # -----------------------------------------------------------------
@@ -5787,6 +5827,30 @@ class Remote(object):
         """
 
         return fs.join(self.pts_root_path, "pts")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pts_do_path(self):
+
+        """
+        This fnction ...
+        :return:
+        """
+
+        return fs.join(self.pts_package_path, "do")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def pts_main_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.pts_do_path, "__main__.py")
 
     # -----------------------------------------------------------------
 

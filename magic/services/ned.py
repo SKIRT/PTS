@@ -45,6 +45,9 @@ def get_image(galaxy_name, fltr, year=None):
 
     filter_name = str(fltr)
 
+    # Inform the user
+    log.info("Looking for images of '" + galaxy_name + "' in the '" + filter_name + "' band ...")
+
     # Configure
     ned = NED()
     ned.config.galaxy = galaxy_name
@@ -55,11 +58,18 @@ def get_image(galaxy_name, fltr, year=None):
     # Run
     ned.run()
 
+    #
     if year is None:
         last_year = None
         for bibcode, image_year, image_url in ned.images[filter_name]:
             if last_year is None or image_year > last_year: last_year = image_year
         year = last_year
+
+        # Debugging
+        log.debug("Most recent image encountered is from " + str(year))
+
+    #print(ned.images.keys())
+    #print(ned.images[filter_name])
 
     # List of possible urls
     urls = []
@@ -75,12 +85,19 @@ def get_image(galaxy_name, fltr, year=None):
     url = urls[0]
 
     # Download to temporary path
-    filepath = network.download_and_decompress_file(url, introspection.pts_temp_dir, remove=True, progress_bar=True)
+    #filepath = network.download_and_decompress_file(url, introspection.pts_temp_dir, remove=True, progress_bar=True)
+    filepath = network.download_file(url, introspection.pts_temp_dir, progress_bar=True)
+
+    # RENAME: REMOVE THE .GZ!
+    filepath = fs.remove_extension(filepath)
 
     from ..core.frame import Frame
 
     # Open the image
     frame = Frame.from_file(filepath)
+
+    # Remove the file
+    fs.remove_file(filepath)
 
     # Set the filter
     frame.filter = fltr

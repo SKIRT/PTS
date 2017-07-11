@@ -736,3 +736,34 @@ def find_any_case(string, sequence):
     return None # not found
 
 # -----------------------------------------------------------------
+
+def is_character(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    return len(string) == 1
+
+# -----------------------------------------------------------------
+
+def add_quotes_if_spaces(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    if " " in string:
+        if '"' in string:
+            assert "'" not in string
+            return "'" + string + "'"
+        elif "'" in string: return '"' + string + '"'
+        else: return "'" + string + "'"
+
+    else: return string
+
+# -----------------------------------------------------------------

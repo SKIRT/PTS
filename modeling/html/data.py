@@ -120,8 +120,11 @@ class DataPageGenerator(HTMLPageComponent):
         log.info("Making the image plots ...")
 
         # Start python session on cache remote
-        if self.has_cache_host: session = self.cache_remote.start_python_session(output_path=self.cache_remote.pts_temp_path)
-        else: session = None
+        if self.has_cache_host:
+            session = remote = None
+            if self.config.use_session: session = self.cache_remote.start_python_session(output_path=self.cache_remote.pts_temp_path, attached=True, new_connection_for_attached=True)
+            else: remote = self.cache_remote
+        else: session = remote = None
 
         # Loop over the images
         paths = self.get_data_image_paths_with_cached(lazy=True)
@@ -130,23 +133,35 @@ class DataPageGenerator(HTMLPageComponent):
 
             path = paths[name]
 
+            # Determine the path
+            output_path = fs.join(self.images_path, name + ".png")
+
             # Local
-            if fs.is_file(path): frame = Frame.from_file(paths[name])
+            if fs.is_file(path): Frame.from_file(paths[name]).saveto_png(output_path)
+
+            # Remote session
+            elif session is not None: RemoteFrame.from_remote_file(path, session).saveto_png(output_path)
 
             # Remote
-            elif session is not None: frame = RemoteFrame.from_remote_file(path, session)
+            elif remote is not None:
+
+                # Temporary remote path
+                temp_output_path = fs.join(remote.pts_temp_path, name + ".png")
+
+                # Run the PTS command to create the PNG
+                remote.execute_pts("fits_to_png", path, output=temp_output_path, show_output=True)
+
+                # Check whether the remote file exists
+                if not remote.is_file(temp_output_path): raise RuntimeError("Remote file does not exist")
+
+                # Retrieve the file
+                output_path = remote.download_file_to(temp_output_path, self.images_path, remove=True)
 
             # Not found!
             else: raise ValueError("File '" + path + "' not found")
 
-            # Determine the path
-            path = fs.join(self.images_path, name + ".png")
-
-            # Convert to png
-            frame.saveto_png(path)
-
             # Add the path
-            self.image_paths[name] = path
+            self.image_paths[name] = output_path
 
     # -----------------------------------------------------------------
 

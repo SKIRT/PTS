@@ -859,7 +859,7 @@ class DetachedPythonSession(RemotePythonSession):
         """
 
         # Inform the user
-        log.info("Attaching to the screen session " + self.screen_name + " ...")
+        log.info("Attaching to the screen session '" + self.screen_name + "' ...")
 
         # Tmux or screen
         if self.tmux: self.remote.execute("tmux a -t " + self.screen_name, expect=">>>")
@@ -889,7 +889,7 @@ class DetachedPythonSession(RemotePythonSession):
         """
 
         # Inform the user
-        log.info("Detaching from the screen session " + self.screen_name + " ...")
+        log.info("Detaching from the screen session '" + self.screen_name + "' ...")
 
         # Check
         if not self.attached: log.warning("Not attached")
@@ -901,7 +901,8 @@ class DetachedPythonSession(RemotePythonSession):
         if self.tmux:
 
             # Send Ctrl+b d to detach
-            self.remote.execute("^B")
+            #self.remote.execute("^B")
+            self.remote.execute("\\x02") # CONTROL B
             self.remote.execute("d")
 
             # Match the prompt
@@ -911,21 +912,22 @@ class DetachedPythonSession(RemotePythonSession):
         else:
 
             # Send Ctrl+A d to detach
-            self.remote.ssh.send("^A")
+            #self.remote.ssh.send("^A")
+            self.remote.ssh.send("\\x01")  # CONTROL A
             self.remote.ssh.send("d")
 
             # Match the prompt
             self.remote.ssh.prompt()
 
-            print("before", self.remote.ssh.before)
-            print("after", self.remote.ssh.after)
+            #print("before", self.remote.ssh.before)
+            #print("after", self.remote.ssh.after)
 
             # Extra empty line
             self.remote.ssh.send("")
             self.remote.ssh.prompt()
 
-            print("before", self.remote.ssh.before)
-            print("after", self.remote.ssh.after)
+            #print("before", self.remote.ssh.before)
+            #print("after", self.remote.ssh.after)
 
     # -----------------------------------------------------------------
 

@@ -1201,6 +1201,26 @@ def rename_file(directory, original_name, new_name):
     # Rename the file
     os.rename(original_path, new_path)
 
+    # Return the new file path
+    return new_path
+
+# -----------------------------------------------------------------
+
+def remove_extension(filepath):
+
+    """
+    This function ...
+    :param filepath:
+    :return:
+    """
+
+    filename = name(filepath)
+    directory = directory_of(filepath)
+    new_filename = strip_extension(filename)
+
+    # Rename, return the new file path
+    return rename_file(directory, filename, new_filename)
+
 # -----------------------------------------------------------------
 
 def rename_directory(parent, original_name, new_name):

@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-from skimage import exposure
 
 # Import astronomical modules
 from astropy.visualization import SqrtStretch, LogStretch
@@ -645,13 +644,12 @@ def plot_background_center(cutout, mask, peaks=None, title=None, show=True, scal
 
     """
     This function ...
-    :param x_center_rel:
-    :param y_center_rel:
-    :param x_center_back:
-    :param y_center_back:
-    :param background:
-    :param background_mask:
     :param cutout:
+    :param mask:
+    :param peaks:
+    :param title:
+    :param show:
+    :param scale:
     :return:
     """
 
