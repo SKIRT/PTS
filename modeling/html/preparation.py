@@ -199,7 +199,7 @@ class PreparationPageGenerator(HTMLPageComponent):
         body = self.heading
 
         # Add table
-        body += self.statistics_table
+        body += str(self.statistics_table)
 
         # Footing
         body += self.footing

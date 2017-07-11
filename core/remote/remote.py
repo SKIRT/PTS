@@ -2410,7 +2410,7 @@ class Remote(object):
         """
 
         # Debugging
-        self.debug("Sent command: "  + command)
+        self.debug('Sent command: "'  + command + '"')
 
         # Add the command
         self.commands.append(command)
@@ -2426,7 +2426,7 @@ class Remote(object):
         """
 
         # Make executable
-        self.execute("chmod +rx " + filepath)
+        self.execute("chmod +rx '" + filepath + "'")
 
     # -----------------------------------------------------------------
 
@@ -2542,6 +2542,10 @@ class Remote(object):
         :return:
         """
 
+        # Determine python path
+        python_path = self.conda_pts_environment_python_path
+        #print("PYTHON PATH", python_path)
+
         if len(args) == 0: raise ValueError("No command specified")
         command = args[0]
         if len(args) > 1: positional = args[1:]
@@ -2577,7 +2581,7 @@ class Remote(object):
         optional_string = " ".join(optional_parts)
 
         # Create command string
-        command = self.pts_main_path + " " + command + " " + positional_string + " " + optional_string
+        command = python_path + " " + self.pts_main_path + " " + command + " " + positional_string + " " + optional_string
 
         # Execute
         output = self.execute(command, show_output=show_output, cwd=cwd)

@@ -46,8 +46,8 @@ def is_boolean_type(value):
 
 # -----------------------------------------------------------------
 
-if HAS_NP: integer_types = [int, np.int32, np.int64, np.uint32, np.uint64]
-else: integer_types = [int]
+if HAS_NP: integer_types = [int, long, np.int32, np.int64, np.uint32, np.uint64]
+else: integer_types = [int, long]
 
 # -----------------------------------------------------------------
 

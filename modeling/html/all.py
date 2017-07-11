@@ -107,6 +107,7 @@ class AllPagesGenerator(GalaxyModelingComponent):
         # Generate
         generator = StatusPageGenerator()
         generator.config.path = self.config.path
+        generator.config.replot = self.config.replot
         generator.run()
 
     # -----------------------------------------------------------------
@@ -124,6 +125,7 @@ class AllPagesGenerator(GalaxyModelingComponent):
         # Generate
         generator = DataPageGenerator()
         generator.config.path = self.config.path
+        generator.config.replot = self.config.replot
         generator.run()
 
     # -----------------------------------------------------------------
@@ -141,6 +143,7 @@ class AllPagesGenerator(GalaxyModelingComponent):
         # Generate
         generator = PreparationPageGenerator()
         generator.config.path = self.config.path
+        generator.config.replot = self.config.replot
         generator.run()
 
     # -----------------------------------------------------------------
@@ -158,6 +161,7 @@ class AllPagesGenerator(GalaxyModelingComponent):
         # Generate
         generator = ComponentsPageGenerator()
         generator.config.path = self.config.path
+        generator.config.replot = self.config.replot
         generator.run()
 
     # -----------------------------------------------------------------
@@ -175,6 +179,7 @@ class AllPagesGenerator(GalaxyModelingComponent):
         # Generate
         generator = MapsPageGenerator()
         generator.config.path = self.config.path
+        generator.config.replot = self.config.replot
         generator.run()
 
     # -----------------------------------------------------------------
@@ -192,6 +197,7 @@ class AllPagesGenerator(GalaxyModelingComponent):
         # Generate the model page
         generator = ModelPageGenerator()
         generator.config.path = self.config.path
+        generator.config.replot = self.config.replot
         generator.run()
 
     # -----------------------------------------------------------------

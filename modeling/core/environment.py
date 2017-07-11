@@ -25,6 +25,7 @@ from ...core.basics.configuration import Configuration
 from ...core.data.sed import ObservedSED
 from ...core.filter.filter import parse_filter
 from ...magic.core.dataset import DataSet
+from ...core.basics.range import QuantityRange
 
 # -----------------------------------------------------------------
 
@@ -500,6 +501,7 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         :return:
         """
 
+        # WARNING: INITIALIZED FILES CAN BE CACHED!
         return self.initial_dataset.min_pixelscale
 
     # -----------------------------------------------------------------
@@ -512,6 +514,7 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         :return:
         """
 
+        # WARNING: INITIALIZED FILES CAN BE CACHED!
         return self.initial_dataset.max_pixelscale
 
     # -----------------------------------------------------------------
@@ -524,6 +527,7 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         :return:
         """
 
+        # WARNING: INITIALIZED FILES CAN BE CACHED!
         return self.initial_dataset.pixelscale_range
 
     # -----------------------------------------------------------------
@@ -536,7 +540,10 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         :return:
         """
 
-        return self.initial_dataset.min_wavelength
+        # WARNING: INITIALIZED FILES CAN BE CACHED!
+        #return self.initial_dataset.min_wavelength
+
+        return min(fltr.wavelength for fltr in self.filters)
 
     # -----------------------------------------------------------------
 
@@ -548,7 +555,10 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         :return:
         """
 
-        return self.initial_dataset.max_wavelength
+        # WARNING: INITIALIZED FILES CAN BE CACHED!
+        #return self.initial_dataset.max_wavelength
+
+        return max(fltr.wavelength for fltr in self.filters)
 
     # -----------------------------------------------------------------
 
@@ -560,7 +570,10 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         :return:
         """
 
-        return self.initial_dataset.wavelength_range
+        # WARNING: INITIALIZED FILES CAN BE CACHED!
+        #return self.initial_dataset.wavelength_range
+
+        return QuantityRange(self.min_wavelength, self.max_wavelength)
 
     # -----------------------------------------------------------------
 
@@ -587,7 +600,7 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
         # Convert to HEX
         from ...magic.tools.plotting import RGB_to_hex
-        colours = [RGB_to_hex(colour[0:3]) for colour in colours]
+        colours = [RGB_to_hex(np.array(colour[0:3])*255) for colour in colours]
 
         # Return the colours
         return colours
