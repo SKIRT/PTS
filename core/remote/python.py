@@ -91,19 +91,19 @@ class RemotePythonSession(object):
 
         # Execute the import command
         #output = self.send_line(command, output=True, show_output=log.is_debug())
-        self.send_line(command, show_output=show_output)
+        output = self.send_line(command, show_output=show_output)
 
         # If output is given, this is normally not so good
-        #if len(output) > 0:
+        if len(output) > 0:
 
             # Check output
-            #last_line = output[-1]
-            #if "cannot import" in last_line: log.warning(last_line)
-            #if "ImportError" in last_line: log.warning(last_line)
+            last_line = output[-1]
+            if "cannot import" in last_line: log.warning(last_line)
+            if "ImportError" in last_line: log.warning(last_line)
 
-            #return False
+            return False
 
-        #return True
+        return True
 
     # -----------------------------------------------------------------
 
