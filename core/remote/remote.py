@@ -2554,10 +2554,26 @@ class Remote(object):
         positional_string = " ".join([strings.add_quotes_if_spaces(item) for item in positional])
         optional_parts = []
         for name in kwargs:
+
+            # TODO: implement this, based on the defaults for the PTS command
+            if types.is_boolean_type(kwargs[name]):
+                continue
+                if kwargs[name]: # value of True
+                    #option_name = name
+                    pass
+                else:  # value of False
+                    #option_name = "not_" + name
+                    name = "not_" + name
+
+            # Set command-line name
             if strings.is_character(name): option_name = "-" + name
             else: option_name = "--" + name
-            value = strings.add_quotes_if_spaces(kwargs[name])
-            optional_parts.append(option_name + " " + value)
+
+            if types.is_boolean_type(kwargs[name]): optional_parts.append(option_name)
+            else:
+                value = strings.add_quotes_if_spaces(str(kwargs[name]))
+                optional_parts.append(option_name + " " + value)
+
         optional_string = " ".join(optional_parts)
 
         # Create command string
@@ -5547,7 +5563,7 @@ class Remote(object):
         output = self.ssh.before.replace(" \r", "").replace("\x1b[K", "").split("\r\n")
         output = output[1:-1]
 
-        print("OUTPUT:", output)
+        #print("OUTPUT:", output)
 
         return output[0] == "True"
 
