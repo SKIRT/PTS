@@ -127,10 +127,10 @@ class SourcesTest(SourcesTestBase):
         # 12. Create the directories
         self.create_directories()
 
-        # 13. FInd
+        # 13. Find sources
         self.find()
 
-        # 14. Extract
+        # 14. Extract sources
         self.extract()
 
         # 15. Write

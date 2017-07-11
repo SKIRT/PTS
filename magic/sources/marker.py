@@ -52,6 +52,7 @@ class SourceMarker(Configurable):
         # The frames
         self.frames = dict()
 
+        # FWHMs
         self.fwhms = dict()
 
         # Ignore images
@@ -114,16 +115,16 @@ class SourceMarker(Configurable):
         :return: 
         """
 
-        # Setup
+        # 1. Setup
         self.setup(**kwargs)
 
-        # Extended regions
+        # 2. Mark extended regions
         self.create_extended_regions()
 
-        # Point sources
+        # 3. Mark point sources
         self.create_point_regions()
 
-        # Write
+        # 4. Write
         self.write()
 
     # -----------------------------------------------------------------
@@ -138,8 +139,6 @@ class SourceMarker(Configurable):
 
         # Call the setup function of the base class
         super(SourceMarker, self).setup(**kwargs)
-
-        # Get input
 
         # Get FWHMS
         self.fwhms = kwargs.pop("fwhms")
@@ -454,6 +453,9 @@ class SourceMarker(Configurable):
         This function ...
         :return: 
         """
+
+        # Inform the user
+        log.info("Writing the regions ...")
 
         # Write galaxy regions
         self.write_galaxy_regions()

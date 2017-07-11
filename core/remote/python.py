@@ -20,6 +20,7 @@ import pexpect
 from pts.core.tools import time
 from pts.core.tools import filesystem as fs
 from pts.core.tools.logging import log
+from pts.core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -145,7 +146,6 @@ class RemotePythonSession(object):
         :param with_statement:
         :param for_statement:
         :param in_loop_lines:
-        :param show_output:
         :return:
         """
 
@@ -556,7 +556,7 @@ class AttachedPythonSession(RemotePythonSession):
         from .remote import Remote
 
         # The remote connection
-        if isinstance(remote, basestring):
+        if types.is_string_type(remote):
 
             # Set the original remote
             self.remote = Remote()
@@ -678,6 +678,7 @@ class DetachedPythonSession(RemotePythonSession):
         """
         This function ...
         :param remote:
+        :param python_command:
         :param assume_pts:
         :param tmux: use tmux instead of screen
         :return:
@@ -690,7 +691,7 @@ class DetachedPythonSession(RemotePythonSession):
         super(DetachedPythonSession, self).__init__(output_path)
 
         # The remote connection
-        if isinstance(remote, basestring):
+        if types.is_string_type(remote):
             from .remote import Remote
             self.remote = Remote()
             self.remote.setup(remote)
@@ -713,7 +714,7 @@ class DetachedPythonSession(RemotePythonSession):
         self.create_pipe()
 
         # Start the session
-        self.start_session()
+        self.start_session(python_command=python_command)
 
         # Set the output pipe
         self.set_out_pipe()
@@ -1110,6 +1111,7 @@ class DetachedPythonSession(RemotePythonSession):
         :return:
         """
 
+        # Construct the command
         if self.tmux: send_command = 'tmux send-keys -t ' + self.screen_name + ' "' + line + '" Enter'
         else:
 
@@ -1122,10 +1124,13 @@ class DetachedPythonSession(RemotePythonSession):
         log.debug(send_command)
 
         # Send the line
-        self.remote.execute(send_command, show_output=log.is_debug(), timeout=timeout)
+        output = self.remote.execute(send_command, show_output=log.is_debug(), timeout=timeout)
 
         # Sleep for a while so that we are sure that the actual python stuff has reached the interactive python session within the screen
         time.wait(5) # in seconds
+
+        # Return the output
+        return output
 
     # -----------------------------------------------------------------
 
