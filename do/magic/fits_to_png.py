@@ -31,6 +31,7 @@ definition.add_optional("colours", "string", "colour or colour scale", "red")
 definition.add_flag("alpha", "use alpha", True)
 definition.add_optional("output", "string", "output filepath", letter="o")
 definition.add_optional("peak_alpha", "real", "alpha of peak value", 1.)
+definition.add_flag("show", "show after creating", False)
 config = parse_arguments("fits_to_png", definition)
 
 # -----------------------------------------------------------------
@@ -55,6 +56,6 @@ frame.saveto_png(filepath, interval=config.interval, scale=config.scale, alpha=c
 # -----------------------------------------------------------------
 
 # Open the file
-fs.open_file(filepath)
+if config.show: fs.open_file(filepath)
 
 # -----------------------------------------------------------------

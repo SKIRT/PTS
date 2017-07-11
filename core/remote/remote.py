@@ -2564,7 +2564,10 @@ class Remote(object):
         command = self.pts_main_path + " " + command + " " + positional_string + " " + optional_string
 
         # Execute
-        self.execute(command, show_output=show_output, cwd=cwd)
+        output = self.execute(command, show_output=show_output, cwd=cwd)
+
+        # If error popped up
+        if "Error:" in output[-1]: raise RuntimeError(output[-1])
 
     # -----------------------------------------------------------------
 
@@ -5542,10 +5545,9 @@ class Remote(object):
         #print("AFTER:", list(self.ssh.after))
 
         output = self.ssh.before.replace(" \r", "").replace("\x1b[K", "").split("\r\n")
-
-        #print("OUTPUT:", output)
-
         output = output[1:-1]
+
+        print("OUTPUT:", output)
 
         return output[0] == "True"
 

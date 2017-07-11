@@ -1946,7 +1946,8 @@ class PTSInstaller(Installer):
         assert self.remote.is_file(self.conda_pip_path)
         assert self.remote.is_file(self.conda_activate_path)
         assert self.remote.is_file(self.conda_python_path)
-        assert self.remote.is_file(self.conda_easy_install_path)
+        #assert self.remote.is_file(self.conda_easy_install_path)
+        if not self.remote.is_file(self.conda_easy_install_path): log.warning("easy_install executable is not present")
 
         # Jupyter is not required
         if not self.remote.is_file(self.conda_jupyter_path): self.conda_jupyter_path = None

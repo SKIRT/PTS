@@ -149,7 +149,7 @@ class DataPageGenerator(HTMLPageComponent):
                 temp_output_path = fs.join(remote.pts_temp_path, name + ".png")
 
                 # Run the PTS command to create the PNG
-                remote.execute_pts("fits_to_png", path, output=temp_output_path, show_output=True)
+                remote.execute_pts("fits_to_png", path, output=temp_output_path, show=False, show_output=True)
 
                 # Check whether the remote file exists
                 if not remote.is_file(temp_output_path): raise RuntimeError("Remote file does not exist")
