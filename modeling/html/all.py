@@ -19,6 +19,7 @@ import webbrowser
 from pts.modeling.html.status import StatusPageGenerator
 from pts.modeling.html.data import DataPageGenerator
 from pts.modeling.html.preparation import PreparationPageGenerator
+from pts.modeling.html.components import ComponentsPageGenerator
 from pts.modeling.html.maps import MapsPageGenerator
 from pts.modeling.html.model import ModelPageGenerator
 from pts.core.tools.logging import log
@@ -63,8 +64,11 @@ class AllPagesGenerator(GalaxyModelingComponent):
         # Generate the preparation page
         if self.history.finished("prepare_data"): self.generate_preparation()
 
+        # Generate the components page
+        if self.history.finished("decompose"): self.generate_components()
+
         # Generate the maps page
-        if self.history.finished_maps: self.generate_maps()
+        if self.history.finished("build_model"): self.generate_maps()
 
         # GEnerate the model page
         if self.history.finished("configure_fit"): self.generate_model()
@@ -136,6 +140,23 @@ class AllPagesGenerator(GalaxyModelingComponent):
 
         # Generate
         generator = PreparationPageGenerator()
+        generator.config.path = self.config.path
+        generator.run()
+
+    # -----------------------------------------------------------------
+
+    def generate_components(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Generating the components page ...")
+
+        # Generate
+        generator = ComponentsPageGenerator()
         generator.config.path = self.config.path
         generator.run()
 

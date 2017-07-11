@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.tools import filesystem as fs
 from pts.magic.core.frame import Frame
+from pts.core.tools.logging import log
 
 # -----------------------------------------------------------------
 
@@ -36,6 +37,9 @@ config = parse_arguments("fits_to_png", definition)
 
 # -----------------------------------------------------------------
 
+# Inform the user
+log.info("Loading the FITS file ...")
+
 # Load the FITS file
 frame = Frame.from_file(config.filename)
 
@@ -49,6 +53,9 @@ else:
     filepath = fs.absolute_path(name + ".png")
 
 # -----------------------------------------------------------------
+
+# Inform the user
+log.info("Converting the image to a png file ...")
 
 # Save as PNG image
 frame.saveto_png(filepath, interval=config.interval, scale=config.scale, alpha=config.alpha, peak_alpha=config.peak_alpha, colours=config.colours)

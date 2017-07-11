@@ -19,6 +19,7 @@ import shutil
 import platform
 import subprocess
 import datetime
+from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from . import time
@@ -993,7 +994,9 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
         file_paths.append(thing)
 
     # Return the list of file paths
-    if return_dict: return dict(file_paths) # file_paths is list of tuples
+    if return_dict:
+        if sort is not None: return OrderedDict(file_paths)
+        else: return dict(file_paths) # file_paths is list of tuples
     elif unpack: return sequences.unpack(file_paths, default_size=len(returns))
     else: return file_paths
 
@@ -1149,7 +1152,9 @@ def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains
         directory_paths.append(thing)
 
     # Return the list of directory paths
-    if return_dict: return dict(directory_paths)
+    if return_dict:
+        if sort is not None: return OrderedDict(directory_paths)
+        else: return dict(directory_paths)
     elif unpack: return sequences.unpack(directory_paths, default_size=len(returns))
     else: return directory_paths
 

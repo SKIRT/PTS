@@ -499,10 +499,7 @@ class ImageFetcher(DataComponent):
         # Inform the user
         log.info("Writing the image URLs ...")
 
-        # Determine the path
-        path = fs.join(self.data_images_path, "urls.dat")
-
         # Write
-        write_dict(self.dustpedia_image_urls, path)
+        write_dict(self.dustpedia_image_urls, self.urls_path)
 
 # -----------------------------------------------------------------

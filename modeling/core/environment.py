@@ -23,6 +23,7 @@ from ...core.tools import filesystem as fs
 from ...core.basics.configuration import Configuration
 from ...core.data.sed import ObservedSED
 from ...core.filter.filter import parse_filter
+from ...magic.core.dataset import DataSet
 
 # -----------------------------------------------------------------
 
@@ -188,6 +189,12 @@ status_name = "status.html"
 
 # -----------------------------------------------------------------
 
+initial_dataset_name = "initial_dataset.dat"
+dataset_name = "dataset.dat"
+statistics_name = "statistics.dat"
+
+# -----------------------------------------------------------------
+
 class GalaxyModelingEnvironment(ModelingEnvironment):
 
     """
@@ -266,6 +273,17 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
         self.html_status_path = fs.join(self.html_path, status_name)
         self.html_images_path = fs.create_directory_in(self.html_path, "images")
+
+        # NEW
+
+        # Set the path to the initial dataset file
+        self.initial_dataset_path = fs.join(self.prep_path, initial_dataset_name)
+
+        # Set the path to the prepared dataset file
+        self.prepared_dataset_path = fs.join(self.prep_path, dataset_name)
+
+        # Set the path to the preparation statistics file
+        self.preparation_statistics_path = fs.join(self.prep_path, statistics_name)
 
     # -----------------------------------------------------------------
 
@@ -377,6 +395,42 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def initial_dataset(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return DataSet.from_file(self.initial_dataset_path, check=False)  # don't check whether the file are actually present (caching on remote)
+
+    # -----------------------------------------------------------------
+
+    #@property
+    #def preparation_names(self):
+
+    #    """
+    #    This function ...
+    #    :return:
+    #    """
+
+    #    return fs.directories_in_path(self.prep_path, returns="name")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def prep_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sorted(self.initial_dataset.names, key=lambda filter_name: parse_filter(filter_name).wavelength.to("micron").value)
+
+    # -----------------------------------------------------------------
+
     @property
     def preparation_names(self):
 
@@ -385,7 +439,7 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         :return:
         """
 
-        return fs.directories_in_path(self.prep_path, returns="name")
+        return self.prep_names
 
     # -----------------------------------------------------------------
 
@@ -397,7 +451,91 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         :return:
         """
 
-        return fs.directories_in_path(self.prep_path, returns="dict")
+        return fs.directories_in_path(self.prep_path, returns="dict", sort=lambda filter_name: parse_filter(filter_name).wavelength.to("micron").value)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dataset(self):
+
+        """
+        This funtion ...
+        :return:
+        """
+
+        return DataSet.from_file(self.prepared_dataset_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def frame_list(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dataset.get_framelist(named=False)  # on filter
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def named_frame_list(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dataset.get_framelist(named=True)  # on name
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def errormap_list(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dataset.get_errormap_list(named=False)  # on filter
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def named_errormap_list(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dataset.get_errormap_list(named=True)  # on name
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def frame_path_list(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dataset.get_frame_path_list(named=False)  # on filter
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def named_frame_path_list(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dataset.get_frame_path_list(named=True)  # on name
 
 # -----------------------------------------------------------------
 

@@ -29,6 +29,8 @@ else: definition.add_required("fitting_run", "string", "name of the fitting run 
 
 # -----------------------------------------------------------------
 
+# Add flags
 definition.add_flag("show", "show", False)
+definition.add_flag("replot", "make plots again", True)
 
 # -----------------------------------------------------------------

@@ -105,3 +105,5 @@ generate_status_page | -- | html.status.StatusPageGenerator | arguments | Genera
 generate_model_page | -- | html.model.ModelPageGenerator | arguments | Generate the model page
 generate_data_page | -- | html.data.DataPageGenerator | arguments | Generate the data page
 generate_maps_page | -- | html.maps.MapsPageGenerator | arguments | Generate the maps page
+generate_preparation_page | -- | html.preparation.PreparationPageGenerator | arguments | Generate the preparation page
+generate_components_page | -- | html.components.ComponentsPageGenerator | arguments | Generate the components page

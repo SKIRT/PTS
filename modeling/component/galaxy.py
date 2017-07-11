@@ -107,15 +107,6 @@ class GalaxyModelingComponent(ModelingComponent):
         # The path to the disk region file
         self.disk_region_path = None
 
-        # The path to the initial data set file
-        self.initial_dataset_path = None
-
-        # The path to the prepared data set file
-        self.prepared_dataset_path = None
-
-        # The path to the preparation statistics file
-        self.preparation_statistics_path = None
-
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -154,15 +145,6 @@ class GalaxyModelingComponent(ModelingComponent):
 
         # Set the path to the disk region file
         self.disk_region_path = fs.join(self.components_path, "disk.reg")
-
-        # Set the path to the initial dataset file
-        self.initial_dataset_path = fs.join(self.prep_path, "initial_dataset.dat")
-
-        # Set the path to the prepared dataset file
-        self.prepared_dataset_path = fs.join(self.prep_path, "dataset.dat")
-
-        # Set the path to the preparation statistics file
-        self.preparation_statistics_path = fs.join(self.prep_path, "statistics.dat")
 
     # -----------------------------------------------------------------
 
@@ -372,7 +354,7 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def initial_dataset(self):
 
         """
@@ -380,23 +362,11 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        return DataSet.from_file(self.initial_dataset_path, check=False) # don't check whether the file are actually present (caching on remote)
+        return self.environment.initial_dataset
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def preparation_statistics(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return PreparationStatistics.from_file(self.preparation_statistics_path)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
+    @property
     def preparation_names(self):
 
         """
@@ -408,7 +378,7 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def preparation_paths(self):
 
         """
@@ -420,19 +390,19 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def dataset(self):
 
         """
-        This funtion ...
-        :return: 
+        This function ...
+        :return:
         """
 
-        return DataSet.from_file(self.prepared_dataset_path)
+        return self.environment.dataset
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def frame_list(self):
 
         """
@@ -440,11 +410,11 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        return self.dataset.get_framelist(named=False) # on filter
+        return self.environment.frame_list
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def named_frame_list(self):
 
         """
@@ -452,11 +422,11 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        return self.dataset.get_framelist(named=True) # on name
+        return self.environment.named_frame_list
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def errormap_list(self):
 
         """
@@ -464,11 +434,11 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        return self.dataset.get_errormap_list(named=False)  # on filter
+        return self.environment.errormap_list
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def named_errormap_list(self):
 
         """
@@ -476,11 +446,11 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        return self.dataset.get_errormap_list(named=True) # on name
+        return self.environment.named_errormap_list
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def frame_path_list(self):
 
         """
@@ -488,11 +458,11 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        return self.dataset.get_frame_path_list(named=False) # on filter
+        return self.environment.frame_path_list
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def named_frame_path_list(self):
 
         """
@@ -500,196 +470,7 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        return self.dataset.get_frame_path_list(named=True) # on name
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    #def dataset(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        # Initialize the dataset
-        #dataset = DataSet()
-
-        # Loop over all directories in the preparation directory
-        #for path, name in fs.directories_in_path(self.prep_path, not_contains="Halpha", returns=["path", "name"]):
-
-            # Check whether the 'result' file exists
-            #result_path = fs.join(path, "result.fits")
-            #if not fs.is_file(result_path): raise RuntimeError("The " + name + " result image does not exist")
-
-            # Add the image path to the dataset
-            #dataset.add_path(name, result_path)
-
-            # Check whether a truncation mask is available
-            ##mask_path = self.truncation_mask_path(name)
-
-            # Add the mask path
-            ##if mask_path is not None: dataset.add_mask_path(name, mask_path)
-
-        # Return the dataset
-        #return dataset
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    #def masked_halpha_frame(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        # Get the frame
-        #frame = self.halpha_frame.copy()
-
-        # Check whether the reference truncation mask is present
-        #if not fs.is_file(self.reference_mask_path): raise IOError("The truncation mask has not been created")
-
-        # Mask the image
-        #mask = Mask.from_file(self.reference_mask_path)
-        #frame[mask] = 0.0
-
-        # Return the frame
-        #return frame
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    #def halpha_frame(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        # Determine the path to the image
-        #path = fs.join(self.prep_path, "Mosaic Halpha", "result.fits")
-
-        # Check whether the Halpha image is present
-        #if not fs.is_file(path): raise IOError("The prepared H-alpha image is missing")
-
-        # Load and return the frame
-        #frame = Frame.from_file(path)
-
-        # Return the frame
-        #return frame
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    #def halpha_errors(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        # Determine the path to the image
-        #path = fs.join(self.prep_path, "Mosaic Halpha", "result.fits")
-
-        # Check whether the Halpha image is present
-        #if not fs.is_file(path): raise IOError("The prepared H-alpha image is missing")
-
-        # Load the errors frame
-        #errors = Frame.from_file(path, plane="errors")
-
-        # Return the errors frame
-        #return errors
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    #def halpha_relative_errors(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        #frame = self.halpha_frame
-        #errors = self.halpha_errors
-
-        # Calculate the relative errors frame and return it
-        #return errors / frame
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    #def halpha_significance(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        #frame = self.halpha_frame
-        #errors = self.halpha_errors
-
-        # Calculate the significance map and return it
-        #return frame / errors
-
-    # -----------------------------------------------------------------
-
-    #def get_halpha_significance_levels(self, levels, below_levels_value=float("nan")):
-
-        #"""
-        #This function ...
-        #:param levels:
-        #:param below_levels_value:
-        #:return:
-        #"""
-
-        # Get the significance map
-        #significance = self.halpha_significance
-
-        # Create a frame full of nans
-        #significance_levels = Frame.filled_like(significance, below_levels_value)
-
-        # Loop over the levels
-        #for level in levels: significance_levels[significance > level] = level
-
-        # Return the significance levels map
-        #return significance_levels
-
-    # -----------------------------------------------------------------
-
-    #def get_halpha_significance_mask(self, level):
-
-        #"""
-        #This function ...
-        #:param level:
-        #:return:
-        #"""
-
-        #return self.halpha_significance > level
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    #def masked_disk_frame(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        # Get the disk frame
-        #frame = self.disk_frame.copy()
-
-        # Check whether the reference truncation mask is present
-        #if not fs.is_file(self.reference_mask_path): raise IOError("The truncation mask has not been created")
-
-        # Mask the disk frame
-        #mask = Mask.from_file(self.reference_mask_path)
-        #frame[mask] = 0.0
-
-        # Return the frame
-        #return frame
+        return self.environment.named_frame_path_list
 
     # -----------------------------------------------------------------
 
@@ -709,29 +490,6 @@ class GalaxyModelingComponent(ModelingComponent):
 
         # Return the frame
         return frame
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    #def masked_bulge_frame(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        # Get the bulge frame
-        #frame = self.bulge_frame.copy()
-
-        # Check whether the reference truncation mask is present
-        #if not fs.is_file(self.reference_mask_path): raise IOError("The truncation mask has not been created")
-
-        # Mask the bulge frame
-        #mask = Mask.from_file(self.reference_mask_path)
-        #frame[mask] = 0.0
-
-        # Return the frame
-        #return frame
 
     # -----------------------------------------------------------------
 

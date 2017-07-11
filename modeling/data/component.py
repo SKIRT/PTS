@@ -64,6 +64,9 @@ class DataComponent(GalaxyModelingComponent):
         # The paths to the data/images/ directories for the different origins
         self.data_images_paths = dict()
 
+        # Determine the path
+        self.urls_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -78,5 +81,8 @@ class DataComponent(GalaxyModelingComponent):
 
         # Set ...
         for origin in self.data_origins: self.data_images_paths[origin] = fs.create_directory_in(self.data_images_path, origin)
+
+        # Set the urls path
+        self.urls_path = fs.join(self.data_images_path, "urls.dat")
 
 # -----------------------------------------------------------------

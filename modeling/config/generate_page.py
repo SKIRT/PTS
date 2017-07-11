@@ -6,11 +6,15 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.modeling.config.generate_page import definition
+from pts.core.basics.configuration import ConfigurationDefinition
 
 # -----------------------------------------------------------------
 
-# Flags
-definition.add_flag("show", "show the page", False)
+# Create the configuration
+definition = ConfigurationDefinition(log_path="log", config_path="config")
+
+# -----------------------------------------------------------------
+
+definition.add_flag("replot", "replot", True)
 
 # -----------------------------------------------------------------

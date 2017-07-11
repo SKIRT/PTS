@@ -128,7 +128,6 @@ class DataPageGenerator(HTMLPageComponent):
 
         # Loop over the images
         paths = self.get_data_image_paths_with_cached(lazy=True)
-        #print("paths", paths)
         for name in paths:
 
             path = paths[name]
