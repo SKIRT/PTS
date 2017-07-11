@@ -130,34 +130,51 @@ class DataPageGenerator(HTMLPageComponent):
         paths = self.get_data_image_paths_with_cached(lazy=True)
         for name in paths:
 
+            # Debugging
+            log.debug("Making a plot for the '" + name + "' image ...")
+
             path = paths[name]
+
+            # Determine the colour
+            colour = self.environment.plotting_colours_dict[name]
+
+            # Debugging
+            log.debug("Colour for the '" + name + "' image: " + colour)
 
             # Determine the path
             output_path = fs.join(self.images_path, name + ".png")
 
-            # Local
-            if fs.is_file(path): Frame.from_file(paths[name]).saveto_png(output_path)
+            #print(output_path, fs.is_file(output_path))
 
-            # Remote session
-            elif session is not None: RemoteFrame.from_remote_file(path, session).saveto_png(output_path)
+            # CHECK WHETHER THE FILE ALREADY EXISTS
+            if fs.is_file(output_path) and not self.config.replot:
+                log.success("Plot of the '" + name + "' image is already present: not replotting")
 
-            # Remote
-            elif remote is not None:
+            else:
 
-                # Temporary remote path
-                temp_output_path = fs.join(remote.pts_temp_path, name + ".png")
+                # Local
+                if fs.is_file(path): Frame.from_file(paths[name]).saveto_png(output_path)
 
-                # Run the PTS command to create the PNG
-                remote.execute_pts("fits_to_png", path, output=temp_output_path, show=False, show_output=True)
+                # Remote session
+                elif session is not None: RemoteFrame.from_remote_file(path, session).saveto_png(output_path)
 
-                # Check whether the remote file exists
-                if not remote.is_file(temp_output_path): raise RuntimeError("Remote file does not exist")
+                # Remote
+                elif remote is not None:
 
-                # Retrieve the file
-                output_path = remote.download_file_to(temp_output_path, self.images_path, remove=True)
+                    # Temporary remote path
+                    temp_output_path = fs.join(remote.pts_temp_path, name + ".png")
 
-            # Not found!
-            else: raise ValueError("File '" + path + "' not found")
+                    # Run the PTS command to create the PNG
+                    remote.execute_pts("fits_to_png", path, output=temp_output_path, show=False, show_output=True)
+
+                    # Check whether the remote file exists
+                    if not remote.is_file(temp_output_path): raise RuntimeError("Remote file does not exist")
+
+                    # Retrieve the file
+                    output_path = remote.download_file_to(temp_output_path, self.images_path, remove=True)
+
+                # Not found!
+                else: raise ValueError("File '" + path + "' not found")
 
             # Add the path
             self.image_paths[name] = output_path
@@ -204,18 +221,6 @@ class DataPageGenerator(HTMLPageComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def image_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return sorted(self.image_paths.keys(), key=lambda filter_name: parse_filter(filter_name).wavelength)
-
-    # -----------------------------------------------------------------
-
     def make_images_table(self):
 
         """
@@ -229,19 +234,29 @@ class DataPageGenerator(HTMLPageComponent):
         # Create the code for each image
         cells = []
 
-        for name in self.image_names:
+        # Loop over the images
+        for name in self.preparation_names:
 
-            # Get the relative image path
-            image_path = self.image_paths[name]
-            relative_path = fs.relative_to(image_path, self.environment.html_path)
+            # Image not found
+            if name not in self.image_paths:
 
-            # Set title
-            text = ""
-            text += html.center_template.format(text=html.bold_template.format(text=name))
-            text += html.newline + html.newline
-            text += html.image(relative_path, width=400, height=400)
+                log.warning("'" + name + "' image was not found")
+                cells.append("")
 
-            cells.append(text)
+            # Image found
+            else:
+
+                # Get the relative image path
+                image_path = self.image_paths[name]
+                relative_path = fs.relative_to(image_path, self.environment.html_path)
+
+                # Set title
+                text = ""
+                text += html.center_template.format(text=html.bold_template.format(text=name))
+                text += html.newline + html.newline
+                text += html.image(relative_path, width=400, height=400)
+
+                cells.append(text)
 
         # Create table from cells
         self.images_table = html.SimpleTable.rasterize(cells, 4, tostr_kwargs=self.tostr_kwargs)

@@ -151,7 +151,10 @@ class PreparationPageGenerator(HTMLPageComponent):
 
         # Fill cells
         cells = []
-        for name in self.prep_names:
+        for name in self.preparation_names:
+
+            # Check whether statistics are found
+
 
             # Set title
             text = ""

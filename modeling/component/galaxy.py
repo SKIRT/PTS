@@ -379,6 +379,18 @@ class GalaxyModelingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def prep_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.preparation_names
+
+    # -----------------------------------------------------------------
+
+    @property
     def preparation_paths(self):
 
         """

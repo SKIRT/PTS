@@ -44,6 +44,7 @@ from ..tools import coordinates
 from ...core.units.parsing import parse_unit as u
 from ...core.basics.table import SmartTable
 from ...core.basics.containers import FileList, NamedFileList
+from ...core.basics.range import QuantityRange
 
 # -----------------------------------------------------------------
 
@@ -225,6 +226,18 @@ class DataSet(object):
         """
 
         return self.paths.keys()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def path_list(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.paths.values()
 
     # -----------------------------------------------------------------
 
@@ -1203,6 +1216,18 @@ class DataSet(object):
     # -----------------------------------------------------------------
 
     @property
+    def pixelscale_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return QuantityRange(self.min_pixelscale, self.max_pixelscale)
+
+    # -----------------------------------------------------------------
+
+    @property
     def min_pixelscale_wcs(self):
 
         """
@@ -1321,6 +1346,18 @@ class DataSet(object):
     # -----------------------------------------------------------------
 
     @property
+    def fwhm_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return QuantityRange(self.min_fwhm, self.max_fwhm)
+
+    # -----------------------------------------------------------------
+
+    @property
     def min_wavelength(self):
 
         """
@@ -1363,6 +1400,17 @@ class DataSet(object):
 
         # Return the maximum wavelength
         return wavelength
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelength_range(self):
+
+        """"
+        This function ...
+        """
+
+        return QuantityRange(self.min_wavelength, self.max_wavelength)
 
     # -----------------------------------------------------------------
 

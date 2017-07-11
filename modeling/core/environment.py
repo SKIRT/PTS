@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import numpy as np
 from abc import ABCMeta
 
 # Import astronomical modules
@@ -395,6 +396,18 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_initial_dataset(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.initial_dataset_path)
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def initial_dataset(self):
 
@@ -407,20 +420,8 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     # -----------------------------------------------------------------
 
-    #@property
-    #def preparation_names(self):
-
-    #    """
-    #    This function ...
-    #    :return:
-    #    """
-
-    #    return fs.directories_in_path(self.prep_path, returns="name")
-
-    # -----------------------------------------------------------------
-
-    @property
-    def prep_names(self):
+    @lazyproperty
+    def preparation_names(self):
 
         """
         This function ...
@@ -431,19 +432,7 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     # -----------------------------------------------------------------
 
-    @property
-    def preparation_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.prep_names
-
-    # -----------------------------------------------------------------
-
-    @property
+    @lazyproperty
     def preparation_paths(self):
 
         """
@@ -451,7 +440,196 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         :return:
         """
 
-        return fs.directories_in_path(self.prep_path, returns="dict", sort=lambda filter_name: parse_filter(filter_name).wavelength.to("micron").value)
+        return sorted(self.initial_dataset.path_list, key=lambda path: parse_filter(fs.name(fs.directory_of(path))).wavelength.to("micron").value)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nimages(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.preparation_names)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [parse_filter(name) for name in self.preparation_names]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def filter_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [str(fltr) for fltr in self.filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return [fltr.wavelength for fltr in self.filters]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def min_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.initial_dataset.min_pixelscale
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def max_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.initial_dataset.max_pixelscale
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def pixelscale_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.initial_dataset.pixelscale_range
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def min_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.initial_dataset.min_wavelength
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def max_wavelength(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.initial_dataset.max_wavelength
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelength_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.initial_dataset.wavelength_range
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plotting_colours(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the colour map
+        import matplotlib.pyplot as plt
+        cmap = plt.get_cmap("jet")
+
+        min_log_wavelength = np.log10(self.min_wavelength.to("micron").value)
+        max_log_wavelength = np.log10(self.max_wavelength.to("micron").value)
+        log_wavelength_range = max_log_wavelength - min_log_wavelength
+
+        normalized_wavelengths = [(np.log10(wavelength.to("micron").value) - min_log_wavelength)/log_wavelength_range for wavelength in self.wavelengths]
+
+        # Get colours in RGBA
+        colours = cmap(normalized_wavelengths)
+
+        # Convert to HEX
+        from ...magic.tools.plotting import RGB_to_hex
+        colours = [RGB_to_hex(colour[0:3]) for colour in colours]
+
+        # Return the colours
+        return colours
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plotting_colours_dict(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        colours = dict()
+        for name, colour in zip(self.preparation_names, self.plotting_colours):
+            colours[name] = colour
+        return colours
+
+    # -----------------------------------------------------------------
+
+    #@property
+    #def preparation_paths_dict(self):
+
+        #"""
+        #This function ...
+        #:return:
+        #"""
+
+        #return fs.directories_in_path(self.prep_path, returns="dict", sort=lambda filter_name: parse_filter(filter_name).wavelength.to("micron").value)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dataset(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.prepared_dataset_path)
 
     # -----------------------------------------------------------------
 

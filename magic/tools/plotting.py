@@ -50,6 +50,149 @@ line_styles = ['-', '--', '-.', ':']
 
 # -----------------------------------------------------------------
 
+def hex_to_RGB(hex):
+
+    """
+    This function ...
+    #FFFFFF" -> [255,255,255]
+    """
+
+    # Pass 16 to the integer function for change of base
+
+    return [int(hex[i:i+2], 16) for i in range(1,6,2)]
+
+# -----------------------------------------------------------------
+
+def RGB_to_hex(RGB):
+
+  """
+  [255,255,255] -> "#FFFFFF"
+  """
+
+  # Components need to be integers for hex to make sense
+  RGB = [int(x) for x in RGB]
+
+  return "#"+"".join(["0{0:x}".format(v) if v < 16 else
+            "{0:x}".format(v) for v in RGB])
+
+# -----------------------------------------------------------------
+
+def color_dict(gradient):
+
+  """
+  Takes in a list of RGB sub-lists and returns dictionary of
+    colors in RGB and hex form for use in a graphing function
+    defined later on
+    """
+
+  return {"hex":[RGB_to_hex(RGB) for RGB in gradient],
+      "r":[RGB[0] for RGB in gradient],
+      "g":[RGB[1] for RGB in gradient],
+      "b":[RGB[2] for RGB in gradient]}
+
+# -----------------------------------------------------------------
+
+def linear_gradient(start_hex, finish_hex="#FFFFFF", n=307):
+
+    """
+    Returns a gradient list of (n) colors between
+        two hex colors. start_hex and finish_hex
+        should be the full six-digit color string,
+        inlcuding the number sign ("#FFFFFF")
+    """
+    
+    # Starting and ending colors in RGB form
+    s = hex_to_RGB(start_hex)
+    f = hex_to_RGB(finish_hex)
+
+    # Initilize a list of the output colors with the starting color
+    RGB_list = [s]
+
+    # Calculate a color at each evenly spaced value of t from 1 to n
+    for t in range(1, n):
+
+        # Interpolate RGB vector for color at the current value of t
+        curr_vector = [int(s[j] + (float(t)/(n-1))*(f[j]-s[j])) for j in range(3)]
+
+        # Add it to our list of output colors
+        RGB_list.append(curr_vector)
+
+    # Return
+    return RGB_list
+
+# -----------------------------------------------------------------
+
+# Have colormaps separated into categories:
+# http://matplotlib.org/examples/color/colormaps_reference.html
+cmaps = [('Perceptually Uniform Sequential', [
+            'viridis', 'plasma', 'inferno', 'magma']),
+         ('Sequential', [
+            'Greys', 'Purples', 'Blues', 'Greens', 'Oranges', 'Reds',
+            'YlOrBr', 'YlOrRd', 'OrRd', 'PuRd', 'RdPu', 'BuPu',
+            'GnBu', 'PuBu', 'YlGnBu', 'PuBuGn', 'BuGn', 'YlGn']),
+         ('Sequential (2)', [
+            'binary', 'gist_yarg', 'gist_gray', 'gray', 'bone', 'pink',
+            'spring', 'summer', 'autumn', 'winter', 'cool', 'Wistia',
+            'hot', 'afmhot', 'gist_heat', 'copper']),
+         ('Diverging', [
+            'PiYG', 'PRGn', 'BrBG', 'PuOr', 'RdGy', 'RdBu',
+            'RdYlBu', 'RdYlGn', 'Spectral', 'coolwarm', 'bwr', 'seismic']),
+         ('Qualitative', [
+            'Pastel1', 'Pastel2', 'Paired', 'Accent',
+            'Dark2', 'Set1', 'Set2', 'Set3']),
+         ('Miscellaneous', [
+            'flag', 'prism', 'ocean', 'gist_earth', 'terrain', 'gist_stern',
+            'gnuplot', 'gnuplot2', 'CMRmap', 'cubehelix', 'brg', 'hsv',
+            'gist_rainbow', 'rainbow', 'jet', 'nipy_spectral', 'gist_ncar'])]
+
+# -----------------------------------------------------------------
+
+def plot_color_gradients(cmap_category, cmap_list, nrows):
+
+    """
+    This function ...
+    :param cmap_category:
+    :param cmap_list:
+    :param nrows:
+    :return:
+    """
+
+    gradient = np.linspace(0, 1, 256)
+    gradient = np.vstack((gradient, gradient))
+
+    fig, axes = plt.subplots(nrows=nrows)
+    fig.subplots_adjust(top=0.95, bottom=0.01, left=0.2, right=0.99)
+    axes[0].set_title(cmap_category + ' colormaps', fontsize=14)
+
+    # Loop over
+    for ax, name in zip(axes, cmap_list):
+
+        ax.imshow(gradient, aspect='auto', cmap=plt.get_cmap(name))
+        pos = list(ax.get_position().bounds)
+        x_text = pos[0] - 0.01
+        y_text = pos[1] + pos[3]/2.
+        fig.text(x_text, y_text, name, va='center', ha='right', fontsize=10)
+
+    # Turn off *all* ticks & spines, not just the ones with colormaps.
+    for ax in axes: ax.set_axis_off()
+
+# -----------------------------------------------------------------
+
+def show_gradients():
+
+    """
+    This function ...
+    :return
+    """
+
+    nrows = max(len(cmap_list) for cmap_category, cmap_list in cmaps)
+
+    for cmap_category, cmap_list in cmaps:
+        plot_color_gradients(cmap_category, cmap_list, nrows)
+    plt.show()
+
+# -----------------------------------------------------------------
+
 def plot_coordinates_on_image(image, x_coordinates, y_coordinates, path=None, format=None):
 
     """
