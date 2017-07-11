@@ -31,6 +31,62 @@ from ...core.filter.filter import parse_filter
 from ...core.filter.narrow import NarrowBandFilter
 from ...core.basics.configurable import Configurable
 from ...core.tools import formatting as fmt
+from ...core.tools import network
+from ...core.tools import introspection
+
+# -----------------------------------------------------------------
+
+def get_image(galaxy_name, fltr, year=None):
+
+    """
+    This function ...
+    :return:
+    """
+
+    filter_name = str(fltr)
+
+    # Configure
+    ned = NED()
+    ned.config.galaxy = galaxy_name
+    ned.config.filter = filter_name
+    ned.config.unknown = False
+    ned.config.show = False
+
+    # Run
+    ned.run()
+
+    if year is None:
+        last_year = None
+        for bibcode, image_year, image_url in ned.images[filter_name]:
+            if last_year is None or image_year > last_year: last_year = image_year
+        year = last_year
+
+    # List of possible urls
+    urls = []
+
+    # Look in the found images
+    for bibcode, image_year, image_url in ned.images[filter_name]:
+        if image_year == year: urls.append(image_url)
+
+    # Check the number of urls
+    if len(urls) == 0: raise RuntimeError("No images found")
+    if len(urls) > 1: log.warning("Multiple images found: taking the first")
+
+    url = urls[0]
+
+    # Download to temporary path
+    filepath = network.download_and_decompress_file(url, introspection.pts_temp_dir, remove=True, progress_bar=True)
+
+    from ..core.frame import Frame
+
+    # Open the image
+    frame = Frame.from_file(filepath)
+
+    # Set the filter
+    frame.filter = fltr
+
+    # Return the frame
+    return frame
 
 # -----------------------------------------------------------------
 
@@ -76,7 +132,7 @@ class NED(Configurable):
         self.find()
 
         # 3. List the images
-        self.list()
+        if self.config.show: self.show()
 
     # -----------------------------------------------------------------
 
@@ -188,17 +244,20 @@ class NED(Configurable):
 
     # -----------------------------------------------------------------
 
-    def list(self):
+    def show(self):
 
         """
         This function ...
         :return:
         """
 
+        # Inform the user
+        log.info("Showing the list of images ...")
+
+        # No filter was specified
         if self.config.filter is not None:
 
             if str(self.config.filter) not in self.images: log.error("No images for this filter are found")
-
             else:
 
                 print(fmt.green + fmt.bold + "Found images: (" + str(len(self.images[str(self.config.filter)])) + ")" + fmt.reset)

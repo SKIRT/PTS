@@ -789,26 +789,10 @@ class DetachedPythonSession(RemotePythonSession):
         # Inform the user
         log.info("Starting session for python ...")
 
-        # Start the screen
-        #start_screen_command = "screen -dmS " + self.screen_name
-
-        # Debugging
-        #log.debug("Starting screen session with command:")
-        #log.debug(start_screen_command)
-
-        # Start the screen
-        #self.remote.execute(start_screen_command, show_output=True)
-
-        # Determine command
-        #command = "tmux new-session -d -n " + self.screen_name + " python > " + self.out_pipe_filepath
-
+        # Construct the command
         if self.tmux: command = "tmux new -d -s " + self.screen_name + " " + python_command
         elif self.output_path is not None: command = "screen -dmS " + self.screen_name + " -L"
         else: command = "screen -dmS " + self.screen_name
-
-        #command = "tmux new -d -n " + self.screen_name + " python > " + self.out_pipe_filepath
-
-        #command = "tmux new -d -n " + self.screen_name + " python \; pipe-pane 'cat > " + self.out_pipe_filepath + "'"
 
         # Debugging
         log.debug("Starting session with the command:")
@@ -817,17 +801,7 @@ class DetachedPythonSession(RemotePythonSession):
         # Execute the command
         self.remote.execute(command, show_output=True, cwd=self.output_path)
 
-        # Tmux ls
-        #self.remote.execute("tmux ls", show_output=True)
-
-        #to_out_pipe_command = "tmux pipe-pane -o -t " + self.screen_name + " 'cat >> " + self.out_pipe_filepath + "'"
-
-        # Debugging
-        #log.debug("Piping output with the command:")
-        #log.debug(to_out_pipe_command)
-
-        #self.remote.execute(to_out_pipe_command, show_output=True)
-
+        # Using screen
         if not self.tmux:
 
             start_python_command = "screen -S " + self.screen_name + " -p 0 -X stuff '" + python_command + "\n'"
@@ -841,37 +815,6 @@ class DetachedPythonSession(RemotePythonSession):
         This function ...
         :return:
         """
-
-        # Start python in the screen session
-        # start_python_command = "screen -r " + self.screen_name + " -X stuff $'python > " + self.out_pipe_filepath + " < " + self.in_pipe_filepath + "\n'"
-        #start_python_command = "screen -r -S " + self.screen_name + " -X stuff $'python > " + self.out_pipe_filepath + "\n'"
-
-        #start_python_command = "screen -r -S " + self.screen_name + " -X stuff $'python\n'"
-
-        #start_python_command = "screen -r -X stuff $'python\n'"
-        #start_python_command = "screen -r -S " + self.screen_name + " -p 0 -X stuff 'python > " + self.out_pipe_filepath + "\n'"
-        #start_python_command = 'screen -r ' + self.screen_name + ' -X stuff "python > ' + self.out_pipe_filepath + '"'
-
-        #start_python_command = "screen -r -S " + self.screen_name
-
-        # Debugging
-        #log.debug("Starting python session with command:")
-        #log.debug(start_python_command)
-
-        # Start python
-        #self.remote.execute(start_python_command, expect="$")
-        #self.remote.execute(start_python_command)
-
-        #start_python_command = "python > " + self.out_pipe_filepath
-
-        # Start python again
-        #self.remote.execute(start_python_command, expect=">>>")
-
-        # Detach
-        #self.remote.execute("$'\x01'")
-        #self.remote.execute("d")
-
-        #self.remote.execute("\n")
 
         self.send_line("import sys")
         #self.send_line(r"newline = '\\\n'")
@@ -934,7 +877,6 @@ class DetachedPythonSession(RemotePythonSession):
         self.attached = True
 
         # Set displayhook to default
-        #self.send_line("sys.displayhook = sys.__displayhook__")
         self.remote.execute("sys.displayhook = sys.__displayhook__", expect=">>>")
 
     # -----------------------------------------------------------------
@@ -953,7 +895,6 @@ class DetachedPythonSession(RemotePythonSession):
         if not self.attached: log.warning("Not attached")
 
         # Set displayhook back to custom function
-        #self.send_line("sys.displayhook = my_display")
         self.remote.execute("sys.displayhook = my_display", expect=">>>")
 
         # Tmux
@@ -975,6 +916,16 @@ class DetachedPythonSession(RemotePythonSession):
 
             # Match the prompt
             self.remote.ssh.prompt()
+
+            print("before", self.remote.ssh.before)
+            print("after", self.remote.ssh.after)
+
+            # Extra empty line
+            self.remote.ssh.send("")
+            self.remote.ssh.prompt()
+
+            print("before", self.remote.ssh.before)
+            print("after", self.remote.ssh.after)
 
     # -----------------------------------------------------------------
 
