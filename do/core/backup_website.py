@@ -14,22 +14,14 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
-from pts.core.remote.host import Host
-from pts.core.tools import introspection
 from pts.core.remote.mounter import RemoteMounter
 from pts.core.tools import archive
 
 # -----------------------------------------------------------------
 
-# Get account
-username, password = introspection.get_account("ugent.be")
-
-# Create host
-host = Host("www", name="files.ugent.be", user=username, password=password, mount_point=username + "/www/users", protocol="smb")
-
 # Mount
 mounter = RemoteMounter()
-mount_path = mounter.mount(host)
+mount_path = mounter.mount("www")
 
 # -----------------------------------------------------------------
 
@@ -44,7 +36,7 @@ fs.copy_directory(mount_path, fs.home(), new_name=new_name)
 # -----------------------------------------------------------------
 
 # Unmount
-mounter.unmount(host)
+mounter.unmount("www")
 
 # -----------------------------------------------------------------
 

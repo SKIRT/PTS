@@ -20,8 +20,7 @@ from pts.core.basics.configuration import ConfigurationDefinition, parse_argumen
 from pts.core.tools import filesystem as fs
 from pts.modeling.core.environment import GalaxyModelingEnvironment
 from pts.modeling.html.all import AllPagesGenerator
-from pts.core.remote.host import Host
-from pts.core.tools import introspection
+from pts.core.remote.host import load_host
 from pts.core.remote.mounter import RemoteMounter
 
 # -----------------------------------------------------------------
@@ -59,11 +58,8 @@ if config.generate:
 
 # -----------------------------------------------------------------
 
-# Get account
-username, password = introspection.get_account("ugent.be")
-
 # Create host
-host = Host("www", name="files.ugent.be", user=username, password=password, mount_point=username + "/www/users", protocol="smb")
+host = load_host("www")
 
 # Mount
 mounter = RemoteMounter()
