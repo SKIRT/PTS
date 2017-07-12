@@ -620,13 +620,15 @@ def str_from_real(real, **kwargs):
                 else: result = result.split("e")[0] + " x 10^" + str(power)
                 return result
         else:
-            if ndigits is not None: decimal_places = ndigits - 1
 
+            if ndigits is not None: decimal_places = ndigits - 1
             if html: return ("{:." + str(decimal_places) + "e}").format(real).replace("+", "").replace("e0", " &times; 10<sup>") + "</sup>"
             else: return ("{:." + str(decimal_places) + "e}").format(real).replace("+", "").replace("e0", "e")
 
     else:
-        if doround: return repr(numbers.round_to_n_significant_digits(real, ndigits))
+        if doround:
+            if ndigits is None: raise ValueError("number of digits not specified")
+            return repr(numbers.round_to_n_significant_digits(real, ndigits))
         else: return repr(real)
 
 # -----------------------------------------------------------------

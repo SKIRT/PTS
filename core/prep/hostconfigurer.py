@@ -18,6 +18,8 @@ from ..tools.logging import log
 from ..tools import introspection
 from ..tools import filesystem as fs
 from ..basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
+from ..tools import formatting as fmt
+from ..basics.map import Map
 
 # -----------------------------------------------------------------
 
@@ -77,6 +79,9 @@ class HostConfigurer(Configurable):
         # 4. Writing
         self.write()
 
+        # Show
+        self.show()
+
     # -----------------------------------------------------------------
 
     def setup(self):
@@ -103,7 +108,7 @@ class HostConfigurer(Configurable):
         else: template_path = fs.join(hosts_config_path, self.config.preconfigured + ".cfg")
 
         # Load the configuration template
-        self.definition = ConfigurationDefinition.from_file(template_path)
+        self.definition = ConfigurationDefinition.from_file(template_path, write_config=False)
 
     # -----------------------------------------------------------------
 
@@ -115,7 +120,7 @@ class HostConfigurer(Configurable):
         """
 
         # Create the configuration
-        self.host_config = self.setter.run(self.definition)
+        self.host_config = self.setter.run(self.definition, prompt_optional=True)
 
     # -----------------------------------------------------------------
 
@@ -143,5 +148,49 @@ class HostConfigurer(Configurable):
 
         # Write the host configuration
         self.host_config.saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def show(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Showing the settings ...")
+
+        kwargs = dict()
+        kwargs["round"] = True
+        kwargs["scientific"] = True
+        kwargs["ndigits"] = 3
+
+        print("")
+
+        # Print in 2 columns
+        with fmt.print_in_columns(3, delimiter="   ", indent=" ", tostr_kwargs=kwargs) as print_row:
+
+            # Print row for each variable
+            for name in self.host_config.keys():
+
+                if name.startswith("_"): continue
+
+                # Mapping
+                if isinstance(self.host_config[name], Map):
+
+                    prefix = name
+                    for nname in self.host_config[name].keys():
+
+                        #print(name + "/" + nname)
+
+                        value = self.host_config[name][nname]
+                        the_name = prefix + "/" + nname
+                        print_row(the_name, ":", value)
+
+                # Other setting
+                else: print_row(name, ":", self.host_config[name])
+
+        print("")
 
 # -----------------------------------------------------------------

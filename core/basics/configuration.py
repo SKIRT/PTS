@@ -1006,6 +1006,7 @@ def write_mapping(mappingfile, mapping, indent=""):
 
         else:
             ptype, string = stringify.stringify(mapping[name])
+            #if string.startswith(" "): print(ptype, string)
             print(indent + name + " [" + ptype + "]: " + string, file=mappingfile)
 
         if index != length - 1: print("", file=mappingfile)
@@ -1121,16 +1122,19 @@ class ConfigurationDefinition(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path):
+    def from_file(cls, path, log_path=None, config_path=None, write_config=True):
 
         """
         This function ...
         :param path:
+        :param log_path:
+        :parma config_path:
+        :param write_config:
         :return:
         """
 
         # Create the definition
-        definition = cls()
+        definition = cls(log_path=log_path, config_path=config_path, write_config=write_config)
 
         # Load the definition
         with open(path, 'r') as configfile: load_definition(configfile, definition)
@@ -1817,8 +1821,8 @@ class ConfigurationSetter(object):
         if self.definition.write_config:
 
             # Set the path to the directory where the configuration file should be saved
-            if self.definition.config_path is not None: self.definition.add_fixed("config_path", "the directory for the configuration file to be written to", self.definition.config_path)
-            else: self.definition.add_optional("config_path", "directory_path", "the directory for the configuration file to be written to (relative to the working directory or absolute) (if None, the output directory is used)")
+            if self.definition.config_path is not None: self.definition.add_fixed("config_path", "directory for the configuration file to be written to", self.definition.config_path)
+            else: self.definition.add_optional("config_path", "directory_path", "directory for the configuration file to be written to (relative to the working directory or absolute) (if None, the output directory is used)")
 
         # Add the path to the current working directory
         if self.add_cwd: self.definition.add_fixed("path", "the working directory", cwd_path)
@@ -1883,9 +1887,16 @@ class InteractiveConfigurationSetter(ConfigurationSetter):
             log.info("Do you want to configure optional settings (y or n)?")
             log.info("Press ENTER to use the default (True)")
 
-            answer = raw_input("   : ")
-            if answer == "": prompt_optional = True
-            else: prompt_optional = parsing.boolean(answer)
+            while True:
+                answer = raw_input("   : ")
+                if answer == "":
+                    prompt_optional = True
+                    break
+                else:
+                    try:
+                        prompt_optional = parsing.boolean(answer)
+                        break
+                    except ValueError: log.warning("Invalid input. Try again.")
 
         # Get the settings from an interactive prompt
         add_settings_interactive(self.config, self.definition, prompt_optional=prompt_optional)
@@ -2221,7 +2232,7 @@ def get_real_type(user_type):
     :return:
     """
 
-    if isinstance(user_type, basestring): return getattr(parsing, user_type)
+    if types.is_string_type(user_type): return getattr(parsing, user_type)
     else: return user_type
 
 # -----------------------------------------------------------------
@@ -2312,22 +2323,17 @@ def load_definition(configfile, definition):
                         choices_string = comment_string.split("choices = ")[1]
                 else: value = after
 
+                # Strip value for leading and trailing spaces
+                value = value.strip()
+
                 kind = specification[0]
                 user_type = specification[1].strip() if kind != "flag" else None
 
-                #if user_type == "str": user_type = str
-                #elif user_type == "int": user_type = int
-                #elif user_type == "float": user_type = float
-                #elif user_type == "bool": user_type = bool # for fixed flags ...
-                #elif user_type == "None": # for fixed things that should be None
-                #    user_type = NoneType
-                #    value = None
-
+                # Set user type
                 if user_type == "None":
                     user_type = NoneType
                     value = None
-                elif kind != "flag":
-                    user_type = getattr(parsing, user_type)
+                elif kind != "flag": user_type = getattr(parsing, user_type)
 
                 # Convert choices to real list of the user_type-'list' type
                 choices = None
@@ -2342,18 +2348,9 @@ def load_definition(configfile, definition):
                     value = user_type(value) if value is not None else None # convert here because the add_fixed function doesn't bother with types now
                     definition.add_fixed(name, description, value)
 
-                elif kind == "required":
-
-                    definition.add_required(name, user_type, description, choices=choices)
-
-                elif kind == "pos_optional":
-
-                    definition.add_positional_optional(name, user_type, description, default=value, choices=choices, convert_default=True)
-
-                elif kind == "optional":
-
-                    definition.add_optional(name, user_type, description, default=value, choices=choices, letter=None, convert_default=True)
-
+                elif kind == "required": definition.add_required(name, user_type, description, choices=choices)
+                elif kind == "pos_optional": definition.add_positional_optional(name, user_type, description, default=value, choices=choices, convert_default=True)
+                elif kind == "optional": definition.add_optional(name, user_type, description, default=value, choices=choices, letter=None, convert_default=True)
                 elif kind == "flag":
 
                     value = parsing.boolean(value) if value is not None else False
@@ -3757,9 +3754,11 @@ def parse_default(default, user_type, real_type):
     :return:
     """
 
-    if user_type.endswith("list") and isinstance(default, list):
+    user_type_name = user_type if types.is_string_type(user_type) else user_type.__name__
 
-        real_base_type = getattr(parsing, user_type.split("_list")[0])
+    if user_type_name.endswith("list") and types.is_sequence(default):
+
+        real_base_type = getattr(parsing, user_type_name.split("_list")[0])
         default = [get_real_value(arg, real_base_type) for arg in default]
 
     else: default = get_real_value(default, real_type)

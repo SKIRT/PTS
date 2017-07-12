@@ -387,6 +387,19 @@ def string(argument):
 
 # -----------------------------------------------------------------
 
+def nonempty_string(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    if argument == "": raise ValueError("String is empty")
+    return argument
+
+# -----------------------------------------------------------------
+
 def string_no_spaces(argument):
 
     """
@@ -397,6 +410,19 @@ def string_no_spaces(argument):
 
     if " " in argument: raise ValueError("The string cannot contain spaces")
     return argument
+
+# -----------------------------------------------------------------
+
+def nonempty_string_no_spaces(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    argument = string_no_spaces(argument)
+    return nonempty_string(argument)
 
 # -----------------------------------------------------------------
 

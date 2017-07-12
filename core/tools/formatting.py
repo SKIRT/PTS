@@ -377,6 +377,7 @@ def print_columns(*columns, **kwargs):
 
     delimiter = kwargs.pop("delimiter", "  ")
     indent = kwargs.pop("indent", "")
+    tostr_kwargs = kwargs.pop("tostr_kwargs", {})
 
     # Check sizes
     if not equal_sizes(*columns): raise ValueError("Columns must have equal lengths")
@@ -390,7 +391,7 @@ def print_columns(*columns, **kwargs):
 
     for column in columns:
 
-        new_column = [stringify.tostr(entry) for entry in column]
+        new_column = [stringify.tostr(entry, **tostr_kwargs) for entry in column]
         lengths = [printed_length(string) for string in new_column]
 
         #print(new_column, max(lengths))
@@ -427,7 +428,7 @@ class print_in_columns(object):
     This function ...
     """
 
-    def __init__(self, ncolumns, delimiter=" ", indent=""):
+    def __init__(self, ncolumns, delimiter=" ", indent="", tostr_kwargs=None):
 
         """
         This function ...
@@ -438,6 +439,7 @@ class print_in_columns(object):
         self.columns = [[] for _ in range(ncolumns)]
         self.delimiter = delimiter
         self.indent = indent
+        self.tostr_kwargs = tostr_kwargs if tostr_kwargs is not None else {}
 
     # -----------------------------------------------------------------
 
@@ -472,10 +474,6 @@ class print_in_columns(object):
         :return:
         """
 
-        #if len(args) != self.ncolumns: raise ValueError("Needs " + str(self.ncolumns) + " arguments")
-
-        #iterate_args = iterate(args)
-
         for index in range(self.ncolumns):
 
             arg = args[index] if len(args) > index else ""
@@ -493,9 +491,7 @@ class print_in_columns(object):
         :return:
         """
 
-        #print(self.columns[1])
-
-        print_columns(*self.columns, delimiter=self.delimiter, indent=self.indent)
+        print_columns(*self.columns, delimiter=self.delimiter, indent=self.indent, tostr_kwargs=self.tostr_kwargs)
 
 # -----------------------------------------------------------------
 

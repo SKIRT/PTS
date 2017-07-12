@@ -21,12 +21,12 @@ preconfigured_names = fs.files_in_path(hosts_config_path, extension="cfg", not_c
 # -----------------------------------------------------------------
 
 # Create configuration definition
-definition = ConfigurationDefinition()
+definition = ConfigurationDefinition(write_config=False)
 
 # Add required
-definition.add_required("name", "string", "the name to give to the host")
+definition.add_required("name", "nonempty_string_no_spaces", "name to give to the host")
 
 # Add optional
-definition.add_positional_optional("preconfigured", "string", "the name of a preconfigured remote for which to adapt the user-specific settings", choices=preconfigured_names)
+definition.add_positional_optional("preconfigured", "string", "name of a preconfigured remote for which to adapt the user-specific settings", choices=preconfigured_names)
 
 # -----------------------------------------------------------------
