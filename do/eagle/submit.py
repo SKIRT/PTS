@@ -10,13 +10,15 @@
 # This script prepares and submits batch jobs for processing a given stage on a set of SKIRT-runs records.
 # Processing in the batch job occurs in one of two modes depending on the command line arguments:
 #
-#    pts eagle/submit <stage> loop <numjobs>
-#    pts eagle/submit <stage> force <runidspec>
+#\verbatim
+#pts eagle/submit <stage> loop <numjobs>
+#pts eagle/submit <stage> force <runidspec>
+#\endverbatim
 #
 # where:
-#  - <stage> is one of "extract", "simulate", "observe", or "store";
-#  - <numjobs> is the number of jobs to submit as a job array (or 1 for a single job);
-#  - <runidspec> is a comma-seperated list of run-ids and/or run-id ranges (two run-ids with a dash in between).
+#  - \<stage\> is one of "extract", "simulate", "observe", or "store";
+#  - \<numjobs\> is the number of jobs to submit as a job array (or 1 for a single job);
+#  - \<runidspec\> is a comma-seperated list of run-ids and/or run-id ranges (two run-ids with a dash in between).
 #
 # In loop mode, each batch job repeatedly performs the specified stage for a SKIRT-run record that is
 # at the corresponding workflow stage and has the 'scheduled' status, until there are no more such records,
