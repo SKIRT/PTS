@@ -22,6 +22,7 @@ from ....core.prep.wavelengthgrids import WavelengthGridGenerator
 from ..tables import WeightsTable
 from ....core.tools.serialization import write_dict
 from ....core.prep.smile import SKIRTSmileSchema
+from ...build.suite import ModelSuite
 
 # -----------------------------------------------------------------
 
@@ -61,6 +62,9 @@ class FittingInitializerBase(FittingComponent):
         # The dictionary of input map paths
         self.input_map_paths = dict()
 
+        # The models suite
+        self.suite = None
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -82,6 +86,9 @@ class FittingInitializerBase(FittingComponent):
 
         # Create the table to contain the weights
         self.weights = WeightsTable()
+
+        # Set the models suite
+        self.suite = ModelSuite.from_modeling_path(self.config.path)
 
     # -----------------------------------------------------------------
 

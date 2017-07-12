@@ -17,9 +17,6 @@ from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
-from ..component.galaxy import GalaxyModelingComponent
-from ..component.component import ModelingComponent
-from ...core.tools import filesystem as fs
 from .tables import ModelsTable, RepresentationsTable
 from ...core.basics.map import Map
 from ...core.basics.configuration import open_mapping
@@ -27,6 +24,7 @@ from ..basics.models import DeprojectionModel3D, load_3d_model
 from ...core.tools.serialization import load_dict
 from ...magic.core.frame import Frame
 from ...magic.basics.coordinatesystem import CoordinateSystem
+from .representation import Representation
 
 # -----------------------------------------------------------------
 
@@ -235,7 +233,10 @@ class ModelSuite(object):
 
         path = self.get_representation_path(representation_name)
         if not fs.is_directory(path): raise ValueError("Representation does not exist")
-        else: return get_representation(self.modeling_path, representation_name)
+        else:
+            # Get model name
+            model_name = self.representations_table.model_for_representation(representation_name)
+            return Representation(representation_name, model_name, path)
 
     # -----------------------------------------------------------------
 
@@ -333,5 +334,332 @@ class ModelSuite(object):
 
         # Create the deprojection
         return self.create_deprojection_for_wcs(galaxy_properties, disk_position_angle, reference_wcs, filename, scaleheight)
+
+    # -----------------------------------------------------------------
+
+    def load_component(self, path, add_map=False):
+
+        """
+        This function ...
+        :param path:
+        :param add_map:
+        :return:
+        """
+
+        # Create a map
+        component = Map()
+
+        # Set the name
+        component.name = fs.name(path)
+
+        # Load the parameters
+        parameters_path = fs.join(path, parameters_filename)
+        if fs.is_file(parameters_path):
+            parameters = open_mapping(parameters_path)
+            component.parameters = parameters
+
+        # Load the deprojection
+        deprojection_path = fs.join(path, deprojection_filename)
+        if fs.is_file(deprojection_path):
+            deprojection = DeprojectionModel3D.from_file(deprojection_path)
+            component.deprojection = deprojection
+
+        # Load the map
+        map_path = fs.join(path, model_map_filename)
+        if fs.is_file(map_path):
+            component.map_path = map_path
+            if add_map:
+                map = Frame.from_file(map_path)
+                component.map = map
+
+        # Load the model
+        model_path = fs.join(path, model_filename)
+        if fs.is_file(model_path):
+            model = load_3d_model(model_path)
+            component.model = model
+
+        # Load the properties
+        properties_path = fs.join(path, properties_filename)
+        if fs.is_file(properties_path):
+            properties = load_dict(properties_path)
+            component.properties = properties
+
+        # Return the component
+        return component
+
+    # -----------------------------------------------------------------
+
+    def get_stellar_component_path(self, model_name, component_name):
+
+        """
+        This function ...
+        :param model_name:
+        :param component_name:
+        :return:
+        """
+
+        return fs.join(self.get_model_stellar_path(model_name), component_name)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_component_path(self, model_name, component_name):
+
+        """
+        This function ...
+        :param modeling_path:
+        :param model_name:
+        :param component_name:
+        :return:
+        """
+
+        return fs.join(self.get_model_dust_path(model_name), component_name)
+
+    # -----------------------------------------------------------------
+
+    def load_stellar_component(self, model_name, component_name, add_map=False):
+
+        """
+        This function ...
+        :param model_name:
+        :param component_name:
+        :param add_map:
+        :return:
+        """
+
+        # Determine the path
+        path = self.get_stellar_component_path(model_name, component_name)
+
+        # Load the component
+        return self.load_component(path, add_map=add_map)
+
+    # -----------------------------------------------------------------
+
+    def load_stellar_component_deprojection(self, model_name, component_name):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..component.galaxy import get_disk_position_angle
+
+        # Load galaxy properties
+        from ..component.galaxy import get_galaxy_properties
+        properties = get_galaxy_properties(self.modeling_path)
+
+        # Load component
+        component = self.load_stellar_component(model_name, component_name, add_map=False)
+
+        ## Set deprojection
+        if "deprojection" in component:
+
+            # Get title
+            title = component.parameters.title
+
+            # Return
+            return title, component.deprojection
+
+        # Check if this is a new component, add geometry, SED and normalization all at once
+        if "geometry" in component.parameters:
+
+            # Get title
+            title = component.parameters.title
+
+            # Check whether this is a read FITS geometry
+            geometry_type = component.parameters.geometry
+            if geometry_type != "ReadFitsGeometry": return component.parameters.title, None
+
+            # Get properties for each of the three classes
+            geometry_properties = component.properties["geometry"]
+
+            # Get the path of the input map
+            filepath = geometry_properties["filename"]
+
+            # Get the scale height
+            scale_height = geometry_properties["axialScale"]
+
+            # Get properties
+            wcs = CoordinateSystem.from_file(filepath)
+
+            # Get the galaxy distance, the inclination and position angle
+            distance = properties.distance
+            inclination = properties.inclination
+            position_angle = get_disk_position_angle(self.modeling_path)
+            # Get center coordinate of galaxy
+            galaxy_center = properties.center
+
+            # Create
+            deprojection = DeprojectionModel3D.from_wcs(wcs, galaxy_center, distance, position_angle, inclination,
+                                                        filepath, scale_height)
+
+            # Return
+            return title, deprojection
+
+        # No deprojection
+        return component.parameters.title, None
+
+    # -----------------------------------------------------------------
+
+    def load_dust_component(self, model_name, component_name, add_map=False):
+
+        """
+        This function ...
+        :param model_name:
+        :param component_name:
+        :param add_map:
+        :return:
+        """
+
+        # Determine the path
+        path = self.get_dust_component_path(model_name, component_name)
+
+        # Load the component
+        return self.load_component(path, add_map=add_map)
+
+    # -----------------------------------------------------------------
+
+    def load_dust_component_deprojection(self, model_name, component_name):
+
+        """
+        This function ...
+        :param modeling_path:
+        :param model_name:
+        :param component_name:
+        """
+
+        from ..component.galaxy import get_disk_position_angle
+
+        # Load galaxy properties
+        from ..component.galaxy import get_galaxy_properties
+        properties = get_galaxy_properties(self.modeling_path)
+
+        # Load the component
+        component = self.load_dust_component(model_name, component_name, add_map=False)
+
+        # Set deprojection
+        if "deprojection" in component:
+
+            # Get title
+            title = component.parameters.title
+
+            # Return
+            return title, component.deprojection
+
+        # Check if this is a new dust component, add geometry, mix and normalization all at once
+        if "geometry" in component.parameters:
+
+            # Get title
+            title = component.parameters.title
+
+            # Check whether this is a read FITS geometry
+            geometry_type = component.parameters.geometry
+            if geometry_type != "ReadFitsGeometry": return title, None
+
+            # Get properties for each of the three classes
+            geometry_properties = component.properties["geometry"]
+
+            # Get the path of the input map
+            filepath = geometry_properties["filename"]
+
+            # Get the scale height
+            scale_height = geometry_properties["axialScale"]
+
+            # Get properties
+            wcs = CoordinateSystem.from_file(filepath)
+
+            # Get the galaxy distance, the inclination and position angle
+            distance = properties.distance
+            inclination = properties.inclination
+            position_angle = get_disk_position_angle(self.modeling_path)
+            # Get center coordinate of galaxy
+            galaxy_center = properties.center
+
+            # Create
+            deprojection = DeprojectionModel3D.from_wcs(wcs, galaxy_center, distance, position_angle, inclination,
+                                                        filepath, scale_height)
+
+            # Return
+            return title, deprojection
+
+        # No deprojection for this component
+        return component.parameters.title, None
+
+# -----------------------------------------------------------------
+
+def get_input_path(modeling_path, model_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param model_name:
+    :return:
+    """
+
+    return fs.join(get_model_path(modeling_path, model_name), "input")
+
+# -----------------------------------------------------------------
+
+def get_stellar_path(modeling_path, model_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param model_name:
+    :return:
+    """
+
+    return fs.join(get_model_path(modeling_path, model_name), "stellar")
+
+# -----------------------------------------------------------------
+
+def get_dust_path(modeling_path, model_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param model_name:
+    :return:
+    """
+
+    return fs.join(get_model_path(modeling_path, model_name), "dust")
+
+# -----------------------------------------------------------------
+
+def get_stellar_map_paths(modeling_path, model_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param model_name:
+    :return:
+    """
+
+    return fs.files_in_path(get_stellar_path(modeling_path, model_name), recursive=True, exact_name="map", extension="fits")
+
+# -----------------------------------------------------------------
+
+def get_dust_map_paths(modeling_path, model_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param model_name:
+    :return:
+    """
+
+    return fs.files_in_path(get_dust_path(modeling_path, model_name), recursive=True, exact_name="map", extension="fits")
+
+# -----------------------------------------------------------------
+
+def get_input_paths(modeling_path, model_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param model_name:
+    :return:
+    """
+
+    return fs.files_in_path(get_input_path(modeling_path, model_name)) + get_stellar_map_paths(modeling_path, model_name) + get_dust_map_paths(modeling_path, model_name)
 
 # -----------------------------------------------------------------

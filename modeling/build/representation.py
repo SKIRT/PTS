@@ -23,8 +23,6 @@ from .component import BuildComponent
 from ...core.tools import filesystem as fs
 from ..basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument
 from ...core.tools.logging import log
-from ..build.component import get_stellar_component_names, get_dust_component_names
-from ..build.component import load_stellar_component_deprojection, load_dust_component_deprojection
 from ..basics.projection import EdgeOnProjection, FaceOnProjection, GalaxyProjection
 from ...core.basics.configuration import prompt_string, prompt_yn, prompt_real
 from ...core.units.stringify import represent_quantity
@@ -436,10 +434,10 @@ class RepresentationBuilder(RepresentationBuilderBase, GalaxyModelingComponent):
         log.info("Loading the stellar deprojections ...")
 
         # Loop over the stellar components
-        for name in get_stellar_component_names(self.config.path, self.model_name):
+        for name in self.suite.get_stellar_component_names(self.model_name):
 
             # Load the deprojection of the component, if applicable
-            title, deprojection = load_stellar_component_deprojection(self.config.path, self.model_name, name)
+            title, deprojection = self.suite.load_stellar_component_deprojection(self.model_name, name)
             if deprojection is not None: self.deprojections[(name, title)] = deprojection
 
     # -----------------------------------------------------------------
@@ -455,10 +453,10 @@ class RepresentationBuilder(RepresentationBuilderBase, GalaxyModelingComponent):
         log.info("Loading the dust deprojections ...")
 
         # Loop over the dust components
-        for name in get_dust_component_names(self.config.path, self.model_name):
+        for name in self.suite.get_dust_component_names(self.config.path, self.model_name):
 
             # Load the deprojection of the component, if applicable
-            title, deprojection = load_dust_component_deprojection(self.config.path, self.model_name, name)
+            title, deprojection = self.suite.load_dust_component_deprojection(self.model_name, name)
             if deprojection is not None: self.deprojections[(name, title)] = deprojection
 
     # -----------------------------------------------------------------

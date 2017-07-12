@@ -57,7 +57,7 @@ from ..component.galaxy import get_observed_sed_file_path, get_reference_seds
 from ...core.plot.sed import SEDPlotter
 from ...core.tools import parsing
 from ...dustpedia.core.database import get_mbb_dust_mass
-from ..build.definition import get_model_definition
+from ..build.component import get_model_definition
 from ...core.units.parsing import parse_quantity
 
 # -----------------------------------------------------------------

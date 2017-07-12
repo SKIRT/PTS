@@ -27,7 +27,6 @@ from ...core.basics.configuration import ConfigurationDefinition, InteractiveCon
 from ...core.plot.sed import SEDPlotter
 from ..build.sed import SEDModelBuilder
 from ..build.sedrepresentation import SEDRepresentationBuilder
-#from ..build.definition import get_input_paths
 from ..component.sed import get_ski_input_path
 from ..core.environment import SEDModelingEnvironment
 from ...core.basics.configuration import prompt_weights

@@ -113,15 +113,6 @@ for which_map in config.maps:
     # Set psf filter
     the_map.psf_filter = "Pacs red"
 
-    #print("REFERENCE WCS:", the_map.wcs)
-
-    # Load the paths to the created maps
-    #if which_map == "dust": paths = get_dust_map_paths(modeling_path)
-    #elif which_map == "old": paths = get_old_stellar_map_paths(modeling_path)
-    #elif which_map == "young": paths = get_young_stellar_map_paths(modeling_path)
-    #elif which_map == "ionizing": paths = get_ionizing_stellar_map_paths(modeling_path)
-    #else: raise ValueError("Invalid map type: '" + which_map + "'")
-
     # Loop over the maps
     if which_map == "dust": maps = collection.get_dust_maps(flatten=True)
     elif which_map == "old": maps = collection.get_old_maps(flatten=True)

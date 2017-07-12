@@ -17,8 +17,6 @@ from ....core.tools.logging import log
 from ...component.sed import SEDModelingComponent
 from ....core.simulation.skifile import LabeledSkiFile
 from .base import FittingInitializerBase
-from ...build.component import load_stellar_component, load_dust_component
-from ...build.component import get_stellar_component_names, get_dust_component_names
 
 # -----------------------------------------------------------------
 
@@ -135,10 +133,10 @@ class SEDFittingInitializer(FittingInitializerBase, SEDModelingComponent):
         log.info("Configuring input maps for stellar components ...")
 
         # Loop over the stellar components
-        for name in get_stellar_component_names(self.config.path, self.model_name):
+        for name in self.suite.get_stellar_component_names(self.model_name):
 
             # Load the component
-            component = load_stellar_component(self.config.path, self.model_name, name)
+            component = self.suite.load_stellar_component(self.model_name, name)
 
             # Check whether requires a map
             if component.map_path is None: continue
@@ -171,10 +169,10 @@ class SEDFittingInitializer(FittingInitializerBase, SEDModelingComponent):
         log.info("Configuring input maps for dust components ...")
 
         # Loop over the dust components
-        for name in get_dust_component_names(self.config.path, self.model_name):
+        for name in self.suite.get_dust_component_names(self.model_name):
 
             # Load the component
-            component = load_dust_component(self.config.path, self.model_name, name)
+            component = self.suite.load_dust_component(self.model_name, name)
 
             # Check whether requires a map
             if component.map_path is None: continue
