@@ -1627,3 +1627,16 @@ def pixel_shape(argument):
     return PixelShape.from_tuple(shape)
 
 # -----------------------------------------------------------------
+
+def colour(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..basics.colour import parse_colour
+    return parse_colour(argument)
+
+# -----------------------------------------------------------------

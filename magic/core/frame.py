@@ -48,6 +48,7 @@ from ..basics.vector import PixelShape
 from ...core.tools.stringify import tostr
 from ...core.units.stringify import represent_unit
 from ..basics.pixelscale import Pixelscale
+from ...core.basics.colour import parse_colour
 
 # -----------------------------------------------------------------
 
@@ -2280,16 +2281,28 @@ class Frame(NDDataArray):
             green = normalized * 255
             alpha = transparency * 255
 
-        # Colour map
+        # More intricate colour or colour map
         else:
 
-            # Get the colour map
-            cmap = get_cmap(colours)
-            rgba = cmap(normalized)
-            red = rgba[:,:,0] * 255
-            green = rgba[:,:,1] * 255
-            blue = rgba[:,:,2] * 255
-            alpha = transparency * 255
+            # Try to parse the colour
+            try:
+
+                colour = parse_colour(colours)
+                red = normalized * colour.red
+                green = normalized * colour.green
+                blue = normalized * colour.blue
+                alpha = transparency * 255
+
+            # Assume colour map
+            except ValueError:
+
+                # Get the colour map
+                cmap = get_cmap(colours)
+                rgba = cmap(normalized)
+                red = rgba[:,:,0] * 255
+                green = rgba[:,:,1] * 255
+                blue = rgba[:,:,2] * 255
+                alpha = transparency * 255
 
         # MAKE THE IMAGE ARRAY
         # Stack, create the image array

@@ -153,10 +153,10 @@ class DataPageGenerator(HTMLPageComponent):
             else:
 
                 # Local
-                if fs.is_file(path): Frame.from_file(paths[name]).saveto_png(output_path)
+                if fs.is_file(path): Frame.from_file(paths[name]).saveto_png(output_path, colours=colour)
 
                 # Remote session
-                elif session is not None: RemoteFrame.from_remote_file(path, session).saveto_png(output_path)
+                elif session is not None: RemoteFrame.from_remote_file(path, session).saveto_png(output_path, colours=colour)
 
                 # Remote
                 elif remote is not None:
@@ -165,7 +165,7 @@ class DataPageGenerator(HTMLPageComponent):
                     temp_output_path = fs.join(remote.pts_temp_path, name + ".png")
 
                     # Run the PTS command to create the PNG
-                    execute_pts_remote(remote, "fits_to_png", path, output=temp_output_path, show=False, show_output=True)
+                    execute_pts_remote(remote, "fits_to_png", path, output=temp_output_path, show=False, show_output=True, colours=colour)
 
                     # Check whether the remote file exists
                     if not remote.is_file(temp_output_path): raise RuntimeError("Remote file does not exist")
