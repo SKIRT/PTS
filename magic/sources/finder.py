@@ -238,9 +238,6 @@ class SourceFinder(Configurable):
         self.fwhms = dict()
         self.psfs = dict()
 
-        # The statistics table
-        #self.statistics = None
-
         # The photometry table
         self.photometry = None
 
@@ -418,7 +415,7 @@ class SourceFinder(Configurable):
         self.setup(**kwargs)
 
         # 3. Find the galaxies
-        self.find_galaxies()
+        if self.config.find_galaxies: self.find_galaxies()
         
         # 3. Find the stars
         if self.config.find_stars: self.find_stars()

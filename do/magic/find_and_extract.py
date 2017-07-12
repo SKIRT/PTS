@@ -25,7 +25,10 @@ from pts.core.tools import configuration
 from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.magic.region.list import PixelRegionList
-from pts.magic.view import MagicViewer
+
+# -----------------------------------------------------------------
+
+# TODO: THIS SCRIPT IS COMPLETELY OUTDATED!!
 
 # -----------------------------------------------------------------
 

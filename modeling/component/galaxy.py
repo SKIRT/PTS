@@ -38,7 +38,7 @@ from ...magic.basics.stretch import SkyStretch
 from ...core.tools import types
 from ...core.filter.filter import parse_filter
 from ...core.tools import tables
-from ...core.remote.host import Host
+from ...core.remote.host import load_host
 from ...core.remote.remote import Remote
 from ..core.steps import cached_directory_path_for_single_command
 from ..core.environment import GalaxyModelingEnvironment
@@ -1215,7 +1215,7 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        return Host.from_host_id(self.cache_host_id)
+        return load_host(self.cache_host_id)
 
     # -----------------------------------------------------------------
 

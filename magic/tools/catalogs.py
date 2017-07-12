@@ -383,12 +383,12 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs=None, check_in_box=
             # -- Positional information --
 
             # Get the position of the star as a SkyCoord object and as pixel coordinate
-            position = SkyCoordinate(ra=table["_RAJ2000"][i], dec=table["_DEJ2000"][i], unit="deg", frame="fk5")
+            position = SkyCoordinate(ra=table["RAJ2000"][i], dec=table["DEJ2000"][i], unit="deg", frame="fk5")
             #pixel_position = position.to_pixel(frame.wcs)
 
             # Get the right ascension and declination for the current star
-            star_ra = table["_RAJ2000"][i]
-            star_dec = table["_DEJ2000"][i]
+            star_ra = table["RAJ2000"][i]
+            star_dec = table["DEJ2000"][i]
 
             number_of_stars += 1
 
@@ -401,23 +401,20 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs=None, check_in_box=
 
             number_of_stars_in_frame += 1
 
+            # DOESN'T WORK ANYMORE!
             # Get the mean error on the right ascension and declination
-            if catalog == "UCAC4" or catalog == "NOMAD":
-
-                ra_error = table["e_RAJ2000"][i] * u("mas")
-                dec_error = table["e_DEJ2000"][i] * u("mas")
-
-            elif catalog == "II/246":
-
-                error_maj = table["errMaj"][i] * u("arcsec")
-                error_min = table["errMin"][i] * u("arcsec")
-                error_theta = Angle(table["errPA"][i], "deg")
-
-                # Temporary: use only the major axis error (convert the error ellipse into a circle)
-                ra_error = error_maj.to("mas")
-                dec_error = error_maj.to("mas")
-
-            else: raise ValueError("Catalogs other than 'UCAC4', 'NOMAD' or 'II/246' are currently not supported")
+            #if catalog == "UCAC4" or catalog == "NOMAD":
+            #    ra_error = table["e_RAJ2000"][i] * u("mas")
+            #    dec_error = table["e_DEJ2000"][i] * u("mas")
+            #elif catalog == "II/246":
+            #    error_maj = table["errMaj"][i] * u("arcsec")
+            ##    error_min = table["errMin"][i] * u("arcsec")
+            #    error_theta = Angle(table["errPA"][i], "deg")
+            #    # Temporary: use only the major axis error (convert the error ellipse into a circle)
+            #    ra_error = error_maj.to("mas")
+            #    dec_error = error_maj.to("mas")
+            #else: raise ValueError("Catalogs other than 'UCAC4', 'NOMAD' or 'II/246' are currently not supported")
+            ra_error = dec_error = None
 
             # -- Magnitudes --
 
@@ -495,8 +492,8 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs=None, check_in_box=
                 id_column.append(star_id)
                 ra_column.append(star_ra * u("deg"))
                 dec_column.append(star_dec * u("deg"))
-                ra_error_column.append(ra_error.value)
-                dec_error_column.append(dec_error.value)
+                ra_error_column.append(ra_error.value if ra_error is not None else None)
+                dec_error_column.append(dec_error.value if dec_error is not None else None)
                 confidence_level_column.append(1)
 
         # Debug messages
@@ -792,7 +789,7 @@ def get_galaxy_info(name, position):
         # If no matches are found, look for the table entry for which the coordinate matches the given position (if any)
         if entry is None and position is not None:
             for row in table:
-                if np.isclose(row["_RAJ2000"], position.ra.value) and np.isclose(row["_DEJ2000"], position.dec.value):
+                if np.isclose(row["RAJ2000"], position.ra.value) and np.isclose(row["DEJ2000"], position.dec.value):
                     entry = row
                     break
 
@@ -800,7 +797,7 @@ def get_galaxy_info(name, position):
     if entry is None: return name, position, None, None, [], None, None, None, None, None, None
 
     # Get the right ascension and the declination
-    position = SkyCoordinate(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit="deg", frame="fk5")
+    position = SkyCoordinate(ra=entry["RAJ2000"], dec=entry["DEJ2000"], unit="deg", frame="fk5")
 
     # Get the names given to this galaxy
     gal_names = entry["ANames"].split() if entry["ANames"] else []
@@ -895,7 +892,7 @@ def galaxies_in_box(center, ra_span, dec_span):
     # Loop over the rows in the table
     for entry in table:
         name = "PGC " + str(entry["PGC"])
-        coordinate = SkyCoordinate(ra=entry["_RAJ2000"], dec=entry["_DEJ2000"], unit="deg", frame="fk5")
+        coordinate = SkyCoordinate(ra=entry["RAJ2000"], dec=entry["DEJ2000"], unit="deg", frame="fk5")
         namepluscoordinate = (name, coordinate)
         names.append(namepluscoordinate)
 

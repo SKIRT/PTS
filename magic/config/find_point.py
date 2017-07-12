@@ -14,23 +14,25 @@ from pts.core.basics.configuration import ConfigurationDefinition
 definition = ConfigurationDefinition()
 
 definition.add_flag("use_frame_fwhm", "If possible, avoid the fitting procedure and use the FWHM defined by the frame", True)
-
 definition.add_optional("input_path", "directory_path", "path to the input directory")
-
 definition.add_optional("output_path", "directory_path", "path to the output directory")
-
 definition.add_flag("track_record", "track record", False)
 definition.add_flag("plot_track_record_if_exception", True)
-
 definition.add_optional("manual_region", "file_path", "manual star region")
-
 definition.add_flag("remove", "remove stars from the frame", True)
-
 definition.add_flag("find_saturation", "find saturated stars", True)
 
+# -----------------------------------------------------------------
+
+# Settings for fetching the catalogs
 definition.add_section("fetching", "fetching")
-#definition.sections["fetching"].add_flag("use_catalog_file", "use catalog file")
-#definition.sections["fetching"].add_optional("catalog_path", "file_path", "catalog path")
+
+# THE CATALOGS
+default_catalogs = ["II/246"]
+possible_catalogs = ["UCAC4", "NOMAD", "PPMXL", "II/246"]
+definition.add_optional("catalogs", "string_list", "catalogs for point sources", default_catalogs, possible_catalogs)
+
+# -----------------------------------------------------------------
 
 definition.sections["fetching"].add_flag("use_statistics_file", "use statistics file")
 definition.sections["fetching"].add_optional("statistics_path", "file_path", "statistics file path")

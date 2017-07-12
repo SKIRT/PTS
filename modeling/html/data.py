@@ -20,8 +20,8 @@ from ...dustpedia.core.properties import DustPediaProperties
 from ...dustpedia.core.database import get_account
 from ...core.tools import filesystem as fs
 from ...magic.core.frame import Frame
-from ...core.filter.filter import parse_filter
 from ...magic.core.remote import RemoteFrame
+from ...core.launch.pts import execute_pts_remote
 
 # -----------------------------------------------------------------
 
@@ -165,7 +165,7 @@ class DataPageGenerator(HTMLPageComponent):
                     temp_output_path = fs.join(remote.pts_temp_path, name + ".png")
 
                     # Run the PTS command to create the PNG
-                    remote.execute_pts("fits_to_png", path, output=temp_output_path, show=False, show_output=True)
+                    execute_pts_remote(remote, "fits_to_png", path, output=temp_output_path, show=False, show_output=True)
 
                     # Check whether the remote file exists
                     if not remote.is_file(temp_output_path): raise RuntimeError("Remote file does not exist")

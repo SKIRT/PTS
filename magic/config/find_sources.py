@@ -7,9 +7,9 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from .find_point import definition as point_definition
-from .find_extended import definition as extended_definition
-from .find_other import definition as other_definition
+from pts.magic.config.find_point import definition as point_definition
+from pts.magic.config.find_extended import definition as extended_definition
+from pts.magic.config.find_other import definition as other_definition
 from pts.core.tools.parallelization import ncores
 
 # -----------------------------------------------------------------
@@ -23,10 +23,9 @@ definition.add_positional_optional("dataset", "file_path", "name of the dataset 
 # Number of parallel processes
 definition.add_optional("nprocesses", "integer", "number of parallel processes", max(8, ncores()))
 
-# Flags
+# Flags to turn features on and off
+definition.add_flag("find_galaxies", "find galaxies in the images", True)
 definition.add_flag("find_stars", "find stars in the images", True)
-
-# Flags
 definition.add_flag("find_other_sources", "find other contaminating sources", True)
 
 # Optional settings
