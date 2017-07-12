@@ -10,7 +10,7 @@
 # This script collects the statistics contained in the info files for a set of SKIRT-runs into a single data file,
 # which is placed in the "Collections" directory specified in eagle.config.
 # The script expects one or more command line arguments, which are used as possible values for the label
-# and eaglesim fields in the SKIRT-run database. For example, "pts collect Recal25 convergence" will collect all
+# and eaglesim fields in the SKIRT-run database. For example, "pts eagle/collect Recal25 convergence" will collect all
 # runs that have a label value of "Recal25" or "convergence" \em and an eaglesim value of "Recal25" or "convergence".
 #
 

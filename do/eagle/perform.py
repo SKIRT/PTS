@@ -10,13 +10,15 @@
 # This script performs the process for a given stage on a set of SKIRT-runs records, in one of two modes
 # depending on the command line arguments:
 #
-#    pts eagle/perform <stage> loop <runtime>
-#    pts eagle/perform <stage> force <runidspec>
+#\verbatim
+#pts eagle/perform <stage> loop <runtime>
+#pts eagle/perform <stage> force <runidspec>
+#\endverbatim
 #
 # where:
-#  - <stage> is one of "extract", "simulate", "observe", or "store";
-#  - <runtime> is a run time in seconds (given as a floating point expression);
-#  - <runidspec> is a comma-seperated list of run-ids and/or run-id ranges (two run-ids with a dash in between).
+#  - \<stage\> is one of "extract", "simulate", "observe", or "store";
+#  - \<runtime\> is a run time in seconds (given as a floating point expression);
+#  - \<runidspec\> is a comma-seperated list of run-ids and/or run-id ranges (two run-ids with a dash in between).
 #
 # In loop mode, the script repeatedly performs the specified stage for a SKIRT-run record that is
 # at the corresponding workflow stage and has the 'scheduled' status, until there are no more such records,

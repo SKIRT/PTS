@@ -17,8 +17,8 @@
 # For example:
 #
 #\verbatim
-#pts eagle_update "runid=403" status scheduled
-#pts eagle_update "label='batch3' and runid>555" skitemplate pan
+#pts eagle/update "runid=403" status scheduled
+#pts eagle/update "label='batch3' and runid>555" skitemplate pan
 #\endverbatim
 
 # -----------------------------------------------------------------
