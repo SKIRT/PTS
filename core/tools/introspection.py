@@ -2403,3 +2403,16 @@ def get_class_from_path(path):
     return try_importing_class(class_name, class_module_path)
 
 # -----------------------------------------------------------------
+
+def execute_lines(lines, namespace):
+
+    """
+    This function ...
+    :param lines:
+    :param namespace:
+    :return:
+    """
+
+    for line in lines: exec(line, namespace)
+
+# -----------------------------------------------------------------

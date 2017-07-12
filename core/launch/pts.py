@@ -25,6 +25,10 @@ from ..tools import filesystem as fs
 from ..basics.task import Task
 from ...do.commandline import start_target
 from ..basics.configuration import create_configuration_passive
+from ..tools import strings
+from ..tools import types
+from ..basics.configuration import get_definition
+from ..basics.map import Map
 
 # -----------------------------------------------------------------
 
@@ -33,6 +37,172 @@ class RemoteInstance(object):
     """
     This class ...
     """
+
+# -----------------------------------------------------------------
+
+def get_definition_for_command(command, cwd=None):
+
+    """
+    This function ...
+    :param command:
+    :param cwd:
+    :return:
+    """
+
+    # Find possible PTS commands
+    scripts = introspection.get_scripts()
+    tables = introspection.get_arguments_tables()
+
+    # Find matches
+    matches = introspection.find_matches_scripts(command, scripts)
+    table_matches = introspection.find_matches_tables(command, tables)
+
+    # No match
+    if len(matches) + len(table_matches) == 0: raise ValueError("There is no match with a PTS command for '" + command + "'")
+
+    # If there is a unique match in an existing script, raise error
+    elif len(matches) == 1 and len(table_matches) == 0:
+
+        # Get subproject and script name
+        subproject, filename = matches[0]
+        do_subpath = fs.join(introspection.pts_subproject_dir("do"), subproject)
+        filepath = fs.join(do_subpath, filename)
+
+        # Read the lines of the file
+        triggered = False
+        definition_lines = []
+        all_relevant_lines = []
+        for line in fs.read_lines(filepath):
+
+            if "ConfigurationDefinition(" in line:
+                if not line.startswith("#"): all_relevant_lines.append(line)
+                triggered = True
+            elif "parse_arguments(" in line: break
+            elif triggered:
+
+                if line.strip() == "": continue
+                definition_lines.append(line)
+                if not line.startswith("#"): all_relevant_lines.append(line)
+
+            elif not line.startswith("#") and line.strip("") != "": all_relevant_lines.append(line)
+
+
+        # Execute
+        namespace = Map()
+        introspection.execute_lines(all_relevant_lines, namespace)
+        return namespace.definition
+
+    # If there is an unique match in a table
+    elif len(table_matches) == 1 and len(matches) == 0:
+
+        subproject, index = table_matches[0]
+        command_name = tables[subproject]["Command"][index]
+        description = tables[subproject]["Description"][index]
+        class_path_relative = tables[subproject]["Path"][index]
+        class_path = "pts." + subproject + "." + class_path_relative
+        module_path, class_name = class_path.rsplit('.', 1)
+        configuration_method_table = tables[subproject]["Configuration method"][index]
+
+        # Determine configuration module path
+        configuration_name = tables[subproject]["Configuration"][index]
+        if configuration_name == "--": configuration_name = command_name
+        configuration_module_path = "pts." + subproject + ".config." + configuration_name
+
+        # Get the definition
+        definition = get_definition(class_name, configuration_module_path, cwd=cwd)
+
+        # Exact command name
+        exact_command_name = subproject + "/" + command_name
+
+        # Return the definition
+        return definition
+
+    # Show possible matches if there are more than just one
+    else: raise ValueError("The PTS command '" + command + "' is ambigious")
+
+# -----------------------------------------------------------------
+
+def execute_pts_remote(*args, **kwargs):
+
+    """
+    This function ...
+    :param args:
+    :param kwargs:
+    :return:
+    """
+
+    if len(args) == 0: raise ValueError("No arguments were provided")
+
+    # Get the remote
+    remote = args[0]
+
+    # Determine python path
+    python_path = remote.conda_pts_environment_python_path
+
+    # Get PTS command
+    if len(args) < 2: raise ValueError("No command specified")
+    command = args[1]
+    if len(args) > 2: positional = args[2:]
+    else: positional = []
+
+    # Get options
+    show_output = kwargs.pop("show_output", False)
+    cwd = kwargs.pop("cwd", None)
+
+    # Create string of positional arguments
+    positional_string = " ".join([strings.add_quotes_if_spaces(item) for item in positional])
+
+    _definition = None
+
+    # Get optional arguments
+    optional_parts = []
+    for name in kwargs:
+
+        # A flag option
+        if types.is_boolean_type(kwargs[name]):
+
+            # Get the definition if not yet done
+            if _definition is None: _definition = get_definition_for_command(command)
+
+            if kwargs[name]: # value of True
+
+                # If default is True, this option should not be specified on the command line
+                if _definition.flags[name].default: continue
+
+                # If the default is False, the option should be added to the command line
+                else: pass # (name = name)
+
+            else:  # value of False
+
+                # If default is True, the option should be added to the command line, but with not_
+                if _definition.flags[name].default: name = "not_" + name
+
+                # If the default is False, this option should not be specified on the command line
+                else: continue
+
+        # Set command-line name
+        if strings.is_character(name): option_name = "-" + name
+        else: option_name = "--" + name
+
+        if types.is_boolean_type(kwargs[name]): optional_parts.append(option_name)
+        else:
+            value = strings.add_quotes_if_spaces(str(kwargs[name]))
+            optional_parts.append(option_name + " " + value)
+
+    # Create string of optional arguments
+    optional_string = " ".join(optional_parts)
+
+    # Create command string
+    command = python_path + " " + remote.pts_main_path + " " + command + " " + positional_string + " " + optional_string
+
+    # Execute
+    output = remote.execute(command, show_output=show_output, cwd=cwd)
+
+    # If error popped up
+    if "Error:" in output[-1]: raise RuntimeError(output[-1])
+
+    # Return the output lines
+    return output
 
 # -----------------------------------------------------------------
 
@@ -365,7 +535,6 @@ class PTSRemoteLauncher(object):
         log.info("Running in attached mode ...")
 
         # START REMOTE PYTHON SESSION
-        #python = self.remote.start_python_session(output_path=remote_temp_path)
         python = self.remote.start_python_session(output_path=remote_temp_path, attached=True)
 
         # Import the class from which to make an instance
@@ -733,6 +902,8 @@ class PTSRemoteLauncher(object):
         """
         This function ...
         :param pts_command:
+        :param config_dict:
+        :param input_dict:
         :return:
         """
 
@@ -770,12 +941,7 @@ def find_match(pts_command):
     table_matches = introspection.find_matches_tables(pts_command, tables)
 
     # No match
-    if len(matches) + len(table_matches) == 0:
-
-        #log.error("There is no match")
-        #show_all_available(scripts, tables)
-        #exit()
-        raise ValueError("There is no match with a PTS command for '" + pts_command + "'")
+    if len(matches) + len(table_matches) == 0: raise ValueError("There is no match with a PTS command for '" + pts_command + "'")
 
     # If there is a unique match in an existing script, raise error
     elif len(matches) == 1 and len(table_matches) == 0: raise ValueError("This do command cannot be executed remotely")
