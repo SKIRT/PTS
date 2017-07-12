@@ -813,6 +813,19 @@ def walk_level(some_dir, level=1):
 
 # -----------------------------------------------------------------
 
+def nfiles_in_path(*args, **kwargs):
+
+    """
+    Thisf unction ...
+    :param args:
+    :param kwargs:
+    :return:
+    """
+
+    return len(files_in_path(*args, **kwargs))
+
+# -----------------------------------------------------------------
+
 def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None,
                   extensions=False, returns="path", exact_name=None, exact_not_name=None, startswith=None, endswith=None,
                   sort=None, contains_operator="OR", recursion_level=None, unpack=False):

@@ -25,7 +25,7 @@ from .options import LoggingOptions
 from ..tools import introspection, time
 from ..tools import filesystem as fs
 from ..tools.logging import log
-from ..remote.host import Host
+from ..remote.host import Host, load_host
 from .analyser import SimulationAnalyser
 from .options import AnalysisOptions
 from ..simulation.definition import create_definitions
@@ -451,7 +451,7 @@ class BatchLauncher(Configurable):
 
             # Create the list of hosts
             hosts = []
-            for host_id in self.host_ids: hosts.append(Host.from_host_id(host_id))
+            for host_id in self.host_ids: hosts.append(load_host(host_id))
 
             # Return the list of hosts
             return hosts
@@ -481,7 +481,7 @@ class BatchLauncher(Configurable):
             for host_id in self.host_ids:
 
                 # Create Host instance
-                host = Host.from_host_id(host_id)
+                host = load_host(host_id)
 
                 # If it's a scheduler, add it to the list
                 if host.scheduler: host_ids.append(host_id)
@@ -513,7 +513,7 @@ class BatchLauncher(Configurable):
             for host_id in self.host_ids:
 
                 # Create a Host instance
-                host = Host.from_host_id(host_id)
+                host = load_host(host_id)
 
                 # If it's a scheulder, add it to the list
                 if host.scheduler: hosts.append(host)
@@ -544,7 +544,7 @@ class BatchLauncher(Configurable):
             for host_id in self.host_ids:
 
                 # Create Host instance
-                host = Host.from_host_id(host_id)
+                host = load_host(host_id)
 
                 # If it's not a scheduler, add it to the list
                 if not host.scheduler: host_ids.append(host_id)
@@ -576,7 +576,7 @@ class BatchLauncher(Configurable):
             for host_id in self.host_ids:
 
                 # Create a Host instance
-                host = Host.from_host_id(host_id)
+                host = load_host(host_id)
 
                 # If it's a not scheulder, add it to the list
                 if not host.scheduler: hosts.append(host)

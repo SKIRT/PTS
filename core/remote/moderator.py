@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from .remote import is_available
 from ..tools.logging import log
-from .host import Host
+from .host import load_host
 
 # -----------------------------------------------------------------
 
@@ -308,7 +308,7 @@ class PlatformModerator(object):
         host_ids = []
         for host_id in self.host_ids_for_ensemble(name):
 
-            host = Host.from_host_id(host_id)
+            host = load_host(host_id)
 
             # Skip schedulers
             if host.scheduler: continue
@@ -329,7 +329,7 @@ class PlatformModerator(object):
         host_ids = []
         for host_id in self.host_ids_for_ensemble(name):
 
-            host = Host.from_host_id(host_id)
+            host = load_host(host_id)
 
             # Skip non-schedulers
             if not host.scheduler: continue

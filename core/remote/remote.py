@@ -26,7 +26,7 @@ from lxml import etree
 from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
-from .host import Host
+from .host import Host, load_host
 from .utils import HostDownException
 from .vpn import VPN
 from ..tools.logging import log
@@ -189,7 +189,7 @@ class Remote(object):
 
         # Create the host object
         if isinstance(host_id, Host): self.host = host_id
-        elif types.is_string_type(host_id): self.host = Host.from_host_id(host_id, cluster_name)
+        elif types.is_string_type(host_id): self.host = load_host(host_id, cluster_name)
         else: raise ValueError("Invalid value for 'host_id'")
 
         # Set the host ID
@@ -2530,64 +2530,6 @@ class Remote(object):
 
         # Return the output
         if output: return the_output
-
-    # -----------------------------------------------------------------
-
-    def execute_pts(self, *args, **kwargs):
-
-        """
-        This function ...
-        :param args:
-        :param kwargs:
-        :return:
-        """
-
-        # Determine python path
-        python_path = self.conda_pts_environment_python_path
-        #print("PYTHON PATH", python_path)
-
-        if len(args) == 0: raise ValueError("No command specified")
-        command = args[0]
-        if len(args) > 1: positional = args[1:]
-        else: positional = []
-
-        # Get options
-        show_output = kwargs.pop("show_output", False)
-        cwd = kwargs.pop("cwd", None)
-
-        positional_string = " ".join([strings.add_quotes_if_spaces(item) for item in positional])
-        optional_parts = []
-        for name in kwargs:
-
-            # TODO: implement this, based on the defaults for the PTS command
-            if types.is_boolean_type(kwargs[name]):
-                continue
-                if kwargs[name]: # value of True
-                    #option_name = name
-                    pass
-                else:  # value of False
-                    #option_name = "not_" + name
-                    name = "not_" + name
-
-            # Set command-line name
-            if strings.is_character(name): option_name = "-" + name
-            else: option_name = "--" + name
-
-            if types.is_boolean_type(kwargs[name]): optional_parts.append(option_name)
-            else:
-                value = strings.add_quotes_if_spaces(str(kwargs[name]))
-                optional_parts.append(option_name + " " + value)
-
-        optional_string = " ".join(optional_parts)
-
-        # Create command string
-        command = python_path + " " + self.pts_main_path + " " + command + " " + positional_string + " " + optional_string
-
-        # Execute
-        output = self.execute(command, show_output=show_output, cwd=cwd)
-
-        # If error popped up
-        if "Error:" in output[-1]: raise RuntimeError(output[-1])
 
     # -----------------------------------------------------------------
 

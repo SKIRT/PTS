@@ -15,7 +15,7 @@ import pexpect
 import subprocess
 
 # Import the relevant PTS classes and modules
-from .host import Host
+from .host import Host, load_host
 from .vpn import VPN
 from ..tools.logging import log
 from ..tools import filesystem as fs
@@ -134,7 +134,7 @@ class RemoteMounter(object):
 
         # Get host
         if isinstance(host_id, Host): host = host_id
-        elif types.is_string_type(host_id): host = Host.from_host_id(host_id)
+        elif types.is_string_type(host_id): host = load_host(host_id)
         else: raise ValueError("Invalid value for 'host_id'")
 
         # If a VPN connection is required for the remote host
@@ -207,7 +207,7 @@ class RemoteMounter(object):
 
         # Get host
         if isinstance(host_id, Host): host = host_id
-        elif types.is_string_type(host_id): host = Host.from_host_id(host_id)
+        elif types.is_string_type(host_id): host = load_host(host_id)
         else: raise ValueError("Invalid value for 'host_id'")
 
         # Create directory for remote

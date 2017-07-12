@@ -19,7 +19,7 @@ from pts.core.simulation.jobscript import SKIRTJobScript
 from pts.core.launch.options import LoggingOptions
 from pts.core.simulation.arguments import SkirtArguments
 from pts.core.simulation.definition import SingleSimulationDefinition
-from pts.core.remote.host import Host
+from pts.core.remote.host import load_host
 from pts.core.simulation.parallelization import Parallelization
 
 # -----------------------------------------------------------------
@@ -48,7 +48,7 @@ config = parse_arguments("installation_commands", definition)
 
 # -----------------------------------------------------------------
 
-host = Host.from_host_id(config.remote, config.cluster)
+host = load_host(config.remote, config.cluster)
 
 modules = []
 modules.append("iimpi/2016b")

@@ -14,11 +14,10 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import subprocess
-import tempfile
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
-from pts.core.remote.host import find_host_ids, Host
+from pts.core.remote.host import find_host_ids, load_host
 from pts.core.tools import filesystem as fs
 from pts.core.tools import introspection
 from pts.core.tools import time
@@ -40,7 +39,7 @@ if not introspection.is_macos(): raise RuntimeError("This command only works on 
 # -----------------------------------------------------------------
 
 # Get host
-host = Host.from_host_id(config.remote)
+host = load_host(config.remote)
 
 # If a VPN connection is required for the remote host
 #if host.requires_vpn: self.connect_to_vpn(host)

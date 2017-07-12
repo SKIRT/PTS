@@ -20,16 +20,27 @@ from ..tools import introspection, network
 from ..tools import filesystem as fs
 from ..basics.configuration import Configuration
 from ..basics.map import Map
+from ..tools import types
 
 # -----------------------------------------------------------------
 
-def find_host_ids(schedulers=None):
+protocols = ["ssh", "smb"]
+
+# -----------------------------------------------------------------
+
+def find_host_ids(schedulers=None, protocol="ssh"):
 
     """
     This function ...
     :param schedulers: None, True or False
+    :param protocol: ssh, smb or combination
     :return:
     """
+
+    # Set protocol as list
+    if types.is_sequence(protocol): pass
+    elif types.is_string_type(protocol): protocol = [protocol]
+    else: raise ValueError("Invalid option for 'protocol'")
 
     # Create a list to contain the host ids
     ids = []
@@ -39,21 +50,18 @@ def find_host_ids(schedulers=None):
     if not fs.is_directory(hosts_directory): fs.create_directory(hosts_directory, recursive=True)
 
     # Loop over the configuration files in the hosts directory
-    for filename in os.listdir(hosts_directory):
+    for file_path, host_id in fs.files_in_path(hosts_directory, extension="cfg", returns=["path", "name"]):
 
-        # Determine the full path to the host file
-        file_path = fs.join(hosts_directory, filename)
-
-        # Ignore directories and hidden files
-        if filename.startswith(".") or not os.path.isfile(file_path): continue
-
-        # Get the host id for this line
-        host_id = filename.split(".")[0]
+        #host = None
+        host = load_host(host_id)
 
         # If schedulers is specified (False or True)
         if schedulers is not None:
-            host = Host.from_host_id(host_id)
+            #if host is None: host = load_host(host_id)
             if schedulers != host.scheduler: continue
+
+        # Check whether this host's protocol is part of those requested
+        if host.protocol not in protocol: continue
 
         # Add the id to the list
         ids.append(host_id)
@@ -82,7 +90,8 @@ def has_simulations(host_id):
     if not fs.is_directory(host_run_dir): fs.create_directory(host_run_dir)
 
     # Check whether simulation files are present
-    return len([item for item in os.listdir(host_run_dir) if item.endswith(".sim") and not item.startswith(".")]) > 0
+    #return len([item for item in os.listdir(host_run_dir) if item.endswith(".sim") and not item.startswith(".")]) > 0
+    return fs.nfiles_in_path(host_run_dir, extension="sim") > 0
 
 # -----------------------------------------------------------------
 
@@ -103,11 +112,29 @@ def has_tasks(host_id):
     if not fs.is_directory(host_run_dir): fs.create_directory(host_run_dir)
 
     # Check whether task files are present
+    #return len([item for item in os.listdir(host_run_dir) if item.endswith(".task") and not item.startswith(".")]) > 0
     return len([item for item in os.listdir(host_run_dir) if item.endswith(".task") and not item.startswith(".")]) > 0
 
 # -----------------------------------------------------------------
 
-protocols = ["ssh", "smb"]
+def load_host(host_id, clustername=None):
+
+    """
+    This function ...
+    :param host_id:
+    :param clustername:
+    :return:
+    """
+
+    ## Read the host configuration file
+
+    # Determine the path to the configuration file for the specified host and check if it is present
+    host_file_path = fs.join(introspection.pts_user_dir, "hosts", host_id + ".cfg")
+    if not os.path.isfile(host_file_path): raise ValueError(
+        "The configuration settings for remote host " + host_id + " could not be found in the PTS/user/hosts directory")
+
+    # Create and return the host object
+    return Host.from_file(host_file_path, clustername=clustername)
 
 # -----------------------------------------------------------------
 
@@ -154,27 +181,6 @@ class Host(object):
         self.key_password = kwargs.pop("key_password", None)
         self.quota_command = kwargs.pop("quota_command", None)
         self.protocol = kwargs.pop("protocol", "ssh")
-
-    # -----------------------------------------------------------------
-
-    @classmethod
-    def from_host_id(cls, host_id, clustername=None):
-
-        """
-        This function ...
-        :param host_id:
-        :param clustername:
-        :return:
-        """
-
-        ## Read the host configuration file
-
-        # Determine the path to the configuration file for the specified host and check if it is present
-        host_file_path = fs.join(introspection.pts_user_dir, "hosts", host_id + ".cfg")
-        if not os.path.isfile(host_file_path): raise ValueError("The configuration settings for remote host " + host_id + " could not be found in the PTS/user/hosts directory")
-
-        # Create and return the host object
-        return cls.from_file(host_file_path, clustername=clustername)
 
     # -----------------------------------------------------------------
 

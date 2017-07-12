@@ -29,7 +29,7 @@ from ...core.advanced.runtimeestimator import RuntimeEstimator
 from ...core.tools.stringify import stringify_not_list, stringify
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.advanced.parallelizationtool import ParallelizationTool
-from ...core.remote.host import Host
+from ...core.remote.host import load_host
 from ...core.basics.configuration import ConfigurationDefinition, create_configuration_interactive
 from .evaluate import prepare_simulation, generate_simulation_name, get_parameter_values_for_named_individual
 from ...core.simulation.input import SimulationInput
@@ -273,7 +273,7 @@ class ParameterExplorer(FittingComponent):
         remote_host_ids = []
         if self.fitting_run.ngenerations == 0:
             for host_id in self.config.remotes:
-                if Host.from_host_id(host_id).scheduler:
+                if load_host(host_id).scheduler:
                     log.warning("Not using remote host '" + host_id + "' for the initial generation because it uses a scheduling system for launching jobs")
                 else: remote_host_ids.append(host_id)
         else: remote_host_ids = self.config.remotes
