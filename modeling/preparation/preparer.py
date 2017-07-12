@@ -157,7 +157,7 @@ def steps_before_and_including(step):
 
 # -----------------------------------------------------------------
 
-def load_statistics(modeling_path, prep_name):
+def get_statistics_path(modeling_path, prep_name):
 
     """
     This function ...
@@ -168,8 +168,35 @@ def load_statistics(modeling_path, prep_name):
 
     prep_path = fs.join(modeling_path, "prep", prep_name)
     statistics_path = fs.join(prep_path, statistics_name)
-    statistics = PreparationStatistics.from_file(statistics_path)
-    return statistics
+    return statistics_path
+
+# -----------------------------------------------------------------
+
+def has_statistics(modeling_path, prep_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param prep_name:
+    :return:
+    """
+
+    path = get_statistics_path(modeling_path, prep_name)
+    return fs.is_file(path)
+
+# -----------------------------------------------------------------
+
+def load_statistics(modeling_path, prep_name):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param prep_name:
+    :return:
+    """
+
+    path = get_statistics_path(modeling_path, prep_name)
+    return PreparationStatistics.from_file(path)
 
 # -----------------------------------------------------------------
 

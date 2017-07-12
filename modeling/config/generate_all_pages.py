@@ -22,9 +22,16 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 
 # -----------------------------------------------------------------
 
-# Fitting run setting
-if not has_fitting_runs(modeling_path): pass
+# No fitting runs (yet)
+if not has_fitting_runs(modeling_path):
+
+    # Check whether we can prompt for model definitions
+
+
+# One fitting run
 elif has_single_fitting_run(modeling_path): definition.add_fixed("fitting_run", "string", get_single_fitting_run_name)
+
+# Multiple fitting runs
 else: definition.add_required("fitting_run", "string", "name of the fitting run to use", choices=get_fitting_run_names(modeling_path))
 
 # -----------------------------------------------------------------

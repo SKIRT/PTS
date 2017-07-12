@@ -7,14 +7,15 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.modeling.build.component import get_model_names
 from pts.core.tools import filesystem as fs
 from pts.modeling.config.build_representation import dust_grid_types, default_dust_grid_type
+from pts.modeling.build.suite import ModelSuite
 
 # -----------------------------------------------------------------
 
 # Determine the modeling path
 modeling_path = fs.cwd()
+suite = ModelSuite.from_modeling_path(modeling_path)
 
 # -----------------------------------------------------------------
 
@@ -26,7 +27,7 @@ default_nrepresentations = 2
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
 # Name of the model for which to create the representation
-model_names = get_model_names(modeling_path)
+model_names = suite.model_names
 if len(model_names) == 0: raise RuntimeError("No models found: first run build_model to create a new model")
 elif len(model_names) == 1: definition.add_fixed("model_name", "name of the model", model_names[0])
 else: definition.add_required("model_name", "string", "name of the model", choices=model_names)

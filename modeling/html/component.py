@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import webbrowser
 from abc import ABCMeta, abstractmethod, abstractproperty
 
 # Import the relevant PTS classes and modules
@@ -431,7 +430,6 @@ class HTMLPageComponent(GalaxyModelingComponent):
         log.info("Showing the page ...")
 
         # Open
-        webbrowser._tryorder = ["safari"]
-        webbrowser.open(self.page_path, new=2)
+        fs.open_in_browser(self.page_path)
 
 # -----------------------------------------------------------------

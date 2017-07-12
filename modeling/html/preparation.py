@@ -16,8 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ...core.tools.logging import log
 from .component import HTMLPageComponent, table_class
 from ...core.tools import html
-from ..preparation.preparer import load_statistics
-from ...core.filter.filter import parse_filter
+from ..preparation.preparer import load_statistics, has_statistics
 
 # -----------------------------------------------------------------
 
@@ -107,15 +106,65 @@ class PreparationPageGenerator(HTMLPageComponent):
         # Inform the user
         log.info("Making tables ...")
 
+        # Load the statistics
+        self.load_statistics()
+
+        # Make the statistics table
+        self.make_statistics_table()
+
         # Make statistics tables
-        self.make_statistics_tables()
+        #self.make_statistics_tables()
 
         # Make the table
-        self.make_statistics_table()
+        #self.make_statistics_table()
 
     # -----------------------------------------------------------------
 
-    def make_statistics_tables(self):
+    def load_statistics(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the statistics ...")
+
+        # Loop over the preparation names
+        for prep_name in self.preparation_names:
+
+            # Check
+            if not has_statistics(self.config.path, prep_name):
+
+                log.warning("Statistics not found for the '" + prep_name + "' image")
+                continue
+
+            # Load the statistics
+            statistics = load_statistics(self.config.path, prep_name)
+
+            # Add
+            self.statistics[prep_name] = statistics
+
+    # -----------------------------------------------------------------
+
+    def make_statistics_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making the statistics table ...")
+
+
+
+        # Loop over the preparation names
+
+
+    # -----------------------------------------------------------------
+
+    def make_statistics_tables_old(self):
 
         """
         This function ...
@@ -139,7 +188,7 @@ class PreparationPageGenerator(HTMLPageComponent):
 
     # -----------------------------------------------------------------
 
-    def make_statistics_table(self):
+    def make_statistics_table_old(self):
 
         """
         This function ...
@@ -154,7 +203,11 @@ class PreparationPageGenerator(HTMLPageComponent):
         for name in self.preparation_names:
 
             # Check whether statistics are found
+            if name not in self.statistics_tables:
+                log.warning("Preparation statistics not found for the '" + name + "' image")
+                text = ""
 
+            else:
 
             # Set title
             text = ""

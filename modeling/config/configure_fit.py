@@ -7,14 +7,15 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.modeling.build.component import get_model_names
 from pts.modeling.fitting.component import get_run_names
 from pts.modeling.component.component import get_default_fitting_method
 from pts.core.tools import filesystem as fs
+from pts.modeling.build.suite import ModelSuite
 
 # -----------------------------------------------------------------
 
 modeling_path = fs.cwd()
+suite = ModelSuite.from_modeling_path(modeling_path)
 
 # -----------------------------------------------------------------
 
@@ -37,7 +38,7 @@ if len(run_names) == 0: definition.add_positional_optional("name", "string", "na
 else: definition.add_required("name", "string", "name for the fitting run", forbidden=run_names)
 
 # Name of the model to use
-model_names = get_model_names(modeling_path)
+model_names = suite.model_names
 if len(model_names) == 1: definition.add_fixed("model_name", "name of the model to use for the fitting", model_names[0])
 else: definition.add_optional("model_name", "string", "name of the model to use for the fitting", choices=model_names)
 

@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import webbrowser
-
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.tools import filesystem as fs
@@ -78,8 +75,6 @@ mounter.unmount(host)
 # -----------------------------------------------------------------
 
 # CHECK
-if config.check:
-    webbrowser._tryorder = ["safari"]
-    webbrowser.open(url, new=2)
+if config.check: fs.open_in_browser(url)
 
 # -----------------------------------------------------------------

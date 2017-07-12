@@ -48,6 +48,6 @@ if config.generate:
 
 # Check whether the status page is present
 if not fs.is_file(environment.html_status_path): raise ValueError("The status page is not present")
-else: fs.open_file(environment.html_status_path)
+else: fs.open_in_browser(environment.html_status_path)
 
 # -----------------------------------------------------------------

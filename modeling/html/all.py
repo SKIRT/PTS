@@ -12,8 +12,8 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import webbrowser
+# Import astronomical modules
+from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from pts.modeling.html.status import StatusPageGenerator
@@ -24,6 +24,7 @@ from pts.modeling.html.maps import MapsPageGenerator
 from pts.modeling.html.model import ModelPageGenerator
 from pts.core.tools.logging import log
 from ..component.galaxy import GalaxyModelingComponent
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -91,6 +92,26 @@ class AllPagesGenerator(GalaxyModelingComponent):
 
         # Call the setup function of the base class
         super(AllPagesGenerator, self).setup(**kwargs)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def model_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def model_definition(self):
+
+        """
+        This function ...
+        :return:
+        """
 
     # -----------------------------------------------------------------
 
@@ -225,7 +246,6 @@ class AllPagesGenerator(GalaxyModelingComponent):
         log.info("Showing the pages ...")
 
         # Open
-        webbrowser._tryorder = ["safari"]
-        webbrowser.open(self.environment.html_status_path, new=2)
+        fs.open_in_browser(self.environment.html_status_path)
 
 # -----------------------------------------------------------------

@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-#from ..component.galaxy import GalaxyModelingComponent
 from ..component.component import ModelingComponent
 from ...core.tools import filesystem as fs
 from .tables import ModelsTable, RepresentationsTable
@@ -23,14 +22,7 @@ from ..basics.models import DeprojectionModel3D, load_3d_model
 from ...core.tools.serialization import load_dict
 from ...magic.core.frame import Frame
 from ...magic.basics.coordinatesystem import CoordinateSystem
-
-# -----------------------------------------------------------------
-
-parameters_filename = "parameters.cfg"
-deprojection_filename = "deprojection.mod"
-model_map_filename = "map.fits"
-model_filename = "model.mod"
-properties_filename = "properties.dat"
+from .suite import ModelSuite
 
 # -----------------------------------------------------------------
 
@@ -51,17 +43,8 @@ class BuildComponent(ModelingComponent):
         # Call the constructor of the base class
         super(BuildComponent, self).__init__(*args, **kwargs)
 
-        # Path to the models directory
-        self.models_path = None
-
-        # Path to the representations directory
-        self.representations_path = None
-
-        # Path to the models table
-        self.models_table_path = None
-
-        # Path to the representations table
-        self.representations_table_path = None
+        # The model suite
+        self.suite = None
 
     # -----------------------------------------------------------------
 
@@ -76,27 +59,56 @@ class BuildComponent(ModelingComponent):
         # Call the setup function of the base class
         super(BuildComponent, self).setup(**kwargs)
 
-        # Determine the path to the models directory
-        self.models_path = fs.create_directory_in(self.build_path, "models")
+        # Create the model suite
+        self.suite = ModelSuite(self.build_path)
 
-        # Determine the path to the models table
-        self.models_table_path = fs.join(self.models_path, "models.dat")
+    # -----------------------------------------------------------------
 
-        # Initialize the models table if necessary
-        if not fs.is_file(self.models_table_path):
-            table = ModelsTable()
-            table.saveto(self.models_table_path)
+    @property
+    def models_path(self):
 
-        # Determine the path to the representations directory
-        self.representations_path = fs.create_directory_in(self.build_path, "representations")
+        """
+        This function ...
+        :return:
+        """
 
-        # Determine the path to the representations table
-        self.representations_table_path = fs.join(self.representations_path, "representations.dat")
+        return self.suite.models_path
 
-        # Initialize the representations table if necessary
-        if not fs.is_file(self.representations_table_path):
-            table = RepresentationsTable()
-            table.saveto(self.representations_table_path)
+    # -----------------------------------------------------------------
+
+    @property
+    def representations_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.suite.representations_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def models_table_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.suite.models_table_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def representations_table_path(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.suite.representations_table_path
 
     # -----------------------------------------------------------------
 
@@ -108,11 +120,7 @@ class BuildComponent(ModelingComponent):
         :return:
         """
 
-        from .definition import ModelDefinition
-
-        path = self.get_model_path(model_name)
-        if not fs.is_directory(path): raise ValueError("Model does not exist")
-        return ModelDefinition(model_name, path)
+        return self.suite.get_model_definition(model_name)
 
     # -----------------------------------------------------------------
 
@@ -124,8 +132,7 @@ class BuildComponent(ModelingComponent):
         :return:
         """
 
-        # Open the table
-        return ModelsTable.from_file(self.models_table_path)
+        return self.suite.models_table
 
     # -----------------------------------------------------------------
 
@@ -137,7 +144,7 @@ class BuildComponent(ModelingComponent):
         :return:
         """
 
-        return self.models_table.names
+        return self.suite.model_names
 
     # -----------------------------------------------------------------
 
@@ -149,7 +156,7 @@ class BuildComponent(ModelingComponent):
         :return:
         """
 
-        return fs.join(self.models_path, model_name)
+        return self.suite.get_model_path(model_name)
 
     # -----------------------------------------------------------------
 
@@ -161,7 +168,7 @@ class BuildComponent(ModelingComponent):
         :return:
         """
 
-        return fs.join(self.get_model_path(model_name), "stellar")
+        return self.suite.get_model_stellar_path(model_name)
 
     # -----------------------------------------------------------------
 
@@ -173,7 +180,7 @@ class BuildComponent(ModelingComponent):
         :return:
         """
 
-        return fs.join(self.get_model_path(model_name), "dust")
+        return self.suite.get_model_dust_path(model_name)
 
     # -----------------------------------------------------------------
 
@@ -184,7 +191,7 @@ class BuildComponent(ModelingComponent):
         :return:
         """
 
-        return fs.directories_in_path(self.get_model_stellar_path(model_name), returns="name")
+        return self.suite.get_stellar_component_names(model_name)
 
     # -----------------------------------------------------------------
 
@@ -196,7 +203,7 @@ class BuildComponent(ModelingComponent):
         :return:
         """
 
-        return fs.directories_in_path(self.get_model_dust_path(model_name), returns="name")
+        return self.suite.get_dust_component_names(model_name)
 
     # -----------------------------------------------------------------
 
@@ -208,9 +215,7 @@ class BuildComponent(ModelingComponent):
         :return:
         """
 
-        path = self.get_representation_path(representation_name)
-        if not fs.is_directory(path): raise ValueError("Representation does not exist")
-        else: return get_representation(self.config.path, representation_name)
+        return self.suite.get_representation(representation_name)
 
     # -----------------------------------------------------------------
 
@@ -222,7 +227,7 @@ class BuildComponent(ModelingComponent):
         :return:
         """
 
-        return fs.join(self.representations_path, representation_name)
+        return self.suite.get_representation_path(representation_name)
 
     # -----------------------------------------------------------------
 
@@ -234,7 +239,7 @@ class BuildComponent(ModelingComponent):
         :return:
         """
 
-        return RepresentationsTable.from_file(self.representations_table_path)
+        return self.suite.representations_table
 
     # -----------------------------------------------------------------
 
@@ -246,7 +251,7 @@ class BuildComponent(ModelingComponent):
         :return:
         """
 
-        return self.representations_table.names
+        return self.suite.representation_names
 
     # -----------------------------------------------------------------
 
@@ -258,7 +263,7 @@ class BuildComponent(ModelingComponent):
         :return:
         """
 
-        return self.representations_table.representations_for_model(model_name)
+        return self.suite.representations_for_model(model_name)
 
     # -----------------------------------------------------------------
 
@@ -274,20 +279,7 @@ class BuildComponent(ModelingComponent):
         :return:
         """
 
-        # Get the galaxy distance, the inclination and position angle
-        distance = galaxy_properties.distance
-        inclination = galaxy_properties.inclination
-        position_angle = disk_position_angle
-
-        # Get center coordinate of galaxy
-        galaxy_center = galaxy_properties.center
-
-        # Create deprojection
-        # wcs, galaxy_center, distance, pa, inclination, filepath, scale_height
-        deprojection = DeprojectionModel3D.from_wcs(wcs, galaxy_center, distance, position_angle, inclination, filename, scaleheight)
-
-        # Return the deprojection
-        return deprojection
+        return self.suite.create_deprojection_for_wcs(galaxy_properties, disk_position_angle, wcs, filename, scaleheight)
 
     # -----------------------------------------------------------------
 
@@ -303,48 +295,9 @@ class BuildComponent(ModelingComponent):
         :return:
         """
 
-        # Get the WCS
-        reference_wcs = map.wcs
-
-        # Create the deprojection
-        return self.create_deprojection_for_wcs(galaxy_properties, disk_position_angle, reference_wcs, filename, scaleheight)
+        return self.suite.create_deprojection_for_map(galaxy_properties, disk_position_angle, map, filename, scaleheight)
 
 # -----------------------------------------------------------------
-
-def get_models_table_path(modeling_path):
-
-    """
-    This function ...
-    :param modeling_path:
-    :return:
-    """
-
-    return fs.join(modeling_path, "build", "models", "models.dat")
-
-# -----------------------------------------------------------------
-
-def get_models_table(modeling_path):
-
-    """
-    This function ...
-    :param modeling_path:
-    :return:
-    """
-
-    return ModelsTable.from_file(get_models_table_path(modeling_path))
-
-# -----------------------------------------------------------------
-
-def get_model_names(modeling_path):
-
-    """
-    This function ...
-    :param modeling_path:
-    :return:
-    """
-
-    if not fs.is_file(get_models_table_path(modeling_path)): return []
-    return get_models_table(modeling_path).names
 
 # -----------------------------------------------------------------
 
@@ -680,6 +633,52 @@ def load_dust_component_deprojection(modeling_path, model_name, component_name):
 
 # -----------------------------------------------------------------
 
+def get_models_path(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return fs.join(modeling_path, "build", models_name)
+
+# -----------------------------------------------------------------
+
+def get_representations_path(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return fs.join(modeling_path, "build", representations_name)
+
+# -----------------------------------------------------------------
+
+def get_definitions_table_path(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return fs.join(get_models_path(modeling_path), models_table_filename)
+
+# -----------------------------------------------------------------
+
+def get_definitions_table(modeling_path):
+
+    """
+    This function ...
+    :param modeling_path:
+    :return:
+    """
+
+    return
+
 def get_representations_table_path(modeling_path):
 
     """
@@ -688,7 +687,7 @@ def get_representations_table_path(modeling_path):
     :return:
     """
 
-    return fs.join(modeling_path, "build", "representations", "representations.dat")
+    return fs.join(modeling_path, "build", representations_name, representations_table_filename)
 
 # -----------------------------------------------------------------
 
@@ -739,7 +738,7 @@ def get_representation_path(modeling_path, name):
     :return:
     """
 
-    return fs.join(modeling_path, "build", "representations", name)
+    return fs.join(modeling_path, "build", representations_name, name)
 
 # -----------------------------------------------------------------
 

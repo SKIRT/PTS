@@ -7,13 +7,14 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.modeling.build.component import get_model_names, get_representation_names
 from pts.core.tools import filesystem as fs
+from pts.modeling.build.suite import ModelSuite
 
 # -----------------------------------------------------------------
 
 # Determine the modeling path
 modeling_path = fs.cwd()
+suite = ModelSuite.from_modeling_path(modeling_path)
 
 # -----------------------------------------------------------------
 
@@ -26,12 +27,12 @@ default_dust_grid_type = "bintree"
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
 # Name of the representation
-representation_names = get_representation_names(modeling_path)
+representation_names = suite.representation_names
 if len(representation_names) == 0: definition.add_optional("name", "string", "name for the representation", default="highres")
 else: definition.add_required("name", "string", "name for the representation")
 
 # Name of the model for which to create the representation
-model_names = get_model_names(modeling_path)
+model_names = suite.model_names
 if len(model_names) == 0: raise RuntimeError("No models found: first run build_model to create a new model")
 elif len(model_names) == 1: definition.add_fixed("model_name", "name of the model", model_names[0])
 else: definition.add_required("model_name", "string", "name of the model", choices=model_names)
