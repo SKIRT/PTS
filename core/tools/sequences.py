@@ -212,6 +212,33 @@ def all_equal(lst, ignore_none=False):
 
 # -----------------------------------------------------------------
 
+def get_all_equal_value(sequence):
+
+    """
+    This function ...
+    :param sequence:
+    :return:
+    """
+
+    if not all_equal(sequence): raise ValueError("Not all equal")
+    else: return sequence[0]
+
+# -----------------------------------------------------------------
+
+def get_first_not_none_value(sequence):
+
+    """
+    This function ...
+    :param sequence:
+    :return:
+    """
+
+    for item in sequence:
+        if item is not None: return item
+    return None
+
+# -----------------------------------------------------------------
+
 def all_close(lst, ignore_none=False, rtol=1.e-5, atol=1.e-8):
 
     """
@@ -738,5 +765,92 @@ def get_singleton(sequence):
     if len(sequence) == 0: raise ValueError("Empty sequence")
     elif len(sequence) > 1: raise ValueError("Not a singleton")
     else: return sequence[0]
+
+# -----------------------------------------------------------------
+
+def in_all(item, sequences):
+
+    """
+    This function ...
+    :param item:
+    :param sequences:
+    :return:
+    """
+
+    for sequence in sequences:
+        if item not in sequence: return False
+    return True
+
+# -----------------------------------------------------------------
+
+def in_some(item, sequences):
+
+    """
+    This function ...
+    :param item:
+    :param sequences:
+    :return:
+    """
+
+    for sequence in sequences:
+        if item in sequence: return True
+    return False
+
+# -----------------------------------------------------------------
+
+def union(*sequences):
+    
+    """
+    This function ...
+    :param sequences:
+    :return: 
+    """
+
+    if len(sequences) == 0: return []
+    elif len(sequences) == 1: return sequences[0][:] # make copy of the list
+
+    #else: return set().union(*sequences) # DOES PROBABLY NOT CONTAIN ORDER
+
+    # OWN IMPLEMENTATION: quadratic complexity!
+    else:
+
+        elements = []
+
+        # Just loop over each sequence sequentially
+        for sequence in sequences:
+            for item in sequence:
+                if item not in elements: elements.append(item)
+
+        # Return the list of elements
+        return elements
+
+# -----------------------------------------------------------------
+
+def intersection(*sequences):
+
+    """
+    This function ...
+    :return:
+    """
+
+    if len(sequences) == 0: return []
+    elif len(sequences) == 1: return sequences[0][:] # make copy of the list
+    else:
+        first_sequence = sequences[0]
+        other_sequences = sequences[1:]
+        return [item for item in first_sequence if in_all(item, other_sequences)]
+
+# -----------------------------------------------------------------
+
+def prepend(sequence, item):
+
+    """
+    This function ...
+    :param sequence:
+    :param item:
+    :return:
+    """
+
+    sequence.insert(0, item)
 
 # -----------------------------------------------------------------

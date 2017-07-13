@@ -25,6 +25,7 @@ from ..units.unit import PhotometricUnit
 from ..units.parsing import parse_unit as u
 from ..tools import filesystem as fs
 from ..tools import types
+from ..tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -62,6 +63,110 @@ class SmartTable(Table):
         # Initialize 'density' meta object
         if "density" not in self.meta: self.meta["density"] = []
         if "brightness" not in self.meta: self.meta["brightness"] = []
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_composites(cls, *composites, **kwargs):
+
+        """
+        This function ...
+        :param composites:
+        :param kwargs:
+        :return:
+        """
+
+        # Check number
+        if len(composites) == 0: raise ValueError("No input is provided")
+
+        # Get names
+        labels = kwargs.pop("labels", None)
+        label = kwargs.pop("label", "-")
+
+        # Get list of lists of property names
+        property_names = [composite.property_names for composite in composites]
+        #property_types = [composite.property_types for composite in composites]
+        #property_units = [composite.property_units for composite in composites]
+        #property_descriptions = [composite.property_descriptions for composite in composites]
+
+        # Determine the column names, types and descriptions
+        column_names = sequences.union(*property_names)
+        #column_units = sequences.union(*property_units)
+        #column_types = sequences.union(*property_types)
+        #column_descriptions = sequences.union(*property_descriptions)
+
+        # Add the label column name
+        if labels is not None: sequences.prepend(column_names, label)
+        else: labels = [None] * len(composites) # labels was None
+
+        # Create the table
+        table = cls()
+
+        column_types = []
+        column_units = []
+
+        # Make the columns
+        for name in column_names:
+
+            if name == label:
+
+                real_type = str
+                column_unit = None
+                column_description = "label"
+
+            else:
+
+                # Get the types, units and descriptions
+                types = [composite.type_for_property(name) for composite in composites]
+                units = [composite.unit_for_property(name) for composite in composites]
+                descriptions = [composite.description_for_property(name) for composite in composites]
+
+                # Determine column type, unit and description
+                column_type = sequences.get_all_equal_value(types)
+                column_unit = sequences.get_first_not_none_value(units)
+                column_description = sequences.get_first_not_none_value(descriptions)
+
+                column_types.append(column_type)
+                column_units.append(column_unit)
+
+                if column_type.endswith("real"): real_type = float
+                elif column_type.endswith("integer"): real_type = int
+                elif column_type.endswith("string"): real_type = str
+                elif column_type.endswith("boolean"): real_type = bool
+                else: raise ValueError("Column type not recognized: " + str(column_type))
+
+            # Add the column info
+            table.add_column_info(name, real_type, column_unit, column_description)
+
+        # Make the columns
+        #for name, dtype, description in zip(column_names, column_types, column_units, column_descriptions):
+        #    # Add column info
+        #    table.add_column_info(name, simple_dtype, unit, description)
+
+        # Add the rows
+        for composite_label, composite in zip(labels, composites):
+
+            values = []
+
+            # Fill the row
+            #for name, dtype, unit in zip(column_names, column_types, column_units):
+            for name in column_names:
+
+                if name == label: value = composite_label
+                else:
+
+                    # Get the value
+                    if hasattr(composite, name): value = getattr(composite, name)
+                    else: value = None
+
+                # Add the value
+                values.append(value)
+
+            # Add the row: unit conversion is done here
+            table.add_row(values)
+
+        # Return the table
+        return table
 
     # -----------------------------------------------------------------
 
@@ -726,7 +831,6 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
-
     @property
     def column_names(self):
 
@@ -736,6 +840,30 @@ class SmartTable(Table):
         """
 
         return self.colnames
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ncolumns(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.column_names)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nrows(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self)
 
     # -----------------------------------------------------------------
 

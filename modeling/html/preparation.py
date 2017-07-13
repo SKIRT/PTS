@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.html.preparation Contains the StatusPageGenerator class.
+## \package pts.modeling.html.preparation Contains the PreparationPageGenerator class.
 
 # -----------------------------------------------------------------
 
@@ -17,6 +17,7 @@ from ...core.tools.logging import log
 from .component import HTMLPageComponent, table_class
 from ...core.tools import html
 from ..preparation.preparer import load_statistics, has_statistics
+from ...core.basics.table import SmartTable
 
 # -----------------------------------------------------------------
 
@@ -38,7 +39,13 @@ class PreparationPageGenerator(HTMLPageComponent):
         super(PreparationPageGenerator, self).__init__(*args, **kwargs)
 
         # Tables
-        self.statistics_tables = dict()
+        #self.statistics_tables = dict()
+        #self.statistics_table = None
+
+        # The statistics for each image
+        self.statistics = dict()
+
+        # The complete statistics table
         self.statistics_table = None
 
     # -----------------------------------------------------------------
@@ -157,10 +164,24 @@ class PreparationPageGenerator(HTMLPageComponent):
         # Inform the user
         log.info("Making the statistics table ...")
 
+        # Get the statistics in a list for each image
+        statistics = []
+        for prep_name in self.preparation_names:
+            if prep_name in self.statistics: statistics.append(self.statistics[prep_name])
+            else: statistics.append(None)
 
+        # Create the table
+        table = SmartTable.from_composites(*statistics, labels=self.preparation_names, label="Image")
 
-        # Loop over the preparation names
+        # Create background colours
+        #for i in range(table.nrows):
+        #for fltr in self.environment.filters:
+        colours = []
+        for colour in self.environment.plotting_colours:
+            colours.append([colour] + [None] * (table.ncolumns - 1))
 
+        # Generate HTML table
+        self.statistics_table = html.SimpleTable(table.as_tuples(), table.column_names, css_class=table_class, tostr_kwargs=self.tostr_kwargs, bgcolors=colours)
 
     # -----------------------------------------------------------------
 

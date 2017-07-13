@@ -103,6 +103,9 @@ class AllPagesGenerator(GalaxyModelingComponent):
         :return:
         """
 
+        if self.config.model_name is not None: return
+
+
     # -----------------------------------------------------------------
 
     @lazyproperty

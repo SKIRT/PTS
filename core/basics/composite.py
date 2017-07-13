@@ -182,10 +182,6 @@ class SimplePropertyComposite(object):
             self.__dict__[name] = value
             return
 
-        #elif hasattr(self, "_" + name):
-        #    self.__dict__["_" + name] = value
-        #    return
-
         if value is None: pass
         elif isinstance(value, SimplePropertyComposite): assert name in self._descriptions
         else:
@@ -208,9 +204,6 @@ class SimplePropertyComposite(object):
                 parsing_function = getattr(parsing, the_type)
                 try: value = parsing_function(string)
                 except ValueError: raise ValueError("The value of '" + str(value) + "' for '" + name +  "' given is of the wrong type: '" + ptype + "', must be '" + the_type + "' (value is " + string + ")")
-
-        # Actually set the attribute
-        #super(SimplePropertyComposite, self).__setattr__(name, value)
 
         # Set the attribute
         self.__dict__[name] = value
@@ -266,6 +259,136 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def property_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = []
+        for name in vars(self):
+
+            # Skip internal variables
+            if name.startswith("_"): continue
+
+            # Add the name
+            names.append(name)
+
+        # Return the names
+        return names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def property_types(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        types = []
+        for name in self.property_names:
+
+            # Get the type
+            ptype = self._ptypes[name]
+            types.append(ptype)
+
+        # Return the types
+        return types
+
+    # -----------------------------------------------------------------
+
+    def type_for_property(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self._ptypes[name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def property_units(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        units = []
+        for name in self.property_names:
+
+            # Get the value
+            value = getattr(self, name)
+
+            # Check whether there is a unit
+            if hasattr(value, "unit"): unit = value.unit
+            else: unit = None
+
+            # Add the unit
+            units.append(unit)
+
+        # Return the list of units
+        return units
+
+    # -----------------------------------------------------------------
+
+    def unit_for_property(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get the value
+        value = getattr(self, name)
+
+        # Check whether there is a unit
+        if hasattr(value, "unit"): unit = value.unit
+        else: unit = None
+
+        # Return the unit
+        return unit
+
+    # -----------------------------------------------------------------
+
+    @property
+    def property_descriptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        descriptions = []
+        for name in self.property_names:
+
+            # Get the description
+            description = self._descriptions[name]
+            descriptions.append(description)
+
+        # Return the descriptions
+        return descriptions
+
+    # -----------------------------------------------------------------
+
+    def description_for_property(self, name):
+
+        """
+        This function ...
+        """
+
+        return self._descriptions[name]
+
+    # -----------------------------------------------------------------
+
     def get_properties(self):
 
         """
@@ -282,6 +405,7 @@ class SimplePropertyComposite(object):
             # Set property
             properties[name] = getattr(self, name)
 
+        # Return the properties as a dictionary
         return properties
 
     # -----------------------------------------------------------------
@@ -362,30 +486,6 @@ class SimplePropertyComposite(object):
 
         # Save
         self.saveto(self._path)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def property_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        names = []
-
-        # Loop over the variables
-        for name in vars(self):
-
-            # Skip internal variables
-            if name.startswith("_"): continue
-
-            # Add the name
-            names.append(name)
-
-        # Return the names
-        return names
 
     # -----------------------------------------------------------------
 

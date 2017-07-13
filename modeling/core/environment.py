@@ -599,8 +599,8 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         colours = cmap(normalized_wavelengths)
 
         # Convert to HEX
-        from ...magic.tools.plotting import RGB_to_hex
-        colours = [RGB_to_hex(np.array(colour[0:3])*255) for colour in colours]
+        from ...core.basics.colour import rgb_to_hex
+        colours = [rgb_to_hex(np.array(colour[0:3])*255) for colour in colours]
 
         # Return the colours
         return colours
