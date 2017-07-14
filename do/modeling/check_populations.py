@@ -17,23 +17,28 @@ from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
-from pts.modeling.fitting.component import get_run_names, get_populations
+from pts.modeling.fitting.component import get_populations
 from pts.modeling.fitting.run import get_generations_table, get_generation_path
 from pts.modeling.fitting.generation import Generation
 from pts.modeling.core.environment import verify_modeling_cwd
+from pts.modeling.fitting.run import FittingRuns
 
 # -----------------------------------------------------------------
 
 modeling_path = verify_modeling_cwd()
+runs = FittingRuns(modeling_path)
 
 # -----------------------------------------------------------------
 
 # Create configuration definition
 definition = ConfigurationDefinition()
-run_names = get_run_names(modeling_path)
-if len(run_names) == 0: raise RuntimeError("There are no fitting runs")
-elif len(run_names) == 1: definition.add_fixed("fitting_run", "string", run_names[0])
-else: definition.add_required("fitting_run", "string", "name of the fitting run to use", choices=run_names)
+
+# -----------------------------------------------------------------
+
+# FITTING RUN
+if runs.empty: raise RuntimeError("No fitting runs are present (yet)")
+elif runs.has_single: definition.add_fixed("fitting_run", "name of the fitting run", runs.single_name)
+else: definition.add_required("fitting_run", "string", "name of the fitting run", choices=runs.names)
 
 # Create the configuration
 config = parse_arguments("check_populations", definition)

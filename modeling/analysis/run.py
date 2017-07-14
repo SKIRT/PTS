@@ -563,7 +563,7 @@ class AnalysisRuns(object):
         :return:
         """
 
-        return len(self.names) == 0
+        return sequences.is_empty(self.names)
 
     # -----------------------------------------------------------------
 

@@ -19,9 +19,9 @@ runs = FittingRuns(modeling_path)
 # -----------------------------------------------------------------
 
 # Fitting run setting
-if not has_fitting_runs(modeling_path): raise RuntimeError("There are no fitting runs")
-elif has_single_fitting_run(modeling_path): definition.add_fixed("fitting_run", "string", get_single_fitting_run_name)
-else: definition.add_required("fitting_run", "string", "name of the fitting run to use", choices=get_fitting_run_names(modeling_path))
+if runs.empty: raise RuntimeError("No fitting runs are present (yet)")
+elif runs.has_single: definition.add_fixed("fitting_run", "name of the fitting run", runs.single_name)
+else: definition.add_required("fitting_run", "string", "name of the fitting run", choices=runs.names)
 
 # -----------------------------------------------------------------
 

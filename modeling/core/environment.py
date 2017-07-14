@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.core.environment Contains the ModelingEnvironment class.
+## \package pts.modeling.core.environment Contains the ModelingEnvironment class and derived classes.
 
 # -----------------------------------------------------------------
 
@@ -665,18 +665,6 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
     # -----------------------------------------------------------------
 
-    #@property
-    #def preparation_paths_dict(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        #return fs.directories_in_path(self.prep_path, returns="dict", sort=lambda filter_name: parse_filter(filter_name).wavelength.to("micron").value)
-
-    # -----------------------------------------------------------------
-
     @property
     def has_dataset(self):
 
@@ -774,6 +762,8 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 # -----------------------------------------------------------------
 
 input_name = "input"
+sed_filename = "sed.dat"
+template_ski_filename = "template.ski"
 
 # -----------------------------------------------------------------
 
@@ -794,13 +784,13 @@ class SEDModelingEnvironment(ModelingEnvironment):
         super(SEDModelingEnvironment, self).__init__(modeling_path)
 
         # Set the SED path
-        self.sed_path = fs.join(self.path, "sed.dat")
+        self.sed_path = fs.join(self.path, sed_filename)
 
         # Set the SED plot path
         self.sed_plot_path = fs.join(self.path, "sed.pdf")
 
         # Set the ski template path
-        self.ski_path = fs.join(self.path, "template.ski")
+        self.ski_path = fs.join(self.path, template_ski_filename)
 
         # Set the ski input path
         self.ski_input_path = fs.create_directory_in(self.path, input_name)
@@ -844,6 +834,7 @@ class SEDModelingEnvironment(ModelingEnvironment):
 # -----------------------------------------------------------------
 
 images_name = "images"
+header_filename = "header.txt"
 
 # -----------------------------------------------------------------
 
@@ -864,13 +855,13 @@ class ImagesModelingEnvironment(ModelingEnvironment):
         super(ImagesModelingEnvironment, self).__init__(modeling_path)
 
         # Set images path
-        self.images_path = fs.create_directory_in(self.path, "images")
+        self.images_path = fs.create_directory_in(self.path, images_name)
 
         # Set images header path
-        self.images_header_path = fs.join(self.images_path, "header.txt")
+        self.images_header_path = fs.join(self.images_path, header_filename)
 
         # Set the ski template path
-        self.ski_path = fs.join(self.path, "template.ski")
+        self.ski_path = fs.join(self.path, template_ski_filename)
 
         # Set the ski input path
         self.ski_input_path = fs.create_directory_in(self.path, input_name)

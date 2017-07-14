@@ -8,24 +8,24 @@
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.remote.host import find_host_ids
-from pts.modeling.fitting.component import get_run_names
 from pts.modeling.core.environment import verify_modeling_cwd
+from pts.modeling.fitting.run import FittingRuns
 
 # -----------------------------------------------------------------
 
 # Set the modeling path
 modeling_path = verify_modeling_cwd()
+runs = FittingRuns(modeling_path)
 
 # -----------------------------------------------------------------
 
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
-# The fitting run to use for analysis
-run_names = get_run_names(modeling_path)
-if len(run_names) == 0: raise RuntimeError("There are no fitting runs")
-elif len(run_names) == 1: definition.add_fixed("fitting_run", "string", run_names[0])
-else: definition.add_required("fitting_run", "string", "name of the fitting run to use", choices=run_names)
+# FITTING RUN
+if runs.empty: raise RuntimeError("No fitting runs are present (yet)")
+elif runs.has_single: definition.add_fixed("fitting_run", "name of the fitting run", runs.single_name)
+else: definition.add_required("fitting_run", "string", "name of the fitting run", choices=runs.names)
 
 # Settings for the wavelength grid
 definition.add_optional("nwavelengths", "integer", "the number of wavelengths to simulate the best model", 450)

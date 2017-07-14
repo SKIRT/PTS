@@ -164,6 +164,54 @@ class ModelSuite(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nmodels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.model_names)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def no_models(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nmodels == 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nmodels == 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_model_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.model_names[0]
+
+    # -----------------------------------------------------------------
+
     def get_model_path(self, model_name):
 
         """
@@ -273,6 +321,54 @@ class ModelSuite(object):
         """
 
         return self.representations_table.names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nrepresentations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.representation_names)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def no_representations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nrepresentations == 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_representation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nrepresentations == 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_representation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.representation_names[0]
 
     # -----------------------------------------------------------------
 

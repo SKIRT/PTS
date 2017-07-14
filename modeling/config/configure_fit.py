@@ -7,20 +7,23 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.modeling.fitting.component import get_run_names
 from pts.modeling.component.component import get_default_fitting_method
 from pts.modeling.build.suite import ModelSuite
 from pts.modeling.core.environment import verify_modeling_cwd
+from pts.modeling.fitting.run import FittingRuns
 
 # -----------------------------------------------------------------
 
 modeling_path = verify_modeling_cwd()
 suite = ModelSuite.from_modeling_path(modeling_path)
+runs = FittingRuns(modeling_path)
 
 # -----------------------------------------------------------------
 
+# Default run name
+default_run_name = "run_1"
+
 # Fitting methods
-#default_fitting_method = "genetic"
 default_fitting_method = get_default_fitting_method(modeling_path) # as defined in the modeling configuration
 fitting_methods = ["genetic", "grid"]
 
@@ -32,15 +35,20 @@ default_ndigits = 3
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
-# Name for the fitting run
-run_names = get_run_names(modeling_path)
-if len(run_names) == 0: definition.add_positional_optional("name", "string", "name for the fitting run", default="run_1")
-else: definition.add_required("name", "string", "name for the fitting run", forbidden=run_names)
+# -----------------------------------------------------------------
 
-# Name of the model to use
-model_names = suite.model_names
-if len(model_names) == 1: definition.add_fixed("model_name", "name of the model to use for the fitting", model_names[0])
-else: definition.add_optional("model_name", "string", "name of the model to use for the fitting", choices=model_names)
+# FITTING RUN
+if runs.empty: definition.add_positional_optional("name", "string", "name for the fitting run", default=default_run_name)
+else: definition.add_required("name", "string", "name for the fitting run", forbidden=runs.names)
+
+# -----------------------------------------------------------------
+
+# MODEL
+if suite.no_models: raise ValueError("No models are present (yet)")
+elif suite.has_single_model: definition.add_fixed("model_name", "name of the model to use for the fitting", suite.single_model_name)
+else: definition.add_optional("model_name", "string", "name of the model to use for the fitting", choices=suite.model_names)
+
+# -----------------------------------------------------------------
 
 # NEW: FITTING METHOD
 definition.add_optional("fitting_method", "string", "fitting method", default_fitting_method, fitting_methods)

@@ -2438,7 +2438,7 @@ class FittingRuns(object):
 
     # -----------------------------------------------------------------
 
-    @property
+    @lazyproperty
     def fit_path(self):
 
         """
@@ -2450,106 +2450,112 @@ class FittingRuns(object):
 
     # -----------------------------------------------------------------
 
-    def get_fitting_run_names(self):
+    @lazyproperty
+    def names(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.directories_in_path(get_fit_path(modeling_path), returns="name")
+        return fs.directories_in_path(self.fit_path, returns="name")
 
     # -----------------------------------------------------------------
 
-    def has_fitting_runs(self):
+    @lazyproperty
+    def empty(self):
 
         """
         This function ...
-        :param modeling_path:
         :return:
         """
 
-        return len(get_fitting_run_names(modeling_path)) > 0
+        return sequences.is_empty(self.names)
 
     # -----------------------------------------------------------------
 
-    def has_single_fitting_run(self):
+    @lazyproperty
+    def has_single(self):
 
         """
         This function ...
-        :param modeling_path:
         :return:
         """
 
-        names = get_fitting_run_names(modeling_path)
-        return sequences.is_singleton(names)
+        return sequences.is_singleton(self.names)
 
     # -----------------------------------------------------------------
 
-    def get_single_fitting_run_name(self):
+    def __len__(self):
 
         """
         This function ...
-        :param modeling_path:
         :return:
         """
 
-        names = get_fitting_run_names(modeling_path)
-        return sequences.get_singleton(names)
+        return len(self.names)
 
     # -----------------------------------------------------------------
 
-    def get_single_fitting_run_path(self):
+    @lazyproperty
+    def single_name(self):
 
         """
         This function ...
-        :param modeling_path:
         :return:
         """
 
-        name = get_single_fitting_run_name(modeling_path)
-        return get_fitting_run_path(modeling_path, name)
+        return sequences.get_singleton(self.names)
 
     # -----------------------------------------------------------------
 
-    def get_fitting_run_path(self, fitting_run):
+    @lazyproperty
+    def single_path(self):
 
         """
         This function ...
-        :param modeling_path:
+        :return:
+        """
+
+        return self.get_path(self.single_name)
+
+    # -----------------------------------------------------------------
+
+    def get_path(self, name):
+
+        """
+        This function ...
         :param fitting_run:
         :return:
         """
 
-        return fs.join(modeling_path, "fit", fitting_run)
+        return fs.join(self.fit_path, name)
 
     # -----------------------------------------------------------------
 
-    def load_fitting_run(self, name):
+    def load(self, name):
 
         """
         This function ...
-        :param modeling_path:
         :param name:
         :return:
         """
 
-        fitting_run_path = get_fitting_run_path(modeling_path, name)
+        fitting_run_path = self.get_path(name)
         if not fs.is_directory(fitting_run_path): raise ValueError("Fitting run '" + name + "' does not exist")
         return FittingRun.from_path(fitting_run_path)
 
     # -----------------------------------------------------------------
 
-    def load_single_fitting_run(self):
+    @lazyproperty
+    def single(self):
 
         """
         This function ...
-        :param modeling_path:
         :return:
         """
 
-        fitting_run_path = get_single_fitting_run_path(modeling_path)
-        return FittingRun.from_path(fitting_run_path)
+        return FittingRun.from_path(self.single_path)
 
 # -----------------------------------------------------------------
 
@@ -3013,10 +3019,6 @@ def has_unevaluated_generations(modeling_path, fitting_run):
 
 # -----------------------------------------------------------------
 
-
-
-# -----------------------------------------------------------------
-
 def get_fitting_configuration_path(modeling_path, fitting_run):
 
     """
@@ -3101,6 +3103,4 @@ def get_spectral_convolution_flag(modeling_path, fitting_run):
     fitting_configuration = load_fitting_configuration(modeling_path, fitting_run)
     return fitting_configuration.spectral_convolution
 
-# -----------------------------------------------------------------
-# NEW
 # -----------------------------------------------------------------

@@ -568,18 +568,6 @@ def any_in(sequence, target):
 
 # -----------------------------------------------------------------
 
-def is_empty(sequence):
-
-    """
-    This function ...
-    :param sequence:
-    :return:
-    """
-
-    return len(sequence) == 0
-
-# -----------------------------------------------------------------
-
 def any_empty(*sequences):
 
     """
@@ -739,6 +727,18 @@ def find_differences(sequence_a, sequence_b):
         if sequence_a[index] != sequence_b[index]: indices.append(index)
 
     return indices
+
+# -----------------------------------------------------------------
+
+def is_empty(sequence):
+
+    """
+    This function ...
+    :param sequence:
+    :return:
+    """
+
+    return len(sequence) == 0
 
 # -----------------------------------------------------------------
 

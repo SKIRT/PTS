@@ -7,13 +7,14 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.modeling.fitting.component import get_run_names
 from pts.modeling.core.environment import verify_modeling_cwd
+from pts.modeling.fitting.run import FittingRuns
 
 # -----------------------------------------------------------------
 
 # Set the modeling path
 modeling_path = verify_modeling_cwd()
+runs = FittingRuns(modeling_path)
 
 # -----------------------------------------------------------------
 
@@ -21,10 +22,10 @@ modeling_path = verify_modeling_cwd()
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
 # The fitting run for which to fit the SED
-run_names = get_run_names(modeling_path)
-if len(run_names) == 0: raise RuntimeError("No fitting runs found: first run configure_fit to create a new fitting run")
-elif len(run_names) == 1: definition.add_fixed("name", "name of the fitting run", run_names[0])
-else: definition.add_required("name", "string", "name of the fitting run", choices=run_names)
+# FITTING RUN
+if runs.empty: raise RuntimeError("No fitting runs are present (yet)")
+elif runs.has_single: definition.add_fixed("name", "name of the fitting run", runs.single_name)
+else: definition.add_required("name", "string", "name of the fitting run", choices=runs.names)
 
 # Add optional arguments
 definition.add_flag("visualise", "make visualisations")

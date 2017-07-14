@@ -59,8 +59,11 @@ class AnalysisLauncher(AnalysisComponent):
 
         # -- Attributes --
 
+        # NEW: THE ANALYSIS RUN
+        self.analysis_run = None
+
         # The fitting run
-        self.fitting_run = None
+        #self.fitting_run = None
 
         # The remote SKIRT environment
         self.remote = SkirtRemote()
@@ -190,8 +193,11 @@ class AnalysisLauncher(AnalysisComponent):
         # Call the setup function of the base class
         super(AnalysisLauncher, self).setup(**kwargs)
 
+        # NEW: GET THE RUN
+        self.analysis_run = self.get_run(self.config.run)
+
         # Prompt for generation name
-        self.fitting_run = load_fitting_run(self.config.path, self.config.fitting_run)
+        #self.fitting_run = load_fitting_run(self.config.path, self.config.fitting_run)
 
         # Get the generation name
         self.generation_name = prompt_string("generation", "name of the (finished) generation for which to launch the "
