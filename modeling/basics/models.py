@@ -23,7 +23,6 @@ import itertools
 # Import astronomical modules
 from astropy.coordinates import Angle
 from astropy.units import dimensionless_angles
-from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from ...core.basics.composite import SimplePropertyComposite
@@ -36,6 +35,7 @@ from ...magic.basics.pixelscale import Pixelscale
 from ...core.tools import numbers
 from ...magic.basics.vector import PixelShape
 from ...core.basics.range import QuantityRange
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

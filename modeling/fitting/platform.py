@@ -15,9 +15,6 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from .generation import Generation
@@ -30,6 +27,7 @@ from ...core.tools.stringify import tostr
 from ...core.tools import filesystem as fs
 from ...evolve.analyse.database import get_scores_named_individuals, get_individual, get_individuals_scores
 from ...core.tools import sequences
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -196,10 +194,11 @@ class GenerationPlatform(object):
         :return:
         """
 
-        from .component import get_populations
+        #from .component import get_populations
 
         # Load the populations data
-        populations = get_populations(self.modeling_path)
+        #populations = get_populations(self.modeling_path)
+        populations = self.fitting_context.populations
         return populations[self.generation.fitting_run_name][self.generation.name]
 
     # -----------------------------------------------------------------
@@ -212,8 +211,10 @@ class GenerationPlatform(object):
         :return:
         """
 
-        from .component import get_database
-        return get_database(self.modeling_path)
+        #from .component import get_database
+        #return get_database(self.modeling_path)
+
+        return self.fitting_context.database
 
     # -----------------------------------------------------------------
 
@@ -225,8 +226,10 @@ class GenerationPlatform(object):
         :return:
         """
 
-        from .component import get_statistics
-        return get_statistics(self.modeling_path)
+        #from .component import get_statistics
+        #return get_statistics(self.modeling_path)
+
+        return self.fitting_context.statistics
 
     # -----------------------------------------------------------------
 
@@ -251,6 +254,19 @@ class GenerationPlatform(object):
         """
 
         return self.generation.fitting_run
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fitting_context(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from .context import FittingContext
+        return FittingContext.from_modeling_path(self.modeling_path)
 
     # -----------------------------------------------------------------
 

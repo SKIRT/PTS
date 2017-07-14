@@ -12,16 +12,13 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import filesystem as fs
 from ...core.launch.timing import TimingTable
 from ...core.launch.memory import MemoryTable
-from .info import AnalysisRunInfo
-from .run import AnalysisRun
+from .run import AnalysisRunInfo, AnalysisRun
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

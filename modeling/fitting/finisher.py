@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
 from ...core.tools.logging import log
@@ -26,6 +23,7 @@ from ...core.tools import filesystem as fs
 from ...evolve.optimize.stepwise import load_population
 from .modelgenerators.genetic import statistics_name, database_name, populations_name, frequency, commit_frequency
 from ...evolve.optimize.tables import RecurrenceTable
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from .component import DustHeatingAnalysisComponent, contributions
 from ....core.tools import filesystem as fs
@@ -28,6 +25,7 @@ from ....core.simulation.parallelization import Parallelization
 from ....core.advanced.runtimeestimator import RuntimeEstimator
 from ....core.launch.options import SchedulingOptions
 from ....core.advanced.dustgridtool import DustGridTool
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

@@ -16,9 +16,6 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 from abc import ABCMeta, abstractmethod
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
 from ...core.tools.logging import log
@@ -37,6 +34,7 @@ from ...core.tools.stringify import tostr
 from .components import get_genome_type, is_1d_genome, is_2d_genome, get_mutator, create_genome, get_crossover_method, get_crossover, get_selector, get_scaling, get_initializator
 from ...core.tools.random import setup_prng
 from .parameters import get_binary_genome_from_scaled_parameters, scale_parameter_sets
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

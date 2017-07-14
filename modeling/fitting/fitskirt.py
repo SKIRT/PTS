@@ -23,7 +23,6 @@ from collections import defaultdict
 
 # Import astronomical modules
 from astropy.table import Table
-from astropy.utils import lazyproperty
 from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
@@ -44,6 +43,7 @@ from ...core.tools import time
 from ...core.simulation.skifile import LabeledSkiFile
 from ...magic.core.frame import Frame
 from ...core.units.helper import is_angle
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

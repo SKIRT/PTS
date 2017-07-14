@@ -12,13 +12,11 @@
 # Import standard modules
 import importlib
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ..tools import serialization
 from .configuration import Configuration
 from ..tools import filesystem as fs
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

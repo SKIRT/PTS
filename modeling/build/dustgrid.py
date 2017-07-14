@@ -15,9 +15,6 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.basics.configurable import Configurable
@@ -35,6 +32,7 @@ from ...core.basics.map import Map
 from ...core.basics.configuration import save_mapping
 from ...core.plot.grids import plotgrids
 from ...magic.core.list import NamedFrameList
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

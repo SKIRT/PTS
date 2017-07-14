@@ -15,8 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from .tables import RunsTable
 from ...evolve.optimize.stepwise import load_populations
-from .run import FittingRun, get_generation_names, get_finished_generations
+from .run import get_generation_names, get_finished_generations
 from ...core.tools import filesystem as fs
+from .run import FittingRuns
 
 # -----------------------------------------------------------------
 
@@ -65,6 +66,35 @@ class FittingContext(object):
         # The name of the instrument
         self.earth_instrument_name = earth_instrument_name
 
+        # The fitting runs
+        self.runs = FittingRuns(self.modeling_path)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_modeling_path(cls, modeling_path):
+
+        """
+        This function ...
+        :param modeling_path:
+        :return:
+        """
+
+        fit_path = fs.join(modeling_path, "fit")
+        return cls(fit_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fit_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.path
+
     # -----------------------------------------------------------------
 
     @property
@@ -79,18 +109,19 @@ class FittingContext(object):
 
     # -----------------------------------------------------------------
 
-    def get_run_generation_combinations(modeling_path):
+    @property
+    def generation_combinations(self):
 
         """
         This function ...
-        :param modeling_path:
         :return:
         """
 
         combinations = []
 
-        for run_name in get_run_names(modeling_path):
-            for generation in get_generation_names(modeling_path, run_name):
+        for run_name in self.runs.names:
+
+            for generation in get_generation_names(self.modeling_path, run_name):
                 combinations.append((run_name, generation))
 
         # Return the combinations
@@ -98,18 +129,18 @@ class FittingContext(object):
 
     # -----------------------------------------------------------------
 
-    def get_run_finished_generation_combinations(modeling_path):
+    @property
+    def finished_generation_combinations(self):
 
         """
         This function ...
-        :param modeling_path:
         :return:
         """
 
         combinations = []
 
-        for run_name in get_run_names(modeling_path):
-            for generation in get_finished_generations(modeling_path, run_name):
+        for run_name in self.runs.names:
+            for generation in get_finished_generations(self.modeling_path, run_name):
                 combinations.append((run_name, generation))
 
         # Return the combinations
@@ -117,140 +148,77 @@ class FittingContext(object):
 
     # -----------------------------------------------------------------
 
-    def load_fitting_run(modeling_path, name):
+    def load_fitting_run(self, name):
 
         """
         This function ...
-        :param modeling_path:
         :param name:
         :return:
         """
 
-        model_name = get_model_for_run(modeling_path, name)
-        return FittingRun(modeling_path, name, model_name)
+        return self.runs.load(name)
 
     # -----------------------------------------------------------------
 
-    def get_runs_table_path(modeling_path):
+    @property
+    def runs_table(self):
 
         """
         This function ...
-        :param modeling_path:
+        :param self:
         :return:
         """
 
-        fit_path = fs.join(modeling_path, "fit")
-        return fs.join(fit_path, "runs.dat")
+        return RunsTable.from_file(self.runs_table_path)
 
     # -----------------------------------------------------------------
 
-    def get_runs_table(modeling_path):
-
-        """
-        This function ...
-        :param modeling_path:
-        :return:
-        """
-
-        path = get_runs_table_path(modeling_path)
-        return RunsTable.from_file(path)
-
-    # -----------------------------------------------------------------
-
-    def get_model_for_run(modeling_path, name):
+    def get_model_for_run(self, name):
 
         """
         This function ...
         :return:
         """
 
-        table = get_runs_table(modeling_path)
-        return table.model_for_run(name)
+        return self.runs_table.model_for_run(name)
 
     # -----------------------------------------------------------------
 
-    def get_fit_path(modeling_path):
-
-        """
-        This function ...
-        :param modeling_path:
-        :return:
-        """
-
-        return fs.join(modeling_path, "fit")
-
-    # -----------------------------------------------------------------
-
-    def get_statistics_path(modeling_path):
-
-        """
-        This function ...
-        :param modeling_path:
-        :return:
-        """
-
-        return fs.join(get_fit_path(modeling_path), "statistics.csv")
-
-    # -----------------------------------------------------------------
-
-    def get_statistics(modeling_path):
+    @property
+    def statistics(self):
 
         """
         Thisf ucntion ...
-        :param modeling_path:
+        :param self:
         :return:
         """
 
         from ...evolve.analyse.statistics import load_statistics
-        return load_statistics(get_statistics_path(modeling_path))
+        return load_statistics(self.statistics_path)
 
     # -----------------------------------------------------------------
 
-    def get_database_path(modeling_path):
+    @property
+    def database(self):
 
         """
         This function ...
-        :param modeling_path:
-        :return:
-        """
-
-        return fs.join(get_fit_path(modeling_path), "database.db")
-
-    # -----------------------------------------------------------------
-
-    def get_database(modeling_path):
-
-        """
-        This function ...
-        :param modeling_path:
         :return:
         """
 
         from ...evolve.analyse.database import load_database
-        return load_database(get_database_path(modeling_path))
+        return load_database(self.database_path)
 
     # -----------------------------------------------------------------
 
-    def get_populations_path(modeling_path):
+    @property
+    def populations(self):
 
         """
         This function ...
-        :param modeling_path:
         :return:
         """
 
-        return fs.join(get_fit_path(modeling_path), "populations.dat")
-
-    # -----------------------------------------------------------------
-
-    def get_populations(modeling_path):
-
-        """
-        This function ...
-        :param modeling_path:
-        :return:
-        """
-
-        return load_populations(get_populations_path(modeling_path))
+        return load_populations(self.populations_path)
 
 # -----------------------------------------------------------------

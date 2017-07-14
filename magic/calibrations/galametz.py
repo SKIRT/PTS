@@ -12,14 +12,12 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from ...core.tools import introspection
 from ...core.tools import tables
 from ...core.filter.filter import parse_filter, Filter
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

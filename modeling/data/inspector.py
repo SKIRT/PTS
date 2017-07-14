@@ -19,7 +19,6 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle, Ellipse
 
 # Import astronomical modules
-from astropy.utils import lazyproperty
 from astropy.io import fits
 
 # Import the relevant PTS classes and modules
@@ -31,6 +30,7 @@ from ...core.basics.plot import pretty_colors
 from ...core.tools import archive
 from ...magic.core.fits import contains_pc_and_cd, contains_pc_and_cdelt, remove_cd_keywords, remove_cdelt_keywords
 from ...core.tools import time
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

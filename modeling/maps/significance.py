@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from .component import MapsComponent
@@ -22,6 +19,7 @@ from ...core.tools import sequences, types
 from ...core.tools import filesystem as fs
 from ...magic.core.mask import intersection
 from ...magic.core.list import NamedFrameList
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

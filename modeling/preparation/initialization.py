@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from .component import PreparationComponent
 from ...magic.sources.finder import SourceFinder
@@ -35,6 +32,7 @@ from ...magic.sources.marker import SourceMarker
 from ...core.units.parsing import parse_unit as u
 from ...core.remote.remote import Remote
 from ..core.steps import cached_directory_name_for_single_command
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

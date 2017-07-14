@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ...core.basics.composite import SimplePropertyComposite
 from ...core.tools import filesystem as fs
@@ -27,6 +24,7 @@ from ...core.basics.configuration import Configuration
 from ...evolve.optimize.components import get_crossover, get_crossover_origins, get_genome_class, get_mutator, get_selector, get_scaling, get_initializator
 from ...core.basics.range import IntegerRange, RealRange, QuantityRange
 from ...core.tools import sequences
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

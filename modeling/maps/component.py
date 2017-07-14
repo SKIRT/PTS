@@ -15,9 +15,6 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 from abc import ABCMeta, abstractproperty
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import filesystem as fs
@@ -33,6 +30,7 @@ from ...core.tools.stringify import tostr
 from ...core.launch.pts import find_match
 from ...core.tools import introspection
 from .collection import MapsCollection
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

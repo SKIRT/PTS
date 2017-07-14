@@ -30,7 +30,6 @@ from astropy.convolution import Gaussian2DKernel
 from photutils import Background2D, SigmaClip, MedianBackground # for 0.3.1
 from photutils import SExtractorBackground
 # from photutils.background import Background # for version 0.2.x
-from astropy.utils import lazyproperty
 from astropy.modeling.models import Sersic2D
 from astropy.coordinates import Angle
 from photutils import make_source_mask
@@ -50,6 +49,7 @@ from pts.magic.tools import statistics
 from pts.core.basics.map import Map
 from pts.core.tools import filesystem as fs
 from pts.core.basics.configuration import save_mapping
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

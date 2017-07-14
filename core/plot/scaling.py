@@ -27,7 +27,6 @@ from matplotlib import rc
 
 # Import astronomical modules
 from astropy.table import Table
-from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from ..basics.measurement import Measurement
@@ -45,6 +44,7 @@ from ..tools import tables
 from ..tools import stringify
 from ..tools.serialization import write_dict, load_dict, write_list, load_list
 from ..tools.strings import alphabet, split_in_lines
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

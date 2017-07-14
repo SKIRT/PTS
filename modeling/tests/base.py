@@ -15,7 +15,6 @@ from collections import defaultdict
 
 # Import astronomical modules
 from astropy.io.fits import Header
-from astropy.utils import lazyproperty
 from astropy.units import dimensionless_angles
 
 # Import the relevant PTS classes and modules
@@ -51,6 +50,7 @@ from pts.evolve.analyse.statistics import get_best_score_for_generation, load_st
 from pts.do.commandline import Command
 from pts.evolve.optimize.tables import ElitismTable
 from pts.core.prep.templates import get_pan_template
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

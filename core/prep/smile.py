@@ -17,9 +17,6 @@ import os
 import subprocess
 from lxml import etree
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
 from ..tools import introspection
@@ -34,6 +31,7 @@ from ..basics.configuration import print_mapping
 from ..tools import stringify
 from ..simulation.skifile import SkiFile
 from ..tools import types
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

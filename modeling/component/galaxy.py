@@ -19,7 +19,6 @@ from abc import ABCMeta
 from collections import OrderedDict
 
 # Import astronomical modules
-from astropy.utils import lazyproperty
 from astropy.units import dimensionless_angles
 
 # Import the relevant PTS classes and modules
@@ -44,6 +43,7 @@ from ..core.steps import cached_directory_path_for_single_command
 from ..core.environment import GalaxyModelingEnvironment
 from ...magic.core.remote import get_filter_name
 from ...magic.tools import headers
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

@@ -17,13 +17,13 @@ from abc import ABCMeta
 
 # Import astronomical modules
 from astropy.io.fits import Header
-from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from .component import ModelingComponent
 from ...core.tools import filesystem as fs
 from ...core.simulation.skifile import LabeledSkiFile
 from ...magic.basics.coordinatesystem import CoordinateSystem
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

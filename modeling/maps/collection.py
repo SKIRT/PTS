@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.tools import filesystem as fs
@@ -28,6 +25,7 @@ from ...core.filter.filter import parse_filter
 from ...core.tools.stringify import tostr
 from ...core.tools import types
 from ..core.environment import colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 from abc import ABCMeta
 
 # Import astronomical modules
-from astropy.utils import lazyproperty
 from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
@@ -27,6 +26,7 @@ from ...core.filter.broad import BroadBandFilter
 from ...core.basics.configuration import Configuration
 from ..core.history import ModelingHistory
 from ..core.environment import GalaxyModelingEnvironment, SEDModelingEnvironment, ImagesModelingEnvironment
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

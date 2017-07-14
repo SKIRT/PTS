@@ -15,9 +15,6 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import math
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from .component import BuildComponent
 from ...core.tools import filesystem as fs
@@ -32,6 +29,7 @@ from ...core.prep.dustgrids import create_one_dust_grid_for_galaxy_from_deprojec
 from ...core.simulation.grids import FileTreeDustGrid
 from ...core.simulation.tree import DustGridTree
 from .dustgrid import DustGridBuilder
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

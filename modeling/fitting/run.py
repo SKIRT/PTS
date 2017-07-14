@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from ...core.launch.timing import TimingTable
@@ -41,6 +38,7 @@ from ..config.parameters import parsing_types_for_parameter_types
 from ..build.component import get_representation
 from ...core.tools import sequences
 from ..build.component import get_model_definition
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -2316,108 +2314,6 @@ class FittingRun(object):
 
         # Load dictionary
         return load_dict(self.input_maps_file_path)
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    #def highest_dust_grid_level(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        # Return the last filename, sorted as integers
-        #return int(fs.files_in_path(self.dust_grids_path, not_contains="grids", extension="dg", returns="name", sort=int)[-1])
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    #def current_dust_grid_level(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        # Generations exist
-        #if len(self.generations_table) > 0: return self.generations_table["Dust grid level"][-1]
-
-        # Initial value
-        #else: return 0
-
-    # -----------------------------------------------------------------
-
-    #def dust_grid_path_for_level(self, level):
-
-        #"""
-        #This function ...
-        #:param level:
-        #:return:
-        #"""
-
-        #return fs.join(self.dust_grids_path, str(level) + ".dg")
-
-    # -----------------------------------------------------------------
-
-    #def dust_grid_for_level(self, level):
-
-        #"""
-        #This function ...
-        #:param level:
-        #:return:
-        #"""
-
-        # Load and return the dust grid
-        #return load_grid(self.dust_grid_path_for_level(level))
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    #def sed_instrument(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        # Check if the file exists
-        #if not fs.is_file(self.sed_instrument_path): raise RuntimeError("The SED instrument file has not been created yet. Run initialize_fit first.")
-
-        # Load the file
-        #return load_instrument(self.sed_instrument_path)
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    #def frame_instrument(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        # Check if the file exists
-        #if not fs.is_file(self.frame_instrument_path): raise RuntimeError("The frame instrument file has not been created yet. Run initialize_fit first.")
-
-        # Load the file
-        #return load_instrument(self.frame_instrument_path)
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    #def simple_instrument(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        # Check if the file exists
-        #if not fs.is_file(self.simple_instrument_path): raise RuntimeError("The simple instrument file has not been created yet. Run initialize_fit first.")
-
-        # Load the file
-        #return load_instrument(self.simple_instrument_path)
 
 # -----------------------------------------------------------------
 

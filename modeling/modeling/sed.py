@@ -13,9 +13,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ..fitting.configuration import FittingConfigurer
@@ -31,6 +28,7 @@ from ..component.sed import get_ski_input_path
 from ..core.environment import SEDModelingEnvironment
 from ...core.basics.configuration import prompt_weights
 from ...core.tools.stringify import tostr
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

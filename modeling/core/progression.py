@@ -12,14 +12,12 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from .environment import GalaxyModelingEnvironment
 from ..fitting.run import FittingRuns, FittingRun
 from ..analysis.run import AnalysisRuns, AnalysisRun
 from ...core.basics.configuration import prompt_string
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

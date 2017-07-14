@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from .tables import ModelsTable
@@ -28,6 +25,7 @@ from .dust import basic_dust_map_name
 from .general import parameters_filename, deprojection_filename
 from ...core.basics.configuration import open_mapping
 from ..basics.models import DeprojectionModel3D
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

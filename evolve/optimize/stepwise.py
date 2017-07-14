@@ -16,9 +16,6 @@ from __future__ import absolute_import, division, print_function
 import copy
 from collections import OrderedDict
 
-# Import asronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ..core.engine import GeneticEngine
@@ -37,6 +34,7 @@ from ...core.basics.map import Map
 from ...core.basics.configurable import write_input
 from ...core.tools import types
 from ...core.tools.stringify import tostr
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

@@ -19,7 +19,9 @@ from datetime import datetime
 # Import astronomical modules
 from ..tools import tables
 from astropy.table import Table
-from astropy.utils import lazyproperty
+
+# Import the relevant PTS classes and modules
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

@@ -16,9 +16,6 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 from abc import ABCMeta, abstractmethod
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable, write_input
 from ...core.tools.logging import log, add_log_file, write_log_to
@@ -38,6 +35,7 @@ from ...core.tools import time
 from ..core.steps import commands_after_and_including, output_paths_for_single_command, cached_directory_name_for_single_command
 from ...core.basics.configuration import prompt_proceed
 from ...core.tools.stringify import tostr
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

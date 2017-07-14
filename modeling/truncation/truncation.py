@@ -18,9 +18,6 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 from scipy import interpolate
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ...magic.region.list import SkyRegionList, PixelRegionList
 from .component import TruncationComponent
@@ -33,6 +30,7 @@ from ...magic.core.mask import intersection
 from ...core.remote.remote import Remote
 from ...core.units.parsing import parse_quantity
 from ..core.steps import cached_directory_name_for_single_command
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

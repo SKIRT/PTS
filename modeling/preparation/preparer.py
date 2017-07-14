@@ -15,9 +15,6 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ...magic.core.image import Image
 from ...magic.region.list import PixelRegionList
@@ -43,6 +40,7 @@ from ...core.tools.serialization import write_dict
 from ...magic.core.mask import Mask
 from ...core.remote.remote import Remote
 from ..core.steps import cached_directory_name_for_single_command
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

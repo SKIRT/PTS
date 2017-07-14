@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
 from ...core.tools.logging import log
@@ -39,6 +36,7 @@ from .generation import GenerationInfo, Generation
 from ...core.tools.stringify import tostr
 from ...core.basics.configuration import prompt_proceed
 from ...core.prep.smile import SKIRTSmileSchema
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

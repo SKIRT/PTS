@@ -12,13 +12,11 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ..tools import tables
 from . import textfile
 from ..basics.range import QuantityRange
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

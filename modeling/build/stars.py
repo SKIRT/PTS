@@ -16,9 +16,6 @@ from __future__ import absolute_import, division, print_function
 import math
 import numpy as np
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.basics.configuration import ConfigurationDefinition
@@ -33,6 +30,7 @@ from ...magic.core.frame import Frame
 from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import types
 from ...magic.tools import extinction
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

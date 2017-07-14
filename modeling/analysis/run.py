@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from ...core.simulation.skifile import LabeledSkiFile
@@ -22,6 +19,7 @@ from ..core.model import Model
 from ...core.tools import sequences
 from ...core.basics.composite import SimplePropertyComposite
 from ..fitting.run import FittingRun
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

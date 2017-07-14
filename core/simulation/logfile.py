@@ -15,12 +15,12 @@ from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
 from astropy.table import Table
-from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from ..tools import time
 from ..tools import filesystem as fs
 from ..basics.distribution import Distribution
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

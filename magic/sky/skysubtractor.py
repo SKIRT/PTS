@@ -39,7 +39,6 @@ from photutils import SExtractorBackground
 from astropy.modeling import models
 from astropy.modeling.fitting import LevMarLSQFitter, LinearLSQFitter, SLSQPLSQFitter
 from astropy import stats
-from astropy.utils import lazyproperty
 from photutils.background import BkgZoomInterpolator, BkgIDWInterpolator
 from photutils.background.core import MeanBackground, MedianBackground, ModeEstimatorBackground, MMMBackground, SExtractorBackground, BiweightLocationBackground
 from photutils.background.core import StdBackgroundRMS, MADStdBackgroundRMS, BiweightMidvarianceBackgroundRMS
@@ -64,6 +63,7 @@ from ...core.basics.map import Map
 from ...core.basics.configuration import save_mapping
 from ...core.basics.distribution import Distribution
 from ...core.plot.distribution import DistributionPlotter
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

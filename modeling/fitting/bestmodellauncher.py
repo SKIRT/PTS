@@ -14,7 +14,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
 from astropy.units import Unit, dimensionless_angles
-from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
@@ -31,6 +30,7 @@ from ...core.simulation.definition import SingleSimulationDefinition
 from ...core.advanced.dustgridtool import DustGridTool
 from ...core.advanced.parallelizationtool import ParallelizationTool
 from ...core.basics.configuration import prompt_string
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

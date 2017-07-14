@@ -12,15 +12,13 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import standard modules
 from .component import MapsComponent
 from ...core.tools.logging import log
 from ...magic.maps.colour.colour import ColourMapsMaker, colour_strings
 from ...magic.tools.colours import get_filters_for_colour
 from ...magic.core.list import FrameList
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

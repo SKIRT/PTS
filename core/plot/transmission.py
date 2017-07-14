@@ -24,7 +24,6 @@ from matplotlib.ticker import FormatStrFormatter
 
 # Import astronomical modules
 from astropy.units import Unit
-from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from ..tools.logging import log
@@ -37,6 +36,7 @@ from ..filter.narrow import NarrowBandFilter
 from ..basics.range import RealRange
 from ..basics.plot import Plot
 from ..tools import filesystem as fs
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

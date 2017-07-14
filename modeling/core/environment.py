@@ -16,9 +16,6 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 from abc import ABCMeta
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from ...core.basics.configuration import Configuration
@@ -26,6 +23,7 @@ from ...core.data.sed import ObservedSED
 from ...core.filter.filter import parse_filter
 from ...magic.core.dataset import DataSet
 from ...core.basics.range import QuantityRange
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

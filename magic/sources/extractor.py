@@ -16,9 +16,6 @@ from __future__ import absolute_import, division, print_function
 import math
 import numpy as np
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ..basics.mask import Mask
 from ..region.ellipse import PixelEllipseRegion
@@ -34,6 +31,7 @@ from ..core.frame import Frame
 from ...core.tools import filesystem as fs
 from ..region.list import load_as_pixel_region_list
 from ..region.point import PixelPointRegion
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from .tables import ModelsTable, RepresentationsTable
@@ -25,6 +22,7 @@ from ...core.tools.serialization import load_dict
 from ...magic.core.frame import Frame
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from .representation import Representation
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

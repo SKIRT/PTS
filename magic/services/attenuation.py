@@ -18,7 +18,6 @@ import numpy as np
 
 # Import astronomical modules
 from astroquery.irsa_dust import IrsaDust
-from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
@@ -32,6 +31,7 @@ from ...core.tools.logging import log
 from ...core.tools import sequences
 from ...core.filter.broad import BroadBandFilter
 from ...core.filter.narrow import NarrowBandFilter
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

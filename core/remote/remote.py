@@ -22,9 +22,6 @@ import StringIO
 import subprocess
 from lxml import etree
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from .host import Host, load_host
 from .utils import HostDownException
@@ -40,6 +37,7 @@ from .python import AttachedPythonSession, DetachedPythonSession
 from ..units.parsing import parse_unit as u
 from ..basics.map import Map
 from ..tools import strings, types
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

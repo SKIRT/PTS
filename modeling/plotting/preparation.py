@@ -12,12 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-from matplotlib import cm
-
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from .component import PlottingComponent
 from ..preparation.component import PreparationComponent
@@ -31,6 +25,7 @@ from ...magic.plot.imagegrid import StandardImageGridPlotter
 from ...core.plot.distribution import DistributionGridPlotter, DistributionPlotter
 from ...core.basics.distribution import Distribution
 from ...magic.plot.error import ErrorPlotter
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

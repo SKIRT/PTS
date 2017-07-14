@@ -10,7 +10,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
 from astropy.io.fits import Header
-from astropy.utils import lazyproperty
 from ipyvolume.embed import embed_html
 
 # Import the relevant PTS classes and modules
@@ -27,6 +26,7 @@ from pts.core.units.parsing import parse_quantity
 from pts.core.units.parsing import parse_unit as u
 from pts.modeling.config.parameters import default_units
 from pts.modeling.plotting.model import plot_galaxy_components, generate_html
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

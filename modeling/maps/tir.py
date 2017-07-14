@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from .component import MapsComponent
 from ...core.tools.logging import log
@@ -22,6 +19,7 @@ from ...magic.maps.tir.single import SingleBandTIRMapMaker
 from ...magic.maps.tir.multi import MultiBandTIRMapMaker
 from ...core.filter.filter import parse_filter
 from ...magic.core.list import FrameList
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

@@ -15,14 +15,12 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import numpy as np
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from ...core.data.sed import SED
 from ...core.tools import introspection, tables
 from ...core.tools import filesystem as fs
 from ...core.units.parsing import parse_unit as u
+from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
