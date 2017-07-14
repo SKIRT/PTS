@@ -185,62 +185,62 @@ class PreparationPageGenerator(HTMLPageComponent):
 
     # -----------------------------------------------------------------
 
-    def make_statistics_tables_old(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making the statistics tables ...")
-
-        # Loop over the preparation names
-        for prep_name in self.preparation_names:
-
-            # Load the statistics
-            statistics = load_statistics(self.config.path, prep_name)
-
-            # Convert to table
-            table = html.SimpleTable(statistics.as_tuples(), ["Property", "Value"], css_class=table_class, tostr_kwargs=self.tostr_kwargs)
-
-            # Set the table
-            self.statistics_tables[prep_name] = table
-
-    # -----------------------------------------------------------------
-
-    def make_statistics_table_old(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making the statistics table ...")
-
-        # Fill cells
-        cells = []
-        for name in self.preparation_names:
-
-            # Check whether statistics are found
-            if name not in self.statistics_tables:
-                log.warning("Preparation statistics not found for the '" + name + "' image")
-                text = ""
-
-            else:
-
-            # Set title
-            text = ""
-            text += html.center_template.format(text=html.bold_template.format(text=name))
-            text += html.newline + html.newline
-            text += str(self.statistics_tables[name])
-
-            # Add to cells
-            cells.append(text)
-
-        # Create the table
-        self.statistics_table = html.SimpleTable.rasterize(cells, 4, css_class=table_class, tostr_kwargs=self.tostr_kwargs)
+    # def make_statistics_tables_old(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Inform the user
+    #     log.info("Making the statistics tables ...")
+    #
+    #     # Loop over the preparation names
+    #     for prep_name in self.preparation_names:
+    #
+    #         # Load the statistics
+    #         statistics = load_statistics(self.config.path, prep_name)
+    #
+    #         # Convert to table
+    #         table = html.SimpleTable(statistics.as_tuples(), ["Property", "Value"], css_class=table_class, tostr_kwargs=self.tostr_kwargs)
+    #
+    #         # Set the table
+    #         self.statistics_tables[prep_name] = table
+    #
+    # # -----------------------------------------------------------------
+    #
+    # def make_statistics_table_old(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Inform the user
+    #     log.info("Making the statistics table ...")
+    #
+    #     # Fill cells
+    #     cells = []
+    #     for name in self.preparation_names:
+    #
+    #         # Check whether statistics are found
+    #         if name not in self.statistics_tables:
+    #             log.warning("Preparation statistics not found for the '" + name + "' image")
+    #             text = ""
+    #
+    #         else:
+    #
+    #         # Set title
+    #         text = ""
+    #         text += html.center_template.format(text=html.bold_template.format(text=name))
+    #         text += html.newline + html.newline
+    #         text += str(self.statistics_tables[name])
+    #
+    #         # Add to cells
+    #         cells.append(text)
+    #
+    #     # Create the table
+    #     self.statistics_table = html.SimpleTable.rasterize(cells, 4, css_class=table_class, tostr_kwargs=self.tostr_kwargs)
 
     # -----------------------------------------------------------------
 

@@ -261,6 +261,78 @@ class HTMLPageComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def heating_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, "heating.html")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def heating_page_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.heating_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colours_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, "colours.html")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colours_page_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.colours_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, "attenuation.html")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_page_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.attenuation_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def top_title(self):
 
         """
