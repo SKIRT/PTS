@@ -36,6 +36,7 @@ from pts.core.plot.seds import plotseds
 from pts.modeling.basics.projection import GalaxyProjection
 from pts.modeling.basics.instruments import FullInstrument, FrameInstrument, SimpleInstrument
 from pts.core.units.parsing import parse_unit as u
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
@@ -56,7 +57,7 @@ fuv_wavelength = fuv_filter.pivot
 # -----------------------------------------------------------------
 
 # Modeling path
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 
 # Path to the fixed parameters file
 fixed_path = fs.join(modeling_path, "fit", "fixed.dat")

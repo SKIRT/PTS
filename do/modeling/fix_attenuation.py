@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import filesystem as fs
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.core.environment import GalaxyModelingEnvironment
 from pts.modeling.preparation.preparer import load_statistics
@@ -23,6 +22,7 @@ from pts.core.tools.logging import log
 from pts.modeling.component.galaxy import get_galaxy_properties
 from pts.core.tools.stringify import tostr
 from pts.core.tools import numbers
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
@@ -35,7 +35,7 @@ config = parse_arguments("fix_attenuation", definition)
 # -----------------------------------------------------------------
 
 # Modeling path
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 
 # Load the modeling environment
 environment = GalaxyModelingEnvironment(modeling_path)

@@ -9,12 +9,12 @@
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.remote.host import find_host_ids
 from pts.magic.config.find_sources import definition as sources_definition
-from pts.core.tools import filesystem as fs
 from pts.modeling.component.component import get_cache_host_id
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 
 # -----------------------------------------------------------------
 

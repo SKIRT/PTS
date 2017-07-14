@@ -7,39 +7,11 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.modeling.fitting.run import has_single_fitting_run, get_fitting_run_names, has_fitting_runs, get_single_fitting_run_name
-from pts.core.tools import filesystem as fs
-from pts.modeling.build.suite import ModelSuite
-
-# -----------------------------------------------------------------
-
-# Set the modeling path
-modeling_path = fs.cwd()
 
 # -----------------------------------------------------------------
 
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
-
-# -----------------------------------------------------------------
-
-# No fitting runs (yet)
-if not has_fitting_runs(modeling_path):
-
-    # Check whether we can prompt for model definitions
-    suite = ModelSuite.from_modeling_path(modeling_path)
-    model_names = suite.model_names
-
-    # Set model name option
-    if len(model_names) == 0: definition.add_fixed("model_name", "name of the model", None)
-    elif len(model_names) == 1: definition.add_fixed("model_name", "name of the model", model_names[0])
-    else: definition.add_required("model_name", "string", "name of the model", choices=model_names)
-
-# One fitting run
-elif has_single_fitting_run(modeling_path): definition.add_fixed("fitting_run", "fitting run", get_single_fitting_run_name)
-
-# Multiple fitting runs
-else: definition.add_required("fitting_run", "string", "name of the fitting run to use", choices=get_fitting_run_names(modeling_path))
 
 # -----------------------------------------------------------------
 

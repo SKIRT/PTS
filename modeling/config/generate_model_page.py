@@ -6,14 +6,15 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.modeling.fitting.run import has_single_fitting_run, get_fitting_run_names, has_fitting_runs, get_single_fitting_run_name
-from pts.core.tools import filesystem as fs
 from pts.modeling.config.generate_page import definition
+from pts.modeling.fitting.run import FittingRuns
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
 # Set the modeling path
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
+runs = FittingRuns(modeling_path)
 
 # -----------------------------------------------------------------
 

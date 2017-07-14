@@ -49,6 +49,22 @@ def integer_or_real_or_string(argument):
 
 # -----------------------------------------------------------------
 
+def integer_or_real_or_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    try: return integer(argument)
+    except ValueError:
+        try: return real(argument)
+        except ValueError:
+            return quantity(argument)
+
+# -----------------------------------------------------------------
+
 def real_or_quantity(argument):
 
     """
@@ -72,6 +88,26 @@ def real_list_or_quantity_list(argument):
 
     try: return real_list(argument)
     except ValueError: return quantity_list(argument)
+
+# -----------------------------------------------------------------
+
+def integer_real_and_quantity_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    elements = string_list(argument)
+
+    values = []
+
+    for element in elements:
+        value = integer_or_real_or_quantity(element)
+        values.append(value)
+
+    return values
 
 # -----------------------------------------------------------------
 

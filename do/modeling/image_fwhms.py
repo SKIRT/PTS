@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.core.tools import formatting as fmt
 from pts.modeling.component.galaxy import get_data_images_path
@@ -22,10 +21,11 @@ from pts.magic.tools import headers
 from pts.magic.convolution.kernels import has_variable_fwhm, get_fwhm
 from pts.core.units.parsing import parse_unit as u
 from pts.dustpedia.core.properties import DustPediaProperties
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 
 # -----------------------------------------------------------------
 

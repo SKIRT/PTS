@@ -13,14 +13,13 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import filesystem as fs
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.core.environment import GalaxyModelingEnvironment
 from pts.magic.plot.imagegrid import StandardImageGridPlotter
-from pts.magic.core.frame import Frame
 from pts.modeling.core.environment import map_sub_names
 from pts.modeling.maps.component import get_maps_sub_name
 from pts.modeling.component.component import load_modeling_history
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
@@ -36,7 +35,7 @@ config = parse_arguments("plot_maps", definition)
 
 # -----------------------------------------------------------------
 
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 
 # -----------------------------------------------------------------
 

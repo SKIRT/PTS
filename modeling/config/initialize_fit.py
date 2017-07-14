@@ -8,12 +8,12 @@
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.modeling.fitting.component import get_run_names
-from pts.core.tools import filesystem as fs
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
 # Determine the modeling path
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 
 # -----------------------------------------------------------------
 

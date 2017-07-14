@@ -9,12 +9,12 @@
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.remote.host import find_host_ids
 from pts.modeling.fitting.component import get_run_names
-from pts.core.tools import filesystem as fs
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
 # Set the modeling path
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 
 # -----------------------------------------------------------------
 

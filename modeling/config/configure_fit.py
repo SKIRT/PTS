@@ -9,12 +9,12 @@
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.modeling.fitting.component import get_run_names
 from pts.modeling.component.component import get_default_fitting_method
-from pts.core.tools import filesystem as fs
 from pts.modeling.build.suite import ModelSuite
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 suite = ModelSuite.from_modeling_path(modeling_path)
 
 # -----------------------------------------------------------------

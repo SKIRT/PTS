@@ -12,10 +12,11 @@ import numpy as np
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.tools import filesystem as fs
 from pts.modeling.maps.component import get_old_stellar_map_names, get_young_stellar_map_names, get_ionizing_stellar_map_names
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 
 # -----------------------------------------------------------------
 

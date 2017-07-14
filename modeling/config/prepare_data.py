@@ -11,11 +11,11 @@ from pts.core.remote.host import find_host_ids
 from pts.core.tools.parallelization import ncores
 from pts.modeling.preparation.preparer import steps
 from pts.modeling.component.component import get_cache_host_id
-from pts.core.tools import filesystem as fs
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 
 # -----------------------------------------------------------------
 

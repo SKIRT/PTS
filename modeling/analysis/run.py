@@ -17,9 +17,40 @@ from astropy.utils import lazyproperty
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
-from .info import AnalysisRunInfo
 from ...core.simulation.skifile import LabeledSkiFile
 from ..core.model import Model
+from ...core.tools import sequences
+from ...core.basics.composite import SimplePropertyComposite
+from ..fitting.run import FittingRun
+
+# -----------------------------------------------------------------
+
+class AnalysisRunInfo(SimplePropertyComposite):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, **kwargs):
+
+        """
+        The constructor ...
+        """
+
+        # Call the constructor of the base class
+        super(AnalysisRunInfo, self).__init__()
+
+        # Define properties
+        self.add_string_property("name", "name of the analysis run")
+        self.add_string_property("path", "path of the analysis run")
+        self.add_string_property("fitting_run", "fitting run name")
+        self.add_string_property("generation_name", "generation name")
+        self.add_string_property("simulation name", "simulation name")
+        self.add_property("parameter_values", "integer_real_and_quantity_list", "parameter values")
+        self.add_property("chi_squared", "real", "chi squared value")
+
+        # Set properties
+        self.set_properties(kwargs)
 
 # -----------------------------------------------------------------
 
@@ -37,6 +68,38 @@ class AnalysisRun(object):
 
         self.galaxy_name = None
         self.info = None
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_name(cls, modeling_path, name):
+
+        """
+        This function ...
+        :param modeling_path:
+        :param name:
+        :return:
+        """
+
+        analysis_path = fs.join(modeling_path, "analysis")
+        run_path = fs.join(analysis_path, name)
+        return cls.from_path(run_path)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_path(cls, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Determine the info path
+        info_path = fs.join(path, "info.dat")
+        if not fs.is_file(info_path): raise IOError("Could not find the info file")
+        else: return cls.from_info(info_path)
 
     # -----------------------------------------------------------------
 
@@ -61,6 +124,18 @@ class AnalysisRun(object):
 
         # Return the analysis run object
         return run
+
+    # -----------------------------------------------------------------
+
+    @property
+    def from_fitting(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run is not None
 
     # -----------------------------------------------------------------
 
@@ -329,7 +404,7 @@ class AnalysisRun(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
-    def fitting_run(self):
+    def fitting_run_name(self):
 
         """
         This function ...
@@ -337,6 +412,18 @@ class AnalysisRun(object):
         """
 
         return self.info.fitting_run
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fitting_run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return FittingRun.from_name(self.fitting_run_name)
 
     # -----------------------------------------------------------------
 
@@ -413,5 +500,182 @@ class AnalysisRun(object):
 
         # Return the model
         return model
+
+# -----------------------------------------------------------------
+
+class AnalysisRuns(object):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, modeling_path):
+
+        """
+        This function ...
+        :param modeling_path:
+        """
+
+        self.modeling_path = modeling_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def analysis_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.modeling_path, "analysis")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.directories_in_path(self.analysis_path, returns="name")
+
+    # -----------------------------------------------------------------
+
+    def __len__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.names)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def empty(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.names) == 0
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_single(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sequences.is_singleton(self.names)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def single_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return sequences.get_singleton(self.names)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def single_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_path(self.single_name)
+
+    # -----------------------------------------------------------------
+
+    def get_path(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return fs.join(self.analysis_path, name)
+
+    # -----------------------------------------------------------------
+
+    def load(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        analysis_run_path = self.get_path(name)
+        if not fs.is_directory(analysis_run_path): raise ValueError("Analysis run '" + name + "' does not exist")
+        return AnalysisRun.from_path(analysis_run_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def single(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return AnalysisRun.from_path(self.single_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def last_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.empty: return None
+        if self.has_single: return self.single_name
+
+        return sorted(self.names)[-1]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def last_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_path(self.last_name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def last(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.load(self.last_name)
 
 # -----------------------------------------------------------------

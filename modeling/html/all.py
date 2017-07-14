@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.utils import lazyproperty
-
 # Import the relevant PTS classes and modules
 from pts.modeling.html.status import StatusPageGenerator
 from pts.modeling.html.data import DataPageGenerator
@@ -25,6 +22,7 @@ from pts.modeling.html.model import ModelPageGenerator
 from pts.core.tools.logging import log
 from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import filesystem as fs
+from ..core.progression import create_modeling_progression
 
 # -----------------------------------------------------------------
 
@@ -42,6 +40,9 @@ class AllPagesGenerator(GalaxyModelingComponent):
 
         # Call the constructor of the base class
         super(AllPagesGenerator, self).__init__(*args, **kwargs)
+
+        # The modeling progression to use to generate the pages
+        self.progression = None
 
     # -----------------------------------------------------------------
 
@@ -93,28 +94,24 @@ class AllPagesGenerator(GalaxyModelingComponent):
         # Call the setup function of the base class
         super(AllPagesGenerator, self).setup(**kwargs)
 
+        # Create the progression
+        if "progression" in kwargs: self.progression = kwargs.pop("progression")
+        else: self.create_progression()
+
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def model_name(self):
+    def create_progression(self):
 
         """
         This function ...
         :return:
         """
 
-        if self.config.model_name is not None: return
+        # Inform the user
+        log.info("Creating the modeling progression ...")
 
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def model_definition(self):
-
-        """
-        This function ...
-        :return:
-        """
+        # Create
+        self.progression = create_modeling_progression(self.config.path)
 
     # -----------------------------------------------------------------
 

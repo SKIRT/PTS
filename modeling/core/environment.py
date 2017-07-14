@@ -48,6 +48,49 @@ html_name = "html"
 
 # -----------------------------------------------------------------
 
+def is_modeling_path(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    config_file_path = fs.join(path, config_filename)
+
+    # Check for the presence of the configuration file
+    if not fs.is_file(config_file_path): return False
+    else: return True
+
+# -----------------------------------------------------------------
+
+def verify_modeling_path(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    config_file_path = fs.join(path, config_filename)
+
+    # Check for the presence of the configuration file
+    if not fs.is_file(config_file_path): raise ValueError("The path '" + path + "' is not a radiative transfer modeling directory")
+    else: return path
+
+# -----------------------------------------------------------------
+
+def verify_modeling_cwd():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return verify_modeling_path(fs.cwd())
+
+# -----------------------------------------------------------------
+
 class ModelingEnvironment(object):
 
     """

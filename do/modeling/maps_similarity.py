@@ -27,6 +27,7 @@ from pts.magic.core.frame import Frame
 from pts.modeling.maps.collection import MapsCollection
 from pts.core.tools import formatting as fmt
 from pts.magic.core.list import NamedFrameList
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
@@ -35,7 +36,7 @@ maps = ["old", "young", "ionizing", "dust"]
 # -----------------------------------------------------------------
 
 # Set the modeling path
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 
 # -----------------------------------------------------------------
 

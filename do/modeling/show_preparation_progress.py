@@ -21,6 +21,7 @@ from pts.core.basics.configuration import ConfigurationDefinition, parse_argumen
 from pts.modeling.preparation.preparer import sort_image, status_to_steps, steps
 from pts.core.filter.filter import parse_filter
 from pts.core.tools import formatting as fmt
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
@@ -32,7 +33,7 @@ config = parse_arguments("show_preparation_progress", definition)
 
 # -----------------------------------------------------------------
 
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 
 # -----------------------------------------------------------------
 

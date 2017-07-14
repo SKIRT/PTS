@@ -21,6 +21,7 @@ from pts.modeling.core.steps import cached_directory_path_for_single_command
 from pts.modeling.component.galaxy import get_data_image_and_error_paths, get_initial_dataset
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.data.component import instrument_to_origin
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
@@ -33,7 +34,7 @@ config = parse_arguments("cache_images", definition)
 
 # -----------------------------------------------------------------
 
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 
 # -----------------------------------------------------------------
 

@@ -26,6 +26,7 @@ from pts.core.tools.introspection import pts_temp_dir
 from pts.magic.core.frame import Frame
 from pts.magic.tools import plotting
 from pts.modeling.core.steps import cached_directory_name_for_single_command
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
@@ -41,7 +42,7 @@ config = parse_arguments("plot_truncated", definition)
 
 # -----------------------------------------------------------------
 
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 
 # -----------------------------------------------------------------
 

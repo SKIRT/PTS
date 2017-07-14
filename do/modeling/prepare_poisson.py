@@ -24,6 +24,7 @@ from pts.magic.convolution.aniano import AnianoKernels
 from pts.magic.core.kernel import ConvolutionKernel
 from pts.core.tools import parsing
 from pts.core.remote.python import AttachedPythonSession
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
@@ -35,7 +36,9 @@ config = parse_arguments("prepare_poisson", definition)
 
 # -----------------------------------------------------------------
 
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
+
+# -----------------------------------------------------------------
 
 data_path = fs.join(modeling_path, "data")
 prep_path = fs.join(modeling_path, "prep")

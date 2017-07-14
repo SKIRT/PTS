@@ -17,16 +17,14 @@ from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
-from pts.core.tools import filesystem as fs
 from pts.modeling.fitting.component import get_run_names, get_populations
 from pts.modeling.fitting.run import get_generations_table, get_generation_path
 from pts.modeling.fitting.generation import Generation
-from pts.evolve.optimize.stepwise import load_population
-from pts.core.basics import containers
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 
 # -----------------------------------------------------------------
 

@@ -13,17 +13,17 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.modeling.component.galaxy import get_data_images_path
 from pts.magic.basics.coordinatesystem import CoordinateSystem
 from pts.magic.tools import headers
 from pts.magic.core.fits import get_header
 from pts.core.tools import formatting as fmt
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 
 # -----------------------------------------------------------------
 

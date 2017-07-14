@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.core.environment import GalaxyModelingEnvironment
@@ -24,6 +23,7 @@ from pts.magic.plot.imagegrid import StandardImageGridPlotter
 from pts.core.filter.filter import parse_filter
 from pts.core.tools.parsing import real
 from pts.magic.core.frame import Frame
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
@@ -38,7 +38,7 @@ config = parse_arguments("plot_truncated", definition)
 
 # -----------------------------------------------------------------
 
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 
 # -----------------------------------------------------------------
 

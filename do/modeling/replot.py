@@ -23,11 +23,12 @@ from pts.core.basics.configuration import ConfigurationDefinition, parse_argumen
 from pts.modeling.fitting.component import get_generation_names, get_simulations
 from pts.core.plot.sed import SEDPlotter
 from pts.core.data.sed import SED
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
 # Set the modeling path
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 
 # -----------------------------------------------------------------
 

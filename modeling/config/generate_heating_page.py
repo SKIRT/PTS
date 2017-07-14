@@ -6,23 +6,26 @@
 # *****************************************************************
 
 # Import the relevant PTS classes and modules
-from pts.core.basics.configuration import ConfigurationDefinition
-from pts.modeling.core.environment import verify_modeling_cwd
+from pts.modeling.config.generate_page import definition
 from pts.modeling.analysis.run import AnalysisRuns
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
+# Set the modeling path
 modeling_path = verify_modeling_cwd()
 runs = AnalysisRuns(modeling_path)
 
 # -----------------------------------------------------------------
 
-# Create the configuration
-definition = ConfigurationDefinition(log_path="log", config_path="config")
+# The analysis run
+if runs.empty: raise ValueError("There are no analysis runs (yet)")
+elif runs.has_single: definition.add_fixed("analysis_run", "analysis run", runs.single_name)
+else: definition.add_required("analysis_run", "string", "analysis run", choices=runs.names)
 
-# ANALYSIS RUNS
-if runs.empty: raise ValueError("No analysis runs present (yet)")
-elif runs.has_single: definition.add_fixed("run", "name of the analysis run", runs.single_name)
-else: definition.add_positional_optional("run", "string", "name of the analysis run for which to analyse the projected heating", runs.last_name, runs.names)
+# -----------------------------------------------------------------
+
+# Flags
+definition.add_flag("show", "show the page", False)
 
 # -----------------------------------------------------------------

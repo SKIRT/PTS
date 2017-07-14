@@ -13,9 +13,9 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import filesystem as fs
 from pts.core.tools.logging import log
 from pts.modeling.component.galaxy import get_galaxy_properties, get_prepared_dataset
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
@@ -24,7 +24,7 @@ log.start("Starting add_distance_to_prepared_images ...")
 
 # -----------------------------------------------------------------
 
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 
 # -----------------------------------------------------------------
 

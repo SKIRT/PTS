@@ -19,6 +19,7 @@ from pts.modeling.core.environment import GalaxyModelingEnvironment
 from pts.modeling.html.all import AllPagesGenerator
 from pts.core.remote.host import load_host
 from pts.core.remote.mounter import RemoteMounter
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
@@ -30,7 +31,7 @@ config = parse_arguments("upload_status", definition)
 
 # -----------------------------------------------------------------
 
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 
 # -----------------------------------------------------------------
 

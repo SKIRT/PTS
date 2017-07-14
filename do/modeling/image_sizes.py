@@ -17,10 +17,11 @@ from pts.core.tools import filesystem as fs
 from pts.modeling.component.galaxy import get_data_images_path
 from pts.magic.core.frame import Frame
 from pts.core.tools import formatting as fmt
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 
 # -----------------------------------------------------------------
 

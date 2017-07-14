@@ -9,16 +9,16 @@
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.remote.host import find_host_ids
 from pts.core.tools.parallelization import ncores
-from pts.core.tools import filesystem as fs
 from pts.modeling.component.component import get_default_fitting_method, get_cache_host_id
 from pts.modeling.modeling.base import fitting_methods
 from pts.modeling.preparation.preparer import steps
 from pts.modeling.core.steps import single_commands
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
 # Set modeling path
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 
 # -----------------------------------------------------------------
 

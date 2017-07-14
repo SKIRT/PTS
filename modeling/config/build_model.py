@@ -8,13 +8,13 @@
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.modeling.build.suite import ModelSuite
-from pts.core.tools import filesystem as fs
 from pts.modeling.config.build_stars import default_sfr
 from pts.modeling.config.build_dust import default_dust_mass
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 suite = ModelSuite.from_modeling_path(modeling_path)
 
 # -----------------------------------------------------------------

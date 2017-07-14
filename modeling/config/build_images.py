@@ -7,12 +7,12 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.core.tools import filesystem as fs
 from pts.modeling.build.suite import ModelSuite
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 suite = ModelSuite.from_modeling_path(modeling_path)
 
 # -----------------------------------------------------------------

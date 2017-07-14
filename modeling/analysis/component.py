@@ -162,31 +162,3 @@ class AnalysisComponent(GalaxyModelingComponent):
         return AnalysisRun.from_info(info_path)
 
 # -----------------------------------------------------------------
-
-def get_analysis_run_names(modeling_path):
-
-    """
-    This function ...
-    :param modeling_path:
-    :return:
-    """
-
-    analysis_path = fs.join(modeling_path, "analysis")
-    if not fs.is_file(analysis_path): return None
-    else: return fs.directories_in_path(analysis_path, returns="name")
-
-# -----------------------------------------------------------------
-
-def get_last_run_name(modeling_path):
-
-    """
-    This function ...
-    :param modeling_path:
-    :return:
-    """
-
-    names = get_analysis_run_names(modeling_path)
-    if names is None: return None
-    else: return sorted(names)[-1]
-
-# -----------------------------------------------------------------

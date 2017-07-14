@@ -16,12 +16,12 @@ from __future__ import absolute_import, division, print_function
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.fitting.component import get_run_names
 from pts.modeling.fitting.component import load_fitting_run
-from pts.core.tools import filesystem as fs
 from pts.core.tools import formatting as fmt
+from pts.modeling.core.environment import verify_modeling_cwd
 
 # -----------------------------------------------------------------
 
-modeling_path = fs.cwd()
+modeling_path = verify_modeling_cwd()
 
 # -----------------------------------------------------------------
 
