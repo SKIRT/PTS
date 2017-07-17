@@ -243,7 +243,6 @@ class SmartTable(Table):
             if not dtype_str.startswith("|S"): continue
 
             current_string_length = int(dtype_str.split("S")[1])
-
             if values[index] is None: new_string_length = 0
             else: new_string_length = len(values[index])
 
