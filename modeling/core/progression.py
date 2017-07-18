@@ -16,6 +16,7 @@ from __future__ import absolute_import, division, print_function
 from .environment import GalaxyModelingEnvironment
 from ..fitting.run import FittingRuns, FittingRun
 from ..analysis.run import AnalysisRuns, AnalysisRun
+from ..build.suite import ModelSuite
 from ...core.basics.configuration import prompt_string
 from pts.core.tools.utils import lazyproperty
 
@@ -35,7 +36,7 @@ def create_modeling_progression(modeling_path):
     # Choose analysis run
     if analysis_runs.empty: analysis_run_name = None
     elif analysis_runs.has_single: analysis_run_name = analysis_runs.single_name
-    else: analysis_run_name = prompt_string("analysis_run", "analysis run", choices=analysis_runs.names, default=analysis_runs.last_name, required=True)
+    else: analysis_run_name = prompt_string("analysis_run", "name of the analysis run", choices=analysis_runs.names, default=analysis_runs.last_name, required=True)
 
     # Check whether fitting run has to be choosen
     analysis_run = AnalysisRun.from_name(modeling_path, analysis_run_name)
@@ -47,24 +48,37 @@ def create_modeling_progression(modeling_path):
         # Choose fitting run
         if fitting_runs.empty: fitting_run_name = None
         elif fitting_runs.has_single: fitting_run_name = fitting_runs.single_name
-        else: fitting_run_name =
+        else: fitting_run_name = prompt_string("fitting_run", "name of the fitting run", choices=fitting_runs.names, required=True)
 
     # Just take fitting run name for given analysis run
     else: fitting_run_name = analysis_run.fitting_run_name
+
+    # Get the model suite
+    suite = ModelSuite.from_modeling_path(modeling_path)
 
     # Check whether model representation has to be choosen
     fitting_run = FittingRun.from_name(modeling_path, fitting_run_name)
     if fitting_run_name is None:
 
+        # Choose representation
+        if suite.no_representations: representation_name = None
+        elif suite.has_single_representation: representation_name = suite.single_representation_name
+        else: representation_name = prompt_string("representation", "name of the model representation", choices=suite.representation_names, required=True)
 
+    # Else
     else: representation_name = fitting_run.initial_representation_name
 
     # Check whether the model name has to be choosen
     if representation_name is None:
 
-    else: model_name =
+        # No models
+        if suite.no_models: model_name = None
 
+        # Choose from models
+        else: model_name = prompt_string("model", "name of the model", choices=suite.model_names, required=True)
 
+    # Get the model name for the chosen representation
+    else: model_name = suite.get_model_name_for_representation(representation_name)
 
     # Return
     return GalaxyModelingProgression(modeling_path, model_name, representation_name, fitting_run_name, analysis_run_name)
@@ -110,12 +124,80 @@ class GalaxyModelingProgression(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def model_suite(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.model_name is None: return None # no models yet or none choosen: don't load the model suite
+        return ModelSuite.from_modeling_path(self.modeling_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fitting_context(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..fitting.context import FittingContext
+        if self.fitting_run_name is None: return None # no fitting runs yet or none choosen: don't load the fitting context
+        return FittingContext.from_modeling_path(self.modeling_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_runs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_context.runs
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def analysis_context(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..analysis.context import AnalysisContext
+        if self.analysis_run_name is None: return None
+        return AnalysisContext.from_modeling_path(self.modeling_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def analysis_runs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_context.runs
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def definition(self):
 
         """
         This function ...
         :return:
         """
+
+        if self.model_name is None: return None
+        return self.model_suite.get_model_definition(self.model_name)
 
     # -----------------------------------------------------------------
 
@@ -127,6 +209,9 @@ class GalaxyModelingProgression(object):
         :return:
         """
 
+        if self.representation_name is None: return None
+        return self.model_suite.get_model_representation(self.representation_name)
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -137,6 +222,9 @@ class GalaxyModelingProgression(object):
         :return:
         """
 
+        if self.fitting_run_name is None: return None
+        return self.fitting_runs.load(self.fitting_run_name)
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -146,5 +234,7 @@ class GalaxyModelingProgression(object):
         This function ...
         :return:
         """
+
+
 
 # -----------------------------------------------------------------

@@ -211,10 +211,14 @@ class FittingRun(object):
         :return:
         """
 
-        from .component import get_model_for_run
+        #from .component import get_model_for_run
+
+        from .context import FittingContext
+        context = FittingContext.from_modeling_path(modeling_path)
 
         # Get model name
-        model_name = get_model_for_run(modeling_path, name)
+        #model_name = get_model_for_run(modeling_path, name)
+        model_name = context.get_model_for_run(name)
 
         # Create and return
         return cls(modeling_path, name, model_name)
@@ -1528,10 +1532,12 @@ class FittingRun(object):
         :return:
         """
 
-        from .component import get_populations
+        #from .component import get_populations
 
         # Load the populations data and get only for this fitting run
-        return get_populations(self.modeling_path)[self.name]
+        #return get_populations(self.modeling_path)[self.name]
+        #return self.context.populations[self.name]
+        return self.context.get_populations_for_run(self.name)
 
     # -----------------------------------------------------------------
 
@@ -1566,6 +1572,19 @@ class FittingRun(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def context(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        from .context import FittingContext
+        return FittingContext.from_modeling_path(self.modeling_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def best_parameter_values_and_chi_squared(self):
 
         """
@@ -1576,10 +1595,10 @@ class FittingRun(object):
         # NEW: THIS FUNCTION WAS CREATED BECAUSE RECURRENCE WAS IMPLEMENTED: THIS MEANS THAT OUR OWN TABLES
         # (THOSE WHO CONTAIN ONLY MODELS THAT HAVE TO BE SIMULATED AND HAVE NOT OCCURED AND SCORED BEFORE)
 
-        from .component import get_database_path
+        #from .component import get_database_path
 
         # Get path
-        database_path = get_database_path(self.modeling_path)
+        database_path = self.context.database_path
 
         # Get generation and individual
         generation_index, individual_key, chi_squared = get_best_individual_key_and_score_all_generations(database_path, self.name, minmax="min")
@@ -2924,7 +2943,8 @@ def get_fitting_configuration_path(modeling_path, fitting_run):
     :return: 
     """
 
-    run_path = get_fitting_run_path(modeling_path, fitting_run)
+    #run_path = get_fitting_run_path(modeling_path, fitting_run)
+    run_path = fs.join(modeling_path, "fit", fitting_run)
     fitting_configuration_path = fs.join(run_path, "configuration.cfg")
     return fitting_configuration_path
 

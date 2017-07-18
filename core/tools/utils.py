@@ -260,6 +260,21 @@ class lazyproperties(type):
 
 # -----------------------------------------------------------------
 
+class abstractclassmethod(classmethod):
+
+    """
+    This class is a decorator for abstract class methods
+    """
+
+    __isabstractmethod__ = True
+
+    def __init__(self, callable):
+
+        callable.__isabstractmethod__ = True
+        super(abstractclassmethod, self).__init__(callable)
+
+# -----------------------------------------------------------------
+
 class UserIntervention(Exception):
 
     """
@@ -285,20 +300,5 @@ class UserIntervention(Exception):
 
         # Call the constructor of the base class
         super(UserIntervention, self).__init__(message)
-
-# -----------------------------------------------------------------
-
-class abstractclassmethod(classmethod):
-
-    """
-    This class is a decorator for abstract class methods
-    """
-
-    __isabstractmethod__ = True
-
-    def __init__(self, callable):
-
-        callable.__isabstractmethod__ = True
-        super(abstractclassmethod, self).__init__(callable)
 
 # -----------------------------------------------------------------

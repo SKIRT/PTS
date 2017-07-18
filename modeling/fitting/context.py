@@ -221,4 +221,16 @@ class FittingContext(object):
 
         return load_populations(self.populations_path)
 
+    # -----------------------------------------------------------------
+
+    def get_populations_for_run(self, run_id):
+
+        """
+        This function ...
+        :param run_id:
+        :return:
+        """
+
+        return self.populations[run_id]
+
 # -----------------------------------------------------------------

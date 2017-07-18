@@ -14,11 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..component.galaxy import GalaxyModelingComponent
-from ...core.tools import filesystem as fs
-from ...core.launch.timing import TimingTable
-from ...core.launch.memory import MemoryTable
-from .run import AnalysisRunInfo, AnalysisRun
-from pts.core.tools.utils import lazyproperty
+from .context import AnalysisContext
 
 # -----------------------------------------------------------------
 
@@ -39,13 +35,8 @@ class AnalysisComponent(GalaxyModelingComponent):
         # Call the constructor of the base class
         super(AnalysisComponent, self).__init__(*args, **kwargs)
 
-        # -- Attributes --
-
-        # The path to the timing table
-        self.timing_table_path = None
-
-        # The path to the memory table
-        self.memory_table_path = None
+        # The analysis context
+        self.context = None
 
     # -----------------------------------------------------------------
 
@@ -59,33 +50,36 @@ class AnalysisComponent(GalaxyModelingComponent):
         # Call the setup function of the base class
         super(AnalysisComponent, self).setup()
 
-        # Timing table --
-
-        # Set the path to the timing table
-        self.timing_table_path = fs.join(self.analysis_path, "timing.dat")
-
-        # Initialize the timing table if necessary
-        if not fs.is_file(self.timing_table_path):
-
-            # Create the table and save it
-            timing_table = TimingTable()
-            timing_table.saveto(self.timing_table_path)
-
-        # Memory table --
-
-        # Set the path to the memory table
-        self.memory_table_path = fs.join(self.analysis_path, "memory.dat")
-
-        # Initialize the memory table if necessary
-        if not fs.is_file(self.memory_table_path):
-
-            # Create the table and save it
-            memory_table = MemoryTable()
-            memory_table.saveto(self.memory_table_path)
+        # Create the analysis context
+        self.context = AnalysisContext(self.analysis_path)
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
+    def timing_table_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.context.timing_table_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def memory_table_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.context.memory_table_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def timing_table(self):
 
         """
@@ -93,11 +87,11 @@ class AnalysisComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return TimingTable.from_file(self.timing_table_path)
+        return self.context.timing_table
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def memory_table(self):
 
         """
@@ -105,7 +99,7 @@ class AnalysisComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return MemoryTable.from_file(self.memory_table_path)
+        return self.context.memory_table
 
     # -----------------------------------------------------------------
 
@@ -117,7 +111,7 @@ class AnalysisComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return fs.directories_in_path(self.analysis_path, returns="name")
+        return self.context.analysis_run_names
 
     # -----------------------------------------------------------------
 
@@ -129,8 +123,7 @@ class AnalysisComponent(GalaxyModelingComponent):
         :return:
         """
 
-        path = fs.join(self.analysis_path, run_name)
-        return path
+        return self.context.get_run_path(run_name)
 
     # -----------------------------------------------------------------
 
@@ -142,8 +135,7 @@ class AnalysisComponent(GalaxyModelingComponent):
         :return:
         """
 
-        path = fs.join(self.get_run_path(run_name), "info.dat")
-        return AnalysisRunInfo.from_file(path)
+        return self.context.get_run_info(run_name)
 
     # -----------------------------------------------------------------
 
@@ -155,7 +147,6 @@ class AnalysisComponent(GalaxyModelingComponent):
         :return:
         """
 
-        info_path = fs.join(self.get_run_path(run_name), "info.dat")
-        return AnalysisRun.from_info(info_path)
+        return self.context.get_run(run_name)
 
 # -----------------------------------------------------------------

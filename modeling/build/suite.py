@@ -269,6 +269,34 @@ class ModelSuite(object):
 
     # -----------------------------------------------------------------
 
+    def is_representation(self, representation_name):
+
+        """
+        Thisf unction ...
+        :param representation_name:
+        :return:
+        """
+
+        path = self.get_representation_path(representation_name)
+        return fs.is_directory(path)
+
+    # -----------------------------------------------------------------
+
+    def get_model_name_for_representation(self, representation_name):
+
+        """
+        This function ...
+        :param representation_name:
+        :return:
+        """
+
+        if not self.is_representation(representation_name): raise ValueError("Representation does not exist")
+
+        # Get model name
+        return self.representations_table.model_for_representation(representation_name)
+
+    # -----------------------------------------------------------------
+
     def get_representation(self, representation_name):
 
         """
@@ -278,11 +306,22 @@ class ModelSuite(object):
         """
 
         path = self.get_representation_path(representation_name)
-        if not fs.is_directory(path): raise ValueError("Representation does not exist")
+        if not self.is_representation(representation_name): raise ValueError("Representation does not exist")
         else:
-            # Get model name
-            model_name = self.representations_table.model_for_representation(representation_name)
+            model_name = self.get_model_name_for_representation(representation_name)
             return Representation(representation_name, model_name, path)
+
+    # -----------------------------------------------------------------
+
+    def get_model_representation(self, representation_name):
+
+        """
+        This function ...
+        :param representation_name:
+        :return:
+        """
+
+        return self.get_representation(representation_name)
 
     # -----------------------------------------------------------------
 
