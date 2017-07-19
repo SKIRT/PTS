@@ -1012,6 +1012,30 @@ class FittingRun(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nfinished_generations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.finished_generations)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_finished_generations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nfinished_generations > 0
+
+    # -----------------------------------------------------------------
+
     def is_finished_generation(self, generation_name):
 
         """

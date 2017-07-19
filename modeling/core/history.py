@@ -233,6 +233,32 @@ class ModelingHistory(SmartTable):
 
     # -----------------------------------------------------------------
 
+    def finished_all(self, *command_names):
+
+        """
+        This function ...
+        :param command_names:
+        :return:
+        """
+
+        return self.finished_commands(command_names)
+
+    # -----------------------------------------------------------------
+
+    def finished_any(self, *command_names):
+
+        """
+        This function ...
+        :param command_names:
+        :return:
+        """
+
+        for command in command_names:
+            if self.finished(command): return True
+        return False
+
+    # -----------------------------------------------------------------
+
     @property
     def finished_maps(self):
 

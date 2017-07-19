@@ -197,6 +197,44 @@ class ModelingEnvironment(object):
         status = ModelingStatus(self.path)
         return status
 
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def model_suite(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..build.suite import ModelSuite
+        return ModelSuite.from_modeling_path(self.path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def fitting_context(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..fitting.context import FittingContext
+        return FittingContext.from_modeling_path(self.path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_runs(self):
+
+        """
+        Thi function ...
+        :return:
+        """
+
+        return self.fitting_context.runs
+
 # -----------------------------------------------------------------
 
 data_name = "data"
@@ -756,6 +794,31 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         """
 
         return self.dataset.get_frame_path_list(named=True)  # on name
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def analysis_context(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..analysis.context import AnalysisContext
+        return AnalysisContext.from_modeling_path(self.path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def analysis_runs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_context.runs
 
 # -----------------------------------------------------------------
 

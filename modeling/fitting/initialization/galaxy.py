@@ -16,9 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ....core.data.sun import Sun
 from ....core.tools.logging import log
 from ...component.galaxy import GalaxyModelingComponent
-from ...build.component import get_stellar_component_names, get_dust_component_names, load_stellar_component, load_dust_component
 from .base import FittingInitializerBase
-from ...build.construct import add_dust_component, add_stellar_component
 
 # -----------------------------------------------------------------
 
@@ -125,59 +123,8 @@ class GalaxyFittingInitializer(FittingInitializerBase, GalaxyModelingComponent):
         # Inform the user
         log.info("Setting the stellar and dust components ...")
 
-        # 1. Set stellar components
-        self.set_stellar_components()
-
-        # 2. Set dust components
-        self.set_dust_components()
-
-    # -----------------------------------------------------------------
-
-    def set_stellar_components(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Setting the stellar components ...")
-
-        # Loop over the stellar components
-        for name in get_stellar_component_names(self.config.path, self.model_name):
-
-            # Load the component
-            component = load_stellar_component(self.config.path, self.model_name, name)
-
-            # Add the stellar component
-            map_filename = add_stellar_component(self.ski, name, component)
-
-            # If map filename is defined, set path in dictionary
-            if map_filename is not None: self.input_map_paths[map_filename] = component.map_path
-
-    # -----------------------------------------------------------------
-
-    def set_dust_components(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Setting the dust components ...")
-
-        # Loop over the dust components
-        for name in get_dust_component_names(self.config.path, self.model_name):
-
-            # Load the component
-            component = load_dust_component(self.config.path, self.model_name, name)
-
-            # Add the dust component
-            map_filename = add_dust_component(self.ski, name, component)
-
-            # If map filename is defined, set path in dictionary
-            if map_filename is not None: self.input_map_paths[map_filename] = component.map_path
+        # Add the components to the ski file and to the input map paths dictionary
+        self.suite.add_model_components(self.model_name, self.ski, self.input_map_paths)
 
     # -----------------------------------------------------------------
 

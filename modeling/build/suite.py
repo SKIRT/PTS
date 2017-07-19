@@ -22,7 +22,8 @@ from ...core.tools.serialization import load_dict
 from ...magic.core.frame import Frame
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from .representation import Representation
-from pts.core.tools.utils import lazyproperty
+from ...core.tools.logging import log
+from .construct import add_stellar_component, add_dust_component
 
 # -----------------------------------------------------------------
 
@@ -717,82 +718,146 @@ class ModelSuite(object):
         # No deprojection for this component
         return component.parameters.title, None
 
+    # -----------------------------------------------------------------
+
+    def add_model_components(self, model_name, ski, input_map_paths):
+
+        """
+        This function ...
+        :param model_name:
+        :param ski:
+        :param input_map_paths:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adding the components of model '" + model_name + "' to the ski file ...")
+
+        # 1. Set stellar components
+        self.add_stellar_components(model_name, ski, input_map_paths)
+
+        # 2. Set dust components
+        self.add_dust_components(model_name, ski, input_map_paths)
+
+    # -----------------------------------------------------------------
+
+    def add_stellar_components(self, model_name, ski, input_map_paths):
+
+        """
+        This function ...
+        :param model_name:
+        :param ski
+        :param input_map_paths:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adding the stellar components of model '" + model_name + "' to the ski file ...")
+
+        # Loop over the stellar components
+        for name in self.get_stellar_component_names(model_name):
+
+            # Load the component
+            #component = load_stellar_component(self.config.path, self.model_name, name)
+            component = self.load_stellar_component(model_name, name, add_map=False)
+
+            # Add the stellar component
+            map_filename = add_stellar_component(ski, name, component)
+
+            # If map filename is defined, set path in dictionary
+            if map_filename is not None: input_map_paths[map_filename] = component.map_path
+
+    # -----------------------------------------------------------------
+
+    def add_dust_components(self, model_name, ski, input_map_paths):
+
+        """
+        This function ...
+        :param model_name:
+        :param ski:
+        :param input_map_paths:
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adding the dust components of model '" + model_name + "' to the ski file ...")
+
+        # Loop over the dust components
+        for name in self.get_dust_component_names(model_name):
+
+            # Load the component
+            #component = load_dust_component(self.config.path, self.model_name, name)
+            component = self.load_dust_component(model_name, name, add_map=False)
+
+            # Add the dust component
+            map_filename = add_dust_component(ski, name, component)
+
+            # If map filename is defined, set path in dictionary
+            if map_filename is not None: input_map_paths[map_filename] = component.map_path
+
 # -----------------------------------------------------------------
 
-def get_input_path(modeling_path, model_name):
-
-    """
-    This function ...
-    :param modeling_path:
-    :param model_name:
-    :return:
-    """
-
-    return fs.join(get_model_path(modeling_path, model_name), "input")
-
-# -----------------------------------------------------------------
-
-def get_stellar_path(modeling_path, model_name):
-
-    """
-    This function ...
-    :param modeling_path:
-    :param model_name:
-    :return:
-    """
-
-    return fs.join(get_model_path(modeling_path, model_name), "stellar")
-
-# -----------------------------------------------------------------
-
-def get_dust_path(modeling_path, model_name):
-
-    """
-    This function ...
-    :param modeling_path:
-    :param model_name:
-    :return:
-    """
-
-    return fs.join(get_model_path(modeling_path, model_name), "dust")
-
-# -----------------------------------------------------------------
-
-def get_stellar_map_paths(modeling_path, model_name):
-
-    """
-    This function ...
-    :param modeling_path:
-    :param model_name:
-    :return:
-    """
-
-    return fs.files_in_path(get_stellar_path(modeling_path, model_name), recursive=True, exact_name="map", extension="fits")
-
-# -----------------------------------------------------------------
-
-def get_dust_map_paths(modeling_path, model_name):
-
-    """
-    This function ...
-    :param modeling_path:
-    :param model_name:
-    :return:
-    """
-
-    return fs.files_in_path(get_dust_path(modeling_path, model_name), recursive=True, exact_name="map", extension="fits")
-
-# -----------------------------------------------------------------
-
-def get_input_paths(modeling_path, model_name):
-
-    """
-    This function ...
-    :param modeling_path:
-    :param model_name:
-    :return:
-    """
-
-    return fs.files_in_path(get_input_path(modeling_path, model_name)) + get_stellar_map_paths(modeling_path, model_name) + get_dust_map_paths(modeling_path, model_name)
+# def get_stellar_path(modeling_path, model_name):
+#
+#     """
+#     This function ...
+#     :param modeling_path:
+#     :param model_name:
+#     :return:
+#     """
+#
+#     return fs.join(get_model_path(modeling_path, model_name), "stellar")
+#
+# # -----------------------------------------------------------------
+#
+# def get_dust_path(modeling_path, model_name):
+#
+#     """
+#     This function ...
+#     :param modeling_path:
+#     :param model_name:
+#     :return:
+#     """
+#
+#     return fs.join(get_model_path(modeling_path, model_name), "dust")
+#
+# # -----------------------------------------------------------------
+#
+# def get_stellar_map_paths(modeling_path, model_name):
+#
+#     """
+#     This function ...
+#     :param modeling_path:
+#     :param model_name:
+#     :return:
+#     """
+#
+#     return fs.files_in_path(get_stellar_path(modeling_path, model_name), recursive=True, exact_name="map", extension="fits")
+#
+# # -----------------------------------------------------------------
+#
+# def get_dust_map_paths(modeling_path, model_name):
+#
+#     """
+#     This function ...
+#     :param modeling_path:
+#     :param model_name:
+#     :return:
+#     """
+#
+#     return fs.files_in_path(get_dust_path(modeling_path, model_name), recursive=True, exact_name="map", extension="fits")
+#
+# # -----------------------------------------------------------------
+#
+# def get_input_paths(modeling_path, model_name):
+#
+#     """
+#     This function ...
+#     :param modeling_path:
+#     :param model_name:
+#     :return:
+#     """
+#
+#     return fs.files_in_path(get_input_path(modeling_path, model_name)) + get_stellar_map_paths(modeling_path, model_name) + get_dust_map_paths(modeling_path, model_name)
 
 # -----------------------------------------------------------------

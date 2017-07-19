@@ -15,6 +15,8 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 
 # -----------------------------------------------------------------
 
+# Add flags
 definition.add_flag("replot", "replot", True)
+definition.add_flag("show", "show the page", False)
 
 # -----------------------------------------------------------------

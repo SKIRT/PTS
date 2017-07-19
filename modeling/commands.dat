@@ -64,7 +64,7 @@ finish_exploration | -- | fitting.finisher.ExplorationFinisher | arguments | Fin
 launch_best | -- | fitting.bestmodellauncher.BestModelLauncher | interactive | Launch simulations to inspect the current best RT model for a certain generation
 
 # MODEL ANALYSIS
-initialize_analysis | -- | analysis.initialization.AnalysisInitializer | arguments | Initialize an analysis run
+initialize_analysis | -- | analysis.initialization.AnalysisInitializer | interactive | Initialize an analysis run
 launch_analysis | -- | analysis.launcher.AnalysisLauncher | arguments | Launch a simulation for analysis
 launch_heating | -- | analysis.heating.launcher.DustHeatingContributionLauncher | arguments | Launch simulations for analysing the heating contributions
 analyse_attenuation_curve | -- | analysis.attenuation.curve.AttenuationCurveAnalyser | arguments | Analyse the dust attenuation curve
@@ -108,6 +108,7 @@ generate_data_page | -- | html.data.DataPageGenerator | arguments | Generate the
 generate_maps_page | -- | html.maps.MapsPageGenerator | arguments | Generate the maps page
 generate_preparation_page | -- | html.preparation.PreparationPageGenerator | arguments | Generate the preparation page
 generate_components_page | -- | html.components.ComponentsPageGenerator | arguments | Generate the components page
+generate_fitting_page | -- | html.fitting.FittingPageGenerator | arguments | Generate the fitting page
 generate_colours_page | -- | html.colours.ColoursPageGenerator | arguments | Generate the colours page
 generate_attenuation_page | -- | html.attenuation.AttenuationPageGenerator | arguments | Generate the attenuation page
 generate_heating_page | -- | html.heating.HeatingPageGenerator | arguments | Generate the heating page

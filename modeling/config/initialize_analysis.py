@@ -19,3 +19,12 @@ modeling_path = verify_modeling_cwd()
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
 # -----------------------------------------------------------------
+
+#origins = ["initial_model", "fitting_run", "custom_model"]
+origins = ["model", "fitting_run"]
+
+# -----------------------------------------------------------------
+
+definition.add_required("origin", "string", "origin of the analysis model", choices=origins)
+
+# -----------------------------------------------------------------

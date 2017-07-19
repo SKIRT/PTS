@@ -24,8 +24,3 @@ elif runs.has_single: definition.add_fixed("analysis_run", "analysis run", runs.
 else: definition.add_required("analysis_run", "string", "analysis run", choices=runs.names)
 
 # -----------------------------------------------------------------
-
-# Flags
-definition.add_flag("show", "show the page", False)
-
-# -----------------------------------------------------------------

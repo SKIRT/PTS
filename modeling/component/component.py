@@ -488,6 +488,42 @@ class ModelingComponent(Configurable):
 
         return 0.55 * Unit("micron")
 
+    # -----------------------------------------------------------------
+
+    @property
+    def model_suite(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.model_suite
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_context(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.fitting_context
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_runs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.fitting_runs
+
 # -----------------------------------------------------------------
 
 #def load_fitting_configuration(modeling_path):

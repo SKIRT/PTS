@@ -1275,6 +1275,30 @@ class GalaxyModelingComponent(ModelingComponent):
 
         return get_data_image_and_error_paths_with_cached(self.config.path, self.cache_host_id, lazy=lazy)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def analysis_context(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.analysis_context
+
+    # -----------------------------------------------------------------
+
+    @property
+    def analysis_runs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.analysis_runs
+
 # -----------------------------------------------------------------
 
 def load_preparation_statistics(modeling_path):

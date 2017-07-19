@@ -44,6 +44,7 @@ class AnalysisRunInfo(SimplePropertyComposite):
         self.add_string_property("fitting_run", "fitting run name")
         self.add_string_property("generation_name", "generation name")
         self.add_string_property("simulation name", "simulation name")
+        self.add_string_property("model_name", "name of the model")
         self.add_property("parameter_values", "integer_real_and_quantity_list", "parameter values")
         self.add_property("chi_squared", "real", "chi squared value")
 

@@ -261,6 +261,30 @@ class HTMLPageComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def fitting_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.environment.html_path, "fitting.html")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def fitting_page_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.name(self.fitting_page_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def heating_page_path(self):
 
         """

@@ -19,6 +19,10 @@ from pts.modeling.html.preparation import PreparationPageGenerator
 from pts.modeling.html.components import ComponentsPageGenerator
 from pts.modeling.html.maps import MapsPageGenerator
 from pts.modeling.html.model import ModelPageGenerator
+from pts.modeling.html.fitting import FittingPageGenerator
+from pts.modeling.html.attenuation import AttenuationPageGenerator
+from pts.modeling.html.colours import ColoursPageGenerator
+from pts.modeling.html.heating import HeatingPageGenerator
 from pts.core.tools.logging import log
 from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import filesystem as fs
@@ -58,40 +62,160 @@ class AllPagesGenerator(GalaxyModelingComponent):
         self.setup(**kwargs)
 
         # Generate the status page
-        if self.history.finished("fetch_properties"): self.generate_status()
+        if self.has_properties: self.generate_status()
 
         # Generate the data page
-        if self.history.finished("fetch_images"): self.generate_data()
+        if self.has_images: self.generate_data()
 
         # Generate the preparation page
-        if self.history.finished("prepare_data"): self.generate_preparation()
+        if self.has_prepared: self.generate_preparation()
 
         # Generate the components page
-        if self.history.finished("decompose"): self.generate_components()
+        if self.has_components: self.generate_components()
 
-        # Generate the maps page
-        if self.history.finished("build_model"): self.generate_maps()
+        # Generate the maps page, if maps are chosen to construct a model
+        if self.has_model: self.generate_maps()
 
         # GEnerate the model page
-        if self.history.finished("configure_fit"): self.generate_model()
+        if self.has_fitting_run: self.generate_model()
 
         # Generate the fitting page
-        if self.history.finished("fit_sed"): self.generate_fitting()
+        if self.has_generation: self.generate_fitting()
 
         # Generate the attenuation page
-        if self.history.finished("analyse_attenuation_map"): self.generate_attenuation()
-
-        # Generate the heating page
-        if self.history.finished("analyse_cell_heating") or self.history.finished("analyse_projected_heating"): self.generate_heating()
+        if self.has_attenuation: self.generate_attenuation()
 
         # Generate the colours page
-        if self.history.finished("analyse_colours"): self.generate_colours()
+        if self.has_colours: self.generate_colours()
+
+        # Generate the heating page
+        if self.has_heating: self.generate_heating()
 
         # Write
         self.write()
 
         # Show
         if self.config.show: self.show()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.history.finished("fetch_properties")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.history.finished("fetch_images")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_prepared(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.history.finished("prepare_data")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_components(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.history.finished("decompose")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.history.finished("build_model")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_fitting_run(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.history.finished("configure_fit")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_generation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.history.finished("fit_sed")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_attenuation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.history.finished_any("analyse_attenuation_map", "analyse_attenuation_curve")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_colours(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.history.finished("analyse_colours")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_heating(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.history.finished_any("analyse_cell_heating", "analyse_projected_heating")
 
     # -----------------------------------------------------------------
 
@@ -213,7 +337,7 @@ class AllPagesGenerator(GalaxyModelingComponent):
         # Inform the user
         log.info("Generating the maps page ...")
 
-        # Generate
+        # Generate the maps page
         # 'generate_maps_page'
         generator = MapsPageGenerator()
         generator.config.path = self.config.path
@@ -251,6 +375,13 @@ class AllPagesGenerator(GalaxyModelingComponent):
         # Inform the user
         log.info("Generating the fitting page ...")
 
+        # Generate the fitting page
+        # 'generate_fitting_page'
+        generator = FittingPageGenerator()
+        generator.config.path = self.config.path
+        generator.config.replot = self.config.replot
+        generator.run()
+
     # -----------------------------------------------------------------
 
     def generate_attenuation(self):
@@ -262,6 +393,13 @@ class AllPagesGenerator(GalaxyModelingComponent):
 
         # Inform the user
         log.info("Generating the attenuation page ...")
+
+        # Generate the attenuation page
+        # 'generate_attenuation_page'
+        generator = AttenuationPageGenerator()
+        generator.config.path = self.config.path
+        generator.config.replot = self.config.replot
+        generator.run()
 
     # -----------------------------------------------------------------
 
@@ -275,6 +413,13 @@ class AllPagesGenerator(GalaxyModelingComponent):
         # Inform the user
         log.info("Generating the colours page ...")
 
+        # Generate the colours page
+        # 'generate_colours_page'
+        generator = ColoursPageGenerator()
+        generator.config.path = self.config.path
+        generator.config.replot = self.config.replot
+        generator.run()
+
     # -----------------------------------------------------------------
 
     def generate_heating(self):
@@ -286,6 +431,13 @@ class AllPagesGenerator(GalaxyModelingComponent):
 
         # Inform the user
         log.info("Generating the heating page ...")
+
+        # Generate the heating page
+        # 'generate_heating_page'
+        generator = HeatingPageGenerator()
+        generator.config.path = self.config.path
+        generator.config.replot = self.config.replot
+        generator.run()
 
     # -----------------------------------------------------------------
 

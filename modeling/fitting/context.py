@@ -148,6 +148,18 @@ class FittingContext(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def fitting_run_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.runs.names
+
+    # -----------------------------------------------------------------
+
     def load_fitting_run(self, name):
 
         """

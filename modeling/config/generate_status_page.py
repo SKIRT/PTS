@@ -9,8 +9,3 @@
 from pts.modeling.config.generate_page import definition
 
 # -----------------------------------------------------------------
-
-# Flags
-definition.add_flag("show", "show the page", False)
-
-# -----------------------------------------------------------------

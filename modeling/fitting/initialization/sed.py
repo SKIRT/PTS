@@ -148,9 +148,6 @@ class SEDFittingInitializer(FittingInitializerBase, SEDModelingComponent):
             filename = "stars_" + name + ".fits"
 
             # Set the filename in the ski file template
-            #self.ski.change_input_filename(old_filename, filename)
-
-            # Set the filename in the ski file template
             self.ski.set_stellar_component_fits_geometry_filename(component.name, filename)
 
             # Add entry to the input maps dictionary
@@ -182,9 +179,6 @@ class SEDFittingInitializer(FittingInitializerBase, SEDModelingComponent):
 
             # Generate a filename for the map
             filename = "dust_" + name + ".fits"
-
-            # Set the filename in the ski file template
-            #self.ski.change_input_filename(old_filename, filename)
 
             # Set the filename in the ski file template
             self.ski.set_dust_component_fits_geometry_filename(component.name, filename)
