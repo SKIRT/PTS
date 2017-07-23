@@ -25,6 +25,7 @@ from ...core.simulation.parallelization import Parallelization
 from ...core.simulation.remote import SkirtRemote
 from ...magic.convolution.aniano import AnianoKernels
 from ...core.advanced.dustgridtool import DustGridTool
+from ...core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -56,29 +57,8 @@ class AnalysisLauncher(AnalysisComponent):
         # The path to the instruments directory
         self.run_instruments_path = None
 
-        # Simulation directories
-        self.run_output_path = None
-        self.run_extr_path = None
-        self.run_plot_path = None
-        self.run_misc_path = None
-
-        # Analysis directories
-        self.run_attenuation_path = None
-        self.run_colours_path = None
-        self.run_residuals_path = None
-        self.run_heating_path = None
-
         # The ski file
         self.ski = None
-
-        # # The wavelength grid
-        # self.wavelength_grid = None
-        #
-        # # The dust grid
-        # self.dust_grid = None
-        #
-        # # The instruments
-        # self.instruments = dict()
 
         # The parallelization scheme
         self.parallelization = None
@@ -103,8 +83,7 @@ class AnalysisLauncher(AnalysisComponent):
         self.setup(**kwargs)
 
         # 2. Load the ski file
-        #self.load_ski()
-        #self.load_input_paths()
+        self.load_ski()
 
         # 7. Adjust the ski file
         self.adjust_ski()
@@ -169,6 +148,81 @@ class AnalysisLauncher(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def ski_file_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.ski_file_path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def input_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.input_paths
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def extract_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.extract_path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def plot_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.plot_path
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def misc_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.analysis_run.misc_path
+
+    # -----------------------------------------------------------------
+
+    def load_ski(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the ski file template ...")
+
+        # Load the ski file template
+        self.ski = self.analysis_run.ski_file
+
+    # -----------------------------------------------------------------
+
     def adjust_ski(self):
 
         """
@@ -187,18 +241,6 @@ class AnalysisLauncher(AnalysisComponent):
 
         # Enable transient heating
         self.ski.set_transient_dust_emissivity()
-
-        # Remove the existing instruments
-        #self.ski.remove_all_instruments()
-
-        # Add the instruments
-        #for name in self.instruments: self.ski.add_instrument(name, self.instruments[name])
-
-        # Enable all writing options for analysis
-        #self.ski.enable_all_writing_options()
-
-        # Write out the dust grid data
-        #self.ski.set_write_grid()
 
     # -----------------------------------------------------------------
 
@@ -255,7 +297,7 @@ class AnalysisLauncher(AnalysisComponent):
         estimator = RuntimeEstimator(self.timing_table)
 
         # Determine the number of dust cells by building the tree locally
-        ncells = self.estimate_ncells()
+        #ncells = self.estimate_ncells()
 
         # Estimate the runtime for the configured number of photon packages and the configured remote host
         runtime = estimator.runtime_for(self.ski, self.parallelization, self.remote.host_id, self.remote.cluster_name, self.config.data_parallel, nwavelengths=len(self.wavelength_grid), ncells=ncells)
@@ -269,25 +311,25 @@ class AnalysisLauncher(AnalysisComponent):
 
     # -----------------------------------------------------------------
 
-    def estimate_ncells(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Estimating the number of dust cells ...")
-
-        # Create simulation directory and output directory
-        simulation_path = fs.create_directory_in(self.analysis_run_path, "temp")
-
-        # Initialize dust grid tool
-        tool = DustGridTool()
-
-        # Get the dust grid statistics
-        statistics = tool.get_statistics(self.ski, simulation_path, self.maps_path, self.galaxy_name)
-        return statistics.ncells
+    # def estimate_ncells(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Inform the user
+    #     log.info("Estimating the number of dust cells ...")
+    #
+    #     # Create simulation directory and output directory
+    #     simulation_path = fs.create_directory_in(self.analysis_run_path, "temp")
+    #
+    #     # Initialize dust grid tool
+    #     tool = DustGridTool()
+    #
+    #     # Get the dust grid statistics
+    #     statistics = tool.get_statistics(self.ski, simulation_path, self.maps_path, self.galaxy_name)
+    #     return statistics.ncells
 
     # -----------------------------------------------------------------
 
@@ -313,13 +355,13 @@ class AnalysisLauncher(AnalysisComponent):
         self.analysis_options = AnalysisOptions()
 
         # Set options for extraction
-        self.analysis_options.extraction.path = self.run_extr_path
+        self.analysis_options.extraction.path = self.extract_path
         self.analysis_options.extraction.progress = True
         self.analysis_options.extraction.timeline = True
         self.analysis_options.extraction.memory = True
 
         # Set options for plotting
-        self.analysis_options.plotting.path = self.run_plot_path
+        self.analysis_options.plotting.path = self.plot_path
         self.analysis_options.plotting.progress = True
         self.analysis_options.plotting.timeline = True
         self.analysis_options.plotting.seds = True
@@ -327,7 +369,7 @@ class AnalysisLauncher(AnalysisComponent):
         self.analysis_options.plotting.reference_seds = [self.observed_sed_path]
 
         # Set miscellaneous options
-        self.analysis_options.misc.path = self.run_misc_path
+        self.analysis_options.misc.path = self.misc_path
         self.analysis_options.misc.rgb = True
         self.analysis_options.misc.wave = True
         self.analysis_options.misc.fluxes = True

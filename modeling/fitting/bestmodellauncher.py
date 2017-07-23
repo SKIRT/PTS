@@ -286,12 +286,13 @@ class BestModelLauncher(FittingComponent):
         log.info("Setting the analysis options for the simulation of the total stellar contribution ...")
 
         # Set the paths to the kernel for each image (except for the SPIRE images)
-        kernel_paths = dict()
-        aniano = AnianoKernels()
-        pacs_red_psf_path = aniano.get_psf_path(self.pacs_red_filter)
-        for filter_name in self.observed_filter_names:
-            if "SPIRE" in filter_name: continue
-            kernel_paths[filter_name] = pacs_red_psf_path
+        # HERZIEN:
+        # kernel_paths = dict()
+        # aniano = AnianoKernels()
+        # pacs_red_psf_path = aniano.get_psf_path(self.pacs_red_filter)
+        # for filter_name in self.observed_filter_names:
+        #     if "SPIRE" in filter_name: continue
+        #     kernel_paths[filter_name] = pacs_red_psf_path
 
         # Set the analysis options that are different from those used for the simulations of the other stellar contributions
         self.analysis_options_total["misc"] = dict()

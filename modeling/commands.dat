@@ -99,6 +99,7 @@ make_rgb | -- | show.rgb.RGBImageMaker | arguments | Make RGB images from the ga
 fitskirt | -- | fitting.fitskirt.FitSKIRTLauncher | arguments | Launch FitSKIRT
 analyse_mosaic | -- | data.analyser.MosaicAnalyser | arguments | Analyse mosaics and Poisson error mosaic maps
 build_grid | -- | build.dustgrid.DustGridBuilder | arguments | Build dust grid
+launch_model | -- | misc.launch.ModelLauncher | arguments | Launch a certain model
 
 # GENERATING THE HTML PAGES
 generate_all_pages | -- | html.all.AllPagesGenerator | arguments | Generate all the pages

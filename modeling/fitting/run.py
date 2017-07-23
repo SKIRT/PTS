@@ -1791,6 +1791,34 @@ class FittingRun(object):
 
     # -----------------------------------------------------------------
 
+    def best_simulation_name_and_parameter_values_for_generation(self, generation_name, only_finished=True):
+
+        """
+        This function ...
+        :param generation_name:
+        :param only_finished:
+        :return:
+        """
+
+        model = self.best_model_for_generation(generation_name, only_finished=only_finished)
+        return model.simulation_name, model.parameter_values
+
+    # -----------------------------------------------------------------
+
+    def best_simulation_name_parameter_values_and_chi_squared_for_generation(self, generation_name, only_finished=True):
+
+        """
+        This function ...
+        :param generation_name:
+        :param only_finished:
+        :return:
+        """
+
+        model = self.best_model_for_generation(generation_name, only_finished=only_finished)
+        return model.simulation_name, model.parameter_values, model.chi_squared
+
+    # -----------------------------------------------------------------
+
     def best_parameter_values_for_generation(self, generation_name, return_chi_squared=False, only_finished=True):
 
         """

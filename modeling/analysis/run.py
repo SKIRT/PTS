@@ -20,6 +20,7 @@ from ...core.tools import sequences
 from ...core.basics.composite import SimplePropertyComposite
 from ..fitting.run import FittingRun
 from pts.core.tools.utils import lazyproperty
+from ...core.tools.serialization import load_dict
 
 # -----------------------------------------------------------------
 
@@ -59,14 +60,17 @@ class AnalysisRun(object):
     This class ...
     """
 
-    def __init__(self):
+    def __init__(self, galaxy_name=None, info=None):
 
         """
         The constructor ...
+        :param galaxy_name:
+        :param info:
         """
 
-        self.galaxy_name = None
-        self.info = None
+        # Set attributes
+        self.galaxy_name = galaxy_name
+        self.info = info
 
     # -----------------------------------------------------------------
 
@@ -127,6 +131,30 @@ class AnalysisRun(object):
     # -----------------------------------------------------------------
 
     @property
+    def analysis_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.directory_of(self.path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def modeling_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.directory_of(self.analysis_path)
+
+    # -----------------------------------------------------------------
+
+    @property
     def from_fitting(self):
 
         """
@@ -135,6 +163,46 @@ class AnalysisRun(object):
         """
 
         return self.fitting_run is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def from_model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.fitting_run is None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def from_generation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Otherwise: from initial guess
+
+        return self.from_fitting and self.generation_name is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def from_initial_guess(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Otherwise: from best simulation of a certain generation
+
+        return self.from_fitting and self.generation_name is None
 
     # -----------------------------------------------------------------
 
@@ -163,6 +231,105 @@ class AnalysisRun(object):
     # -----------------------------------------------------------------
 
     @property
+    def generation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.info.generation_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def simulation_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.info.simulation_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def model_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.info.model_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def input_file_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, "input.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ski_file_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, self.galaxy_name + ".ski")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def wavelength_grid_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set the path to the wavelength grid file
+        return fs.join(self.path, "wavelength_grid.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_grid_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set the path to the dust grid file
+        return fs.join(self.path, "dust_grid.dg")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def info_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Set the path to the analysis run info file
+        return fs.join(self.path, "info.dat")
+
+    # -----------------------------------------------------------------
+
+    @property
     def out_path(self):
 
         """
@@ -175,6 +342,18 @@ class AnalysisRun(object):
     # -----------------------------------------------------------------
 
     @property
+    def output_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.out_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def extr_path(self):
 
         """
@@ -183,6 +362,18 @@ class AnalysisRun(object):
         """
 
         return fs.join(self.path, "extr")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def extract_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.extr_path
 
     # -----------------------------------------------------------------
 
@@ -343,18 +534,6 @@ class AnalysisRun(object):
     # -----------------------------------------------------------------
 
     @property
-    def ski_file_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return fs.join(self.analysis_run_path, self.galaxy_name + ".ski")
-
-    # -----------------------------------------------------------------
-
-    @property
     def ski_file(self):
 
         """
@@ -363,6 +542,18 @@ class AnalysisRun(object):
         """
 
         return LabeledSkiFile(self.ski_file_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def input_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return load_dict(self.input_file_path)
 
     # -----------------------------------------------------------------
 
@@ -422,7 +613,7 @@ class AnalysisRun(object):
         :return:
         """
 
-        return FittingRun.from_name(self.fitting_run_name)
+        return FittingRun.from_name(self.modeling_path, self.fitting_run_name)
 
     # -----------------------------------------------------------------
 
