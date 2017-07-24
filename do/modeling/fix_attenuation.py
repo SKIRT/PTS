@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.core.environment import GalaxyModelingEnvironment
@@ -27,6 +30,7 @@ from pts.modeling.preparation.preparer import get_step_image_paths_with_cached
 from pts.core.launch.pts import execute_pts_remote, execute_pts_local
 from pts.core.tools import filesystem as fs
 from pts.core.tools.serialization import write_dict
+from pts.magic.core.frame import Frame
 
 # -----------------------------------------------------------------
 
@@ -43,7 +47,7 @@ modeling_path = verify_modeling_cwd()
 environment = GalaxyModelingEnvironment(modeling_path)
 
 # Load the caching remote
-remote = environment.cache_host_id
+remote = environment.cache_remote
 
 # -----------------------------------------------------------------
 
@@ -123,11 +127,41 @@ for prep_name in fix:
     # Loop over the images
     for step in paths:
 
-        # Inform the user
-        log.info("Correcting the " + prep_name + " image after the " + step + " step ...")
-
         # Get the path
         path = paths[step]
+
+        # Check whether the correction has already been performed
+        backup_filepath = fs.appended_filepath(path, "_backup")
+        if fs.is_file(path): # local
+
+            if fs.is_file(backup_filepath): # already corrected
+
+                # Check
+                corrected = Frame.from_file(path)
+                backup = Frame.from_file(backup_filepath)
+
+                ratio = corrected / backup
+                ratios = ratio[np.isfinite(ratio)]
+                if not np.all(np.isclose(ratios, factor)): raise RuntimeError("Correction was not OK for " + prep_name + " after the " + step + " step: mean ratio of " + str(np.mean(ratios)))
+
+                log.success("The " + prep_name + " image after the " + step + " step has already been corrected (locally)")
+                continue
+
+            else: pass # continue below (do correction)
+
+        else: # remote
+
+            if remote.is_file(backup_filepath): # already corrected
+
+                # Check?
+
+                log.success("The " + prep_name + " image after the " + step + " step has already been corrected (remotely)")
+                continue
+
+            else: pass # continue below (do correction)
+
+        # Inform the user
+        log.info("Correcting the " + prep_name + " image after the " + step + " step ...")
 
         # Correct all the images by multiplying with the factor
         # Local
@@ -140,7 +174,13 @@ for prep_name in fix:
             log.debug("Fixing remotely ...")
             execute_pts_remote(remote, "multiply", path, factor, backup=True, debug=True)
 
+        # Success
+        log.success("Succesfully corrected the " + prep_name + " image after the " + step + " step")
+
     # CHANGE ATTENUATION VALUE IN PREPARATION STATISTICS
+
+    # Inform the user
+    log.info("Adapting the attenuation value in the preparation statistics ...")
 
     # Load the preparation statistics
     statistics_path = get_statistics_path(modeling_path, prep_name)
@@ -155,6 +195,9 @@ for prep_name in fix:
 
     # Save
     statistics.saveto(statistics_path)
+
+    # Success
+    log.success("All corrections for the " + prep_name + " image applied")
 
 # -----------------------------------------------------------------
 

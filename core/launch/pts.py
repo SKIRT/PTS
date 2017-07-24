@@ -31,6 +31,7 @@ from ..basics.configuration import get_definition
 from ..basics.map import Map
 from ..tools import terminal
 from ..tools import conda
+from ..tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -70,6 +71,9 @@ def get_definition_for_command(command, cwd=None):
         do_subpath = fs.join(introspection.pts_subproject_dir("do"), subproject)
         filepath = fs.join(do_subpath, filename)
 
+        # Default
+        write_config = True
+
         # Read the lines of the file
         triggered = False
         definition_lines = []
@@ -79,6 +83,10 @@ def get_definition_for_command(command, cwd=None):
             if "ConfigurationDefinition(" in line:
                 if not line.startswith("#"): all_relevant_lines.append(line)
                 triggered = True
+                if "write_config" in line:
+                    if line.split("write_config=")[1].startswith("True"): write_config = True
+                    elif line.split("write_config=")[1].startswith("False"): write_config = False
+                    else: raise IOError("Don't know how to interpret '" + line + "'")
             elif "parse_arguments(" in line: break
             elif triggered:
 
@@ -88,11 +96,18 @@ def get_definition_for_command(command, cwd=None):
 
             elif not line.startswith("#") and line.strip("") != "": all_relevant_lines.append(line)
 
-
         # Execute
         namespace = Map()
         introspection.execute_lines(all_relevant_lines, namespace)
-        return namespace.definition
+        definition = namespace.definition
+        definition.write_config = write_config
+        definition.add_flag("debug", "enable debug output", letter="d")
+        definition.add_flag("brief", "brief output", letter="b")
+        definition.add_flag("report", "write a report file")
+        # Add config path
+        if definition.write_config:
+            definition.add_optional("config_path", "directory_path", "directory for the configuration file to be written to (relative to the working directory or absolute) (if None, the output directory is used)")
+        return definition
 
     # If there is an unique match in a table
     elif len(table_matches) == 1 and len(matches) == 0:
@@ -203,7 +218,7 @@ def construct_pts_command_string(python_path, pts_main_path, args, kwargs):
     else: positional = []
 
     # Create string of positional arguments
-    positional_string = " ".join([strings.add_quotes_if_spaces(item) for item in positional])
+    positional_string = " ".join([strings.add_quotes_if_spaces(tostr(item)) for item in positional])
 
     _definition = None
 
@@ -239,7 +254,8 @@ def construct_pts_command_string(python_path, pts_main_path, args, kwargs):
 
         if types.is_boolean_type(kwargs[name]): optional_parts.append(option_name)
         else:
-            value = strings.add_quotes_if_spaces(str(kwargs[name]))
+            #value = strings.add_quotes_if_spaces(str(kwargs[name]))
+            value = strings.add_quotes_if_spaces(tostr(kwargs[name]))
             optional_parts.append(option_name + " " + value)
 
     # Create string of optional arguments

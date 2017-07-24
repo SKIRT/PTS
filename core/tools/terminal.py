@@ -141,8 +141,8 @@ def execute_no_pexpect(command, output=True, show_output=False, cwd=None):
     :return:
     """
 
-    output = subprocess.check_output(command, shell=True, stderr=sys.stderr, cwd=cwd)
-    if output: return output.split("\n")[:-1]
+    the_output = subprocess.check_output(command, shell=True, stderr=sys.stderr, cwd=cwd)
+    if output: return the_output.split("\n")[:-1]
 
     #import os
 
@@ -536,23 +536,41 @@ def aliases():
     :return:
     """
 
+    # DOESN'T WORK ANYMORE??
+    # alias_dict = dict()
+    #
+    # output = execute_no_pexpect("alias")
+    #
+    # for line in output:
+    #
+    #     first, second = line.split("=")
+    #
+    #     alias = first.split("alias ")[1].strip()
+    #
+    #     command = second
+    #     if command.startswith("'") and command.endswith("'"): command = command[1:-1]
+    #     elif command.startswith('"') and command.endswith('"'): command = command[1:-1]
+    #
+    #     alias_dict[alias] = command
+    #
+    # # Return the dictionary
+    # return alias_dict
+
     alias_dict = dict()
 
-    output = execute_no_pexpect("alias")
+    for line in fs.read_lines(introspection.shell_configuration_path()):
 
-    for line in output:
+        if not line.startswith("alias"): continue
 
-        first, second = line.split("=")
+        key = line.split("alias ")[1].split("=")[0].strip()
+        value = line.split("=", 1)[1].strip()
+        if value.startswith("'") and value.endswith("'"): value = value[1:-1]
+        elif value.startswith('"') and value.endswith('"'): value = value[1:-1]
 
-        alias = first.split("alias ")[1].strip()
+        # Set
+        alias_dict[key] = value
 
-        command = second
-        if command.startswith("'") and command.endswith("'"): command = command[1:-1]
-        elif command.startswith('"') and command.endswith('"'): command = command[1:-1]
-
-        alias_dict[alias] = command
-
-    # Return the dictionary
+    # Return the aliases
     return alias_dict
 
 # -----------------------------------------------------------------

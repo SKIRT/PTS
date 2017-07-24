@@ -767,3 +767,29 @@ def add_quotes_if_spaces(string):
     else: return string
 
 # -----------------------------------------------------------------
+
+def add_quotes_if_string_with_spaces(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    if not types.is_string_type(value): return value
+    else: return add_quotes_if_spaces(value)
+
+# -----------------------------------------------------------------
+
+def add_quotes_if_string_with_spaces_else_string(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    if not types.is_string_type(value): return str(value)
+    else: return add_quotes_if_spaces(value)
+
+# -----------------------------------------------------------------
