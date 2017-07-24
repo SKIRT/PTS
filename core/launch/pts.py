@@ -29,6 +29,8 @@ from ..tools import strings
 from ..tools import types
 from ..basics.configuration import get_definition
 from ..basics.map import Map
+from ..tools import terminal
+from ..tools import conda
 
 # -----------------------------------------------------------------
 
@@ -122,6 +124,36 @@ def get_definition_for_command(command, cwd=None):
 
 # -----------------------------------------------------------------
 
+def execute_pts_local(*args, **kwargs):
+
+    """
+    This function ...
+    :param args:
+    :param kwargs:
+    :return:
+    """
+
+    if len(args) == 0: raise ValueError("No arguments were provided")
+
+    # Determine the python path
+    python_path = conda.conda_python_path_for_pts()
+    pts_main_path = fs.join(introspection.pts_do_dir, "__main__.py")
+
+    # Get options
+    show_output = kwargs.pop("show_output", False)
+    cwd = kwargs.pop("cwd", None)
+
+    # Create the command
+    command = construct_pts_command_string(python_path, pts_main_path, args, kwargs)
+
+    # Execute
+    output = terminal.execute(command, show_output=show_output, cwd=cwd)
+
+    # Return the output
+    return output
+
+# -----------------------------------------------------------------
+
 def execute_pts_remote(*args, **kwargs):
 
     """
@@ -136,18 +168,39 @@ def execute_pts_remote(*args, **kwargs):
     # Get the remote
     remote = args[0]
 
-    # Determine python path
-    python_path = remote.conda_pts_environment_python_path
-
-    # Get PTS command
-    if len(args) < 2: raise ValueError("No command specified")
-    command = args[1]
-    if len(args) > 2: positional = args[2:]
-    else: positional = []
-
     # Get options
     show_output = kwargs.pop("show_output", False)
     cwd = kwargs.pop("cwd", None)
+
+    # Determine python path
+    python_path = remote.conda_pts_environment_python_path
+
+    # Create the command
+    command = construct_pts_command_string(python_path, remote.pts_main_path, args[1:], kwargs) # strip remote from the args
+
+    # Execute
+    output = remote.execute(command, show_output=show_output, cwd=cwd)
+
+    # If error popped up
+    if "Error:" in output[-1]: raise RuntimeError(output[-1])
+
+    # Return the output lines
+    return output
+
+# -----------------------------------------------------------------
+
+def construct_pts_command_string(python_path, pts_main_path, args, kwargs):
+
+    """
+    Thisf unction ...
+    :return:
+    """
+
+    # Get PTS command
+    if len(args) == 0: raise ValueError("No command specified")
+    command = args[0]
+    if len(args) > 1: positional = args[1:]
+    else: positional = []
 
     # Create string of positional arguments
     positional_string = " ".join([strings.add_quotes_if_spaces(item) for item in positional])
@@ -193,16 +246,10 @@ def execute_pts_remote(*args, **kwargs):
     optional_string = " ".join(optional_parts)
 
     # Create command string
-    command = python_path + " " + remote.pts_main_path + " " + command + " " + positional_string + " " + optional_string
+    command = python_path + " " + pts_main_path + " " + command + " " + positional_string + " " + optional_string
 
-    # Execute
-    output = remote.execute(command, show_output=show_output, cwd=cwd)
-
-    # If error popped up
-    if "Error:" in output[-1]: raise RuntimeError(output[-1])
-
-    # Return the output lines
-    return output
+    # Return the command
+    return command
 
 # -----------------------------------------------------------------
 

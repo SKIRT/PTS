@@ -135,6 +135,20 @@ def conda_environment_for_pts():
 
 # -----------------------------------------------------------------
 
+def conda_python_path_for_pts():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Get environment name
+    pts_alias = terminal.resolve_alias("pts")
+    pts_python_path = pts_alias.split()[0]
+    return pts_python_path
+
+# -----------------------------------------------------------------
+
 def activate_environment(environment_name, conda_path="conda", activate_path="activate"):
 
     """

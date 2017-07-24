@@ -1851,5 +1851,47 @@ def replace_strings(path, replacement_dict):
     # Write lines
     write_lines(path, new_lines)
 
+# -----------------------------------------------------------------
+
+def add_extension(filename, extension):
+
+    """
+    This function ...
+    :param filename:
+    :param extension:
+    :return:
+    """
+
+    return filename + "." + extension
+
+# -----------------------------------------------------------------
+
+def appended_filename(filepath, append_with):
+
+    """
+    This function ...
+    :param filepath:
+    :param append_with:
+    :return:
+    """
+
+    filename = name(filepath)
+    the_name = strip_extension(filename)
+    extension = get_extension(filename)
+    appended_name = the_name + append_with
+    return add_extension(appended_name, extension)
+
+# -----------------------------------------------------------------
+
+def appended_filepath(filepath, append_with):
+
+    """
+    This function ...
+    :param filepath:
+    :param append_with:
+    :return:
+    """
+
+    return join(directory_of(filepath), appended_filename(filepath, append_with))
 
 # -----------------------------------------------------------------

@@ -23,6 +23,9 @@ from pts.modeling.component.galaxy import get_galaxy_properties
 from pts.core.tools.stringify import tostr
 from pts.core.tools import numbers
 from pts.modeling.core.environment import verify_modeling_cwd
+from pts.modeling.preparation.preparer import get_step_image_paths_with_cached
+from pts.core.launch.pts import execute_pts_remote, execute_pts_local
+from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -39,6 +42,9 @@ modeling_path = verify_modeling_cwd()
 
 # Load the modeling environment
 environment = GalaxyModelingEnvironment(modeling_path)
+
+# Load the caching remote
+remote = environment.cache_host_id
 
 # -----------------------------------------------------------------
 
@@ -92,6 +98,35 @@ for prep_name in environment.preparation_names:
 
 # -----------------------------------------------------------------
 
-print(fix)
+# Loop over the prep names that need to be fixed
+for prep_name in fix:
+
+    # Get the image paths after and including the extinction correction step
+    paths = get_step_image_paths_with_cached(modeling_path, prep_name, environment.cache_host_id, after_step="extinction", inclusive=True)
+
+    # Determine the correction factor
+    actual = float(fix[prep_name][0])
+    mistaken = float(fix[prep_name][1])
+    factor = 10**(actual - mistaken)
+
+    # Loop over the images
+    for step in paths:
+
+        # Inform the user
+        log.info("Correcting the " + prep_name + " image after the " + step + " step ...")
+
+        # Get the path
+        path = paths[step]
+
+        # Correct all the images by multiplying with the factor
+        # Local
+        if fs.is_file(path):
+            log.debug("Fixing locally ...")
+            execute_pts_local("multiply", path, factor, backup=True)
+
+        # Remote
+        else:
+            log.debug("Fixing remotely ...")
+            execute_pts_remote(remote, "multiply", path, factor, backup=True)
 
 # -----------------------------------------------------------------

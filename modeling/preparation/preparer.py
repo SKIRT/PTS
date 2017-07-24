@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from ...magic.core.image import Image
@@ -87,6 +88,15 @@ filename_for_status["result"] = result_name
 
 # -----------------------------------------------------------------
 
+filename_for_steps = dict()
+filename_for_steps["extraction"] = extracted_name
+filename_for_steps["extinction"] = corrected_name
+filename_for_steps["subtraction"] = subtracted_name
+filename_for_steps["errormaps"] = with_errors_name
+filename_for_steps["units"] = result_name
+
+# -----------------------------------------------------------------
+
 def filenames_before_status(status):
 
     """
@@ -152,6 +162,109 @@ def steps_before_and_including(step):
     """
 
     return steps_before(step) + [step]
+
+# -----------------------------------------------------------------
+
+def steps_after(step):
+
+    """
+    This function ...
+    :param step:
+    :return:
+    """
+
+    # Check
+    if step not in steps: raise ValueError("Invalid step: '" + step + "'")
+
+    the_steps = []
+    for stepi in reversed(steps):
+        if stepi == step: break
+        else: the_steps.append(stepi)
+    return reversed(the_steps)
+
+# -----------------------------------------------------------------
+
+def steps_after_and_including(step):
+
+    """
+    Thisf unction ...
+    :param step:
+    :return:
+    """
+
+    return [step] + steps_after(step)
+
+# -----------------------------------------------------------------
+
+def steps_between(after_step, before_step):
+
+    """
+    This function ...
+    :param after_step:
+    :param before_step:
+    :return:
+    """
+
+    if after_step not in steps: raise ValueError("Invalid step: '" + step + "'")
+
+    the_steps = []
+    triggered = False
+    for stepi in steps:
+
+        if triggered:
+
+            if stepi == before_step: break
+            else: the_steps.append(stepi)
+
+        elif stepi == after_step: triggered = True
+
+        # Not triggered and not 'after_step'
+        else: pass
+
+    return the_steps
+
+# -----------------------------------------------------------------
+
+def steps_between_and_including(after_step, before_step):
+
+    """
+    This function ...
+    :param after_step:
+    :param before_step:
+    :return:
+    """
+
+    return [after_step] + steps_between(after_step, before_step) + [before_step]
+
+# -----------------------------------------------------------------
+
+def get_filenames_between_steps(after_step=None, before_step=None, inclusive=True, return_steps=False):
+
+    """
+    Thisf unction ...
+    :param after_step:
+    :param before_step:
+    :param inclusive:
+    :return:
+    """
+
+    if after_step is not None and before_step is not None:
+        if inclusive: the_steps = steps_between_and_including(after_step, before_step)
+        else: the_steps = steps_between(after_step, before_step)
+    elif after_step is not None:
+        if inclusive: the_steps = steps_after_and_including(after_step)
+        else: the_steps = steps_after(after_step)
+    elif before_step is not None:
+        if inclusive: the_steps = steps_before_and_including(before_step)
+        else: the_steps = steps_before(before_step)
+    else: the_steps = steps
+
+    filenames = []
+    for step in the_steps: filenames.append(filename_for_steps[step])
+
+    # Return the file names
+    if return_steps: return the_steps, filenames
+    else: return filenames
 
 # -----------------------------------------------------------------
 
@@ -1033,7 +1146,7 @@ class DataPreparer(PreparationComponent):
         log.info("Writing the output dataset ...")
 
         # Write the dataset
-        self.prepared_dataset.saveto(self.prepared_dataset_path)
+        self.prepared_dataset.saveto(self.environment.prepared_dataset_path)
 
 # -----------------------------------------------------------------
 
@@ -1834,5 +1947,108 @@ def remove_file_local_or_remote(path, remote=None):
 
     if remote is not None: remote.remove_file(path)
     else: return fs.remove_file(path)
+
+# -----------------------------------------------------------------
+
+def get_step_image_paths(modeling_path, prep_name, after_step=None, before_step=None, inclusive=True):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param prep_name:
+    :param after_step:
+    :param before_step:
+    :param inclusive:
+    :return:
+    """
+
+    prep_path = fs.join(modeling_path, "prep")
+    prep_path_image = fs.join(prep_path, prep_name)
+
+    # Create a dictionary to contain the paths
+    the_paths = OrderedDict()
+
+    # Check
+    if not fs.is_directory(prep_path_image) or fs.is_empty(prep_path_image): return the_paths # empty
+
+    # Look for the images
+    for step, filename in get_filenames_between_steps(after_step, before_step, inclusive=inclusive, return_steps=True):
+
+        # Determine the filepath
+        filepath = fs.join(prep_path_image, filename)
+
+        if fs.is_file(filepath): the_paths[step] = filepath
+
+    # Return the filepaths
+    return the_paths
+
+# -----------------------------------------------------------------
+
+def get_step_image_paths_with_cached(modeling_path, prep_name, host_id, after_step=None, before_step=None, inclusive=True):
+
+    """
+    This function ...
+    :param modeling_path:
+    :param prep_name:
+    :param host_id:
+    :param after_step:
+    :param before_step:
+    :param inclusive:
+    :return:
+    """
+
+    paths = get_step_image_paths(modeling_path, prep_name, after_step=after_step, before_step=before_step, inclusive=inclusive)
+    cached_paths = get_cached_step_image_paths(modeling_path, prep_name, host_id, after_step=after_step, before_step=before_step, inclusive=inclusive)
+    paths.update(**cached_paths)
+    return paths
+
+# -----------------------------------------------------------------
+
+def get_cached_step_image_paths(modeling_path, prep_name, host_id, after_step=None, before_step=None, inclusive=True):
+
+    """
+    Thisf function ...
+    :param modeling_path:
+    :param prep_name:
+    :param host_id:
+    :param after_step:
+    :param before_step:
+    :return:
+    """
+
+    from ..core.environment import GalaxyModelingEnvironment
+    from ..core.steps import cached_directory_path_for_single_command
+
+    # Create the remote
+    if isinstance(host_id, Remote): remote = host_id
+    else: remote = Remote(host_id=host_id)
+
+    # Load the environment
+    environment = GalaxyModelingEnvironment(modeling_path)
+
+    # Determine the command
+    command_name = "prepare_data"
+
+    # Get the remote path
+    remote_preparation_path = cached_directory_path_for_single_command(environment, command_name, remote)
+    remote_prep_path_image = fs.join(remote_preparation_path, prep_name)
+
+    # Create a dictionary to contain the paths
+    the_paths = OrderedDict()
+
+    # Check
+    if not remote.is_directory(remote_prep_path_image) or remote.is_empty(remote_prep_path_image): return the_paths  # empty
+
+    # Look for the images
+    for step, filename in get_filenames_between_steps(after_step, before_step, inclusive=inclusive, return_steps=True):
+
+        # Determine the filepath
+        filepath = fs.join(remote_prep_path_image, filename)
+
+        # Check if present
+        if remote.is_file(filepath): the_paths[step] = filepath
+
+    # Return the paths dictionary
+    return the_paths
 
 # -----------------------------------------------------------------

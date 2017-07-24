@@ -24,6 +24,8 @@ from ...core.filter.filter import parse_filter
 from ...magic.core.dataset import DataSet
 from ...core.basics.range import QuantityRange
 from pts.core.tools.utils import lazyproperty
+from ...core.remote.host import load_host
+from ...core.remote.remote import Remote
 
 # -----------------------------------------------------------------
 
@@ -475,6 +477,30 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         """
 
         return self.modeling_configuration.cache_host_id
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cache_host(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return load_host(self.cache_host_id)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def cache_remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return Remote(host_id=self.cache_host_id)
 
     # -----------------------------------------------------------------
 

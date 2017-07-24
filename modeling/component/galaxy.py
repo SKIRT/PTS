@@ -37,7 +37,6 @@ from ...magic.basics.stretch import SkyStretch
 from ...core.tools import types
 from ...core.filter.filter import parse_filter
 from ...core.tools import tables
-from ...core.remote.host import load_host
 from ...core.remote.remote import Remote
 from ..core.steps import cached_directory_path_for_single_command
 from ..core.environment import GalaxyModelingEnvironment
@@ -1195,7 +1194,7 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def cache_host(self):
 
         """
@@ -1203,11 +1202,11 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        return load_host(self.cache_host_id)
+        return self.environment.cache_host
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def cache_remote(self):
 
         """
@@ -1215,7 +1214,7 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        return Remote(host_id=self.cache_host_id)
+        return self.environment.cache_remote
 
     # -----------------------------------------------------------------
 
@@ -1723,7 +1722,8 @@ def get_cached_data_image_and_error_paths(modeling_path, host_id, lazy=False):
     """
 
     # Create the remote and start (detached) python session
-    remote = Remote(host_id=host_id)
+    if isinstance(host_id, Remote): remote = host_id
+    else: remote = Remote(host_id=host_id)
     if not lazy: session = remote.start_python_session(output_path=remote.pts_temp_path)
     else: session = None
 
@@ -1753,6 +1753,7 @@ def get_cached_data_image_and_error_paths(modeling_path, host_id, lazy=False):
             if fltr is None:
                 log.warning("Could not determine the filter of the '" + image_name + "' image: skipping ...")
                 continue
+            else: name = str(fltr)
         else: name = get_filter_name(image_path, session)
 
         if name is None: raise RuntimeError("Could not determine the filter name for the '" + image_name + "' image")
