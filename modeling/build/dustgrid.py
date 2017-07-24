@@ -80,8 +80,6 @@ class DustGridBuilder(Configurable):
         # The model
         self.definition = None
 
-        # THe model representation
-        #self.representation = None
         # The dust grid
         self.dust_grid = None
 

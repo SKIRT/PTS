@@ -474,95 +474,18 @@ class RepresentationBuilder(RepresentationBuilderBase, GalaxyModelingComponent):
         # Use grid?
         if prompt_yn("grid_resolution", "use the resolution of the dust grid for setting up the instruments?"):
 
-            # Determine smallest scale
-            smallest_scale = smallest_scale_for_dust_grid(self.dust_grid)
-
-            # Determine instrument pixelscale
-            ratio = prompt_real("pixelscale_to_grid_scale_ratio", "ratio of the instrument pixelscale to the smallest scale of the dust grid (e.g. 10)")
-            physical_pixelscale = smallest_scale * ratio
-
-            # Set number of pixels from extent
-            extent = self.dust_grid.x_extent
-
-            pixels_x = int(math.ceil(extent/physical_pixelscale))
-            pixels_y = pixels_x
-
-            x_center = 0.5 * (pixels_x - 1)
-            y_center = 0.5 * (pixels_y - 1)
-
-            # Pixel to physical
-            center_x = x_center * physical_pixelscale
-            center_y = y_center * physical_pixelscale
-
-            # Create projections
-            # distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x, field_y
-            earth_projection = GalaxyProjection(self.galaxy_distance, self.galaxy_inclination, azimuth, self.disk_position_angle, pixels_x, pixels_y, center_x, center_y, extent, extent)
-            faceon_projection = FaceOnProjection.from_projection(earth_projection)
-            edgeon_projection = EdgeOnProjection.from_projection(earth_projection)
+            # Create the projections
+            # dust_grid, galaxy_distance, galaxy_inclination, azimuth, disk_position_angle
+            earth, faceon, edgeon = create_projections_from_dust_grid(self.dust_grid, self.galaxy_distance, self.galaxy_inclination, azimuth, self.disk_position_angle)
 
         # Use deprojections
-        else:
-
-            # Get the desired deprojection to base the instruments on
-            reference_deprojection = self.prompt_deprojection()
-
-            # Create the 'earth' projection system
-            earth_projection = GalaxyProjection.from_deprojection(reference_deprojection, self.galaxy_distance, azimuth)
-
-            # Create the face-on projection system
-            faceon_projection = FaceOnProjection.from_deprojection(reference_deprojection, self.galaxy_distance)
-
-            # Create the edge-on projection system
-            edgeon_projection = EdgeOnProjection.from_deprojection(reference_deprojection, self.galaxy_distance)
+        # galaxy_distance, azimuth
+        else: earth, faceon, edgeon = create_projections_from_deprojections(self.deprojections, self.galaxy_distance, azimuth)
 
         # Set the projection systems
-        self.projections["earth"] = earth_projection
-        self.projections["faceon"] = faceon_projection
-        self.projections["edgeon"] = edgeon_projection
-
-    # -----------------------------------------------------------------
-
-    def prompt_deprojection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Dictionary for the options
-        options = dict()
-
-        lowest_pixelscale = None
-        lowest_pixelscale_name = None
-        lowest_pixelscale_title = None
-
-        # Loop over the different deprojection models
-        for name, title in self.deprojections:
-
-            # Determine name and description
-            option = name
-            pixelscale = self.deprojections[(name, title)].pixelscale
-            if lowest_pixelscale is None or pixelscale < lowest_pixelscale:
-                lowest_pixelscale = pixelscale
-                lowest_pixelscale_name = name
-                lowest_pixelscale_title = title
-            description = "pixelscale of the " + title.lower() + " input map (" + represent_quantity(lowest_pixelscale) + ")"
-
-            # Add the option
-            options[option] = description
-
-        # name, description, choices=None, default=None
-        answer = prompt_string("reference map", "input map to use as the reference for the spatial resolution (dust grid and instruments) of the model representation", choices=options, default=lowest_pixelscale_name)
-
-        # Set the reference deprojection
-        answer_title = None
-        for name, title in self.deprojections:
-            if name == answer:
-                answer_title = title
-                break
-
-        # Return the deprojection
-        return self.deprojections[(answer, answer_title)]
+        self.projections["earth"] = earth
+        self.projections["faceon"] = faceon
+        self.projections["edgeon"] = edgeon
 
     # -----------------------------------------------------------------
 
@@ -724,5 +647,122 @@ class RepresentationBuilder(RepresentationBuilderBase, GalaxyModelingComponent):
         table = self.representations_table
         table.add_entry(self.representation_name, self.model_name)
         table.save()
+
+# -----------------------------------------------------------------
+
+def create_projections_from_dust_grid(dust_grid, galaxy_distance, galaxy_inclination, azimuth, disk_position_angle):
+
+    """
+    This function ...
+    :param dust_grid:
+    :param galaxy_distance:
+    :param galaxy_inclination:
+    :param azimuth:
+    :param disk_position_angle
+    :return:
+    """
+
+    # Determine smallest scale
+    smallest_scale = smallest_scale_for_dust_grid(dust_grid)
+
+    # Determine instrument pixelscale
+    ratio = prompt_real("pixelscale_to_grid_scale_ratio", "ratio of the instrument pixelscale to the smallest scale of the dust grid (e.g. 10)")
+    physical_pixelscale = smallest_scale * ratio
+
+    # Set number of pixels from extent
+    extent = dust_grid.x_extent
+
+    pixels_x = int(math.ceil(extent / physical_pixelscale))
+    pixels_y = pixels_x
+
+    x_center = 0.5 * (pixels_x - 1)
+    y_center = 0.5 * (pixels_y - 1)
+
+    # Pixel to physical
+    center_x = x_center * physical_pixelscale
+    center_y = y_center * physical_pixelscale
+
+    # Create projections
+    # distance, inclination, azimuth, position_angle, pixels_x, pixels_y, center_x, center_y, field_x, field_y
+    earth_projection = GalaxyProjection(galaxy_distance, galaxy_inclination, azimuth,
+                                        disk_position_angle, pixels_x, pixels_y, center_x, center_y, extent,
+                                        extent)
+    faceon_projection = FaceOnProjection.from_projection(earth_projection)
+    edgeon_projection = EdgeOnProjection.from_projection(earth_projection)
+
+    # Return the projections
+    return earth_projection, faceon_projection, edgeon_projection
+
+# -----------------------------------------------------------------
+
+def create_projections_from_deprojections(deprojections, galaxy_distance, azimuth):
+
+    """
+    This function ...
+    :param deprojections:
+    :param galaxy_distance:
+    :param azimuth:
+    :return:
+    """
+
+    # Get the desired deprojection to base the instruments on
+    reference_deprojection = prompt_deprojection(deprojections)
+
+    # Create the 'earth' projection system
+    earth_projection = GalaxyProjection.from_deprojection(reference_deprojection, galaxy_distance, azimuth)
+
+    # Create the face-on projection system
+    faceon_projection = FaceOnProjection.from_deprojection(reference_deprojection, galaxy_distance)
+
+    # Create the edge-on projection system
+    edgeon_projection = EdgeOnProjection.from_deprojection(reference_deprojection, galaxy_distance)
+
+    # Return the projections
+    return earth_projection, faceon_projection, edgeon_projection
+
+# -----------------------------------------------------------------
+
+def prompt_deprojection(deprojections):
+
+    """
+    This function ...
+    :param deprojections:
+    :return:
+    """
+
+    # Dictionary for the options
+    options = dict()
+
+    lowest_pixelscale = None
+    lowest_pixelscale_name = None
+    lowest_pixelscale_title = None
+
+    # Loop over the different deprojection models
+    for name, title in self.deprojections:
+
+        # Determine name and description
+        option = name
+        pixelscale = self.deprojections[(name, title)].pixelscale
+        if lowest_pixelscale is None or pixelscale < lowest_pixelscale:
+            lowest_pixelscale = pixelscale
+            lowest_pixelscale_name = name
+            lowest_pixelscale_title = title
+        description = "pixelscale of the " + title.lower() + " input map (" + represent_quantity(lowest_pixelscale) + ")"
+
+        # Add the option
+        options[option] = description
+
+    # name, description, choices=None, default=None
+    answer = prompt_string("reference map", "input map to use as the reference for the spatial resolution (dust grid and instruments) of the model representation", choices=options, default=lowest_pixelscale_name)
+
+    # Set the reference deprojection
+    answer_title = None
+    for name, title in deprojections:
+        if name == answer:
+            answer_title = title
+            break
+
+    # Return the deprojection
+    return deprojections[(answer, answer_title)]
 
 # -----------------------------------------------------------------

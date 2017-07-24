@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.units import dimensionless_angles
-
 # Import the relevant PTS classes and modules
 from .component import AnalysisComponent
 from ...core.tools.logging import log
@@ -24,13 +21,15 @@ from .run import AnalysisRunInfo, AnalysisRun
 from ...core.tools.serialization import write_dict
 from ...core.basics.emissionlines import EmissionLines
 from ...core.prep.wavelengthgrids import create_one_subgrid_wavelength_grid
-from ...core.prep.dustgrids import create_one_dust_grid
-from ...core.units.parsing import parse_unit as u
-from ...core.simulation.input import SimulationInput
 from ...core.tools.utils import lazyproperty
 from ...core.prep.smile import SKIRTSmileSchema
 from ...core.tools.stringify import tostr
 from ..misc.select import select_from_model_suite, select_from_fitting_context
+from ...core.prep.dustgrids import create_one_dust_grid_for_galaxy_from_deprojection
+from ..build.dustgrid import DustGridBuilder
+from ..basics.instruments import FullInstrument
+from ..build.representation import create_projections_from_dust_grid, create_projections_from_deprojections
+from ...core.basics.configuration import prompt_yn
 
 # -----------------------------------------------------------------
 
@@ -65,14 +64,14 @@ class AnalysisInitializer(AnalysisComponent):
         # The path to the analysis run info file
         self.run_info_path = None
 
+        # The ski file
+        self.ski = None
+
         # The model definition
         self.definition = None
 
         # The parameter values
         self.parameter_values = None
-
-        # The ski file
-        self.ski = None
 
         # The dictionary of input map paths
         self.input_paths = None
@@ -83,7 +82,11 @@ class AnalysisInitializer(AnalysisComponent):
         # The dust grid
         self.dust_grid = None
 
-        # The instruments
+        # The deprojections
+        self.deprojections = dict()
+
+        # The projections and instruments
+        self.projections = dict()
         self.instruments = dict()
 
     # -----------------------------------------------------------------
@@ -111,6 +114,12 @@ class AnalysisInitializer(AnalysisComponent):
         # 5. Create the dust grid
         self.create_dust_grid()
 
+        # Load the deprojections
+        self.load_deprojections()
+
+        # Create the projections
+        self.create_projections()
+
         # 6. Create the instruments
         self.create_instruments()
 
@@ -119,6 +128,9 @@ class AnalysisInitializer(AnalysisComponent):
 
         # Set the input
         self.set_input()
+
+        # Build the dust grid
+        self.build_dust_grid()
 
         # 8. Write
         self.write()
@@ -213,23 +225,10 @@ class AnalysisInitializer(AnalysisComponent):
         # Inform the user
         log.info("Prompting for the initial model to use for analysis ...")
 
-        # # Ask for the model name
-        # model_name = prompt_string("model", "name of the model", choices=self.model_suite.model_names, required=True)
-        #
-        # # Load the labeled ski template file
-        # self.ski = LabeledSkiFile(template_ski_path)
-        #
-        # # Load the model
-        # self.definition = self.model_suite.get_model_definition(model_name)
-        #
-        # # Add the components to the ski file and to the input map paths dictionary
-        # self.model_suite.add_model_components(model_name, self.ski, self.input_paths)
-        #
-        # # Get the parameter values
-        # self.parameter_values = self.prompt_parameters()
-
-        # NEW
+        # Select model
         model_name, ski, definition, input_paths, parameter_values = select_from_model_suite(self.model_suite)
+
+        # Set attributes
         self.ski = ski
         self.definition = definition
         self.parameter_values = parameter_values
@@ -256,6 +255,7 @@ class AnalysisInitializer(AnalysisComponent):
         smile = SKIRTSmileSchema()
         #return smile.supports_file_tree_grids and self.representation.has_dust_grid_tree
         if not smile.supports_file_tree_grids: raise RuntimeError("A version of SKIRT that supports file tree grids is necessary")
+        if not self.analysis_run.has_dust_grid_tree: raise RuntimeError("The dust grid tree is not present at '"  + self.analysis_run.dust_grid_tree_path + "'")
         return True
 
     # -----------------------------------------------------------------
@@ -270,24 +270,16 @@ class AnalysisInitializer(AnalysisComponent):
         # Inform the user
         log.info("Prompting for the origin of the analysis model ...")
 
-        # # Prompt for fitting run
-        # run_id = prompt_string("fitting_run", "name of the fitting run", choices=self.fitting_context.fitting_run_names)
-        #
-        # # Load the fitting run
-        # fitting_run = self.fitting_context.load_fitting_run(run_id)
-        #
-        # # Prompt for the generation
-        # generation_name = self.prompt_generation(fitting_run)
-        #
-        # # Get the parameter values
-        # simulation_name, self.parameter_values, chi_squared = self.get_parameters(fitting_run, generation_name)
-
-        # NEW
+        # Select model
         run_id, generation_name, simulation_name, fitting_run, chi_squared, ski, input_paths, parameter_values = select_from_fitting_context(self.fitting_context)
 
+        # Load the model definition
+        definition = fitting_run.model_definition
+
         # Set
-        self.parameter_values = parameter_values
         self.ski = ski
+        self.definition = definition
+        self.parameter_values = parameter_values
         self.input_paths = input_paths
 
         # Set info
@@ -297,17 +289,6 @@ class AnalysisInitializer(AnalysisComponent):
         self.analysis_run_info.parameter_values = self.parameter_values
         self.analysis_run_info.chi_squared = chi_squared
         self.analysis_run_info.model_name = fitting_run.model_name
-
-        # # Load the ski file
-        # if simulation_name is not None: self.ski = get_ski_file_for_simulation(self.config.path, run_id, generation_name, simulation_name)
-        # else: self.ski = fitting_run.ski_template
-        #
-        # # Set parameter values (ALTHOUGH PROBABLY UNNECESSARY)
-        # self.ski.set_labeled_values(self.parameter_values)
-        #
-        # # Load the input paths
-        # input_map_paths = fitting_run.input_map_paths
-        # self.input_paths = input_map_paths
 
     # -----------------------------------------------------------------
 
@@ -336,21 +317,47 @@ class AnalysisInitializer(AnalysisComponent):
         # Inform the user
         log.info("Creating the wavelength grid ...")
 
-        # Create the emission lines instance
-        emission_lines = EmissionLines()
-
-        # Fixed wavelengths in the grid
+        # Fixed wavelengths (always in the grid: for normalization)
         fixed = [self.i1_filter.pivot, self.fuv_filter.pivot]
+
+        # Create the emission lines instance
+        if self.config.wg.add_emission_lines: emission_lines = EmissionLines()
+        else: emission_lines = None
 
         # Create the grid
         # grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added
-        grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added = create_one_subgrid_wavelength_grid(self.config.nwavelengths, emission_lines, fixed)
+        grid, subgrid_npoints, emission_npoints, fixed_npoints, broad_resampled, narrow_added = \
+            create_one_subgrid_wavelength_grid(self.config.wg.npoints, emission_lines, fixed, min_wavelength=self.config.wg.range.min, max_wavelength=self.config.wg.range.max)
 
         # Set the grid
         self.wavelength_grid = grid
 
-        # Determine and set the path to the wavelength grid file
-        self.input_paths[wavelengths_filename] = self.wavelength_grid_path
+        # Debugging
+        log.debug("Created a wavelength grid with:")
+        log.debug("")
+        log.debug(" - number of points: " + str(len(grid)))
+        log.debug(" - number of points in subgrids: " + str(subgrid_npoints))
+        log.debug(" - number of emission points: " + str(emission_npoints))
+        log.debug(" - number of fixed points: " + str(fixed_npoints))
+        log.debug(" - filters for which extra sampling was performed: " + str(broad_resampled))
+        log.debug(" - narrow band filters for which wavelength was added: " + str(narrow_added))
+        log.debug("")
+        if log.is_debug():
+            print("")
+            print(self.wavelength_grid)
+            print("")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nwavelengths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.wavelength_grid)
 
     # -----------------------------------------------------------------
 
@@ -361,41 +368,160 @@ class AnalysisInitializer(AnalysisComponent):
         :return:
         """
 
+
         # Inform the user
         log.info("Creating the dust grid ...")
 
-        # Calculate the major radius of the truncation ellipse in physical coordinates (pc)
-        semimajor_angular = self.truncation_ellipse.semimajor  # major axis length of the sky ellipse
-        radius_physical = (semimajor_angular * self.galaxy_properties.distance).to("pc", equivalencies=dimensionless_angles())
+        # Load the dust disk deprojection
+        deprojection = self.definition.dust_deprojection
 
-        # Get the pixelscale in physical units
-        distance = self.galaxy_properties.distance
-        pixelscale_angular = self.reference_wcs.average_pixelscale #* u("pix")  # in deg
-        pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
+        # Set minimum level
+        if self.config.dg.grid_type == "bintree": min_level = self.config.dg.bintree_max_level
+        elif self.config.dg.grid_type == "octtree": min_level = self.config.dg.octtree_max_level
+        else: min_level = None
 
-        x_radius = radius_physical
-        y_radius = radius_physical
-        z_radius = 3. * u("kpc")
+        # Set max ndivisions per pixel
+        max_ndivisions_per_pixel = 1. / self.config.dg.scale  # default 1/0.5 = 2 divisions along each direction per pixel
 
-        x_min = - x_radius
-        x_max = x_radius
-        y_min = - y_radius
-        y_max = y_radius
-        z_min = - z_radius
-        z_max = z_radius
+        # Create the dust grid
+        # grid_type, deprojection, distance, sky_ellipse, min_level, max_mass_fraction, max_ndivisions_per_pixel=2, nscaleheights=10.
+        self.dust_grid = create_one_dust_grid_for_galaxy_from_deprojection(self.config.dg.grid_type, deprojection,
+                                                                           self.galaxy_distance, self.truncation_ellipse,
+                                                                           min_level, self.config.dg.max_mass_fraction,
+                                                                           max_ndivisions_per_pixel, self.config.dg.scale_heights)
 
-        x_extent = x_max - x_min
-        y_extent = y_max - y_min
-        z_extent = z_max - z_min
+    # -----------------------------------------------------------------
 
-        # Set the scale
-        scale = self.config.dg.rel_scale * pixelscale
+    @property
+    def model_name(self):
 
-        # Create the grid
-        grid = create_one_dust_grid(self.config.dg.grid_type, scale, x_extent, y_extent, z_extent, x_min, x_max, y_min, y_max, z_min, z_max, self.config.dg.min_level, self.config.dg.max_mass_fraction)
+        """
+        This function ...
+        :return:
+        """
 
-        # Set the grid
-        self.dust_grid = grid
+        return self.definition.name
+
+    # -----------------------------------------------------------------
+
+    def load_deprojections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the deprojections ...")
+
+        # Stellar
+        self.load_stellar_deprojections()
+
+        # Dust
+        self.load_dust_deprojections()
+
+    # -----------------------------------------------------------------
+
+    def load_stellar_deprojections(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the stellar deprojections ...")
+
+        # Loop over the stellar components
+        for name in self.model_suite.get_stellar_component_names(self.model_name):
+
+            # Load the deprojection of the component, if applicable
+            title, deprojection = self.model_suite.load_stellar_component_deprojection(self.model_name, name)
+            if deprojection is not None: self.deprojections[(name, title)] = deprojection
+
+    # -----------------------------------------------------------------
+
+    def load_dust_deprojections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the dust deprojections ...")
+
+        # Loop over the dust components
+        for name in self.model_suite.get_dust_component_names(self.config.path, self.model_name):
+
+            # Load the deprojection of the component, if applicable
+            title, deprojection = self.model_suite.load_dust_component_deprojection(self.model_name, name)
+            if deprojection is not None: self.deprojections[(name, title)] = deprojection
+
+    # -----------------------------------------------------------------
+
+    def create_projections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the projection systems ...")
+
+        azimuth = 0.0
+
+        # Use grid?
+        if prompt_yn("grid_resolution", "use the resolution of the dust grid for setting up the instruments?"):
+
+            earth, faceon, edgeon = create_projections_from_dust_grid(self.dust_grid, self.galaxy_distance,
+                                                                      self.galaxy_inclination, azimuth,
+                                                                      self.disk_position_angle)
+
+        # Use deprojections
+        else: earth, faceon, edgeon = create_projections_from_deprojections(self.deprojections, self.galaxy_distance, azimuth)
+
+        # Set the projection systems
+        self.projections["earth"] = earth
+        self.projections["faceon"] = faceon
+        self.projections["edgeon"] = edgeon
+
+    # -----------------------------------------------------------------
+
+    @property
+    def earth_projection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.projections["earth"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def faceon_projection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.projections["faceon"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_projection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.projections["edgeon"]
 
     # -----------------------------------------------------------------
 
@@ -409,14 +535,50 @@ class AnalysisInitializer(AnalysisComponent):
         # Inform the user
         log.info("Creating the instruments ...")
 
-        # Loop over the projections
-        for projection in ["earth", "faceon", "edgeon"]:
+        # Create an earth instrument
+        self.instruments["earth"] = FullInstrument.from_projection(self.earth_projection)
 
-            # Debugging
-            log.debug("Creating a full instrument for the " + projection + " projection ...")
+        # Create a faceon instrument
+        self.instruments["faceon"] = FullInstrument.from_projection(self.faceon_projection)
 
-            # Create the instrument and add it to the dictionary
-            self.instruments[projection] = self.create_instrument("full", projection)
+        # Create an edgeon instrument
+        self.instruments["edgeon"] = FullInstrument.from_projection(self.edgeon_projection)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def earth_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.instruments["earth"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def faceon_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.instruments["faceon"]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_instrument(self):
+
+        """
+        Thsi function ...
+        :return:
+        """
+
+        return self.instruments["edgeon"]
 
     # -----------------------------------------------------------------
 
@@ -442,7 +604,32 @@ class AnalysisInitializer(AnalysisComponent):
         # Write out the dust grid data
         #self.ski.set_write_grid()
 
-        # TODO: GENERATE GRID??!
+    # -----------------------------------------------------------------
+
+    def build_dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Building the dust grid ...")
+
+        # Create the builder
+        builder = DustGridBuilder()
+
+        # Set output path
+        builder.config.output = self.analysis_run.dust_grid_build_path
+
+        # Set simulation path
+        builder.config.simulation_path = self.analysis_run.dust_grid_simulation_out_path
+
+        # Set whether quality has to be calculated
+        builder.config.quality = self.config.check_dust_grid_quality
+
+        # Run the dust grid builder
+        builder.run(definition=self.definition, dust_grid=self.dust_grid)
 
     # -----------------------------------------------------------------
 
@@ -469,12 +656,12 @@ class AnalysisInitializer(AnalysisComponent):
         if self.use_file_tree_dust_grid:
 
             # self.simulation_input.add_file(self.representation.dust_grid_tree_path)
-            self.input_paths[dustgridtree_filename] = self.dust_grid_tree_path
+            self.input_paths[dustgridtree_filename] = self.analysis_run.dust_grid_tree_path
 
         # Determine and set the path to the appropriate wavelength grid file
         # wavelength_grid_path = self.fitting_run.wavelength_grid_path_for_level(self.generation_info.wavelength_grid_level)
         # self.simulation_input.add_file(wavelength_grid_path)
-        self.input_paths[wavelengths_filename] = self.wavelength_grid_path
+        self.input_paths[wavelengths_filename] = self.analysis_run.wavelength_grid_path
 
         # Get the number of wavelengths
         # self.nwavelengths = len(WavelengthGrid.from_skirt_input(wavelength_grid_path))
@@ -491,11 +678,11 @@ class AnalysisInitializer(AnalysisComponent):
         # Inform the user
         log.info("Writing ...")
 
+        # Write the config
+        self.write_config()
+
         # Write the info
         self.write_info()
-
-        # Create the necessary directories
-        self.write_directories()
 
         # Write the ski file
         self.write_ski()
@@ -509,8 +696,26 @@ class AnalysisInitializer(AnalysisComponent):
         # Write the wavelength grid
         self.write_wavelength_grid()
 
+        # Write the projections
+        self.write_projections()
+
         # Write the instruments
         self.write_instruments()
+
+    # -----------------------------------------------------------------
+
+    def write_config(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the configuration used to create this analysis run ...")
+
+        # Write
+        self.config.saveto(self.analysis_run.config_path)
 
     # -----------------------------------------------------------------
 
@@ -526,33 +731,6 @@ class AnalysisInitializer(AnalysisComponent):
 
         # Write the analysis run info
         self.analysis_run_info.saveto(self.run_info_path)
-
-    # -----------------------------------------------------------------
-
-    def write_directories(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Creating the necessary directories for this analysis run ...")
-
-        # The directory with the instruments
-        self.run_instruments_path = fs.create_directory_in(self.analysis_run_path, "instruments")
-
-        # Simulation directories
-        self.run_output_path = fs.create_directory_in(self.analysis_run_path, "out")
-        self.run_extr_path = fs.create_directory_in(self.analysis_run_path, "extr")
-        self.run_plot_path = fs.create_directory_in(self.analysis_run_path, "plot")
-        self.run_misc_path = fs.create_directory_in(self.analysis_run_path, "misc")
-
-        # Analysis directories
-        self.run_attenuation_path = fs.create_directory_in(self.analysis_run_path, "attenuation")
-        self.run_colours_path = fs.create_directory_in(self.analysis_run_path, "colours")
-        self.run_residuals_path = fs.create_directory_in(self.analysis_run_path, "residuals")
-        self.run_heating_path = fs.create_directory_in(self.analysis_run_path, "heating")
 
     # -----------------------------------------------------------------
 
@@ -579,7 +757,7 @@ class AnalysisInitializer(AnalysisComponent):
         log.info("Writing the dictionary of input map paths ...")
 
         # Write
-        write_dict(self.input_paths, self.input_file_path)
+        write_dict(self.input_paths, self.analysis_run.input_file_path)
 
     # -----------------------------------------------------------------
 
@@ -591,10 +769,10 @@ class AnalysisInitializer(AnalysisComponent):
         """
 
         # Inform the user
-        log.info("Writing the wavelength grid to " + self.wavelength_grid_path + " ...")
+        log.info("Writing the wavelength grid to " + self.analysis_run.wavelength_grid_path + " ...")
 
         # Write the wavelength grid
-        self.wavelength_grid.to_skirt_input(self.wavelength_grid_path)
+        self.wavelength_grid.to_skirt_input(self.analysis_run.wavelength_grid_path)
 
     # -----------------------------------------------------------------
 
@@ -606,10 +784,31 @@ class AnalysisInitializer(AnalysisComponent):
         """
 
         # Inform the user
-        log.info("Writing the dust grid " + self.dust_grid_path + " ...")
+        log.info("Writing the dust grid " + self.analysis_run.dust_grid_path + " ...")
 
         # Write the dust grid
-        self.dust_grid.saveto(self.dust_grid_path)
+        self.dust_grid.saveto(self.analysis_run.dust_grid_path)
+
+    # -----------------------------------------------------------------
+
+    def write_projections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the projection systems ...")
+
+        # Write the earth projection system
+        self.projections["earth"].saveto(self.analysis_run.earth_projection_path)
+
+        # Write the faceon projection system
+        self.projections["faceon"].saveto(self.analysis_run.faceon_projection_path)
+
+        # Write the edgeon projection system
+        self.projections["edgeon"].saveto(self.analysis_run.edgeon_projection_path)
 
     # -----------------------------------------------------------------
 
@@ -623,13 +822,13 @@ class AnalysisInitializer(AnalysisComponent):
         # Inform the user
         log.info("Writing the instruments ...")
 
-        # Loop over the instruments
-        for name in self.instruments:
+        # Write the SED instrument
+        self.instruments["earth"].saveto(self.analysis_run.earth_instrument_path)
 
-            # Determine the path
-            path = fs.join(self.run_instruments_path, name + ".instr")
+        # Write the frame instrument
+        self.instruments["faceon"].saveto(self.analysis_run.faceon_instrument_path)
 
-            # Save the instrument
-            self.instruments[name].saveto(path)
+        # Write the simple instrument
+        self.instruments["edgeon"].saveto(self.analysis_run.edgeon_instrument_path)
 
 # -----------------------------------------------------------------

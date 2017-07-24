@@ -28,14 +28,13 @@ else: definition.add_required("name", "string", "name of the fitting run", runs.
 
 # Settings for the wavelength grid generation
 definition.add_section("wg", "settings for the wavelength grids")
-definition.sections["wg"].add_optional("npoints_range", "integer_range", "the range of the wavelength grid size", "150>500", convert_default=True)
-definition.sections["wg"].add_optional("ngrids", "integer", "the number of wavelength grids to generate", 10)
+definition.sections["wg"].add_optional("npoints_range", "integer_range", "range of the wavelength grid size", "150>500", convert_default=True)
+definition.sections["wg"].add_optional("ngrids", "integer", "number of wavelength grids to generate", 10)
 definition.sections["wg"].add_flag("add_emission_lines", "add emission lines to the wavelength grids", False)
-definition.sections["wg"].add_optional("min_wavelength", "quantity", "minimum wavelength")
-definition.sections["wg"].add_optional("max_wavelength", "quantity", "maximum wavelength")
+definition.sections["wg"].add_optional("range", "quantity_range", "range of wavelengths", "0.1 micron > 2000 micron", convert_default=True)
 
 # Add optional arguments
-definition.add_optional("npackages", "real", "the number of photon packages per wavelength", 2e5)
+definition.add_optional("npackages", "real", "number of photon packages per wavelength", 2e5)
 definition.add_flag("selfabsorption", "enable dust self-absorption")
 definition.add_flag("transient_heating", "enable transient heating", True)
 

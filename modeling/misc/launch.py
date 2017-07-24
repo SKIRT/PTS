@@ -132,6 +132,7 @@ class ModelLauncher(GalaxyModelingComponent):
 
         # NEW
         model_name, ski, definition, input_paths, parameter_values = select_from_model_suite(self.model_suite)
+
         self.ski = ski
         self.definition = definition
         self.parameter_values = parameter_values

@@ -21,6 +21,11 @@ from ...core.basics.composite import SimplePropertyComposite
 from ..fitting.run import FittingRun
 from pts.core.tools.utils import lazyproperty
 from ...core.tools.serialization import load_dict
+from ...core.simulation.tree import DustGridTree
+from ...core.simulation.grids import FileTreeDustGrid, load_grid
+from ...core.simulation.wavelengthgrid import WavelengthGrid
+from ..basics.projection import GalaxyProjection, EdgeOnProjection, FaceOnProjection
+from ..basics.instruments import FullInstrument
 
 # -----------------------------------------------------------------
 
@@ -54,6 +59,35 @@ class AnalysisRunInfo(SimplePropertyComposite):
 
 # -----------------------------------------------------------------
 
+dust_grid_filename = "dust_grid.dg"
+wavelength_grid_filename = "wavelength_grid.dat"
+dust_grid_build_name = "dust grid"
+info_filename = "info.dat"
+config_filename = "config.cfg"
+input_filename = "input.dat"
+instruments_name = "instruments"
+projections_name = "projections"
+extract_name = "extr"
+plot_name = "plot"
+misc_name = "misc"
+attenuation_name = "attenuation"
+colours_name = "colours"
+residuals_name = "residuals"
+heating_name = "heating"
+dust_grid_tree_filename = "tree.dat"
+
+# Projections
+earth_projection_filename = "earth.proj"
+faceon_projection_filename = "faceon.proj"
+edgeon_projection_filename = "edgeon.proj"
+
+# Instruments
+earth_instrument_filename = "earth.instr"
+faceon_instrument_filename = "faceon.instr"
+edgeon_instrument_filename = "edgeon.instr"
+
+# -----------------------------------------------------------------
+
 class AnalysisRun(object):
 
     """
@@ -71,6 +105,28 @@ class AnalysisRun(object):
         # Set attributes
         self.galaxy_name = galaxy_name
         self.info = info
+
+        ## Create directories
+
+        # The directory for the projections and the instruments
+        if not fs.is_directory(self.projections_path): fs.create_directory(self.projections_path)
+        if not fs.is_directory(self.instruments_path): fs.create_directory(self.instruments_path)
+
+        # The directory for the dust grid output
+        if not fs.is_directory(self.dust_grid_build_path): fs.create_directory(self.dust_grid_build_path)
+        if not fs.is_directory(self.dust_grid_simulation_out_path): fs.create_directory(self.dust_grid_simulation_out_path)
+
+        # Simulation directories
+        if not fs.is_directory(self.output_path): fs.create_directory(self.output_path)
+        if not fs.is_directory(self.extract_path): fs.create_directory(self.extract_path)
+        if not fs.is_directory(self.plot_path): fs.create_directory(self.plot_path)
+        if not fs.is_directory(self.misc_path): fs.create_directory(self.misc_path)
+
+        # Analysis directories
+        if not fs.is_directory(self.attenuation_path): fs.create_directory(self.attenuation_path)
+        if not fs.is_directory(self.colours_path): fs.create_directory(self.colours_path)
+        if not fs.is_directory(self.residuals_path): fs.create_directory(self.residuals_path)
+        if not fs.is_directory(self.heating_path): fs.create_directory(self.heating_path)
 
     # -----------------------------------------------------------------
 
@@ -274,7 +330,7 @@ class AnalysisRun(object):
         :return:
         """
 
-        return fs.join(self.path, "input.dat")
+        return fs.join(self.path, input_filename)
 
     # -----------------------------------------------------------------
 
@@ -299,7 +355,19 @@ class AnalysisRun(object):
         """
 
         # Set the path to the wavelength grid file
-        return fs.join(self.path, "wavelength_grid.dat")
+        return fs.join(self.path, wavelength_grid_filename)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def wavelength_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return WavelengthGrid.from_skirt_input(self.wavelength_grid_path)
 
     # -----------------------------------------------------------------
 
@@ -312,7 +380,19 @@ class AnalysisRun(object):
         """
 
         # Set the path to the dust grid file
-        return fs.join(self.path, "dust_grid.dg")
+        return fs.join(self.path, dust_grid_filename)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_grid(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return load_grid(self.dust_grid_path)
 
     # -----------------------------------------------------------------
 
@@ -325,7 +405,19 @@ class AnalysisRun(object):
         """
 
         # Set the path to the analysis run info file
-        return fs.join(self.path, "info.dat")
+        return fs.join(self.path, info_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def config_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, config_filename)
 
     # -----------------------------------------------------------------
 
@@ -361,7 +453,7 @@ class AnalysisRun(object):
         :return:
         """
 
-        return fs.join(self.path, "extr")
+        return fs.join(self.path, extract_name)
 
     # -----------------------------------------------------------------
 
@@ -385,7 +477,7 @@ class AnalysisRun(object):
         :return:
         """
 
-        return fs.join(self.path, "plot")
+        return fs.join(self.path, plot_name)
 
     # -----------------------------------------------------------------
 
@@ -397,7 +489,7 @@ class AnalysisRun(object):
         :return:
         """
 
-        return fs.join(self.path, "misc")
+        return fs.join(self.path, misc_name)
 
     # -----------------------------------------------------------------
 
@@ -409,7 +501,7 @@ class AnalysisRun(object):
         :return:
         """
 
-        return fs.join(self.path, "attenuation")
+        return fs.join(self.path, attenuation_name)
 
     # -----------------------------------------------------------------
 
@@ -421,7 +513,7 @@ class AnalysisRun(object):
         :return:
         """
 
-        return fs.join(self.path, "colours")
+        return fs.join(self.path, colours_name)
 
     # -----------------------------------------------------------------
 
@@ -433,7 +525,7 @@ class AnalysisRun(object):
         :return:
         """
 
-        return fs.join(self.path, "residuals")
+        return fs.join(self.path, residuals_name)
 
     # -----------------------------------------------------------------
 
@@ -445,7 +537,7 @@ class AnalysisRun(object):
         :return:
         """
 
-        return fs.join(self.path, "heating")
+        return fs.join(self.path, heating_name)
 
     # -----------------------------------------------------------------
 
@@ -457,7 +549,7 @@ class AnalysisRun(object):
         :return:
         """
 
-        return fs.join(self.heating_path, "wavelength_grid.dat")
+        return fs.join(self.heating_path, wavelength_grid_filename)
 
     # -----------------------------------------------------------------
 
@@ -469,7 +561,7 @@ class AnalysisRun(object):
         :return:
         """
 
-        return fs.join(self.heating_path, "instruments")
+        return fs.join(self.heating_path, instruments_name)
 
     # -----------------------------------------------------------------
 
@@ -558,26 +650,76 @@ class AnalysisRun(object):
     # -----------------------------------------------------------------
 
     @property
-    def dust_grid_path(self):
+    def dust_grid_build_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.join(self.path, "dust_grid.dg")
+        return fs.join(self.path, dust_grid_build_name)
 
     # -----------------------------------------------------------------
 
     @property
-    def wavelength_grid_path(self):
+    def dust_grid_simulation_out_path(self):
 
         """
         This function ...
         :return:
         """
 
-        return fs.join(self.path, "wavelength_grid.dat")
+        return fs.join(self.dust_grid_build_path, "out")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_grid_tree_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.dust_grid_build_path, dust_grid_tree_filename)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_grid_tree(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return DustGridTree.from_file(self.dust_grid_tree_path)
+
+    # -----------------------------------------------------------------
+
+    def create_file_tree_dust_grid(self, search_method="Neighbor", write=False):
+
+        """
+        This function ...
+        :param search_method:
+        :param write:
+        :return:
+        """
+
+        grid = FileTreeDustGrid(filename=self.dust_grid_tree_path, search_method=search_method, write=write)
+        return grid
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def has_dust_grid_tree(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_file(self.dust_grid_tree_path)
 
     # -----------------------------------------------------------------
 
@@ -589,7 +731,163 @@ class AnalysisRun(object):
         :return:
         """
 
-        return fs.join(self.path, "instruments")
+        return fs.join(self.path, instruments_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def projections_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.path, projections_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def earth_projection_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.projections_path, earth_projection_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def faceon_projection_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.projections_path, faceon_projection_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_projection_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.projections_path, edgeon_projection_filename)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def earth_projection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return GalaxyProjection.from_file(self.earth_projection_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_projection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return EdgeOnProjection.from_file(self.edgeon_projection_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_projection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return FaceOnProjection.from_file(self.faceon_projection_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def earth_instrument_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.instruments_path, earth_instrument_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def faceon_instrument_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.instruments_path, faceon_instrument_filename)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def edgeon_instrument_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.instruments_path, edgeon_instrument_filename)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def earth_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return FullInstrument.from_file(self.earth_instrument_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def faceon_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return FullInstrument.from_file(self.faceon_instrument_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def edgeon_instrument(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return FullInstrument.from_file(self.edgeon_instrument_path)
 
     # -----------------------------------------------------------------
 

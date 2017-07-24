@@ -920,30 +920,6 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    #def create_instrument(self, instrument_type, projection):
-
-        #"""
-        #This function ...
-        #:param instrument_type: "frame", "SED", "simple", or "full"
-        #:param projection: "earth", "faceon", or "edgeon"
-        #:return:
-        #"""
-
-        # Determine the instrument class
-        #if instrument_type == "SED": instrument_class = SEDInstrument
-        #elif instrument_type == "frame": instrument_class = FrameInstrument
-        #elif instrument_type == "simple": instrument_class = SimpleInstrument
-        #elif instrument_type == "full": instrument_class = FullInstrument
-        #else: raise ValueError("Invalid instrument type: " + instrument_type)
-
-        # Create the instrument and return it
-        #if projection == "earth": return instrument_class.from_projection(self.earth_projection)
-        #elif projection == "faceon": return instrument_class.from_projection(self.faceon_projection)
-        #elif projection == "edgeon": return instrument_class.from_projection(self.edgeon_projection)
-        #else: raise ValueError("Invalid projection: " + projection)
-
-    # -----------------------------------------------------------------
-
     @lazyproperty
     def bulge_model(self):
 
