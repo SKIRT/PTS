@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from .component import HTMLPageComponent, table_class
+from ...core.tools import html
 
 # -----------------------------------------------------------------
 
@@ -34,6 +35,12 @@ class FittingPageGenerator(HTMLPageComponent):
 
         # Call the constructor of the base class
         super(FittingPageGenerator, self).__init__(*args, **kwargs)
+
+        # The fitting run
+        self.fitting_run = None
+
+        # The statistics table
+        self.statistics_table = None
 
     # -----------------------------------------------------------------
 
@@ -100,6 +107,27 @@ class FittingPageGenerator(HTMLPageComponent):
         # Inform the user
         log.info("Making tables ...")
 
+        # Making the statistics table
+        self.make_statistics_table()
+
+    # -----------------------------------------------------------------
+
+    def make_statistics_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making the statistics table ...")
+
+        # Get the statistics table
+        table = self.fitting_run.statistics
+
+        # Generate HTML table
+        self.statistics_table = html.SimpleTable(table.as_tuples(), table.column_names, css_class=table_class, tostr_kwargs=self.tostr_kwargs)
+
     # -----------------------------------------------------------------
 
     def generate(self):
@@ -111,6 +139,32 @@ class FittingPageGenerator(HTMLPageComponent):
 
         # Inform the user
         log.info("Generating the HTML ...")
+
+        self.generate_page()
+
+    # -----------------------------------------------------------------
+
+    def generate_page(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Generating the page ...")
+
+        # Heading
+        body = self.heading
+
+        # Add table
+        body += str(self.statistics_table)
+
+        # Footing
+        body += self.footing
+
+        # Create the status page
+        self.make_page(body)
 
     # -----------------------------------------------------------------
 

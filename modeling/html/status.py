@@ -59,7 +59,7 @@ class StatusPageGenerator(HTMLPageComponent):
         # Make plots
         self.make_plots()
 
-        # Generaet the html
+        # Generate the html
         self.generate()
 
         # Write

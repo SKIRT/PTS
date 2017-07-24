@@ -1549,6 +1549,18 @@ class FittingRun(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def statistics(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.context.get_statistics_for_run(self.name)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def populations(self):
 
         """

@@ -373,3 +373,30 @@ def as_tuples(table):
     return tuples
 
 # -----------------------------------------------------------------
+
+def filtered(table, column_name, value):
+
+    """
+    This function ...
+    :param table:
+    :param key:
+    :param value:
+    :return:
+    """
+
+    names = table.colnames
+
+    data = []
+
+    indices = find_indices(table, value, column_name=column_name)
+
+    # Fill the columns
+    for name in names:
+        column = [value for index, value in enumerate(table[name]) if index in indices]
+        data.append(column)
+
+    # Create the filtered table
+    newtable = new(data, names)
+    return newtable
+
+# -----------------------------------------------------------------

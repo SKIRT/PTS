@@ -18,6 +18,7 @@ from ...evolve.optimize.stepwise import load_populations
 from .run import get_generation_names, get_finished_generations
 from ...core.tools import filesystem as fs
 from .run import FittingRuns
+from ...core.tools import tables
 
 # -----------------------------------------------------------------
 
@@ -244,5 +245,17 @@ class FittingContext(object):
         """
 
         return self.populations[run_id]
+
+    # -----------------------------------------------------------------
+
+    def get_statistics_for_run(self, run_id):
+
+        """
+        This function ...
+        :param run_id:
+        :return:
+        """
+
+        return tables.filtered(self.statistics, "Identifier", run_id)
 
 # -----------------------------------------------------------------
