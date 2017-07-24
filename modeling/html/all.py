@@ -342,6 +342,7 @@ class AllPagesGenerator(GalaxyModelingComponent):
         generator = MapsPageGenerator()
         generator.config.path = self.config.path
         generator.config.replot = self.config.replot
+        generator.config.model_name = self.progression.model_name
         generator.run()
 
     # -----------------------------------------------------------------
@@ -361,6 +362,7 @@ class AllPagesGenerator(GalaxyModelingComponent):
         generator = ModelPageGenerator()
         generator.config.path = self.config.path
         generator.config.replot = self.config.replot
+        generator.config.fitting_run = self.progression.fitting_run_name
         generator.run()
 
     # -----------------------------------------------------------------
@@ -380,6 +382,7 @@ class AllPagesGenerator(GalaxyModelingComponent):
         generator = FittingPageGenerator()
         generator.config.path = self.config.path
         generator.config.replot = self.config.replot
+        generator.config.fitting_run = self.progression.fitting_run_name
         generator.run()
 
     # -----------------------------------------------------------------
@@ -399,6 +402,7 @@ class AllPagesGenerator(GalaxyModelingComponent):
         generator = AttenuationPageGenerator()
         generator.config.path = self.config.path
         generator.config.replot = self.config.replot
+        generator.config.analysis_run = self.progression.analysis_run_name
         generator.run()
 
     # -----------------------------------------------------------------
@@ -418,6 +422,7 @@ class AllPagesGenerator(GalaxyModelingComponent):
         generator = ColoursPageGenerator()
         generator.config.path = self.config.path
         generator.config.replot = self.config.replot
+        generator.config.analysis_run = self.progression.analysis_run_name
         generator.run()
 
     # -----------------------------------------------------------------
@@ -437,6 +442,7 @@ class AllPagesGenerator(GalaxyModelingComponent):
         generator = HeatingPageGenerator()
         generator.config.path = self.config.path
         generator.config.replot = self.config.replot
+        generator.config.analysis_run = self.progression.analysis_run_name
         generator.run()
 
     # -----------------------------------------------------------------
