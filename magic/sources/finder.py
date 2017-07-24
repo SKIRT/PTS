@@ -979,7 +979,12 @@ class SourceFinder(Configurable):
             fwhm = self.frames[name].fwhm
 
             # Get the FWHM if not defined
-            if fwhm is None: fwhm = get_fwhm(self.frames[name].filter)
+            if fwhm is None:
+                try:
+                    fwhm = get_fwhm(self.frames[name].filter)
+                    # This doesn't work for SDSS filters
+                except:
+                    fwhm = 0. # Brute force option
 
             # Debugging
             log.debug("The FWHM of the '" + name + "' image is " + tostr(fwhm))
@@ -1436,7 +1441,7 @@ class SourceFinder(Configurable):
             else: path = self.output_path_file("saturation_" + name + ".reg")
 
             # Save
-            self.saturation_regions[name].saveto(path)
+            if self.saturation_regions[name] is not None: self.saturation_regions[name].saveto(path)
 
     # -----------------------------------------------------------------
 
