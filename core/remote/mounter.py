@@ -156,7 +156,7 @@ class RemoteMounter(object):
         else: mount_point_string = ""
 
         # e.g. sshfs xxx@nancy.ugent.be: ~/PTS/remotes/nancy -C -o volname=nancy
-        # SMB EXAMPLE: mount_smbfs //sjversto:ellen184@files.ugent.be/sjversto/www/users ~/Remotes/WWW
+        # SMB EXAMPLE: mount_smbfs //sjversto:password@files.ugent.be/sjversto/www/users ~/Remotes/WWW
         if host.protocol == "ssh": command = "sshfs " + debug_flags + host.user + "@" + host.name + ":" + mount_point_string + " " + mount_path + " -C -o volname=" + host.id
         elif host.protocol == "smb":
             #fs.remove_directory(mount_path)

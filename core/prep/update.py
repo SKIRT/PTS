@@ -950,6 +950,8 @@ class PTSUpdater(Updater):
         # Debugging
         log.debug("Getting latest version ...")
 
+        #print(self.remote.pts_package_path)
+
         # Get the url of the "origin"
         url = git.get_url_repository(self.remote, self.remote.pts_package_path)
 
@@ -975,6 +977,7 @@ class PTSUpdater(Updater):
 
         # Decompose
         host, user_or_organization, repo_name, username, password = git.decompose_https(url)
+        #print(host, user_or_organization, rep_name, username, password)
 
         # Find the account file for the repository host (e.g. github.ugent.be)
         if username is None and password is None and introspection.has_account(host):

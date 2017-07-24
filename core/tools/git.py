@@ -142,8 +142,7 @@ def get_url_repository(remote, repo_path, repo_name="origin"):
     elif index == 0: output = remote.ssh.before.split("\r\n")[1:]
 
     # This shouldn't happen
-    else:
-        raise RuntimeError("Something went wrong")
+    else: raise RuntimeError("Something went wrong")
 
     # Reset logfile
     remote.ssh.logfile = None
@@ -151,9 +150,16 @@ def get_url_repository(remote, repo_path, repo_name="origin"):
     # Reset cwd
     remote.change_cwd(original_cwd)
 
+    # Check for errors
+    for line in output:
+        if "Authentication failed" in line: raise RuntimeError(line)
+
     url = None
     for line in output:
         if "Fetch URL" in line: url = line.split(": ")[1]
+
+    # Check
+    if url is None: raise RuntimeError("Something went wrong: could not determine the repository url")
 
     # Return the url
     return url
