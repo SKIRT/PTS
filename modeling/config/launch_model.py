@@ -26,6 +26,10 @@ default_dust_grid_type = "bintree"
 
 # -----------------------------------------------------------------
 
+definition.add_required("name", "string_no_spaces", "name for the simulation")
+
+# -----------------------------------------------------------------
+
 definition.add_required("origin", "string", "origin of the analysis model", choices=origins)
 
 # -----------------------------------------------------------------

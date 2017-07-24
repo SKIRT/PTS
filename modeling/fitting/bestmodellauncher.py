@@ -31,6 +31,7 @@ from ...core.advanced.dustgridtool import DustGridTool
 from ...core.advanced.parallelizationtool import ParallelizationTool
 from ...core.basics.configuration import prompt_string
 from pts.core.tools.utils import lazyproperty
+from ..misc.interface import ModelSimulationInterface
 
 # -----------------------------------------------------------------
 
@@ -41,7 +42,7 @@ component_names = {"old": ["Evolved stellar bulge", "Evolved stellar disk"],
 
 # -----------------------------------------------------------------
 
-class BestModelLauncher(FittingComponent):
+class BestModelLauncher(FittingComponent, ModelSimulationInterface):
     
     """
     This class...
@@ -56,7 +57,9 @@ class BestModelLauncher(FittingComponent):
         """
 
         # Call the constructor of the base class
-        super(BestModelLauncher, self).__init__(*args, **kwargs)
+        #super(BestModelLauncher, self).__init__(*args, **kwargs)
+        FittingComponent.__init__(*args, **kwargs)
+        ModelSimulationInterface.__init__(*args, **kwargs)
 
         # -- Attributes --
 
@@ -157,7 +160,9 @@ class BestModelLauncher(FittingComponent):
         """
 
         # Call the setup function of the base class
-        super(BestModelLauncher, self).setup(**kwargs)
+        #super(BestModelLauncher, self).setup(**kwargs)
+        FittingComponent.setup(**kwargs)
+        ModelSimulationInterface.setup(**kwargs)
 
         # Load the fitting run
         self.fitting_run = self.load_fitting_run(self.config.fitting_run)

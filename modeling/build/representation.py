@@ -738,11 +738,11 @@ def prompt_deprojection(deprojections):
     lowest_pixelscale_title = None
 
     # Loop over the different deprojection models
-    for name, title in self.deprojections:
+    for name, title in deprojections:
 
         # Determine name and description
         option = name
-        pixelscale = self.deprojections[(name, title)].pixelscale
+        pixelscale = deprojections[(name, title)].pixelscale
         if lowest_pixelscale is None or pixelscale < lowest_pixelscale:
             lowest_pixelscale = pixelscale
             lowest_pixelscale_name = name

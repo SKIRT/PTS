@@ -841,7 +841,7 @@ class DustGridBuilder(Configurable):
         log.info("Writing the dust grid tree data ...")
 
         # Determine path
-        path = self.output_path_file("tree.dat")
+        path = self.output_path_file(self.config.tree_path)
 
         # Save the tree
         #self.tree.saveto(path) # THIS CAN TAKE MUCH TOO LONG

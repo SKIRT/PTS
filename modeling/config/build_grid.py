@@ -34,3 +34,7 @@ definition.add_flag("density_quality", "get the density quality", True)
 definition.add_flag("dust_mass_quality", "get the dust mass quality", True)
 
 # -----------------------------------------------------------------
+
+definition.add_optional("tree_path", "string", "filepath for the tree grid file", "tree.dat")
+
+# -----------------------------------------------------------------

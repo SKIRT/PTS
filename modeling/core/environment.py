@@ -245,6 +245,7 @@ phot_name = "phot"
 maps_name = "maps"
 components_name = "components"
 deprojection_name = "deprojection"
+playground_name = "playground"
 
 # -----------------------------------------------------------------
 
@@ -304,6 +305,7 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         self.maps_path = fs.create_directory_in(self.path, maps_name)
         self.components_path = fs.create_directory_in(self.path, components_name)
         self.deprojection_path = fs.create_directory_in(self.path, deprojection_name)
+        self.playground_path = fs.create_directory_in(self.path, playground_name)
 
         ## NEW: ADD MORE AND MORE PATH DEFINITIONS HERE
 

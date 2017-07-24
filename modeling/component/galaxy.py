@@ -316,6 +316,18 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def playground_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.playground_path
+
+    # -----------------------------------------------------------------
+
     @lazyproperty
     def ngc_name(self):
 
