@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.modeling.core.environment import GalaxyModelingEnvironment
-from pts.modeling.preparation.preparer import load_statistics
+from pts.modeling.preparation.preparer import load_statistics, get_statistics_path
 from pts.core.filter.filter import parse_filter
 from pts.magic.services.attenuation import GalacticAttenuation
 from pts.core.tools.logging import log
@@ -26,13 +26,12 @@ from pts.modeling.core.environment import verify_modeling_cwd
 from pts.modeling.preparation.preparer import get_step_image_paths_with_cached
 from pts.core.launch.pts import execute_pts_remote, execute_pts_local
 from pts.core.tools import filesystem as fs
+from pts.core.tools.serialization import write_dict
 
 # -----------------------------------------------------------------
 
-# Create the configuration definition
-definition = ConfigurationDefinition()
-
 # Create the configuration
+definition = ConfigurationDefinition()
 config = parse_arguments("fix_attenuation", definition)
 
 # -----------------------------------------------------------------
@@ -98,6 +97,11 @@ for prep_name in environment.preparation_names:
 
 # -----------------------------------------------------------------
 
+# Remember the correction factors
+correction_factors = dict()
+
+# -----------------------------------------------------------------
+
 # Loop over the prep names that need to be fixed
 for prep_name in fix:
 
@@ -108,6 +112,13 @@ for prep_name in fix:
     actual = float(fix[prep_name][0])
     mistaken = float(fix[prep_name][1])
     factor = 10**(actual - mistaken)
+
+    # Debugging
+    log.debug("The correction factor for the " + prep_name + " image is " + str(factor))
+    correction_factors[prep_name] = factor
+
+    #print(paths)
+    #continue
 
     # Loop over the images
     for step in paths:
@@ -122,11 +133,33 @@ for prep_name in fix:
         # Local
         if fs.is_file(path):
             log.debug("Fixing locally ...")
-            execute_pts_local("multiply", path, factor, backup=True)
+            execute_pts_local("multiply", path, factor, backup=True, debug=True)
 
         # Remote
         else:
             log.debug("Fixing remotely ...")
-            execute_pts_remote(remote, "multiply", path, factor, backup=True)
+            execute_pts_remote(remote, "multiply", path, factor, backup=True, debug=True)
+
+    # CHANGE ATTENUATION VALUE IN PREPARATION STATISTICS
+
+    # Load the preparation statistics
+    statistics_path = get_statistics_path(modeling_path, prep_name)
+    statistics = load_statistics(modeling_path, prep_name)
+
+    # BACKUP THE STATISTICS
+    backup_statistics_path = fs.appended_filepath(statistics_path, "_backup")
+    statistics.saveto(backup_statistics_path)
+
+    # Set new attenuation value
+    statistics.attenuation = actual
+
+    # Save
+    statistics.saveto(statistics_path)
+
+# -----------------------------------------------------------------
+
+# Write the correction factors
+factors_path = fs.join(environment.prep_path, "attenuation_correction_factors.dat")
+write_dict(correction_factors, factors_path)
 
 # -----------------------------------------------------------------

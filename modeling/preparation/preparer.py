@@ -180,7 +180,7 @@ def steps_after(step):
     for stepi in reversed(steps):
         if stepi == step: break
         else: the_steps.append(stepi)
-    return reversed(the_steps)
+    return list(reversed(the_steps))
 
 # -----------------------------------------------------------------
 
@@ -263,7 +263,7 @@ def get_filenames_between_steps(after_step=None, before_step=None, inclusive=Tru
     for step in the_steps: filenames.append(filename_for_steps[step])
 
     # Return the file names
-    if return_steps: return the_steps, filenames
+    if return_steps: return zip(the_steps, filenames)
     else: return filenames
 
 # -----------------------------------------------------------------
