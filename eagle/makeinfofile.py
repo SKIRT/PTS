@@ -139,6 +139,10 @@ def makeinfofile(skirtrun, snaptag):
         info["setup_optical_depth_percentile90"] = map(float,simulation.dustcellstats())
     info["setup_distance_instrument"] = simulation.instrumentdistance()
 
+    # gather SKIRT operating statistics
+    info["skirt_run_wall_time"], info["skirt_run_peak_memory"], \
+    info["skirt_run_self_absorption_cycles"] = operatingStatistics(simulation)
+
     # load filters and wavelength grid
     _loadfilters()
     wavelengths = simulation.wavelengths()
@@ -221,14 +225,17 @@ def makeinfofile(skirtrun, snaptag):
     infofile.write('# Information file for SKIRT-run {}\n'.format(skirtrun.runid()))
     infofile.write('# cells : 1\n')
     infofile.write('# particles : 1\n')
+    infofile.write('# cycles : 1\n')
     infofile.write('# luminosity : Lsun\n')
     infofile.write('# mass : Msun\n')
     infofile.write('# distance : pc\n')
     infofile.write('# fluxdensity : Jy\n')
     infofile.write('# magnitude : mag\n')
+    infofile.write('# memory : GB\n')
+    infofile.write('# time : s\n')
     maxkeylen = max(map(len,info.keys()))
     for key in sorted(info.keys()):
-        valueformat = ".0f" if "_particles_" in key or "_cells_" in key or "_id" in key else ".9e"
+        valueformat = ".0f" if "_particles_" in key or "_cells_" in key or "_id" in key or "_cycles" in key else ".9e"
         infofile.write( ("{0:"+str(maxkeylen)+"} = {1:16"+valueformat+"}\n").format(key, info[key]) )
     infofile.close()
 
@@ -404,5 +411,36 @@ def distantflux(f, d, z):
     # expect flux in Jy, instrument distance in m, redshift ; return corrected flux in Jy
     # see e.g. https://ned.ipac.caltech.edu/level5/Hogg/Hogg7.html
     return f * (d/DL(z))**2 * (1+z)
+
+# -----------------------------------------------------------------
+
+## This function retrieves some operating statistics from the simulation's log file. It returns a tuple as follows:
+# (simulation walltime in seconds, peak memory usage in GB, number of dust self-absorption cycles).
+def operatingStatistics(simulation):
+    lines = open(simulation.logfilepath()).readlines()
+
+    walltime = 0
+    for line in reversed(lines):
+        if " Finished simulation " in line:
+            segments = line.split()
+            timeindex = segments.index("s") if "s" in segments else segments.index("s.")
+            walltime = float(segments[timeindex-1])
+            break
+
+    memory = 0
+    for line in reversed(lines):
+        if " Available memory: " in line:
+            segments = line.split()
+            memory = float(segments[segments.index("usage:")+1])
+            break
+
+    cycles = 0
+    for line in reversed(lines):
+        if " Finished " in line and " self-absorption cycle " in line:
+            segments = line.split()
+            cycles = int(segments[segments.index("cycle")+1])
+            break
+
+    return (walltime, memory, cycles)
 
 # -----------------------------------------------------------------
