@@ -560,7 +560,6 @@ class PointSourceFinder(Configurable):
 
         # Inform the user
         log.info("Fitting PSF profiles to the point sources ...")
-
         # Loop over all sources in the list
         for source in self.sources:
 
@@ -578,14 +577,12 @@ class PointSourceFinder(Configurable):
 
                 # Create a detection object
                 detection = Detection.from_ellipse(self.frame, ellipse, self.config.fitting.background_outer_factor)
-
             else: detection = None
-
             # Find a model
             if source.has_detection or detection is not None: source.fit_model(self.config.fitting, detection)
 
         # If requested, perform sigma-clipping to the list of FWHM's to filter out outliers
-        if self.config.fitting.sigma_clip_fwhms:
+        if self.config.fitting.sigma_clip_fwhms and len(self.fwhms_pix_valid) > 0:
 
             #print(self.fwhms_pix)
             mean, median, stddev = statistics.sigma_clipped_statistics(self.fwhms_pix_valid, self.config.fitting.fwhm_sigma_level)
@@ -663,7 +660,7 @@ class PointSourceFinder(Configurable):
 
             # Get the center in pixel coordinates
             center = source.pixel_position(self.frame.wcs)
-
+            
             # Determine the color, based on the detection level
             if source.has_model: color = "blue"
             elif source.has_detection: color = "green"
@@ -673,7 +670,10 @@ class PointSourceFinder(Configurable):
             fwhm = default_fwhm if not source.has_model else source.fwhm
 
             # Calculate the radius in pixels
-            radius = fwhm * statistics.fwhm_to_sigma * self.config.source_psf_sigma_level
+            if fwhm is not None:
+                radius = fwhm * statistics.fwhm_to_sigma * self.config.source_psf_sigma_level
+            else:
+                radius = 0.
 
             # Convert the source index to a string
             text = str(source.index)
@@ -709,88 +709,92 @@ class PointSourceFinder(Configurable):
 
         # Check whether detections are found
         with_detection = self.have_detection
-        if with_detection == 0: raise RuntimeError("Not a single source was found")
+        if with_detection == 0:
+            # Stop searching for saturation, but don't break the whole process
+            print("Not a single source was found")
+            self.config.find_saturation = False
+        else:
 
-        # Inform the user on the number of stars that have a detection
-        log.debug("Number of stars with detection = " + str(with_detection))
+            # Inform the user on the number of stars that have a detection
+            log.debug("Number of stars with detection = " + str(with_detection))
 
-        # Calculate the default FWHM, for the stars for which a model was not found
-        default_fwhm = self.fwhm_pix
+            # Calculate the default FWHM, for the stars for which a model was not found
+            default_fwhm = self.fwhm_pix
 
-        # Set the number of stars where saturation was removed to zero initially
-        success = 0
+            # Set the number of stars where saturation was removed to zero initially
+            success = 0
 
-        # Create point source mask
-        star_mask = self.regions.to_mask(self.frame.xsize, self.frame.ysize)
+            # Create point source mask
+            star_mask = self.regions.to_mask(self.frame.xsize, self.frame.ysize)
 
-        # Only brightest method
-        if self.config.saturation.only_brightest:
+            # Only brightest method
+            if self.config.saturation.only_brightest:
 
-            fluxes = sorted(self.get_fluxes(without_background=True))
+                fluxes = sorted(self.get_fluxes(without_background=True))
 
-            # Percentage method
-            if self.config.saturation.brightest_method == "percentage":
+                # Percentage method
+                if self.config.saturation.brightest_method == "percentage":
 
-                # Get the number of fluxes lower than the percentage of highest fluxes
-                percentage = self.config.saturation.brightest_level
-                fraction = 0.01 * percentage
-                count_before = int((1.0-fraction)*len(fluxes))
+                    # Get the number of fluxes lower than the percentage of highest fluxes
+                    percentage = self.config.saturation.brightest_level
+                    fraction = 0.01 * percentage
+                    count_before = int((1.0-fraction)*len(fluxes))
 
-                # Determine the flux threshold
-                flux_threshold = fluxes[count_before-1]
+                    # Determine the flux threshold
+                    flux_threshold = fluxes[count_before-1]
 
-            # Sigma clipping method
-            elif self.config.saturation.brightest_method == "sigma clipping":
+                # Sigma clipping method
+                elif self.config.saturation.brightest_method == "sigma clipping":
 
-                # Determine the sigma level
-                sigma_level = self.config.saturation.brightest_level
+                    # Determine the sigma level
+                    sigma_level = self.config.saturation.brightest_level
 
-                # Determine the flux threshold
-                flux_threshold = statistics.cutoff(fluxes, "sigma_clip", sigma_level)
+                    # Determine the flux threshold
+                    flux_threshold = statistics.cutoff(fluxes, "sigma_clip", sigma_level)
 
-            # Invalid option
-            else: raise ValueError("Brightest method should be 'percentage' or 'sigma clipping'")
+                # Invalid option
+                else: raise ValueError("Brightest method should be 'percentage' or 'sigma clipping'")
 
-        # Otherwise, no flux threshold
-        else: flux_threshold = None
+            # Otherwise, no flux threshold
+            else: flux_threshold = None
 
-        # Loop over all sources
-        for source in self.sources:
+            # Loop over all sources
+            for source in self.sources:
 
-            # Skip None
-            if source is None: continue
+                # Skip None
+                if source is None: continue
 
-            # If this star should be ignored, skip it
-            if source.ignore: continue
+                # If this star should be ignored, skip it
+                if source.ignore: continue
 
-            # If a flux threshold is defined
-            if flux_threshold is not None:
+                # If a flux threshold is defined
+                if flux_threshold is not None:
 
-                # No source, skip right away
-                if not source.has_detection: continue
+                    # No source, skip right away
+                    if not source.has_detection: continue
 
-                # Determine the flux of this star
-                if not source.detection.has_background: source.detection.estimate_background()
-                flux = source.detection.get_flux(without_background=True)
+                    # Determine the flux of this star
+                    if not source.detection.has_background: source.detection.estimate_background()
+                    flux = source.detection.get_flux(without_background=True)
 
-                # Skip this star if its flux is lower than the threshold
-                if flux < flux_threshold: continue
+                    # Skip this star if its flux is lower than the threshold
+                    if flux < flux_threshold: continue
 
-            # If a model was not found for this star, skip it unless the remove_if_not_fitted flag is enabled
-            if not source.has_model and not self.config.saturation.remove_if_not_fitted: continue
-            if source.has_model: assert source.has_detection
+                # If a model was not found for this star, skip it unless the remove_if_not_fitted flag is enabled
+                if not source.has_model and not self.config.saturation.remove_if_not_fitted: continue
+                if source.has_model: assert source.has_detection
 
-            # Note: DustPedia stars will always get a 'source' during removal (with star.source_at_sigma_level) so star.has_source will already pass
+                # Note: DustPedia stars will always get a 'source' during removal (with star.source_at_sigma_level) so star.has_source will already pass
 
-            # If a source was not found for this star, skip it unless the remove_if_undetected flag is enabled
-            if not source.has_detection and not self.config.saturation.remove_if_undetected: continue
+                # If a source was not found for this star, skip it unless the remove_if_undetected flag is enabled
+                if not source.has_detection and not self.config.saturation.remove_if_undetected: continue
 
-            # Find a saturation source and remove it from the frame
-            source.find_saturation(self.frame, self.config.saturation, default_fwhm, star_mask)
-            success += source.has_saturation
+                # Find a saturation source and remove it from the frame
+                source.find_saturation(self.frame, self.config.saturation, default_fwhm, star_mask)
+                success += source.has_saturation
 
-        # Inform the user
-        log.debug("Found saturation in " + str(success) + " out of " + str(self.have_detection) + " sources with detection ({0:.2f}%)".format(success / self.have_detection * 100.0))
+            # Inform the user
+            log.debug("Found saturation in " + str(success) + " out of " + str(self.have_detection) + " sources with detection ({0:.2f}%)".format(success / self.have_detection * 100.0))
 
     # -----------------------------------------------------------------
 
@@ -1141,7 +1145,7 @@ class PointSourceFinder(Configurable):
 
         # Loop over all sources
         for source in self.sources:
-
+            
             if source is None: fwhms.append(None)
 
             # If the star contains a model, add the fwhm of that model to the list
@@ -1326,7 +1330,6 @@ class PointSourceFinder(Configurable):
         This function ...
         :return:
         """
-
         return (self.fwhm / self.frame.average_pixelscale.to("arcsec")).value if self.fwhm is not None else None
 
     # -----------------------------------------------------------------
