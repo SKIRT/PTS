@@ -12,6 +12,8 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+from ipyvolume.embed import embed_html
+
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from .component import HTMLPageComponent, table_class
@@ -22,6 +24,7 @@ from ...core.tools import filesystem as fs
 from ...magic.core.frame import Frame
 from ...core.filter.filter import parse_filter
 from ...magic.core.remote import RemoteFrame
+from ..plotting.model import plot_galaxy_components, generate_html
 
 # -----------------------------------------------------------------
 
@@ -41,6 +44,15 @@ class ComponentsPageGenerator(HTMLPageComponent):
 
         # Call the constructor of the base class
         super(ComponentsPageGenerator, self).__init__(*args, **kwargs)
+
+        self.bulge_table = None
+        self.bulge_plot = None
+
+        self.disk_table = None
+        self.disk_plot = None
+
+        self.model_table = None
+        self.model_plot = None
 
     # -----------------------------------------------------------------
 
@@ -95,11 +107,65 @@ class ComponentsPageGenerator(HTMLPageComponent):
         # Inform the user
         log.info("Making plots ...")
 
+        self.plot_bulge()
 
+        self.plot_disk()
+
+        self.plot_model()
 
     # -----------------------------------------------------------------
 
+    def plot_bulge(self):
 
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the bulge component ...")
+
+        # Plot, create HTML
+        components = {"bulge": None}
+        kwargs = {}
+        box = plot_galaxy_components(components, draw=True, show=False, **kwargs)
+        self.bulge_plot = generate_html(box, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def plot_disk(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the disk component ...")
+
+        # Plot, create HTML
+        components = {"disk": None}
+        kwargs = {}
+        box = plot_galaxy_components(components, draw=True, show=False, **kwargs)
+        self.disk_plot = generate_html(box, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def plot_model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Plotting the model (disk + bulge) ...")
+
+        # Plot, create HTML
+        components = {"disk": None, "bulge": None}
+        kwargs = {}
+        box = plot_galaxy_components(components, draw=True, show=False, **kwargs)
+        self.model_plot = generate_html(box, **kwargs)
 
     # -----------------------------------------------------------------
 
