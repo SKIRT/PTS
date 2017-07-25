@@ -1,11 +1,8 @@
 # Command | Configuration | Class | Configuration method | Description
 
-# TOP-LEVEL MODELING
+# MODELING
 setup | -- | modeling.setup.ModelingSetupTool | interactive | Setup a modeling directory for a certain galaxy
 model | -- | modeling.modeler.Modeler | arguments | Perform radiative transfer modeling
-
-# MISC
-info | -- | misc.info.InfoShower | arguments | Show information about the radiative transfer model
 
 # DATA
 fetch_properties | fetch | data.properties.PropertyFetcher | interactive | Fetch the galaxy properties
@@ -39,9 +36,6 @@ create_significance_masks | -- | maps.significance.SignificanceMaskCreator | arg
 # PHOTOMETRY
 photometry | -- | photometry.photometry.PhotoMeter | interactive | Calculate the photometry of the different input images
 
-# DEPROJECTION
-deproject | -- | deprojection.deprojector.Deprojector | arguments | Deproject the maps
-
 # MODEL BUILDING
 build_sed | -- | build.sed.SEDModelBuilder | arguments | Build the model for SED modeling
 build_images | -- | build.images.ImagesModelBuilder | arguments | Build the model for images modeling
@@ -63,7 +57,7 @@ fit_sed | -- | fitting.sedfitting.SEDFitter | arguments | Determine the best fit
 finish_exploration | -- | fitting.finisher.ExplorationFinisher | arguments | Finish the parameter exploration
 launch_best | -- | fitting.bestmodellauncher.BestModelLauncher | interactive | Launch simulations to inspect the current best RT model for a certain generation
 
-# MODEL ANALYSIS
+# ANALYSIS
 initialize_analysis | -- | analysis.initialization.AnalysisInitializer | interactive | Initialize an analysis run
 launch_analysis | -- | analysis.launcher.AnalysisLauncher | arguments | Launch a simulation for analysis
 launch_heating | -- | analysis.heating.launcher.DustHeatingContributionLauncher | arguments | Launch simulations for analysing the heating contributions
@@ -76,6 +70,8 @@ analyse_residuals | -- | analysis.residuals.ResidualAnalyser | arguments | Analy
 
 # OTHER
 report | -- | reporting.reporting.Reporter | arguments | Make (a) report(s) of certain steps of the radiative transfer modeling procedure (or all steps)
+deproject | -- | deprojection.deprojector.Deprojector | arguments | Deproject the maps
+info | -- | misc.info.InfoShower | arguments | Show information about the radiative transfer model
 
 # PLOTTING
 plot_data | plot_data | plotting.data.DataPlotter | interactive | Make plots of the data
@@ -95,13 +91,13 @@ plot_analysis | plot_analysis | plotting.analysis.AnalysisPlotter | interactive 
 make_movie | -- | show.movie.MovieMaker | arguments | Make a movie from the galaxy model
 make_rgb | -- | show.rgb.RGBImageMaker | arguments | Make RGB images from the galaxy model
 
-# NOT PART OF MODELING PIPELINE
+# EXTRA
 fitskirt | -- | fitting.fitskirt.FitSKIRTLauncher | arguments | Launch FitSKIRT
 analyse_mosaic | -- | data.analyser.MosaicAnalyser | arguments | Analyse mosaics and Poisson error mosaic maps
 build_grid | -- | build.dustgrid.DustGridBuilder | arguments | Build dust grid
 launch_model | -- | misc.launch.ModelLauncher | arguments | Launch a certain model
 
-# GENERATING THE HTML PAGES
+# HTML
 generate_all_pages | -- | html.all.AllPagesGenerator | arguments | Generate all the pages
 generate_status_page | -- | html.status.StatusPageGenerator | arguments | Generate the status page
 generate_model_page | -- | html.model.ModelPageGenerator | arguments | Generate the model page

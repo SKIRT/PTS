@@ -152,6 +152,7 @@ elif len(table_matches) == 1 and len(matches) == 0:
     resolved = introspection.resolve_from_match(subproject, tables[subproject], index)
 
     # Get properties
+    title = resolved.title
     command_name = resolved.command_name
     hidden = resolved.hidden
     description = resolved.description

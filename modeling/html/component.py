@@ -29,6 +29,7 @@ stylesheet_url = "http://users.ugent.be/~sjversto/stylesheet.css"
 # -----------------------------------------------------------------
 
 table_class = "realtable"
+hover_table_class = "hovertable"
 
 # -----------------------------------------------------------------
 
@@ -430,10 +431,10 @@ class HTMLPageComponent(GalaxyModelingComponent):
         :return:
         """
 
-        text = "Last updated " + time.pretty_date().lower()
+        text = html.small_template.format(text="Last updated " + time.pretty_time())
 
         footing = ""
-        footing += html.newline + html.line + html.newline + html.center_template.format(text=text)
+        footing += html.newline + html.make_line("heavy") + html.center_template.format(text=text)
         return footing
 
     # -----------------------------------------------------------------

@@ -1799,6 +1799,73 @@ def find_matches_tables(name, tables):
 
 # -----------------------------------------------------------------
 
+def get_argument_table(subproject):
+
+    """
+    This function ...
+    :param subproject:
+    :return:
+    """
+
+    table_path = fs.join(pts_subproject_dir(subproject), "commands.dat")
+    if not fs.is_file(table_path): return None
+
+    # Get the columns
+    # commands, configuration, where, method, description = np.genfromtxt(table_path, delimiter=" | ", dtype=str, unpack=True)
+    commands = []
+    configuration = []
+    where = []
+    method = []
+    description = []
+    titles = []
+
+    # Numpy-less implementation
+    with open(table_path, 'r') as table:
+
+        last_title = None
+
+        for line in table:
+
+            if line.startswith("#"):
+                if "|" in line: continue  # header
+                last_title = line.split("# ")[1]
+                continue
+
+            line = line[:-1]
+
+            # EMPTY LINE
+            if not line:
+                last_title = None
+                continue
+
+            splitted = line.split(" | ")
+            if len(splitted) != 5: raise SyntaxError("The following row is wrong: '" + line + "'")
+
+            # Add entry
+            commands.append(splitted[0])
+            configuration.append(splitted[1])
+            where.append(splitted[2])
+            method.append(splitted[3])
+            description.append(splitted[4])
+            titles.append(last_title)
+
+    # Fix
+    if types.is_string_type(commands):
+        commands = [commands]
+        configuration = [configuration]
+        where = [where]
+        method = [method]
+        description = [description]
+        titles = [titles]
+
+    # Table
+    table = {"Command": commands, "Configuration": configuration, "Path": where, "Configuration method": method,
+             "Description": description, "Title": titles}
+
+    return table
+
+# -----------------------------------------------------------------
+
 def get_arguments_tables():
 
     """
@@ -1813,60 +1880,10 @@ def get_arguments_tables():
     # Loop over the subprojects
     for subproject in subprojects:
 
-        table_path = fs.join(pts_subproject_dir(subproject), "commands.dat")
-        if not fs.is_file(table_path): continue
+        table = get_argument_table(subproject)
+        if table is None: continue
 
-        # Get the columns
-        #commands, configuration, where, method, description = np.genfromtxt(table_path, delimiter=" | ", dtype=str, unpack=True)
-        commands = []
-        configuration = []
-        where = []
-        method = []
-        description = []
-        titles = []
-
-        # Numpy-less implementation
-        with open(table_path, 'r') as table:
-
-            last_title = None
-
-            for line in table:
-
-                if line.startswith("#"):
-                    if "|" in line: continue # header
-                    last_title = line.split("# ")[1]
-                    continue
-
-                line = line[:-1]
-
-                # EMPTY LINE
-                if not line:
-                    last_title = None
-                    continue
-
-                splitted = line.split(" | ")
-                if len(splitted) != 5: raise SyntaxError("The following row is wrong: '" + line + "'")
-
-                # Add entry
-                commands.append(splitted[0])
-                configuration.append(splitted[1])
-                where.append(splitted[2])
-                method.append(splitted[3])
-                description.append(splitted[4])
-                titles.append(last_title)
-
-        # Fix
-        if types.is_string_type(commands):
-
-            commands = [commands]
-            configuration = [configuration]
-            where = [where]
-            method = [method]
-            description = [description]
-            titles = [titles]
-
-        # Table
-        table = {"Command": commands, "Configuration": configuration, "Path": where, "Configuration method": method, "Description": description, "Title": titles}
+        # Add table
         tables[subproject] = table
 
     # Return the tables
@@ -2048,6 +2065,27 @@ def all_concrete_configurable_classes():
 
 # -----------------------------------------------------------------
 
+def get_command_index(table, command):
+
+    """
+    This function ...
+    :param table:
+    :param command:
+    :return:
+    """
+
+    matches = []
+    for i in range(len(table["Command"])):
+        command_name = table["Command"][i]
+        if command_name.startswith("*"): command_name = command_name[1:]
+        if command_name.startswith(name): matches.append(i)
+
+    if len(matches) == 0: raise ValueError("Command not present in table")
+    elif len(matches) > 1: raise ValueError("Multiple matches in table")
+    else: return matches[0] # return the index
+
+# -----------------------------------------------------------------
+
 def resolve_command_configurable(command):
 
     """
@@ -2113,10 +2151,13 @@ def resolve_from_match(subproject, table, index):
     if configuration_name == "--": configuration_name = command_name
     configuration_module_path = "pts." + subproject + ".config." + configuration_name
 
+    # Get the title
+    title = table["Title"][index]
+
     # Return
     return Map(subproject=subproject, command_name=command_name, hidden=hidden, description=command_description,
                module_path=module_path, class_name=class_name, configuration_method=configuration_method_table,
-               configuration_module_path=configuration_module_path)
+               configuration_module_path=configuration_module_path, title=title)
 
 # -----------------------------------------------------------------
 

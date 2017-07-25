@@ -278,7 +278,18 @@ def strip_last_digits(string, ndigits):
 
 # -----------------------------------------------------------------
 
-def pretty_date(time=False):
+def pretty_time():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return _time.strftime("%A %B %dth %Y %H:%M:%S", _time.localtime())
+
+# -----------------------------------------------------------------
+
+def pretty_lookback_time(time):
 
     """
     Get a datetime object or a int() Epoch timestamp and return a
@@ -286,15 +297,10 @@ def pretty_date(time=False):
     'just now', etc
     """
 
-    from datetime import datetime
-    now = datetime.now()
-
-    if type(time) is int:
-        diff = now - datetime.fromtimestamp(time)
-    elif isinstance(time,datetime):
-        diff = now - time
-    elif not time:
-        diff = now - now
+    # Get time difference
+    if type(time) is int: diff = now() - datetime.fromtimestamp(time)
+    elif isinstance(time, datetime): diff = now() - time
+    else: raise ValueError("Invalid time object")
 
     second_diff = diff.seconds
     day_diff = diff.days

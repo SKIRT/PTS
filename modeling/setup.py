@@ -12,6 +12,21 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import the relevant PTS classes and modules
+from ..core.tools import introspection
+
+# -----------------------------------------------------------------
+
+# Determine commands to be ignored for the history
+ignore_titles = ["MODELING", "OTHER", "PLOTTING", "HIDDEN", "SHOW", "EXTRA", "HTML"]
+ignore_commands = []
+table = introspection.get_argument_table("modeling")
+# Loop over all commands for which the title is one of the ignore titles
+for index in range(len(table["Command"])):
+    command_name = table["Command"][index]
+    title = table["Title"][index]
+    if title in ignore_titles: ignore_commands.append(command_name)
+
 # -----------------------------------------------------------------
 
 def setup(command_name, cwd):
@@ -23,8 +38,8 @@ def setup(command_name, cwd):
     :return: 
     """
 
-    # When launching a seperate modeling command, add entry to history
-    if command_name == "setup" or command_name == "model": return
+    # Ignore not-pipeline
+    if command_name in ignore_commands: return
 
     # Load the history
     from .component.component import load_modeling_history
@@ -44,7 +59,8 @@ def finish(command_name, cwd):
     :return: 
     """
 
-    if command_name == "setup" or command_name == "model": return
+    # Ignore not-pipeline
+    if command_name in ignore_commands: return
 
     # Load the history
     from .component.component import load_modeling_history

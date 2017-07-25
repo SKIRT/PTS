@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
-from .component import HTMLPageComponent, table_class
+from .component import HTMLPageComponent, table_class, hover_table_class
 from ...core.tools import html
 
 # -----------------------------------------------------------------
@@ -39,6 +39,7 @@ class StatusPageGenerator(HTMLPageComponent):
         # Tables
         self.info_table = None
         self.status_table = None
+        self.history_table = None
 
     # -----------------------------------------------------------------
 
@@ -99,6 +100,9 @@ class StatusPageGenerator(HTMLPageComponent):
         # Make status table
         self.make_status_table()
 
+        # Make the history table
+        self.make_history_table()
+
     # -----------------------------------------------------------------
 
     def make_info_table(self):
@@ -122,7 +126,7 @@ class StatusPageGenerator(HTMLPageComponent):
         tuples.append(("Inclination", self.galaxy_properties.inclination))
 
         # Create the table
-        self.info_table = html.SimpleTable(tuples, header_row=["Property", "Value"], css_class=table_class, tostr_kwargs=self.tostr_kwargs)
+        self.info_table = html.SimpleTable(tuples, header_row=["Property", "Value"], css_class=hover_table_class, tostr_kwargs=self.tostr_kwargs)
 
     # -----------------------------------------------------------------
 
@@ -140,7 +144,22 @@ class StatusPageGenerator(HTMLPageComponent):
         bgcolors = [(None, color) for color in self.status.colors]
 
         # Create the table
-        self.status_table = html.SimpleTable(self.status, header_row=["Step", "Status"], bgcolors=bgcolors, css_class=table_class)
+        self.status_table = html.SimpleTable(self.status, header_row=["Step", "Status"], bgcolors=bgcolors, css_class=hover_table_class)
+
+    # -----------------------------------------------------------------
+
+    def make_history_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making the history table ...")
+
+        # Create the table
+        self.history_table = html.SimpleTable(self.history.as_tuples(), header_row=self.history.column_names, css_class=hover_table_class)
 
     # -----------------------------------------------------------------
 
@@ -184,8 +203,9 @@ class StatusPageGenerator(HTMLPageComponent):
         body = self.heading
 
         # Create titles
-        title_info = html.underline_template.format(text="GALAXY INFO")
-        title_status = html.underline_template.format(text="MODELING STATUS")
+        title_info = html.underline_template.format(text="Galaxy info")
+        title_status = html.underline_template.format(text="Modeling status")
+        title_history = html.underline_template.format(text="Modeling history")
 
         #body += html.newline + html.line
         body += html.newline + "Pages:" + html.newline
@@ -201,6 +221,8 @@ class StatusPageGenerator(HTMLPageComponent):
         body += title_info + html.newline + html.newline + str(self.info_table) + html.newline
         body += html.line + html.newline
         body += title_status + html.newline + html.newline + str(self.status_table) + html.newline + html.newline
+        body += html.line + html.newline
+        body += title_history + html.newline + html.newline + str(self.history_table) + html.newline + html.newline
 
         body += self.footing
 
