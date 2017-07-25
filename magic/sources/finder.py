@@ -38,7 +38,7 @@ from ...core.tools.parallelization import ParallelTarget
 from ..core.frame import Frame
 from ..tools import statistics
 from ...core.tools.stringify import tostr
-from ..convolution.kernels import get_fwhm
+from ..convolution.kernels import get_fwhm, has_variable_fwhm, get_average_variable_fwhm
 from ...core.tools import filesystem as fs
 from .tables import FWHMTable, StarTable, GalaxyTable
 from ..region.rectangle import SkyRectangleRegion
@@ -865,11 +865,11 @@ class SourceFinder(Configurable):
         # Get minimum pixelscale
         min_pixelscale = self.min_pixelscale
         
-        # self.config.point.fetching.catalogs # This property does not exist
-        catalogs = 'NOMAD'
+        # self.config.point.fetching.catalogs # This property does not exist => FIXED
+        #catalogs = 'NOMAD'
     
         # Fetch
-        self.point_source_catalog = self.fetcher.get_point_source_catalog(self.catalog_coordinate_box, min_pixelscale, catalogs)
+        self.point_source_catalog = self.fetcher.get_point_source_catalog(self.catalog_coordinate_box, min_pixelscale, self.config.point.fetching.catalogs)
 
     # -----------------------------------------------------------------
 
@@ -980,11 +980,11 @@ class SourceFinder(Configurable):
 
             # Get the FWHM if not defined
             if fwhm is None:
-                try:
-                    fwhm = get_fwhm(self.frames[name].filter)
-                    # This doesn't work for SDSS filters
-                except:
-                    fwhm = 0. # Brute force option
+
+                if has_variable_fwhm(self.frames[name].filter):
+                    log.warning("The FWHM of the '" + name + "' image is still undefined after point source detection and FWHM for this filter is variable. Using average value (Clark et al., 2017) to proceed.")
+                    fwhm = get_average_variable_fwhm(self.frames[name].filter)
+                else: fwhm = get_fwhm(self.frames[name].filter)
 
             # Debugging
             log.debug("The FWHM of the '" + name + "' image is " + tostr(fwhm))

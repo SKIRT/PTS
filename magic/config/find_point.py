@@ -30,7 +30,7 @@ definition.add_section("fetching", "fetching")
 # THE CATALOGS
 default_catalogs = ["II/246"]
 possible_catalogs = ["UCAC4", "NOMAD", "PPMXL", "II/246"]
-definition.add_optional("catalogs", "string_list", "catalogs for point sources", default_catalogs, possible_catalogs)
+definition.sections["fetching"].add_optional("catalogs", "string_list", "catalogs for point sources", default_catalogs, possible_catalogs)
 
 # -----------------------------------------------------------------
 

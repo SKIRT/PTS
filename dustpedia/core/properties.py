@@ -66,6 +66,19 @@ reference_for_instrument["IRAS"] = "k"
 
 # -----------------------------------------------------------------
 
+def get_fwhm(fltr):
+
+    """
+    This function ...
+    :param fltr:
+    :return:
+    """
+
+    properties = DustPediaProperties()
+    return properties.get_fwhm(fltr)
+
+# -----------------------------------------------------------------
+
 class DustPediaProperties(object):
 
     """

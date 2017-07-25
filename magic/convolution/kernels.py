@@ -164,6 +164,19 @@ def has_variable_fwhm(fltr):
 
 # -----------------------------------------------------------------
 
+def get_average_variable_fwhm(fltr):
+
+    """
+    This function ...
+    :param fltr:
+    :return:
+    """
+
+    from ...dustpedia.core.properties import get_fwhm as get_dustpedia_fwhm
+    return get_dustpedia_fwhm(fltr)
+
+# -----------------------------------------------------------------
+
 class Kernels(object):
 
     """
