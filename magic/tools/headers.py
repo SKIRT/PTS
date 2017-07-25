@@ -285,6 +285,16 @@ def get_filter(name, header=None):
         elif "k" in filterid: final_filter_name = "2MASS Ks"
         else: log.warning("Could not determine which 2MASS filter was used for this image")
 
+    # UKIDSS/UKIRT filters
+    elif "ukidss" in filterid:
+    
+        if "h" in filterid: final_filter_name = "UKIDSS H"
+        elif "j" in filterid: final_filter_name = "UKIDSS J"
+        elif "k" in filterid: final_filter_name = "UKIDSS K"
+        else: log.warning("Could not determine which UKIDSS filter was used for this image")
+    
+
+
     # IRAC filters
     elif "irac" in filterid:
 
