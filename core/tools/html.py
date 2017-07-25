@@ -168,7 +168,7 @@ def unordered_list(items, css_class=None):
 
 # -----------------------------------------------------------------
 
-def image(url, alttext=None, height=None, width=None):
+def image(url, alttext=None, height=None, width=None, hover=None):
 
     """
     This function ...
@@ -176,6 +176,7 @@ def image(url, alttext=None, height=None, width=None):
     :param alttext:
     :param height:
     :param width:
+    :param hover:
     :return:
     """
 
@@ -183,6 +184,7 @@ def image(url, alttext=None, height=None, width=None):
     if alttext is not None: code += 'alt="' + alttext + '"'
     if height is not None: code += " height=" + str(height)
     if width is not None: code += " width=" + str(width)
+    if hover is not None: code += ' onmouseover="this.src=' + "'" + hover + "';" + '" ' + 'onmouseout="this.src=' + "'" + url + "'" + ';"'
     code += ">"
     return code
 

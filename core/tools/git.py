@@ -18,6 +18,37 @@ from . import terminal
 
 # -----------------------------------------------------------------
 
+def clone(url, path, show_output=False):
+
+    """
+    This function ...
+    :param url:
+    :param path:
+    :param show_output:
+    :return:
+    """
+
+    command = "git clone " + url + " " + path
+    terminal.execute(command, show_output=show_output)
+
+# -----------------------------------------------------------------
+
+def checkout_new_branch(repo_path, branch_name, origin_branch_name, show_output=False):
+
+    """
+    Thisn function ...
+    :param repo_path:
+    :param branch_name:
+    :param origin_branch_name:
+    :param show_output:
+    :return:
+    """
+
+    command = "git -C " + repo_path + " checkout -b " + branch_name + " " + origin_branch_name
+    terminal.execute(command, show_output=show_output)
+
+# -----------------------------------------------------------------
+
 def get_hash_remote_repository(url):
 
     """

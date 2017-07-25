@@ -169,8 +169,17 @@ class RemoteMounter(object):
         # Create the pexpect child instance
         child = pexpect.spawn(command, timeout=30)
         if host.password is not None:
-            child.expect(['password: ', 'Password for ' + host.name + ": "])
-            child.sendline(host.password)
+            index = child.expect(['password: ', 'Password for ' + host.name + ": ", pexpect.EOF, pexpect.TIMEOUT])
+            if index == 0 or index == 1: child.sendline(host.password)
+            elif index == 2:
+                output = child.before.split("\r\n")[:-1]
+                for line in output:
+                    if "File exists" in line: raise IOError("Remote host is already mounted somewhere else")
+                else:
+                    print("\n".join(output))
+                    exit()
+            elif index == 3: raise RuntimeError("A timeout has occurred")
+            else: raise RuntimeError("Unknown error")
 
         if log.is_debug(): child.logfile = sys.stdout
 
