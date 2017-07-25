@@ -567,7 +567,7 @@ class SourceFinder(Configurable):
 
         # Inform the user
         log.info("Loading the frame(s) ...")
-
+        
         # Create new dataset
         if self.config.dataset.endswith(".fits"):
 
@@ -864,9 +864,12 @@ class SourceFinder(Configurable):
 
         # Get minimum pixelscale
         min_pixelscale = self.min_pixelscale
-
+        
+        # self.config.point.fetching.catalogs # This property does not exist
+        catalogs = 'NOMAD'
+    
         # Fetch
-        self.point_source_catalog = self.fetcher.get_point_source_catalog(self.catalog_coordinate_box, min_pixelscale, self.config.point.fetching.catalogs)
+        self.point_source_catalog = self.fetcher.get_point_source_catalog(self.catalog_coordinate_box, min_pixelscale, catalogs)
 
     # -----------------------------------------------------------------
 
@@ -976,7 +979,12 @@ class SourceFinder(Configurable):
             fwhm = self.frames[name].fwhm
 
             # Get the FWHM if not defined
-            if fwhm is None: fwhm = get_fwhm(self.frames[name].filter)
+            if fwhm is None:
+                try:
+                    fwhm = get_fwhm(self.frames[name].filter)
+                    # This doesn't work for SDSS filters
+                except:
+                    fwhm = 0. # Brute force option
 
             # Debugging
             log.debug("The FWHM of the '" + name + "' image is " + tostr(fwhm))
@@ -1433,7 +1441,7 @@ class SourceFinder(Configurable):
             else: path = self.output_path_file("saturation_" + name + ".reg")
 
             # Save
-            self.saturation_regions[name].saveto(path)
+            if self.saturation_regions[name] is not None: self.saturation_regions[name].saveto(path)
 
     # -----------------------------------------------------------------
 
@@ -1474,8 +1482,8 @@ class SourceFinder(Configurable):
 
             # Determine path
             if self.output_paths is not None and name in self.output_paths: path = fs.join(self.output_paths[name], "segments.fits")
-            else: path = self.output_path_file("segments_" + name + ".reg")
-
+            else: path = self.output_path_file("segments_" + name + ".fits")
+            
             # Save
             self.segments[name].saveto(path)
 
