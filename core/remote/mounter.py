@@ -172,11 +172,16 @@ class RemoteMounter(object):
             child.expect(['password: ', 'Password for ' + host.name + ": "])
             child.sendline(host.password)
 
-        child.logfile = sys.stdout
+        if log.is_debug(): child.logfile = sys.stdout
 
         # Execute the command and get the output
         child.expect(pexpect.EOF, timeout=None)
+        output = child.before
         child.close()
+
+        lines = output.split("\r\n")
+        for line in lines:
+            if "error" in line: raise RuntimeError("Something went wrong: " + line)
 
         if not fs.is_mount_point(mount_path): raise RuntimeError("An error occured during the mounting")
 

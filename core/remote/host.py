@@ -21,10 +21,23 @@ from ..tools import filesystem as fs
 from ..basics.configuration import Configuration
 from ..basics.map import Map
 from ..tools import types
+from ..basics.composite import SimplePropertyComposite
 
 # -----------------------------------------------------------------
 
 protocols = ["ssh", "smb"]
+
+# -----------------------------------------------------------------
+
+def all_host_ids():
+
+    """
+    This function ...
+    :param schedulers:
+    :return:
+    """
+
+    return find_host_ids(protocol=protocols)
 
 # -----------------------------------------------------------------
 
@@ -138,7 +151,7 @@ def load_host(host_id, clustername=None):
 
 # -----------------------------------------------------------------
 
-class Host(object):
+class Host(SimplePropertyComposite):
 
     """
     This class ...
@@ -153,7 +166,49 @@ class Host(object):
         :return:
         """
 
+        # Call the constructor of the base class
+        super(Host, self).__init__()
+
         # -- Attributes --
+
+        # Define properties
+        self.add_string_property("id", "host ID")
+        self.add_string_property("cluster_name", "name of the cluster to use")
+        self.add_string_property("name", "host name (adress)")
+        self.add_string_property("user", "username")
+        self.add_string_property("password", "user password")
+        self.add_boolean_property("scheduler", "uses scheduling system")
+        self.add_string_property("scratch_path", "scratch path")
+        self.add_string_property("output_path", "output path")
+        self.add_string_property("mount_point", "mount point")
+        self.add_string_property("mpi_command", "mpi command")
+        self.add_boolean_property("force_process_binding", "force process binding to cores")
+        self.add_boolean_property("use_hyperthreading", "enable hyperthreading")
+        self.add_real_property("maximum_walltime", "maximal allowed walltime")
+        self.add_real_property("preferred_walltime", "maximum walltime preferred by user")
+
+        # Clusters
+        #self.add_section("clusters", "clusters")
+        self.add_section("clusters", "clusters", dynamic=True)
+
+        # VPN
+        self.add_section("vpn", "vpn settings")
+        self.vpn.add_string_property("service", "VPN service name")
+        self.vpn.add_string_property("secret", "secret")
+        self.vpn.add_real_property("prompt_time_delay", "time delay between showing the prompt (for username and password) and checking for connection")
+        self.vpn.add_string_property("not_for_dns_domain", "don't connect to VPN when on this DNS domain")
+        self.vpn.add_string_property("user", "username")
+        self.vpn.add_string_property("password", "user password")
+
+        self.add_integer_property("port", "port")
+        self.add_string_property("key", "key")
+        self.add_string_property("key_password", "key password")
+        self.add_string_property("quota_command", "user quota command")
+        self.add_string_property("protocol", "protocol (ssh or smb)")
+
+        ## SET
+
+        #print("HERE", "clusters" in self.__dict__)
 
         # The host ID
         self.id = host_id
@@ -217,6 +272,45 @@ class Host(object):
 
         # Create and return
         return cls(host_id, **config)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path, update_path=True):
+
+        """
+        This function ...
+        :param path:
+        :param update_path:
+        :return:
+        """
+
+        # Create configuration object
+        config = Configuration()
+        config.name = self.name
+        config.user = self.user
+        config.password = self.password
+        config.scheduler = self.scheduler
+        config.scratch_path = self.scratch_path
+        config.output_path = self.output_path
+        config.mount_point = self.mount_point
+        config.mpi_command = self.mpi_command
+        config.force_process_binding = self.force_process_binding
+        config.use_hyperthreading = self.use_hyperthreading
+        config.maximum_walltime = self.maximum_walltime
+        config.preferred_walltime = self.preferred_walltime
+        config.clusters = self.clusters
+        config.vpn = self.vpn
+        config.port = self.port
+        config.key = self.key
+        config.key_password = self.key_password
+        config.quota_command = self.quota_command
+        config.protocol = self.protocol
+
+        # Write the host configuration
+        config.saveto(path)
+
+        # Change path
+        if update_path: self._path = path
 
     # -----------------------------------------------------------------
 

@@ -84,6 +84,19 @@ def initialize_log(config, remote=None):
 
 # -----------------------------------------------------------------
 
+def parse_logging_arguments(name, description=None, add_cwd=True):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    definition = ConfigurationDefinition(write_config=False)
+    return parse_arguments(name, definition, description, add_logging=True, add_cwd=add_cwd)
+
+# -----------------------------------------------------------------
+
 def parse_arguments(name, definition, description=None, add_logging=True, add_cwd=True):
 
     """

@@ -16,13 +16,13 @@ from __future__ import absolute_import, division, print_function
 import copy
 import warnings
 from abc import ABCMeta
-from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from ..tools import parsing
 from ..tools.logging import log
 from ..tools import formatting as fmt
-from ..tools.stringify import stringify
+from ..tools.stringify import stringify, tostr
+from .map import Map
 
 # -----------------------------------------------------------------
 
@@ -55,9 +55,6 @@ class SimplePropertyComposite(object):
         # The choices
         self._choices = dict()
 
-        # The sections
-        self._sections = OrderedDict()
-
     # -----------------------------------------------------------------
 
     def add_property(self, name, ptype, description, default_value=None, choices=None):
@@ -74,6 +71,9 @@ class SimplePropertyComposite(object):
 
         # Check
         if hasattr(self, name): raise ValueError("A property with the name '" + name + "' already exists")
+
+        # Check
+        if " " in name: raise ValueError("Name cannot contain spaces")
 
         # Set the ptype
         self._ptypes[name] = ptype
@@ -149,20 +149,37 @@ class SimplePropertyComposite(object):
 
     # -----------------------------------------------------------------
 
-    def add_section(self, name, description):
+    def add_section(self, name, description, dynamic=False):
 
         """
         This function ...
         :param name:
         :param description:
+        :param dynamic:
         :return:
         """
 
         # Set the description
         self._descriptions[name] = description
 
-        # Set an attribute that is a nested SimplePropertyComposite
-        setattr(self, name, SimplePropertyComposite())
+        # Set an attribute that is a nested SimplePropertyComposite (or a Map)
+        if dynamic: self.__dict__[name] = Map() #setattr(self, name, Map())
+        else: self.__dict__[name] = SimplePropertyComposite() #setattr(self, name, SimplePropertyComposite())
+
+    # -----------------------------------------------------------------
+
+    @property
+    def sections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        sections_dict = dict()
+        for name in self.section_names:
+            sections_dict[name] = getattr(self, name)
+        return sections_dict
 
     # -----------------------------------------------------------------
 
@@ -175,15 +192,23 @@ class SimplePropertyComposite(object):
         :return:
         """
 
+        # Hidden variable
         if name.startswith("_"):
-
-            #super(SimplePropertyComposite, self).__setattr__(name, value)
-            #return
             self.__dict__[name] = value
             return
 
         if value is None: pass
         elif isinstance(value, SimplePropertyComposite): assert name in self._descriptions
+        elif isinstance(value, Map):
+            assert name in self._descriptions
+            #print(value)
+            #print(getattr(self, name))
+            #print(name in self.__dict__)
+            for key in value:
+                keyvalue = value[key]
+                #print(self.__dict__)
+                self.__dict__[name].__setattr__(key, keyvalue)
+            return
         else:
 
             # Check the type
@@ -260,6 +285,28 @@ class SimplePropertyComposite(object):
     # -----------------------------------------------------------------
 
     @property
+    def all_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = []
+        for name in vars(self):
+
+            # Skip internal variables
+            if name.startswith("_"): continue
+
+            # Add the name
+            names.append(name)
+
+        # Return the names
+        return names
+
+    # -----------------------------------------------------------------
+
+    @property
     def property_names(self):
 
         """
@@ -272,6 +319,38 @@ class SimplePropertyComposite(object):
 
             # Skip internal variables
             if name.startswith("_"): continue
+
+            if name not in self._ptypes:
+                if not (isinstance(getattr(self, name), SimplePropertyComposite) or isinstance(getattr(self, name), Map)): raise Exception("Property '" + name + "' doesn't have its type defined")
+                else: continue
+
+            # Add the name
+            names.append(name)
+
+        # Return the names
+        return names
+
+    # -----------------------------------------------------------------
+
+    @property
+    def section_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = []
+        for name in vars(self):
+
+            # Skip internal
+            if name.startswith("_"): continue
+
+            # Skip simple properties
+            if name in self._ptypes: continue
+
+            # Should be composite
+            if not (isinstance(getattr(self, name), SimplePropertyComposite) or isinstance(getattr(self, name), Map)): raise Exception("Property '" + name + "' doesn't have its type defined")
 
             # Add the name
             names.append(name)
@@ -419,16 +498,29 @@ class SimplePropertyComposite(object):
 
         lines = []
 
-        # Loop over the variables
-        for name in vars(self):
-
-            # Skip internal variables
-            if name.startswith("_"): continue
+        # The simple properties
+        for name in self.property_names:
 
             dtype, value = stringify(getattr(self, name))
-            line = " - " + fmt.bold +  name + fmt.reset + ": " + value
+            line = " - " + fmt.bold + name + fmt.reset + ": " + value
             lines.append(line)
 
+        # Sections
+        for name in self.section_names:
+
+            line = " - " + fmt.bold + name + fmt.reset + ":"
+            lines.append(line)
+            if isinstance(getattr(self, name), SimplePropertyComposite): section_lines = ["    " + line for line in repr(getattr(self, name)).split("\n")]
+            elif isinstance(getattr(self, name), Map):
+                section_lines = []
+                section = getattr(self, name)
+                for key in section:
+                    line = "    " + " - " + fmt.bold + key + fmt.reset + ": " + tostr(section[key])
+                    section_lines.append(line)
+            else: raise ValueError("Unknown type for section: " + str(type(getattr(self, name))))
+            lines += section_lines
+
+        # Return
         return "\n".join(lines)
 
     # -----------------------------------------------------------------
@@ -462,6 +554,8 @@ class SimplePropertyComposite(object):
                 # Set the property value
                 if dtype == "None" or value.strip() == "None": properties[name] = None
                 else: properties[name] = getattr(parsing, dtype)(value)
+
+            # TODO: sections!!
 
         # Create the class instance
         composite = cls(**properties)
@@ -513,6 +607,8 @@ class SimplePropertyComposite(object):
                 actual_dtype = self._ptypes[name]
                 print(name + ":", value + " [" + actual_dtype + "]", file=fh)
 
+            # TODO: sections!!
+
         # Update the path
         self._path = path
 
@@ -530,6 +626,10 @@ class SimplePropertyComposite(object):
         for name in self.property_names:
             value = getattr(self, name)
             tuples.append((name, value))
+
+        for name in self.section_names:
+            value = getattr(self, name)
+            tuples.append((name, value.as_tuples()))
 
         # Retunr the tuples
         return tuples

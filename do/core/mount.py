@@ -15,14 +15,14 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.remote.mounter import RemoteMounter
-from pts.core.remote.host import find_host_ids
+from pts.core.remote.host import all_host_ids
 from pts.core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
 # Create the configuration definition
 definition = ConfigurationDefinition()
-definition.add_required("remote", "string", "remote host to mount", choices=find_host_ids())
+definition.add_required("remote", "string", "remote host to mount", choices=all_host_ids())
 definition.add_positional_optional("path", "directory_path", "path of directory in which to create the mount point")
 
 # Read the command line arguments
