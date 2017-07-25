@@ -187,8 +187,7 @@ class Host(SimplePropertyComposite):
         self.add_real_property("maximum_walltime", "maximal allowed walltime")
         self.add_real_property("preferred_walltime", "maximum walltime preferred by user")
 
-        # Clusters
-        #self.add_section("clusters", "clusters")
+        # Clusters: dynamic section: the number of properties in this mapping can vary from remote to remote
         self.add_section("clusters", "clusters", dynamic=True)
 
         # VPN

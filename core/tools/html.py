@@ -61,6 +61,44 @@ item = "<li>"
 
 # -----------------------------------------------------------------
 
+def make_line(css_class=None):
+
+    """
+    This function ...
+    :return: 
+    """
+
+    if css_class is None: return line
+    else: return "<hr class='" + css_class + "'>"
+
+# -----------------------------------------------------------------
+
+def make_newline(css_class=None):
+
+    """
+    This function ...
+    :param css_class:
+    :return:
+    """
+
+    if css_class is None: return line
+    else: return "<br class='" + css_class + "'>"
+
+# -----------------------------------------------------------------
+
+def make_item(css_class=None):
+
+    """
+    This function ...
+    :param css_class:
+    :return:
+    """
+
+    if css_class is None: return item
+    else: return "<li class='" + css_class + "'>"
+
+# -----------------------------------------------------------------
+
 underline_template = "<span style='text-decoration: underline;'>{text}</span>"
 bold_template = "<span style='font-weight:bold'>{text}</span>"
 fontsize_template = "<span style='font-size:{size}px'>{text}</span>"
