@@ -19,6 +19,7 @@ import shutil
 import platform
 import subprocess
 import datetime
+import filecmp
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
@@ -850,6 +851,34 @@ def nfiles_in_path(*args, **kwargs):
 
 # -----------------------------------------------------------------
 
+def ndirectories_in_path(*args, **kwargs):
+
+    """
+    This function ...
+    :param args:
+    :param kwargs:
+    :return:
+    """
+
+    return len(directories_in_path(*args, **kwargs))
+
+# -----------------------------------------------------------------
+
+def nitems_in_path(*args, **kwargs):
+
+    """
+    This function ...
+    :param args: 
+    :param kwargs: 
+    :return: 
+    """
+
+    files = files_in_path(*args, **kwargs)
+    directories = directories_in_path(*args, **kwargs)
+    return len(files) + len(directories)
+
+# -----------------------------------------------------------------
+
 def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None,
                   extensions=False, returns="path", exact_name=None, exact_not_name=None, startswith=None, endswith=None,
                   sort=None, contains_operator="OR", recursion_level=None, unpack=False):
@@ -1287,18 +1316,22 @@ def rename_directory(parent, original_name, new_name):
 
 # -----------------------------------------------------------------
 
-def copy_file(file_path, directory_path, new_name=None):
+def copy_file(file_path, directory_path, new_name=None, remove=False):
 
     """
     This function ...
     :param file_path:
     :param directory_path:
     :param new_name:
+    :param remove:
     :return:
     """
 
     if new_name is not None: destination = join(directory_path, new_name)
     else: destination = directory_path
+
+    # Remove previous
+    if is_file(destination) and remove: remove_file(destination)
 
     # Copy
     shutil.copy(file_path, destination)
@@ -1903,5 +1936,208 @@ def appended_filepath(filepath, append_with):
     """
 
     return join(directory_of(filepath), appended_filename(filepath, append_with))
+
+# -----------------------------------------------------------------
+
+def equal_files(filepath_a, filepath_b, shallow=True):
+
+    """
+    This function ...
+    :param filepath_a:
+    :param filepath_b:
+    :param shallow:
+    :return:
+    """
+
+    return filecmp.cmp(filepath_a, filepath_b, shallow=shallow)
+
+# -----------------------------------------------------------------
+
+def equal_directories(directory_a, directory_b, shallow=True, create=False):
+
+    """
+    Compare two directories recursively. Files in each directory are
+    assumed to be equal if their names and contents are equal.
+
+    @param dir1: First directory path
+    @param dir2: Second directory path
+
+    @return: True if the directory trees are the same and
+        there were no errors while accessing the directories or files,
+        False otherwise.
+    """
+
+    # Check existence
+    if not is_directory(directory_a):
+        if create: create_directory(directory_a)
+        else: raise ValueError("The directory '" + directory_a + "' does not exist")
+    if not is_directory(directory_b):
+        if create: create_directory(directory_b)
+        else: raise ValueError("The directory '" + directory_b + "' does not exist")
+
+    # Do directory comparison
+    dirs_cmp = filecmp.dircmp(directory_a, directory_b)
+    if len(dirs_cmp.left_only) > 0 or len(dirs_cmp.right_only) > 0 or len(dirs_cmp.funny_files) > 0: return False
+
+    # Check files
+    (_, mismatch, errors) = filecmp.cmpfiles(directory_a, directory_b, dirs_cmp.common_files, shallow=shallow)
+    if len(mismatch) > 0 or len(errors) > 0: return False
+
+    # Loop over common directories and check them
+    for common_dir in dirs_cmp.common_dirs:
+
+        # Get paths
+        new_dir1 = os.path.join(directory_a, common_dir)
+        new_dir2 = os.path.join(directory_b, common_dir)
+
+        # Recursively call this function
+        if not equal_directories(new_dir1, new_dir2, shallow=shallow): return False
+
+    # All checks passed
+    return True
+
+# -----------------------------------------------------------------
+
+def equal_number_of_files(directory_a, directory_b, recursive=True, create=False):
+
+    """
+    This function ...
+    :param directory_a:
+    :param directory_b:
+    :param recursive:
+    :param create:
+    :return:
+    """
+
+    # Get the number of files in directory a
+    if is_directory(directory_a): nfiles_a = nfiles_in_path(directory_a, recursive=recursive)
+    else:
+        if create: create_directory(directory_a)
+        else: raise ValueError("The directory '" + directory_a + "' does not exist")
+        nfiles_a = 0
+
+    # Get the number of files in directory b
+    if is_directory(directory_b): nfiles_b = nfiles_in_path(directory_b, recursive=recursive)
+    else:
+        if create: create_directory(directory_b)
+        else: raise ValueError("The directory '" + directory_b + "' does not exist")
+        nfiles_b = 0
+
+    # Compare
+    return nfiles_a == nfiles_b
+
+# -----------------------------------------------------------------
+
+def equal_number_of_directories(directory_a, directory_b, recursive=True, create=False):
+
+    """
+    This function ...
+    :param directory_a:
+    :param directory_b:
+    :param recursive:
+    :param create:
+    :return:
+    """
+
+    # Get the number of directories
+    if is_directory(directory_a): ndirectories_a = ndirectories_in_path(directory_a, recursive=recursive)
+    else:
+        if create: create_directory(directory_a)
+        else: raise ValueError("The directory '" + directory_a + "' does not exist")
+        ndirectories_a = 0
+
+    # Get the number of directories
+    if is_directory(directory_b): ndirectories_b = ndirectories_in_path(directory_b, recursive=recursive)
+    else:
+        if create: create_directory(directory_b)
+        else: raise ValueError("The directory '" + directory_b + "' does not exist")
+        ndirectories_b = 0
+
+    # Compare
+    return ndirectories_a == ndirectories_b
+
+# -----------------------------------------------------------------
+
+def equal_number_of_items(directory_a, directory_b, recursive=True, create=False):
+
+    """
+    This function ...
+    :param directory_a:
+    :param directory_b:
+    :param recursive:
+    :param create:
+    :return:
+    """
+
+    # Get the number of items
+    if is_directory(directory_a): nitems_a = nitems_in_path(directory_a, recursive=recursive)
+    else:
+        if create: create_directory(directory_a)
+        else: raise ValueError("The directory '" + directory_a + "' does not exist")
+        nitems_a = 0
+
+    # Get the number of items
+    if is_directory(directory_b): nitems_b = nitems_in_path(directory_b, recursive=recursive)
+    else:
+        if create: create_directory(directory_b)
+        else: raise ValueError("The directory '" + directory_b + "' does not exist")
+        nitems_b = 0
+
+    # Compare
+    return nitems_a == nitems_b
+
+# -----------------------------------------------------------------
+
+def update_file(source, target, create=False):
+
+    """
+    This function ...
+    :param source:
+    :param target:
+    :param create:
+    :return:
+    """
+
+    # Source does not exist
+    if not is_file(source): raise ValueError("The file '" + source + "' does not exist")
+
+    # Target does not yet exist
+    if not is_file(target):
+
+        if create: copy_file(source, target)
+        else: raise ValueError("The file '" + target + "' does not exist")
+        return True
+
+    # Replace if not equal
+    elif not equal_files(source, target):
+        replace_file(target, source)
+        return True
+
+    # No update required
+    return False
+
+# -----------------------------------------------------------------
+
+def update_directory(source, target, create=False):
+
+    """
+    This function ...
+    :param source:
+    :param target:
+    :param create:
+    :return:
+    """
+
+    # Source directory does not exist
+    if not is_directory(source): raise ValueError("The directory '" + source + "' does not exist")
+
+    # if not fs.equal_number_of_files(fonts_path, mount_fonts_path, create=True):
+    if not equal_directories(source, target, create=create):
+        clear_directory(target)
+        copy_from_directory(source, target)
+        return True
+
+    # No update required
+    else: return False
 
 # -----------------------------------------------------------------
