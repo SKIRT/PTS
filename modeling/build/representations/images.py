@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.build.sedrepresentation Contains the SEDRepresentationBuilder class.
+## \package pts.modeling.build.representations.images Contains the ImagesRepresentationBuilder class.
 
 # -----------------------------------------------------------------
 
@@ -13,18 +13,21 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from .component import BuildComponent
-from ...core.tools import filesystem as fs
-from ..basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument
-from ...core.tools.logging import log
-from .representation import Representation
-from ..component.sed import get_ski_template
-from ..basics.projection import GalaxyProjection, FaceOnProjection, EdgeOnProjection
-from .representation import RepresentationBuilderBase
+from ....core.tools import filesystem as fs
+from ...basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument
+from ....core.tools.logging import log
+from ..representation import Representation
+from ...component.sed import get_ski_template
+from ...basics.projection import GalaxyProjection, FaceOnProjection, EdgeOnProjection
+from .base import RepresentationBuilderBase
 
 # -----------------------------------------------------------------
 
-class SEDRepresentationBuilder(RepresentationBuilderBase):
+# TODO: now this is just a copy of the SEDRepresentationBuilder class
+
+# -----------------------------------------------------------------
+
+class ImagesRepresentationBuilder(RepresentationBuilderBase):
     
     """
     This class...
@@ -39,7 +42,7 @@ class SEDRepresentationBuilder(RepresentationBuilderBase):
         """
 
         # Call the constructor of the base class
-        super(SEDRepresentationBuilder, self).__init__(*args, **kwargs)
+        super(ImagesRepresentationBuilder, self).__init__(*args, **kwargs)
 
         # The ski file template
         self.ski = None
@@ -89,7 +92,7 @@ class SEDRepresentationBuilder(RepresentationBuilderBase):
         """
 
         # Call the setup function of the base class
-        super(SEDRepresentationBuilder, self).setup(**kwargs)
+        super(ImagesRepresentationBuilder, self).setup(**kwargs)
 
         # Create the model definition
         self.definition = self.get_model_definition(self.config.model_name)

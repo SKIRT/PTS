@@ -50,11 +50,13 @@ single_commands["make_young_stellar_maps"] = galaxy_modeling
 single_commands["make_ionizing_stellar_maps"] = galaxy_modeling
 single_commands["create_significance_masks"] = galaxy_modeling
 single_commands["plot_sed"] = sed_modeling # only for SEDModeler
-single_commands["build_model"] = galaxy_modeling
-single_commands["build_sed"] = sed_modeling
-single_commands["build_images"] = images_modeling
+single_commands["build_model_galaxy"] = galaxy_modeling
+single_commands["build_model_sed"] = sed_modeling
+single_commands["build_model_images"] = images_modeling
 single_commands["generate_representations"] = galaxy_modeling
-single_commands["buildsedrepresentation"] = sed_modeling
+single_commands["build_representation_galaxy"] = galaxy_modeling
+single_commands["build_representation_sed"] = sed_modeling
+single_commands["build_representation_images"] = images_modeling
 single_commands["configure_fit"] = all_modeling
 single_commands["initialize_fit_sed"] = sed_modeling # for sed modeling
 single_commands["initialize_fit_galaxy"] = galaxy_modeling # for galaxy modeling
@@ -188,13 +190,25 @@ def output_paths_for_single_command(environment, command_name):
     elif command_name == "plot_sed": return []
 
     # Build model
-    elif command_name == "build_model": return []
+    elif command_name == "build_model_galaxy": return []
+
+    # Build model for SED modeling
+    elif command_name == "build_model_sed": return []
+
+    # Build model for images modeling
+    elif command_name == "build_model_images": return []
 
     #
     elif command_name == "generate_representations": return []
 
+    # Build representation for galaxy model
+    elif command_name == "build_representation_galaxy": return []
+
     # Build representation for SED modeling
-    elif command_name == "buildsedrepresentation": return []
+    elif command_name == "build_representation_sed": return []
+
+    # Build representation for images modeling
+    elif command_name == "build_representation_images": return []
 
     # Configure fit
     elif command_name == "configure_fit": return []
@@ -285,13 +299,25 @@ def cached_directory_name_for_single_command(environment, command_name):
     elif command_name == "plot_sed": return None
 
     # Build model
-    elif command_name == "build_model": return None
+    elif command_name == "build_model_galaxy": return None
+
+    # Build model for SED modeling
+    elif command_name == "build_model_sed": return None
+
+    # Build model for images modeling
+    elif command_name == "build_model_images": return None
 
     #
     elif command_name == "generate_representations": return None
 
+    # Build representation
+    elif command_name == "build_representation_galaxy": return None
+
     # Build representation for SED modeling
-    elif command_name == "buildsedrepresentation": return None
+    elif command_name == "build_representation_sed": return None
+
+    # Build representation for images modeling
+    elif command_name == "build_representation_images": return None
 
     # Configure fit
     elif command_name == "configure_fit": return None

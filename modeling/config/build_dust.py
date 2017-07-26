@@ -7,8 +7,6 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.modeling.build.component import get_model_names
-from pts.core.tools import filesystem as fs
 from pts.modeling.maps.component import get_dust_map_names
 from pts.core.units.parsing import parse_quantity
 from pts.modeling.core.environment import verify_modeling_cwd

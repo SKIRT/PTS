@@ -22,7 +22,7 @@ from ...core.basics.emissionlines import EmissionLines
 from ...core.prep.wavelengthgrids import create_one_subgrid_wavelength_grid
 from .select import select_from_model_suite, select_from_fitting_context
 from ...core.prep.dustgrids import create_one_dust_grid_for_galaxy_from_deprojection
-from ..build.representation import create_projections_from_dust_grid, create_projections_from_deprojections
+from ..build.representations.galaxy import create_projections_from_dust_grid, create_projections_from_deprojections
 from ...core.basics.configuration import prompt_yn
 
 # -----------------------------------------------------------------

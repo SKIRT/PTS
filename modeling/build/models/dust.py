@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.build.dust Contains the DustBuilder class.
+## \package pts.modeling.build.models.dust Contains the DustBuilder class.
 
 # -----------------------------------------------------------------
 
@@ -13,14 +13,14 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ...core.basics.configuration import prompt_proceed, ConfigurationDefinition, InteractiveConfigurationSetter, prompt_string
-from ...core.tools.logging import log
+from ....core.basics.configuration import prompt_proceed, ConfigurationDefinition, InteractiveConfigurationSetter, prompt_string
+from ....core.tools.logging import log
 from .general import GeneralBuilder
-from .component import model_map_filename
-from ...core.tools import filesystem as fs
-from ...magic.core.frame import Frame
+from ..suite import model_map_filename
+from ....core.tools import filesystem as fs
+from ....magic.core.frame import Frame
 #from ..maps.component import get_dust_maps_path
-from ..component.galaxy import GalaxyModelingComponent
+from ...component.galaxy import GalaxyModelingComponent
 from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------

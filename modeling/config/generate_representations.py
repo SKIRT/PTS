@@ -7,7 +7,7 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
-from pts.modeling.config.build_representation import dust_grid_types, default_dust_grid_type
+from pts.modeling.config.build_representation_galaxy import dust_grid_types, default_dust_grid_type
 from pts.modeling.build.suite import ModelSuite
 from pts.modeling.core.environment import verify_modeling_cwd
 

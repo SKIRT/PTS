@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.build.sed Contains the SEDModelBuilder class.
+## \package pts.modeling.build.models.sed Contains the SEDModelBuilder class.
 
 # -----------------------------------------------------------------
 
@@ -13,18 +13,17 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from .component import BuildComponent
-from ...core.tools.logging import log
-from ...core.tools import filesystem as fs
-from ..component.sed import get_ski_template, get_ski_input_path
-from ...core.tools.serialization import write_dict
-from ...magic.core.frame import Frame
-from .component import model_map_filename
-from .model import ModelBuilderBase
+from ....core.tools.logging import log
+from ....core.tools import filesystem as fs
+from ...component.sed import get_ski_template, get_ski_input_path
+from ....core.tools.serialization import write_dict
+from ....magic.core.frame import Frame
+from ..suite import model_map_filename
+from .base import ModelBuilderBase
 
 # -----------------------------------------------------------------
 
-class ImagesModelBuilder(ModelBuilderBase):
+class SEDModelBuilder(ModelBuilderBase):
     
     """
     This class...
@@ -39,7 +38,7 @@ class ImagesModelBuilder(ModelBuilderBase):
         """
 
         # Call the constructor of the base class
-        super(ImagesModelBuilder, self).__init__(*args, **kwargs)
+        super(SEDModelBuilder, self).__init__(*args, **kwargs)
 
         # The path for the other input files
         self.model_input_path = None
@@ -120,7 +119,7 @@ class ImagesModelBuilder(ModelBuilderBase):
         """
 
         # Call the setup function of the base class
-        super(ImagesModelBuilder, self).setup(**kwargs)
+        super(SEDModelBuilder, self).setup(**kwargs)
 
         # Set the path of the input directory
         self.model_input_path = fs.create_directory_in(self.model_path, "input")
@@ -330,7 +329,7 @@ class ImagesModelBuilder(ModelBuilderBase):
         for name in self.stellar_properties:
 
             # Create a directory
-            component_path = fs.join(self.model_stellar_path, str(name)) # name (component ID) can be an integer
+            component_path = fs.join(self.model_stellar_path, str(name)) # name (component ID can be an integer)
             fs.create_directory(component_path)
 
             # Set the path

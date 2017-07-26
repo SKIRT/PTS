@@ -148,6 +148,19 @@ def stringify(value, **kwargs):
 
 # -----------------------------------------------------------------
 
+def get_parsing_type(value):
+
+    """
+    This function ...
+    :param value:
+    :return:
+    """
+
+    ptype, string = stringify(value)
+    return ptype
+
+# -----------------------------------------------------------------
+
 def can_get_item(value):
 
     """

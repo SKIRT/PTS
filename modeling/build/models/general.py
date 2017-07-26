@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.build.general Contains the GeneralBuilder class, a base class for StarsBuilder and DustBuilder.
+## \package pts.modeling.build.models.general Contains the GeneralBuilder class, a base class for StarsBuilder and DustBuilder.
 
 # -----------------------------------------------------------------
 
@@ -16,12 +16,12 @@ from __future__ import absolute_import, division, print_function
 from abc import ABCMeta, abstractmethod
 
 # Import the relevant PTS classes and modules
-from .component import BuildComponent
-from ...core.tools.logging import log
-from ...core.prep.smile import SKIRTSmileSchema
-from ...core.tools import filesystem as fs
-from ...core.tools.serialization import write_dict
-from .component import parameters_filename, deprojection_filename, model_map_filename, model_filename, properties_filename
+from ..component import BuildComponent
+from ....core.tools.logging import log
+from ....core.prep.smile import SKIRTSmileSchema
+from ....core.tools import filesystem as fs
+from ....core.tools.serialization import write_dict
+from ..suite import parameters_filename, deprojection_filename, model_map_filename, model_filename, properties_filename
 
 # -----------------------------------------------------------------
 

@@ -23,8 +23,8 @@ from ...core.basics.range import IntegerRange, QuantityRange
 from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, DictConfigurationSetter
 from ..core.environment import ImagesModelingEnvironment
 from ..component.images import get_ski_input_path
-from ..build.images import ImagesModelBuilder
-from ..build.imagesrepresentation import ImagesRepresentationBuilder
+from ..build.models.images import ImagesModelBuilder
+from ..build.representations.images import ImagesRepresentationBuilder
 from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------

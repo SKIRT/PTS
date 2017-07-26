@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.build.stars Contains the StarsBuilder class.
+## \package pts.modeling.build.models.stars Contains the StarsBuilder class.
 
 # -----------------------------------------------------------------
 
@@ -17,20 +17,20 @@ import math
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log
-from ...core.basics.configuration import ConfigurationDefinition
-from ...core.basics.configuration import InteractiveConfigurationSetter, prompt_proceed, prompt_string
-from ...core.units.parsing import parse_unit as u
-from ..core.mappings import Mappings
+from ....core.tools.logging import log
+from ....core.basics.configuration import ConfigurationDefinition
+from ....core.basics.configuration import InteractiveConfigurationSetter, prompt_proceed, prompt_string
+from ....core.units.parsing import parse_unit as u
+from ...core.mappings import Mappings
 from .general import GeneralBuilder
-from .component import model_map_filename
-from ...core.tools import filesystem as fs
-from ...magic.core.frame import Frame
+from ..suite import model_map_filename
+from ....core.tools import filesystem as fs
+from ....magic.core.frame import Frame
 #from ..maps.component import get_old_stars_maps_path, get_young_stars_maps_path, get_ionizing_stars_maps_path
-from ..component.galaxy import GalaxyModelingComponent
-from ...core.tools import types
-from ...magic.tools import extinction
-from pts.core.tools.utils import lazyproperty
+from ...component.galaxy import GalaxyModelingComponent
+from ....core.tools import types
+from ....magic.tools import extinction
+from ....core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 

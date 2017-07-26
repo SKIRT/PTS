@@ -38,9 +38,9 @@ from .base import ModelerBase
 from ..config.parameters import units as parameter_units
 from ..config.parameters import default_ranges, types, parameter_descriptions
 from ...core.units.parsing import parse_unit as u
-from ..build.model import ModelBuilder
-from ..build.representation import RepresentationBuilder
-from ..build.representations import RepresentationGenerator
+from ..build.models.galaxy import GalaxyModelBuilder
+from ..build.representations.galaxy import GalaxyRepresentationBuilder
+from ..build.representations.generator import RepresentationGenerator
 from ..component.galaxy import get_galaxy_properties_path, get_data_seds_path, get_data_images_path, get_dustpedia_sed
 from ...core.tools import filesystem as fs
 from ...core.filter.filter import parse_filter
@@ -1105,7 +1105,7 @@ class GalaxyModeler(ModelerBase):
         #################
 
         # Create the builder
-        builder = ModelBuilder(config)
+        builder = GalaxyModelBuilder(config)
 
         # Set the working directory
         builder.config.path = self.modeling_path
@@ -1135,7 +1135,7 @@ class GalaxyModeler(ModelerBase):
         config["model_name"] = self.model_name
 
         # Create the builder
-        builder = RepresentationBuilder(config)
+        builder = GalaxyRepresentationBuilder(config)
 
         # Run the builder
         with self.write_log(builder), self.history.register(builder), self.write_config(builder): builder.run()

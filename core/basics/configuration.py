@@ -97,17 +97,56 @@ def parse_logging_arguments(name, description=None, add_cwd=True):
 
 # -----------------------------------------------------------------
 
-def create_definition(*args, **kwargs):
+def create_definition(**kwargs):
 
     """
     This function ...
-    definition = create_definition(a, b, c, d=None, e="default", f=False)
+    definition = create_definition(a, b, c, d=None, e="default", f=False) # CANNOT WORK
+    # ONLY OPTIONAL AND FLAGS
     :param args:
     :param kwargs:
     :return:
     """
 
-    pass
+    definition = ConfigurationDefinition(write_config=False)
+    for name in kwargs:
+
+        default = kwargs[name]
+        description = "value for '" + name + "'"
+
+        if types.is_boolean_type(default): definition.add_flag(name, description, default)
+        elif types.is_none(default): raise ValueError("Type cannot be defined when None is given as default")
+        else:
+            # Add optional argument
+            ptype = stringify.get_parsing_type(default)
+            definition.add_optional(name, ptype, description, default=default)
+
+    # Return the definition
+    return definition
+
+# -----------------------------------------------------------------
+
+def prompt_settings(name, definition, description=None, add_logging=True, add_cwd=True):
+
+    """
+    This function ...
+    :param name:
+    :param definition:
+    :param description:
+    :param add_logging:
+    :param add_cwd:
+    :return:
+    """
+
+    # Create the configuration
+    setter = InteractiveConfigurationSetter(name, description=description, add_logging=add_logging, add_cwd=add_cwd)
+    config = setter.run(definition, prompt_optional=True)
+
+    # Initialize the logger
+    log = initialize_log(config)
+
+    # Return the configuration
+    return config
 
 # -----------------------------------------------------------------
 

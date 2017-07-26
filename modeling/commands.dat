@@ -37,14 +37,15 @@ create_significance_masks | -- | maps.significance.SignificanceMaskCreator | arg
 photometry | -- | photometry.photometry.PhotoMeter | interactive | Calculate the photometry of the different input images
 
 # MODEL BUILDING
-build_sed | -- | build.sed.SEDModelBuilder | arguments | Build the model for SED modeling
-build_images | -- | build.images.ImagesModelBuilder | arguments | Build the model for images modeling
-build_model | -- | build.model.ModelBuilder | interactive | Build the model for galaxy modeling
-build_stars | -- | build.stars.StarsBuilder | interactive | Build stellar components of model
-build_dust | -- | build.dust.DustBuilder | interactive | Build dust components of model
-build_representation | -- | build.representation.RepresentationBuilder | interactive | Build model representation
-buildsedrepresentation | -- | build.sedrepresentation.SEDRepresentationBuilder | arguments | Build model representation for SED modeling
-generate_representations | -- | build.representations.RepresentationsGenerator | interactive | Generate model representations
+build_model_galaxy | -- | build.models.galaxy.GalaxyModelBuilder | interactive | Build the model for galaxy modeling
+build_model_sed | -- | build.models.sed.SEDModelBuilder | arguments | Build the model for SED modeling
+build_model_images | -- | build.models.images.ImagesModelBuilder | arguments | Build the model for images modeling
+*build_stars | -- | build.models.stars.StarsBuilder | interactive | Build stellar components of model
+*build_dust | -- | build.models.dust.DustBuilder | interactive | Build dust components of model
+build_representation_galaxy | -- | build.representations.galaxy.GalaxyRepresentationBuilder | interactive | Build galaxy model representation
+build_representation_sed | -- | build.representations.sed.SEDRepresentationBuilder | arguments | Build model representation for SED modeling
+build_representation_images | -- | build.representations.images.ImagesRepresentationBuilder | arguments | Build model representation for images modeling
+generate_representations | -- | build.representations.generator.RepresentationsGenerator | interactive | Generate galaxy model representations
 
 # FITTING
 configure_fit | -- | fitting.configuration.FittingConfigurer | arguments | Configure the fitting procedure

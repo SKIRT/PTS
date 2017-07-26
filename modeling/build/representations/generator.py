@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.build.representations Contains the RepresentationsGenerator class.
+## \package pts.modeling.build.representations.generator Contains the RepresentationsGenerator class.
 
 # -----------------------------------------------------------------
 
@@ -19,18 +19,18 @@ from collections import OrderedDict
 from astropy.units import dimensionless_angles
 
 # Import the relevant PTS classes and modules
-from .component import BuildComponent
-from ..component.galaxy import GalaxyModelingComponent
-from ...core.prep.dustgrids import DustGridGenerator
-from ...core.tools.logging import log
-from ...core.basics.range import QuantityRange, RealRange
-from .representation import RepresentationBuilder
-from ...core.tools import time
-from ...core.tools import tables
-from ...core.tools import filesystem as fs
-from ...core.prep.templates import get_pan_template
-from ...core.advanced.dustgridtool import generate_grid
-from ...core.simulation.grids import load_grid
+from ..component import BuildComponent
+from ...component.galaxy import GalaxyModelingComponent
+from ....core.prep.dustgrids import DustGridGenerator
+from ....core.tools.logging import log
+from ....core.basics.range import QuantityRange, RealRange
+from .galaxy import GalaxyRepresentationBuilder
+from ....core.tools import time
+from ....core.tools import tables
+from ....core.tools import filesystem as fs
+from ....core.prep.templates import get_pan_template
+from ....core.advanced.dustgridtool import generate_grid
+from ....core.simulation.grids import load_grid
 
 # -----------------------------------------------------------------
 
@@ -183,7 +183,7 @@ class RepresentationGenerator(BuildComponent, GalaxyModelingComponent):
         for index, grid in enumerate(self.dg_generator.grids):
 
             # Create builder
-            builder = RepresentationBuilder(cwd=self.config.path)
+            builder = GalaxyRepresentationBuilder(cwd=self.config.path)
 
             # Determine a name for this representation
             name = "grid" + str(index)
