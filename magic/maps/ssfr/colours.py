@@ -108,6 +108,7 @@ class ColoursSSFRMapsMaker(Configurable):
 
         # Get maps that have already been created
         if "maps" in kwargs: self.maps = kwargs.pop("maps")
+        
 
     # -----------------------------------------------------------------
 

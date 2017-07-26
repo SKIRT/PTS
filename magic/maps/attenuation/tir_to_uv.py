@@ -67,10 +67,11 @@ def make_tir_to_uv(tir, fuv, **kwargs):
     # FIRST CONVERT THEM BOTH (UNITS ARE IN FACT DIFFERENT, ONE IS DENSITY, OTHER IS NOT)
     fuv = fuv.copy()
     fuv.convert_to("W/m2", density=True, density_strict=True, **kwargs) # here it is a neutral density!
-
+    
     tir = tir.copy()
     tir.convert_to("W/m2", density=False, density_strict=True, **kwargs) # here it is bolometric!
 
+    
     #frames.convert_to_same_unit("W/m2", density=True)
 
     ## TIR IN W/M2
@@ -79,10 +80,10 @@ def make_tir_to_uv(tir, fuv, **kwargs):
     frames = NamedFrameList(fuv=fuv, tir=tir)
     frames.convolve_and_rebin()
 
+    
     # CALCULATE TIR TO FUV RATIO
-
     #print(frames.names)
-
+    
     # The ratio of TIR and FUV
     tir_to_fuv = frames["tir"] / frames["fuv"]
 
