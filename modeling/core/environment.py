@@ -328,7 +328,7 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         # Set the ...
         self.data_images_path = fs.create_directory_in(self.data_path, "images")
 
-        # FROM MAPSCOMPONENT:
+        # DIFFERENT MAPS SUBDIRECTORIES:
 
         # The path to the maps/colours directory
         self.maps_colours_path = fs.create_directory_in(self.maps_path, colours_name)
@@ -353,6 +353,9 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
         # Set the path to the maps/dust directory
         self.maps_dust_path = fs.create_directory_in(self.maps_path, dust_name)
+
+        # NEW: Set the path to the maps/html directory
+        self.maps_html_path = fs.create_directory_in(self.maps_path, "html")
 
         # NEW
 

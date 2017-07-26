@@ -600,6 +600,18 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def maps_html_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.maps_html_path
+
+    # -----------------------------------------------------------------
+
     def get_origins_sub_name(self, name, flatten=False, method=None):
 
         """

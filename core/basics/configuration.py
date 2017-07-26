@@ -97,6 +97,20 @@ def parse_logging_arguments(name, description=None, add_cwd=True):
 
 # -----------------------------------------------------------------
 
+def create_definition(*args, **kwargs):
+
+    """
+    This function ...
+    definition = create_definition(a, b, c, d=None, e="default", f=False)
+    :param args:
+    :param kwargs:
+    :return:
+    """
+
+    pass
+
+# -----------------------------------------------------------------
+
 def parse_arguments(name, definition, description=None, add_logging=True, add_cwd=True):
 
     """
