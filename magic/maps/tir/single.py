@@ -163,7 +163,7 @@ class SingleBandTIRMapMaker(Configurable):
 
             # Get the parameters
             a, b = self.galametz.get_parameters_single_brightness(fltr)
-
+            
             # Get the frame
             frame = self.frames[fltr]
 
@@ -174,8 +174,11 @@ class SingleBandTIRMapMaker(Configurable):
             #log.debug("Conversion factor: " + str(factor))
 
             # Calculate the TIR map in W/kpc2 (intrinsic surface brightness)
-            logtir = a * np.log(frame.data) + b
+            
+            logtir = a * np.log10(frame.data) + b
+
             tir = Frame(10**logtir)
+
             tir.unit = u("W/kpc2", density=False, brightness=True, density_strict=True, brightness_strict=True) # TIR can only be bolometric, right??
             #tir.unit = u("W/kpc2", density=True, brightness=True, density_strict=True, brightness_strict=True)
             tir.wcs = frame.wcs
