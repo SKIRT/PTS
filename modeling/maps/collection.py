@@ -30,6 +30,7 @@ from pts.core.tools.utils import lazyproperty
 # -----------------------------------------------------------------
 
 origins_filename = "origins.txt"
+methods_filename = "methods.txt"
 
 # -----------------------------------------------------------------
 
@@ -359,56 +360,7 @@ class MapsCollection(object):
         :return: 
         """
 
-        # Determine path
-        sub_path = fs.join(self.maps_path, name)
-        if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
-        direct_origins_path = fs.join(sub_path, origins_filename)
-
-        # No subdirectories
-        if fs.is_file(direct_origins_path): origins = load_dict(direct_origins_path)
-
-        # Subdirectories
-        else:
-
-            if method is not None:
-
-                # Check whether valid method
-                method_path = fs.join(sub_path, method)
-                if not fs.is_directory(method_path): raise ValueError("Could not find a directory for the '" + method + "' method")
-                origins_path = fs.join(method_path, origins_filename)
-                if not fs.is_file(origins_path): raise ValueError("File '" + origins_path + "' is missing")
-
-                # Load the origins
-                origins = load_dict(origins_path)
-
-            else:
-
-                # Initialize
-                origins = dict()
-
-                # Loop over subdirectories
-                for method_path in fs.directories_in_path(sub_path):
-
-                    origins_path = fs.join(method_path, origins_filename)
-                    if not fs.is_file(origins_path): raise ValueError("File '" + origins_path + "' is missing")
-
-                    #print(origins_path)
-
-                    # Determine method
-                    method_name = fs.name(method_path)
-
-                    # Load the origins for this method
-                    origins_method = load_dict(origins_path)
-
-                    # Flatten into a one-level dict
-                    if flatten:
-                        for map_name in origins_method: origins[method_name + "_" + map_name] = origins_method[map_name]
-
-                    # Don't flatten: get nested dict
-                    else: origins[method_name] = origins_method
-
-        # Return the origins
-        return origins
+        return get_origins_sub_name(self.environment, name, flatten=flatten, method=method)
 
     # -----------------------------------------------------------------
 
@@ -426,7 +378,21 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_maps_sub_names(self, flatten=False):
+    def get_methods_sub_name(self, name, flatten=False, method=None):
+
+        """
+        This function ...
+        :param name:
+        :param flatten:
+        :param method:
+        :return:
+        """
+
+        return get_methods_sub_name(self.environment, name, flatten=flatten, method=method)
+
+    # -----------------------------------------------------------------
+
+    def get_methods_sub_names(self, flatten=False):
 
         """
         This function ...
@@ -434,9 +400,11 @@ class MapsCollection(object):
         :return:
         """
 
-        maps = dict()
-        for name in self.maps_sub_names: maps[name] = self.get_maps_sub_name(name, flatten=flatten)
-        return maps
+        methods = dict()
+        for name in self.maps_sub_names: methods[name] = self.get_methods_sub_name(name, flatten=flatten)
+        return methods
+
+    # -----------------------------------------------------------------
 
     # ORIGINS
 
@@ -974,6 +942,20 @@ class MapsCollection(object):
 
         return get_maps_sub_name(self.environment, self.history, name, flatten=flatten, framelist=framelist, method=method)
 
+    # -----------------------------------------------------------------
+
+    def get_maps_sub_names(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        maps = dict()
+        for name in self.maps_sub_names: maps[name] = self.get_maps_sub_name(name, flatten=flatten)
+        return maps
+
 # -----------------------------------------------------------------
 
 def get_map_paths_sub_name(environment, name, flatten=False, method=None):
@@ -1105,5 +1087,130 @@ def get_maps_sub_name(environment, history, name, flatten=False, framelist=False
     # Return the maps
     if framelist: return NamedFrameList(**maps)
     else: return maps
+
+# -----------------------------------------------------------------
+
+def get_origins_sub_name(environment, name, flatten=False, method=None):
+
+    """
+    This function ...
+    :param environment:
+    :param name:
+    :param flatten:
+    :param method:
+    :return:
+    """
+
+    # Determine path
+    sub_path = fs.join(environment.maps_path, name)
+    if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
+    direct_origins_path = fs.join(sub_path, origins_filename)
+
+    # No subdirectories
+    if fs.is_file(direct_origins_path): origins = load_dict(direct_origins_path)
+
+    # Subdirectories
+    else:
+
+        if method is not None:
+
+            # Check whether valid method
+            method_path = fs.join(sub_path, method)
+            if not fs.is_directory(method_path): raise ValueError("Could not find a directory for the '" + method + "' method")
+            origins_path = fs.join(method_path, origins_filename)
+            if not fs.is_file(origins_path): raise ValueError("File '" + origins_path + "' is missing")
+
+            # Load the origins
+            origins = load_dict(origins_path)
+
+        else:
+
+            # Initialize
+            origins = dict()
+
+            # Loop over subdirectories
+            for method_path in fs.directories_in_path(sub_path):
+
+                origins_path = fs.join(method_path, origins_filename)
+                if not fs.is_file(origins_path): raise ValueError("File '" + origins_path + "' is missing")
+
+                # Determine method
+                method_name = fs.name(method_path)
+
+                # Load the origins for this method
+                origins_method = load_dict(origins_path)
+
+                # Flatten into a one-level dict
+                if flatten:
+                    for map_name in origins_method: origins[method_name + "_" + map_name] = origins_method[map_name]
+
+                # Don't flatten: get nested dict
+                else: origins[method_name] = origins_method
+
+    # Return the origins
+    return origins
+
+# -----------------------------------------------------------------
+
+def get_methods_sub_name(environment, name, flatten=False, method=None):
+
+    """
+    This function ...
+    :param environment:
+    :param name:
+    :param flatten:
+    :param method:
+    :return:
+    """
+
+    # Determine path
+    sub_path = fs.join(environment.maps_path, name)
+    if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
+    direct_methods_path = fs.join(sub_path, methods_filename)
+
+    # No subdirectories
+    if fs.is_file(direct_methods_path): methods = load_dict(direct_methods_path)
+
+    # Subdirectories
+    else:
+
+        if method is not None:
+
+            # Check whether valid method
+            method_path = fs.join(sub_path, method)
+            if not fs.is_directory(method_path): raise ValueError("Could not find a directory for the '" + method + "' method")
+
+            methods_filepath = fs.join(method_path, methods_filename)
+            if not fs.is_file(methods_filepath): raise ValueError("File '" + methods_filepath + "' is missing")
+
+            # Load the origins
+            methods = load_dict(methods_filepath)
+
+        else:
+
+            # Initialize
+            methods = dict()
+
+            # Loop over subdirectories
+            for method_path in fs.directories_in_path(sub_path):
+
+                methods_filepath = fs.join(method_path, methods_filename)
+                if not fs.is_file(methods_filepath): raise ValueError("File '" + methods_filepath + "' is missing")
+
+                # Determine method
+                method_name = fs.name(method_path)
+
+                # Load the origins for this method
+                methods_method = load_dict(methods_filepath)
+
+                # Flatten into a one-level dict
+                if flatten:
+                    for map_name in methods_method: methods[method_name + "_" + map_name] = methods_method[map_name]
+
+                # Don't flatten: get nested dict
+                else: methods[method_name] = methods_method
+
+    # Return the methods
+    return methods
 
 # -----------------------------------------------------------------

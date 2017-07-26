@@ -35,6 +35,7 @@ from pts.core.tools.utils import lazyproperty
 # -----------------------------------------------------------------
 
 origins_filename = "origins.txt"
+methods_filename = "methods.txt"
 
 # -----------------------------------------------------------------
 
@@ -129,6 +130,9 @@ class MapsComponent(GalaxyModelingComponent):
 
         # The origins
         self.origins = dict()
+
+        # The methods
+        self.methods = dict()
 
         # The paths to the maps
         self.paths = dict()
@@ -1545,5 +1549,41 @@ class MapsComponent(GalaxyModelingComponent):
 
                 # Write
                 write_dict(self.origins, origins_path)
+
+    # -----------------------------------------------------------------
+
+    def write_methods(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the map methods ...")
+
+        # Loop over the methods OF THIS STEP
+        for method in self.methods:
+
+            # Depending on whether subdirectories
+            if types.is_dictionary(self.methods[method]):
+
+                # Directory path
+                path = fs.join(self.maps_sub_path, method)
+
+                # Methods path
+                methods_path = fs.join(path, methods_filename)
+
+                # Write
+                write_dict(self.methods[method], methods_path)
+
+            # No different methods
+            else:
+
+                # Determine the file path
+                methods_path = fs.join(self.maps_sub_path, methods_filename)
+
+                # Write
+                write_dict(self.methods, methods_path)
 
 # -----------------------------------------------------------------
