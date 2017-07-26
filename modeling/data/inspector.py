@@ -320,8 +320,13 @@ class DataInspector(DataComponent):
         :return: 
         """
 
+        # Inform the user
+        log.info("Showing ...")
+
+        # Show the coordinate ranges
         self.show_coordinate_ranges()
 
+        # Show the pixelscales
         self.show_pixelscales()
 
     # -----------------------------------------------------------------
