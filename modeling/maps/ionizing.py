@@ -135,6 +135,9 @@ class IonizingStellarMapMaker(MapsComponent):
         # Get
         self.hots_origins = self.get_hot_dust_origins()
 
+        # Methods
+        self.hots_methods = self.get_hot_dust_methods()
+
     # -----------------------------------------------------------------
 
     def load_halpha(self):
@@ -162,17 +165,23 @@ class IonizingStellarMapMaker(MapsComponent):
         :return: 
         """
 
+        # Inform the user
+        log.info("Making the map ...")
+
         # Create
         maker = IonizingStellarMapsMaker()
 
         # Run
-        maker.run(halpha=self.halpha, hots=self.hots, hots_origins=self.hots_origins)
+        maker.run(halpha=self.halpha, hots=self.hots, hots_origins=self.hots_origins, hots_methods=self.hots_methods)
 
         # Set the maps
         self.maps = maker.maps
 
         # Set the origins
         self.origins = maker.origins
+
+        # Set the methods
+        self.methods = maker.methods
 
     # -----------------------------------------------------------------
 
@@ -191,5 +200,8 @@ class IonizingStellarMapMaker(MapsComponent):
 
         # Write origins
         self.write_origins()
+
+        # Write the methods
+        self.write_methods()
 
 # -----------------------------------------------------------------

@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from copy import copy
+
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
 from ....core.tools import filesystem as fs
@@ -64,12 +67,16 @@ class ColoursSSFRMapsMaker(Configurable):
         # Input
         self.colours = dict()
         self.colours_origins = None
+        self.colours_methods = None
 
         # The sSFR maps
         self.maps = dict()
 
         # The origins
         self.origins = dict()
+
+        # The methods
+        self.methods = dict()
 
     # -----------------------------------------------------------------
 
@@ -106,6 +113,13 @@ class ColoursSSFRMapsMaker(Configurable):
         # Get origins
         self.colours_origins = kwargs.pop("colours_origins", None)
 
+        # Get methods
+        self.colours_methods = kwargs.pop("colours_methods", None)
+
+        # Get method name
+        self.method_name = kwargs.pop("method_name", None)
+        if self.has_methods and self.method_name is None: raise ValueError("Method name has to be specified when methods are given")
+
         # Get maps that have already been created
         if "maps" in kwargs: self.maps = kwargs.pop("maps")
 
@@ -120,6 +134,18 @@ class ColoursSSFRMapsMaker(Configurable):
         """
 
         return self.colours_origins is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.colours_methods is not None
 
     # -----------------------------------------------------------------
 
@@ -141,8 +167,15 @@ class ColoursSSFRMapsMaker(Configurable):
             if self.has_origins:
 
                 # Set the origins
-                origins = self.colours_origins[colour]
+                origins = copy(self.colours_origins[colour])
                 self.origins[colour] = origins
+
+            # Set methods
+            if self.has_methods:
+
+                methods = copy(self.colours_methods[colour])
+                methods.append(self.method_name)
+                self.methods[colour] = methods
 
             # Check whether a colour map is already present
             if colour in self.maps:

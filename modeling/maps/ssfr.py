@@ -43,9 +43,6 @@ class SSFRMapMaker(MapsComponent):
         # The colour maps
         self.colours = dict()
 
-        # THe maps
-        self.maps = dict()
-
     # -----------------------------------------------------------------
 
     @property
@@ -130,17 +127,23 @@ class SSFRMapMaker(MapsComponent):
         # Inform the user
         log.info("Making sSFR maps based on colours ...")
 
+        # Set the method name
+        method_name = "ssfr"
+
         # Create the map maker
         maker = ColoursSSFRMapsMaker()
 
         # Run the maker
-        maker.run(colours=self.colours, colours_origins=self.get_colours_origins(), maps=self.current_maps)
+        maker.run(colours=self.colours, colours_origins=self.get_colours_origins(), maps=self.current_maps, method_name=method_name)
 
         # Get the maps
         self.maps = maker.maps
 
         # Get the origins
         self.origins = maker.origins
+
+        # Set the methods
+        self.methods = maker.methods
 
     # -----------------------------------------------------------------
 
@@ -159,5 +162,8 @@ class SSFRMapMaker(MapsComponent):
 
         # Write the origins
         self.write_origins()
+
+        # Write the methods
+        self.write_methods()
 
 # -----------------------------------------------------------------

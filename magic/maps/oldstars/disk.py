@@ -67,11 +67,17 @@ class DiskOldStellarMapMaker(Configurable):
         self.frames = None
         self.bulges = None
 
+        # The method name
+        self.method_name = None
+
         # The maps
         self.maps = dict()
 
         # The origins
         self.origins = dict()
+
+        # The methods
+        self.methods = dict()
 
     # -----------------------------------------------------------------
 
@@ -105,6 +111,9 @@ class DiskOldStellarMapMaker(Configurable):
         self.frames = kwargs.pop("frames")
         self.bulges = kwargs.pop("bulges")
 
+        # Get method name
+        self.method_name = kwargs.pop("method_name", None)
+
     # -----------------------------------------------------------------
 
     @property
@@ -116,6 +125,18 @@ class DiskOldStellarMapMaker(Configurable):
         """
 
         return self.frames.filters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_method_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.method_name is not None
 
     # -----------------------------------------------------------------
 
@@ -180,6 +201,9 @@ class DiskOldStellarMapMaker(Configurable):
 
             # Set origin
             self.origins[name] = [fltr]
+
+            # Set methods
+            if self.has_method_name: self.methods[name] = [self.method_name]
 
             # Mask pixels outside of the low signal-to-noise contour
             #old_stars[self.mask] = 0.0

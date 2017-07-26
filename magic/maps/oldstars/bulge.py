@@ -86,11 +86,17 @@ class BulgeOldStellarMapMaker(Configurable):
         # The bulge frames
         self.bulges = None
 
+        # The method name
+        self.method_name = None
+
         # THe maps
         self.maps = dict()
 
         # The origins
         self.origins = dict()
+
+        # The methods
+        self.methods = dict()
 
     # -----------------------------------------------------------------
 
@@ -124,6 +130,9 @@ class BulgeOldStellarMapMaker(Configurable):
         # Get the input
         self.bulges = kwargs.pop("bulges")
 
+        # Get the method name
+        self.method_name = kwargs.pop("method_name", None)
+
     # -----------------------------------------------------------------
 
     @property
@@ -135,6 +144,18 @@ class BulgeOldStellarMapMaker(Configurable):
         """
 
         return self.bulges.filters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_method_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.method_name is not None
 
     # -----------------------------------------------------------------
 
@@ -165,6 +186,9 @@ class BulgeOldStellarMapMaker(Configurable):
 
             # Set the origin
             self.origins[name] = [fltr]
+
+            # Set methods
+            if self.has_method_name: self.methods[name] = [self.method_name]
 
     # -----------------------------------------------------------------
 

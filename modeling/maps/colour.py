@@ -177,6 +177,9 @@ class ColoursMapMaker(MapsComponent):
         # Set the origins
         self.origins = maker.origins
 
+        # Set the methods
+        self.methods = maker.methods
+
     # -----------------------------------------------------------------
 
     def write(self):
@@ -194,5 +197,8 @@ class ColoursMapMaker(MapsComponent):
 
         # Write origins
         self.write_origins()
+
+        # Write the methods
+        self.write_methods()
 
 # -----------------------------------------------------------------

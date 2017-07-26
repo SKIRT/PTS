@@ -70,6 +70,9 @@ class SingleBandTIRMapMaker(Configurable):
 
         # -- Attributes --
 
+        # The method name
+        self.method_name = None
+
         # The frames
         self.frames = None
 
@@ -81,6 +84,9 @@ class SingleBandTIRMapMaker(Configurable):
 
         # The origins
         self.origins = dict()
+
+        # The methods
+        self.methods = dict()
 
         # The Galametz TIR calibration object
         self.galametz = GalametzTIRCalibration()
@@ -117,6 +123,9 @@ class SingleBandTIRMapMaker(Configurable):
         self.frames = kwargs.pop("frames")
         self.errors = kwargs.pop("errors", None)
 
+        # Get the method name
+        self.method_name = kwargs.pop("method_name", None)
+
         # Get maps that have already been created
         if "maps" in kwargs: self.maps = kwargs.pop("maps")
 
@@ -131,6 +140,18 @@ class SingleBandTIRMapMaker(Configurable):
         """
 
         return self.frames.filters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_method_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.method_name is not None
 
     # -----------------------------------------------------------------
 
@@ -152,6 +173,9 @@ class SingleBandTIRMapMaker(Configurable):
 
             # Set the origins, also when already created map
             self.origins[name] = [fltr]
+
+            # Set the methods
+            if self.has_method_name: self.methods[name] = [self.method_name]
 
             # Check whether a TIR map is already present
             if name in self.maps:

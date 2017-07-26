@@ -87,6 +87,9 @@ class AttenuationMapMaker(MapsComponent):
         # Inform the user
         log.info("Making Cortese attenuation maps ...")
 
+        # Define method name
+        method_name = "cortese"
+
         # Create the map maker
         maker = CorteseAttenuationMapsMaker()
 
@@ -98,18 +101,23 @@ class AttenuationMapMaker(MapsComponent):
         ssfrs = self.get_ssfr_maps(flatten=True)
         tirs_origins = self.get_tir_origins(flatten=True)
         ssfrs_origins = self.get_ssfr_origins(flatten=True)
+        tirs_methods = self.get_tir_methods(flatten=True)
+        ssfrs_methods = self.get_ssfr_methods(flatten=True)
 
         # Get current maps
-        current = self.get_current_maps_method("cortese")
+        current = self.get_current_maps_method(method_name)
 
         # Run the map maker
-        maker.run(fuv=fuv, tirs=tirs, ssfrs=ssfrs, tirs_origins=tirs_origins, ssfrs_origins=ssfrs_origins, maps=current)
+        maker.run(fuv=fuv, tirs=tirs, ssfrs=ssfrs, tirs_origins=tirs_origins, ssfrs_origins=ssfrs_origins, tirs_methods=tirs_methods, ssfrs_methods=ssfrs_methods, method_name=method_name, maps=current)
 
         # Set the maps
-        self.maps["cortese"] = maker.maps
+        self.maps[method_name] = maker.maps
 
         # Set the origins
-        self.origins["cortese"] = maker.origins
+        self.origins[method_name] = maker.origins
+
+        # Set the methods
+        self.methods[method_name] = maker.methods
 
     # -----------------------------------------------------------------
 
@@ -123,6 +131,9 @@ class AttenuationMapMaker(MapsComponent):
         # Inform the user
         log.info("Making Buat attenuation maps ...")
 
+        # Define method name
+        method_name = "buat"
+
         # Create the map maker
         maker = BuatAttenuationMapsMaker()
 
@@ -131,18 +142,22 @@ class AttenuationMapMaker(MapsComponent):
         nuv = self.get_frame_for_filter(self.nuv_filter)
         tirs = self.get_tir_maps(flatten=True)
         tirs_origins = self.get_tir_origins(flatten=True)
+        tirs_methods = self.get_tir_methods(flatten=True)
 
         # Get current maps
-        current = self.get_current_maps_method("buat")
+        current = self.get_current_maps_method(method_name)
 
         # Run the map maker
-        maker.run(fuv=fuv, nuv=nuv, tirs=tirs, tirs_origins=tirs_origins, maps=current)
+        maker.run(fuv=fuv, nuv=nuv, tirs=tirs, tirs_origins=tirs_origins, tirs_methods=tirs_methods, method_name=method_name, maps=current)
 
         # Set the maps
-        self.maps["buat"] = maker.maps
+        self.maps[method_name] = maker.maps
 
         # Set the origins
-        self.origins["buat"] = maker.origins
+        self.origins[method_name] = maker.origins
+
+        # Set the methods
+        self.methods[method_name] = maker.methods
 
     # -----------------------------------------------------------------
 
@@ -161,5 +176,8 @@ class AttenuationMapMaker(MapsComponent):
 
         # Write the origins
         self.write_origins()
+
+        # Write the methods
+        self.write_methods()
 
 # -----------------------------------------------------------------

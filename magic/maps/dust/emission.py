@@ -43,6 +43,9 @@ class EmissionDustMapsMaker(Configurable):
         # The origins
         self.origins = dict()
 
+        # The methods
+        self.methods = dict()
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):

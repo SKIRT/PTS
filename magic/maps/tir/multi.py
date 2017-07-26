@@ -94,6 +94,9 @@ class MultiBandTIRMapMaker(Configurable):
 
         # -- Attributes --
 
+        # The method name
+        self.method_name = None
+
         # Maps/dust/tirfuv path
         self.maps_tirfuv_path = None
 
@@ -106,6 +109,9 @@ class MultiBandTIRMapMaker(Configurable):
 
         # The origins
         self.origins = dict()
+
+        # The methods
+        self.methods = dict()
 
         # The galametz calibration object
         self.galametz = GalametzTIRCalibration()
@@ -152,6 +158,9 @@ class MultiBandTIRMapMaker(Configurable):
         # The number of filters to consider as combinations
         self.lengths = kwargs.pop("lengths", [2,3])
 
+        # Get the method name
+        self.method_name = kwargs.pop("method_name", None)
+
     # -----------------------------------------------------------------
 
     @property
@@ -163,6 +172,18 @@ class MultiBandTIRMapMaker(Configurable):
         """
 
         return self.frames.filters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_method_name(self):
+
+        """
+        This ufnction ...
+        :return:
+        """
+
+        return self.method_name is not None
 
     # -----------------------------------------------------------------
 
@@ -189,6 +210,9 @@ class MultiBandTIRMapMaker(Configurable):
 
             # Set the origins (also when the map is already present)
             self.origins[key] = filters  # cannot be tuple (for serialization reasons of the origins dict): OK: sequences.combinations now returns list instead of tuple
+
+            # Set the methods
+            if self.has_method_name: self.methods[key] = [self.method_name]
 
             # Check whether a TIR map is already present
             if key in self.maps:

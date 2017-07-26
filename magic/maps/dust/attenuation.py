@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from copy import copy
+
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
 from ....core.basics.configurable import Configurable
@@ -59,14 +62,22 @@ class AttenuationDustMapsMaker(Configurable):
 
         # -- Attributes --
 
+        # Input
         self.attenuation = None
         self.attenuation_origins = None
+        self.attenuation_methods = None
+
+        # The method name
+        self.method_name = None
 
         # The maps
         self.maps = dict()
 
         # The origins
         self.origins = dict()
+
+        # The methods
+        self.methods = dict()
 
     # -----------------------------------------------------------------
 
@@ -103,6 +114,13 @@ class AttenuationDustMapsMaker(Configurable):
         # Get origins
         self.attenuation_origins = kwargs.pop("attenuation_origins", None)
 
+        # Get methods
+        self.attenuation_methods = kwargs.pop("attenuation_methods", None)
+
+        # Get method name for this class
+        self.method_name = kwargs.pop("method_name", None)
+        if self.has_methods and self.method_name is None: raise ValueError("Method name has to be specified when methods are specified")
+
         # Get already created maps
         self.maps = kwargs.pop("maps", dict())
 
@@ -120,6 +138,18 @@ class AttenuationDustMapsMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.attenuation_methods is not None
+
+    # -----------------------------------------------------------------
+
     def make_maps(self):
 
         """
@@ -133,12 +163,20 @@ class AttenuationDustMapsMaker(Configurable):
         # Loop over the colour maps
         for name in self.attenuation:
 
-            # Set origin
+            # Set origins
             if self.has_origins:
 
                 # Set the origins
-                origins = self.attenuation_origins[name]
+                origins = copy(self.attenuation_origins[name])
                 self.origins[name] = origins
+
+            # Set methods
+            if self.has_methods:
+
+                # Set the methods
+                methods = copy(self.attenuation_methods[name])
+                methods.append(self.method_name)
+                self.methods[name] = methods
 
             # Check whether a dust map is already present
             if name in self.maps:

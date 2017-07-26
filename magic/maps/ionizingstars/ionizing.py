@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from copy import copy
+
 # Import astronomical modules
 from astropy import constants
 
@@ -77,12 +80,16 @@ class IonizingStellarMapsMaker(Configurable):
         self.halpha = None
         self.hots = None
         self.hots_origins = None
+        self.hots_methods = None
 
         # THE MAPS OF IONIZING STARS
         self.maps = dict()
 
         # The origins
         self.origins = dict()
+
+        # The methods
+        self.methods = dict()
 
     # -----------------------------------------------------------------
 
@@ -117,6 +124,7 @@ class IonizingStellarMapsMaker(Configurable):
         self.halpha = kwargs.pop("halpha")
         self.hots = kwargs.pop("hots", None)
         self.hots_origins = kwargs.pop("hots_origins", None)
+        self.hots_methods = kwargs.pop("hots_methods", None)
 
     # -----------------------------------------------------------------
 
@@ -129,6 +137,18 @@ class IonizingStellarMapsMaker(Configurable):
         """
 
         return self.hots_origins is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.hots_methods is not None
 
     # -----------------------------------------------------------------
 
@@ -162,6 +182,8 @@ class IonizingStellarMapsMaker(Configurable):
         # Inform the user
         log.info("Making maps of ionizing stars based on H-alpha emission and hot dust maps ...")
 
+        method_name = "hot"
+
         # NEW: MAKE MAP OF IONIZING STARS FOR VARIOUS DIFFERENT maps of hot dust
         for name in self.hots:
 
@@ -185,9 +207,15 @@ class IonizingStellarMapsMaker(Configurable):
 
             # Set the origin
             if self.has_origins:
-                origins = self.hots_origins[name]
+                origins = copy(self.hots_origins[name])
                 sequences.append_unique(origins, parse_filter("Halpha"))
                 self.origins[name] = origins
+
+            # Set the method
+            if self.has_methods:
+                methods = copy(self.hots_methods[name])
+                methods.append(method_name)
+                self.methods[name] = methods
 
         # ionizing_ratio = self.ha / (0.031*mips_young_stars)
 
@@ -223,6 +251,8 @@ class IonizingStellarMapsMaker(Configurable):
         # Inform the user
         log.info("Making map of ionizing stars based on H-alpha emission ...")
 
+        method_name = "halpha"
+
         ionizing = self.halpha.copy()
         ionizing[ionizing < 0.0] = 0.0
 
@@ -230,10 +260,13 @@ class IonizingStellarMapsMaker(Configurable):
         ionizing.normalize()
 
         # Add the map of ionizing stars
-        self.maps["halpha"] = ionizing
+        self.maps[method_name] = ionizing
 
         # Set origins
-        if self.has_origins: self.origins["halpha"] = [parse_filter("Halpha")]
+        if self.has_origins: self.origins[method_name] = [parse_filter("Halpha")]
+
+        # Set method
+        if self.has_methods: self.methods[method_name] = [method_name]
 
     # -----------------------------------------------------------------
 

@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import the standard modules
+from copy import copy
+
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
 from ....core.basics.configurable import Configurable
@@ -101,6 +104,10 @@ class YoungStellarMapsMaker(Configurable):
         self.old_origin = None
         self.fuv_attenuations_origins = None
 
+        # Methods
+        self.old_method = None
+        self.fuv_attenuation_methods = None
+
         # The transparent FUV maps
         self.transparent = dict()
 
@@ -109,6 +116,9 @@ class YoungStellarMapsMaker(Configurable):
 
         # The origins
         self.origins = dict()
+
+        # The methods
+        self.methods = dict()
 
     # -----------------------------------------------------------------
 
@@ -149,6 +159,10 @@ class YoungStellarMapsMaker(Configurable):
         self.old_origin = kwargs.pop("old_origin", None)
         self.fuv_attenuations_origins = kwargs.pop("fuv_attenuations_origins", None)
 
+        # Get methods
+        self.old_method = kwargs.pop("old_method", None)
+        self.fuv_attenuations_methods = kwargs.pop("fuv_attenuations_methods", None)
+
         # Get already calculated maps
         self.maps = kwargs.pop("maps", dict())
 
@@ -166,6 +180,18 @@ class YoungStellarMapsMaker(Configurable):
         """
 
         return self.old_origin is not None and self.fuv_attenuations_origins is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_method is not None and self.fuv_attenuations_methods is not None
 
     # -----------------------------------------------------------------
 
@@ -255,10 +281,17 @@ class YoungStellarMapsMaker(Configurable):
                 if self.has_origins:
 
                     # Set the origins
-                    origins = self.fuv_attenuations_origins[name]
+                    origins = copy(self.fuv_attenuations_origins[name])
                     sequences.append_unique(origins, parse_filter("FUV"))
                     sequences.append_unique(origins, self.old_origin)
                     self.origins[key] = origins
+
+                # Set the methods
+                if self.has_methods:
+
+                    methods = copy(self.fuv_attenuations_methods[name])
+                    methods.append(self.old_method)
+                    self.methods[key] = methods
 
                 # Check whether a map is already present
                 if key in self.maps:

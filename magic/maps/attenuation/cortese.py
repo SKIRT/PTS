@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+from copy import copy
 
 # Import the relevant PTS classes and modules
 from ....magic.core.frame import Frame
@@ -85,6 +86,10 @@ class CorteseAttenuationMapsMaker(Configurable):
         self.tirs_origins = None
         self.ssfrs_origins = None
 
+        # Methods
+        self.tirs_methods = None
+        self.ssfrs_methods = None
+
         # The table describing the calibration parameters from Cortese et. al 2008
         # Title of table: Relations to convert the TIR/FUV ratio in A(FUV) for different values of tau and
         # FUV − NIR/optical colours.
@@ -98,6 +103,9 @@ class CorteseAttenuationMapsMaker(Configurable):
 
         # The origins
         self.origins = dict()
+
+        # The methods
+        self.methods = dict()
 
     # -----------------------------------------------------------------
 
@@ -137,6 +145,14 @@ class CorteseAttenuationMapsMaker(Configurable):
         self.tirs_origins = kwargs.pop("tirs_origins", None)
         self.ssfrs_origins = kwargs.pop("ssfrs_origins", None)
 
+        # Get methods
+        self.tirs_methods = kwargs.pop("tirs_methods", None)
+        self.ssfrs_methods = kwargs.pop("ssfrs_methods", None)
+
+        # Get method name
+        self.method_name = kwargs.pop("method_name", None)
+        if self.has_methods and self.method_name is None: raise ValueError("Method name should be specified when methods are given")
+
         # Get already calculated maps
         self.maps = kwargs.pop("maps", dict())
 
@@ -154,6 +170,18 @@ class CorteseAttenuationMapsMaker(Configurable):
         """
 
         return self.tirs_origins is not None and self.ssfrs_origins is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.tirs_methods is not None and self.ssfrs_methods is not None
 
     # -----------------------------------------------------------------
 
@@ -187,11 +215,20 @@ class CorteseAttenuationMapsMaker(Configurable):
                 # Set origins
                 if self.has_origins:
 
-                    # print(self.tirs_origins)
-                    origins = self.tirs_origins[name]
-                    sequences.extend_unique(origins, self.ssfrs_origins[ssfr_colour])
+                    origins = copy(self.tirs_origins[name])
+                    origins_ssfr = copy(self.ssfrs_origins[name])
+                    sequences.extend_unique(origins, origins_ssfr)
                     sequences.append_unique(origins, parse_filter("FUV"))
                     self.origins[key] = origins
+
+                # Set methods
+                if self.has_methods:
+
+                    methods = copy(self.tirs_methods[name])
+                    methods_ssfr = copy(self.ssfrs_methods[ssfr_colour])
+                    sequences.extend_unique(methods, methods_ssfr)
+                    methods.append(self.method_name)
+                    self.methods[key] = methods
 
                 # Check whether a map is already present
                 if key in self.maps:

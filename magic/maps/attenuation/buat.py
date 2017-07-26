@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import numpy as np
+from copy import copy
 
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
@@ -80,6 +81,12 @@ class BuatAttenuationMapsMaker(Configurable):
         # Tirs origins
         self.tirs_origins = None
 
+        # Tirs methods
+        self.tirs_methods = None
+
+        # The method name for this class
+        self.method_name = None
+
         # Buat parameters
         self.buat = None
 
@@ -88,6 +95,9 @@ class BuatAttenuationMapsMaker(Configurable):
 
         # The origins
         self.origins = dict()
+
+        # The methods
+        self.methods = dict()
 
     # -----------------------------------------------------------------
 
@@ -126,6 +136,13 @@ class BuatAttenuationMapsMaker(Configurable):
         # Origins
         self.tirs_origins = kwargs.pop("tirs_origins", None)
 
+        # Methods
+        self.tirs_methods = kwargs.pop("tirs_methods", None)
+
+        # Get the method name for this class
+        self.method_name = kwargs.pop("method_name", None)
+        if self.has_methods and self.method_name is None: raise ValueError("When methods are specified, method for this class has to be given")
+
         # Get already created maps
         self.maps = kwargs.pop("maps", dict())
 
@@ -143,6 +160,18 @@ class BuatAttenuationMapsMaker(Configurable):
         """
 
         return self.tirs_origins is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.tirs_methods is not None
 
     # -----------------------------------------------------------------
 
@@ -187,9 +216,17 @@ class BuatAttenuationMapsMaker(Configurable):
             if self.has_origins:
 
                 # Add FUV as an origin
-                origins = self.tirs_origins[name]
+                origins = copy(self.tirs_origins[name])
                 origins.append(parse_filter("FUV"))
                 self.origins[key] = origins
+
+            # Set method
+            if self.has_methods:
+
+                # Add the method name
+                methods = copy(self.tirs_methods[name])
+                methods.append(self.method_name)
+                self.methods[key] = methods
 
             # Check whether a map is already present
             if key in self.maps:

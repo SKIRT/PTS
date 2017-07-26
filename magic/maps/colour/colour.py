@@ -80,6 +80,9 @@ class ColourMapsMaker(Configurable):
         # The origins
         self.origins = dict()
 
+        # The methods
+        self.methods = dict()
+
         # The colours
         self.colours = None
 
@@ -139,6 +142,9 @@ class ColourMapsMaker(Configurable):
 
             # Add the origins
             self.origins[colour] = [fltr_a, fltr_b]
+
+            # Add the methods
+            self.methods[colour] = []
 
             # Check whether a colour map is already present
             if colour in self.maps:

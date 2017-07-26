@@ -654,6 +654,8 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    # ORIGINS
+
     def get_colours_origins(self, flatten=False):
 
         """
@@ -747,6 +749,104 @@ class MapsComponent(GalaxyModelingComponent):
         """
 
         return self.collection.get_dust_origins(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    # METHODS
+
+    def get_colours_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_colours_methods(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_ssfr_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_ssfr_methods(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_tir_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_tir_methods(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_attenuation_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_attenuation_methods(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_old_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_old_methods(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_young_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_young_methods(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_ionizing_methods(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_dust_methods(flatten=flatten)
 
     # -----------------------------------------------------------------
 
@@ -1185,6 +1285,18 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_fuv_attenuation_maps_origins_and_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.collection.get_fuv_attenuation_maps_origins_and_methods(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
     def get_buat_fuv_attenuation_maps(self):
 
         """
@@ -1299,6 +1411,17 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_old_stellar_disk_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.get_old_stellar_disk_methods()
+
+    # -----------------------------------------------------------------
+
     def get_hot_dust_maps(self):
 
         """
@@ -1318,6 +1441,17 @@ class MapsComponent(GalaxyModelingComponent):
         """
 
         return self.collection.get_hot_dust_origins()
+
+    # -----------------------------------------------------------------
+
+    def get_hot_dust_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.get_hot_dust_methods()
 
     # -----------------------------------------------------------------
 

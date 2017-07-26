@@ -502,6 +502,108 @@ class MapsCollection(object):
 
         return self.get_origins_sub_name(self.maps_dust_name, flatten=flatten)
 
+    # -----------------------------------------------------------------
+
+    # METHODS
+
+    def get_colour_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.get_methods_sub_name(self.maps_colours_name, flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_ssfr_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.get_methods_sub_name(self.maps_ssfr_name, flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_tir_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.get_methods_sub_name(self.maps_tir_name, flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_attenuation_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.get_methods_sub_name(self.maps_attenuation_name, flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_old_methods(self, flatten=False):
+
+        """
+        Thisf unction ...
+        :param flatten:
+        :return:
+        """
+
+        return self.get_methods_sub_name(self.maps_old_name, flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_young_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.get_methods_sub_name(self.maps_young_name, flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.get_methods_sub_name(self.maps_ionizing_name, flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.get_methods_sub_name(self.maps_dust_name, flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    # MAPS
+
     def get_colour_maps(self, flatten=False, framelist=False):
 
         """
@@ -708,6 +810,19 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    def get_fuv_attenuation_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        cortese = self.get_cortese_fuv_attenuation_methods()
+        buat = self.get_buat_fuv_attenuation_methods()
+
+    # -----------------------------------------------------------------
+
     def get_fuv_attenuation_maps_and_origins(self, flatten=False):
 
         """
@@ -745,6 +860,42 @@ class MapsCollection(object):
 
         # Return
         return maps, origins
+
+    # -----------------------------------------------------------------
+
+    def get_fuv_attenuation_maps_origins_and_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        # Already checked: maps vs. origins
+        maps, origins = self.get_fuv_attenuation_maps_and_origins(flatten=flatten)
+        methods = self.get_fuv_attenuation_methods(flatten=flatten)
+
+        # Check
+        if not sequences.same_contents(maps.keys(), methods.keys()):
+
+            log.error("Mismatch between FUV attenuation maps and their methods:")
+
+            sorted_keys_maps = sorted(maps.keys())
+            sorted_keys_methods = sorted(methods.keys())
+
+            if len(sorted_keys_maps) != len(sorted_keys_methods): log.error("Number of maps: " + str(len(sorted_keys_maps)) + " vs Number of methods: " + str(len(sorted_keys_methods)))
+
+            indices = sequences.find_differences(sorted_keys_maps, sorted_keys_methods)
+
+            log.error("Number of mismatches: " + str(len(indices)))
+
+            for index in range(min(len(sorted_keys_maps), len(sorted_keys_methods))):
+
+                if sorted_keys_maps[index] == sorted_keys_methods[index]: log.success(" - " + sorted_keys_maps[index] + " = " + sorted_keys_methods[index])
+                else: log.error(" - " + sorted_keys_maps[index] + " != " + sorted_keys_methods[index])
+
+        # Return
+        return maps, origins, methods
 
     # -----------------------------------------------------------------
 
@@ -825,6 +976,19 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    def get_cortese_fuv_attenuation_methods(self):
+
+        """
+        Tihs function ...
+        :return:
+        """
+
+        cortese_path = fs.join(self.maps_attenuation_path, "cortese")
+        table_path = fs.join(cortese_path, methods_filename)
+        return load_dict(table_path)
+
+    # -----------------------------------------------------------------
+
     def get_old_stellar_bulge_map(self, fltr):
 
         """
@@ -890,6 +1054,17 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    def get_old_stellar_disk_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_methods_sub_name(self.maps_old_name, method="disk")
+
+    # -----------------------------------------------------------------
+
     def get_hot_dust_maps(self):
 
         """
@@ -912,6 +1087,19 @@ class MapsCollection(object):
         hot_dust_path = fs.join(self.maps_dust_path, "hot")
         origins_path = fs.join(hot_dust_path, origins_filename)
         return load_dict(origins_path)
+
+    # -----------------------------------------------------------------
+
+    def get_hot_dust_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        hot_dust_path = fs.join(self.maps_dust_path, "hot")
+        methods_path = fs.join(hot_dust_path, methods_filename)
+        return load_dict(methods_path)
 
     # -----------------------------------------------------------------
 

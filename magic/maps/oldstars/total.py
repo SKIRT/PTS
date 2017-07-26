@@ -53,11 +53,17 @@ class TotalOldStellarMapMaker(Configurable):
         # The frames
         self.frames = None
 
-        # THe maps
+        # The method name
+        self.method_name = None
+
+        # The maps
         self.maps = dict()
 
         # The origins
         self.origins = dict()
+
+        # The methods
+        self.methods = dict()
 
     # -----------------------------------------------------------------
 
@@ -91,6 +97,9 @@ class TotalOldStellarMapMaker(Configurable):
         # Get the frames
         self.frames = kwargs.pop("frames")
 
+        # Get the method name
+        self.method_name = kwargs.pop("method_name", None)
+
     # -----------------------------------------------------------------
 
     @property
@@ -102,6 +111,18 @@ class TotalOldStellarMapMaker(Configurable):
         """
 
         return self.frames.filters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_method_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.method_name is not None
 
     # -----------------------------------------------------------------
 
@@ -132,5 +153,8 @@ class TotalOldStellarMapMaker(Configurable):
 
             # Set origin
             self.origins[name] = [fltr]
+
+            # Set method
+            if self.has_method_name: self.methods[name] = [self.method_name]
 
 # -----------------------------------------------------------------

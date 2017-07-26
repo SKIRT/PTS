@@ -16,7 +16,6 @@ from __future__ import absolute_import, division, print_function
 from ...core.tools.logging import log
 from .component import MapsComponent
 from ...magic.maps.youngstars.young import YoungStellarMapsMaker
-from ...core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -56,6 +55,10 @@ class YoungStellarMapMaker(MapsComponent):
         # The origins
         self.old_origin = None
         self.fuv_attenuations_origins = None
+
+        # Methods
+        self.old_method = None
+        self.fuv_attenuations_methods = None
 
     # -----------------------------------------------------------------
 
@@ -150,7 +153,8 @@ class YoungStellarMapMaker(MapsComponent):
         log.info("Loading the maps of the FUV attenuation ...")
 
         # Get the FUV attenuation maps
-        self.fuv_attenuations, self.fuv_attenuations_origins = self.get_fuv_attenuation_maps_and_origins(flatten=True)
+        #self.fuv_attenuations, self.fuv_attenuations_origins = self.get_fuv_attenuation_maps_and_origins(flatten=True)
+        self.fuv_attenuations, self.fuv_attenuations_origins, self.fuv_attenuations_methods = self.get_fuv_attenuation_maps_origins_and_methods(flatten=True)
 
     # -----------------------------------------------------------------
 
@@ -168,6 +172,9 @@ class YoungStellarMapMaker(MapsComponent):
 
         # Set the old origin
         self.old_origin = self.i1_filter
+
+        # Set the old method
+        self.old_method = "disk" #self.get_old_stellar_disk_methods()
 
     # -----------------------------------------------------------------
 
@@ -189,13 +196,17 @@ class YoungStellarMapMaker(MapsComponent):
 
         # Run the map maker
         maker.run(fuv=self.fuv, fuv_errors=self.fuv_errors, old=self.old, fuv_attenuations=self.fuv_attenuations,
-                  factors=factors, old_origin=self.old_origin, fuv_attenuations_origins=self.fuv_attenuations_origins)
+                  factors=factors, old_origin=self.old_origin, fuv_attenuations_origins=self.fuv_attenuations_origins,
+                  old_method=self.old_method, fuv_attenuations_methods=self.fuv_attenuations_origins)
 
         # Set the maps
         self.maps = maker.maps
 
         # Set the origins
         self.origins = maker.origins
+
+        # Set the methods
+        self.methods = maker.methods
 
     # -----------------------------------------------------------------
 
@@ -214,5 +225,8 @@ class YoungStellarMapMaker(MapsComponent):
 
         # 2. Write origins
         self.write_origins()
+
+        # Write the methods
+        self.write_methods()
 
 # -----------------------------------------------------------------

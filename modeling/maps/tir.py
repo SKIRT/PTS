@@ -229,19 +229,25 @@ class TIRMapMaker(MapsComponent):
         # Inform the user
         log.info("Making maps based on a single band ...")
 
+        # Set the method name
+        method_name = "single"
+
         # Create
         maker = SingleBandTIRMapMaker()
 
         # Run
         frames, errors = self.load_data_singleband()
-        current = self.get_current_maps_method("single")
-        maker.run(frames=frames, errors=errors, maps=current)
+        current = self.get_current_maps_method(method_name)
+        maker.run(frames=frames, errors=errors, maps=current, method_name=method_name)
 
         # Set the maps
-        self.maps["single"] = maker.maps
+        self.maps[method_name] = maker.maps
 
         # Set the origins
-        self.origins["single"] = maker.origins
+        self.origins[method_name] = maker.origins
+
+        # Set the methods
+        self.methods[method_name] = maker.methods
 
     # -----------------------------------------------------------------
 
@@ -255,19 +261,25 @@ class TIRMapMaker(MapsComponent):
         # Inform the user
         log.info("Making maps based on multiple bands ...")
 
+        # Set method name
+        method_name = "multi"
+
         # Create
         maker = MultiBandTIRMapMaker()
 
         # Run
         frames, errors = self.load_data_multiband()
-        current = self.get_current_maps_method("multi")
-        maker.run(frames=frames, errors=errors, maps=current)
+        current = self.get_current_maps_method(method_name)
+        maker.run(frames=frames, errors=errors, maps=current, method_name=method_name)
 
         # Set the maps
-        self.maps["multi"] = maker.maps
+        self.maps[method_name] = maker.maps
 
         # Set the origins
-        self.origins["multi"] = maker.origins
+        self.origins[method_name] = maker.origins
+
+        # Set the methods
+        self.methods[method_name] = maker.methods
 
     # -----------------------------------------------------------------
 
@@ -286,5 +298,8 @@ class TIRMapMaker(MapsComponent):
 
         # Write the origins
         self.write_origins()
+
+        # Write the methods
+        self.write_methods()
 
 # -----------------------------------------------------------------

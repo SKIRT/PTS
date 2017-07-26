@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from copy import copy
+
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
 from ....core.basics.configurable import Configurable
@@ -82,11 +85,14 @@ class HotDustMapsMaker(Configurable):
         self.mips24 = None
         #self.mips24_errors = None
 
-        # THe maps of the old stellar disk
+        # The maps of the old stellar disk
         self.old = None
 
-        # THe origins
+        # The origins
         self.old_origins = None
+
+        # The methods
+        self.old_methods = None
 
         # Factors
         self.factors = None
@@ -96,6 +102,9 @@ class HotDustMapsMaker(Configurable):
 
         # The origins
         self.origins = dict()
+
+        # The methods
+        self.methods = dict()
 
     # -----------------------------------------------------------------
 
@@ -133,6 +142,11 @@ class HotDustMapsMaker(Configurable):
         # Maps of old stars and their origins
         self.old = kwargs.pop("old")
         self.old_origins = kwargs.pop("old_origins", None)
+        self.old_methods = kwargs.pop("old_methods", None)
+
+        # The method name
+        self.method_name = kwargs.pop("method_name", None)
+        if self.has_methods and self.method_name is None: raise ValueError("Method name has to be specified when methods are given")
 
         # Set factors
         self.factors = kwargs.pop("factors")
@@ -148,6 +162,18 @@ class HotDustMapsMaker(Configurable):
         """
 
         return self.old_origins is not None
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_methods is not None
 
     # -----------------------------------------------------------------
 
@@ -242,12 +268,20 @@ class HotDustMapsMaker(Configurable):
                 if self.has_origins:
 
                     origins = [self.mips24.filter]
+                    old_origins = copy(self.old_origins[old_name])
 
                     # Add old origins
-                    sequences.extend_unique(origins, self.old_origins[old_name])
+                    sequences.extend_unique(origins, old_origins)
 
                     # Add the origins
                     self.origins[name] = origins
+
+                # Set method
+                if self.has_methods:
+
+                    methods = copy(self.old_methods[old_name])
+                    methods.append(self.method_name)
+                    self.methods[name] = methods
 
                 # Check whether a map is already present
                 if name in self.maps:

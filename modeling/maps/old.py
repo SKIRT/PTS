@@ -105,6 +105,9 @@ class OldStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Making the old stellar disk map ...")
 
+        # Set the method name
+        method_name = "disk"
+
         # Create the maker
         maker = DiskOldStellarMapMaker()
 
@@ -117,13 +120,16 @@ class OldStellarMapMaker(MapsComponent):
         bulges = FrameList(i1=bulge)
 
         # Run
-        maker.run(frames=frames, bulges=bulges)
+        maker.run(frames=frames, bulges=bulges, method_name=method_name)
 
         # Set the maps
-        self.maps["disk"] = maker.maps
+        self.maps[method_name] = maker.maps
 
         # Set the origins
-        self.origins["disk"] = maker.origins
+        self.origins[method_name] = maker.origins
+
+        # Set the methods
+        self.methods[method_name] = maker.methods
 
     # -----------------------------------------------------------------
 
@@ -137,6 +143,9 @@ class OldStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Making the total map of the old stars ...")
 
+        # Set the method name
+        method_name = "total"
+
         # Create the maker
         maker = TotalOldStellarMapMaker()
 
@@ -145,13 +154,16 @@ class OldStellarMapMaker(MapsComponent):
         frames = FrameList(i1)
 
         # Run
-        maker.run(frames=frames)
+        maker.run(frames=frames, method_name=method_name)
 
         # Set the maps
-        self.maps["total"] = maker.maps
+        self.maps[method_name] = maker.maps
 
         # Set the origins
-        self.origins["total"] = maker.origins
+        self.origins[method_name] = maker.origins
+
+        # Set the methods
+        self.methods[method_name] = maker.methods
 
     # -----------------------------------------------------------------
 
@@ -165,6 +177,9 @@ class OldStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Making the map of the old stellar bulge ...")
 
+        # Set the method name
+        method_name = "bulge"
+
         # Create the maker
         maker = BulgeOldStellarMapMaker()
 
@@ -173,13 +188,16 @@ class OldStellarMapMaker(MapsComponent):
         bulges = FrameList(i1=bulge)
 
         # Run
-        maker.run(bulges=bulges)
+        maker.run(bulges=bulges, method_name=method_name)
 
         # Set the maps
-        self.maps["bulge"] = maker.maps
+        self.maps[method_name] = maker.maps
 
         # Set the origins
-        self.origins["bulge"] = maker.origins
+        self.origins[method_name] = maker.origins
+
+        # Set the methods
+        self.methods[method_name] = maker.methods
 
     # -----------------------------------------------------------------
 
@@ -198,5 +216,8 @@ class OldStellarMapMaker(MapsComponent):
 
         # Write origins
         self.write_origins()
+
+        # Write the methods
+        self.write_methods()
 
 # -----------------------------------------------------------------
