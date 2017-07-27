@@ -190,10 +190,12 @@ def get_filter(name, header=None):
 
         # Get a name describing the filter
         if "FILTER" in header:
-            try:
-                filter = parse_filter(header["FILTER"])
-                return filter
-            except ValueError: pass
+            # One-letter filters are too ambiguous!
+            if len(header["FILTER"]) > 1:
+                try:
+                    filter = parse_filter(header["FILTER"])
+                    return filter
+                except ValueError: pass
             filterid += " " + get_string(header['FILTER']).lower()
         if "FLTRNM" in header:
             try:
