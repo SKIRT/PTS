@@ -1953,7 +1953,22 @@ def equal_files(filepath_a, filepath_b, shallow=True):
 
 # -----------------------------------------------------------------
 
-def equal_directories(directory_a, directory_b, shallow=True, create=False):
+def all_hidden_files(filepaths):
+
+    """
+    This function ...
+    :param filepaths:
+    :return:
+    """
+
+    for filepath in filepaths:
+        filename = name(filepath)
+        if not filename.startswith("."): return False
+    return True
+
+# -----------------------------------------------------------------
+
+def equal_directories(directory_a, directory_b, shallow=True, create=False, report=False, ignore_hidden=True):
 
     """
     Compare two directories recursively. Files in each directory are
@@ -1969,19 +1984,40 @@ def equal_directories(directory_a, directory_b, shallow=True, create=False):
 
     # Check existence
     if not is_directory(directory_a):
-        if create: create_directory(directory_a)
+        if create:
+            if report: print("Directory '" + directory_a + "' does not exist yet: creating ...")
+            create_directory(directory_a)
         else: raise ValueError("The directory '" + directory_a + "' does not exist")
     if not is_directory(directory_b):
-        if create: create_directory(directory_b)
+        if create:
+            if report: print("Directory '" + directory_b + "' does not exist yet: creating ...")
+            create_directory(directory_b)
         else: raise ValueError("The directory '" + directory_b + "' does not exist")
 
     # Do directory comparison
     dirs_cmp = filecmp.dircmp(directory_a, directory_b)
-    if len(dirs_cmp.left_only) > 0 or len(dirs_cmp.right_only) > 0 or len(dirs_cmp.funny_files) > 0: return False
+    if len(dirs_cmp.left_only) > 0:
+        if ignore_hidden and all_hidden_files(dirs_cmp.left_only): pass
+        else:
+            if report: print("Only in '" + directory_a + "': " + str(dirs_cmp.left_only))
+            return False
+    if len(dirs_cmp.right_only) > 0:
+        if ignore_hidden and all_hidden_files(dirs_cmp.right_only): pass
+        else:
+            if report: print("Only in '" + directory_b + "': " + str(dirs_cmp.right_only))
+            return False
+    if len(dirs_cmp.funny_files) > 0:
+        if report: print("Funny files: " + str(dirs_cmp.funny_files))
+        return False
 
     # Check files
     (_, mismatch, errors) = filecmp.cmpfiles(directory_a, directory_b, dirs_cmp.common_files, shallow=shallow)
-    if len(mismatch) > 0 or len(errors) > 0: return False
+    if len(mismatch) > 0:
+        if report: print("Mismatches: " + str(mismatch))
+        return False
+    if len(errors) > 0:
+        if report: print("Errors: " + str(errors))
+        return False
 
     # Loop over common directories and check them
     for common_dir in dirs_cmp.common_dirs:
@@ -1991,7 +2027,7 @@ def equal_directories(directory_a, directory_b, shallow=True, create=False):
         new_dir2 = os.path.join(directory_b, common_dir)
 
         # Recursively call this function
-        if not equal_directories(new_dir1, new_dir2, shallow=shallow): return False
+        if not equal_directories(new_dir1, new_dir2, shallow=shallow, report=report): return False
 
     # All checks passed
     return True
@@ -2088,13 +2124,14 @@ def equal_number_of_items(directory_a, directory_b, recursive=True, create=False
 
 # -----------------------------------------------------------------
 
-def update_file(source, target, create=False):
+def update_file(source, target, create=False, report=False):
 
     """
     This function ...
     :param source:
     :param target:
     :param create:
+    :param report:
     :return:
     """
 
@@ -2104,12 +2141,15 @@ def update_file(source, target, create=False):
     # Target does not yet exist
     if not is_file(target):
 
-        if create: copy_file(source, target)
+        if create:
+            if report: print("File does not yet exist: copying ...")
+            copy_file(source, target)
         else: raise ValueError("The file '" + target + "' does not exist")
         return True
 
     # Replace if not equal
     elif not equal_files(source, target):
+        if report: print("Files not equal: replacing ...")
         replace_file(target, source)
         return True
 
@@ -2118,13 +2158,15 @@ def update_file(source, target, create=False):
 
 # -----------------------------------------------------------------
 
-def update_directory(source, target, create=False):
+def update_directory(source, target, create=False, report=False, ignore_hidden=True):
 
     """
     This function ...
     :param source:
     :param target:
     :param create:
+    :param report:
+    :param ignore_hidden:
     :return:
     """
 
@@ -2132,7 +2174,7 @@ def update_directory(source, target, create=False):
     if not is_directory(source): raise ValueError("The directory '" + source + "' does not exist")
 
     # if not fs.equal_number_of_files(fonts_path, mount_fonts_path, create=True):
-    if not equal_directories(source, target, create=create):
+    if not equal_directories(source, target, create=create, report=report, ignore_hidden=ignore_hidden):
         clear_directory(target)
         copy_from_directory(source, target)
         return True

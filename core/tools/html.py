@@ -107,6 +107,18 @@ center_template = "<div style='text-align:center;'>{text}</div>"
 
 # -----------------------------------------------------------------
 
+def center(html):
+
+    """
+    This function ...
+    :param html:
+    :return:
+    """
+
+    return center_template.format(text=html)
+
+# -----------------------------------------------------------------
+
 link_stylesheet_header_template = '<link rel="stylesheet" type="text/css" href="{url}">'
 
 # -----------------------------------------------------------------
@@ -214,6 +226,129 @@ def mailto(address, text=None):
 
     if text is None: text = address
     return hyperlink("mailto:" + address, text)
+
+# -----------------------------------------------------------------
+
+theme_button = """
+<input id="b1" onclick="change()" type="button" value="Dark theme"> 
+<script>
+
+    function fileExists(image_url)
+    {
+        var http = new XMLHttpRequest();
+        window.alert(image_url);
+        http.open('HEAD', image_url, false);
+        http.send();
+        return http.status != 404;
+    }
+
+    // The "callback" argument is called with either true or false
+    // depending on whether the image at "url" exists or not.
+    function imageExists_callback(url, allImages, i, dark_path, callback) 
+    {
+        var img = new Image();
+        img.onload = function() { callback(true, allImages, i, dark_path); };
+        img.onerror = function() { callback(false, allImages, i, dark_path); };
+        img.src = url;
+    }
+    
+    function change()
+    {
+        var elem = document.getElementById("b1");
+        if (elem.value=="Light theme")
+        {
+            lightTheme();
+            elem.value = "Dark theme";
+        }   
+        else
+        { 
+            darkTheme();
+            elem.value = "Light theme";
+        }
+    }
+    
+    function darkTheme()
+    {
+        darkBackground();
+        darkText();
+        darkImages();
+    }
+    
+    function lightTheme()
+    {
+        lightBackground();
+        lightText();
+        lightImages();
+    }
+    
+    function darkBackground()
+    {
+        document.body.style.backgroundColor = "black";
+    }
+    
+    function darkText()
+    {
+        document.body.style.color = "white";
+    }
+    
+    function lightBackground()
+    {
+        document.body.style.backgroundColor = "white";
+    }
+    
+    function lightText()
+    {
+        document.body.style.color = "black";
+    }
+    
+    var splitByLastDot = function(text)
+    {
+        var index = text.lastIndexOf('.');
+        return [text.slice(0, index), text.slice(index + 1)]
+    }
+    
+    //allImages = document.getElementsByTagName('img'); // faster as global??
+    
+    function darkImages()
+    {
+        var allImages = document.getElementsByTagName('img');
+        for(var i = 0; i < allImages.length ; i++)
+        {     
+            var result = splitByLastDot(allImages[i].src);
+            var filename = result[0];
+            var extension = result[1];
+            
+            //window.alert("filename: " + filename);
+            
+            var dark_path = filename + "_dark." + extension;
+            
+            imageExists_callback(dark_path, allImages, i, dark_path, function(existing, allImages, i, dark_path){
+                if(existing == true) { allImages[i].src = dark_path; }
+                });
+                                    
+            // didn't work, something I tried myself
+            //allImages[i].onerror = function(){
+            //    allImages[i].src = filename + "." + extension;
+            //    }
+        }
+    }
+    
+    function lightImages()
+    {
+        var allImages = document.getElementsByTagName('img');
+        for(var i = 0; i < allImages.length ; i++)
+        {            
+            var result = splitByLastDot(allImages[i].src);
+            var filename = result[0];
+            var extension = result[1];
+            
+            var is_dark = filename.endsWith("_dark");
+            
+            var default_path = filename.split("_dark")[0] + "." + extension;   
+            allImages[i].src = default_path;
+        }
+    }
+</script>"""
 
 # -----------------------------------------------------------------
 

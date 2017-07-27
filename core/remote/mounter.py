@@ -228,7 +228,9 @@ class RemoteMounter(object):
         path = fs.join(pts_remotes_path, host.id)
 
         # Unmount
-        output = subprocess.check_output(["umount", path])
+        try: output = subprocess.check_output(["umount", path])
+        except subprocess.CalledProcessError:
+            raise RuntimeError("Something went wrong during unmounting")
 
         # Busy?
         if "busy" in output: raise RuntimeError("Could not unmount: resource is busy")
