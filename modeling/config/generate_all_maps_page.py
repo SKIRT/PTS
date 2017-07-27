@@ -10,8 +10,15 @@ from pts.core.basics.configuration import ConfigurationDefinition
 
 # -----------------------------------------------------------------
 
+default_cmap = "jet"
+
+# -----------------------------------------------------------------
+
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 definition.add_flag("show", "show the page", False)
+
+# Colour map
+definition.add_optional("colours", "string", "colour or colour map", default=default_cmap)
 
 # -----------------------------------------------------------------

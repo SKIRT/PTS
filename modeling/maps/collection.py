@@ -26,6 +26,7 @@ from ...core.tools.stringify import tostr
 from ...core.tools import types
 from ..core.environment import colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name
 from pts.core.tools.utils import lazyproperty
+from ...core.tools.utils import create_lazified_class
 
 # -----------------------------------------------------------------
 
@@ -821,6 +822,20 @@ class MapsCollection(object):
         cortese = self.get_cortese_fuv_attenuation_methods()
         buat = self.get_buat_fuv_attenuation_methods()
 
+        if flatten:
+
+            methods = dict()
+            for name in cortese: methods["cortese__" + name] = cortese[name]
+            for name in buat: methods["buat__" + name] = buat[name]
+            return methods
+
+        else:
+
+            methods = dict()
+            methods["cortese"] = cortese
+            methods["buat"] = buat
+            return methods
+
     # -----------------------------------------------------------------
 
     def get_fuv_attenuation_maps_and_origins(self, flatten=False):
@@ -984,8 +999,21 @@ class MapsCollection(object):
         """
 
         cortese_path = fs.join(self.maps_attenuation_path, "cortese")
-        table_path = fs.join(cortese_path, methods_filename)
-        return load_dict(table_path)
+        methods_path = fs.join(cortese_path, methods_filename)
+        return load_dict(methods_path)
+
+    # -----------------------------------------------------------------
+
+    def get_buat_fuv_attenuation_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        buat_path = fs.join(self.maps_attenuation_path, "buat")
+        methods_path = fs.join(buat_path, methods_filename)
+        return load_dict(methods_path)
 
     # -----------------------------------------------------------------
 
@@ -1143,6 +1171,437 @@ class MapsCollection(object):
         maps = dict()
         for name in self.maps_sub_names: maps[name] = self.get_maps_sub_name(name, flatten=flatten)
         return maps
+
+    # -----------------------------------------------------------------
+
+    def get_nmaps_sub_name(self, name, method=None):
+
+        """
+        This function ...
+        :param name:
+        :param method:
+        :return:
+        """
+
+        paths = self.get_map_paths_sub_name(name, flatten=True, method=method)
+        return len(paths)
+
+    # -----------------------------------------------------------------
+
+    def has_maps_sub_name(self, name, method=None):
+
+        """
+        This function ...
+        :param name:
+        :param method:
+        :return:
+        """
+
+        return self.get_nmaps_sub_name(name, method=method) > 0
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ncolour_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.get_nmaps_sub_name(colours_name)
+        return len(self.colour_maps_flat) # SO IT CAN GET LAZIFIED
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nssfr_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.get_nmaps_sub_name(ssfr_name)
+        return len(self.ssfr_maps_flat) # SO IT CAN GET LAZIFIED
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ntir_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.get_nmaps_sub_name(tir_name)
+        return len(self.tir_maps_flat) # SO IT CAN GET LAZIFIED
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nattenuation_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.get_nmaps_sub_name(attenuation_name)
+        return len(self.attenuation_maps_flat) # SO IT CAN GET LAZIFIED
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nold_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.get_nmaps_sub_name(old_name)
+        return len(self.old_maps_flat) # SO IT CAN GET LAZIFIED
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nyoung_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.get_nmaps_sub_name(young_name)
+        return len(self.young_maps_flat) # SO IT CAN GET LAZIFIED
+
+    # -----------------------------------------------------------------
+
+    @property
+    def nionizing_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.get_nmaps_sub_name(ionizing_name)
+        return len(self.ionizing_maps_flat) # SO IT CAN GET LAZIFIED
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ndust_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.get_nmaps_sub_name(dust_name)
+        return len(self.dust_maps_flat) # SO IT CAN GET LAZIFIED
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_colour_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.has_maps_sub_name(colours_name)
+        return self.ncolour_maps > 0 # SO IT CAN GET LAZIFIED
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ssfr_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.has_maps_sub_name(ssfr_name)
+        return self.nssfr_maps > 0 # SO IT CAN GET LAZIFIED
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_tir_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.has_maps_sub_name(tir_name)
+        return self.ntir_maps > 0 # SO IT CAN GET LAZIFIED
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_attenuation_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.has_maps_sub_name(attenuation_name)
+        return self.nattenuation_maps > 0 # SO IT CAN GET LAZIFIED
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.has_maps_sub_name(old_name)
+        return self.nold_maps > 0 # SO IT CAN GET LAZIFIED
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.has_maps_sub_name(young_name)
+        return self.nyoung_maps > 0 # SO IT CAN GET LAZIFIED
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ionizing_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.has_maps_sub_name(ionizing_name)
+        return self.nionizing_maps > 0 # SO IT CAN GET LAZIFIED
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        #return self.has_maps_sub_name(dust_name)
+        return self.ndust_maps > 0 # SO IT CAN GET LAZIFIED
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colour_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_colour_maps(flatten=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colour_maps_flat(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.get_colour_maps(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_ssfr_maps(flatten=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_maps_flat(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_ssfr_maps(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tir_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_tir_maps(flatten=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tir_maps_flat(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_tir_maps(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_attenuation_maps(flatten=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_maps_flat(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_attenuation_maps(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_old_maps(flatten=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_maps_flat(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_old_maps(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_young_maps(flatten=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_maps_flat(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_young_maps(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_ionizing_maps(flatten=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_maps_flat(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_ionizing_maps(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_dust_maps(flatten=False)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_maps_flat(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_dust_maps(flatten=True)
+
+# -----------------------------------------------------------------
+
+StaticMapsCollection = create_lazified_class(MapsCollection, "StaticMapsCollection")
 
 # -----------------------------------------------------------------
 

@@ -45,6 +45,7 @@ from ...core.units.parsing import parse_unit as u
 from ...core.basics.table import SmartTable
 from ...core.basics.containers import FileList, NamedFileList
 from ...core.basics.range import QuantityRange
+from ...core.tools.utils import create_lazified_class
 
 # -----------------------------------------------------------------
 
@@ -2112,6 +2113,10 @@ class DataSetCreator(Configurable):
 
         path = fs.join(self.config.path, "dataset.dat")
         self.dataset.saveto(path)
+
+# -----------------------------------------------------------------
+
+StaticDataSet = create_lazified_class(DataSet, "StaticDataSet")
 
 # -----------------------------------------------------------------
 

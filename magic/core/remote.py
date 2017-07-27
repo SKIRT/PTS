@@ -1119,7 +1119,7 @@ class RemoteFrame(object):
 
     # -----------------------------------------------------------------
 
-    def saveto_png(self, path, interval="pts", scale="log", alpha=True, peak_alpha=1., colours="red"):
+    def saveto_png(self, path, interval="pts", scale="log", alpha=True, peak_alpha=1., colours="red", absolute_alpha=False):
 
         """
         This function ...
@@ -1129,6 +1129,7 @@ class RemoteFrame(object):
         :param alpha:
         :param peak_alpha:
         :param colours:
+        :param absolute_alpha:
         :return:
         """
 
@@ -1149,7 +1150,7 @@ class RemoteFrame(object):
         log.debug("Saving the frame remotely ...")
 
         # Save the frame remotely
-        self.session.send_line(self.label + ".saveto_png('" + remote_file_path + "', interval='" + interval + "', scale='" + scale + "', alpha=" + str(alpha) + ", peak_alpha=" + str(peak_alpha) + ", colours='" + colours + "')", show_output=True)
+        self.session.send_line(self.label + ".saveto_png('" + remote_file_path + "', interval='" + interval + "', scale='" + scale + "', alpha=" + str(alpha) + ", peak_alpha=" + str(peak_alpha) + ", colours='" + colours + "', absolute_alpha=" + str(absolute_alpha) + ")", show_output=True)
 
         # Debugging
         log.debug("Downloading the image ...")

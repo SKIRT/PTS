@@ -61,6 +61,9 @@ class lazyproperty(property):
 
     def __get__(self, obj, owner=None):
         try:
+            #print("TYPE", type(obj))
+            #print("DICT", obj.__dict__)
+            #print("KEY", self._key)
             return obj.__dict__[self._key]
         except KeyError:
             val = self.fget(obj)
@@ -212,21 +215,29 @@ def create_lazified_class(cls, name=None):
 
     bases = cls.__bases__
 
+    #print(bases)
+
     clsdict = {}
 
     # Loop over all attributes (methods, properties, ...) of the original class
-    for name in cls.__dict__:
+    for attrname in cls.__dict__:
+
+        # WEIRD, BUT __DICT__ IS ALSO A ATTRNAME IN __DICT__ ????????
+        if attrname == "__dict__": continue
+        #if attrname.startswith("__") and attrname.endswith("__") and attrname != "__init__": continue # NOT NECESSARY SO STRICT
 
         # Get the value for the original class
-        value = cls.__dict__[name]
+        value = cls.__dict__[attrname]
 
         # lazify, copy or just plug in
-        if isinstance(value, property): clsdict[name] = lazyproperty(value)
-        elif is_mutable(value): clsdict[name] = copy.copy(value)  # FOR EXAMPLE, A CLASS COULD HAVE A CLASS PROPERTY THAT IS A LIST
-        else: clsdict[name] = value
+        if isinstance(value, property): clsdict[attrname] = lazyproperty(value.fget)
+        elif is_mutable(value): clsdict[attrname] = copy.copy(value)  # FOR EXAMPLE, A CLASS COULD HAVE A CLASS PROPERTY THAT IS A LIST
+        else: clsdict[attrname] = value
 
     # Determine name
     if name is None: name = "Lazy" + cls.__name__
+
+    #print(clsdict)
 
     # Create the new class
     return type(name, bases, clsdict)

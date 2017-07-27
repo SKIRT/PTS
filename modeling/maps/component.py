@@ -29,8 +29,9 @@ from ...core.basics.configuration import prompt_proceed
 from ...core.tools.stringify import tostr
 from ...core.launch.pts import find_match
 from ...core.tools import introspection
-from .collection import MapsCollection
+from .collection import MapsCollection, StaticMapsCollection
 from pts.core.tools.utils import lazyproperty
+from ..core.environment import colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name
 
 # -----------------------------------------------------------------
 
@@ -40,6 +41,18 @@ methods_filename = "methods.txt"
 # -----------------------------------------------------------------
 
 maps_commands = ["make_colours_maps", "make_ssfr_maps", "make_tir_maps", "make_attenuation_maps", "make_old_stellar_maps", "make_dust_map", "make_young_stellar_maps", "make_ionizing_stellar_maps"]
+
+# -----------------------------------------------------------------
+
+titles = dict()
+titles[colours_name] = "Colour"
+titles[ssfr_name] = "sSFR"
+titles[tir_name] = "TIR"
+titles[attenuation_name] = "UV dust attenuation"
+titles[old_name] = "Old stars"
+titles[young_name] = "Young stars"
+titles[ionizing_name] = "Ionizing stars"
+titles[dust_name] = "Dust"
 
 # -----------------------------------------------------------------
 
@@ -604,6 +617,18 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def static_collection(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return StaticMapsCollection(self.maps_path)
+
+    # -----------------------------------------------------------------
+
     @property
     def maps_html_path(self):
 
@@ -919,6 +944,102 @@ class MapsComponent(GalaxyModelingComponent):
 
         # Return the dictionary
         return filters
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_colour_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.has_colour_maps
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ssfr_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.has_ssfr_maps
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_tir_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.has_tir_maps
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_attenuation_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.has_attenuation_maps
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.has_old_maps
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.has_young_maps
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ionizing_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.has_ionizing_maps
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.has_dust_maps
 
     # -----------------------------------------------------------------
 

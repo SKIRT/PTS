@@ -2201,7 +2201,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def to_rgba(self, interval="pts", scale="log", alpha=True, peak_alpha=1., colours="red"):
+    def to_rgba(self, interval="pts", scale="log", alpha=True, peak_alpha=1., colours="red", absolute_alpha=False):
 
         """
         This function ...
@@ -2210,6 +2210,7 @@ class Frame(NDDataArray):
         :param alpha:
         :param peak_alpha:
         :param colours:
+        :param absolute_alpha:
         :return:
         """
 
@@ -2226,8 +2227,9 @@ class Frame(NDDataArray):
 
         # Get data and replace nans and infs
         data = np.copy(self.data)
-        data[np.isnan(data)] = 0.0
-        data[np.isinf(data)] = 0.0
+        #data[np.isnan(data)] = 0.0
+        #data[np.isinf(data)] = 0.0
+        data[np.isinf(data)] = float("nan")
 
         # INTERVAL
         if interval == "zscale": vmin, vmax = ZScaleInterval().get_limits(data)
@@ -2251,7 +2253,12 @@ class Frame(NDDataArray):
         normalized = norm(data)
 
         # Determine transparency
-        if alpha: transparency = peak_alpha * normalized / np.nanmax(normalized)
+        if absolute_alpha:
+            transparency = np.ones_like(normalized)
+            transparency[np.isnan(data)] = 0.0
+            transparency[data == 0.] = 0.0
+        elif alpha:
+            transparency = peak_alpha * normalized / np.nanmax(normalized)
         else: transparency = np.ones_like(normalized)
 
         # CREATE THE CHANNEL ARRAYS
@@ -2442,7 +2449,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def saveto_png(self, path, interval="pts", scale="log", alpha=True, peak_alpha=1., colours="red"):
+    def saveto_png(self, path, interval="pts", scale="log", alpha=True, peak_alpha=1., colours="red", absolute_alpha=False):
 
         """
         This function ...
@@ -2452,6 +2459,7 @@ class Frame(NDDataArray):
         :param alpha:
         :param peak_alpha:
         :param colours:
+        :param absolute_alpha:
         :return:
         """
 
@@ -2459,7 +2467,7 @@ class Frame(NDDataArray):
         import imageio
 
         # Get image values
-        image = self.to_rgba(interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha, colours=colours)
+        image = self.to_rgba(interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha, colours=colours, absolute_alpha=absolute_alpha)
 
         # Write
         imageio.imwrite(path, image)

@@ -403,7 +403,6 @@ class ConvolutionKernel(Frame):
         self._data = shift(self._data, [shift_y, shift_x])
 
         # CHECK AGAIN
-
         if centroid_method == "com": x_centroid, y_centroid = self.centroid_com()
         elif centroid_method == "fit": x_centroid, y_centroid = self.centroid_fit()
         elif centroid_method == "2dg": x_centroid, y_centroid = self.centroid_2dg()
