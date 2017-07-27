@@ -392,6 +392,7 @@ def is_sdss_2mass_or_johnson(identifier):
 
         if "SDSS" in identifier.instruments: return True
         if "2MASS" in identifier.instruments: return True
+        if "WFCAM" in identifier.instruments: return True
 
     if "system" in identifier:
 

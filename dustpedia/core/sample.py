@@ -197,8 +197,8 @@ class DustPediaSample(object):
         if len(table) > 1: raise ValueError("Ambiguous result")
 
         # Get RA and DEC
-        ra = table["_RAJ2000"][0]
-        dec = table["_DEJ2000"][0]
+        ra = table["RAJ2000"][0]
+        dec = table["DEJ2000"][0]
 
         # Create sky coordinate and return it
         return SkyCoordinate(ra=ra, dec=dec, unit="deg")
