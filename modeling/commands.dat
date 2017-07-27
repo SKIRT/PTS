@@ -20,7 +20,8 @@ decompose | -- | decomposition.decomposition.GalaxyDecomposer | arguments | Run 
 decomposition_residuals | -- | decomposition.residuals.DecompositionResidualsCalculator | arguments | Calculate the residuals between the 3.6 micron image and the simulated bulge and disk images
 
 # TRUNCATION
-truncate | -- | truncation.truncation.Truncator | interactive | Determine the truncation region
+calculate_truncation_analytics | -- | truncation.analytics.TruncationAnalyticsCalculator | interactive | Calculate truncation analytics
+truncate | -- | truncation.truncator.Truncator | arguments | Set the truncation boundary
 
 # MAPS
 make_colours_maps | -- | maps.colour.ColoursMapMaker | arguments | Make colour maps

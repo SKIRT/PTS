@@ -13,13 +13,8 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import math
 import gc
 from abc import ABCMeta
-from collections import OrderedDict
-
-# Import astronomical modules
-from astropy.units import dimensionless_angles
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
@@ -32,11 +27,8 @@ from ..basics.properties import GalaxyProperties
 from ...core.tools.logging import log
 from ...magic.prepare.statistics import PreparationStatistics
 from .component import ModelingComponent
-from ...magic.region.ellipse import SkyEllipseRegion
-from ...magic.basics.stretch import SkyStretch
 from ...core.tools import types
 from ...core.filter.filter import parse_filter
-from ...core.tools import tables
 from ...core.remote.remote import Remote
 from ..core.steps import cached_directory_path_for_single_command
 from ..core.environment import GalaxyModelingEnvironment
@@ -103,9 +95,6 @@ class GalaxyModelingComponent(ModelingComponent):
         # The path to the DustPedia observed SED for the galaxy
         self.dustpedia_sed_path = None
 
-        # The path to the disk region file
-        self.disk_region_path = None
-
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -141,9 +130,6 @@ class GalaxyModelingComponent(ModelingComponent):
 
         # The DustPedia SED path
         self.dustpedia_sed_path = fs.join(self.data_seds_path, "DustPedia.dat")
-
-        # Set the path to the disk region file
-        self.disk_region_path = fs.join(self.components_path, "disk.reg")
 
     # -----------------------------------------------------------------
 
@@ -535,7 +521,19 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
+    def disk_region_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.disk_region_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def disk_ellipse(self):
 
         """
@@ -543,15 +541,11 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        # Open the region
-        region = SkyRegionList.from_file(self.disk_region_path)
-
-        # Return the first and only shape
-        return region[0]
+        return self.environment.disk_ellipse
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def disk_position_angle(self):
 
         """
@@ -559,11 +553,23 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        return self.disk_ellipse.angle
+        return self.environment.disk_position_angle
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
+    def truncation_ellipse_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.truncation_ellipse_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def truncation_ellipse(self):
 
         """
@@ -571,17 +577,11 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        # Load the ellipse
-        path = fs.join(self.truncation_path, "ellipse.reg")
-        region = SkyRegionList.from_file(path)
-        ellipse = region[0]
-
-        # Return the (sky) ellipse
-        return ellipse
+        return self.environment.truncation_ellipse
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def physical_truncation_ellipse(self):
 
         """
@@ -589,12 +589,11 @@ class GalaxyModelingComponent(ModelingComponent):
         :return: 
         """
 
-        raise NotImplementedError("Not implemented yet")
-        #return self.truncation_area
+        return self.environment.physical_truncation_ellipse
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def truncation_area(self):
 
         """
@@ -602,20 +601,11 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        # Convert the semi minor and semi major axis lengths from angular to physical sizes
-        semimajor = (self.truncation_ellipse.semimajor * self.galaxy_distance).to("kpc", equivalencies=dimensionless_angles())
-        semiminor = (self.truncation_ellipse.semiminor * self.galaxy_distance).to("kpc", equivalencies=dimensionless_angles())
-
-        # Calculate the area in kpc^2
-        # A = pi * a * b
-        area = math.pi * semimajor * semiminor
-
-        # Return the area
-        return area
+        return self.environment.truncation_area
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def truncation_box(self):
 
         """
@@ -623,7 +613,7 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        return self.truncation_ellipse.bounding_box
+        return self.environment.truncation_box
 
     # -----------------------------------------------------------------
 
@@ -745,7 +735,7 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def galaxy_properties(self):
 
         """
@@ -753,18 +743,11 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        # Check whether the file is present
-        if not fs.is_file(self.galaxy_properties_path): raise IOError("The galaxy properties file is not present. Perform 'fetch_properties' to create this file'")
-
-        # Load the properties
-        properties = GalaxyProperties.from_file(self.galaxy_properties_path)
-
-        # Return the property map
-        return properties
+        return self.environment.galaxy_properties
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def galaxy_info(self):
 
         """
@@ -772,22 +755,11 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        # Check whether the file is present
-        if not fs.is_file(self.galaxy_info_path): raise IOError("The galaxy info file is not present. Perform 'fetch_")
-
-        # Load the info table
-        table = tables.from_file(self.galaxy_info_path)
-
-        # To ordered dict
-        info = OrderedDict()
-        for name in table.colnames: info[name] = table[name][0]
-
-        # Return the info
-        return info
+        return self.environment.galaxy_info
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def galaxy_ellipse(self): # from properties
 
         """
@@ -795,26 +767,11 @@ class GalaxyModelingComponent(ModelingComponent):
         :return: 
         """
 
-        # Get properties
-        center = self.galaxy_properties.center
-        major = self.galaxy_properties.major_arcsec
-        position_angle = self.galaxy_properties.position_angle
-        ellipticity = self.galaxy_properties.ellipticity
-
-        # 1 / axial_ratio = 1 - ellipticity
-        axial_ratio = 1. / (1. - ellipticity)
-
-        # Set radius
-        minor = major * axial_ratio
-        radius = SkyStretch(major, minor)
-
-        # Create and return the region
-        region = SkyEllipseRegion(center, radius, position_angle)
-        return region
+        return self.environment.galaxy_ellipse
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
+    @property
     def galaxy_distance(self):
 
         """
@@ -822,7 +779,7 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        return self.galaxy_properties.distance
+        return self.environment.galaxy_distance
 
     # -----------------------------------------------------------------
 
@@ -834,7 +791,7 @@ class GalaxyModelingComponent(ModelingComponent):
         :return: 
         """
 
-        return self.galaxy_properties.center
+        return self.environment.galaxy_center
 
     # -----------------------------------------------------------------
 
@@ -846,7 +803,7 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        return self.galaxy_properties.inclination
+        return self.environment.galaxy_inclination
 
     # -----------------------------------------------------------------
 
@@ -858,7 +815,7 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        return self.galaxy_properties.position_angle
+        return self.environment.galaxy_position_angle
 
     # -----------------------------------------------------------------
 
@@ -870,64 +827,7 @@ class GalaxyModelingComponent(ModelingComponent):
         :return:
         """
 
-        return self.galaxy_properties.redshift
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    #def earth_projection(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        # Check whether the file is present
-        #if not fs.is_file(self.earth_projection_path): raise IOError("The earth projection file is not present. Run the 'decompose' step to create it")
-
-        # Load the projection
-        #projection = GalaxyProjection.from_file(self.earth_projection_path)
-
-        # Return the projection
-        #return projection
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    #def edgeon_projection(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        # Check whether the file is present
-        #if not fs.is_file(self.edgeon_projection_path): raise IOError("The edgeon projection file is not present. Run the 'decompose' step to create it")
-
-        # Load the projection
-        #projection = GalaxyProjection.from_file(self.edgeon_projection_path)
-
-        # Return the projection
-        #return projection
-
-    # -----------------------------------------------------------------
-
-    #@lazyproperty
-    #def faceon_projection(self):
-
-        #"""
-        #This function ...
-        #:return:
-        #"""
-
-        # Check whether the file is present
-        #if not fs.is_file(self.faceon_projection_path): raise IOError("The faceon projection file is not present. Run the 'decompose' step to create it")
-
-        # Load the projection
-        #projection = GalaxyProjection.from_file(self.faceon_projection_path)
-
-        # Return the projection
-        #return projection
+        return self.environment.galaxy_redshift
 
     # -----------------------------------------------------------------
 

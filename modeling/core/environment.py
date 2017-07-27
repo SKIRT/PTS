@@ -13,8 +13,13 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import math
 import numpy as np
 from abc import ABCMeta
+from collections import OrderedDict
+
+# Import astronomical modules
+from astropy.units import dimensionless_angles
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
@@ -26,6 +31,11 @@ from ...core.basics.range import QuantityRange
 from pts.core.tools.utils import lazyproperty
 from ...core.remote.host import load_host
 from ...core.remote.remote import Remote
+from ...magic.region.list import SkyRegionList
+from ...magic.region.ellipse import SkyEllipseRegion
+from ...magic.basics.stretch import SkyStretch
+from ...core.tools import tables
+from ..basics.properties import GalaxyProperties
 
 # -----------------------------------------------------------------
 
@@ -279,6 +289,11 @@ statistics_name = "statistics.dat"
 
 # -----------------------------------------------------------------
 
+disk_region_filename = "disk.reg"
+truncation_ellipse_filename = "ellipse.reg"
+
+# -----------------------------------------------------------------
+
 class GalaxyModelingEnvironment(ModelingEnvironment):
 
     """
@@ -309,9 +324,13 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         self.deprojection_path = fs.create_directory_in(self.path, deprojection_name)
         self.playground_path = fs.create_directory_in(self.path, playground_name)
 
-        ## NEW: ADD MORE AND MORE PATH DEFINITIONS HERE
+        # DISK REGION PATH
+        self.disk_region_path = fs.join(self.components_path, disk_region_filename)
 
-        # FROM DATACOMPONENT:
+        # TRUNCATION ELLIPSE PATH
+        self.truncation_ellipse_path = fs.join(self.truncation_path, truncation_ellipse_filename)
+
+        # DATA
 
         # Set the path to the DustPedia observed SED
         self.observed_sed_dustpedia_path = fs.join(self.data_path, fluxes_name)
@@ -850,6 +869,226 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         """
 
         return self.analysis_context.runs
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def galaxy_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether the file is present
+        if not fs.is_file(self.galaxy_properties_path): raise IOError("The galaxy properties file is not present. Perform 'fetch_properties' to create this file'")
+
+        # Load the properties
+        properties = GalaxyProperties.from_file(self.galaxy_properties_path)
+
+        # Return the property map
+        return properties
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def galaxy_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Check whether the file is present
+        if not fs.is_file(self.galaxy_info_path): raise IOError("The galaxy info file is not (yet) present.")
+
+        # Load the info table
+        table = tables.from_file(self.galaxy_info_path)
+
+        # To ordered dict
+        info = OrderedDict()
+        for name in table.colnames: info[name] = table[name][0]
+
+        # Return the info
+        return info
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def galaxy_ellipse(self):  # from properties
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get properties
+        center = self.galaxy_properties.center
+        major = self.galaxy_properties.major_arcsec
+        position_angle = self.galaxy_properties.position_angle
+        ellipticity = self.galaxy_properties.ellipticity
+
+        # 1 / axial_ratio = 1 - ellipticity
+        axial_ratio = 1. / (1. - ellipticity)
+
+        # Set radius
+        minor = major * axial_ratio
+        radius = SkyStretch(major, minor)
+
+        # Create and return the region
+        region = SkyEllipseRegion(center, radius, position_angle)
+        return region
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def galaxy_distance(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.galaxy_properties.distance
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def galaxy_center(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.galaxy_properties.center
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def galaxy_inclination(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.galaxy_properties.inclination
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def galaxy_position_angle(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.galaxy_properties.position_angle
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def galaxy_redshift(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.galaxy_properties.redshift
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_ellipse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Open the region
+        region = SkyRegionList.from_file(self.disk_region_path)
+
+        # Return the first and only shape
+        return region[0]
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def disk_position_angle(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.disk_ellipse.angle
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def truncation_ellipse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Load the ellipse
+        region = SkyRegionList.from_file(self.truncation_ellipse_path)
+        ellipse = region[0]
+
+        # Return the (sky) ellipse
+        return ellipse
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def physical_truncation_ellipse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        raise NotImplementedError("Not implemented yet")
+        # return self.truncation_area
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def truncation_area(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Convert the semi minor and semi major axis lengths from angular to physical sizes
+        semimajor = (self.truncation_ellipse.semimajor * self.galaxy_distance).to("kpc", equivalencies=dimensionless_angles())
+        semiminor = (self.truncation_ellipse.semiminor * self.galaxy_distance).to("kpc", equivalencies=dimensionless_angles())
+
+        # Calculate the area in kpc^2
+        # A = pi * a * b
+        area = math.pi * semimajor * semiminor
+
+        # Return the area
+        return area
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def truncation_box(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.truncation_ellipse.bounding_box
 
 # -----------------------------------------------------------------
 

@@ -18,6 +18,10 @@ from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
+analytics_name = "analytics"
+
+# -----------------------------------------------------------------
+
 class TruncationComponent(GalaxyModelingComponent):
     
     """
@@ -35,8 +39,8 @@ class TruncationComponent(GalaxyModelingComponent):
         # Call the constructor of the base class
         super(TruncationComponent, self).__init__(*args, **kwargs)
 
-        # The path to the truncation/images directory
-        #self.truncation_images_path = None
+        # The path to the truncation/analytics directory
+        self.truncation_analytics_path = None
 
     # -----------------------------------------------------------------
 
@@ -51,7 +55,7 @@ class TruncationComponent(GalaxyModelingComponent):
         # Call the setup function of the base class
         super(TruncationComponent, self).setup(**kwargs)
 
-        # Set the path to the truncation/images directory
-        #self.truncation_images_path = fs.create_directory_in(self.truncation_path, "images")
+        # Set the path to the truncation/analytics directory
+        self.truncation_analytics_path = fs.create_directory_in(self.truncation_path, analytics_name)
 
 # -----------------------------------------------------------------

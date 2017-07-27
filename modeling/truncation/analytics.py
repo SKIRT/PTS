@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.truncation.truncation Contains the Truncator class.
+## \package pts.modeling.truncation.analytics Contains the TruncationAnalyticsCalculator class.
 
 # -----------------------------------------------------------------
 
@@ -27,14 +27,12 @@ from ...magic.dist_ellipse import distance_ellipse
 from ...core.basics.range import RealRange
 from ...core.basics.map import Map
 from ...magic.core.mask import intersection
-from ...core.remote.remote import Remote
 from ...core.units.parsing import parse_quantity
-from ..core.steps import cached_directory_name_for_single_command
 from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
-class Truncator(TruncationComponent):
+class TruncationAnalyticsCalculator(TruncationComponent):
     
     """
     This class...
@@ -49,7 +47,7 @@ class Truncator(TruncationComponent):
         """
 
         # Call the constructor of the base class
-        super(Truncator, self).__init__(*args, **kwargs)
+        super(TruncationAnalyticsCalculator, self).__init__(*args, **kwargs)
 
         # --- Attributes ---
 
@@ -121,16 +119,16 @@ class Truncator(TruncationComponent):
         """
 
         # Call the setup function of the base class
-        super(Truncator, self).setup(**kwargs)
+        super(TruncationAnalyticsCalculator, self).setup(**kwargs)
 
         # Setup the remote
-        self.remote = Remote(host_id=self.environment.cache_host_id)
+        #self.remote = Remote(host_id=self.environment.cache_host_id)
 
         # Create the cache directory
-        directory_name = cached_directory_name_for_single_command(self.environment, self.command_name())
-        self.remote_truncation_path = fs.join(self.remote.home_directory, directory_name)
-        if self.config.cache:
-            if not self.remote.is_directory(self.remote_truncation_path): self.remote.create_directory(self.remote_truncation_path)
+        #directory_name = cached_directory_name_for_single_command(self.environment, self.command_name())
+        #self.remote_truncation_path = fs.join(self.remote.home_directory, directory_name)
+        #if self.config.cache:
+        #    if not self.remote.is_directory(self.remote_truncation_path): self.remote.create_directory(self.remote_truncation_path)
 
     # -----------------------------------------------------------------
 
@@ -190,19 +188,19 @@ class Truncator(TruncationComponent):
         for name in self.frames.names:
 
             # Create directory
-            path = fs.create_directory_in(self.truncation_path, name)
+            path = fs.create_directory_in(self.truncation_analytics_path, name)
 
             # Set path
             self.paths[name] = path
 
             # Determine remote cache path
-            remote_path = fs.join(self.remote_truncation_path, name)
+            #remote_path = fs.join(self.remote_truncation_path, name)
 
             # Set path
-            self.cache_paths[name] = remote_path
+            #self.cache_paths[name] = remote_path
 
             # Create directory
-            if self.config.cache and not self.remote.is_directory(remote_path): self.remote.create_directory(remote_path)
+            #if self.config.cache and not self.remote.is_directory(remote_path): self.remote.create_directory(remote_path)
 
     # -----------------------------------------------------------------
 
@@ -357,7 +355,7 @@ class Truncator(TruncationComponent):
         self.write_ellipses()
 
         # Write the truncated images
-        self.write_images()
+        #self.write_images()
 
         # Write low-res truncated image
         self.write_lowres_images()
@@ -443,83 +441,83 @@ class Truncator(TruncationComponent):
 
     # -----------------------------------------------------------------
 
-    def write_images(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Writing the truncated images ...")
-
-        # Loop over the the images
-        index = 0
-        for name in self.frames.names:
-
-            # Debugging
-            index += 1
-            progress = float(index) / float(self.nframes)
-            log.debug("Writing truncated images for the " + name + " image (" + str(index) + " of " + str(self.nframes) + ") ...")
-
-            # Loop over the factors
-            for factor in self.factors:
-
-                # Determine the local path
-                filename = str(factor) + ".fits"
-                path = fs.join(self.paths[name], filename)
-
-                # Determine the remote path
-                remote_path = fs.join(self.cache_paths[name], filename)
-
-                # Already existing
-                if fs.is_file(path):
-
-                    # Debugging
-                    log.debug("Truncated " + name + " image with factor " + str(factor) + "is already present: not creating it again")
-
-                    # Cache if requested
-                    if self.config.cache:
-
-                        # Upload
-                        self.remote.upload_file_to(path, self.cache_paths[name], remove=True)
-
-                        # Debugging
-                        log.debug("Truncated " + name + " image with factor " + str(factor) + " has been cached to '" + remote_path + "'")
-
-                # Already present remotely
-                elif self.remote.is_file(remote_path):
-
-                    # Debugging
-                    log.debug("Truncated " + name + " image with factor " + str(factor) + " is already present and cached on remote host '" + self.remote.host_id + "'")
-
-                # Not yet present, create truncated image (and cache)
-                else:
-
-                    # Debugging
-                    log.debug("Creating the truncated " + name + " image with factor " + str(factor) + "...")
-
-                    # Get the pixel ellipse
-                    ellipse = self.ellipses[name][factor]
-
-                    # Convert into mask
-                    mask = ellipse.to_mask(self.frames[name].xsize, self.frames[name].ysize, invert=True)
-
-                    # Truncate the frame
-                    frame = self.frames[name]
-                    frame[mask] = self.config.truncated_value
-
-                    # Save
-                    frame.saveto(path)
-
-                    # Cache
-                    if self.config.cache:
-
-                        # Upload, and remove local file
-                        remote_path = self.remote.upload_file_to(path, self.cache_paths[name], remove=True)
-
-                        # Debugging
-                        log.debug("Truncated " + name + " image with factor " + str(factor) + " has been cached to '" + remote_path + "'")
+    # def write_images(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     # Inform the user
+    #     log.info("Writing the truncated images ...")
+    #
+    #     # Loop over the the images
+    #     index = 0
+    #     for name in self.frames.names:
+    #
+    #         # Debugging
+    #         index += 1
+    #         progress = float(index) / float(self.nframes)
+    #         log.debug("Writing truncated images for the " + name + " image (" + str(index) + " of " + str(self.nframes) + ") ...")
+    #
+    #         # Loop over the factors
+    #         for factor in self.factors:
+    #
+    #             # Determine the local path
+    #             filename = str(factor) + ".fits"
+    #             path = fs.join(self.paths[name], filename)
+    #
+    #             # Determine the remote path
+    #             remote_path = fs.join(self.cache_paths[name], filename)
+    #
+    #             # Already existing
+    #             if fs.is_file(path):
+    #
+    #                 # Debugging
+    #                 log.debug("Truncated " + name + " image with factor " + str(factor) + "is already present: not creating it again")
+    #
+    #                 # Cache if requested
+    #                 if self.config.cache:
+    #
+    #                     # Upload
+    #                     self.remote.upload_file_to(path, self.cache_paths[name], remove=True)
+    #
+    #                     # Debugging
+    #                     log.debug("Truncated " + name + " image with factor " + str(factor) + " has been cached to '" + remote_path + "'")
+    #
+    #             # Already present remotely
+    #             elif self.remote.is_file(remote_path):
+    #
+    #                 # Debugging
+    #                 log.debug("Truncated " + name + " image with factor " + str(factor) + " is already present and cached on remote host '" + self.remote.host_id + "'")
+    #
+    #             # Not yet present, create truncated image (and cache)
+    #             else:
+    #
+    #                 # Debugging
+    #                 log.debug("Creating the truncated " + name + " image with factor " + str(factor) + "...")
+    #
+    #                 # Get the pixel ellipse
+    #                 ellipse = self.ellipses[name][factor]
+    #
+    #                 # Convert into mask
+    #                 mask = ellipse.to_mask(self.frames[name].xsize, self.frames[name].ysize, invert=True)
+    #
+    #                 # Truncate the frame
+    #                 frame = self.frames[name]
+    #                 frame[mask] = self.config.truncated_value
+    #
+    #                 # Save
+    #                 frame.saveto(path)
+    #
+    #                 # Cache
+    #                 if self.config.cache:
+    #
+    #                     # Upload, and remove local file
+    #                     remote_path = self.remote.upload_file_to(path, self.cache_paths[name], remove=True)
+    #
+    #                     # Debugging
+    #                     log.debug("Truncated " + name + " image with factor " + str(factor) + " has been cached to '" + remote_path + "'")
 
     # -----------------------------------------------------------------
 
