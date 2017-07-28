@@ -69,9 +69,12 @@ def make_tir_to_uv(tir, fuv, **kwargs):
     fuv.convert_to("W/m2", density=True, density_strict=True, **kwargs) # here it is a neutral density!
     
     tir = tir.copy()
-    tir.convert_to("W/m2", density=False, density_strict=True, **kwargs) # here it is bolometric!
+    tir_mapData = tir.data.astype('float64') # Necessary for extreme conversion factors
 
-    
+    factor = tir.convert_to("W/m2", density=False, density_strict=True, **kwargs) # here it is bolometric!
+
+    tir._data = tir_mapData * factor
+
     #frames.convert_to_same_unit("W/m2", density=True)
 
     ## TIR IN W/M2
@@ -79,7 +82,6 @@ def make_tir_to_uv(tir, fuv, **kwargs):
     # Convert to same pixelscale and convolve to same resolution
     frames = NamedFrameList(fuv=fuv, tir=tir)
     frames.convolve_and_rebin()
-
     
     # CALCULATE TIR TO FUV RATIO
     #print(frames.names)

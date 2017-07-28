@@ -77,7 +77,13 @@ class ConvolutionKernel(Frame):
         if "prepared" in self.metadata: self._prepared = self.metadata["prepared"]
 
         # Get from and to filter, set PSF filter
-        self.from_filter = parse_filter(self.metadata["frmfltr"]) if "frmfltr" in self.metadata else None
+        if "frmfltr" in self.metadata:
+            # Prevent sending None string to parse_filter
+            if self.metadata["frmfltr"] != 'None':
+                self.from_filter = parse_filter(self.metadata["frmfltr"])
+            else:
+                self.from_filter = None
+
         self.to_filter = parse_filter(self.metadata["tofltr"])
         self._psf_filter = self.to_filter
 
