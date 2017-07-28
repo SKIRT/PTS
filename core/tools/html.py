@@ -232,6 +232,21 @@ def mailto(address, text=None):
 theme_button = """
 <input id="b1" onclick="change()" type="button" value="Dark theme"> 
 <script>
+    function getCSSRule(ruleName)
+    {
+        ruleName = ruleName.toLowerCase();
+        var result = null;
+        var find = Array.prototype.find;
+    
+        find.call(document.styleSheets, styleSheet => {
+            result = find.call(styleSheet.cssRules, cssRule => {
+                return cssRule instanceof CSSStyleRule 
+                    && cssRule.selectorText.toLowerCase() == ruleName;
+            });
+            return result != null;
+        });
+        return result;
+    }
 
     function fileExists(image_url)
     {
@@ -272,6 +287,7 @@ theme_button = """
         darkBackground();
         darkText();
         darkImages();
+        darkTables();
     }
     
     function lightTheme()
@@ -279,6 +295,7 @@ theme_button = """
         lightBackground();
         lightText();
         lightImages();
+        lightTables();
     }
     
     function darkBackground()
@@ -347,6 +364,20 @@ theme_button = """
             var default_path = filename.split("_dark")[0] + "." + extension;   
             allImages[i].src = default_path;
         }
+    }
+    
+    function darkTables()
+    {
+        var hovertable = getCSSRule('table.hovertable tr:hover');
+        //window.alert(hovertable);
+        hovertable.style["background-color"] = "#3b3d3f";
+    }
+    
+    function lightTables()
+    {
+        var hovertable = getCSSRule('table.hovertable tr:hover');
+        //window.alert(hovertable);
+        hovertable.style["background-color"] = "lightgrey";
     }
 </script>"""
 
