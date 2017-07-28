@@ -103,8 +103,8 @@ class S4G(Configurable):
         self.ngc_name = None
         self.ngc_name_nospaces = None
 
-        # The Vizier querying object
-        self.vizier = Vizier()
+        # The Vizier querying object, specifying the necessary columns for this class
+        self.vizier = Vizier(columns=['Name', 'RAJ2000', 'DEJ2000', 'Dmean','e_Dmean', 'amaj', 'ell','[3.6]', '[4.5]', 'e_[3.6]', 'e_[4.5]', 'PA'])
         self.vizier.ROW_LIMIT = -1
 
         # The DustPedia database
@@ -281,16 +281,15 @@ class S4G(Configurable):
 
         # Galaxy name for S4G catalog
         self.properties.name = table["Name"][0]
-
         # Galaxy center from decomposition (?)
-        ra_center = table["_RAJ2000"][0]
-        dec_center = table["_DEJ2000"][0]
+        ra_center = table["RAJ2000"][0]
+        dec_center = table["DEJ2000"][0]
         center = SkyCoordinate(ra=ra_center, dec=dec_center, unit="deg", frame='fk5')
         self.properties.center = center
 
         # Center position
         #self.properties.center = SkyCoordinate(ra=self.info["RA"][0], dec=self.info["DEC"][0], unit="deg") # center position from DustPedia
-
+        
         # Distance
         self.properties.distance = table["Dmean"][0] * u("Mpc")
         self.properties.distance_error = table["e_Dmean"][0] * u("Mpc")

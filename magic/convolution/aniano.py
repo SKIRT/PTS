@@ -61,6 +61,9 @@ aniano_names = {"UVOT UVM2": "Gauss_02.5",
                 "2MASS J": "Gauss_03.5",   # FWHM is actually variable
                 "2MASS H": "Gauss_03.0",   # FWHM is actually variable
                 "2MASS Ks": "Gauss_03.5",  # FWHM is actually variable
+                "UKIDSS J": "BiGauss_01.0",  # FWHM is actually variable
+                "UKIDSS H": "BiGauss_01.0",  # FWHM is actually variable
+                "UKIDSS K": "BiGauss_01.0",  # FWHM is actually variable
                 "WISE W1": "WISE_FRAME_3.4",
                 "IRAC I1": "IRAC_3.6",
                 "IRAC I2": "IRAC_4.5",
