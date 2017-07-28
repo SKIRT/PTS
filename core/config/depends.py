@@ -23,7 +23,7 @@ definition.add_flag("version", "show the version numbers of the required package
 definition.add_flag("canopy", "show whether the package is available through Canopy")
 definition.add_flag("pip", "show whether the package is available through pip")
 definition.add_flag("conda", "show whether the package is available through the conda package manager")
-definition.add_flag("description", "show a description", letter="d")
+definition.add_flag("description", "show a description")
 definition.add_flag("subprojects", "show the dependencies per subproject", letter="j")
 
 definition.add_flag("show", "show", True)
