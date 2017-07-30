@@ -15,10 +15,10 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from .component import MapsComponent
-from ...core.tools import html
 from ..html.component import stylesheet_url, page_style, table_class, hover_table_class, top_title_size, title_size
 from ..core.environment import map_sub_names, colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name
 from ...core.tools import filesystem as fs
+from ...core.tools.html import HTMLPage, SimpleTable
 
 # -----------------------------------------------------------------
 
@@ -104,7 +104,7 @@ class AllMapsPageGenerator(MapsComponent):
         self.write()
 
         # Show
-        self.show()
+        if self.config.show: self.show()
 
     # -----------------------------------------------------------------
 
@@ -124,7 +124,6 @@ class AllMapsPageGenerator(MapsComponent):
         else: fs.create_directory(self.plots_path)
 
         # Create directories for each type of map
-        #for name in map_sub_names: self.plots_paths[name] = fs.create_directory_in(self.plots_path, name)
         self.colour_plots_path = fs.create_directory_in(self.plots_path, colours_name)
         self.ssfr_plots_path = fs.create_directory_in(self.plots_path, ssfr_name)
         self.tir_plots_path = fs.create_directory_in(self.plots_path, tir_name)
@@ -583,10 +582,8 @@ class AllMapsPageGenerator(MapsComponent):
         # Loop over the maps
         #for name, map in self.get_colour_maps(flatten=True).items():
 
-
-
         # Make
-        self.colour_table = html.SimpleTable.rasterize(cells, ncolumns=ncolumns)
+        self.colour_table = SimpleTable.rasterize(cells, ncolumns=ncolumns)
 
     # -----------------------------------------------------------------
 
@@ -601,7 +598,7 @@ class AllMapsPageGenerator(MapsComponent):
         log.info("Making the table of sSFR maps ...")
 
         # Make
-        self.ssfr_table = html.SimpleTable.rasterize(cells, ncolumns=ncolumns)
+        self.ssfr_table = SimpleTable.rasterize(cells, ncolumns=ncolumns)
 
     # -----------------------------------------------------------------
 
@@ -672,23 +669,11 @@ class AllMapsPageGenerator(MapsComponent):
         :return:
         """
 
-        body = ""
-        #body += html.line + html.newline
-        #body += str(self.images_table)
+        # Inform the user
+        log.info("Generating the page ...")
 
-
-        #body += self.footing
-
-        # Make page
-        # Create contents
-        contents = dict()
-        contents["title"] = self.title
-        contents["head"] = html.link_stylesheet_header_template.format(url=stylesheet_url)
-        contents["body"] = body
-        contents["style"] = page_style
-
-        # Make page
-        self.page = html.page_template.format(**contents)
+        # Create the page
+        self.page = HTMLPage(self.title, style=page_style, css_path=stylesheet_url, footing=self.footing)
 
     # -----------------------------------------------------------------
 

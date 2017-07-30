@@ -294,6 +294,10 @@ truncation_ellipse_filename = "ellipse.reg"
 
 # -----------------------------------------------------------------
 
+page_filename = "index.html"
+
+# -----------------------------------------------------------------
+
 class GalaxyModelingEnvironment(ModelingEnvironment):
 
     """
@@ -375,6 +379,7 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
         # NEW: Set the path to the maps/html directory
         self.maps_html_path = fs.create_directory_in(self.maps_path, "html")
+        self.maps_html_page_path = fs.create_directory_in(self.maps_html_path, page_filename)
 
         # NEW
 

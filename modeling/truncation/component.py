@@ -19,6 +19,8 @@ from ...core.tools import filesystem as fs
 # -----------------------------------------------------------------
 
 analytics_name = "analytics"
+html_name = "html"
+page_filename = "index.html"
 
 # -----------------------------------------------------------------
 
@@ -42,6 +44,12 @@ class TruncationComponent(GalaxyModelingComponent):
         # The path to the truncation/analytics directory
         self.truncation_analytics_path = None
 
+        # HTML directory
+        self.truncation_html_path = None
+
+        # page
+        self.truncation_html_page_path = None
+
     # -----------------------------------------------------------------
 
     def setup(self, **kwargs):
@@ -57,5 +65,11 @@ class TruncationComponent(GalaxyModelingComponent):
 
         # Set the path to the truncation/analytics directory
         self.truncation_analytics_path = fs.create_directory_in(self.truncation_path, analytics_name)
+
+        # Set the path to the HTML directory
+        self.truncation_html_path = fs.create_directory_in(self.truncation_path, html_name)
+
+        # Page path
+        self.truncation_html_page_path = fs.join(self.truncation_html_path, page_filename)
 
 # -----------------------------------------------------------------

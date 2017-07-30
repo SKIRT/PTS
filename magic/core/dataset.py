@@ -311,6 +311,18 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def filters(self):
+
+        """
+        This functino ...
+        :return:
+        """
+
+        return self.get_filters().values()
+
+    # -----------------------------------------------------------------
+
     def get_filters(self):
 
         """
@@ -322,7 +334,8 @@ class DataSet(object):
         fltrs = OrderedDict()
 
         # Loop over the images
-        for name in self.paths: fltrs[name] = self.get_frame(name, masked=False).filter
+        #for name in self.paths: fltrs[name] = self.get_frame(name, masked=False).filter
+        for name in self.paths: fltrs[name] = self.get_filter(name)
 
         # Return the dictionary with the filters
         return fltrs
@@ -337,7 +350,9 @@ class DataSet(object):
         :return:
         """
 
-        return self.get_frame(name).filter
+        header = self.get_header(name)
+        return headers.get_filter(name, header)
+        #return self.get_frame(name).filter
 
     # -----------------------------------------------------------------
 

@@ -793,3 +793,66 @@ def add_quotes_if_string_with_spaces_else_string(value):
     else: return add_quotes_if_spaces(value)
 
 # -----------------------------------------------------------------
+
+single_quote = "'"
+double_quote = '"'
+
+# -----------------------------------------------------------------
+
+def is_single_quoted(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+
+    if "'" in string:
+        if '"' in string: raise ValueError("String contains both kinds of quote characters")
+        else: return True
+    elif '"' in string: return False
+    else: return False
+
+# -----------------------------------------------------------------
+
+def is_double_quoted(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    if '"' in string:
+        if "'" in string: raise ValueError("String contains both kinds of quote characters")
+        else: return True
+    elif "'" in string: return False
+    else: return False
+
+# -----------------------------------------------------------------
+
+def other_quote_character(*strings):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    is_single = False
+    is_double = False
+
+    for string in strings:
+
+        if is_single_quoted(string): is_single = True
+        elif is_double_quoted(string): is_double = True
+        else: pass
+
+    if is_single:
+        if is_double: raise ValueError("No consensus: both single and double quote characters are used")
+        else: return double_quote
+    elif is_double: return single_quote
+    else: return double_quote  #doesn't matter
+
+# -----------------------------------------------------------------

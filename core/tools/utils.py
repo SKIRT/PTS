@@ -244,6 +244,21 @@ def create_lazified_class(cls, name=None):
 
 # -----------------------------------------------------------------
 
+def create_static_class(cls, name=None):
+
+    """
+    This function ...
+    :param cls:
+    :param name:
+    :return:
+    """
+
+    # TODO
+
+    # Lazified + cache function arguments
+
+# -----------------------------------------------------------------
+
 class lazyproperties(type):
 
     """

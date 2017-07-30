@@ -50,8 +50,11 @@ from __future__ import absolute_import, division, print_function
 import codecs
 
 # Import the relevant PTS classes and modules
-from .stringify import tostr
+from .stringify import tostr, stringify_dict
 from . import numbers
+from . import filesystem as fs
+from . import types
+from . import time
 
 # -----------------------------------------------------------------
 
@@ -116,6 +119,34 @@ def center(html):
     """
 
     return center_template.format(text=html)
+
+# -----------------------------------------------------------------
+
+def updated_footing():
+
+    """
+    This function ...
+    :return:
+    """
+
+    # Generate footing
+    footing = center(small_template.format(text="Last updated on " + time.pretty_time()))
+    return footing
+
+# -----------------------------------------------------------------
+
+def button(id, text, onclick, quote_character='"'):
+
+    """
+    This function ...
+    :param id:
+    :param text:
+    :param onclick:
+    :param quote_character:
+    :return:
+    """
+
+    return '<input id=' + quote_character + id + quote_character + ' onclick=' + quote_character + onclick + quote_character + ' type=' + quote_character + 'button' + quote_character + ' value=' + quote_character + text + quote_character + '>'
 
 # -----------------------------------------------------------------
 
@@ -229,47 +260,45 @@ def mailto(address, text=None):
 
 # -----------------------------------------------------------------
 
-theme_button = """
-<input id="b1" onclick="change()" type="button" value="Dark theme"> 
-<script>
-    function getCSSRule(ruleName)
-    {
-        ruleName = ruleName.toLowerCase();
-        var result = null;
-        var find = Array.prototype.find;
-    
-        find.call(document.styleSheets, styleSheet => {
-            result = find.call(styleSheet.cssRules, cssRule => {
-                return cssRule instanceof CSSStyleRule 
-                    && cssRule.selectorText.toLowerCase() == ruleName;
-            });
-            return result != null;
+get_css_rule_function = """
+function getCSSRule(ruleName)
+{
+    ruleName = ruleName.toLowerCase();
+    var result = null;
+    var find = Array.prototype.find;
+
+    find.call(document.styleSheets, styleSheet => {
+        result = find.call(styleSheet.cssRules, cssRule => {
+            return cssRule instanceof CSSStyleRule 
+                && cssRule.selectorText.toLowerCase() == ruleName;
         });
-        return result;
-    }
+        return result != null;
+    });
+    return result;
+}
+"""
 
-    function fileExists(image_url)
-    {
-        var http = new XMLHttpRequest();
-        window.alert(image_url);
-        http.open('HEAD', image_url, false);
-        http.send();
-        return http.status != 404;
-    }
+# -----------------------------------------------------------------
 
-    // The "callback" argument is called with either true or false
-    // depending on whether the image at "url" exists or not.
-    function imageExists_callback(url, allImages, i, dark_path, callback) 
-    {
-        var img = new Image();
-        img.onload = function() { callback(true, allImages, i, dark_path); };
-        img.onerror = function() { callback(false, allImages, i, dark_path); };
-        img.src = url;
-    }
-    
+file_exists_function = """
+function fileExists(image_url)
+{
+    var http = new XMLHttpRequest();
+    window.alert(image_url);
+    http.open('HEAD', image_url, false);
+    http.send();
+    return http.status != 404;
+}
+"""
+
+# -----------------------------------------------------------------
+
+def make_change_theme_function_template(button_id):
+
+    return """
     function change()
     {
-        var elem = document.getElementById("b1");
+        var elem = document.getElementById('""" + button_id +  """');
         if (elem.value=="Light theme")
         {
             lightTheme();
@@ -281,105 +310,272 @@ theme_button = """
             elem.value = "Light theme";
         }
     }
-    
-    function darkTheme()
-    {
-        darkBackground();
-        darkText();
-        darkImages();
-        darkTables();
+    """
+
+# -----------------------------------------------------------------
+
+dark_theme_function = """
+function darkTheme()
+{
+    darkBackground();
+    darkText();
+    darkImages();
+    darkTables();
+    darkExtra();
+}
+"""
+
+# -----------------------------------------------------------------
+
+light_theme_function = """
+function lightTheme()
+{
+    lightBackground();
+    lightText();
+    lightImages();
+    lightTables();
+    lightExtra();
+}
+"""
+
+# -----------------------------------------------------------------
+
+dark_background_function = """
+function darkBackground()
+{
+    document.body.style.backgroundColor = "black";
+}
+"""
+
+# -----------------------------------------------------------------
+
+dark_text_function = """
+function darkText()
+{
+    document.body.style.color = "white";
+}
+"""
+
+# -----------------------------------------------------------------
+
+light_background_function = """
+function lightBackground()
+{
+    document.body.style.backgroundColor = "white";
+}
+"""
+
+# -----------------------------------------------------------------
+
+light_text_function = """
+function lightText()
+{
+    document.body.style.color = "black";
+}
+"""
+
+# -----------------------------------------------------------------
+
+split_by_last_dot_function = """
+var splitByLastDot = function(text)
+{
+    var index = text.lastIndexOf('.');
+    return [text.slice(0, index), text.slice(index + 1)]
+}
+"""
+
+# -----------------------------------------------------------------
+
+# //allImages = document.getElementsByTagName('img'); // faster as global??
+
+dark_images_function = """
+function darkImages()
+{
+    var allImages = document.getElementsByTagName('img');
+    for(var i = 0; i < allImages.length ; i++)
+    {     
+        var result = splitByLastDot(allImages[i].src);
+        var filename = result[0];
+        var extension = result[1];
+        
+        //window.alert("filename: " + filename);
+        
+        var dark_path = filename + "_dark." + extension;
+        
+        imageExists_callback(dark_path, allImages, i, dark_path, function(existing, allImages, i, dark_path){
+            if(existing == true) { allImages[i].src = dark_path; }
+            });
+                                
+        // didn't work, something I tried myself
+        //allImages[i].onerror = function(){
+        //    allImages[i].src = filename + "." + extension;
+        //    }
     }
-    
-    function lightTheme()
-    {
-        lightBackground();
-        lightText();
-        lightImages();
-        lightTables();
+}
+"""
+
+# -----------------------------------------------------------------
+
+light_images_function = """
+function lightImages()
+{
+    var allImages = document.getElementsByTagName('img');
+    for(var i = 0; i < allImages.length ; i++)
+    {            
+        var result = splitByLastDot(allImages[i].src);
+        var filename = result[0];
+        var extension = result[1];
+        
+        var is_dark = filename.endsWith("_dark");
+        
+        var default_path = filename.split("_dark")[0] + "." + extension;   
+        allImages[i].src = default_path;
     }
-    
-    function darkBackground()
-    {
-        document.body.style.backgroundColor = "black";
-    }
-    
-    function darkText()
-    {
-        document.body.style.color = "white";
-    }
-    
-    function lightBackground()
-    {
-        document.body.style.backgroundColor = "white";
-    }
-    
-    function lightText()
-    {
-        document.body.style.color = "black";
-    }
-    
-    var splitByLastDot = function(text)
-    {
-        var index = text.lastIndexOf('.');
-        return [text.slice(0, index), text.slice(index + 1)]
-    }
-    
-    //allImages = document.getElementsByTagName('img'); // faster as global??
-    
-    function darkImages()
-    {
-        var allImages = document.getElementsByTagName('img');
-        for(var i = 0; i < allImages.length ; i++)
-        {     
-            var result = splitByLastDot(allImages[i].src);
-            var filename = result[0];
-            var extension = result[1];
-            
-            //window.alert("filename: " + filename);
-            
-            var dark_path = filename + "_dark." + extension;
-            
-            imageExists_callback(dark_path, allImages, i, dark_path, function(existing, allImages, i, dark_path){
-                if(existing == true) { allImages[i].src = dark_path; }
-                });
-                                    
-            // didn't work, something I tried myself
-            //allImages[i].onerror = function(){
-            //    allImages[i].src = filename + "." + extension;
-            //    }
-        }
-    }
-    
-    function lightImages()
-    {
-        var allImages = document.getElementsByTagName('img');
-        for(var i = 0; i < allImages.length ; i++)
-        {            
-            var result = splitByLastDot(allImages[i].src);
-            var filename = result[0];
-            var extension = result[1];
-            
-            var is_dark = filename.endsWith("_dark");
-            
-            var default_path = filename.split("_dark")[0] + "." + extension;   
-            allImages[i].src = default_path;
-        }
-    }
-    
-    function darkTables()
-    {
-        var hovertable = getCSSRule('table.hovertable tr:hover');
-        //window.alert(hovertable);
-        hovertable.style["background-color"] = "#3b3d3f";
-    }
-    
-    function lightTables()
-    {
-        var hovertable = getCSSRule('table.hovertable tr:hover');
-        //window.alert(hovertable);
-        hovertable.style["background-color"] = "lightgrey";
-    }
-</script>"""
+}
+"""
+
+# -----------------------------------------------------------------
+
+dark_tables_function = """
+function darkTables()
+{
+    var hovertable = getCSSRule('table.hovertable tr:hover');
+    //window.alert(hovertable);
+    hovertable.style["background-color"] = "#3b3d3f";
+}
+"""
+
+# -----------------------------------------------------------------
+
+light_tables_function = """
+function lightTables()
+{
+    var hovertable = getCSSRule('table.hovertable tr:hover');
+    //window.alert(hovertable);
+    hovertable.style["background-color"] = "lightgrey";
+}
+"""
+
+# -----------------------------------------------------------------
+
+def make_theme_button(classes=None):
+
+    """
+    This function ...
+    :param classes
+    :return:
+    """
+
+    button_id = "theme"
+
+    #code = """
+    #<input id="b1" onclick="change()" type="button" value="Dark theme">
+    code = button(button_id, "Dark theme", "change()")
+    code += "\n"
+    code += "<script>"
+
+    code += "\n"
+    code += get_css_rule_function
+    code += "\n"
+    code += file_exists_function
+    code += "\n"
+    code += split_by_last_dot_function
+    code += "\n"
+    code += make_change_theme_function_template(button_id)
+    code += "\n"
+    code += dark_theme_function
+    code += "\n"
+    code += light_theme_function
+    code += "\n"
+    code += dark_background_function
+    code += "\n"
+    code += dark_text_function
+    code += "\n"
+    code += light_background_function
+    code += "\n"
+    code += light_text_function
+    code += "\n"
+    code += dark_images_function
+    code += "\n"
+    code += light_images_function
+    code += "\n"
+    code += dark_tables_function
+    code += "\n"
+    code += light_tables_function
+
+    # EXTRA
+    if classes is not None:
+
+        code += "\n"
+        dark_function_code = "function darkExtra()\n{\n"
+        light_function_code = "function lightExtra()\n{\n"
+
+        # Loop over the different classes
+        for class_name in classes:
+
+            class_code = ""
+
+            class_code += "    var allDivs = document.getElementsByTagName('div');"
+            class_code += "\n"
+            class_code += "    for(var i = 0; i < allDivs.length ; i++)\n    {"
+            class_code += "\n"
+            class_code += "        var thing = allDivs[i];"
+            class_code += "\n"
+            class_code += "        var currentClass = thing.className;"
+            class_code += "\n"
+
+            # Check class
+            class_code += "        if (currentClass == '" + class_name + "')\n        {"
+            class_code += "\n"
+
+            property_name = classes[class_name]
+            sequence = property_name.split(".")
+
+            property_sequence_string = "[" + "][".join("'" + s + "'"  for s in sequence) + "]"
+
+            # Set color for dark function
+            dark_code = class_code
+            light_code = class_code
+
+            dark_code += "            thing" + property_sequence_string + " = 'black';\n"
+            light_code += "            thing" + property_sequence_string + " = 'white';\n"
+
+            #property_name = classes[class_name]
+
+            #dark_code += "\n"
+            #light_code += "\n"
+
+            dark_code += "        }\n        else {}"
+            light_code += "        }\n        else {}"
+
+            # end of for loop
+            dark_code += "\n    }"
+            light_code += "\n    }"
+
+            dark_function_code += dark_code
+            light_function_code += light_code
+
+        # End function
+        dark_function_code += "\n"
+        dark_function_code += "}"
+
+        # End function
+        light_function_code += "\n"
+        light_function_code += "}"
+
+    else:
+
+        dark_function_code = "function darkExtra()\n{}"
+        light_function_code = "function lightExtra()\n{}"
+
+    code += dark_function_code
+    code += "\n\n"
+    code += light_function_code
+
+    code += "\n</script>"
+
+    # Return the code
+    return code
 
 # -----------------------------------------------------------------
 
@@ -642,7 +838,7 @@ class HTMLPage(object):
     A class to create HTML pages containing CSS and tables.
     """
 
-    def __init__(self, tables, css=None, encoding="utf-8"):
+    def __init__(self, title, css=None, css_path=None, style=None, encoding="utf-8", language="en", head=None, footing=None, body_settings=None, javascript_path=None):
 
         """
         HTML page constructor.
@@ -651,13 +847,43 @@ class HTMLPage(object):
         css -- Cascading Style Sheet specification that is appended before the
                table string
         encoding -- Characters encoding. Default: UTF-8
+        :param language:
+        :param head:
+        :param footing:
+        :param body_settings:
+        :param javascript_path:
         """
 
-        self.tables = tables
+        # Set properties
+        self.title = title
         self.css = css
+        self.css_path = css_path
+        self.style = style
         self.encoding = encoding
+        self.language = language
+        self.head = head
+        self.footing = footing
+        self.body_settings = body_settings
+        self.javascript_path = javascript_path
 
+        # The contents
+        self.contents = []
+
+        # The path of the HTML file
         self.path = None
+
+    # -----------------------------------------------------------------
+
+    def __iadd__(self, element):
+
+        """
+        This function ...
+        :param element:
+        :return:
+        """
+
+        self.contents.append(element)
+        return self
 
     # -----------------------------------------------------------------
 
@@ -667,43 +893,79 @@ class HTMLPage(object):
         Returns the HTML page as a string.
         """
 
-        page = []
+        lines = []
 
-        if self.css: page.append('<style type="text/css">\n%s\n</style>' % self.css)
+        lines.append("<!DOCTYPE html>")
+        lines.append('<html lang="' + self.language +'">')
+        lines.append("<head>")
+
+        # Add css
+        if self.css is not None: lines.append('    <style type="text/css">\n%s\n</style>' % self.css)
+
+        # Add css path(s)
+        if self.css_path is not None:
+            if types.is_string_sequence(self.css_path):
+                for url in self.css_path: lines.append('    <link rel="stylesheet" type="text/css" href="{url}">'.format(url=url))
+            elif types.is_string_type(self.css_path): lines.append('    <link rel="stylesheet" type="text/css" href="{url}">'.format(url=self.css_path))
+            else: raise ValueError("Invalid type for css_path")
+
+        # Add javascript path(s)
+        if self.javascript_path is not None:
+            if types.is_string_sequence(self.javascript_path):
+                for url in self.javascript_path: lines.append('    <script type="text/javascript" src="{url}"></script>'.format(url=url))
+            elif types.is_string_type(self.javascript_path): lines.append('    <script type="text/javascript" src="{url}"></script>'.format(url=self.javascript_path))
+            else: raise ValueError("Invalid type for javascript_path")
 
         # Set encoding
-        page.append('<meta http-equiv="Content-Type" content="text/html;'
-            'charset=%s">' % self.encoding)
+        #lines.append('    <meta charset="UTF-8">')
+        lines.append('    <meta http-equiv="Content-Type" content="text/html;charset=%s">' % self.encoding)
 
-        for table in self.tables:
-            page.append(str(table))
-            page.append('<br />')
+        # Set title
+        lines.append('    <title>{title}</title>'.format(title=self.title))
+
+        # Set other head information
+        if self.head is not None: lines.append(self.head)
+
+        #
+        lines.append("</head>")
+
+        if self.body_settings is not None: body_start = "<body " + stringify_dict(self.body_settings, identity_symbol="=", quote_key=False)[1] + ">"
+        else: body_start = "<body>"
+        lines.append(body_start)
+
+        # Start of styled div
+        if self.style is not None: lines.append('<div class="' + self.style + '">')
+
+        # Add content
+        for element in self.contents: lines.append(str(element))
+
+        # Footing
+        if self.footing is not None: lines.append(str(self.footing))
+
+        # End of styled div
+        if self.style is not None: lines.append('</div>')
+
+        # End of body and page
+        lines.append("</body>")
+        lines.append("</html>")
 
         # Create the page and return
-        return '\n'.join(page)
+        return '\n'.join(lines)
 
     # -----------------------------------------------------------------
 
-    def __iter__(self):
+    def saveto(self, filepath, update_path=True):
 
         """
-        Iterate through tables
+        Save HTML page to a file using the proper encoding:
+        :param update_path:
         """
 
-        for table in self.tables:
-            yield table
+        # Write each line
+        #with codecs.open(filepath, 'w', self.encoding) as outfile:
+        #    for line in str(self): outfile.write(line)
 
-    # -----------------------------------------------------------------
-
-    def saveto(self, filepath):
-
-        """
-        Save HTML page to a file using the proper encoding
-        """
-
-        with codecs.open(filepath, 'w', self.encoding) as outfile:
-            for line in str(self):
-                outfile.write(line)
+        fs.write_text(filepath, str(self))
 
         # Set filepath
         self.path = filepath
@@ -720,21 +982,12 @@ class HTMLPage(object):
         if self.path is None: raise ValueError("Path not defined")
         self.saveto(self.path)
 
-    # -----------------------------------------------------------------
-
-    def add_table(self, table):
-
-        """
-        Add a SimpleTable to the page list of tables
-        """
-
-        self.tables.append(table)
-
 # -----------------------------------------------------------------
 
 def fit_data_to_columns(data, num_cols):
 
-    """Format data into the configured number of columns in a proper format to
+    """
+    Format data into the configured number of columns in a proper format to
     generate a SimpleTable.
 
     Example:
@@ -742,64 +995,12 @@ def fit_data_to_columns(data, num_cols):
     fitted_data = fit_data_to_columns(test_data, 5)
     table = SimpleTable(fitted_data)
     """
+
     num_iterations = len(data)/num_cols
 
     if len(data)%num_cols != 0:
         num_iterations += 1
 
     return [data[num_cols*i:num_cols*i + num_cols] for i in range(num_iterations)]
-
-# -----------------------------------------------------------------
-
-### Example usage ###
-if __name__ == "__main__":
-    css = """
-    table.mytable {
-        font-family: times;
-        font-size:12px;
-        color:#000000;
-        border-width: 1px;
-        border-color: #eeeeee;
-        border-collapse: collapse;
-        background-color: #ffffff;
-        width=100%;
-        max-width:550px;
-        table-layout:fixed;
-    }
-    table.mytable th {
-        border-width: 1px;
-        padding: 8px;
-        border-style: solid;
-        border-color: #eeeeee;
-        background-color: #e6eed6;
-        color:#000000;
-    }
-    table.mytable td {
-        border-width: 1px;
-        padding: 8px;
-        border-style: solid;
-        border-color: #eeeeee;
-    }
-    #code {
-        display:inline;
-        font-family: courier;
-        color: #3d9400;
-    }
-    #string {
-        display:inline;
-        font-weight: bold;
-    }
-    """
-    table1 = SimpleTable([['Hello,', 'world!'], ['How', 'are', 'you?']],
-            header_row=['Header1', 'Header2', 'Header3'],
-            css_class='mytable')
-    table2 = SimpleTable([['Testing', 'this'], ['table', 'here']],
-            css_class='mytable')
-
-    page = HTMLPage()
-    page.add_table(table1)
-    page.add_table(table2)
-    page.css = css
-    page.save("test.html")
 
 # -----------------------------------------------------------------

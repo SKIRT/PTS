@@ -280,6 +280,12 @@ def stringify_dict(value, **kwargs):
     # If delimiter is passed for stringifying the values in the list
     if "value_delimiter" in value_kwargs: value_kwargs["delimiter"] = value_kwargs.pop("value_delimiter")
 
+    # Get identify symbol
+    identity_symbol = kwargs.pop("identity_symbol", ": ")
+    quote_key = kwargs.pop("quote_key", True)
+    quote_value = kwargs.pop("quote_value", True)
+    quote_character = kwargs.pop("quote_character", "'")
+
     # Loop over the dictionary keys
     for key in value:
 
@@ -304,9 +310,15 @@ def stringify_dict(value, **kwargs):
         if ptype is None: ptype = vtype
         elif ptype != vtype: ptype = "mixed"
 
+        if quote_key: kstring_with_quotes = quote_character + kstring + quote_character
+        else: kstring_with_quotes = kstring
+
+        if ptype == "integer" or ptype == "real" or ptype == "boolean": vstring_with_quotes = vstring
+        elif quote_value: vstring_with_quotes = quote_character + vstring + quote_character
+        else: vstring_with_quotes = vstring
+
         # Determine line
-        if ptype == "integer" or ptype == "real" or ptype == "boolean": string = "'" + kstring + "': " + vstring
-        else: string = "'" + kstring + "': '" + vstring + "'"
+        string = kstring_with_quotes + identity_symbol + vstring_with_quotes
 
         # Add line
         parts.append(string)
