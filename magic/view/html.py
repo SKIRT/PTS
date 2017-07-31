@@ -948,12 +948,13 @@ def make_load_regions_function(name, regions, display=None):
 
 # -----------------------------------------------------------------
 
-def make_synchronize_regions(indicator_id, display_ids):
+def make_synchronize_regions(indicator_id, display_ids, ellipses):
 
     """
     This function ...
     :param indicator_id:
     :param display_ids:
+    :param ellipses: default, original ellipses
     :return:
     """
 
@@ -985,8 +986,10 @@ def make_synchronize_regions(indicator_id, display_ids):
     code += "    var x_radius = lastreg.r1;\n"
     code += "    var y_radius = lastreg.r2;\n"
 
-    code += "    window.alert(x_radius);\n"
-    code += "    window.alert(y_radius);\n"
+    #code += "    window.alert(x_radius);\n"
+    #code += "    window.alert(y_radius);\n"
+
+    code += "    window.alert(lastim.display.id);\n"
 
     #new_factor = 2.0
 
@@ -994,8 +997,40 @@ def make_synchronize_regions(indicator_id, display_ids):
 
     #text = "Factor: " + str(new_factor)
     #code += '$("div#' + indicator_id + '").text("' + text + '");'
-    code += '    $("div#' + indicator_id + '").text(new_text);'
+    code += '    $("div#' + indicator_id + '").text(new_text);\n'
 
+    # LOOP OVER THE OTHER IMAGES
+    #code += '    for(var i = 0; i < ' + len(display_ids) + ' ; i++)'
+
+    code += "    var displayIds = " + str(display_ids) + ";\n"
+
+    #code += "    window.alert(displayIds);\n"
+
+    # for display_id in display_ids:
+    #
+    #     im_temp_name = display_id.lower() + "image"
+    #     code += "    try\n    {\n"
+    #     code += "        var " + im_temp_name + " = JS9.GetImage({display: '" + display_id + "'});\n"
+    #     code += "        window.alert('" + display_id + " image is found');\n"
+    #     code += "    }\n"
+    #     code += "    catch(err)\n{\n"
+    #     code += "        window.alert('" + display_id + " image is NOT found');"
+    #     code += "\n    }"
+
+    code += "    window.alert(displayIds.length);\n"
+
+    code += "    for(var i = 0; i < displayIds.length ; i++)\n"
+    code += "    {\n"
+    code += "        window.alert(i);\n"
+    #code += "        var isCurrent = displayIDs[i] == lastim.display.id;\n"
+    #code += "        window.alert(isCurrent);\n"
+    #code += "        if (isCurrent == true) { window.alert(displayIDs[i] + ' = current'); }\n"
+    #code += "        else { window.alert(displayIDs[i] + ' = not current'); }\n"
+
+    code += "    if (displayIDs[i] == lastim.display.id) { window.alert(displayIDs[i] + ' = current'); }\n"
+    code += "    else { window.alert(displayIDs[i] + ' = not current'); }\n"
+
+    code += "    }\n"
     code += "\n}"
 
     # Return the code

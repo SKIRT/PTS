@@ -104,6 +104,9 @@ class TruncationPageGenerator(TruncationComponent):
         # The display IDs
         self.display_ids = dict()
 
+        # The ellipses
+        self.ellipses = dict()
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -494,6 +497,9 @@ class TruncationPageGenerator(TruncationComponent):
             region = self.disk_ellipse.to_pixel(self.coordinate_systems[name])
             regions_for_loader = region if self.config.load_regions else None
 
+            # Add the region
+            self.ellipses[name] = region
+
             # Add preload
             if self.config.preload_all or (self.config.preload is not None and fltr in self.config.preload):
 
@@ -643,7 +649,12 @@ class TruncationPageGenerator(TruncationComponent):
 
         #self.page += "<script>" + other_sleep_function + "</script>"
 
-        self.page += "<script>\n" + make_synchronize_regions(self.indicator_id, self.display_ids.values()) + "</script>\n"
+        ellipses = dict()
+        for name in self.ellipses:
+            display_id = self.display_ids[name]
+            ellipses[display_id] = self.ellipses[name]
+
+        self.page += "<script>\n" + make_synchronize_regions(self.indicator_id, self.display_ids.values(), ellipses) + "</script>\n"
 
         self.page += center(make_theme_button(classes=classes))
 

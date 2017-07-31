@@ -53,7 +53,8 @@ class Truncator(TruncationComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-
+        # Create the truncation ellipse
+        self.make_ellipse()
 
         # 6. Writing
         self.write()
@@ -70,6 +71,21 @@ class Truncator(TruncationComponent):
 
         # Call the setup function of the base class
         super(Truncator, self).setup(**kwargs)
+
+    # -----------------------------------------------------------------
+
+    def make_ellipse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the truncation ellipse ...")
+
+        # Make the truncation ellipse by scaling the disk ellipse
+        self.ellipse = self.config.factor * self.disk_ellipse
 
     # -----------------------------------------------------------------
 
