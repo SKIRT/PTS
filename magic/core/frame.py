@@ -2231,6 +2231,9 @@ class Frame(NDDataArray):
         #data[np.isinf(data)] = 0.0
         data[np.isinf(data)] = float("nan")
 
+        # FLIP UP-DOWN
+        data = np.flipud(data)
+
         # INTERVAL
         if interval == "zscale": vmin, vmax = ZScaleInterval().get_limits(data)
         elif interval == "pts":

@@ -19,7 +19,7 @@ import gc
 from .component import TruncationComponent
 from ...core.tools.html import HTMLPage, SimpleTable, newline, updated_footing, make_theme_button, center, sleep_function, other_sleep_function, make_script_button, unordered_list
 from ...core.tools.logging import log
-from ...magic.view.html import JS9Viewer, JS9Preloader, body_settings, javascripts, css_scripts, JS9Menubar, JS9Loader, JS9Spawner, JS9Colorbar, JS9Window, make_load_region_function, make_load_region
+from ...magic.view.html import JS9Viewer, JS9Preloader, body_settings, javascripts, css_scripts, JS9Menubar, JS9Loader, JS9Spawner, JS9Colorbar, JS9Window, make_load_region_function, make_load_region, make_synchronize_regions
 from ...core.tools import filesystem as fs
 from ...core.tools.utils import lazyproperty
 from ...core.filter.filter import parse_filter
@@ -97,6 +97,12 @@ class TruncationPageGenerator(TruncationComponent):
 
         # Info
         self.info = dict()
+
+        # The coordinate systems
+        self.coordinate_systems = dict()
+
+        # The display IDs
+        self.display_ids = dict()
 
     # -----------------------------------------------------------------
 
@@ -263,6 +269,18 @@ class TruncationPageGenerator(TruncationComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def indicator_id(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "indicator"
+
+    # -----------------------------------------------------------------
+
     def make_indicator(self):
 
         """
@@ -273,7 +291,8 @@ class TruncationPageGenerator(TruncationComponent):
         # Inform the user
         log.info("Making the truncation factor indicator ...")
 
-        self.indicator = "<div id='indicator'>\n"
+        #
+        self.indicator = "<div id='" + self.indicator_id + "'>\n"
         self.indicator += "Factor: 1.0\n"
         self.indicator += "</div>"
 
@@ -363,6 +382,8 @@ class TruncationPageGenerator(TruncationComponent):
             if self.config.reproject_method == "max": rebin_name = self.dataset.max_pixelscale_name
             elif self.config.reproject_method == "median": rebin_name = self.dataset.median_pixelscale_name
             elif self.config.reproject_method == "largest": rebin_name = self.dataset.largest_wcs_name
+            elif self.config.reproject_method == "largest_from_median": rebin_name = self.dataset.largest_wcs_below_median_pixelscale_name
+            elif self.config.reproject_method == "closest_pixelscale": rebin_name = self.dataset.get_closest_pixelscale_name(self.config.reproject_pixelscale)
             else: raise ValueError("Invalid reproject method: '" + self.config.reproject_method + "'")
 
             # Debugging
@@ -386,6 +407,10 @@ class TruncationPageGenerator(TruncationComponent):
 
             # Set the path
             self.plots_paths[name] = filepath
+
+            # Set the WCS
+            if rebin_wcs is not None: self.coordinate_systems[name] = rebin_wcs
+            else: self.coordinate_systems[name] = frame.wcs
 
             # Cleanup
             gc.collect()
@@ -449,6 +474,7 @@ class TruncationPageGenerator(TruncationComponent):
             settings = dict()
             settings["scale"] = self.config.scale
             settings["colormap"] = self.config.colormap
+            settings["zoom"] = self.config.zoom
             #settings["fits2png"] = "true"
 
             #regions = "ellipse"
@@ -464,8 +490,8 @@ class TruncationPageGenerator(TruncationComponent):
 
             #region_string = str(self.disk_ellipse)
 
-            region = self.disk_ellipse
-
+            # Get region in image coordinates
+            region = self.disk_ellipse.to_pixel(self.coordinate_systems[name])
             regions_for_loader = region if self.config.load_regions else None
 
             # Add preload
@@ -475,7 +501,9 @@ class TruncationPageGenerator(TruncationComponent):
                 self.preloader.add_path(name, path, settings=settings, display=display_name, regions=regions_for_loader)
 
                 # Create window
-                self.windows[name] = JS9Window(display_name, width=image_width, height=image_height, background_color="white", menubar=self.config.menubar, colorbar=self.config.colorbar, resize=self.config.resize)
+                self.windows[name] = JS9Window(display_name, width=image_width, height=image_height,
+                                               background_color="white", menubar=self.config.menubar,
+                                               colorbar=self.config.colorbar, resize=self.config.resize)
 
                 display_id = display_name
 
@@ -483,7 +511,8 @@ class TruncationPageGenerator(TruncationComponent):
             elif self.config.dynamic:
 
                 self.loaders[name] = JS9Spawner.from_path("Load image", name, path, settings=settings, button=True,
-                                                          menubar=self.config.menubar, colorbar=self.config.colorbar, regions=regions_for_loader, add_placeholder=False)
+                                                          menubar=self.config.menubar, colorbar=self.config.colorbar,
+                                                          regions=regions_for_loader, add_placeholder=False)
                 display_id = self.loaders[name].display_id
 
                 self.windows[name] = self.loaders[name].placeholder
@@ -500,11 +529,14 @@ class TruncationPageGenerator(TruncationComponent):
 
                 display_id = display_name
 
+            # Set display ID
+            self.display_ids[name] = display_id
+
             # Regions button
             region_button_id = display_name + "regionsbutton"
             load_region_function_name = "load_regions_" + display_name
             # load_region = make_load_region_function(load_region_function_name, regions, display=None)
-            load_region = make_load_region(region, display=display_id)
+            load_region = make_load_region(region, display=display_id, movable=False, rotatable=False, removable=False, resizable=True)
 
             # Create region loader
             self.region_loaders[name] = make_script_button(region_button_id, "Load regions", load_region,
@@ -609,7 +641,9 @@ class TruncationPageGenerator(TruncationComponent):
         classes = dict()
         classes["JS9Menubar"] = "data-backgroundColor"
 
-        self.page += "<script>" + other_sleep_function + "</script>"
+        #self.page += "<script>" + other_sleep_function + "</script>"
+
+        self.page += "<script>\n" + make_synchronize_regions(self.indicator_id, self.display_ids.values()) + "</script>\n"
 
         self.page += center(make_theme_button(classes=classes))
 

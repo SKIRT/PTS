@@ -19,6 +19,7 @@ from collections import OrderedDict
 
 # Import astronomical modules
 from astropy.io import fits
+from astropy.units import Quantity
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
@@ -46,6 +47,8 @@ from ...core.basics.table import SmartTable
 from ...core.basics.containers import FileList, NamedFileList
 from ...core.basics.range import QuantityRange
 from ...core.tools.utils import create_lazified_class
+from ...core.tools import sequences
+from ..basics.pixelscale import Pixelscale
 
 # -----------------------------------------------------------------
 
@@ -1504,8 +1507,65 @@ class DataSet(object):
 
         names = self.names
         #coordinate_systems = [self.get_wcs(name) for name in names]
-        areas = [self.get_wcs(name).area for name in names]
+        areas = [self.get_wcs(name).area.to("sr").value for name in names]
         index = np.argmax(areas)
+        return names[index]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def largest_wcs_below_median_pixelscale_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        names = self.names
+
+        pixelscales = [self.get_pixelscale(name) for name in names]
+
+        # Determine which frame contains the median pixelscale
+        scalar_pixelscales = [pixelscale.average.to("arcsec").value for pixelscale in pixelscales]
+        median_index = np.argsort(scalar_pixelscales)[len(pixelscales) // 2]
+
+        median_pixelscale = pixelscales[median_index]
+
+        # Get pixelscales for determining largest wcs
+        names_for_largest = []
+        for index in range(len(names)):
+            name = names[index]
+            pixelscale = pixelscales[index]
+            if pixelscale <= median_pixelscale: names_for_largest.append(name)
+
+        # Determine the largest wcs
+        areas = [self.get_wcs(name).area.to("sr").value for name in names_for_largest]
+        index = np.argmax(areas)
+        return names_for_largest[index]
+
+    # -----------------------------------------------------------------
+
+    def get_closest_pixelscale_name(self, pixelscale):
+
+        """
+        This function ...
+        :param pixelscale:
+        :return:
+        """
+
+        # Check input
+        if isinstance(pixelscale, Pixelscale): pixelscale = pixelscale.average
+        elif isinstance(pixelscale, Quantity): pass
+        else: raise ValueError("Could not interpret pixelscale")
+
+        # Get names and pixelscales
+        names = self.names
+        pixelscales = [self.get_pixelscale(name).average for name in names]
+
+        # Find index
+        index = sequences.find_closest_index(pixelscales, pixelscale)
+
+        # Return
         return names[index]
 
     # -----------------------------------------------------------------

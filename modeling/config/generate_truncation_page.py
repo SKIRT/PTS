@@ -44,8 +44,9 @@ definition.add_flag("reproject", "reproject to the same WCS", False)
 definition.add_flag("info", "add info about the images", False)
 definition.add_flag("replot", "replot", True)
 
-default_reprojection_method = "largest"
-reproject_methods = ["max", "median", "largest"]
+default_reprojection_method = "closest_pixelscale"
+reproject_methods = ["max", "median", "largest", "largest_from_median", "closest_pixelscale"]
 definition.add_optional("reproject_method", "string", "reprojection method", default_reprojection_method, choices=reproject_methods)
+definition.add_optional("reproject_pixelscale", "quantity", "pixelscale for when reproject_method = 'closest_pixelscale'", "2. arcsec", convert_default=True)
 
 # -----------------------------------------------------------------

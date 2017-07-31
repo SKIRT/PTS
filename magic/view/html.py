@@ -826,7 +826,8 @@ class JS9Window(object):
 
 # -----------------------------------------------------------------
 
-def make_load_region(region, display=None):
+def make_load_region(region, display=None, changeable=True, movable=True, resizable=True, rotatable=True,
+                     removable=True, zoomable=True, lock_x=False, lock_y=False, lock_rotation=False):
 
     """
     This function ...
@@ -837,7 +838,21 @@ def make_load_region(region, display=None):
 
     string = ""
 
+    properties = dict()
+    properties["changeable"] = str(changeable).lower()
+    properties["movable"] = str(movable).lower()
+    properties["resizable"] = str(resizable).lower()
+    properties["rotatable"] = str(rotatable).lower()
+    properties["removable"] = str(removable).lower()
+    properties["zoomable"] = str(zoomable).lower()
+    properties["lockMovementX"] = str(lock_x).lower()
+    properties["lockMovementY"] = str(lock_y).lower()
+    properties["lockRotation"] = str(lock_rotation).lower()
+
     string += "var region_id = JS9.AddRegions('" + str(region) + "'"
+
+    string += ', {' + stringify_dict(properties, identity_symbol=":", quote_key=False, quote_character='"')[1] + '}'
+
     if display is not None: string += ', {display:"' + display + '"}'
     string += ');'
     string += "\n"
@@ -930,5 +945,60 @@ def make_load_regions_function(name, regions, display=None):
         runMyAnalysis(lastim, lastreg);
       }
     }"""
+
+# -----------------------------------------------------------------
+
+def make_synchronize_regions(indicator_id, display_ids):
+
+    """
+    This function ...
+    :param indicator_id:
+    :param display_ids:
+    :return:
+    """
+
+    function_name = "synchronizeRegions"
+
+    code = ""
+
+    code += "var aname, im;\n"
+    code += "var lastim, lastreg;\n"
+    code += "var ncall = 0;\n"
+
+    code += 'JS9.Regions.opts.onchange = "' + function_name + '";'
+    code += "\n"
+
+    code += """// called when the function changes to redo the last display
+    function redo()
+    {
+        if( lastim && lastreg )
+        {
+            """ + function_name + """(lastim, lastreg);
+        }
+    }"""
+
+    code += 'function ' + function_name + '(im, xreg)\n{'
+
+    code += "    lastim = im;\n"
+    code += "    lastreg = xreg;\n"
+
+    code += "    var x_radius = lastreg.r1;\n"
+    code += "    var y_radius = lastreg.r2;\n"
+
+    code += "    window.alert(x_radius);\n"
+    code += "    window.alert(y_radius);\n"
+
+    #new_factor = 2.0
+
+    code += "   new_text = 'test'\n"
+
+    #text = "Factor: " + str(new_factor)
+    #code += '$("div#' + indicator_id + '").text("' + text + '");'
+    code += '    $("div#' + indicator_id + '").text(new_text);'
+
+    code += "\n}"
+
+    # Return the code
+    return code
 
 # -----------------------------------------------------------------
