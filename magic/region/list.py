@@ -1147,7 +1147,7 @@ def make_regular_region(specs):
         else: raise ValueError("No central coordinate")
 
     # RECTANGLES
-    elif region_type == 'rectangle':
+    elif region_type == 'rectangle' or region_type == 'box':
 
         if isinstance(coord_list[0], BaseCoordinateFrame):
 
