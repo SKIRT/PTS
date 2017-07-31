@@ -120,20 +120,6 @@ def open_file(path, wait=False):
 
 # -----------------------------------------------------------------
 
-def open_in_browser(url_or_path):
-
-    """
-    This function ...
-    :param url_or_path:
-    :return:
-    """
-
-    import webbrowser
-    webbrowser._tryorder = ["safari"]
-    webbrowser.open(url_or_path, new=2)
-
-# -----------------------------------------------------------------
-
 def open_directory(path, wait=False):
 
     """

@@ -36,5 +36,9 @@ definition.add_optional("zoom", "string", "zoom function", default_zoom, choices
 definition.add_flag("png", "convert to png", False)
 definition.add_flag("dynamic", "create the viewers dynamically", False)
 definition.add_flag("menubar", "add menubars", True)
+definition.add_flag("colorbar", "add colorbars", False)
+definition.add_flag("resize", "allow resize", False)
+definition.add_flag("load_regions", "load regions with images (does not work yet)", False)
+definition.add_flag("mask", "add masks", False)
 
 # -----------------------------------------------------------------

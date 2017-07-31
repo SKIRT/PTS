@@ -19,6 +19,7 @@ import math
 from astropy.coordinates import Angle
 from astropy.wcs import utils
 from photutils.geometry import elliptical_overlap_grid, circular_overlap_grid, rectangular_overlap_grid
+from astropy.coordinates import frame_transform_graph
 
 # Import the relevant PTS classes and modules
 from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
@@ -27,6 +28,7 @@ from ..basics.stretch import PixelStretch, SkyStretch, PhysicalStretch
 #from ..basics.mask import Mask
 from ...core.units.parsing import parse_unit as u
 from ..core.mask import Mask
+from .region import add_info, make_ellipse_template, coordsys_name_mapping
 
 # -----------------------------------------------------------------
 
@@ -466,6 +468,37 @@ class PixelEllipseRegion(EllipseRegion, PixelRegion):
 
         return SkyEllipseRegion.from_pixel(self, wcs)
 
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.include: prefix = ""
+        else: prefix = "-"
+
+        coordsys = 'fk5'
+        fmt = '.4f'
+        radunit = 'deg'
+
+        if radunit == 'arcsec':
+            if coordsys in coordsys_name_mapping.keys(): radunitstr = '"'
+            else: raise ValueError('Radius unit arcsec not valid for coordsys {}'.format(coordsys))
+        else: radunitstr = ''
+
+        x = self.center.x
+        y = self.center.y
+        r1 = self.semimajor
+        r2 = self.semiminor
+        ang = self.angle.to("deg").value
+
+        string = prefix + make_ellipse_template(fmt, radunitstr).format(**locals())
+        string = add_info(string, self)
+        return string
+
 # -----------------------------------------------------------------
 
 class SkyEllipseRegion(EllipseRegion, SkyRegion):
@@ -559,6 +592,41 @@ class SkyEllipseRegion(EllipseRegion, SkyRegion):
         radius = SkyStretch(box_x_radius, box_y_radius)
 
         return radius
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.include: prefix = ""
+        else: prefix = "-"
+
+        coordsys = 'fk5'
+        fmt = '.4f'
+        radunit = 'deg'
+
+        if radunit == 'arcsec':
+            if coordsys in coordsys_name_mapping.keys(): radunitstr = '"'
+            else: raise ValueError('Radius unit arcsec not valid for coordsys {}'.format(coordsys))
+        else: radunitstr = ''
+
+        # convert coordsys string to coordsys object
+        if coordsys in coordsys_name_mapping: frame = frame_transform_graph.lookup_name(coordsys_name_mapping[coordsys])
+        else: frame = None  # for pixel/image/physical frames
+
+        x = float(self.center.transform_to(frame).spherical.lon.to('deg').value)
+        y = float(self.center.transform_to(frame).spherical.lat.to('deg').value)
+        r1 = float(self.semimajor.to(radunit).value)
+        r2 = float(self.semiminor.to(radunit).value)
+        ang = float(self.angle.to('deg').value)
+
+        string = prefix + make_ellipse_template(fmt, radunitstr).format(**locals())
+        string = add_info(string, self)
+        return string
 
 # -----------------------------------------------------------------
 

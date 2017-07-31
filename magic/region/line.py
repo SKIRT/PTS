@@ -14,6 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
 from astropy.units import Unit
+from astropy.coordinates import frame_transform_graph
 
 # Import the relevant PTS classes and modules
 from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
@@ -21,6 +22,7 @@ from ..basics.coordinate import PixelCoordinate, SkyCoordinate, PhysicalCoordina
 from ..basics.stretch import PixelStretch, SkyStretch, PhysicalStretch
 from .rectangle import PixelRectangleRegion, SkyRectangleRegion, PhysicalRectangleRegion
 from ..tools import coordinates
+from .region import make_line_template, add_info, coordsys_name_mapping
 
 # -----------------------------------------------------------------
 
@@ -187,6 +189,30 @@ class PixelLineRegion(LineRegion, PixelRegion):
 
         return PixelStretch(0.5 * (x_max - x_min), 0.5 * (y_max - y_min))
 
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.include: prefix = ""
+        else: prefix = "-"
+
+        fmt = '.4f'
+
+        x1 = self.start.x
+        y1 = self.end.y
+
+        x2 = self.end.x
+        y2 = self.end.y
+
+        string = prefix + make_line_template(fmt).format(**locals())
+        string = add_info(string, self)
+        return string
+
 # -----------------------------------------------------------------
 
 class SkyLineRegion(LineRegion, SkyRegion):
@@ -249,6 +275,44 @@ class SkyLineRegion(LineRegion, SkyRegion):
         dec_span = dec_distance * Unit("deg")
 
         return SkyStretch(0.5 * ra_span, 0.5 * dec_span)
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        coordsys = "fk5"
+        # convert coordsys string to coordsys object
+        if coordsys in coordsys_name_mapping: frame = frame_transform_graph.lookup_name(coordsys_name_mapping[coordsys])
+        else: frame = None  # for pixel/image/physical frames
+
+        fmt = '.4f'
+
+        if self.include: prefix = ""
+        else: prefix = "-"
+
+        x1 = float(self.start.transform_to(frame).spherical.lon.to('deg').value)
+        y1 = float(self.start.transform_to(frame).spherical.lat.to('deg').value)
+
+        x2 = float(self.end.transform_to(frame).spherical.lon.to('deg').value)
+        y2 = float(self.end.transform_to(frame).spherical.lat.to('deg').value)
+
+        # TO HAVE IT IN hh:mm:ss NOTATION:
+
+        # print(vars(reg.start.transform_to(frame)))
+        # skycoordinate = SkyCoordinate(reg.start.transform_to(frame).spherical.lon, reg.start.transform_to(frame).spherical.lat, frame=frame, representation="spherical")
+        # str1 = skycoordinate.to_string('hmsdms').replace("d", ":").replace("h", ":").replace("m", ":").replace("s ", ",")[:-1]
+
+        # skycoordinate = SkyCoordinate(reg.end.transform_to(frame).spherical.lon, reg.end.transform_to(frame).spherical.lat, frame=frame, representation="spherical")
+        # str2 = skycoordinate.to_string('hmsdms').replace("d", ":").replace("h", ":").replace("m", ":").replace("s ", ",")[:-1]
+
+        string = prefix + make_line_template(fmt).format(**locals())
+        string = add_info(string, self)
+        return string
 
 # -----------------------------------------------------------------
 

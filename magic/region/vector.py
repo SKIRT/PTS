@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import astronomical modules
 from astropy.coordinates import Angle
 from astropy.units import Quantity
+from astropy.coordinates import frame_transform_graph
 
 # Import the relevant PTS classes and modules
 from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
@@ -22,6 +23,7 @@ from ..basics.coordinate import PixelCoordinate, SkyCoordinate, PhysicalCoordina
 from ..basics.stretch import PixelStretch, SkyStretch, PhysicalStretch
 from .rectangle import PixelRectangleRegion, SkyRectangleRegion
 from ..basics.mask import Mask
+from .region import make_vector_template, add_info, coordsys_name_mapping
 
 # -----------------------------------------------------------------
 
@@ -68,6 +70,7 @@ class VectorRegion(Region):
 
     @property
     def axis2_center(self):
+
         """
         This property ...
         :return:
@@ -127,7 +130,36 @@ class PixelVectorRegion(VectorRegion, PixelRegion):
         offset = value - self.center
 
         self.start += offset
-        self.end += offset
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.include: prefix = ""
+        else: prefix = "-"
+
+        coordsys = 'fk5'
+        fmt = '.4f'
+        radunit = 'deg'
+
+        if radunit == 'arcsec':
+            if coordsys in coordsys_name_mapping.keys(): radunitstr = '"'
+            else: raise ValueError('Radius unit arcsec not valid for coordsys {}'.format(coordsys))
+        else: radunitstr = ''
+
+        x = self.start.x
+        y = self.start.y
+        l = self.length
+        ang = self.angle.to("deg").value
+
+        string = prefix + make_vector_template(fmt, radunitstr).format(**locals())
+        string = add_info(string, self)
+        return string
 
 # -----------------------------------------------------------------
 
@@ -155,6 +187,40 @@ class SkyVectorRegion(VectorRegion, SkyRegion):
 
         # Call the constructor of VectorRegion class
         VectorRegion.__init__(self, start, length, angle, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.include: prefix = ""
+        else: prefix = "-"
+
+        coordsys = 'fk5'
+        fmt = '.4f'
+        radunit = 'deg'
+
+        if radunit == 'arcsec':
+            if coordsys in coordsys_name_mapping.keys(): radunitstr = '"'
+            else: raise ValueError('Radius unit arcsec not valid for coordsys {}'.format(coordsys))
+        else: radunitstr = ''
+
+        # convert coordsys string to coordsys object
+        if coordsys in coordsys_name_mapping: frame = frame_transform_graph.lookup_name(coordsys_name_mapping[coordsys])
+        else: frame = None  # for pixel/image/physical frames
+
+        x = float(self.start.transform_to(frame).spherical.lon.to('deg').value)
+        y = float(self.start.transform_to(frame).spherical.lat.to('deg').value)
+        l = float(self.length.to(radunit).value)
+        ang = float(self.angle.to('deg').value)
+
+        string = prefix + make_vector_template(fmt, radunitstr).format(**locals())
+        string = add_info(string, self)
+        return string
 
 # -----------------------------------------------------------------
 

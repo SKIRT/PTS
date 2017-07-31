@@ -113,10 +113,11 @@ class JS9Image(object):
 
     # -----------------------------------------------------------------
 
-    def load(self):
+    def load(self, regions=None):
 
         """
         This function ...
+        :param regions:
         :return:
         """
 
@@ -126,14 +127,29 @@ class JS9Image(object):
 
         # End
         string += ');'
+
+        # Add regions
+        if regions is not None:
+            string += "\n"
+            #string += 'function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms));}'
+            #string += "\n"
+            #string += "sleep(5000);"
+            string += "var region_id = JS9.AddRegions('" + regions + "'"
+            #string += "setTimeout(JS9.AddRegions, 5000, '" + regions + "'"
+            #if self.display is not None: string += ', {display:"' + self.display + '"}'
+            string += ');'
+            #string += "window.alert(region_id);"
+
+        # Return
         return string
 
     # -----------------------------------------------------------------
 
-    def preload(self):
+    def preload(self, regions=None):
 
         """
         This function ...
+        :param regions:
         :return:
         """
 
@@ -143,6 +159,20 @@ class JS9Image(object):
 
         # End
         string += ');'
+
+        # Add regions
+        if regions is not None:
+            string += "\n"
+           # string += 'function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms));}'
+           # string += "\n"
+            #string += "sleep(5000);"
+            string += "var region_id = JS9.AddRegions('" + regions + "'"
+            #string += "setTimeout(JS9.AddRegions, 5000, '" + regions + "'"
+            #if self.display is not None: string += ', {display:"' + self.display + '"}'
+            string += ');'
+            #string += "window.alert(region_id);"
+
+        # Return
         return string
 
 # -----------------------------------------------------------------
@@ -153,13 +183,14 @@ class JS9Loader(object):
     This function ...
     """
 
-    def __init__(self, text, image, button=False):
+    def __init__(self, text, image, button=False, regions=None):
 
         """
         This function ...
         :param text:
         :param image:
         :param button:
+        :param regions:
         """
 
         # The text for the link
@@ -171,10 +202,13 @@ class JS9Loader(object):
         # Flag
         self.button = button
 
+        # Regions
+        self.regions = regions
+
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_path(cls, text, name, path, settings=None, display=None, button=False):
+    def from_path(cls, text, name, path, settings=None, display=None, button=False, regions=None):
 
         """
         This function ...
@@ -184,6 +218,7 @@ class JS9Loader(object):
         :param display:
         :param button:
         :param name:
+        :param regions:
         :return:
         """
 
@@ -191,7 +226,7 @@ class JS9Loader(object):
         image = JS9Image(name, path, settings, display)
 
         # Return
-        return cls(text, image, button=button)
+        return cls(text, image, button=button, regions=regions)
 
     # -----------------------------------------------------------------
 
@@ -204,9 +239,9 @@ class JS9Loader(object):
 
         if self.button:
             buttonid = self.image.name + "Loader"
-            load_html = self.image.load()
+            load_html = self.image.load(regions=self.regions)
             return html.button(buttonid, self.text, load_html, quote_character=strings.other_quote_character(self.text, load_html))
-        else: return "<a href='javascript:" + self.image.load() + "'>" + self.text + "</a>"
+        else: return "<a href='javascript:" + self.image.load(regions=self.regions) + "'>" + self.text + "</a>"
 
 # -----------------------------------------------------------------
 
@@ -223,18 +258,21 @@ class JS9Preloader(object):
         """
 
         self.images = []
+        self.regions = []
 
     # -----------------------------------------------------------------
 
-    def add_image(self, image):
+    def add_image(self, image, regions=None):
 
         """
         This function ...
         :param image:
+        :param regions:
         :return:
         """
 
         self.images.append(image)
+        self.regions.append(regions)
 
     # -----------------------------------------------------------------
 
@@ -250,18 +288,19 @@ class JS9Preloader(object):
 
     # -----------------------------------------------------------------
 
-    def add_path(self, name, path, settings=None, display=None):
+    def add_path(self, name, path, settings=None, display=None, regions=None):
 
         """
         This function ...
         :param path:
         :param kwargs:
         :param display:
+        :param regions:
         :return:
         """
 
         image = JS9Image(name, path, settings, display)
-        self.add_image(image)
+        self.add_image(image, regions=regions)
 
     # -----------------------------------------------------------------
 
@@ -277,7 +316,7 @@ class JS9Preloader(object):
         string += '    {\n'
 
         # Preload all images
-        for image in self.images: string += image.preload() + "\n"
+        for image, regions in zip(self.images, self.regions): string += image.preload(regions=regions) + "\n"
 
         string += "    }\n"
         string += "</script>\n"
@@ -291,7 +330,7 @@ class JS9Spawner(object):
     This function ...
     """
 
-    def __init__(self, text, image, button=False, menubar=True):
+    def __init__(self, text, image, button=False, menubar=True, colorbar=False, width=None, height=None, regions=None, add_placeholder=True):
 
         """
         This function ...
@@ -299,17 +338,24 @@ class JS9Spawner(object):
         :param image:
         :param button:
         :param menubar:
+        :param colorbar:
+        :param regions:
         """
 
         self.text = text
         self.image = image
         self.button = button
         self.menubar = menubar
+        self.colorbar = colorbar
+        self.width = width
+        self.height = height
+        self.regions = regions
+        self.add_placeholder = add_placeholder
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_path(cls, text, name, path, settings=None, button=False, menubar=True):
+    def from_path(cls, text, name, path, settings=None, button=False, menubar=True, colorbar=False, width=None, height=None, regions=None, add_placeholder=True):
 
         """
         This function ...
@@ -319,6 +365,11 @@ class JS9Spawner(object):
         :param settings:
         :param button:
         :param menubar:
+        :param colorbar:
+        :param width:
+        :param height:
+        :param regions:
+        :param add_placeholder:
         :return:
         """
 
@@ -329,7 +380,43 @@ class JS9Spawner(object):
         image = JS9Image(name, path, settings, display_id)
 
         # Create
-        return cls(text, image, button=button, menubar=menubar)
+        return cls(text, image, button=button, menubar=menubar, colorbar=colorbar, width=width, height=height, regions=regions, add_placeholder=add_placeholder)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def display_id(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.image.display
+
+    # -----------------------------------------------------------------
+
+    @property
+    def spawn_div_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.image.name + "placeholder"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def placeholder(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "<div id='" + self.spawn_div_name + "'></div>"
 
     # -----------------------------------------------------------------
 
@@ -349,14 +436,17 @@ class JS9Spawner(object):
         #  html = "<p>"
 
         function_name = "spawn_" + self.image.display
+        function_call = function_name + "()"
+
+        #function_call += ";load_region_" + self.image.name.replace(" ", "") + "()"
 
         if self.button:
             buttonid = self.image.name.replace(" ", "") + "Spawner"
             #load_html = self.image.load()
             #return html.button(buttonid, self.text, load_html, quote_character=strings.other_quote_character(self.text, load_html))
-            click_code = html.button(buttonid, self.text, function_name + "()")
+            click_code = html.button(buttonid, self.text, function_call)
         #else: return "<a href='javascript:" + self.image.load() + "'>" + self.text + "</a>"
-        else: click_code = "<a href='javascript:" + function_name + "()'>" + self.text + "</a>"
+        else: click_code = "<a href='javascript:" + function_call + "'>" + self.text + "</a>"
 
         code = '<script type="text/javascript">'
         code += "\n"
@@ -369,9 +459,22 @@ class JS9Spawner(object):
         spawn_code = "<p>"
 
         menubar_id = self.image.display + "Menubar"
+        colorbar_id = self.image.display + "Colorbar"
 
-        if self.menubar: spawn_code += "<div class='JS9Menubar' id='" + menubar_id + "'></div>"
-        spawn_code += "<div class='JS9' id='" + self.image.display + "'></div>"
+        if self.menubar:
+
+            menubar = JS9Menubar(menubar_id, width=self.width, background_color="white")
+            #spawn_code += "<div class='JS9Menubar' id='" + menubar_id + "'></div>"
+            spawn_code += str(menubar)
+
+        if self.colorbar:
+
+            colorbar = JS9Colorbar(colorbar_id, width=self.width)
+            #spawn_code += "<div class='JS9Colorbar' id = '" + colorbar_id + "'></div>"
+            spawn_code += str(colorbar)
+
+        spawn_code += '<div class="JS9" id="' + self.image.display + '"></div>'
+
         # code += """
         #   // append to end of page
         #   $(html).appendTo($("body"));
@@ -383,17 +486,17 @@ class JS9Spawner(object):
         #     default:
         #       alert("unknown load type: "+loadtype);"""
 
-        code += 'html = "' + spawn_code + '";'
+        code += 'html = "' + strings.make_single_quoted(spawn_code) + '";'
 
-        spawn_div_name = self.image.name + "placeholder"
 
         code += "\n"
         #code += '$(html).appendTo($("body"));'
-        code += '$(html).appendTo($("#' + spawn_div_name + '"));'
+        code += '$(html).appendTo($("#' + self.spawn_div_name + '"));'
         code += "\n"
         code += "JS9.AddDivs(" + self.image.display + ");"
         code += "\n"
-        code += self.image.load()
+        code += self.image.load(regions=self.regions)
+        #code += self.image.load()
         code += "\n"
 
         #code += "\n"
@@ -401,12 +504,21 @@ class JS9Spawner(object):
 
         code += "\n"
 
+        # if self.regions is not None:
+        #     code += "function load_region_" + self.image.name.replace(" ", "") + "()"
+        #     code += "\n"
+        #     code += "{"
+        #     code += "var region_id = JS9.AddRegions('" + self.regions + "');"
+        #     code += "\n"
+        #     code += "}"
+
         code += "</script>"
 
         code += click_code
 
         code += "<br>"
-        code += "<div id='" + spawn_div_name + "'></div>"
+
+        if self.add_placeholder: code += self.placeholder
 
         #code += "break;"
 
@@ -421,18 +533,22 @@ class JS9Viewer(object):
     This function ...
     """
 
-    def __init__(self, id, width=None, height=None):
+    def __init__(self, id, width=None, height=None, resize=True, scrolling=True):
 
         """
         This function ...
         :param id:
         :param width:
         :param height:
+        :param resize:
+        :param scrolling:
         """
 
         self.id = id
         self.width = width
         self.height = height
+        self.resize = resize
+        self.scrolling = scrolling
 
     # -----------------------------------------------------------------
 
@@ -447,6 +563,9 @@ class JS9Viewer(object):
 
         if self.width is not None: string += ' data-width="' + str(self.width) + 'px"'
         if self.height is not None: string += ' data-height="' + str(self.height) + 'px"'
+
+        string += ' resize=' + str(int(self.resize))
+        string += ' scrolling=' + str(int(self.scrolling))
 
         string += '></div>'
         return string
@@ -548,5 +667,251 @@ class JS9Magnifier(object):
 
         string = '<div class="JS9Magnifier" id="' + self.id + '"></div>'
         return string
+
+# -----------------------------------------------------------------
+
+class JS9Colorbar(object):
+
+    """
+    This class ...
+    """
+
+    def __init__(self, id, width=None):
+
+        """
+        This function ...
+        :param id:
+        :param width:
+        """
+
+        self.id = id
+        self.width = width
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        string = '<div class="JS9Colorbar" id="' + self.id + '"'
+
+        if self.width is not None: string += ' data-width="' + str(self.width) + 'px"'
+
+        string += "></div>"
+        return string
+
+# -----------------------------------------------------------------
+
+class JS9Panner(object):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, id, width=None, height=None):
+
+        """
+        This function ...
+        :param id:
+        """
+
+        self.id = id
+        self.width = width
+        self.height = height
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        string = '<div class="JS9Panner" id="' + self.id + '"'
+
+        if self.width is not None: string += ' data-width="' + str(self.width) + 'px"'
+        if self.height is not None: string += ' data-height="' + str(self.height) + 'px"'
+
+        string += "></div>"
+        return string
+
+# -----------------------------------------------------------------
+
+class JS9Window(object):
+
+    """
+    This function ...
+    """
+
+    def __init__(self, name, width=None, height=None, background_color="white", menubar=True, colorbar=False, menubar_position="top", colorbar_position="bottom", resize=True):
+
+        """
+        This function ...
+        :param name:
+        :param width:
+        :param height:
+        :param background_color:
+        :param menubar:
+        :param colorbar:
+        :param resize:
+        """
+
+        # Create view
+        self.view = JS9Viewer(name, width=width, height=height, resize=resize)
+
+        # Set names
+        # Set menu name
+        # menu_name = display_name + "_menu"
+        menu_name = name + "Menubar"
+        # displays = [display_name]
+        displays = None
+        bar_name = name + "Colorbar"
+
+        # Add menu bar
+        if menubar: self.menu = JS9Menubar(menu_name, displays=displays, width=width, background_color=background_color)
+        else: self.menu = None
+
+        # Add color bar
+        if colorbar: self.color = JS9Colorbar(bar_name, width=width)
+        else: self.color = None
+
+        # Positions
+        self.menubar_position = menubar_position
+        self.colorbar_position = colorbar_position
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        string = ""
+
+        # Add menu bar (if requested)
+        # if name in self.menus: string += str(self.menus[name])
+
+        # string += newline
+
+        # Add view (if not dynamic)
+        # if name in self.views: string += str(self.views[name])
+
+        if self.menu is not None and self.menubar_position == "top":
+            string += str(self.menu)
+            string += html.newline
+
+        if self.color is not None and self.colorbar_position == "top":
+            string += str(self.color)
+            string += html.newline
+
+        string += str(self.view)
+        #string += html.newline
+
+        if self.color is not None and self.colorbar_position == "bottom":
+            string += html.newline
+            string += str(self.color)
+
+        if self.menu is not None and self.menubar_position == "bottom":
+            string += html.newline
+            string += str(self.menu)
+
+        # Return the html string
+        return string
+
+# -----------------------------------------------------------------
+
+def make_load_region(region, display=None):
+
+    """
+    This function ...
+    :param region:
+    :param display:
+    :return:
+    """
+
+    string = ""
+
+    string += "var region_id = JS9.AddRegions('" + region + "'"
+    if display is not None: string += ', {display:"' + display + '"}'
+    string += ');'
+    string += "\n"
+
+    #string += "window.alert(region_id);"
+
+    return string
+
+# -----------------------------------------------------------------
+
+def make_load_region_function(name, region, display=None):
+
+    """
+    This function ...
+    :param name:
+    :param region:
+    :param display:
+    :return:
+    """
+
+    if " " in name: raise ValueError("Name cannot contain spaces")
+    string = "function " + name + "()"
+    string += "\n"
+    string += "{"
+
+    for line in make_load_region(region, display=display).split("\n"):
+        string += "    " + line + "\n"
+
+    string += "}"
+    return string
+
+# -----------------------------------------------------------------
+
+def make_load_regions(regions, display=None):
+
+    """
+    This function ...
+    :param regions:
+    :param display:
+    :return:
+    """
+
+    string = ""
+
+    for region in regions:
+
+        string += "JS9.AddRegions('" + region + "'"
+        if display is not None: string += ', {display:"' + display + '"}'
+        string += ');'
+        string += "\n"
+
+    return string
+
+# -----------------------------------------------------------------
+
+def make_load_regions_function(name, regions, display=None):
+
+    """
+    This function ...
+    :param name:
+    :param regions:
+    :param display:
+    :return:
+    """
+
+    if " " in name: raise ValueError("Name cannot contain spaces")
+    string = "function " + name + "()"
+    string += "\n"
+    string += "{"
+
+    for line in make_load_regions(regions, display=display).split("\n"):
+        string += "    " + line + "\n"
+
+    string += "}"
+    return string
 
 # -----------------------------------------------------------------

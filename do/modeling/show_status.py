@@ -18,6 +18,7 @@ from pts.core.tools import filesystem as fs
 from pts.modeling.core.environment import GalaxyModelingEnvironment
 from pts.modeling.html.status import StatusPageGenerator
 from pts.modeling.core.environment import verify_modeling_cwd
+from pts.core.tools import browser
 
 # -----------------------------------------------------------------
 
@@ -49,6 +50,6 @@ if config.generate:
 
 # Check whether the status page is present
 if not fs.is_file(environment.html_status_path): raise ValueError("The status page is not present")
-else: fs.open_in_browser(environment.html_status_path)
+else: browser.open_path(environment.html_status_path)
 
 # -----------------------------------------------------------------

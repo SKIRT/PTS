@@ -192,6 +192,32 @@ class PixelCompositeRegion(CompositeRegion, PixelRegion):
         masks = [element.to_mask(x_size, y_size) for element in self.elements]
         return Mask.union(*masks)
 
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        prefix = "" if self.include else "-"
+
+        # Get properties
+        x = self.center.x
+        y = self.center.y
+        ang = self.angle
+
+        # Create string
+        composite_string = prefix + ds9_strings['composite'].format(**locals())
+        composite_string = add_info(composite_string, composite)
+
+        # Add the strings for the composite elements
+        output = composite_string + "\n" + " ||\n".join([regular_to_string(element, ds9_strings, frame, radunit, fmt) for element in composite.elements])
+
+        # Return the string
+        return output
+
 # -----------------------------------------------------------------
 
 class SkyCompositeRegion(CompositeRegion, SkyRegion):
@@ -226,6 +252,33 @@ class SkyCompositeRegion(CompositeRegion, SkyRegion):
         """
 
         return SkyCoordinate(self.axis1_center, self.axis2_center)
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        prefix = "" if composite.include else "-"
+
+        # Get properties
+        x = float(composite.center.transform_to(frame).spherical.lon.to('deg').value)
+        y = float(composite.center.transform_to(frame).spherical.lat.to('deg').value)
+        ang = composite.angle
+
+        # Create string
+        composite_string = prefix + ds9_strings['composite'].format(**locals())
+        composite_string = add_info(composite_string, composite)
+
+        # Add the strings for the composite elements
+        output = composite_string + "\n" + " ||\n".join(
+            [regular_to_string(element, ds9_strings, frame, radunit, fmt) for element in composite.elements])
+
+        # Return the string
+        return output
 
 # -----------------------------------------------------------------
 

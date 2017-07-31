@@ -27,6 +27,7 @@ from pts.core.tools.logging import log
 from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import filesystem as fs
 from ..core.progression import create_modeling_progression
+from ...core.tools import browser
 
 # -----------------------------------------------------------------
 
@@ -470,6 +471,6 @@ class AllPagesGenerator(GalaxyModelingComponent):
         log.info("Showing the pages ...")
 
         # Open
-        fs.open_in_browser(self.environment.html_status_path)
+        browser.open_path(self.environment.html_status_path)
 
 # -----------------------------------------------------------------

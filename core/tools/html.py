@@ -260,6 +260,22 @@ def mailto(address, text=None):
 
 # -----------------------------------------------------------------
 
+sleep_function = "function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms));}"
+
+# -----------------------------------------------------------------
+
+other_sleep_function = """
+function sleep(milliseconds) {
+  var start = new Date().getTime();
+  for (var i = 0; i < 1e7; i++) {
+    if ((new Date().getTime() - start) > milliseconds){
+      break;
+    }
+  }
+}"""
+
+# -----------------------------------------------------------------
+
 get_css_rule_function = """
 function getCSSRule(ruleName)
 {
@@ -572,6 +588,49 @@ def make_theme_button(classes=None):
     code += "\n\n"
     code += light_function_code
 
+    code += "\n</script>"
+
+    # Return the code
+    return code
+
+# -----------------------------------------------------------------
+
+def make_script_function(name, script):
+
+    """
+    This function ...
+    :param name:
+    :param script:
+    :return:
+    """
+
+    if " " in name: raise ValueError("Name cannot contain spaces")
+    string = "function " + name + "()"
+    string += "\n"
+    string += "{"
+    string += "\n"
+    for line in script.split("\n"):
+        string += "    " + line + "\n"
+    string += "}"
+    return string
+
+# -----------------------------------------------------------------
+
+def make_script_button(id, text, script, function_name):
+
+    """
+    This function ...
+    :param id:
+    :param text:
+    :param script:
+    :param function_name:
+    """
+
+    code = button(id, text, function_name + "()")
+    code += "\n"
+    code += "<script>"
+    code += "\n"
+    code += make_script_function(function_name, script)
     code += "\n</script>"
 
     # Return the code

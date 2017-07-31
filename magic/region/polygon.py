@@ -12,9 +12,13 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
+# Import astronomical modules
+from astropy.coordinates import frame_transform_graph
+
 # Import the relevant PTS classes and modules
 from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
 from ..basics.coordinate import PixelCoordinate, SkyCoordinate, PhysicalCoordinate
+from .region import add_info, make_polygon_template, coordsys_name_mapping
 
 # -----------------------------------------------------------------
 
@@ -75,6 +79,37 @@ class PixelPolygonRegion(PolygonRegion, PixelRegion):
         # Add the point
         self.points.append(point)
 
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.include: prefix = ""
+        else: prefix = "-"
+
+        coordsys = 'fk5'
+        fmt = '.4f'
+        radunit = 'deg'
+
+        if radunit == 'arcsec':
+            if coordsys in coordsys_name_mapping.keys(): radunitstr = '"'
+            else: raise ValueError('Radius unit arcsec not valid for coordsys {}'.format(coordsys))
+        else: radunitstr = ''
+
+        v = self.points
+        coords = [(x, y) for x, y in zip(v.x, v.y)]
+        val = "{:" + fmt + "}"
+        temp = [val.format(x) for _ in coords for x in _]
+        c = ",".join(temp)
+
+        string = prefix + make_polygon_template().format(**locals())
+        string = add_info(string, self)
+        return string
+
 # -----------------------------------------------------------------
 
 class SkyPolygonRegion(PolygonRegion, SkyRegion):
@@ -112,6 +147,42 @@ class SkyPolygonRegion(PolygonRegion, SkyRegion):
 
         # Add the point
         self.points.append(point)
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.include: prefix = ""
+        else: prefix = "-"
+
+        coordsys = 'fk5'
+        fmt = '.4f'
+        radunit = 'deg'
+
+        if radunit == 'arcsec':
+            if coordsys in coordsys_name_mapping.keys(): radunitstr = '"'
+            else: raise ValueError('Radius unit arcsec not valid for coordsys {}'.format(coordsys))
+        else: radunitstr = ''
+
+        # convert coordsys string to coordsys object
+        if coordsys in coordsys_name_mapping: frame = frame_transform_graph.lookup_name(coordsys_name_mapping[coordsys])
+        else: frame = None  # for pixel/image/physical frames
+
+        v = self.points.transform_to(frame)
+        coords = [(x.to('deg').value, y.to('deg').value) for x, y in
+                  zip(v.spherical.lon, v.spherical.lat)]
+        val = "{:" + fmt + "}"
+        temp = [val.format(x) for _ in coords for x in _]
+        c = ",".join(temp)
+
+        string = prefix + make_polygon_template().format(**locals())
+        string = add_info(string, self)
+        return string
 
 # -----------------------------------------------------------------
 

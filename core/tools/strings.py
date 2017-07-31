@@ -809,7 +809,7 @@ def is_single_quoted(string):
 
 
     if "'" in string:
-        if '"' in string: raise ValueError("String contains both kinds of quote characters")
+        if '"' in string: raise ValueError("String (" + string + ") contains both kinds of quote characters")
         else: return True
     elif '"' in string: return False
     else: return False
@@ -825,7 +825,7 @@ def is_double_quoted(string):
     """
 
     if '"' in string:
-        if "'" in string: raise ValueError("String contains both kinds of quote characters")
+        if "'" in string: raise ValueError("String (" + string + ") contains both kinds of quote characters")
         else: return True
     elif "'" in string: return False
     else: return False
@@ -854,5 +854,33 @@ def other_quote_character(*strings):
         else: return double_quote
     elif is_double: return single_quote
     else: return double_quote  #doesn't matter
+
+# -----------------------------------------------------------------
+
+def make_single_quoted(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    if is_single_quoted(string): return string
+    elif is_double_quoted(string): return string.replace('"', "'")
+    else: return string
+
+# -----------------------------------------------------------------
+
+def make_double_quoted(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    if is_single_quoted(string): return string.replace("'", '"')
+    elif is_double_quoted(string): return string
+    else: return string
 
 # -----------------------------------------------------------------

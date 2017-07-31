@@ -19,12 +19,14 @@ import numpy as np
 from astropy.coordinates import Angle
 from astropy.units import Quantity
 from photutils.geometry import elliptical_overlap_grid, circular_overlap_grid, rectangular_overlap_grid
+from astropy.coordinates import frame_transform_graph
 
 # Import the relevant PTS classes and modules
 from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
 from ..basics.coordinate import PixelCoordinate, SkyCoordinate, PhysicalCoordinate
 from ..basics.stretch import PixelStretch, SkyStretch, PhysicalStretch
 from ..basics.mask import Mask
+from .region import add_info, make_rectangle_template, coordsys_name_mapping
 
 # -----------------------------------------------------------------
 
@@ -411,6 +413,37 @@ class PixelRectangleRegion(RectangleRegion, PixelRegion):
 
             return (0 < am.dot(ab) < ab.dot(ab)) and (0 < am.dot(ad) < ad.dot(ad))
 
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.include: prefix = ""
+        else: prefix = "-"
+
+        coordsys = 'fk5'
+        fmt = '.4f'
+        radunit = 'deg'
+
+        if radunit == 'arcsec':
+            if coordsys in coordsys_name_mapping.keys(): radunitstr = '"'
+            else: raise ValueError('Radius unit arcsec not valid for coordsys {}'.format(coordsys))
+        else: radunitstr = ''
+
+        x = self.center.x
+        y = self.center.y
+        d1 = 2.0 * self.radius.x
+        d2 = 2.0 * self.radius.y
+        ang = self.angle.to("deg").value
+
+        string = prefix + make_rectangle_template(fmt, radunitstr).format(**locals())
+        string = add_info(string, self)
+        return string
+
 # -----------------------------------------------------------------
 
 class SkyRectangleRegion(RectangleRegion, SkyRegion):
@@ -529,6 +562,41 @@ class SkyRectangleRegion(RectangleRegion, SkyRegion):
         """
 
         return SkyStretch(0.5 * (self.axis1_max - self.axis1_min), 0.5 * (self.axis2_max - self.axis2_min))
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+        
+        """
+        This function ...
+        :return: 
+        """
+
+        if self.include: prefix = ""
+        else: prefix = "-"
+
+        coordsys = 'fk5'
+        fmt = '.4f'
+        radunit = 'deg'
+
+        if radunit == 'arcsec':
+            if coordsys in coordsys_name_mapping.keys(): radunitstr = '"'
+            else: raise ValueError('Radius unit arcsec not valid for coordsys {}'.format(coordsys))
+        else: radunitstr = ''
+
+        # convert coordsys string to coordsys object
+        if coordsys in coordsys_name_mapping: frame = frame_transform_graph.lookup_name(coordsys_name_mapping[coordsys])
+        else: frame = None  # for pixel/image/physical frames
+
+        x = float(self.center.transform_to(frame).spherical.lon.to('deg').value)
+        y = float(self.center.transform_to(frame).spherical.lat.to('deg').value)
+        d1 = 2.0 * float(self.radius.ra.to(radunit).value)
+        d2 = 2.0 * float(self.radius.dec.to(radunit).value)
+        ang = float(self.angle.to('deg').value)
+
+        string = prefix + make_rectangle_template(fmt, radunitstr).format(**locals())
+        string = add_info(string, self)
+        return string
 
 # -----------------------------------------------------------------
 

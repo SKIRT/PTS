@@ -18,11 +18,13 @@ import math
 # Import astronomical modules
 from astropy.units import Quantity, Unit
 from photutils.geometry import circular_overlap_grid
+from astropy.coordinates import frame_transform_graph
 
 # Import the relevant PTS classes and modules
 from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
 from ..basics.coordinate import PixelCoordinate, SkyCoordinate, PhysicalCoordinate
 from ..basics.mask import Mask
+from .region import add_info, make_circle_template, coordsys_name_mapping
 
 # -----------------------------------------------------------------
 
@@ -236,6 +238,35 @@ class PixelCircleRegion(CircleRegion, PixelRegion):
         # Return a new mask
         return Mask(fraction)
 
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.include: prefix = ""
+        else: prefix = "-"
+
+        coordsys = 'fk5'
+        fmt = '.4f'
+        radunit = 'deg'
+
+        if radunit == 'arcsec':
+            if coordsys in coordsys_name_mapping.keys(): radunitstr = '"'
+            else: raise ValueError('Radius unit arcsec not valid for coordsys {}'.format(coordsys))
+        else: radunitstr = ''
+
+        x = self.center.x
+        y = self.center.y
+        r = self.radius
+
+        string = prefix + make_circle_template(fmt, unitstr).format(**locals())
+        string = add_info(string, self)
+        return string
+
 # -----------------------------------------------------------------
 
 class SkyCircleRegion(CircleRegion, SkyRegion):
@@ -292,6 +323,39 @@ class SkyCircleRegion(CircleRegion, SkyRegion):
         """
 
         return PixelCircleRegion.from_sky(self, wcs)
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.include: prefix = ""
+        else: prefix = "-"
+
+        coordsys = 'fk5'
+        fmt = '.4f'
+        radunit = 'deg'
+
+        if radunit == 'arcsec':
+            if coordsys in coordsys_name_mapping.keys(): radunitstr = '"'
+            else: raise ValueError('Radius unit arcsec not valid for coordsys {}'.format(coordsys))
+        else: radunitstr = ''
+
+        # convert coordsys string to coordsys object
+        if coordsys in coordsys_name_mapping: frame = frame_transform_graph.lookup_name(coordsys_name_mapping[coordsys])
+        else: frame = None  # for pixel/image/physical frames
+
+        x = float(self.center.transform_to(frame).spherical.lon.to('deg').value)
+        y = float(self.center.transform_to(frame).spherical.lat.to('deg').value)
+        r = float(self.radius.to(radunit).value)
+
+        string = prefix + make_circle_template(fmt, radunitstr).format(**locals())
+        string = add_info(string, self)
+        return string
 
 # -----------------------------------------------------------------
 

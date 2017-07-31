@@ -14,12 +14,14 @@ from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
 from astropy.units import Unit
+from astropy.coordinates import frame_transform_graph
 
 # Import the relevant PTS classes and modules
 from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
 from ..basics.coordinate import PixelCoordinate, SkyCoordinate, PhysicalCoordinate
 from ..basics.stretch import PixelStretch, SkyStretch, PhysicalStretch
 from ..basics.mask import Mask
+from .region import make_point_template, add_info, coordsys_name_mapping
 
 # -----------------------------------------------------------------
 
@@ -322,6 +324,27 @@ class PixelPointRegion(PointRegion, PixelCoordinate, PixelRegion):
 
         return self.__idiv__(value)
 
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        fmt = '.4f'
+
+        if self.include: prefix = ""
+        else: prefix = "-"
+
+        x = self.x
+        y = self.y
+
+        string = prefix + make_point_template(fmt).format(**locals())
+        string = add_info(string, self)
+        return string
+
 # -----------------------------------------------------------------
 
 class SkyPointRegion(PointRegion, SkyCoordinate, SkyRegion):
@@ -452,6 +475,32 @@ class SkyPointRegion(PointRegion, SkyCoordinate, SkyRegion):
         """
 
         return SkyStretch(0.0 * Unit("deg"), 0.0 * Unit("deg"))
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        coordsys = "fk5"
+        # convert coordsys string to coordsys object
+        if coordsys in coordsys_name_mapping: frame = frame_transform_graph.lookup_name(coordsys_name_mapping[coordsys])
+        else: frame = None  # for pixel/image/physical frames
+
+        fmt = '.4f'
+
+        if self.include: prefix = ""
+        else: prefix = "-"
+
+        x = float(self.transform_to(frame).spherical.lon.to('deg').value)
+        y = float(self.transform_to(frame).spherical.lat.to('deg').value)
+
+        string = prefix + make_point_template(fmt).format(**locals())
+        string = add_info(string, self)
+        return string
 
 # -----------------------------------------------------------------
 

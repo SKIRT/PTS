@@ -40,6 +40,8 @@ from ...core.tools.strings import stripwhite_around
 from ...core.units.parsing import parse_unit as u
 from ...core.tools import types
 from ...core.tools import filesystem as fs
+from .region import make_point_template, make_line_template, make_vector_template, make_circle_template, make_ellipse_template, make_rectangle_template, make_composite_template, make_polygon_template, make_text_template
+from .region import add_info, coordsys_name_mapping, coordinate_systems
 
 # -----------------------------------------------------------------
 
@@ -94,12 +96,6 @@ def load_as_sky_region_list(path, wcs):
 # -----------------------------------------------------------------
 
 region_type_or_coordsys_re = re.compile("^#? *(-?)([a-zA-Z0-9]+)")
-
-coordinate_systems = ['fk5', 'fk4', 'icrs', 'galactic', 'wcs', 'physical', 'image', 'ecliptic']
-coordinate_systems += ['wcs{0}'.format(letter) for letter in string.ascii_lowercase]
-
-coordsys_name_mapping = dict(zip(frame_transform_graph.get_names(), frame_transform_graph.get_names()))
-coordsys_name_mapping['ecliptic'] = 'geocentrictrueecliptic'  # needs expert attention TODO
 
 # -----------------------------------------------------------------
 
@@ -593,33 +589,11 @@ def add_ds9_regions_from_string(region_string, regions, only=None, ignore=None, 
 
 # -----------------------------------------------------------------
 
-def add_info(string, reg):
-
-    """
-    This function ...
-    :param string:
-    :param reg:
-    :return:
-    """
-
-    start_chars = " #" if not string.startswith("#") else " "
-
-    if reg.has_info: string += start_chars
-    if reg.has_label: string += " text={" + reg.label + "}"
-    if reg.has_meta:
-        if "text" in reg.meta: string += " text={" + reg.meta["text"] + "}"
-        string += " " + " ".join(key + "=" + value for key, value in reg.meta.items() if types.is_string_type(value) and key != "text")
-    if reg.has_appearance: string += " " + " ".join(key + "=" + value for key, value in reg.appearance.items())
-    return string
-
-# -----------------------------------------------------------------
-
-def composite_to_string(composite, ds9_strings, frame, radunit, fmt):
+def composite_to_string(composite, frame, radunit, fmt, coordsys):
 
     """
     This function ...
     :param composite:
-    :param ds9_strings:
     :param frame:
     :param radunit:
     :param fmt:
@@ -628,6 +602,12 @@ def composite_to_string(composite, ds9_strings, frame, radunit, fmt):
 
     prefix = "" if composite.include else "-"
 
+    if radunit == 'arcsec':
+        if coordsys in coordsys_name_mapping.keys(): radunitstr = '"'
+        else: raise ValueError('Radius unit arcsec not valid for coordsys {}'.format(coordsys))
+    else: radunitstr = ''
+
+    # Sky
     if isinstance(composite, SkyCompositeRegion):
 
         # Get properties
@@ -636,9 +616,10 @@ def composite_to_string(composite, ds9_strings, frame, radunit, fmt):
         ang = composite.angle
 
         # Create string
-        composite_string = prefix + ds9_strings['composite'].format(**locals())
+        composite_string = prefix + make_composite_template(fmt).format(**locals())
         composite_string = add_info(composite_string, composite)
 
+    # Pixel
     elif isinstance(composite, PixelCompositeRegion):
 
         # Get properties
@@ -647,21 +628,21 @@ def composite_to_string(composite, ds9_strings, frame, radunit, fmt):
         ang = composite.angle
 
         # Create string
-        composite_string = prefix + ds9_strings['composite'].format(**locals())
+        composite_string = prefix + make_composite_template(fmt).format(**locals())
         composite_string = add_info(composite_string, composite)
 
     # Invalid value for the composite region
     else: raise ValueError("Invalid value for 'composite'")
 
     # Add the strings for the composite elements
-    output = composite_string + "\n" + " ||\n".join([regular_to_string(element, ds9_strings, frame, radunit, fmt) for element in composite.elements])
+    output = composite_string + "\n" + " ||\n".join([regular_to_string(element, frame, radunit, fmt) for element in composite.elements])
 
     # Return the string
     return output
 
 # -----------------------------------------------------------------
 
-def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
+def regular_to_string(reg, frame, radunit, fmt, coordsys):
 
     """
     This function ...
@@ -676,13 +657,18 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
     if reg.include: prefix = ""
     else: prefix = "-"
 
+    if radunit == 'arcsec':
+        if coordsys in coordsys_name_mapping.keys(): radunitstr = '"'
+        else: raise ValueError('Radius unit arcsec not valid for coordsys {}'.format(coordsys))
+    else: radunitstr = ''
+
     # Point region in sky coordinates
     if isinstance(reg, SkyPointRegion):
 
         x = float(reg.transform_to(frame).spherical.lon.to('deg').value)
         y = float(reg.transform_to(frame).spherical.lat.to('deg').value)
 
-        string = prefix + ds9_strings['point'].format(**locals())
+        string = prefix + make_point_template(fmt).format(**locals())
         string = add_info(string, reg)
         return string
 
@@ -692,7 +678,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         x = reg.x
         y = reg.y
 
-        string = prefix + ds9_strings['point'].format(**locals())
+        string = prefix + make_point_template(fmt).format(**locals())
         string = add_info(string, reg)
         return string
 
@@ -714,7 +700,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         #skycoordinate = SkyCoordinate(reg.end.transform_to(frame).spherical.lon, reg.end.transform_to(frame).spherical.lat, frame=frame, representation="spherical")
         #str2 = skycoordinate.to_string('hmsdms').replace("d", ":").replace("h", ":").replace("m", ":").replace("s ", ",")[:-1]
 
-        string = prefix + ds9_strings['line'].format(**locals())
+        string = prefix + make_line_template(fmt).format(**locals())
         string = add_info(string, reg)
         return string
 
@@ -727,7 +713,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         x2 = reg.end.x
         y2 = reg.end.y
 
-        string = prefix + ds9_strings['line'].format(**locals())
+        string = prefix + make_line_template(fmt).format(**locals())
         string = add_info(string, reg)
         return string
 
@@ -739,7 +725,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         l = float(reg.length.to(radunit).value)
         ang = float(reg.angle.to('deg').value)
 
-        string = prefix + ds9_strings['vector'].format(**locals())
+        string = prefix + make_vector_template(fmt, radunitstr).format(**locals())
         string = add_info(string, reg)
         return string
 
@@ -751,7 +737,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         l = reg.length
         ang = reg.angle.to("deg").value
 
-        string = prefix + ds9_strings['vector'].format(**locals())
+        string = prefix + make_vector_template(fmt, radunitstr).format(**locals())
         string = add_info(string, reg)
         return string
 
@@ -762,7 +748,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         y = float(reg.center.transform_to(frame).spherical.lat.to('deg').value)
         r = float(reg.radius.to(radunit).value)
 
-        string = prefix + ds9_strings['circle'].format(**locals())
+        string = prefix + make_circle_template(fmt, radunitstr).format(**locals())
         string = add_info(string, reg)
         return string
 
@@ -773,7 +759,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         y = reg.center.y
         r = reg.radius
 
-        string = prefix + ds9_strings['circle'].format(**locals())
+        string = prefix + make_circle_template(fmt, radunitstr).format(**locals())
         string = add_info(string, reg)
         return string
 
@@ -786,7 +772,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         r2 = float(reg.semiminor.to(radunit).value)
         ang = float(reg.angle.to('deg').value)
 
-        string = prefix + ds9_strings['ellipse'].format(**locals())
+        string = prefix + make_ellipse_template(fmt, radunitstr).format(**locals())
         string = add_info(string, reg)
         return string
 
@@ -799,7 +785,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         r2 = reg.semiminor
         ang = reg.angle.to("deg").value
 
-        string = prefix + ds9_strings['ellipse'].format(**locals())
+        string = prefix + make_ellipse_template(fmt, radunitstr).format(**locals())
         string = add_info(string, reg)
         return string
 
@@ -812,7 +798,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         d2 = 2.0 * float(reg.radius.dec.to(radunit).value)
         ang = float(reg.angle.to('deg').value)
 
-        string = prefix + ds9_strings['rectangle'].format(**locals())
+        string = prefix + make_rectangle_template(fmt, radunitstr).format(**locals())
         string = add_info(string, reg)
         return string
 
@@ -825,7 +811,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         d2 = 2.0 * reg.radius.y
         ang = reg.angle.to("deg").value
 
-        string = prefix + ds9_strings['rectangle'].format(**locals())
+        string = prefix + make_rectangle_template(fmt, radunitstr).format(**locals())
         string = add_info(string, reg)
         return string
 
@@ -839,7 +825,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         temp = [val.format(x) for _ in coords for x in _]
         c = ",".join(temp)
 
-        string = prefix + ds9_strings['polygon'].format(**locals())
+        string = prefix + make_polygon_template().format(**locals())
         string = add_info(string, reg)
         return string
 
@@ -852,7 +838,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         temp = [val.format(x) for _ in coords for x in _]
         c = ",".join(temp)
 
-        string = prefix + ds9_strings['polygon'].format(**locals())
+        string = prefix + make_polygon_template().format(**locals())
         string = add_info(string, reg)
         return string
 
@@ -863,7 +849,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         y = float(reg.center.transform_to(frame).spherical.lat.to('deg').value)
         text = reg.text
 
-        string = prefix + ds9_strings['text'].format(**locals())
+        string = prefix + make_text_template(fmt).format(**locals())
         string = add_info(string, reg)
         return string
 
@@ -874,7 +860,7 @@ def regular_to_string(reg, ds9_strings, frame, radunit, fmt):
         y = reg.center.y
         text = reg.text
 
-        string = prefix + ds9_strings['text'].format(**locals())
+        string = prefix + make_text_template(fmt).format(**locals())
         string = add_info(string, reg)
         return string
 
@@ -890,24 +876,6 @@ def ds9_objects_to_string(regions, coordsys='fk5', fmt='.4f', radunit='deg'):
     :param radunit:
     """
 
-    if radunit == 'arcsec':
-        if coordsys in coordsys_name_mapping.keys(): radunitstr = '"'
-        else: raise ValueError('Radius unit arcsec not valid for coordsys {}'.format(coordsys))
-    else: radunitstr = ''
-
-    ds9_strings = {
-        'point': 'point({x:' + fmt + '},{y:' + fmt + '})',
-        'line': 'line({x1:' + fmt + '},{y1:' + fmt + '},{x2:' + fmt + '},{y2:' + fmt + '}) # line=0 0',
-        #'line': 'line({str1:},{str2:}) # line=0 0',
-        'vector': '# vector({x:' + fmt + '},{y:' + fmt + '},{l:' + fmt + '}' + radunitstr + ',{ang:' + fmt + '}) vector=1',
-        'circle': 'circle({x:' + fmt + '},{y:' + fmt + '},{r:' + fmt + '}' + radunitstr + ')',
-        'ellipse': 'ellipse({x:' + fmt + '},{y:' + fmt + '},{r1:' + fmt + '}' + radunitstr + ',{r2:' + fmt + '}' + radunitstr + ',{ang:' + fmt + '})',
-        'rectangle': 'box({x:' + fmt + '},{y:' + fmt + '},{d1:' + fmt + '}' + radunitstr + ',{d2:' + fmt + '}' + radunitstr + ',{ang:' + fmt + '})',
-        'polygon': 'polygon({c})',
-        'text': '# text({x:' + fmt + '},{y:' + fmt + '}) text="{text:}"',
-        'composite': '# composite({x:' + fmt + '},{y:' + fmt + '},{ang:' + fmt + '}) || composite=1'
-    }
-
     output = '# Region file format: DS9 PTS/magic/region\n'
     output += '{}\n'.format(coordsys)
 
@@ -918,8 +886,9 @@ def ds9_objects_to_string(regions, coordsys='fk5', fmt='.4f', radunit='deg'):
     # Loop over the regions
     for reg in regions:
 
-        if isinstance(reg, CompositeRegion): output += composite_to_string(reg, ds9_strings, frame, radunit, fmt) + "\n"
-        else: output += regular_to_string(reg, ds9_strings, frame, radunit, fmt) + "\n"
+        # composite, frame, radunit, fmt
+        if isinstance(reg, CompositeRegion): output += composite_to_string(reg, frame, radunit, fmt, coordsys) + "\n"
+        else: output += regular_to_string(reg, frame, radunit, fmt, coordsys) + "\n"
 
     # Return the output string
     return output
@@ -1073,6 +1042,9 @@ def make_regular_region(specs):
 
             # Create the vector
             reg = PixelVectorRegion(start, length, angle, meta=meta, appearance=appearance, include=include, label=label)
+
+        # Fail
+        else: raise ValueError("Cannot understand coordinate")
 
     # CIRCLES
     elif region_type == 'circle':

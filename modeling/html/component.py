@@ -21,6 +21,7 @@ from ...core.tools import html
 from ...core.tools import filesystem as fs
 from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import time
+from ...core.tools import browser
 
 # -----------------------------------------------------------------
 
@@ -527,6 +528,6 @@ class HTMLPageComponent(GalaxyModelingComponent):
         log.info("Showing the page ...")
 
         # Open
-        fs.open_in_browser(self.page_path)
+        browser.open_path(self.page_path)
 
 # -----------------------------------------------------------------

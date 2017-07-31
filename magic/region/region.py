@@ -15,6 +15,148 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import copy
 
+# Import the relevant PTS classes and modules
+from ...core.tools import types
+
+# -----------------------------------------------------------------
+
+def make_point_template(fmt):
+
+    """
+    This function ...
+    :param fmt:
+    :return:
+    """
+
+    return 'point({x:' + fmt + '},{y:' + fmt + '})'
+
+# -----------------------------------------------------------------
+
+def make_line_template(fmt):
+
+    """
+    Thisf ucntion ...
+    :return:
+    """
+
+    return 'line({x1:' + fmt + '},{y1:' + fmt + '},{x2:' + fmt + '},{y2:' + fmt + '}) # line=0 0'
+
+# -----------------------------------------------------------------
+
+def make_vector_template(fmt, radunitstr):
+
+    """
+    This function ...
+    :param fmtr:
+    :param radunitstr:
+    :return:
+    """
+
+    return '# vector({x:' + fmt + '},{y:' + fmt + '},{l:' + fmt + '}' + radunitstr + ',{ang:' + fmt + '}) vector=1'
+
+# -----------------------------------------------------------------
+
+def make_circle_template(fmt, radunitstr):
+
+    """
+    This function ...
+    :param fmt:
+    :param radunitstr:
+    :return:
+    """
+
+    return 'circle({x:' + fmt + '},{y:' + fmt + '},{r:' + fmt + '}' + radunitstr + ')'
+
+# -----------------------------------------------------------------
+
+def make_ellipse_template(fmt, radunitstr):
+
+    """
+    This functio n...
+    :param fmtr:
+    :param radunitstr:
+    :return:
+    """
+
+    return 'ellipse({x:' + fmt + '},{y:' + fmt + '},{r1:' + fmt + '}' + radunitstr + ',{r2:' + fmt + '}' + radunitstr + ',{ang:' + fmt + '})'
+
+# -----------------------------------------------------------------
+
+def make_rectangle_template(fmt, radunitstr):
+
+    """
+    This function ...
+    :param fmt:
+    :param radunitstr:
+    :return:
+    """
+
+    return 'box({x:' + fmt + '},{y:' + fmt + '},{d1:' + fmt + '}' + radunitstr + ',{d2:' + fmt + '}' + radunitstr + ',{ang:' + fmt + '})'
+
+# -----------------------------------------------------------------
+
+def make_polygon_template():
+
+    """
+    Thisn function ...
+    :return:
+    """
+
+    return 'polygon({c})'
+
+# -----------------------------------------------------------------
+
+def make_text_template(fmt):
+
+    """
+    This function ...
+    :param fmt:
+    :return:
+    """
+
+    return '# text({x:' + fmt + '},{y:' + fmt + '}) text="{text:}"'
+
+# -----------------------------------------------------------------
+
+def make_composite_template(fmt):
+
+    """
+    This function ...
+    :param fmt:
+    :return:
+    """
+
+    return '# composite({x:' + fmt + '},{y:' + fmt + '},{ang:' + fmt + '}) || composite=1'
+
+# -----------------------------------------------------------------
+
+def add_info(string, reg):
+
+    """
+    This function ...
+    :param string:
+    :param reg:
+    :return:
+    """
+
+    start_chars = " #" if not string.startswith("#") else " "
+
+    if reg.has_info: string += start_chars
+    if reg.has_label: string += " text={" + reg.label + "}"
+    if reg.has_meta:
+        if "text" in reg.meta: string += " text={" + reg.meta["text"] + "}"
+        string += " " + " ".join(key + "=" + value for key, value in reg.meta.items() if types.is_string_type(value) and key != "text")
+    if reg.has_appearance: string += " " + " ".join(key + "=" + value for key, value in reg.appearance.items())
+    return string
+
+# -----------------------------------------------------------------
+
+coordinate_systems = ['fk5', 'fk4', 'icrs', 'galactic', 'wcs', 'physical', 'image', 'ecliptic']
+coordinate_systems += ['wcs{0}'.format(letter) for letter in string.ascii_lowercase]
+
+coordsys_name_mapping = dict(zip(frame_transform_graph.get_names(), frame_transform_graph.get_names()))
+coordsys_name_mapping['ecliptic'] = 'geocentrictrueecliptic'  # needs expert attention TODO
+
 # -----------------------------------------------------------------
 
 class Region(object):
@@ -104,6 +246,17 @@ class Region(object):
         """
 
         return copy.deepcopy(self)
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+
 
 # -----------------------------------------------------------------
 

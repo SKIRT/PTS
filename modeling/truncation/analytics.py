@@ -32,6 +32,10 @@ from pts.core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
+mask_names = ["padded", "bad"]
+
+# -----------------------------------------------------------------
+
 class TruncationAnalyticsCalculator(TruncationComponent):
     
     """
@@ -165,7 +169,6 @@ class TruncationAnalyticsCalculator(TruncationComponent):
         for name in self.dataset.names:
 
             # Get the mask
-            mask_names = ["padded", "bad"]
             mask = self.dataset.get_image_masks_union(name, mask_names, strict=False)
 
             # Set the mask
@@ -230,7 +233,6 @@ class TruncationAnalyticsCalculator(TruncationComponent):
             frame = self.dataset.get_frame(name)
 
             # Get the mask
-            mask_names = ["padded", "bad"]
             mask = self.dataset.get_image_masks_union(name, mask_names, strict=False)
 
             # Convert center to pixel coordinates
