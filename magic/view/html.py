@@ -837,7 +837,7 @@ def make_load_region(region, display=None):
 
     string = ""
 
-    string += "var region_id = JS9.AddRegions('" + region + "'"
+    string += "var region_id = JS9.AddRegions('" + str(region) + "'"
     if display is not None: string += ', {display:"' + display + '"}'
     string += ');'
     string += "\n"
@@ -884,7 +884,7 @@ def make_load_regions(regions, display=None):
 
     for region in regions:
 
-        string += "JS9.AddRegions('" + region + "'"
+        string += "JS9.AddRegions('" + str(region) + "'"
         if display is not None: string += ', {display:"' + display + '"}'
         string += ');'
         string += "\n"
@@ -913,5 +913,22 @@ def make_load_regions_function(name, regions, display=None):
 
     string += "}"
     return string
+
+# -----------------------------------------------------------------
+
+# Start for run analysis on change
+"""
+<script type="text/javascript">
+    var aname, im;
+    var lastim, lastreg;
+    var ncall = 0;
+    // this is the callback for all region changes
+    JS9.Regions.opts.onchange = "runMyAnalysis";
+    // called when the function changes to redo the last display
+    function redo(){
+      if( lastim && lastreg ){
+        runMyAnalysis(lastim, lastreg);
+      }
+    }"""
 
 # -----------------------------------------------------------------

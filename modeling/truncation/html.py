@@ -17,7 +17,7 @@ import gc
 
 # Import the relevant PTS classes and modules
 from .component import TruncationComponent
-from ...core.tools.html import HTMLPage, SimpleTable, newline, updated_footing, make_theme_button, center, sleep_function, other_sleep_function, make_script_button
+from ...core.tools.html import HTMLPage, SimpleTable, newline, updated_footing, make_theme_button, center, sleep_function, other_sleep_function, make_script_button, unordered_list
 from ...core.tools.logging import log
 from ...magic.view.html import JS9Viewer, JS9Preloader, body_settings, javascripts, css_scripts, JS9Menubar, JS9Loader, JS9Spawner, JS9Colorbar, JS9Window, make_load_region_function, make_load_region
 from ...core.tools import filesystem as fs
@@ -25,6 +25,10 @@ from ...core.tools.utils import lazyproperty
 from ...core.filter.filter import parse_filter
 from .analytics import mask_names
 from ...core.tools import browser
+from ...magic.core.frame import Frame
+from ...core.tools.stringify import tostr
+from ...magic.tools import headers
+from ...magic.basics.coordinatesystem import CoordinateSystem
 
 # -----------------------------------------------------------------
 
@@ -61,6 +65,9 @@ class TruncationPageGenerator(TruncationComponent):
 
         # --- Attributes ---
 
+        # The truncation factor indicator
+        self.indicator = None
+
         # The preloader
         self.preloader = None
 
@@ -82,6 +89,15 @@ class TruncationPageGenerator(TruncationComponent):
         # Plot paths
         self.plots_paths = dict()
 
+        # The masks directory
+        self.masks_path = None
+
+        # Mask paths
+        self.mask_paths = dict()
+
+        # Info
+        self.info = dict()
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -97,6 +113,12 @@ class TruncationPageGenerator(TruncationComponent):
 
         # Load the masks
         if self.config.mask: self.load_masks()
+
+        # Make the eindicator
+        self.make_indicator()
+
+        # Make info
+        if self.config.info: self.get_info()
 
         # Make plots
         self.make_plots()
@@ -135,8 +157,19 @@ class TruncationPageGenerator(TruncationComponent):
 
         # Make directory to contain the plots
         self.plots_path = fs.join(self.truncation_html_path, "plots")
-        if fs.is_directory(self.plots_path): fs.clear_directory(self.plots_path)
+        if fs.is_directory(self.plots_path):
+            if self.config.replot: fs.clear_directory(self.plots_path)
         else: fs.create_directory(self.plots_path)
+
+        # make directory to contain the mask plots
+        self.masks_path  = fs.join(self.truncation_html_path, "masks")
+        if fs.is_directory(self.masks_path):
+            if self.config.replot: fs.clear_directory(self.masks_path)
+        else: fs.create_directory(self.masks_path)
+
+        # Check
+        if self.config.reproject:
+            if not self.config.png: raise ValueError("The 'png' option has to be enabled for the reprojection")
 
     # -----------------------------------------------------------------
 
@@ -209,7 +242,93 @@ class TruncationPageGenerator(TruncationComponent):
             mask = self.dataset.get_image_masks_union(name, mask_names, strict=False)
 
             # Add the mask
-            self.masks[name] = mask
+            #self.masks[name] = mask
+
+            # Save the mask as a PNG image
+            frame = Frame(mask.data.astype(int), wcs=mask.wcs)
+
+            # Determine path
+            filepath = fs.join(self.masks_path, name + ".png")
+
+            # Set the path
+            self.mask_paths[name] = filepath
+
+            # Collect
+            gc.collect()
+
+            if fs.is_file(filepath): continue  # plot already there
+
+            # Save as PNG
+            frame.saveto_png(filepath, colours="grey")
+
+    # -----------------------------------------------------------------
+
+    def make_indicator(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making the truncation factor indicator ...")
+
+        self.indicator = "<div id='indicator'>\n"
+        self.indicator += "Factor: 1.0\n"
+        self.indicator += "</div>"
+
+    # -----------------------------------------------------------------
+
+    def get_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting info for the images ...")
+
+        # Loop over the images
+        # for name in self.dataset.names:
+        for name, fltr in zip(self.names, self.filters):
+
+            # Get frame
+            #frame = self.dataset.get_frame(name)
+
+            # Get header -> FASTER (?)
+            header = self.dataset.get_header(name)
+
+            info = []
+
+            fltr = headers.get_filter(name, header)
+            wavelength = fltr.wavelength
+            unit = headers.get_unit(header)
+            pixelscale = headers.get_pixelscale(header)
+            if pixelscale is None:
+                wcs = CoordinateSystem(header)
+                pixelscale = wcs.average_pixelscale
+            else: pixelscale = pixelscale.average
+            fwhm = headers.get_fwhm(header)
+            nxpixels = header["NAXIS1"]
+            nypixels = header["NAXIS2"]
+
+            # Get filesize
+            filesize = fs.file_size(self.dataset.get_frame_path(name)).to("MB")
+
+            info.append("Filter: " + tostr(fltr))
+            info.append("Wavelength: " + tostr(wavelength))
+            info.append("Unit: " + tostr(unit))
+            info.append("Pixelscale: " + tostr(pixelscale))
+            info.append("FWHM: " + tostr(fwhm))
+            info.append("Dimensions: " + str((nxpixels, nypixels)))
+            info.append("File size: " + tostr(filesize))
+
+            # Make list
+            code = unordered_list(info)
+
+            # Add
+            self.info[name] = code
 
     # -----------------------------------------------------------------
 
@@ -238,6 +357,20 @@ class TruncationPageGenerator(TruncationComponent):
         # Inform the user
         log.info("Making image plots ...")
 
+        # Determine rebinning wcs
+        if self.config.reproject:
+
+            if self.config.reproject_method == "max": rebin_name = self.dataset.max_pixelscale_name
+            elif self.config.reproject_method == "median": rebin_name = self.dataset.median_pixelscale_name
+            elif self.config.reproject_method == "largest": rebin_name = self.dataset.largest_wcs_name
+            else: raise ValueError("Invalid reproject method: '" + self.config.reproject_method + "'")
+
+            # Debugging
+            log.debug("Rebinning all images to the coordinate system of the '" + rebin_name + "' image ...")
+            rebin_wcs = self.dataset.get_wcs(rebin_name)
+
+        else: rebin_wcs = None
+
         # Loop over the images
         #for name in self.dataset.names:
         for name, fltr in zip(self.names, self.filters):
@@ -254,12 +387,24 @@ class TruncationPageGenerator(TruncationComponent):
             # Set the path
             self.plots_paths[name] = filepath
 
-            # Make plot
-            # Save as PNG image
-            frame.saveto_png(filepath, colours=self.config.colormap, absolute_alpha=True)
-
             # Cleanup
             gc.collect()
+
+            if fs.is_file(filepath): continue # plot already there
+
+            #
+            # Make plot
+            # Save as PNG image
+            #if fs.is_file(filepath):
+            #    if self.config.replot: frame.saveto_png(filepath, colours=self.config.colormap, absolute_alpha=True)
+            #    else: raise ValueError("The plot file '" + filepath + "' already exists")
+            #else: frame.saveto_png(filepath, colours=self.config.colormap, absolute_alpha=True)
+
+            # REPROJECT
+            if rebin_wcs is not None: frame.rebin(rebin_wcs, exact=False)
+
+            # Save
+            frame.saveto_png(filepath, colours=self.config.colormap, absolute_alpha=True)
 
     # -----------------------------------------------------------------
 
@@ -309,13 +454,17 @@ class TruncationPageGenerator(TruncationComponent):
             #regions = "ellipse"
 
             # Get the angle
-            center = self.disk_ellipse.center  # in sky coordinates
-            semimajor = self.disk_ellipse.semimajor
-            semiminor = self.disk_ellipse.semiminor
-            angle = self.disk_ellipse.angle
+            #center = self.disk_ellipse.center  # in sky coordinates
+            #semimajor = self.disk_ellipse.semimajor
+            #semiminor = self.disk_ellipse.semiminor
+            #angle = self.disk_ellipse.angle
 
             # Determine the ratio of semimajor and semiminor
             #ratio = semiminor / semimajor
+
+            #region_string = str(self.disk_ellipse)
+
+            region = self.disk_ellipse
 
             regions_for_loader = region if self.config.load_regions else None
 
@@ -355,7 +504,7 @@ class TruncationPageGenerator(TruncationComponent):
             region_button_id = display_name + "regionsbutton"
             load_region_function_name = "load_regions_" + display_name
             # load_region = make_load_region_function(load_region_function_name, regions, display=None)
-            load_region = make_load_region(regions, display=display_id)
+            load_region = make_load_region(region, display=display_id)
 
             # Create region loader
             self.region_loaders[name] = make_script_button(region_button_id, "Load regions", load_region,
@@ -371,7 +520,9 @@ class TruncationPageGenerator(TruncationComponent):
         :return:
         """
 
-        if self.config.dynamic: return 1
+        if self.config.dynamic:
+            if self.config.info: return 2
+            else: return 1
         else: return ncolumns
 
     # -----------------------------------------------------------------
@@ -427,6 +578,9 @@ class TruncationPageGenerator(TruncationComponent):
             # Add the cell
             cells.append(string)
 
+            # Add info
+            if self.config.info: cells.append(self.info[name])
+
         # Make the table
         self.table = SimpleTable.rasterize(cells, ncolumns=self.ncolumns, css_class=self.table_class)
 
@@ -458,6 +612,9 @@ class TruncationPageGenerator(TruncationComponent):
         self.page += "<script>" + other_sleep_function + "</script>"
 
         self.page += center(make_theme_button(classes=classes))
+
+        # Add the indicator
+        self.page += center(self.indicator)
 
         # Add the table
         self.page += self.table

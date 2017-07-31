@@ -14,9 +14,14 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 import copy
+import string
+
+# Import astronomical modules
+from astropy.coordinates import frame_transform_graph
 
 # Import the relevant PTS classes and modules
 from ...core.tools import types
+from ..tools import coordinates
 
 # -----------------------------------------------------------------
 
@@ -69,16 +74,18 @@ def make_circle_template(fmt, radunitstr):
 
 # -----------------------------------------------------------------
 
-def make_ellipse_template(fmt, radunitstr):
+def make_ellipse_template(fmt, radunitstr, hmsdms=False):
 
     """
     This functio n...
     :param fmtr:
     :param radunitstr:
+    :param hmsdms:
     :return:
     """
 
-    return 'ellipse({x:' + fmt + '},{y:' + fmt + '},{r1:' + fmt + '}' + radunitstr + ',{r2:' + fmt + '}' + radunitstr + ',{ang:' + fmt + '})'
+    if hmsdms: return 'ellipse({x},{y},{r1:' + fmt + '}' + radunitstr + ',{r2:' + fmt + '}' + radunitstr + ',{ang:' + fmt + '})'
+    else: return 'ellipse({x:' + fmt + '},{y:' + fmt + '},{r1:' + fmt + '}' + radunitstr + ',{r2:' + fmt + '}' + radunitstr + ',{ang:' + fmt + '})'
 
 # -----------------------------------------------------------------
 

@@ -12,6 +12,9 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import numpy as np
+
 # Import the relevant PTS classes and modules
 from ...core.tools.logging import log
 from ...core.filter.filter import parse_filter
@@ -2645,6 +2648,37 @@ def rebin_to_highest_pixelscale(*frames, **kwargs):
 
     # Rebin
     return rebin_to_pixelscale(*frames, names=names, pixelscale=highest_pixelscale, wcs=highest_pixelscale_wcs)
+
+# -----------------------------------------------------------------
+
+def rebin_to_median_pixelscale(*frames, **kwargs):
+
+    """
+    This function ...
+    :param frames:
+    :param kwargs:
+    :return:
+    """
+
+    # Get frame names
+    names = kwargs.pop("names", None)
+
+    # Inform the user
+    log.info("Rebinning frames to the coordinate system with the median pixelscale ...")
+
+    # Determine which frame contains the median pixelscale
+    pixelscales = [frame.average_pixelscale.to("arcsec").value for frame in frames]
+    median_index = np.argsort(pixelscales)[len(pixelscales) // 2]
+
+    # Get pixelscale and WCS
+    pixelscale = frames[median_index].pixelscale
+    wcs = frames[median_index].wcs
+
+    # Debugging
+    if names is not None: log.debug("The frame with the median pixelscale is the '" + names[median_index] + "' frame ...")
+
+    # Rebin
+    return rebin_to_pixelscale(*frames, names=names, pixelscale=pixelscale, wcs=wcs)
 
 # -----------------------------------------------------------------
 

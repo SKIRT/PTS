@@ -356,6 +356,23 @@ class DataSet(object):
 
     # -----------------------------------------------------------------
 
+    def get_pixelscale(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        header = self.get_header(name)
+        pixelscale = headers.get_pixelscale(header)
+        if pixelscale is None:
+            wcs = CoordinateSystem(header)
+            return wcs.pixelscale
+        else: return pixelscale
+
+    # -----------------------------------------------------------------
+
     def get_wavelength(self, name):
 
         """
@@ -1232,6 +1249,19 @@ class DataSet(object):
     # -----------------------------------------------------------------
 
     @property
+    def median_pixelscale(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        name = self.median_pixelscale_name
+        return self.get_pixelscale(name)
+
+    # -----------------------------------------------------------------
+
+    @property
     def pixelscale_range(self):
 
         """
@@ -1264,6 +1294,19 @@ class DataSet(object):
         """
 
         return self.get_wcs(self.max_pixelscale_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def median_pixelscale_wcs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        name = self.median_pixelscale_name
+        return self.get_wcs(name)
 
     # -----------------------------------------------------------------
 
@@ -1312,6 +1355,27 @@ class DataSet(object):
 
         # Return the name for the frame with the maximum pixelscale
         return frame_name
+
+    # -----------------------------------------------------------------
+
+    @property
+    def median_pixelscale_name(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+
+        names = self.names
+        pixelscales = [self.get_pixelscale(name) for name in names]
+
+        # Determine which frame contains the median pixelscale
+        scalar_pixelscales = [pixelscale.average.to("arcsec").value for pixelscale in pixelscales]
+        median_index = np.argsort(scalar_pixelscales)[len(pixelscales) // 2]
+
+        # Return
+        return names[median_index]
 
     # -----------------------------------------------------------------
 
@@ -1427,6 +1491,22 @@ class DataSet(object):
         """
 
         return QuantityRange(self.min_wavelength, self.max_wavelength)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def largest_wcs_name(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        names = self.names
+        #coordinate_systems = [self.get_wcs(name) for name in names]
+        areas = [self.get_wcs(name).area for name in names]
+        index = np.argmax(areas)
+        return names[index]
 
     # -----------------------------------------------------------------
 

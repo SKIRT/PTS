@@ -481,6 +481,30 @@ class CoordinateSystem(wcs.WCS):
     # -----------------------------------------------------------------
 
     @property
+    def npixels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.naxis1 * self.naxis2
+
+    # -----------------------------------------------------------------
+
+    @property
+    def area(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.pixelarea * self.npixels
+
+    # -----------------------------------------------------------------
+
+    @property
     def center_pixel(self):
 
         """

@@ -234,13 +234,14 @@ def ra_difference(ra_distance, declination):
 
 # -----------------------------------------------------------------
 
-def degrees_to_hms(ra='', dec='', round=False):
+def degrees_to_hms(ra='', dec='', round=False, separator=":"):
 
     """
     This function ...
     :param ra:
     :param dec:
     :param round:
+    :param separator:
     :return:
     """
 
@@ -256,7 +257,7 @@ def degrees_to_hms(ra='', dec='', round=False):
             decS = int((abs((dec-deg)*60)-decM)*60)
         else:
             decS = (abs((dec-deg)*60)-decM)*60
-        DEC = '{0}{1} {2} {3}'.format(ds, deg, decM, decS)
+        DEC = ('{0}{1}' + separator + '{2}' + separator + '{3}').format(ds, deg, decM, decS)
 
     if ra:
 
@@ -268,7 +269,7 @@ def degrees_to_hms(ra='', dec='', round=False):
             raS = int(((((ra/15)-raH)*60)-raM)*60)
         else:
             raS = ((((ra/15)-raH)*60)-raM)*60
-        RA = '{0}{1} {2} {3}'.format(rs, raH, raM, raS)
+        RA = ('{0}{1}' + separator + '{2}' + separator + '{3}').format(rs, raH, raM, raS)
 
     # Return ...
     if ra and dec: return (RA, DEC)
@@ -277,6 +278,13 @@ def degrees_to_hms(ra='', dec='', round=False):
 # -----------------------------------------------------------------
 
 def hms_to_degrees(ra='', dec=''):
+
+    """
+    This function ...
+    :param ra:
+    :param dec:
+    :return:
+    """
 
     RA, DEC, rs, ds = '', '', 1, 1
 

@@ -40,5 +40,12 @@ definition.add_flag("colorbar", "add colorbars", False)
 definition.add_flag("resize", "allow resize", False)
 definition.add_flag("load_regions", "load regions with images (does not work yet)", False)
 definition.add_flag("mask", "add masks", False)
+definition.add_flag("reproject", "reproject to the same WCS", False)
+definition.add_flag("info", "add info about the images", False)
+definition.add_flag("replot", "replot", True)
+
+default_reprojection_method = "largest"
+reproject_methods = ["max", "median", "largest"]
+definition.add_optional("reproject_method", "string", "reprojection method", default_reprojection_method, choices=reproject_methods)
 
 # -----------------------------------------------------------------

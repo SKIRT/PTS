@@ -29,6 +29,7 @@ from ..basics.stretch import PixelStretch, SkyStretch, PhysicalStretch
 from ...core.units.parsing import parse_unit as u
 from ..core.mask import Mask
 from .region import add_info, make_ellipse_template, coordsys_name_mapping
+from ..tools import coordinates
 
 # -----------------------------------------------------------------
 
@@ -607,7 +608,8 @@ class SkyEllipseRegion(EllipseRegion, SkyRegion):
 
         coordsys = 'fk5'
         fmt = '.4f'
-        radunit = 'deg'
+        #radunit = 'deg'
+        radunit = "arcsec"
 
         if radunit == 'arcsec':
             if coordsys in coordsys_name_mapping.keys(): radunitstr = '"'
@@ -620,11 +622,18 @@ class SkyEllipseRegion(EllipseRegion, SkyRegion):
 
         x = float(self.center.transform_to(frame).spherical.lon.to('deg').value)
         y = float(self.center.transform_to(frame).spherical.lat.to('deg').value)
+        ra = coordinates.degrees_to_hms(ra=x)
+        dec = coordinates.degrees_to_hms(dec=y)
+        x = ra
+        y = dec
         r1 = float(self.semimajor.to(radunit).value)
         r2 = float(self.semiminor.to(radunit).value)
         ang = float(self.angle.to('deg').value)
 
-        string = prefix + make_ellipse_template(fmt, radunitstr).format(**locals())
+        #preprefix = coordsys + ";"
+        preprefix = ""
+
+        string = preprefix + prefix + make_ellipse_template(fmt, radunitstr, hmsdms=True).format(**locals())
         string = add_info(string, self)
         return string
 
