@@ -113,6 +113,9 @@ class ImagesModeler(ModelerBase):
         # Config for the fitting initializer
         if "initialize_config" in kwargs: self.initialize_config = kwargs.pop("initialize_config")
 
+        # CHECK IF RERUN IS DEFINED, IF SO, REMOVE COMMANDS FROM THE MODELLING HISTORY
+        if self.config.rerun is not None: self.set_rerun()
+
     # -----------------------------------------------------------------
 
     def load_data(self):

@@ -1709,6 +1709,28 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the methods
+        for method in self.maps:
+
+            # Depending on whether subdictionaries
+            if types.is_dictionary(self.maps[method]): return True
+
+            # No subdivision: method is actually the map name
+            else: return False
+
+        # We shouldn't get here
+        raise ValueError("No maps present yet")
+
+    # -----------------------------------------------------------------
+
     def write_maps(self):
 
         """
@@ -1725,15 +1747,10 @@ class MapsComponent(GalaxyModelingComponent):
             # Depending on whether subdictionaries
             if types.is_dictionary(self.maps[method]):
 
-                # Create directory
-                #path = fs.create_directory_in(self.maps_sub_path, method)
-
                 # Loop over the maps
                 for name in self.maps[method]:
 
                     # Determine path
-                    #map_path = fs.join(path, name + ".fits")
-
                     map_path = self.get_path_for_map(name, method)
 
                     if fs.is_file(map_path): continue
@@ -1745,8 +1762,6 @@ class MapsComponent(GalaxyModelingComponent):
             else:
 
                 # Determine path
-                #map_path = fs.join(self.maps_sub_path, method + ".fits")
-
                 map_path = self.get_path_for_map(method)
 
                 if fs.is_file(map_path): continue
@@ -1793,11 +1808,17 @@ class MapsComponent(GalaxyModelingComponent):
         # Inform the user
         log.info("Writing the map origins ...")
 
-        # Loop over the methods
-        for method in self.origins:
+        # CHECK WHETHER ORIGIN IS DEFINED FOR EACH MAP
+        self.check_origins()
 
-            # Depending on whether subdictionaries
-            if types.is_dictionary(self.maps[method]):
+        # If has different methods
+        if self.has_methods:
+
+            # Loop over the methods
+            for method in self.origins:
+
+                # Depending on whether subdictionaries
+                #if types.is_dictionary(self.origins[method]):
 
                 # Directory path
                 path = fs.join(self.maps_sub_path, method)
@@ -1808,14 +1829,42 @@ class MapsComponent(GalaxyModelingComponent):
                 # Write
                 write_dict(self.origins[method], origins_path)
 
+        # No different methods
+        else:
+
+            # Determine the origins file path
+            origins_path = fs.join(self.maps_sub_path, origins_filename)
+
+            # Write
+            write_dict(self.origins, origins_path)
+
+    # -----------------------------------------------------------------
+
+    def check_origins(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the origins dictionary ...")
+
+        # Loop over the methods
+        for method in self.maps:
+
+            # Depending on whether subdictionaries
+            if types.is_dictionary(self.maps[method]):
+
+                if method not in self.origins: raise ValueError("'" + method + "' section of the origins is missing")
+
+                # Loop over the maps
+                for name in self.maps[method]:
+                    if name not in self.origins[method]: raise ValueError("Origin for '" + method + "/" + name + "' map is not defined")
+
             # No different methods
             else:
-
-                # Determine the origins file path
-                origins_path = fs.join(self.maps_sub_path, origins_filename)
-
-                # Write
-                write_dict(self.origins, origins_path)
+                if method not in self.origins: raise ValueError("Origin for '" + method + "' map is not defined")
 
     # -----------------------------------------------------------------
 
@@ -1829,11 +1878,17 @@ class MapsComponent(GalaxyModelingComponent):
         # Inform the user
         log.info("Writing the map methods ...")
 
-        # Loop over the methods OF THIS STEP
-        for method in self.methods:
+        # CHECK WHETHER METHOD IS DEFINED FOR EACH MAP
+        self.check_methods()
 
-            # Depending on whether subdirectories
-            if types.is_dictionary(self.methods[method]):
+        # If has different methods
+        if self.has_methods:
+
+            # Loop over the methods OF THIS STEP
+            for method in self.methods:
+
+                # Depending on whether subdirectories
+                #if types.is_dictionary(self.methods[method]):
 
                 # Directory path
                 path = fs.join(self.maps_sub_path, method)
@@ -1844,13 +1899,41 @@ class MapsComponent(GalaxyModelingComponent):
                 # Write
                 write_dict(self.methods[method], methods_path)
 
+        # No different methods
+        else:
+
+            # Determine the file path
+            methods_path = fs.join(self.maps_sub_path, methods_filename)
+
+            # Write
+            write_dict(self.methods, methods_path)
+
+    # -----------------------------------------------------------------
+
+    def check_methods(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Checking the methods dictionary ...")
+
+        # Loop over the methods
+        for method in self.maps:
+
+            # Depending on whether subdictionaries
+            if types.is_dictionary(self.maps[method]):
+
+                if method not in self.methods: raise ValueError("'" + method + "' section of the methods is missing")
+
+                # Loop over the maps
+                for name in self.maps[method]:
+                    if name not in self.methods[method]: raise ValueError("Method for '" + method + "/" + name + "' map is not defined")
+
             # No different methods
             else:
-
-                # Determine the file path
-                methods_path = fs.join(self.maps_sub_path, methods_filename)
-
-                # Write
-                write_dict(self.methods, methods_path)
+                if method not in self.methods: raise ValueError("Method for '" + method + "' map is not defined")
 
 # -----------------------------------------------------------------

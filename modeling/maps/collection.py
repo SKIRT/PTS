@@ -524,7 +524,7 @@ class MapsCollection(object):
 
     # METHODS
 
-    def get_colour_methods(self, flatten=False):
+    def get_colours_methods(self, flatten=False):
 
         """
         This function ...

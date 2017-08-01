@@ -130,11 +130,15 @@ class SSFRMapMaker(MapsComponent):
         # Set the method name
         method_name = "ssfr"
 
+        # Get origins and methods
+        colours_origins = self.get_colours_origins(flatten=True)
+        colours_methods = self.get_colours_methods(flatten=True)
+
         # Create the map maker
         maker = ColoursSSFRMapsMaker()
 
         # Run the maker
-        maker.run(colours=self.colours, colours_origins=self.get_colours_origins(), maps=self.current_maps, method_name=method_name)
+        maker.run(colours=self.colours, colours_origins=colours_origins, colours_methods=colours_methods, maps=self.current_maps, method_name=method_name)
 
         # Get the maps
         self.maps = maker.maps

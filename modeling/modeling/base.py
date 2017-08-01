@@ -109,6 +109,75 @@ class ModelerBase(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def is_galaxy_modeler(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.environment is None: raise ValueError("Not yet known")
+
+        from ..core.environment import GalaxyModelingEnvironment
+        return isinstance(self.environment, GalaxyModelingEnvironment)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_sed_modeler(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.environment is None: raise ValueError("Not yet known")
+
+        from ..core.environment import SEDModelingEnvironment
+        return isinstance(self.environment, SEDModelingEnvironment)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def is_images_modeler(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.environment is None: raise ValueError("Not yet known")
+
+        from ..core.environment import ImagesModelingEnvironment
+        return isinstance(self.environment, ImagesModelingEnvironment)
+
+    # -----------------------------------------------------------------
+
+    def set_rerun(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get the commands which have to be removed from the history
+        commands = commands_after_and_including(self.config.rerun)
+
+        # Loop over the commands, remove all entries
+        for command_name in commands:
+
+            # SKip if not yet present
+            if command_name not in self.history: continue
+
+            # Debugging
+            log.debug("Removing the '" + command_name + "' command from the modeling history ...")
+
+            # Remove
+            self.history.remove_entries_and_save(command_name)
+
+    # -----------------------------------------------------------------
+
     def output_paths_for_command(self, command_name):
 
         """

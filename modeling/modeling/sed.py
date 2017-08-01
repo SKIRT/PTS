@@ -136,6 +136,9 @@ class SEDModeler(ModelerBase):
         if "parameter_grid_weights" in kwargs: self.parameter_grid_weights = kwargs.pop("parameter_grid_weights")
         elif self.grid_fitting: self.prompt_parameter_grid_weigths()
 
+        # CHECK IF RERUN IS DEFINED, IF SO, REMOVE COMMANDS FROM THE MODELLING HISTORY
+        if self.config.rerun is not None: self.set_rerun()
+
     # -----------------------------------------------------------------
 
     def prompt_parameter_grid_scales(self):

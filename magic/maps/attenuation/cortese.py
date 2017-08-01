@@ -216,7 +216,7 @@ class CorteseAttenuationMapsMaker(Configurable):
                 if self.has_origins:
 
                     origins = copy(self.tirs_origins[name])
-                    origins_ssfr = copy(self.ssfrs_origins[name])
+                    origins_ssfr = copy(self.ssfrs_origins[ssfr_colour])
                     sequences.extend_unique(origins, origins_ssfr)
                     sequences.append_unique(origins, parse_filter("FUV"))
                     self.origins[key] = origins

@@ -174,6 +174,9 @@ def load_dict_impl(dictfile, dct, indent=""):
 
         if line.strip() == "}": return
 
+        #print("LINE", line)
+
+        # Line actually defines something
         if ":" in line:
 
             name_and_specification = line.split(":")[0].strip()
@@ -254,6 +257,19 @@ def load_dict_impl(dictfile, dct, indent=""):
 
                 dct[name_value] = value
 
+            # EMPTY LIST IS POSSIBLE, IT WILL HAVE EMPTINESS AS VALUE
+            elif _is_empty_list_specification(name_and_specification):
+
+                name_string = name_and_specification.split("] ")[1].split(" [")[0]
+
+                # Get type and value of the key
+                name_ptype = name_and_specification.split("[")[1].split("]")[0]
+                name_value = getattr(parsing, name_ptype)(name_string)
+
+                # Set empty list
+                dct[name_value] = []
+
+            # OTHER CASES SHOULD BE DICTS OR MAPPINGS OF WHICH THE VALUES ARE DEFINED WITHIN A NEW INDENTATION CLAUSE
             else:
 
                 name_ptype = name_and_specification.split("[")[1].split("]")[0]
@@ -267,11 +283,28 @@ def load_dict_impl(dictfile, dct, indent=""):
 
                 map_or_dict = name_and_specification.split(name_string + " [")[1].split("]")[0]
 
+                #print(dct)
+
                 if map_or_dict == "dict": dct[name_value] = dict()
                 elif map_or_dict == "Map": dct[name_value] = Map()
                 else: raise ValueError("Don't know how to proceed with '" + map_or_dict + "'")
 
                 load_dict_impl(dictfile, dct[name_value], new_indent)
+
+# -----------------------------------------------------------------
+
+def _is_empty_list_specification(name_and_specification):
+
+    """
+    This function ...
+    :param name_and_specification:
+    :return:
+    """
+
+    #name_ptype = name_and_specification.split("[")[1].split("]")[0]
+    name_string = name_and_specification.split("] ")[1].split(" [")[0]
+
+    return name_and_specification.split(name_string + " [")[1].split("]")[0] == "list"
 
 # -----------------------------------------------------------------
 

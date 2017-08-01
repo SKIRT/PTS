@@ -99,8 +99,12 @@ class AttenuationMapMaker(MapsComponent):
         # Get maps and origins
         tirs = self.get_tir_maps(flatten=True)
         ssfrs = self.get_ssfr_maps(flatten=True)
+
+        # Origins
         tirs_origins = self.get_tir_origins(flatten=True)
         ssfrs_origins = self.get_ssfr_origins(flatten=True)
+
+        # Methods
         tirs_methods = self.get_tir_methods(flatten=True)
         ssfrs_methods = self.get_ssfr_methods(flatten=True)
 
