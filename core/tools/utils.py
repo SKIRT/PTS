@@ -328,3 +328,21 @@ class UserIntervention(Exception):
         super(UserIntervention, self).__init__(message)
 
 # -----------------------------------------------------------------
+
+class DefaultScope(object):
+
+    """
+    This class ...
+    """
+
+    #def __init__(self):
+
+    def __enter__(self):
+        return None
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_type is not None: return False # not succesful
+        else: pass # succesful
+        return None
+
+# -----------------------------------------------------------------

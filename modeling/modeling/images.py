@@ -145,7 +145,7 @@ class ImagesModeler(ModelerBase):
         builder = ImagesModelBuilder(config)
 
         # Run
-        with self.history.register(builder): builder.run()
+        with self.register(builder): builder.run()
 
     # -----------------------------------------------------------------
 
@@ -168,7 +168,7 @@ class ImagesModeler(ModelerBase):
         builder = ImagesRepresentationBuilder(config)
 
         # Run
-        with self.write_log(builder), self.history.register(builder), self.write_config(builder): builder.run()
+        with self.write_log(builder), self.register(builder), self.write_config(builder): builder.run()
 
     # -----------------------------------------------------------------
 
@@ -220,7 +220,7 @@ class ImagesModeler(ModelerBase):
         input_dict["settings"] = self.config.fitting_settings
 
         # Run the fitting configurer
-        with self.write_log(configurer), self.history.register(configurer), self.write_config(configurer), self.write_input(configurer, **input_dict): configurer.run(**input_dict)
+        with self.write_log(configurer), self.register(configurer), self.write_config(configurer), self.write_input(configurer, **input_dict): configurer.run(**input_dict)
 
             #configurer.run(descriptions_config=self.descriptions_config, types_config=self.types_config,
             #               units_config=self.units_config, ranges_config=self.ranges_config, filters_config=self.filters_config,
@@ -306,7 +306,7 @@ class ImagesModeler(ModelerBase):
         # OPTIONS FOR THE DUST GRID NOT RELEVANT FOR SED MODELING (YET)
 
         # Run the fitting initializer
-        with self.write_log(initializer), self.history.register(initializer), self.write_config(initializer): initializer.run()
+        with self.write_log(initializer), self.register(initializer), self.write_config(initializer): initializer.run()
 
     # -----------------------------------------------------------------
 

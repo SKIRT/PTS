@@ -96,4 +96,7 @@ definition.add_flag("check_recurrence", "check for recurrence of models that hav
 definition.add_optional("recurrence_rtol", "positive_real", "relative tolerance for recurrence checking", 1e-5)
 definition.add_optional("recurrence_atol", "positive_real", "absolute tolerance for recurrence checking", 1e-8)
 
+# TRUNCATION FACTOR
+definition.add_optional("truncation_factor", "positive_real", "truncation ellipse boundary factor")
+
 # -----------------------------------------------------------------

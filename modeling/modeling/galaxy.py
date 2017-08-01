@@ -22,7 +22,7 @@ from ..data.inspector import DataInspector
 from ..preparation.initialization import PreparationInitializer
 from ..preparation.preparer import DataPreparer
 from ..decomposition.decomposition import GalaxyDecomposer
-from ..truncation.truncation import Truncator
+from ..truncation.truncator import Truncator
 from ..photometry.photometry import PhotoMeter
 from ..maps.old import OldStellarMapMaker
 from ..maps.young import YoungStellarMapMaker
@@ -336,7 +336,7 @@ class GalaxyModeler(ModelerBase):
         fetcher.config.path = self.modeling_path
 
         # Run the fetcher
-        with self.write_log(fetcher), self.history.register(fetcher), self.write_config(fetcher): fetcher.run()
+        with self.write_log(fetcher), self.register(fetcher), self.write_config(fetcher): fetcher.run()
 
     # -----------------------------------------------------------------
 
@@ -378,7 +378,7 @@ class GalaxyModeler(ModelerBase):
         fetcher.config.path = self.modeling_path
 
         # Set log path
-        with self.write_log(fetcher), self.history.register(fetcher), self.write_config(fetcher): fetcher.run()
+        with self.write_log(fetcher), self.register(fetcher), self.write_config(fetcher): fetcher.run()
 
     # -----------------------------------------------------------------
 
@@ -442,7 +442,7 @@ class GalaxyModeler(ModelerBase):
         fetcher.config.path = self.modeling_path
 
         # Run
-        with self.write_log(fetcher), self.history.register(fetcher), self.write_config(fetcher): fetcher.run()
+        with self.write_log(fetcher), self.register(fetcher), self.write_config(fetcher): fetcher.run()
 
         # If not running in attached remote mode, exit now
         if fetcher.detached:
@@ -504,7 +504,7 @@ class GalaxyModeler(ModelerBase):
         inspector.config.path = self.modeling_path
 
         # Set log path
-        with self.write_log(inspector), self.history.register(inspector), self.write_config(inspector): inspector.run()
+        with self.write_log(inspector), self.register(inspector), self.write_config(inspector): inspector.run()
 
     # -----------------------------------------------------------------
 
@@ -561,7 +561,7 @@ class GalaxyModeler(ModelerBase):
         initializer.config.path = self.modeling_path
 
         # Set log path
-        with self.write_log(initializer), self.history.register(initializer), self.write_config(initializer): initializer.run()
+        with self.write_log(initializer), self.register(initializer), self.write_config(initializer): initializer.run()
 
         # Give warning and exit
         message = "Check the result of the source detection, make adjustments where necessary, and resume the modeling afterwards"
@@ -659,7 +659,7 @@ class GalaxyModeler(ModelerBase):
         preparer.config.path = self.modeling_path
 
         # Run
-        with self.write_log(preparer), self.history.register(preparer), self.write_config(preparer): preparer.run()
+        with self.write_log(preparer), self.register(preparer), self.write_config(preparer): preparer.run()
 
     # -----------------------------------------------------------------
 
@@ -683,7 +683,7 @@ class GalaxyModeler(ModelerBase):
         inspector.config.path = self.modeling_path
 
         # Set log path
-        with self.write_log(inspector), self.history.register(inspector), self.write_config(inspector): inspector.run()
+        with self.write_log(inspector), self.register(inspector), self.write_config(inspector): inspector.run()
 
     # -----------------------------------------------------------------
 
@@ -709,7 +709,7 @@ class GalaxyModeler(ModelerBase):
         input_dict["bulge"] = self.bulge_model
 
         # Set log path
-        with self.write_log(decomposer), self.history.register(decomposer), self.write_config(decomposer), self.write_input(decomposer, **input_dict): decomposer.run(**input_dict) #decomposer.run(disk=self.disk_model, bulge=self.bulge_model)
+        with self.write_log(decomposer), self.register(decomposer), self.write_config(decomposer), self.write_input(decomposer, **input_dict): decomposer.run(**input_dict) #decomposer.run(disk=self.disk_model, bulge=self.bulge_model)
 
     # -----------------------------------------------------------------
 
@@ -725,7 +725,13 @@ class GalaxyModeler(ModelerBase):
 
         # Create configuration
         config = dict()
-        config["cache"] = self.config.cache
+        #config["cache"] = self.config.cache
+
+        # CHECK WHETHER TRUNCATION FACTOR IS DEFINED
+        if self.config.truncation_factor is None: raise RuntimeError("Truncation factor has to be defined in order for the galaxy modeling to continue")
+
+        # Set the truncation factor
+        config["factor"] = self.config.truncation_factor
 
         # Create the truncator
         truncator = Truncator(config)
@@ -734,7 +740,7 @@ class GalaxyModeler(ModelerBase):
         truncator.config.path = self.modeling_path
 
         # Set log path
-        with self.write_log(truncator), self.history.register(truncator), self.write_config(truncator): truncator.run()
+        with self.write_log(truncator), self.register(truncator), self.write_config(truncator): truncator.run()
 
     # -----------------------------------------------------------------
 
@@ -773,7 +779,7 @@ class GalaxyModeler(ModelerBase):
         photometer.config.path = self.modeling_path
 
         # Set log path
-        with self.write_log(photometer), self.history.register(photometer), self.write_config(photometer): photometer.run()
+        with self.write_log(photometer), self.register(photometer), self.write_config(photometer): photometer.run()
 
     # -----------------------------------------------------------------
 
@@ -875,7 +881,7 @@ class GalaxyModeler(ModelerBase):
         maker.config.path = self.modeling_path
 
         # Set log path
-        with self.write_log(maker), self.history.register(maker), self.write_config(maker): maker.run()
+        with self.write_log(maker), self.register(maker), self.write_config(maker): maker.run()
 
     # -----------------------------------------------------------------
 
@@ -896,7 +902,7 @@ class GalaxyModeler(ModelerBase):
         maker.config.path = self.modeling_path
 
         # Set log path
-        with self.write_log(maker), self.history.register(maker), self.write_config(maker): maker.run()
+        with self.write_log(maker), self.register(maker), self.write_config(maker): maker.run()
 
     # -----------------------------------------------------------------
 
@@ -917,7 +923,7 @@ class GalaxyModeler(ModelerBase):
         maker.config.path = self.modeling_path
 
         # Set log path
-        with self.write_log(maker), self.history.register(maker), self.write_config(maker): maker.run()
+        with self.write_log(maker), self.register(maker), self.write_config(maker): maker.run()
 
     # -----------------------------------------------------------------
 
@@ -938,7 +944,7 @@ class GalaxyModeler(ModelerBase):
         maker.config.path = self.modeling_path
 
         # Set log path
-        with self.write_log(maker), self.history.register(maker), self.write_config(maker): maker.run()
+        with self.write_log(maker), self.register(maker), self.write_config(maker): maker.run()
 
     # -----------------------------------------------------------------
 
@@ -959,7 +965,7 @@ class GalaxyModeler(ModelerBase):
         maker.config.path = self.modeling_path
 
         # Set log path
-        with self.write_log(maker), self.history.register(maker), self.write_config(maker): maker.run()
+        with self.write_log(maker), self.register(maker), self.write_config(maker): maker.run()
 
     # -----------------------------------------------------------------
 
@@ -990,7 +996,7 @@ class GalaxyModeler(ModelerBase):
         maker.config.path = self.modeling_path
 
         # Set log path
-        with self.write_log(maker), self.history.register(maker), self.write_config(maker): maker.run()
+        with self.write_log(maker), self.register(maker), self.write_config(maker): maker.run()
 
     # -----------------------------------------------------------------
 
@@ -1011,7 +1017,7 @@ class GalaxyModeler(ModelerBase):
         maker.config.path = self.modeling_path
 
         # Set log path
-        with self.write_log(maker), self.history.register(maker), self.write_config(maker): maker.run()
+        with self.write_log(maker), self.register(maker), self.write_config(maker): maker.run()
 
     # -----------------------------------------------------------------
 
@@ -1032,7 +1038,7 @@ class GalaxyModeler(ModelerBase):
         maker.config.path = self.modeling_path
 
         # Run the ionizing stellar map maker
-        with self.write_log(maker), self.history.register(maker), self.write_config(maker): maker.run()
+        with self.write_log(maker), self.register(maker), self.write_config(maker): maker.run()
 
     # -----------------------------------------------------------------
 
@@ -1056,7 +1062,7 @@ class GalaxyModeler(ModelerBase):
         creator.config.path = self.modeling_path
 
         # Set log path
-        with self.write_log(creator), self.history.register(creator), self.write_config(creator): creator.run()
+        with self.write_log(creator), self.register(creator), self.write_config(creator): creator.run()
 
     # -----------------------------------------------------------------
 
@@ -1111,7 +1117,7 @@ class GalaxyModeler(ModelerBase):
         builder.config.path = self.modeling_path
 
         # Run the model builder
-        with self.write_log(builder), self.history.register(builder), self.write_config(builder): builder.run()
+        with self.write_log(builder), self.register(builder), self.write_config(builder): builder.run()
 
     # -----------------------------------------------------------------
 
@@ -1138,7 +1144,7 @@ class GalaxyModeler(ModelerBase):
         builder = GalaxyRepresentationBuilder(config)
 
         # Run the builder
-        with self.write_log(builder), self.history.register(builder), self.write_config(builder): builder.run()
+        with self.write_log(builder), self.register(builder), self.write_config(builder): builder.run()
 
     # -----------------------------------------------------------------
 
@@ -1165,7 +1171,7 @@ class GalaxyModeler(ModelerBase):
         generator = RepresentationGenerator(config)
 
         # Run the generator
-        with self.write_log(generator), self.history.register(generator), self.write_config(generator): generator.run()
+        with self.write_log(generator), self.register(generator), self.write_config(generator): generator.run()
 
     # -----------------------------------------------------------------
 
@@ -1252,7 +1258,7 @@ class GalaxyModeler(ModelerBase):
         input_dict["settings"] = self.config.fitting_settings
 
         # Run the fitting configurer
-        with self.write_log(configurer), self.history.register(configurer), self.write_config(configurer), self.write_input(configurer, **input_dict): configurer.run(**input_dict)
+        with self.write_log(configurer), self.register(configurer), self.write_config(configurer), self.write_input(configurer, **input_dict): configurer.run(**input_dict)
 
     # -----------------------------------------------------------------
 
@@ -1283,7 +1289,7 @@ class GalaxyModeler(ModelerBase):
         initializer.config.path = self.modeling_path
 
         # Run the fitting initializer
-        with self.write_log(initializer), self.history.register(initializer), self.write_config(initializer): initializer.run()
+        with self.write_log(initializer), self.register(initializer), self.write_config(initializer): initializer.run()
 
     # -----------------------------------------------------------------
 

@@ -35,7 +35,9 @@ from ...core.tools import time
 from ..core.steps import commands_after_and_including, output_paths_for_single_command, cached_directory_name_for_single_command
 from ...core.basics.configuration import prompt_proceed
 from ...core.tools.stringify import tostr
-from pts.core.tools.utils import lazyproperty
+from ...core.tools.utils import lazyproperty
+from ..setup import ignore_commands
+from ...core.tools.utils import DefaultScope
 
 # -----------------------------------------------------------------
 
@@ -302,6 +304,25 @@ class ModelerBase(Configurable):
         command_name = cls_or_instance.command_name()
         config_path = fs.join(self.environment.config_path, command_name + "_" + self.timestamp + ".cfg")
         return config_path
+
+    # -----------------------------------------------------------------
+
+    def register(self, cls_or_instance):
+
+        """
+        This function ...
+        :param cls_or_instance:
+        :return:
+        """
+
+        # Get the command name
+        command_name = cls_or_instance.command_name()
+
+        # Ignore not-pipeline
+        if command_name in ignore_commands: return DefaultScope()
+
+        # Register scope
+        return self.history.register(cls_or_instance)
 
     # -----------------------------------------------------------------
 
