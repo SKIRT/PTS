@@ -18,7 +18,9 @@ from .component import MapsComponent
 from ..html.component import stylesheet_url, page_style, table_class, hover_table_class, top_title_size, title_size
 from ..core.environment import map_sub_names, colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name
 from ...core.tools import filesystem as fs
-from ...core.tools.html import HTMLPage, SimpleTable
+from ...core.tools.html import HTMLPage, SimpleTable, updated_footing
+from ...core.tools import html
+from ...magic.view.html import javascripts, css_scripts
 
 # -----------------------------------------------------------------
 
@@ -144,6 +146,30 @@ class AllMapsPageGenerator(MapsComponent):
         """
 
         return "Maps"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def image_width(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        return 150
+
+    # -----------------------------------------------------------------
+
+    @property
+    def image_height(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 300
 
     # -----------------------------------------------------------------
 
@@ -592,7 +618,16 @@ class AllMapsPageGenerator(MapsComponent):
         cells = []
 
         # Loop over the maps
-        #for name, map in self.get_colour_maps(flatten=True).items():
+        for name in self.colour_maps:
+
+            # Determine the relative path
+            path = fs.join(colours_name, name + ".png")
+
+            # Make image
+            image = html.image(path, alttext=name, height=self.image_height, width=self.image_width, hover=None)
+
+            # Add
+            cells.append(image)
 
         # Make
         self.colour_table = SimpleTable.rasterize(cells, ncolumns=ncolumns, css_class=self.table_class)
@@ -602,12 +637,26 @@ class AllMapsPageGenerator(MapsComponent):
     def make_ssfr_table(self):
 
         """
-
+        This function ...
         :return:
         """
 
         # Inform the user
         log.info("Making the table of sSFR maps ...")
+
+        cells = []
+
+        # Loop over the maps
+        for name in self.ssfr_maps:
+
+            # Determine the relative path
+            path = fs.join(ssfr_name, name + ".png")
+
+            # Make image
+            image = html.image(path, alttext=name, height=self.image_height, width=self.image_width, hover=None)
+
+            # Add
+            cells.append(image)
 
         # Make
         self.ssfr_table = SimpleTable.rasterize(cells, ncolumns=ncolumns, css_class=self.table_class)
@@ -624,6 +673,20 @@ class AllMapsPageGenerator(MapsComponent):
         # Inform the user
         log.info("Making the table of TIR maps ...")
 
+        cells = []
+
+        # Loop over the maps
+        for name in self.tir_maps:
+
+            # Determine the relative path
+            path = fs.join(tir_name, name + ".png")
+
+            # Make image
+            image = html.image(path, alttext=name, height=self.image_height, width=self.image_width, hover=None)
+
+            # Add
+            cells.append(image)
+
         # Make
         self.tir_table = SimpleTable.rasterize(cells, ncolumns=ncolumns, css_class=self.table_class)
 
@@ -638,6 +701,20 @@ class AllMapsPageGenerator(MapsComponent):
 
         # Inform the user
         log.info("Making the table of attenuation maps ...")
+
+        cells = []
+
+        # Loop over the maps
+        for name in self.attenuation_maps:
+
+            # Determine the relative path
+            path = fs.join(attenuation_name, name + ".png")
+
+            # Make image
+            image = html.image(path, alttext=name, height=self.image_height, width=self.image_width, hover=None)
+
+            # Add
+            cells.append(image)
 
         # Make
         self.attenuation_table = SimpleTable.rasterize(cells, ncolumns=ncolumns, css_class=self.table_class)
@@ -654,6 +731,23 @@ class AllMapsPageGenerator(MapsComponent):
         # Inform the user
         log.info("Making the table of old stellar maps ...")
 
+        cells = []
+
+        # Loop over the maps
+        for name in self.old_maps:
+
+            # Determine the relative path
+            path = fs.join(old_name, name + ".png")
+
+            # Make iamge
+            image = html.image(path, alttext=name, height=self.image_height, width=self.image_width, hover=None)
+
+            # Add
+            cells.append(image)
+
+        # Make
+        self.old_table = SimpleTable.rasterize(cells, ncolumns=ncolumns, css_class=self.table_class)
+
     # -----------------------------------------------------------------
 
     def make_young_table(self):
@@ -665,6 +759,23 @@ class AllMapsPageGenerator(MapsComponent):
 
         # Inform the user
         log.info("Making the table of young stellar maps ...")
+
+        cells = []
+
+        # Loop over the maps
+        for name in self.young_maps:
+
+            # Determine the relative path
+            path = fs.join(young_name, name + ".png")
+
+            # Make image
+            image = html.image(path, alttext=name, height=self.image_height, width=self.image_width, hover=None)
+
+            # Add
+            cells.append(image)
+
+        # Make
+        self.young_table = SimpleTable.rasterize(cells, ncolumns=ncolumns, css_class=self.table_class)
 
     # -----------------------------------------------------------------
 
@@ -678,6 +789,23 @@ class AllMapsPageGenerator(MapsComponent):
         # Inform the user
         log.info("Making the table of ionizing stellar maps ...")
 
+        cells = []
+
+        # Loop over the maps
+        for name in self.ionizing_maps:
+
+            # Determine the relative path
+            path = fs.join(ionizing_name, name + ".png")
+
+            # Make image
+            image = html.image(path, alttext=name, height=self.image_height, width=self.image_width, hover=None)
+
+            # Add
+            cells.append(image)
+
+        # Make
+        self.ionizing_table = SimpleTable.rasterize(cells, ncolumns=ncolumns, css_class=self.table_class)
+
     # -----------------------------------------------------------------
 
     def make_dust_table(self):
@@ -689,6 +817,23 @@ class AllMapsPageGenerator(MapsComponent):
 
         # Inform the user
         log.info("Making the table of dust maps ...")
+
+        cells = []
+
+        # Loop over the maps
+        for name in self.dust_maps:
+
+            # Determine the relative path
+            path = fs.join(dust_name, name + ".png")
+
+            # Make image
+            image = html.image(path, alttext=name, height=self.image_height, width=self.image_width, hover=None)
+
+            # Add
+            cells.append(image)
+
+        # Make
+        self.dust_table = SimpleTable.rasterize(cells, ncolumns=ncolumns, css_class=self.table_class)
 
     # -----------------------------------------------------------------
 
@@ -702,8 +847,86 @@ class AllMapsPageGenerator(MapsComponent):
         # Inform the user
         log.info("Generating the page ...")
 
+        css_paths = css_scripts[:]
+        css_paths.append(stylesheet_url)
+
         # Create the page
-        self.page = HTMLPage(self.title, style=page_style, css_path=stylesheet_url, footing=self.footing)
+        self.page = HTMLPage(self.title, style=page_style, css_path=css_paths, javascript_path=javascripts, footing=updated_footing())
+
+        classes = dict()
+        classes["JS9Menubar"] = "data-backgroundColor"
+        self.page += html.center(html.make_theme_button(classes=classes))
+
+        self.page += html.newline
+
+        # Add the tables
+        #self.page += self.table
+
+        # Add the colours table
+        self.page += "COLOURS"
+        self.page += html.newline
+        self.page += html.line
+        self.page += self.colour_table
+        self.page += html.newline
+        self.page += html.newline
+        self.page += html.make_line("heavy")
+        self.page += html.newline
+
+        # Add the sSFR table
+        self.page += "SSFR"
+        self.page += html.newline
+        self.page += html.line
+        self.page += self.ssfr_table
+        self.page += html.make_line("heavy")
+        self.page += html.newline
+
+        # Add the TIR table
+        self.page += "TIR"
+        self.page += html.newline
+        self.page += html.line
+        self.page += self.tir_table
+        self.page += html.make_line("heavy")
+        self.page += html.newline
+
+        # Add the attenuation table
+        self.page += "ATTENUATION"
+        self.page += html.newline
+        self.page += html.line
+        self.page += self.attenuation_table
+        self.page += html.make_line("heavy")
+        self.page += html.newline
+
+        # Add the old table
+        self.page += "OLD STARS"
+        self.page += html.newline
+        self.page += html.line
+        self.page += self.old_table
+        self.page += html.make_line("heavy")
+        self.page += html.newline
+
+        # Add the young table
+        self.page += "YOUNG STARS"
+        self.page += html.newline
+        self.page += html.line
+        self.page += self.young_table
+        self.page += html.make_line("heavy")
+        self.page += html.newline
+
+        # Add the ionizing table
+        self.page += "IONIZING STARS"
+        self.page += html.newline
+        self.page += html.line
+        self.page += self.ionizing_table
+        self.page += html.make_line("heavy")
+        self.page += html.newline
+
+        # Add the dust table
+        self.page += "DUST"
+        self.page += html.newline
+        self.page += html.line
+        self.page += self.dust_table
+        self.page += html.make_line("heavy")
+        self.page += html.newline
 
     # -----------------------------------------------------------------
 

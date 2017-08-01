@@ -302,8 +302,9 @@ class YoungStellarMapsMaker(Configurable):
                 young_stars = make_corrected_fuv_map(transparent, normalized_old, factor)
 
                 # Normalize
-                young_stars.normalize()
-                young_stars.unit = None
+                try: young_stars.normalize()
+                #young_stars.unit = None # not necessary
+                except RuntimeError: log.warning("The young '" + key + "' young stellar map could not be normalized")
 
                 # Add the attenuation map to the dictionary
                 self.maps[key] = young_stars
