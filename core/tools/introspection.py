@@ -1828,7 +1828,7 @@ def get_argument_table(subproject):
 
             if line.startswith("#"):
                 if "|" in line: continue  # header
-                last_title = line.split("# ")[1]
+                last_title = line.split("# ")[1][:-1].strip()
                 continue
 
             line = line[:-1]

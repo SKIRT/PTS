@@ -25,6 +25,7 @@ table = introspection.get_argument_table("modeling")
 for index in range(len(table["Command"])):
     command_name = table["Command"][index]
     title = table["Title"][index]
+    #print(list(title))
     if title in ignore_titles: ignore_commands.append(command_name)
 
 # -----------------------------------------------------------------
