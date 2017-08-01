@@ -20,6 +20,7 @@ from astropy.coordinates import Angle
 from astropy.units import Quantity
 from photutils.geometry import elliptical_overlap_grid, circular_overlap_grid, rectangular_overlap_grid
 from astropy.coordinates import frame_transform_graph
+from astropy.wcs import utils
 
 # Import the relevant PTS classes and modules
 from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
@@ -27,6 +28,7 @@ from ..basics.coordinate import PixelCoordinate, SkyCoordinate, PhysicalCoordina
 from ..basics.stretch import PixelStretch, SkyStretch, PhysicalStretch
 from ..basics.mask import Mask
 from .region import add_info, make_rectangle_template, coordsys_name_mapping
+from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -57,6 +59,30 @@ class RectangleRegion(Region):
 
         # Call the constructor of the base class
         super(RectangleRegion, self).__init__(**kwargs)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def width(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.radius.axis1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def height(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.radius.axis2
 
     # -----------------------------------------------------------------
 
@@ -272,6 +298,54 @@ class PixelRectangleRegion(RectangleRegion, PixelRegion):
 
         # Call the constructor of the base class
         super(PixelRectangleRegion, self).__init__(center, radius, angle, **kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_sky(cls, region, wcs):
+
+        """
+        This function ...
+        :param region:
+        :param wcs:
+        :return:
+        """
+
+        # Get center pixel coordinate
+        center = region.center.to_pixel(wcs)
+
+        ## GET THE PIXELSCALE
+        result = utils.proj_plane_pixel_scales(wcs)
+        # returns: A vector (ndarray) of projection plane increments corresponding to each pixel side (axis).
+        # The units of the returned results are the same as the units of cdelt, crval, and cd for the celestial WCS
+        # and can be obtained by inquiring the value of cunit property of the input WCS WCS object.
+        x_pixelscale = result[0] * u("deg")
+        y_pixelscale = result[1] * u("deg")
+
+        #semimajor = (region.semimajor / x_pixelscale).to("").value
+        #semiminor = (region.semiminor / y_pixelscale).to("").value
+
+        width = (region.width / x_pixelscale).to("").value
+        height = (region.height / y_pixelscale).to("").value
+
+        radius = PixelStretch(width, height)
+
+        # Convert angle
+        # Set the angle
+        angle = region.angle
+        if angle is not None:
+            try:
+                orientation = wcs.standard_orientation_angle
+            except ValueError:
+                orientation = wcs.orientation_angle
+            # Add the orientation angle (w.r.t. standard E-W and S-N projection on the x and y axes) to the position angle
+            # that is expressed in the standard way
+            # return self.pa + orientation
+            angle = angle + orientation
+        else: angle = Angle(0.0, "deg")
+
+        # Create a new PixelRectangleRegion
+        return cls(center, radius, angle, meta=region.meta)
 
     # -----------------------------------------------------------------
 
@@ -597,6 +671,19 @@ class SkyRectangleRegion(RectangleRegion, SkyRegion):
         string = prefix + make_rectangle_template(fmt, radunitstr).format(**locals())
         string = add_info(string, self)
         return string
+
+    # -----------------------------------------------------------------
+
+    def to_pixel(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        # Create a pixel ellipse region
+        return PixelRectangleRegion.from_sky(self, wcs)
 
 # -----------------------------------------------------------------
 
