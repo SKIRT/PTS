@@ -389,6 +389,24 @@ class PixelRegion(Region):
         # Create the rectangle region and return it
         return PixelRectangleRegion(self.center, self.unrotated_radius)
 
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        coordsys = 'image'
+        output = '# Region file format: DS9 PTS/magic/region\n'
+        output += '{}\n'.format(coordsys)
+        output += str(self)
+
+        # Write
+        with open(path, 'w') as fh: fh.write(output)
+
 # -----------------------------------------------------------------
 
 class SkyRegion(Region):
@@ -458,6 +476,24 @@ class SkyRegion(Region):
 
         # Create the rectangle region and return it
         return SkyRectangleRegion(self.center, self.radius)
+
+    # -----------------------------------------------------------------
+
+    def saveto(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        coordsys = 'fk5'
+        output = '# Region file format: DS9 PTS/magic/region\n'
+        output += '{}\n'.format(coordsys)
+        output += str(self)
+
+        # Write
+        with open(path, 'w') as fh: fh.write(output)
 
 # -----------------------------------------------------------------
 

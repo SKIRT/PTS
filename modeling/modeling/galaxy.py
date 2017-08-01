@@ -772,8 +772,12 @@ class GalaxyModeler(ModelerBase):
         # Inform the user
         log.info("Performing photometry on the galaxy images ...")
 
+        # Create configuration
+        config = dict()
+        config["remote"] = self.moderator.host_id_for_single("other")
+
         # Create the photometer
-        photometer = PhotoMeter()
+        photometer = PhotoMeter(config)
 
         # Set the working directory
         photometer.config.path = self.modeling_path

@@ -25,7 +25,7 @@ from ...core.plot.sed import SEDPlotter
 from ...magic.convolution.aniano import AnianoKernels
 from ...magic.convolution.psfs import HerschelPSFs
 from ...magic.core.kernel import ConvolutionKernel
-from ...core.launch.pts import PTSRemoteLauncher
+from ...core.launch.pts import PTSRemoteLauncher, launch_local
 from ...magic.misc.calibration import CalibrationError
 from ...magic.photometry.aperturenoise import ApertureNoiseCalculator
 from ..preparation import unitconversion
@@ -113,7 +113,7 @@ class PhotoMeter(PhotometryComponent):
         self.differences = None
 
         # Create the PTS remote launcher
-        self.launcher = PTSRemoteLauncher()
+        self.launcher = None
 
         # The instances that keep track of PSFs and convolution kernels
         self.aniano = AnianoKernels()
@@ -176,7 +176,9 @@ class PhotoMeter(PhotometryComponent):
         self.sed = ObservedSED(photometry_unit="Jy")
 
         # Setup the remote PTS launcher
-        self.launcher.setup(self.config.remote)
+        if self.config.remote is not None:
+            self.launcher = PTSRemoteLauncher()
+            self.launcher.setup(self.config.remote)
 
         # Initialize the flux error table
         self.error_table = FluxErrorTable()
@@ -850,7 +852,8 @@ class PhotoMeter(PhotometryComponent):
         log.debug("Performing the aperture correction calculation remotely ...")
 
         # Calculate the aperture correction factor
-        factor = self.launcher.run_attached("aperture_correction", config_dict, input_dict, return_output_names=["factor"], unpack=True)
+        if self.launcher is not None: factor = self.launcher.run_attached("aperture_correction", config_dict, input_dict, return_output_names=["factor"], unpack=True)
+        else: factor = launch_local() # TODO
 
         # Debugging
         log.debug("The aperture correction factor for " + filter_name + " is " + repr(factor))
