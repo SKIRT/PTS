@@ -531,6 +531,18 @@ class AllMapsPageGenerator(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def table_class(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "realtable"
+
+    # -----------------------------------------------------------------
+
     def make_tables(self):
 
         """
@@ -583,7 +595,7 @@ class AllMapsPageGenerator(MapsComponent):
         #for name, map in self.get_colour_maps(flatten=True).items():
 
         # Make
-        self.colour_table = SimpleTable.rasterize(cells, ncolumns=ncolumns)
+        self.colour_table = SimpleTable.rasterize(cells, ncolumns=ncolumns, css_class=self.table_class)
 
     # -----------------------------------------------------------------
 
@@ -598,7 +610,7 @@ class AllMapsPageGenerator(MapsComponent):
         log.info("Making the table of sSFR maps ...")
 
         # Make
-        self.ssfr_table = SimpleTable.rasterize(cells, ncolumns=ncolumns)
+        self.ssfr_table = SimpleTable.rasterize(cells, ncolumns=ncolumns, css_class=self.table_class)
 
     # -----------------------------------------------------------------
 
@@ -613,7 +625,7 @@ class AllMapsPageGenerator(MapsComponent):
         log.info("Making the table of TIR maps ...")
 
         # Make
-        #self.tir_table =
+        self.tir_table = SimpleTable.rasterize(cells, ncolumns=ncolumns, css_class=self.table_class)
 
     # -----------------------------------------------------------------
 
@@ -624,6 +636,12 @@ class AllMapsPageGenerator(MapsComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Making the table of attenuation maps ...")
+
+        # Make
+        self.attenuation_table = SimpleTable.rasterize(cells, ncolumns=ncolumns, css_class=self.table_class)
+
     # -----------------------------------------------------------------
 
     def make_old_table(self):
@@ -632,6 +650,9 @@ class AllMapsPageGenerator(MapsComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Making the table of old stellar maps ...")
 
     # -----------------------------------------------------------------
 
@@ -642,6 +663,9 @@ class AllMapsPageGenerator(MapsComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Making the table of young stellar maps ...")
+
     # -----------------------------------------------------------------
 
     def make_ionizing_table(self):
@@ -651,6 +675,9 @@ class AllMapsPageGenerator(MapsComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Making the table of ionizing stellar maps ...")
+
     # -----------------------------------------------------------------
 
     def make_dust_table(self):
@@ -659,6 +686,9 @@ class AllMapsPageGenerator(MapsComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Making the table of dust maps ...")
 
     # -----------------------------------------------------------------
 

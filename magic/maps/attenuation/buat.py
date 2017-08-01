@@ -286,6 +286,14 @@ class BuatAttenuationMapsMaker(Configurable):
                 origins.append(parse_filter("NUV"))
                 self.origins[key] = origins
 
+            # Set method
+            if self.has_methods:
+
+                # Add the method name
+                methods = copy(self.tirs_methods[name])
+                methods.append(self.method_name)
+                self.methods[key] = methods
+
             # Check whether a map is already present
             if key in self.maps:
                 log.warning("The " + name + " attenuation map is already created: not creating it again")

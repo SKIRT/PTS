@@ -148,11 +148,16 @@ class AttenuationMapMaker(MapsComponent):
         tirs_origins = self.get_tir_origins(flatten=True)
         tirs_methods = self.get_tir_methods(flatten=True)
 
+        #print("TIRS methods", tirs_methods)
+
         # Get current maps
         current = self.get_current_maps_method(method_name)
 
         # Run the map maker
         maker.run(fuv=fuv, nuv=nuv, tirs=tirs, tirs_origins=tirs_origins, tirs_methods=tirs_methods, method_name=method_name, maps=current)
+
+        #print("Maker methods", maker.methods.keys())
+        #print("keys", maker.maps.keys())
 
         # Set the maps
         self.maps[method_name] = maker.maps
