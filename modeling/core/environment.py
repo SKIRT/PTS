@@ -212,6 +212,19 @@ class ModelingEnvironment(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def maps_collection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..maps.collection import MapsCollection
+        return MapsCollection.from_modeling_path(self.path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def model_suite(self):
 
         """

@@ -30,6 +30,7 @@ support_filename = "js9support.css"
 main_filename = "js9.css"
 prefs_filename = "js9prefs.js"
 support_min_filename = "js9support.min.js"
+js9_filename = "js9.js"
 min_filename = "js9.min.js"
 plugins_filename = "js9plugins.js"
 
@@ -40,6 +41,7 @@ main_filepath = fs.join(js9_path, main_filename)
 prefs_filepath = fs.join(js9_path, prefs_filename)
 support_min_filepath = fs.join(js9_path, support_min_filename)
 min_filepath = fs.join(js9_path, min_filename)
+#min_filepath = fs.join(js9_path, js9_filename)
 plugins_filepath = fs.join(js9_path, plugins_filename)
 
 # -----------------------------------------------------------------
@@ -301,6 +303,7 @@ class JS9Preloader(object):
 
         image = JS9Image(name, path, settings, display)
         self.add_image(image, regions=regions)
+        return image
 
     # -----------------------------------------------------------------
 
@@ -330,7 +333,8 @@ class JS9Spawner(object):
     This function ...
     """
 
-    def __init__(self, text, image, button=False, menubar=True, colorbar=False, width=None, height=None, regions=None, add_placeholder=True):
+    def __init__(self, text, image, button=False, menubar=True, colorbar=False, width=None, height=None, regions=None,
+                 add_placeholder=True, background_color="white"):
 
         """
         This function ...
@@ -340,6 +344,7 @@ class JS9Spawner(object):
         :param menubar:
         :param colorbar:
         :param regions:
+        :param background_color:
         """
 
         self.text = text
@@ -351,11 +356,13 @@ class JS9Spawner(object):
         self.height = height
         self.regions = regions
         self.add_placeholder = add_placeholder
+        self.background_color = background_color
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_path(cls, text, name, path, settings=None, button=False, menubar=True, colorbar=False, width=None, height=None, regions=None, add_placeholder=True):
+    def from_path(cls, text, name, path, settings=None, button=False, menubar=True, colorbar=False, width=None,
+                  height=None, regions=None, add_placeholder=True, background_color="white"):
 
         """
         This function ...
@@ -370,6 +377,7 @@ class JS9Spawner(object):
         :param height:
         :param regions:
         :param add_placeholder:
+        :param background_color:
         :return:
         """
 
@@ -380,7 +388,8 @@ class JS9Spawner(object):
         image = JS9Image(name, path, settings, display_id)
 
         # Create
-        return cls(text, image, button=button, menubar=menubar, colorbar=colorbar, width=width, height=height, regions=regions, add_placeholder=add_placeholder)
+        return cls(text, image, button=button, menubar=menubar, colorbar=colorbar, width=width, height=height,
+                   regions=regions, add_placeholder=add_placeholder, background_color=background_color)
 
     # -----------------------------------------------------------------
 
@@ -456,24 +465,11 @@ class JS9Spawner(object):
         code += "{"
         code += "\n"
 
-        spawn_code = "<p>"
+        # Make spawn code
+        spawn_code = make_spawn_code(self.image, menubar=self.menubar, colorbar=self.colorbar, width=self.width,
+                                     background_color=self.background_color)
 
-        menubar_id = self.image.display + "Menubar"
-        colorbar_id = self.image.display + "Colorbar"
-
-        if self.menubar:
-
-            menubar = JS9Menubar(menubar_id, width=self.width, background_color="white")
-            #spawn_code += "<div class='JS9Menubar' id='" + menubar_id + "'></div>"
-            spawn_code += str(menubar)
-
-        if self.colorbar:
-
-            colorbar = JS9Colorbar(colorbar_id, width=self.width)
-            #spawn_code += "<div class='JS9Colorbar' id = '" + colorbar_id + "'></div>"
-            spawn_code += str(colorbar)
-
-        spawn_code += '<div class="JS9" id="' + self.image.display + '"></div>'
+        #print(spawn_code)
 
         # code += """
         #   // append to end of page
@@ -486,15 +482,15 @@ class JS9Spawner(object):
         #     default:
         #       alert("unknown load type: "+loadtype);"""
 
-        code += 'html = "' + strings.make_single_quoted(spawn_code) + '";'
+        # Add html code
+        code += add_to_div(self.spawn_div_name, spawn_code)
 
+        # Add div ID to JS9
+        code += "JS9.AddDivs('" + self.image.display + "');"
 
         code += "\n"
-        #code += '$(html).appendTo($("body"));'
-        code += '$(html).appendTo($("#' + self.spawn_div_name + '"));'
-        code += "\n"
-        code += "JS9.AddDivs(" + self.image.display + ");"
-        code += "\n"
+
+        # Add load image code
         code += self.image.load(regions=self.regions)
         #code += self.image.load()
         code += "\n"
@@ -827,7 +823,8 @@ class JS9Window(object):
 # -----------------------------------------------------------------
 
 def make_load_region(region, display=None, changeable=True, movable=True, resizable=True, rotatable=True,
-                     removable=True, zoomable=True, lock_x=False, lock_y=False, lock_rotation=False):
+                     removable=True, zoomable=True, lock_x=False, lock_y=False, lock_rotation=False,
+                     quote_character='"'):
 
     """
     This function ...
@@ -851,9 +848,12 @@ def make_load_region(region, display=None, changeable=True, movable=True, resiza
 
     string += "var region_id = JS9.AddRegions('" + str(region) + "'"
 
-    string += ', {' + stringify_dict(properties, identity_symbol=":", quote_key=False, quote_character='"')[1] + '}'
+    string += ', {' + stringify_dict(properties, identity_symbol=":", quote_key=False, quote_value=False, quote_character=quote_character)[1] + '}'
 
-    if display is not None: string += ', {display:"' + display + '"}'
+    if display is not None:
+        if quote_character == '"': string += ', {display:"' + display + '"}'
+        elif quote_character == "'": string += ", {display:'" + display + "'}"
+        else: raise ValueError("Invalid quote character: " + quote_character)
     string += ');'
     string += "\n"
 
@@ -948,13 +948,14 @@ def make_load_regions_function(name, regions, display=None):
 
 # -----------------------------------------------------------------
 
-def make_synchronize_regions(indicator_id, display_ids, ellipses):
+def make_synchronize_regions(indicator_id, display_ids, ellipses, ndecimals=3):
 
     """
     This function ...
     :param indicator_id:
     :param display_ids:
-    :param ellipses: default, original ellipses
+    :param ellipses: default, original ellipses:
+    :param ndecimals:
     :return:
     """
 
@@ -966,19 +967,44 @@ def make_synchronize_regions(indicator_id, display_ids, ellipses):
     code += "var lastim, lastreg;\n"
     code += "var ncall = 0;\n"
 
+    x_radii = dict()
+    y_radii = dict()
+    for display_id in ellipses:
+        x_radii[display_id] = ellipses[display_id].radius.x
+        y_radii[display_id] = ellipses[display_id].radius.y
+
+    code += "var x_radii = {" + stringify_dict(x_radii, quote_key=False, quote_value=False, identity_symbol=":")[1] + "};\n"
+    code += "var y_radii = {" + stringify_dict(y_radii, quote_key=False, quote_value=False, identity_symbol=":")[1] + "};\n"
+
     code += 'JS9.Regions.opts.onchange = "' + function_name + '";'
     code += "\n"
 
-    code += """// called when the function changes to redo the last display
-    function redo()
-    {
-        if( lastim && lastreg )
-        {
-            """ + function_name + """(lastim, lastreg);
-        }
-    }"""
+    #code += """// called when the function changes to redo the last display
+    code += "function redo()\n"
+    code += "{\n"
+    code += "    if( lastim && lastreg )\n"
+    code += "    {\n"
+    code += "        " + function_name + "(lastim, lastreg);\n"
+    code += "    }\n"
+    code += "}\n"
 
-    code += 'function ' + function_name + '(im, xreg)\n{'
+    code += "\n\n"
+
+    code += html.round_to_decimals_function
+
+    code += "\n\n"
+
+    existing_function_code = ""
+    existing_function_code += "function isExistingDisplayWithImage(displayid)\n"
+    existing_function_code += "{\n"
+    existing_function_code += "    return JS9.IsDisplay(displayid);\n"
+    existing_function_code += "}\n"
+
+    code += existing_function_code
+
+    code += "\n"
+    code += 'function ' + function_name + '(im, xreg)\n'
+    code += "{\n"
 
     code += "    lastim = im;\n"
     code += "    lastreg = xreg;\n"
@@ -989,11 +1015,32 @@ def make_synchronize_regions(indicator_id, display_ids, ellipses):
     #code += "    window.alert(x_radius);\n"
     #code += "    window.alert(y_radius);\n"
 
-    code += "    window.alert(lastim.display.id);\n"
+    #code += "    window.alert(lastim.display.id);\n"
 
     #new_factor = 2.0
 
-    code += "   new_text = 'test'\n"
+    code += "    var x_factor = x_radius / x_radii[lastim.display.id];\n"
+    code += "    var y_factor = y_radius / y_radii[lastim.display.id];\n"
+
+    #code += "   window.alert('factor = ' + String(x_factor));\n"
+    #code += "   window.alert('factor = ' + String(y_factor));\n"
+
+    # Check whether values are close
+    code += "    var tolerance = 1e4;\n"
+    code += "    var relDifference = x_factor / y_factor - 1.;\n"
+    code += "    if(relDifference > tolerance)\n"
+    code += "    {\n"
+    code += "        throw 'The relative difference is ' + String(relDifference);\n"
+    code += "    }\n"
+    code += "    var factor = x_factor;\n"
+
+    #code += "   window.alert('factor = ' + String(factor));\n"
+
+    code += "    var rounded = roundToDecimals(factor, " + str(ndecimals) + ");\n"
+
+    #code += "    window.alert(rounded);\n"
+
+    code += "    var new_text = 'Factor: ' + String(rounded);\n"
 
     #text = "Factor: " + str(new_factor)
     #code += '$("div#' + indicator_id + '").text("' + text + '");'
@@ -1017,23 +1064,123 @@ def make_synchronize_regions(indicator_id, display_ids, ellipses):
     #     code += "        window.alert('" + display_id + " image is NOT found');"
     #     code += "\n    }"
 
-    code += "    window.alert(displayIds.length);\n"
+    #code += "    window.alert(displayIds.length);\n"
+
+    # existing_function_code = ""
+    # existing_function_code += "function isExistingDisplay(display_id)\n"
+    # existing_function_code += "{\n"
+    # existing_function_code += "    try\n"
+    # existing_function_code += "    {\n"
+    # existing_function_code += "        var im_temp_name = JS9.GetImage({display: display_id});\n"
+    # existing_function_code += "        return true;\n"
+    # existing_function_code += "    }\n"
+    # existing_function_code += "    catch(err)\n"
+    # existing_function_code += "    {\n"
+    # existing_function_code += "        return false;\n"
+    # existing_function_code += "    }\n"
+    # existing_function_code += "}\n"
+
+    #code += existing_function_code
+    #code += existing_function_code
+
+    code += "\n"
 
     code += "    for(var i = 0; i < displayIds.length ; i++)\n"
     code += "    {\n"
-    code += "        window.alert(i);\n"
+    code += "         var displayid = displayIds[i];\n"
+    #code += "        window.alert(i);\n"
     #code += "        var isCurrent = displayIDs[i] == lastim.display.id;\n"
     #code += "        window.alert(isCurrent);\n"
     #code += "        if (isCurrent == true) { window.alert(displayIDs[i] + ' = current'); }\n"
     #code += "        else { window.alert(displayIDs[i] + ' = not current'); }\n"
 
-    code += "    if (displayIDs[i] == lastim.display.id) { window.alert(displayIDs[i] + ' = current'); }\n"
-    code += "    else { window.alert(displayIDs[i] + ' = not current'); }\n"
+    #code += "        window.alert(displayIds[i] == lastim.display.id);\n"
 
+    #code += "        if(displayid == lastim.display.id)\n"
+    #code += "        if(displayid != lastim.display.id)\n"
+    code += "        var exists = isExistingDisplayWithImage(displayid);\n"
+    code += "        window.alert('Display ' + displayid + ': ' + String(exists));\n"
+    code += "        if(displayid != lastim.display.id && exists)\n"
+    #code += "        {\n"
+    #code += "            window.alert(displayIds[i] + ' = current');\n"
+    #code += "        }\n"
+    #code += "        else\n"
+    code += "        {\n"
+    #code += "            window.alert(displayIds[i] + ' = not current');\n"
+
+    code += "            var x_radius_i = x_radii[displayid];\n"
+    code += "            var y_radius_i = y_radii[displayid];\n"
+
+    code += "            x_radius_i = x_radius_i * factor;\n"
+    code += "            y_radius_i = y_radius_i * factor;\n"
+
+    code += "            // Get the region\n"
+
+    code += "            var xreg = JS9.GetRegions('all')[0];\n"
+    code += "            var regid = xreg.id;\n"
+
+    code += "            JS9.ChangeRegions(regid, {'r1': x_radius_i, 'r2': y_radius_i}, {display: displayid});\n"
+
+    code += "        }\n"
     code += "    }\n"
     code += "\n}"
 
     # Return the code
+    return code
+
+# -----------------------------------------------------------------
+
+def make_spawn_code(image, menubar=True, colorbar=False, width=None, background_color="white"):
+
+    """
+    This function ...
+    :param image:
+    :param menubar:
+    :param colorbar:
+    :param width:
+    :param background_color:
+    :return:
+    """
+
+    spawn_code = "<p>"
+
+    menubar_id = image.display + "Menubar"
+    colorbar_id = image.display + "Colorbar"
+
+    if menubar:
+
+        menubar = JS9Menubar(menubar_id, width=width, background_color=background_color)
+        # spawn_code += "<div class='JS9Menubar' id='" + menubar_id + "'></div>"
+        spawn_code += str(menubar)
+
+    if colorbar:
+
+        colorbar = JS9Colorbar(colorbar_id, width=width)
+        # spawn_code += "<div class='JS9Colorbar' id = '" + colorbar_id + "'></div>"
+        spawn_code += str(colorbar)
+
+    spawn_code += '<div class="JS9" id="' + image.display + '"></div>'
+    return spawn_code
+
+# -----------------------------------------------------------------
+
+def add_to_div(div_id, text):
+
+    """
+    This function ...
+    :param div_id:
+    :param text:
+    :return:
+    """
+
+    code = ""
+    code += 'html = "' + strings.make_single_quoted(text) + '";'
+
+    code += "\n"
+    # code += '$(html).appendTo($("body"));'
+    code += '$(html).appendTo($("#' + div_id + '"));'
+    code += "\n"
+
     return code
 
 # -----------------------------------------------------------------

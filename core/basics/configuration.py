@@ -323,6 +323,33 @@ def prompt_string(name, description, choices=None, default=None, required=True):
 
 # -----------------------------------------------------------------
 
+def prompt_filepath(name, description):
+
+    """
+    Thisf unction ...
+    :param name:
+    :param description:
+    :return:
+    """
+
+    return prompt_variable(name, "file_path", description, required=True)
+
+# -----------------------------------------------------------------
+
+def prompt_index(name, description, choices):
+
+    """
+    Thisf unction ...
+    :param name:
+    :param description:
+    :param choices:
+    :return:
+    """
+
+    return prompt_string(name, description, choices=choices, required=True)
+
+# -----------------------------------------------------------------
+
 def prompt_real(name, description, choices=None, default=None, required=True):
 
     """

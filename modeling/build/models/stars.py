@@ -19,14 +19,13 @@ import numpy as np
 # Import the relevant PTS classes and modules
 from ....core.tools.logging import log
 from ....core.basics.configuration import ConfigurationDefinition
-from ....core.basics.configuration import InteractiveConfigurationSetter, prompt_proceed, prompt_string
+from ....core.basics.configuration import InteractiveConfigurationSetter, prompt_proceed, prompt_string, prompt_yn, prompt_filepath
 from ....core.units.parsing import parse_unit as u
 from ...core.mappings import Mappings
 from .general import GeneralBuilder
 from ..suite import model_map_filename
 from ....core.tools import filesystem as fs
 from ....magic.core.frame import Frame
-#from ..maps.component import get_old_stars_maps_path, get_young_stars_maps_path, get_ionizing_stars_maps_path
 from ...component.galaxy import GalaxyModelingComponent
 from ....core.tools import types
 from ....magic.tools import extinction
@@ -362,20 +361,65 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         # Inform the user
         log.info("Loading the map of old stars ...")
 
+        # Ask whether a custom map should be used
+        custom = prompt_yn("custom", "use a custom map for the old stellar disk (instead of one of those created in the modeling pipeline)")
+
+        # Load a custom old stellar disk map
+        if custom: self.load_custom_old_map()
+
+        # Load an old stellar disk map from modeling pipeline
+        else: self.load_modeling_old_map()
+
+    # -----------------------------------------------------------------
+
+    def load_custom_old_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading a custom map of the old stars ...")
+
+        # Get the path
+        path = prompt_filepath("filepath", "custom old stellar disk map path")
+
+        # Load the map
+        self.maps["old"] = Frame.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    def load_modeling_old_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading the map of old stars from the modeling pipeline ...")
+
         # Get the path to the old stellar maps directory
-        directory_path = get_old_stars_maps_path(self.config.path)
+        #directory_path = get_old_stars_maps_path(self.config.path)
+
+        map_paths = self.maps_collection.get_old_stellar_disk_map_paths()
+        names = map_paths.keys()
 
         # Get the present filenames
-        names = fs.files_in_path(directory_path, extension="fits", returns="name")
+        #names = fs.files_in_path(directory_path, extension="fits", returns="name")
 
         # Ask for the old stellar map
         name = prompt_string("old_map", "old stellar disk map to use for this model", choices=names)
-        path = fs.join(directory_path, name + ".fits")
+        #path = fs.join(directory_path, name + ".fits")
 
         # TODO: ask for significance mask
 
+        # Get the filepath
+        filepath = map_paths[name]
+
         # Set the map
-        self.maps["old"] = Frame.from_file(path)
+        self.maps["old"] = Frame.from_file(filepath)
 
     # -----------------------------------------------------------------
 
@@ -482,20 +526,64 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         # Inform the user
         log.info("Loading the map of young stars ...")
 
+        # Ask whether a custom map should be used
+        custom = prompt_yn("custom", "use a custom map for the young stars (instead of one of those created in the modeling pipeline)")
+
+        # Load a custom young stellar disk map
+        if custom: self.load_custom_young_map()
+
+        # Load a young stellar disk map from modeling pipeline
+        else: self.load_modeling_young_map()
+
+    # -----------------------------------------------------------------
+
+    def load_custom_young_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading a custom map for the young stars ...")
+
+        # Get the path
+        path = prompt_filepath("filepath", "custom young stellar disk map path")
+
+        # Load the map
+        self.maps["young"] = Frame.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    def load_modeling_young_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading a young stellar disk map from the modeling pipeline ...")
+
         # Get the path to the young stellar maps directory
-        directory_path = get_young_stars_maps_path(self.config.path)
+        #directory_path = get_young_stars_maps_path(self.config.path)
+
+        map_paths = self.maps_collection.get_young_map_paths(flatten=True)
+        names = map_paths.keys()
 
         # Get the present filenames
-        names = fs.files_in_path(directory_path, extension="fits", returns="name")
+        #names = fs.files_in_path(directory_path, extension="fits", returns="name")
 
         # Ask for the young stellar map
         name = prompt_string("young_map", "young stellar disk map to use for this model", choices=names)
-        path = fs.join(directory_path, name + ".fits")
+        #path = fs.join(directory_path, name + ".fits")
 
         # TODO: ask for significance map
 
+        filepath = map_paths[name]
+
         # Set the map
-        self.maps["young"] = Frame.from_file(path)
+        self.maps["young"] = Frame.from_file(filepath)
 
     # -----------------------------------------------------------------
 
@@ -611,20 +699,65 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         # Inform the user
         log.info("Loading the map of ionizing stars ...")
 
+        # Ask whether a custom map should be used
+        custom = prompt_yn("custom", "use a custom map for the ionizing stellar disk (instead of one of those created in the modeling pipeline)")
+
+        # Load a custom ionizing stellar disk map
+        if custom: self.load_custom_ionizing_map()
+
+        # Load a ionizing stellar disk map from modeling pipeline
+        else: self.load_modeling_ionizing_map()
+
+    # -----------------------------------------------------------------
+
+    def load_custom_ionizing_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading a custom map for the ionizing stellar disk ...")
+
+        # Get the path
+        path = prompt_filepath("filepath", "custom ionizing stellar disk map path")
+
+        # Load the map
+        self.maps["ionizing"] = Frame.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    def load_modeling_ionizing_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading a ionizing stellar disk map from the modeling pipeline ...")
+
+        # Get map paths
+        map_paths = self.maps_collection.get_ionizing_map_paths(flatten=True)
+        names = map_paths.keys()
+
         # Get the path to the ionizing stellar maps directory
-        directory_path = get_ionizing_stars_maps_path(self.config.path)
+        #directory_path = get_ionizing_stars_maps_path(self.config.path)
 
         # Get the present filenames
-        names = fs.files_in_path(directory_path, extension="fits", returns="name")
+        #names = fs.files_in_path(directory_path, extension="fits", returns="name")
 
         # Ask for the ionizing stellar map
         name = prompt_string("ionizing_map", "ionizing stellar disk map to use for this model", choices=names)
-        path = fs.join(directory_path, name + ".fits")
+        #path = fs.join(directory_path, name + ".fits")
 
         # TODO: ask for the significance map
 
+        filepath = map_paths[name]
+
         # Set the map
-        self.maps["ionizing"] = Frame.from_file(path)
+        self.maps["ionizing"] = Frame.from_file(filepath)
 
     # -----------------------------------------------------------------
 

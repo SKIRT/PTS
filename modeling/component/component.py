@@ -491,6 +491,18 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def maps_collection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.maps_collection
+
+    # -----------------------------------------------------------------
+
+    @property
     def model_suite(self):
 
         """

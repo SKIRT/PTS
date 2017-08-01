@@ -260,6 +260,22 @@ def mailto(address, text=None):
 
 # -----------------------------------------------------------------
 
+round_to_two_decimals_function = """
+function roundToTwo(number)
+{    
+    return +(Math.round(number + "e+2") + "e-2");
+}"""
+
+# -----------------------------------------------------------------
+
+round_to_decimals_function = """
+function roundToDecimals(number, precision)
+{
+    return +(Math.round(number + "e+"+ precision) + "e-" + precision);
+}"""
+
+# -----------------------------------------------------------------
+
 sleep_function = "function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms));}"
 
 # -----------------------------------------------------------------

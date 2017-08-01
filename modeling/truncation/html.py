@@ -17,9 +17,10 @@ import gc
 
 # Import the relevant PTS classes and modules
 from .component import TruncationComponent
-from ...core.tools.html import HTMLPage, SimpleTable, newline, updated_footing, make_theme_button, center, sleep_function, other_sleep_function, make_script_button, unordered_list
+from ...core.tools.html import HTMLPage, SimpleTable, newline, updated_footing, make_theme_button, center, sleep_function, other_sleep_function, make_script_button, unordered_list, button
 from ...core.tools.logging import log
 from ...magic.view.html import JS9Viewer, JS9Preloader, body_settings, javascripts, css_scripts, JS9Menubar, JS9Loader, JS9Spawner, JS9Colorbar, JS9Window, make_load_region_function, make_load_region, make_synchronize_regions
+from ...magic.view.html import make_spawn_code, add_to_div
 from ...core.tools import filesystem as fs
 from ...core.tools.utils import lazyproperty
 from ...core.filter.filter import parse_filter
@@ -106,6 +107,9 @@ class TruncationPageGenerator(TruncationComponent):
 
         # The ellipses
         self.ellipses = dict()
+
+        # All images loader
+        self.all_loader = None
 
     # -----------------------------------------------------------------
 
@@ -452,6 +456,13 @@ class TruncationPageGenerator(TruncationComponent):
         # Get the error maps
         #self.errormaps = self.dataset.get_errormaplist()
 
+        load_info = dict()
+        images = dict()
+        region_loads = dict()
+        placeholders = dict()
+
+        background_color = "white"
+
         # Loop over all prepared images, get the images
         #self.masks = dict()
         #for name in self.dataset.names:
@@ -504,24 +515,33 @@ class TruncationPageGenerator(TruncationComponent):
             if self.config.preload_all or (self.config.preload is not None and fltr in self.config.preload):
 
                 # Add to preloader
-                self.preloader.add_path(name, path, settings=settings, display=display_name, regions=regions_for_loader)
+                image = self.preloader.add_path(name, path, settings=settings, display=display_name, regions=regions_for_loader)
 
                 # Create window
                 self.windows[name] = JS9Window(display_name, width=image_width, height=image_height,
-                                               background_color="white", menubar=self.config.menubar,
+                                               background_color=background_color, menubar=self.config.menubar,
                                                colorbar=self.config.colorbar, resize=self.config.resize)
-
                 display_id = display_name
+
+                # Set load info
+                load_info[display_id] = (name, path, regions_for_loader)
+                images[display_id] = image
 
             # Add dynamic load
             elif self.config.dynamic:
 
+                # Create the loader
                 self.loaders[name] = JS9Spawner.from_path("Load image", name, path, settings=settings, button=True,
                                                           menubar=self.config.menubar, colorbar=self.config.colorbar,
-                                                          regions=regions_for_loader, add_placeholder=False)
+                                                          regions=regions_for_loader, add_placeholder=False, background_color=background_color)
                 display_id = self.loaders[name].display_id
 
                 self.windows[name] = self.loaders[name].placeholder
+
+                # Set load info
+                load_info[display_id] = (name, path, regions_for_loader)
+                images[display_id] = self.loaders[name].image
+                placeholders[display_id] = self.loaders[name].spawn_div_name
 
             # Regular button load in a pre-existing viewer
             else:
@@ -531,9 +551,13 @@ class TruncationPageGenerator(TruncationComponent):
                                                          settings=settings, button=True, regions=regions_for_loader)
 
                 # Create window
-                self.windows[name] = JS9Window(display_name, width=image_width, height=image_height, background_color="white", menubar=self.config.menubar, colorbar=self.config.colorbar, resize=self.config.resize)
+                self.windows[name] = JS9Window(display_name, width=image_width, height=image_height, background_color=background_color, menubar=self.config.menubar, colorbar=self.config.colorbar, resize=self.config.resize)
 
                 display_id = display_name
+
+                # Set load info
+                load_info[display_id] = (name, path, regions_for_loader)
+                images[display_id] = self.loaders[name].image
 
             # Set display ID
             self.display_ids[name] = display_id
@@ -542,11 +566,60 @@ class TruncationPageGenerator(TruncationComponent):
             region_button_id = display_name + "regionsbutton"
             load_region_function_name = "load_regions_" + display_name
             # load_region = make_load_region_function(load_region_function_name, regions, display=None)
-            load_region = make_load_region(region, display=display_id, movable=False, rotatable=False, removable=False, resizable=True)
+            load_region = make_load_region(region, display=display_id, movable=False, rotatable=False,
+                                           removable=False, resizable=True, quote_character="'")
+
+            region_loads[display_id] = load_region
 
             # Create region loader
             self.region_loaders[name] = make_script_button(region_button_id, "Load regions", load_region,
                                                            load_region_function_name)
+
+            # CREATE ALL IMAGES LOADER
+            #buttonid = self.image.name + "Loader"
+            #load_html = self.image.load(regions=self.regions)
+            #return html.button(buttonid, self.text, load_html, quote_character=strings.other_quote_character(self.text, load_html))
+
+        all_loader_name = "allimagesloaderbutton"
+        all_loader_text = "Load all images"
+
+        load_script = ""
+
+        # Load over the images (displays)
+        for display_id in load_info:
+
+            #name, path, regions_for_loader = load_info[display_id]
+            image = images[display_id]
+
+            load_image = image.load()
+            load_region = region_loads[display_id]
+
+            if display_id in placeholders:
+
+                spawn_div_name = placeholders[display_id]
+
+                # Make spawn code
+                spawn_code = make_spawn_code(image, menubar=self.config.menubar, colorbar=self.config.colorbar, width=image_width,
+                                             background_color=background_color)
+
+                # Add html code to DIV
+                load_script += add_to_div(spawn_div_name, spawn_code)
+
+                # Add DIV to JS9
+                #load_script += "\n"
+                load_script += "JS9.AddDivs('" + display_id + "');\n"
+
+            # Load image and region code
+            load_script += load_image
+            load_script += "\n"
+            load_script += load_region
+            load_script += "\n\n"
+
+        # Make all loader button
+        #self.all_loader = button(all_loader_name, all_loader_text, load_html, quote_character=strings.other_quote_character(all_loader_text, load_html))
+
+        function_name = "loadAllImages"
+        self.all_loader = make_script_button(all_loader_name, all_loader_text, load_script, function_name)
 
     # -----------------------------------------------------------------
 
@@ -654,12 +727,21 @@ class TruncationPageGenerator(TruncationComponent):
             display_id = self.display_ids[name]
             ellipses[display_id] = self.ellipses[name]
 
+        #ellipse = self.ellipses[name]
         self.page += "<script>\n" + make_synchronize_regions(self.indicator_id, self.display_ids.values(), ellipses) + "</script>\n"
 
         self.page += center(make_theme_button(classes=classes))
 
+        self.page += newline
+
         # Add the indicator
         self.page += center(self.indicator)
+
+        self.page += newline
+
+        if self.all_loader is not None:
+            self.page += center(str(self.all_loader))
+            self.page += newline
 
         # Add the table
         self.page += self.table

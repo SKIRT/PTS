@@ -93,8 +93,25 @@ class MapsCollection(object):
         :return:
         """
 
+        # Check whether path exists
+        if not fs.is_directory(maps_path): raise IOError("THe maps directory '" + maps_path + "' does not exist")
+
         # Set the maps path
         self.maps_path = maps_path
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_modeling_path(cls, modeling_path):
+
+        """
+        This function ...
+        :param modeling_path:
+        :return:
+        """
+
+        maps_path = fs.join(modeling_path, "maps")
+        return cls(maps_path)
 
     # -----------------------------------------------------------------
 
@@ -605,6 +622,18 @@ class MapsCollection(object):
 
     # MAPS
 
+    def get_colour_map_paths(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.get_map_paths_sub_name(self.maps_colours_name, flatten=flatten)
+
+    # -----------------------------------------------------------------
+
     def get_colour_maps(self, flatten=False, framelist=False):
 
         """
@@ -615,6 +644,18 @@ class MapsCollection(object):
         """
 
         return self.get_maps_sub_name(self.maps_colours_name, flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
+    def get_ssfr_map_paths(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.get_map_paths_sub_name(self.maps_ssfr_name, flatten=flatten)
 
     # -----------------------------------------------------------------
 
@@ -631,6 +672,18 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    def get_tir_map_paths(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.get_map_paths_sub_name(self.maps_tir_name, flatten=flatten)
+
+    # -----------------------------------------------------------------
+
     def get_tir_maps(self, flatten=False, framelist=False):
 
         """
@@ -641,6 +694,18 @@ class MapsCollection(object):
         """
 
         return self.get_maps_sub_name(self.maps_tir_name, flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
+    def get_attenuation_map_paths(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.get_map_paths_sub_name(self.maps_attenuation_name, flatten=flatten)
 
     # -----------------------------------------------------------------
 
@@ -657,6 +722,18 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    def get_old_map_paths(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.get_map_paths_sub_name(self.maps_old_name, flatten=flatten)
+
+    # -----------------------------------------------------------------
+
     def get_old_maps(self, flatten=False, framelist=False):
 
         """
@@ -667,6 +744,18 @@ class MapsCollection(object):
         """
 
         return self.get_maps_sub_name(self.maps_old_name, flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
+    def get_young_map_paths(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.get_map_paths_sub_name(self.maps_young_name, flatten=flatten)
 
     # -----------------------------------------------------------------
 
@@ -683,6 +772,18 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    def get_ionizing_map_paths(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.get_map_paths_sub_name(self.maps_ionizing_name, flatten=flatten)
+
+    # -----------------------------------------------------------------
+
     def get_ionizing_maps(self, flatten=False, framelist=False):
 
         """
@@ -693,6 +794,18 @@ class MapsCollection(object):
         """
 
         return self.get_maps_sub_name(self.maps_ionizing_name, flatten=flatten, framelist=framelist)
+
+    # -----------------------------------------------------------------
+
+    def get_dust_map_paths(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.get_map_paths_sub_name(self.maps_dust_name, flatten=flatten)
 
     # -----------------------------------------------------------------
 
@@ -1056,6 +1169,17 @@ class MapsCollection(object):
 
         path = fs.join(self.maps_old_path, "disk", tostr(fltr, delimiter="_") + ".fits")
         return Frame.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    def get_old_stellar_disk_map_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_map_paths_sub_name(self.maps_old_name, method="disk")
 
     # -----------------------------------------------------------------
 

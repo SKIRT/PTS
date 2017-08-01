@@ -13,13 +13,12 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ....core.basics.configuration import prompt_proceed, ConfigurationDefinition, InteractiveConfigurationSetter, prompt_string
+from ....core.basics.configuration import prompt_proceed, ConfigurationDefinition, InteractiveConfigurationSetter, prompt_string, prompt_yn, prompt_filepath
 from ....core.tools.logging import log
 from .general import GeneralBuilder
 from ..suite import model_map_filename
 from ....core.tools import filesystem as fs
 from ....magic.core.frame import Frame
-#from ..maps.component import get_dust_maps_path
 from ...component.galaxy import GalaxyModelingComponent
 from pts.core.tools.utils import lazyproperty
 
@@ -205,18 +204,64 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
         # Inform the user
         log.info("Loading the dust disk map ...")
 
+        # Ask whether a custom map should be used
+        custom = prompt_yn("custom", "use a custom map for the dust disk (instead of one of those created in the modelling pipeline)")
+
+        # Load a custom dust disk map
+        if custom: self.load_custom_dust_disk_map()
+
+        # Load a dust disk map from modeling pipeline
+        else: self.load_modeling_dust_disk_map()
+
+    # -----------------------------------------------------------------
+
+    def load_custom_dust_disk_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading a custom dust disk map ...")
+
+        # Get the path
+        path = prompt_filepath("filepath", "dust disk map path")
+
+        # Load the map
+        self.maps["disk"] = Frame.from_file(path)
+
+    # -----------------------------------------------------------------
+
+    def load_modeling_dust_disk_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Loading a dust disk map from the modeling pipeline ...")
+
+        # Get paths
+        map_paths = self.maps_collection.get_dust_map_paths(flatten=True)
+        names = map_paths.keys()
+
         # Get the path to the dust maps directory
-        directory_path = get_dust_maps_path(self.config.path)
+        #directory_path = get_dust_maps_path(self.config.path)
 
         # Get the present filenames
-        names = fs.files_in_path(directory_path, extension="fits", returns="name")
+        #names = fs.files_in_path(directory_path, extension="fits", returns="name")
 
         # Ask for the dust map to use
         name = prompt_string("dust_map", "dust disk map to use for this model", choices=names)
-        path = fs.join(directory_path, name + ".fits")
+
+        #path = fs.join(directory_path, name + ".fits")
+
+        filepath = map_paths[name]
 
         # Set the map
-        self.maps["disk"] = Frame.from_file(path)
+        self.maps["disk"] = Frame.from_file(filepath)
 
     # -----------------------------------------------------------------
 
