@@ -111,10 +111,10 @@ class IonizingStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Loading the necessary data ...")
 
-        # Load the MIPS 24 micron image and convert to solar units
+        # Load the MIPS 24 micron image (and convert to solar units == > NO?)
         self.load_hot()
 
-        # Load the H alpha image and convert to solar units
+        # Load the H alpha image (and convert to solar units == > NO?)
         self.load_halpha()
 
     # -----------------------------------------------------------------
@@ -154,7 +154,7 @@ class IonizingStellarMapMaker(MapsComponent):
         self.halpha = self.get_frame_for_filter(parse_filter("Halpha"))
 
         # Convert from erg/s to Lsun
-        self.halpha.convert_to("Lsun")
+        #self.halpha.convert_to("Lsun")
 
     # -----------------------------------------------------------------
 
