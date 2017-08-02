@@ -79,7 +79,8 @@ fwhms = {"GALEX FUV": 4.48 * u("arcsec"),
 
 # -----------------------------------------------------------------
 
-variable_fwhms = ["SDSS u", "SDSS g", "SDSS r", "SDSS i", "SDSS z", "2MASS H", "2MASS J", "2MASS Ks", "UKIDSS J", "UKIDSS H", "UKIDSS K"]
+variable_fwhms = ["SDSS u", "SDSS g", "SDSS r", "SDSS i", "SDSS z", "2MASS H", "2MASS J", "2MASS Ks", "UKIDSS J",
+                  "UKIDSS H", "UKIDSS K", "Halpha", "Ha"]
 
 # -----------------------------------------------------------------
 

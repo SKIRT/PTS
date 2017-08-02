@@ -471,7 +471,8 @@ class DustGridGenerator(Configurable):
 
 # -----------------------------------------------------------------
 
-def create_one_dust_grid_for_galaxy_from_deprojection(grid_type, deprojection, distance, sky_ellipse, min_level, max_mass_fraction, max_ndivisions_per_pixel=2, nscaleheights=10.):
+def create_one_dust_grid_for_galaxy_from_deprojection(grid_type, deprojection, distance, sky_ellipse, min_level,
+                                                      max_mass_fraction, max_ndivisions_per_pixel=2, nscaleheights=10.):
 
     """
     This function ...

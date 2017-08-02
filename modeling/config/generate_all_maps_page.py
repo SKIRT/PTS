@@ -21,4 +21,8 @@ definition.add_flag("show", "show the page", False)
 # Colour map
 definition.add_optional("colours", "string", "colour or colour map", default=default_cmap)
 
+# Flags
+definition.add_flag("replot", "replot already existing figures", True)
+definition.add_flag("info", "add info about the images", True)
+
 # -----------------------------------------------------------------

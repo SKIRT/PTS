@@ -55,6 +55,7 @@ from . import numbers
 from . import filesystem as fs
 from . import types
 from . import time
+from . import strings
 
 # -----------------------------------------------------------------
 
@@ -325,6 +326,19 @@ function fileExists(image_url)
 
 # -----------------------------------------------------------------
 
+image_exists_function = """
+// The "callback" argument is called with either true or false
+// depending on whether the image at "url" exists or not.
+function imageExists_callback(url, allImages, i, dark_path, callback) 
+{
+    var img = new Image();
+    img.onload = function() { callback(true, allImages, i, dark_path); };
+    img.onerror = function() { callback(false, allImages, i, dark_path); };
+    img.src = url;
+}"""
+
+# -----------------------------------------------------------------
+
 def make_change_theme_function_template(button_id):
 
     return """
@@ -511,6 +525,8 @@ def make_theme_button(classes=None):
     code += "\n"
     code += file_exists_function
     code += "\n"
+    code += image_exists_function
+    code += "\n"
     code += split_by_last_dot_function
     code += "\n"
     code += make_change_theme_function_template(button_id)
@@ -648,6 +664,295 @@ def make_script_button(id, text, script, function_name):
     code += "\n"
     code += make_script_function(function_name, script)
     code += "\n</script>"
+
+    # Return the code
+    return code
+
+# -----------------------------------------------------------------
+
+def make_slider(id, min_value, max_value, stepsize, default_value=None, action_function=None, text=None, text_id=None):
+
+    """
+    This function ...
+    :param id:
+    :param min_value:
+    :param max_value:
+    :param stepsize:
+    :param default_value:
+    :param action_function:
+    :param text:
+    :param text_id:
+    :return:
+    """
+
+    """
+    <input type="range" min="0" max="50" value="0" step="5" onchange="showValue(this.value)" />
+    <span id="range">0</span>
+    <script type="text/javascript">
+    function showValue(newValue)
+    {
+        document.getElementById("range").innerHTML=newValue;
+    }
+    </script>"""
+
+    code = "<input id='" + id + "' type='range' min='" + str(min_value) + "' max='" + str(max_value) + "'"
+
+    if default_value is not None: code += " value='" + str(default_value) + "'"
+
+    code += " step='" + str(stepsize) + "'"
+
+    if action_function is not None: function_name = "processValue"
+    else: function_name = "showValue"
+
+    code += " onchange='" + function_name + "(this.value)'"
+
+    code += "/>\n"
+
+    if text_id is None: text_id = "range"
+
+    if text is None:
+        if default_value is None: default_text = "0"
+        else: default_text = str(default_value)
+    else:
+        if default_value is None: default_text = text + "0"
+        else: default_text = text + str(default_value)
+
+    if text is None: text = ""
+
+    code += "<span id='" + text_id + "'>\n"
+    code += default_text + "\n"
+    code += "</span>\n"
+    
+    #code += "\n"
+
+    code += '<script type="text/javascript">\n'
+
+    if action_function is not None:
+
+        code += "function processValue(newValue)\n"
+        code += "{\n"
+        code += "    showValue(newValue);\n"
+        code += "    " + action_function + "(newValue);\n"
+        code += "}\n"
+        code += "\n"
+
+    code += "function showValue(newValue)\n"
+    code += "{\n"
+    code += "    document.getElementById('" + text_id + "').innerHTML = '" + strings.make_double_quoted(text) + "' + String(newValue);\n"
+    code += "}\n"
+    code += "</script>\n"
+
+    # Return the code
+    return code
+
+# -----------------------------------------------------------------
+
+custom_slider_css = """
+@mixin rangeThumb {
+  width: 18px;
+  height: 18px;
+  margin: -8px 0  0;
+  border-radius: 50%;
+  background: #37adbf;
+  cursor: pointer;
+  border: 0 !important;
+}
+
+@mixin rangeTrack {
+  width: 100%;
+  height: 2px;
+  cursor: pointer;
+  background: #b2b2b2;
+}
+
+.range {
+  position: relative;
+  width: 550px;
+  height: 5px;
+}
+
+.range input {
+  width: 100%;
+  position: absolute;
+  top: 2px;
+  height: 0;
+  -webkit-appearance: none;
+
+  // Thumb
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none; // needed again for Chrome & Safari
+    @include rangeThumb;
+  }
+
+  &::-moz-range-thumb {
+    @include rangeThumb;
+  }
+
+  &::-ms-thumb {
+    @include rangeThumb;
+  }
+
+  // Track
+  &::-webkit-slider-runnable-track {
+    @include rangeTrack;
+  }
+
+  &::-moz-range-track {
+    @include rangeTrack;
+  }
+
+  &::-ms-track {
+    @include rangeTrack;
+  }
+
+  &:focus { // override outline/background on focus
+    background: none;
+    outline: none;
+  }
+
+  &::-ms-track { // A little somethin' somethin' for IE
+    width: 100%;
+    cursor: pointer;
+    background: transparent;
+    border-color: transparent;
+    color: transparent;
+  }
+}
+
+// Labels below slider
+.range-labels {
+  margin: 18px -41px 0;
+  padding: 0;
+  list-style: none;
+  
+  li {
+    position: relative;
+    float: left;
+    width: 90.25px;
+    text-align: center;
+    color: #b2b2b2;
+    font-size: 14px;
+    cursor: pointer;
+    
+    &::before {
+      position: absolute;
+      top: -25px;
+      right: 0;
+      left: 0;
+      content: "";
+      margin: 0 auto;
+      width: 9px;
+      height: 9px;
+      background: #b2b2b2;
+      border-radius: 50%;
+    }
+  }
+  
+  .active {
+    color: #37adbf;
+  }
+  
+  .selected::before {
+    background: #37adbf;
+  }
+  
+  .active.selected::before {
+    display: none;
+  }
+}"""
+
+# -----------------------------------------------------------------
+
+custom_slider_javascript = """
+var sheet = document.createElement('style'),  
+  $rangeInput = $('.range input'),
+  prefs = ['webkit-slider-runnable-track', 'moz-range-track', 'ms-track'];
+
+document.body.appendChild(sheet);
+
+var getTrackStyle = function (el) {  
+  var curVal = el.value,
+      val = (curVal - 1) * 16.666666667,
+      style = '';
+  
+  // Set active label
+  $('.range-labels li').removeClass('active selected');
+  
+  var curLabel = $('.range-labels').find('li:nth-child(' + curVal + ')');
+  
+  curLabel.addClass('active selected');
+  curLabel.prevAll().addClass('selected');
+  
+  // Change background gradient
+  for (var i = 0; i < prefs.length; i++) {
+    style += '.range {background: linear-gradient(to right, #37adbf 0%, #37adbf ' + val + '%, #fff ' + val + '%, #fff 100%)}';
+    style += '.range input::-' + prefs[i] + '{background: linear-gradient(to right, #37adbf 0%, #37adbf ' + val + '%, #b2b2b2 ' + val + '%, #b2b2b2 100%)}';
+  }
+
+  return style;
+}
+
+$rangeInput.on('input', function () {
+  sheet.textContent = getTrackStyle(this);
+});
+
+// Change input value on label click
+$('.range-labels li').on('click', function () {
+  var index = $(this).index();
+  
+  $rangeInput.val(index + 1).trigger('input');
+  
+});"""
+
+# -----------------------------------------------------------------
+
+def make_custom_slider(id, options, default=None, action_function=None):
+
+    """
+    This function ...
+    :param id:
+    :param options:
+    :param default:
+    :param action_function:
+    :return:
+    """
+
+    """
+    <div class="range">
+      <input type="range" min="1" max="7" steps="1" value="1">
+    </div>
+    
+    <ul class="range-labels">
+      <li class="active selected">Today</li>
+      <li>2 days</li>
+      <li>3 days</li>
+      <li>4 days</li>
+      <li>5 days</li>
+      <li>6 days</li>
+      <li>7 days</li>
+    </ul>"""
+
+    noptions = len(options)
+
+    if default is not None: default_index = options.index(default) + 1
+    else: default_index = 1
+
+    code = "<div class='range'>"
+
+    code += "  <input id='" + id + "' type='range' min='1' max='" + str(noptions) + "' steps='1' value='" + str(default_index) + "'"
+    if action_function is not None: code += " onchange='" + action_function + "(this.value)'"
+    code += ">\n"
+
+    code += "</div>\n"
+
+    code += "<ul class='range-labels'>"
+
+    for index, option in enumerate(options):
+
+        if index + 1 == default_index: code += " <li class='active selected'>" + str(option) + "</li>\n"
+        else: code += " <li>" + str(option) + "</li>\n"
+
+    code += "</ul>\n"
 
     # Return the code
     return code

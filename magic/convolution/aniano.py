@@ -55,7 +55,8 @@ aniano_names = {"UVOT UVM2": "Gauss_02.5",
                 "SDSS u": "BiGauss_02.0",  # FWHM is actually variable
                 "SDSS g": "BiGauss_02.0",  # FWHM is actually variable
                 "SDSS r": "BiGauss_02.0",  # FWHM is actually variable
-                "Halpha": "Gauss_03.0",
+                "Halpha": "Gauss_03.0", # FWHM is actually variable
+                "Ha": "Gauss_03.0", # FWHM is actually variable
                 "SDSS i": "BiGauss_02.0",  # FWHM is actually variable
                 "SDSS z": "BiGauss_02.0",  # FWHM is actually variable
                 "2MASS J": "Gauss_03.5",   # FWHM is actually variable
@@ -237,6 +238,8 @@ class AnianoKernels(Kernels):
         :return: 
         """
 
+        #print(from_filter)
+        #print(to_filter)
         return self.has_filter(from_filter) and self.has_filter(to_filter)
 
     # -----------------------------------------------------------------

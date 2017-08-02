@@ -2420,6 +2420,7 @@ def load_definition(configfile, definition):
                 value = value.strip()
 
                 kind = specification[0]
+                print(specification)
                 user_type = specification[1].strip() if kind != "flag" else None
 
                 # Set user type

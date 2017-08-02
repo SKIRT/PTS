@@ -307,7 +307,8 @@ truncation_ellipse_filename = "ellipse.reg"
 
 # -----------------------------------------------------------------
 
-page_filename = "index.html"
+all_maps_filename = "all.html"
+significance_maps_filename = "significance.html"
 
 # -----------------------------------------------------------------
 
@@ -392,7 +393,8 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
         # NEW: Set the path to the maps/html directory
         self.maps_html_path = fs.create_directory_in(self.maps_path, "html")
-        self.maps_html_page_path = fs.create_directory_in(self.maps_html_path, page_filename)
+        self.all_maps_html_page_path = fs.join(self.maps_html_path, all_maps_filename)
+        self.significance_maps_html_page_path = fs.join(self.maps_html_path, significance_maps_filename)
 
         # NEW
 

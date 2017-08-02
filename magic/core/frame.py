@@ -48,7 +48,6 @@ from ..basics.vector import PixelShape
 from ...core.tools.stringify import tostr
 from ...core.units.stringify import represent_unit
 from ..basics.pixelscale import Pixelscale
-from ...core.basics.colour import parse_colour
 
 # -----------------------------------------------------------------
 
@@ -2214,113 +2213,8 @@ class Frame(NDDataArray):
         :return:
         """
 
-        # Import standard modules
-        import numpy as np
-        from matplotlib.cm import get_cmap
-
-        # Import astronomical modules
-        from astropy.visualization import SqrtStretch, LogStretch
-        from astropy.visualization.mpl_normalize import ImageNormalize
-        from astropy.visualization import MinMaxInterval, ZScaleInterval
-
-        # -----------------------------------------------------------------
-
-        # Get data and replace nans and infs
-        data = np.copy(self.data)
-        #data[np.isnan(data)] = 0.0
-        #data[np.isinf(data)] = 0.0
-        data[np.isinf(data)] = float("nan")
-
-        # FLIP UP-DOWN
-        data = np.flipud(data)
-
-        # INTERVAL
-        if interval == "zscale": vmin, vmax = ZScaleInterval().get_limits(data)
-        elif interval == "pts":
-            # Determine the maximum value in the box and the mimimum value for plotting
-            #print("here")
-            vmin = max(np.nanmin(data), 0.)
-            vmax = 0.5 * (np.nanmax(data) + vmin)
-        elif interval == "minmax": vmin, vmax = MinMaxInterval().get_limits(data)
-        else:
-            from ...core.tools import parsing
-            try: vmin, xmax = parsing.real_tuple(interval)
-            except ValueError: raise ValueError("Cannot interpret the interval")
-
-        # Normalization
-        if scale == "log": norm = ImageNormalize(stretch=LogStretch(), vmin=vmin, vmax=vmax)
-        elif scale == "sqrt": norm = ImageNormalize(stretch=SqrtStretch(), vmin=vmin, vmax=vmax)
-        else: raise ValueError("Invalid option for 'scale'")
-
-        # Normalize
-        normalized = norm(data)
-
-        # Determine transparency
-        if absolute_alpha:
-            transparency = np.ones_like(normalized)
-            transparency[np.isnan(data)] = 0.0
-            transparency[data == 0.] = 0.0
-        elif alpha:
-            transparency = peak_alpha * normalized / np.nanmax(normalized)
-        else: transparency = np.ones_like(normalized)
-
-        # CREATE THE CHANNEL ARRAYS
-
-        # Red image
-        if colours == "red":
-
-            # NxMx4
-            red = normalized * 255
-            blue = np.zeros_like(red)
-            green = np.zeros_like(red)
-            alpha = transparency * 255
-
-        # Blue image
-        elif colours == "blue":
-
-            red = np.zeros_like(normalized)
-            blue = normalized * 255
-            green = np.zeros_like(red)
-            alpha = transparency * 255
-
-        # Green image
-        elif colours == "green":
-
-            red = np.zeros_like(normalized)
-            blue = np.zeros_like(normalized)
-            green = normalized * 255
-            alpha = transparency * 255
-
-        # More intricate colour or colour map
-        else:
-
-            # Try to parse the colour
-            try:
-
-                colour = parse_colour(colours)
-                red = normalized * colour.red
-                green = normalized * colour.green
-                blue = normalized * colour.blue
-                alpha = transparency * 255
-
-            # Assume colour map
-            except ValueError:
-
-                # Get the colour map
-                cmap = get_cmap(colours)
-                rgba = cmap(normalized)
-                red = rgba[:,:,0] * 255
-                green = rgba[:,:,1] * 255
-                blue = rgba[:,:,2] * 255
-                alpha = transparency * 255
-
-        # MAKE THE IMAGE ARRAY
-        # Stack, create the image array
-        arrays = [red, green, blue, alpha]
-        image = np.stack(arrays, axis=-1)
-
-        # Return
-        return image
+        from .rgba import RGBAImage
+        return RGBAImage.from_frame(self, interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha, colours=colours, absolute_alpha=absolute_alpha)
 
     # -----------------------------------------------------------------
 
@@ -2345,24 +2239,21 @@ class Frame(NDDataArray):
         if self._from_multiplane: raise RuntimeError("Cannot save frame into a multiplane image")
 
         # Save
-        self.saveto(self.path, header, origin, extra_header_info, add_meta)
+        self.saveto(self.path, header=header, origin=origin, extra_header_info=extra_header_info, add_meta=add_meta)
 
     # -----------------------------------------------------------------
 
-    def saveto(self, path, header=None, origin=None, extra_header_info=None, add_meta=True, update_path=True):
+    def saveto(self, path, **kwargs):
 
         """
         This function ...
         :param path:
-        :param header:
-        :param origin:
-        :param extra_header_info:
-        :param add_meta:
-        :param update_path:
+        :param kwargs:
         """
 
-        if path.endswith("fits"): self.saveto_fits(path, header=header, origin=origin, extra_header_info=extra_header_info, add_meta=add_meta, update_path=update_path)
-        elif path.endswith("png"): self.saveto_png()
+        if path.endswith("fits"): self.saveto_fits(path, **kwargs)
+        elif path.endswith("asdf"): self.saveto_asdf(path, **kwargs)
+        elif path.endswith("png"): self.saveto_png(path, **kwargs)
         else: raise ValueError("Unknown file format: " + fs.get_extension(path))
 
     # -----------------------------------------------------------------
@@ -2416,38 +2307,47 @@ class Frame(NDDataArray):
         if extra_header_info is not None:
             for key in extra_header_info: header[key] = extra_header_info[key]
 
-        # FITS format
-        if path.endswith(".fits"):
+        # Write
+        from .fits import write_frame
 
-            # Write
-            from .fits import write_frame
-            #try:
-            write_frame(self._data, header, path)
-            #except IOError("Something went wrong during write")
-
-        # ASDF format
-        elif path.endswith(".asdf"):
-
-            # Import
-            from asdf import AsdfFile
-
-            # Create the tree
-            tree = dict()
-
-            # Add data and header
-            tree["data"] = self._data
-            tree["header"] = header
-
-            # Create the asdf file
-            ff = AsdfFile(tree)
-
-            # Write
-            ff.write_to(path)
-
-        # Not allowed
-        else: raise ValueError("Only the FITS or ASDF filetypes are supported")
+        #try:
+        write_frame(self._data, header, path)
+        #except IOError("Something went wrong during write")
 
         # Replace the path
+        if update_path: self.path = path
+
+    # -----------------------------------------------------------------
+
+    def saveto_asdf(self, path, header=None, update_path=True):
+
+        """
+        This function ...
+        :param path:
+        :param header:
+        :param update_path:
+        :return:
+        """
+
+        if header is None: header = self.header
+
+        # Import
+        from asdf import AsdfFile
+
+        # Create the tree
+        tree = dict()
+
+        # Add data and header
+        tree["data"] = self._data
+        tree["header"] = header
+
+        # Create the asdf file
+        ff = AsdfFile(tree)
+
+        # Write
+        ff.write_to(path)
+
+        # Update the path
         if update_path: self.path = path
 
     # -----------------------------------------------------------------
@@ -2466,14 +2366,11 @@ class Frame(NDDataArray):
         :return:
         """
 
-        # Import
-        import imageio
-
         # Get image values
         image = self.to_rgba(interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha, colours=colours, absolute_alpha=absolute_alpha)
 
-        # Write
-        imageio.imwrite(path, image)
+        # Save
+        image.saveto(path)
 
 # -----------------------------------------------------------------
 
@@ -2509,10 +2406,10 @@ def linear_combination(frames, coefficients, checks=True):
 
     """
     This function ...
-    :param frames: 
+    :param frames:
     :param coefficients:
     :param checks:
-    :return: 
+    :return:
     """
 
     if checks:
@@ -2536,8 +2433,8 @@ def log10(frame):
 
     """
     This function ...
-    :param frame: 
-    :return: 
+    :param frame:
+    :return:
     """
 
     return frame.get_log10()

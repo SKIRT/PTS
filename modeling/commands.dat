@@ -98,7 +98,8 @@ fitskirt | -- | fitting.fitskirt.FitSKIRTLauncher | arguments | Launch FitSKIRT
 analyse_mosaic | -- | data.analyser.MosaicAnalyser | arguments | Analyse mosaics and Poisson error mosaic maps
 build_grid | -- | build.dustgrid.DustGridBuilder | arguments | Build dust grid
 launch_model | -- | misc.launch.ModelLauncher | arguments | Launch a certain model
-generate_all_maps_page | -- | maps.html.AllMapsPageGenerator | arguments | Generate the all maps page
+generate_all_maps_page | -- | maps.html.all.AllMapsPageGenerator | arguments | Generate the all maps page
+generate_significance_maps_page | -- | maps.html.significance.SignificanceMapsPageGenerator | arguments | Generate the significance maps page
 generate_truncation_page | -- | truncation.html.TruncationPageGenerator | arguments | Generate the truncation page
 
 # HTML
