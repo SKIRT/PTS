@@ -24,6 +24,7 @@ from ....core.units.parsing import parse_unit as u
 from ....core.basics.configurable import Configurable
 from ....core.filter.filter import parse_filter
 from ....core.tools import sequences
+from ...core.list import NamedFrameList
 
 # -----------------------------------------------------------------
 
@@ -196,8 +197,19 @@ class IonizingStellarMapsMaker(Configurable):
             hot = self.hots[name]
             hot[hot < 0.0] = 0.0
 
+            # Uniformize the hot dust and H-alpha map
+            frames = NamedFrameList(hot=hot, halpha=self.halpha)
+            frames.convolve_and_rebin()  # convolve and rebin
+
+            # SEE CALZETTI et al., 2007
+
+            # Convert to erg/s
+            halpha = frames["halpha"].convert_to("erg/s")
+            # convert to neutral spectral (frequency/wavelength) density (nu * Lnu or lambda * Llambda)
+            hot_dust = frames["hot"].convert_to("erg/s", density=True, density_strict=True)
+
             # Calculate ionizing stars map and ratio
-            ionizing = self.halpha + 0.031 * hot
+            ionizing = halpha + 0.031 * hot_dust
 
             # Normalize the dust map
             ionizing.normalize()
