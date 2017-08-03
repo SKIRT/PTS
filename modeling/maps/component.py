@@ -1765,7 +1765,8 @@ class MapsComponent(GalaxyModelingComponent):
                     # Determine path
                     map_path = self.get_path_for_map(name, method)
 
-                    if fs.is_file(map_path): continue
+                    # If map already exists and we don't have to remake
+                    if fs.is_file(map_path) and not self.config.remake: continue
 
                     # Save
                     self.maps[method][name].saveto(map_path)
@@ -1776,7 +1777,8 @@ class MapsComponent(GalaxyModelingComponent):
                 # Determine path
                 map_path = self.get_path_for_map(method)
 
-                if fs.is_file(map_path): continue
+                # If map already exists and we don't have to remake
+                if fs.is_file(map_path) and not self.config.remake: continue
 
                 # Save
                 self.maps[method].saveto(map_path)

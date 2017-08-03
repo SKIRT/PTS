@@ -179,7 +179,10 @@ class DustMapMaker(MapsComponent):
         attenuation_maps = self.get_attenuation_maps(flatten=True)
         attenuation_origins = self.get_attenuation_origins(flatten=True)
         attenuation_methods = self.get_attenuation_methods(flatten=True)
-        current = self.get_current_maps_method("attenuation")
+
+        # Get current
+        if self.config.remake: current = dict()
+        else: current = self.get_current_maps_method(method_name)
 
         # Run the maker
         maker.run(attenuation=attenuation_maps, attenuation_origins=attenuation_origins, attenuation_methods=attenuation_methods, method_name=method_name, maps=current)
@@ -231,7 +234,8 @@ class DustMapMaker(MapsComponent):
         #print(factors)
 
         # Get already created maps
-        current = self.get_current_maps_method(method_name)
+        if self.config.remake: current = dict()
+        else: current = self.get_current_maps_method(method_name)
 
         # Run the maker
         #maker.run(mips24=mips24, mips24_errors=mips24_errors, old=old, factors=factors)

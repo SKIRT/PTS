@@ -151,7 +151,8 @@ class AttenuationMapMaker(MapsComponent):
         #print("TIRS methods", tirs_methods)
 
         # Get current maps
-        current = self.get_current_maps_method(method_name)
+        if self.config.remake: current = dict()
+        else: current = self.get_current_maps_method(method_name)
 
         # Run the map maker
         maker.run(fuv=fuv, nuv=nuv, tirs=tirs, tirs_origins=tirs_origins, tirs_methods=tirs_methods, method_name=method_name, maps=current)

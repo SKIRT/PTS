@@ -168,11 +168,15 @@ class IonizingStellarMapMaker(MapsComponent):
         # Inform the user
         log.info("Making the map ...")
 
+        # Get the current maps
+        if self.config.remake: current = dict()
+        else: current = self.current_maps
+
         # Create
         maker = IonizingStellarMapsMaker()
 
         # Run
-        maker.run(halpha=self.halpha, hots=self.hots, hots_origins=self.hots_origins, hots_methods=self.hots_methods, maps=self.current_maps)
+        maker.run(halpha=self.halpha, hots=self.hots, hots_origins=self.hots_origins, hots_methods=self.hots_methods, maps=current)
 
         # Set the maps
         self.maps = maker.maps

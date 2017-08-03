@@ -14,4 +14,7 @@ from pts.modeling.maps.colour import colour_strings
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
+# Remake?
+definition.add_flag("remake", "remake already existing maps", False)
+
 # -----------------------------------------------------------------

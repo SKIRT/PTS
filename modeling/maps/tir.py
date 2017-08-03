@@ -235,9 +235,12 @@ class TIRMapMaker(MapsComponent):
         # Create
         maker = SingleBandTIRMapMaker()
 
+        # Get current
+        if self.config.remake: current = dict()
+        else: current = self.get_current_maps_method(method_name)
+
         # Run
         frames, errors = self.load_data_singleband()
-        current = self.get_current_maps_method(method_name)
         maker.run(frames=frames, errors=errors, maps=current, method_name=method_name)
 
         # Set the maps
@@ -267,9 +270,12 @@ class TIRMapMaker(MapsComponent):
         # Create
         maker = MultiBandTIRMapMaker()
 
+        # Get current
+        if self.config.remake: current = dict()
+        else: current = self.get_current_maps_method(method_name)
+
         # Run
         frames, errors = self.load_data_multiband()
-        current = self.get_current_maps_method(method_name)
         maker.run(frames=frames, errors=errors, maps=current, method_name=method_name)
 
         # Set the maps

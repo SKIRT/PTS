@@ -165,11 +165,15 @@ class ColoursMapMaker(MapsComponent):
         # Inform the user
         log.info("Making the colour maps ...")
 
+        # Current maps
+        if self.config.remake: current = dict()
+        else: current = self.current_maps
+
         # Create the map maker
         maker = ColourMapsMaker()
 
         # Run the map maker
-        maker.run(colours=self.available_colours, frames=self.frames, maps=self.current_maps)
+        maker.run(colours=self.available_colours, frames=self.frames, maps=current)
 
         # Set the maps
         self.maps = maker.maps

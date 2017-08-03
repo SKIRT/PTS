@@ -2314,6 +2314,7 @@ class Frame(NDDataArray):
         # Add meta information
         if add_meta:
             for key in self.metadata:
+                #print(key, self.metadata[key])
                 header[key] = self.metadata[key]
 
         # Add extra info

@@ -336,6 +336,11 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
 
 # -----------------------------------------------------------------
 
+wcs_keywords = ["NAXIS", "CRPIX1", "CRPIX2", "LONPOLE", "CTYPE2", "CTYPE1", "NAXIS1", "NAXIS2", "WCSAXES", "NAXIS3", "RADESYS", "CDELT1", "CDELT2", "LATPOLE", "CUNIT1", "CUNIT2", "CRVAL1", "CRVAL2"]
+other_ignore_keywords = ["ORIGIN", "BITPIX", "FILTER", "UNIT", "FWHM", "PHYSTYPE", "DISTANCE", "SIGUNIT", "PSFFLTR", "BUNIT"]
+
+# -----------------------------------------------------------------
+
 def load_frame(cls, path, index=None, name=None, description=None, plane=None, hdulist_index=None, no_filter=False,
                fwhm=None, add_meta=True, extra_meta=None, distance=None):
 
@@ -395,6 +400,12 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     if add_meta:
         for key in header:
             #print(header[key], type(header[key]))
+
+            # SKIP MANY
+            if key in wcs_keywords: continue
+            if key.startswith("PLANE"): continue
+            if key in other_ignore_keywords: continue
+
             if isinstance(header[key], fits.header._HeaderCommentaryCards): continue # skip these weird things
             metadata[key.lower()] = header[key]
 

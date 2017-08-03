@@ -109,7 +109,8 @@ class OldStellarMapMaker(MapsComponent):
         method_name = "disk"
 
         # Get current maps
-        current = self.get_current_maps_method(method_name)
+        if self.config.remake: current = dict()
+        else: current = self.get_current_maps_method(method_name)
 
         # Create the maker
         maker = DiskOldStellarMapMaker()
@@ -150,7 +151,8 @@ class OldStellarMapMaker(MapsComponent):
         method_name = "total"
 
         # Get current maps
-        current = self.get_current_maps_method(method_name)
+        if self.config.remake: current = dict()
+        else: current = self.get_current_maps_method(method_name)
 
         # Create the maker
         maker = TotalOldStellarMapMaker()
@@ -187,7 +189,8 @@ class OldStellarMapMaker(MapsComponent):
         method_name = "bulge"
 
         # Get current maps
-        current = self.get_current_maps_method(method_name)
+        if self.config.remake: current = dict()
+        else: current = self.get_current_maps_method(method_name)
 
         # Create the maker
         maker = BulgeOldStellarMapMaker()
@@ -195,6 +198,7 @@ class OldStellarMapMaker(MapsComponent):
         # Get the bulge frame
         bulge = self.bulge_frame
         bulge.wcs = self.get_frame_for_filter(self.i1_filter).wcs
+        #bulge.filter = self.i1_filter
         bulges = FrameList(i1=bulge)
 
         # Run

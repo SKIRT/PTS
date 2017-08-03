@@ -13,4 +13,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
+# Remake?
+definition.add_flag("remake", "remake already existing maps", False)
+
 # -----------------------------------------------------------------

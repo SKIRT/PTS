@@ -41,4 +41,7 @@ definition.add_optional("factor_nvalues", "positive_integer", "number of factors
 #definition.import_section("black_body", "options for black body dust map maker", bb_definition)
 #definition.import_section("emission", "options for emission dust map maker", emission_definition)
 
+# Remake?
+definition.add_flag("remake", "remake already existing maps", False)
+
 # -----------------------------------------------------------------

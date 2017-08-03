@@ -29,4 +29,7 @@ definition.add_optional("factor_nvalues", "integer", "the number of values for t
 definition.add_optional("histograms_annulus_range", "real_range", "range (min,max) of the radius (relative to the scalelength) of the area for to make histograms of the pixel values of the corrected 24 micron maps", "0.065,0.28", convert_default=True)
 definition.add_optional("histograms_nbins", "integer", "the number of bins in the histogram plots", 20)
 
+# Remake?
+definition.add_flag("remake", "remake already existing maps", False)
+
 # -----------------------------------------------------------------
