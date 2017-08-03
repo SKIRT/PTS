@@ -185,6 +185,31 @@ class CorteseAttenuationMapsMaker(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def has_all_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the different TIR maps
+        for name in self.tirs:
+
+            # Loop over the different colour options
+            for ssfr_colour in self.ssfrs:
+
+                # Determine name
+                key = name + "__" + ssfr_colour
+
+                # If map is not yet present, return False
+                if key not in self.maps: return False
+
+        # ALl maps are already present
+        return True
+
+    # -----------------------------------------------------------------
+
     def make_maps(self):
 
         """
@@ -197,14 +222,21 @@ class CorteseAttenuationMapsMaker(Configurable):
 
         # Dust = FUV attenuation = function of (ratio of TIR and FUV luminosity)
 
+        # CHECK if ALL MAPS ARE ALREADY PRESENT: IN THAT CASE, WE DON'T HAVE TO CREATE THE TIR_TO_FUV MAP!
+        if self.has_all_maps:
+            log.debug("All maps are already present. Not creating the TIR to FUV map and the attenuation maps but setting origins and methods.")
+            need_any = False
+        else: need_any = True
+
         # Loop over the different TIR maps
         for name in self.tirs:
 
             #print(name, self.tirs[name])
 
             # Make the TIR to FUV map
-            tir_to_fuv = make_tir_to_uv(self.tirs[name], self.fuv)
+            if need_any: tir_to_fuv = make_tir_to_uv(self.tirs[name], self.fuv)
             #log_tir_to_fuv = Frame(np.log10(tir_to_fuv), wcs=tir_to_fuv.wcs) # unit is lost: cannot do rebinning because 'frame.unit.is_per_pixelsize' is not accessible ...
+            else: tir_to_fuv = None
 
             # Loop over the different colour options
             for ssfr_colour in self.ssfrs:

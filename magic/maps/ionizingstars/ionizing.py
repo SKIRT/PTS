@@ -127,6 +127,9 @@ class IonizingStellarMapsMaker(Configurable):
         self.hots_origins = kwargs.pop("hots_origins", None)
         self.hots_methods = kwargs.pop("hots_methods", None)
 
+        # Get already existing maps
+        self.maps = kwargs.pop("maps", dict())
+
     # -----------------------------------------------------------------
 
     @property
@@ -188,6 +191,23 @@ class IonizingStellarMapsMaker(Configurable):
         # NEW: MAKE MAP OF IONIZING STARS FOR VARIOUS DIFFERENT maps of hot dust
         for name in self.hots:
 
+            # Set the origin
+            if self.has_origins:
+                origins = copy(self.hots_origins[name])
+                sequences.append_unique(origins, parse_filter("Halpha"))
+                self.origins[name] = origins
+
+            # Set the method
+            if self.has_methods:
+                methods = copy(self.hots_methods[name])
+                methods.append(method_name)
+                self.methods[name] = methods
+
+            # Check whether a map is already present
+            if name in self.maps:
+                log.warning("The " + name + " ionizing stellar map is already created: not creating it again")
+                continue
+
             # Young ionizing stars = Ha + 0.031 x MIPS24_corrected
             #best_corrected_24mu_map = self.corrected_24mu_maps[factor]
 
@@ -204,30 +224,18 @@ class IonizingStellarMapsMaker(Configurable):
             # SEE CALZETTI et al., 2007
 
             # Convert to erg/s
-            halpha = frames["halpha"].convert_to("erg/s")
+            frames["halpha"].convert_to("erg/s")
             # convert to neutral spectral (frequency/wavelength) density (nu * Lnu or lambda * Llambda)
-            hot_dust = frames["hot"].convert_to("erg/s", density=True, density_strict=True)
+            frames["hot"].convert_to("erg/s", density=True, density_strict=True)
 
             # Calculate ionizing stars map and ratio
-            ionizing = halpha + 0.031 * hot_dust
+            ionizing = frames["halpha"] + 0.031 * frames["hot"]
 
             # Normalize the dust map
             ionizing.normalize()
 
             # Add the map of ionizing stars
             self.maps[name] = ionizing
-
-            # Set the origin
-            if self.has_origins:
-                origins = copy(self.hots_origins[name])
-                sequences.append_unique(origins, parse_filter("Halpha"))
-                self.origins[name] = origins
-
-            # Set the method
-            if self.has_methods:
-                methods = copy(self.hots_methods[name])
-                methods.append(method_name)
-                self.methods[name] = methods
 
         # ionizing_ratio = self.ha / (0.031*mips_young_stars)
 

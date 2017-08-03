@@ -97,6 +97,9 @@ class TotalOldStellarMapMaker(Configurable):
         # Get the frames
         self.frames = kwargs.pop("frames")
 
+        # Get the already existing maps
+        self.maps = kwargs.pop("maps", dict())
+
         # Get the method name
         self.method_name = kwargs.pop("method_name", None)
 
@@ -142,6 +145,17 @@ class TotalOldStellarMapMaker(Configurable):
             # Set name
             name = tostr(fltr, delimiter="_")
 
+            # Set origin
+            self.origins[name] = [fltr]
+
+            # Set method
+            if self.has_method_name: self.methods[name] = [self.method_name]
+
+            # Check if already present
+            if name in self.maps:
+                log.warning("The " + name + " total old stellar map is already created: not creating it again")
+                continue
+
             # Set map
             total = self.frames[fltr]
 
@@ -150,11 +164,5 @@ class TotalOldStellarMapMaker(Configurable):
 
             # Add
             self.maps[name] = total
-
-            # Set origin
-            self.origins[name] = [fltr]
-
-            # Set method
-            if self.has_method_name: self.methods[name] = [self.method_name]
 
 # -----------------------------------------------------------------

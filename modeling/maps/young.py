@@ -197,7 +197,7 @@ class YoungStellarMapMaker(MapsComponent):
         # Run the map maker
         maker.run(fuv=self.fuv, fuv_errors=self.fuv_errors, old=self.old, fuv_attenuations=self.fuv_attenuations,
                   factors=factors, old_origin=self.old_origin, fuv_attenuations_origins=self.fuv_attenuations_origins,
-                  old_method=self.old_method, fuv_attenuations_methods=self.fuv_attenuations_origins)
+                  old_method=self.old_method, fuv_attenuations_methods=self.fuv_attenuations_origins, maps=self.current_maps)
 
         # Set the maps
         self.maps = maker.maps

@@ -130,6 +130,9 @@ class BulgeOldStellarMapMaker(Configurable):
         # Get the input
         self.bulges = kwargs.pop("bulges")
 
+        # Get already created maps
+        self.maps = kwargs.pop("maps", dict())
+
         # Get the method name
         self.method_name = kwargs.pop("method_name", None)
 
@@ -172,23 +175,28 @@ class BulgeOldStellarMapMaker(Configurable):
         # Loop over the filters
         for fltr in self.filters:
 
-            # Create copy
-            bulge = self.bulges[fltr]
-
-            # Normalize
-            bulge.normalize()
-
             # Set name
             name = tostr(fltr, delimiter="_")
-
-            # Add
-            self.maps[name] = bulge
 
             # Set the origin
             self.origins[name] = [fltr]
 
             # Set methods
             if self.has_method_name: self.methods[name] = [self.method_name]
+
+            # Check if already presnet
+            if name in self.maps:
+                log.warning("The " + name + " old stellar bulge map is already created: not creating it again")
+                continue
+
+            # Create copy
+            bulge = self.bulges[fltr]
+
+            # Normalize
+            bulge.normalize()
+
+            # Add
+            self.maps[name] = bulge
 
     # -----------------------------------------------------------------
 

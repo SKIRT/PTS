@@ -984,6 +984,9 @@ class MapsCollection(object):
                 if sorted_keys_maps[index] == sorted_keys_origins[index]: log.success(" - " + sorted_keys_maps[index] + " = " + sorted_keys_origins[index])
                 else: log.error(" - " + sorted_keys_maps[index] + " != " + sorted_keys_origins[index])
 
+            # QUIT
+            exit()
+
         #exit()
 
         # Return
@@ -1021,6 +1024,9 @@ class MapsCollection(object):
 
                 if sorted_keys_maps[index] == sorted_keys_methods[index]: log.success(" - " + sorted_keys_maps[index] + " = " + sorted_keys_methods[index])
                 else: log.error(" - " + sorted_keys_maps[index] + " != " + sorted_keys_methods[index])
+
+            # QUIT
+            exit()
 
         # Return
         return maps, origins, methods
@@ -1126,7 +1132,14 @@ class MapsCollection(object):
 
         buat_path = fs.join(self.maps_attenuation_path, "buat")
         methods_path = fs.join(buat_path, methods_filename)
-        return load_dict(methods_path)
+        methods = load_dict(methods_path)
+
+        # ONLY KEEP FUV
+        for name in list(methods.keys()):
+            if not name.startswith("FUV"): del methods[name]
+
+        # Return the methods
+        return methods
 
     # -----------------------------------------------------------------
 

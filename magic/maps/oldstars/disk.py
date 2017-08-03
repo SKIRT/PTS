@@ -111,6 +111,9 @@ class DiskOldStellarMapMaker(Configurable):
         self.frames = kwargs.pop("frames")
         self.bulges = kwargs.pop("bulges")
 
+        # Get already created maps
+        self.maps = kwargs.pop("maps", dict())
+
         # Get method name
         self.method_name = kwargs.pop("method_name", None)
 
@@ -154,6 +157,20 @@ class DiskOldStellarMapMaker(Configurable):
         #for name in self.frames:
         for fltr in self.filters:
 
+            # Set name
+            name = tostr(fltr, delimiter="_")
+
+            # Set origin
+            self.origins[name] = [fltr]
+
+            # Set methods
+            if self.has_method_name: self.methods[name] = [self.method_name]
+
+            # Check if already present
+            if name in self.maps:
+                log.warning("The " + name + " old stellar disk map is already created: not creating it again")
+                continue
+
             # Old stars = IRAC3.6 - bulge
             # From the IRAC 3.6 micron map, we must subtract the bulge component to only retain the disk emission
 
@@ -193,17 +210,8 @@ class DiskOldStellarMapMaker(Configurable):
             # Normalize the old stellar map
             minus_bulge.normalize()
 
-            # Set name
-            name = tostr(fltr, delimiter="_")
-
             # Add
             self.maps[name] = minus_bulge
-
-            # Set origin
-            self.origins[name] = [fltr]
-
-            # Set methods
-            if self.has_method_name: self.methods[name] = [self.method_name]
 
             # Mask pixels outside of the low signal-to-noise contour
             #old_stars[self.mask] = 0.0

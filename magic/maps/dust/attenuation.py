@@ -180,7 +180,7 @@ class AttenuationDustMapsMaker(Configurable):
 
             # Check whether a dust map is already present
             if name in self.maps:
-                log.warning("The " + name + " dust map is already created: not creating again")
+                log.warning("The " + name + " dust map is already created: not creating it again")
                 continue
 
             # Get the map

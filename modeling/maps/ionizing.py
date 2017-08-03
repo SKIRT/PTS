@@ -172,7 +172,7 @@ class IonizingStellarMapMaker(MapsComponent):
         maker = IonizingStellarMapsMaker()
 
         # Run
-        maker.run(halpha=self.halpha, hots=self.hots, hots_origins=self.hots_origins, hots_methods=self.hots_methods)
+        maker.run(halpha=self.halpha, hots=self.hots, hots_origins=self.hots_origins, hots_methods=self.hots_methods, maps=self.current_maps)
 
         # Set the maps
         self.maps = maker.maps

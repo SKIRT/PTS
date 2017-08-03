@@ -225,8 +225,19 @@ class YoungStellarMapsMaker(Configurable):
 
         # attenuation = -2.5 log (total / transparent)
 
+        # CHECK if ALL MAPS ARE ALREADY PRESENT: IN THAT CASE, WE DON'T HAVE TO CREATE THE TIR_TO_FUV MAP!
+        if self.has_all_maps:
+            log.debug("All maps are already present. Not creating the transparent FUV maps and the young stellar maps but setting origins and methods.")
+            need_any = False
+        else: need_any = True
+
         # Loop over the different attenuation maps
         for name in self.fuv_attenuations:
+
+            # We don't have to make any maps
+            if not need_any:
+                self.transparent[name] = None
+                continue
 
             # Get the attenuation map
             attenuation = self.fuv_attenuations[name]
@@ -249,6 +260,31 @@ class YoungStellarMapsMaker(Configurable):
 
             # Set the corrected map
             self.transparent[name] = transparent
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_all_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the different attenuation maps
+        for name in self.fuv_attenuations:  # = names of eventual transparent maps
+
+            # Loop over the different factors
+            for factor in self.factors:
+
+                # Determine name
+                key = name + "__" + repr(factor)
+
+                # Check if exists
+                if key not in self.maps: return False
+
+        # Has all maps
+        return True
 
     # -----------------------------------------------------------------
 

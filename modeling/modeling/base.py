@@ -171,10 +171,13 @@ class ModelerBase(Configurable):
             if command_name not in self.history: continue
 
             # Debugging
-            log.debug("Removing the '" + command_name + "' command from the modeling history ...")
+            log.debug("Removing the '" + command_name + "' command from the modeling history and removing the output ...")
 
             # Remove
-            self.history.remove_entries_and_save(command_name)
+            #self.history.remove_entries_and_save(command_name)
+
+            # Remove the output
+            self.remove_output_and_history_for_command(command_name)
 
     # -----------------------------------------------------------------
 
@@ -226,6 +229,60 @@ class ModelerBase(Configurable):
 
     # -----------------------------------------------------------------
 
+    def remove_output_for_command(self, command_name):
+
+        """
+        This function ...
+        :param command_name:
+        :return:
+        """
+
+        # Determine output path
+        paths = self.output_paths_for_command(command_name)
+
+        # Debugging
+        log.debug("Removing the '" + stringify.stringify_paths(paths, base=self.modeling_path)[1] + "' directory ...")
+
+        # Remove
+        fs.remove_directories_and_files(paths)
+
+        # Remove cached data remotely
+        cached_directory_name = self.cached_directory_name_for_command(command_name)
+        if cached_directory_name is not None:
+            remote_path = fs.join(self.cache_remote.home_directory, cached_directory_name)
+            if self.cache_remote.is_directory(remote_path): self.cache_remote.remove_directory(remote_path)
+
+    # -----------------------------------------------------------------
+
+    def remove_output_and_history_for_command(self, command_name):
+
+        """
+        This function ...
+        :param command_name:
+        :return:
+        """
+
+        # Ask to make sure
+        if prompt_proceed("are you absolutely sure the output of '" + command_name + "' can be removed?"):
+
+            # Remove the output
+            self.remove_output_for_command(command_name)
+
+            # Remove from history file (as if it had never been run before)
+            self.history.remove_entries(command_name)
+
+            # Return True, step needs to be performed again
+            return True
+
+        # User doesn't want to proceed
+        else:
+
+            # Exit with an error message
+            log.error("Cannot rerun the " + self.config.rerun + " command when the " + command_name + " cannot be rerun")
+            exit()
+
+    # -----------------------------------------------------------------
+
     def check_needs_step(self, command_name):
 
         """
@@ -238,38 +295,7 @@ class ModelerBase(Configurable):
         if self.history.finished(command_name):
 
             # Rerun?
-            if command_name in self.rerun_commands:
-
-                # Determine
-                paths = self.output_paths_for_command(command_name)
-
-                # Prompt to proceed
-                if prompt_proceed("are you absolutely sure the output of '" + command_name + "' can be removed?"):
-
-                    # Debugging
-                    log.debug("Removing the '" + stringify.stringify_paths(paths, base=self.modeling_path)[1] + "' directory ...")
-
-                    # Remove
-                    fs.remove_directories_and_files(paths)
-
-                    # Remove cached data remotely
-                    cached_directory_name = self.cached_directory_name_for_command(command_name)
-                    if cached_directory_name is not None:
-                        remote_path = fs.join(self.cache_remote.home_directory, cached_directory_name)
-                        if self.cache_remote.is_directory(remote_path): self.cache_remote.remove_directory(remote_path)
-
-                    # Remove from history file (as if it had never been run before)
-                    self.history.remove_entries(command_name)
-
-                    # Return True, step needs to be performed again
-                    return True
-
-                # User doesn't want to proceed
-                else:
-
-                    # Exit with an error
-                    log.error("Cannot rerun the " + self.config.rerun + " command when the " + command_name + " cannot be rerun")
-                    exit()
+            if command_name in self.rerun_commands: return self.remove_output_and_history_for_command(command_name)
 
             # No rerun
             else: return False
@@ -278,38 +304,7 @@ class ModelerBase(Configurable):
         elif command_name in self.history:
 
             # Verify that the output can be removed
-            if command_name in self.rerun_commands:
-
-                # Determine output paths
-                paths = self.output_paths_for_command(command_name)
-
-                # Ask to make sure
-                if prompt_proceed("are you absolutely sure the output of '" + command_name + "' can be removed?"):
-
-                    # Debugging
-                    log.debug("Removing the '" + stringify.stringify_paths(paths, base=self.modeling_path)[1] + "' directory ...")
-
-                    # Remove
-                    fs.remove_directories_and_files(paths)
-
-                    # Remove cached data remotely
-                    cached_directory_name = self.cached_directory_name_for_command(command_name)
-                    if cached_directory_name is not None:
-                        remote_path = fs.join(self.cache_remote.home_directory, cached_directory_name)
-                        if self.cache_remote.is_directory(remote_path): self.cache_remote.remove_directory(remote_path)
-
-                    # Remove from history file (as if it had never been run before)
-                    self.history.remove_entries(command_name)
-
-                    # Return True, step needs to be performed again
-                    return True
-
-                # User doesn't want to proceed
-                else:
-
-                    # Exit with an error message
-                    log.error("Cannot rerun the " + self.config.rerun + " command when the " + command_name + " cannot be rerun")
-                    exit()
+            if command_name in self.rerun_commands: return self.remove_output_and_history_for_command(command_name)
 
             # Rerun isn't enabled for this command, but start anyway because it hasn't finished before
             else:
