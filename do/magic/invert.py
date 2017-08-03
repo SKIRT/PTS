@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.do.core.invert Invert the colors of an image.
+## \package pts.do.magic.invert Invert the colors of an image.
 
 # -----------------------------------------------------------------
 

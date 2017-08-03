@@ -714,6 +714,4 @@ def generate_frame(ski, projection):
     from ...modeling.basics.instruments import FrameInstrument
     instrument = FrameInstrument.from_projection(projection)
 
-
-
 # -----------------------------------------------------------------

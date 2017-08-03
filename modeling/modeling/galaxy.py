@@ -292,6 +292,54 @@ class GalaxyModeler(ModelerBase):
 
     # -----------------------------------------------------------------
 
+    @property
+    def needs_properties(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.check_needs_step("fetch_properties")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_seds(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.check_needs_step("fetch_seds")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.check_needs_step("fetch_images")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_data_inspection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.check_needs_step("inspect_data")
+
+    # -----------------------------------------------------------------
+
     def get_data(self):
 
         """
@@ -303,22 +351,22 @@ class GalaxyModeler(ModelerBase):
         log.info("Getting the galaxy data ...")
 
         # Get the galaxy properties
-        if not self.history.finished("fetch_properties"):
+        if self.needs_properties:
             if self.properties is not None: self.set_properties()
             else: self.get_properties()
 
         # Get the galaxy SEDs
-        if not self.history.finished("fetch_seds"):
+        if self.needs_seds:
             if self.seds is not None: self.set_seds()
             else: self.get_seds()
 
         # Get the galaxy images
-        if not self.history.finished("fetch_images"):
+        if self.needs_images:
             if self.images is not None: self.set_images()
             else: self.get_images()
 
         # Inspect the data
-        if not self.history.finished("inspect_data"): self.inspect_data()
+        if self.needs_data_inspection: self.inspect_data()
 
     # -----------------------------------------------------------------
 
@@ -511,6 +559,54 @@ class GalaxyModeler(ModelerBase):
 
     # -----------------------------------------------------------------
 
+    @property
+    def needs_preparation_initialization(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.check_needs_step("initialize_preparation")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_initialization_inspection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.check_needs_step("inspect_initialization")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_preparation(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.check_needs_step("prepare_data")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_preparation_inspection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.check_needs_step("inspect_preparation")
+
+    # -----------------------------------------------------------------
+
     def prepare_data(self):
 
         """
@@ -522,16 +618,16 @@ class GalaxyModeler(ModelerBase):
         log.info("Preparing the galaxy data ...")
 
         # Initialize the preparation
-        if not self.history.finished("initialize_preparation"): self.initialize_preparation()
+        if self.needs_preparation_initialization: self.initialize_preparation()
 
         # Inspect the initialization
-        if not self.history.finished("inspect_initialization"): self.inspect_initialization()
+        if self.needs_initialization_inspection: self.inspect_initialization()
 
         # Run the preparation
-        if not self.history.finished("prepare_data"): self.prepare()
+        if self.needs_preparation: self.prepare()
 
         # Inspect the preparation
-        if not self.history.finished("inspect_preparation"): self.inspect_preparation()
+        if self.needs_preparation_inspection: self.inspect_preparation()
 
     # -----------------------------------------------------------------
 
@@ -832,6 +928,102 @@ class GalaxyModeler(ModelerBase):
 
     # -----------------------------------------------------------------
 
+    @property
+    def needs_colour_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.check_needs_step("make_colours_maps")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_ssfr_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.check_needs_step("make_ssfr_maps")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_tir_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.check_needs_step("make_tir_maps")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_attenuation_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.check_needs_step("make_attenuation_maps")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_old_stellar_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.check_needs_step("make_old_stellar_maps")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_dust_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.check_needs_step("make_dust_map")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_young_stellar_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.check_needs_step("make_young_stellar_maps")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_ionizing_stellar_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.check_needs_step("make_ionizing_stellar_maps")
+
+    # -----------------------------------------------------------------
+
     def make_maps(self):
 
         """
@@ -843,28 +1035,28 @@ class GalaxyModeler(ModelerBase):
         log.info("Making the maps describing the model geometries ...")
 
         # Create colour maps
-        if not self.history.finished("make_colours_maps"): self.make_colour_maps()
+        if self.needs_colour_maps: self.make_colour_maps()
 
         # Create sSFR maps
-        if not self.history.finished("make_ssfr_maps"): self.make_ssfr_maps()
+        if self.needs_ssfr_maps: self.make_ssfr_maps()
 
         # Create the TIR map
-        if not self.history.finished("make_tir_maps"): self.make_tir_map()
+        if self.needs_tir_maps: self.make_tir_map()
 
         # Create the attenuation map(s)
-        if not self.history.finished("make_attenuation_maps"): self.make_attenuation_maps()
+        if self.needs_attenuation_maps: self.make_attenuation_maps()
 
         # Create the map of the old stellar disk
-        if not self.history.finished("make_old_stellar_maps"): self.make_old_stellar_maps()
+        if self.needs_old_stellar_maps: self.make_old_stellar_maps()
 
         # Create the dust map
-        if not self.history.finished("make_dust_map"): self.make_dust_maps()
+        if self.needs_dust_maps: self.make_dust_maps()
 
         # Create the map of the young stellar population
-        if not self.history.finished("make_young_stellar_maps"): self.make_young_stellar_maps()
+        if self.needs_young_stellar_maps: self.make_young_stellar_maps()
 
         # Create the map of the ionizing stellar population
-        if not self.history.finished("make_ionizing_stellar_maps"): self.make_ionizing_stellar_maps()
+        if self.needs_ionizing_stellar_maps: self.make_ionizing_stellar_maps()
 
         # Calculate the significance masks
         if not self.history.finished("create_significance_masks"): self.create_significance_masks()
@@ -1073,6 +1265,30 @@ class GalaxyModeler(ModelerBase):
 
     # -----------------------------------------------------------------
 
+    @property
+    def needs_build_model(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.check_needs_step("build_model")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_representations(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.check_needs_step("generate_representations")
+
+    # -----------------------------------------------------------------
+
     def build(self):
 
         """
@@ -1084,10 +1300,10 @@ class GalaxyModeler(ModelerBase):
         log.info("Building the model and its representations ...")
 
         # 1. Build model
-        if not self.history.finished("build_model"): self.build_model()
+        if self.needs_build_model: self.build_model()
 
         # Generate the representations
-        if not self.history.finished("generate_representations"): self.generate_representations()
+        if self.needs_representations: self.generate_representations()
 
     # -----------------------------------------------------------------
 

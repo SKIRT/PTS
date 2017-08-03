@@ -194,6 +194,7 @@ class OldStellarMapMaker(MapsComponent):
 
         # Get the bulge frame
         bulge = self.bulge_frame
+        bulge.wcs = self.get_frame_for_filter(self.i1_filter).wcs
         bulges = FrameList(i1=bulge)
 
         # Run

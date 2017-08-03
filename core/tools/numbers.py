@@ -18,6 +18,7 @@ import random
 import numpy as np
 from itertools import cycle
 from math import log10, floor, ceil
+from operator import mul
 
 # Import the relevant PTS classes and modules
 from . import sequences
@@ -950,5 +951,45 @@ def round_up_to_int(number):
     """
 
     return int(ceil(number))
+
+# -----------------------------------------------------------------
+
+def root(number, n):
+
+    """
+    This function ...
+    :param number:
+    :param n:
+    :return:
+    """
+
+    return number**(1./float(n))
+
+# -----------------------------------------------------------------
+
+def arithmetic_mean(*numbers):
+    
+    """
+    This function ...
+    :param numbers: 
+    :return: 
+    """
+
+    nnumbers = len(numbers)
+    return sum(numbers) / float(nnumbers)
+
+# -----------------------------------------------------------------
+
+def geometric_mean(*numbers):
+
+    """
+    This function ...
+    :param numbers:
+    :return:
+    """
+
+    nnumbers = len(numbers)
+    product = reduce(mul, numbers, 1)
+    return root(product, nnumbers)
 
 # -----------------------------------------------------------------

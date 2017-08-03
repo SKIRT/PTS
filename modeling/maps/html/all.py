@@ -23,6 +23,9 @@ from ....core.tools import html
 from ....magic.view.html import javascripts, css_scripts
 from ....core.tools import browser
 from ....core.tools.stringify import tostr
+from ....core.tools.utils import lazyproperty
+from ....core.tools import numbers
+from ....core.basics.range import RealRange
 
 # -----------------------------------------------------------------
 
@@ -414,6 +417,9 @@ class AllMapsPageGenerator(MapsComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Getting info about the colour maps ...")
+
         # Loop over the maps
         for name in self.colour_maps:
 
@@ -425,6 +431,126 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Add info
             self.colour_info[name] = code
+
+    # -----------------------------------------------------------------
+
+    def get_ssfr_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting info about the sSFR maps ...")
+
+    # -----------------------------------------------------------------
+
+    def get_tir_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting info about the TIR maps ...")
+
+    # -----------------------------------------------------------------
+
+    def get_attenuation_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting info about the attenuation maps ...")
+
+    # -----------------------------------------------------------------
+
+    def get_old_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting info about the old stellar maps ...")
+
+    # -----------------------------------------------------------------
+
+    def get_young_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting info about the young stellar maps ...")
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting info about the ionizing stellar maps ...")
+
+    # -----------------------------------------------------------------
+
+    def get_dust_info(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Getting info about the dust maps ...")
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def softening_ellipse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.truncation_ellipse * self.softening_radius
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def softening_radius(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return numbers.geometric_mean(self.config.softening_start, 1.)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def softening_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return RealRange(self.config.softening_start / self.softening_radius, 1. / self.softening_radius)
 
     # -----------------------------------------------------------------
 
@@ -492,8 +618,12 @@ class AllMapsPageGenerator(MapsComponent):
             mask = ellipse.to_mask(xsize, ysize).inverse()
             self.colour_maps[name][mask] = 0.0
 
-            # Save as PNG image
-            self.colour_maps[name].saveto_png(filepath, colours=self.config.colours, absolute_alpha=True)
+            # Make RGBA image
+            rgba = self.colour_maps[name].to_rgba(scale=self.config.scale, colours=self.config.colours, absolute_alpha=True)
+            rgba.soften_edges(self.softening_ellipse.to_pixel(self.colour_maps[name].wcs), self.softening_range)
+
+            # Save
+            rgba.saveto(filepath)
 
     # -----------------------------------------------------------------
 
@@ -525,8 +655,12 @@ class AllMapsPageGenerator(MapsComponent):
             mask = ellipse.to_mask(xsize, ysize).inverse()
             self.ssfr_maps[name][mask] = 0.0
 
-            # Save as PNG image
-            self.ssfr_maps[name].saveto_png(filepath, colours=self.config.colours)
+            # Make RGBA image
+            rgba = self.ssfr_maps[name].to_rgba(scale=self.config.scale, colours=self.config.colours, absolute_alpha=True)
+            rgba.soften_edges(self.softening_ellipse.to_pixel(self.ssfr_maps[name].wcs), self.softening_range)
+
+            # Save
+            rgba.saveto(filepath)
 
     # -----------------------------------------------------------------
 
@@ -558,8 +692,12 @@ class AllMapsPageGenerator(MapsComponent):
             mask = ellipse.to_mask(xsize, ysize).inverse()
             self.tir_maps[name][mask] = 0.0
 
-            # Save as PNG image
-            self.tir_maps[name].saveto_png(filepath, colours=self.config.colours)
+            # Make RGBA image
+            rgba = self.tir_maps[name].to_rgba(scale=self.config.scale, colours=self.config.colours, absolute_alpha=True)
+            rgba.soften_edges(self.softening_ellipse.to_pixel(self.tir_maps[name].wcs), self.softening_range)
+
+            # Save
+            rgba.saveto(filepath)
 
     # -----------------------------------------------------------------
 
@@ -591,8 +729,12 @@ class AllMapsPageGenerator(MapsComponent):
             mask = ellipse.to_mask(xsize, ysize).inverse()
             self.attenuation_maps[name][mask] = 0.0
 
-            # Save as PNG image
-            self.attenuation_maps[name].saveto_png(filepath, colours=self.config.colours)
+            # Make RGBA image
+            rgba = self.attenuation_maps[name].to_rgba(scale=self.config.scale, colours=self.config.colours, absolute_alpha=True)
+            rgba.soften_edges(self.softening_ellipse.to_pixel(self.attenuation_maps[name].wcs), self.softening_range)
+
+            # Save
+            rgba.saveto(filepath)
 
     # -----------------------------------------------------------------
 
@@ -624,8 +766,12 @@ class AllMapsPageGenerator(MapsComponent):
             mask = ellipse.to_mask(xsize, ysize).inverse()
             self.old_maps[name][mask] = 0.0
 
-            # Save as PNG image
-            self.old_maps[name].saveto_png(filepath, colours=self.config.colours)
+            # Make RGBA image
+            rgba = self.old_maps[name].to_rgba(scale=self.config.scale, colours=self.config.colours, absolute_alpha=True)
+            rgba.soften_edges(self.softening_ellipse.to_pixel(self.old_maps[name].wcs), self.softening_range)
+
+            # Save
+            rgba.saveto(filepath)
 
     # -----------------------------------------------------------------
 
@@ -657,8 +803,12 @@ class AllMapsPageGenerator(MapsComponent):
             mask = ellipse.to_mask(xsize, ysize).inverse()
             self.young_maps[name][mask] = 0.0
 
-            # Save as PNG image
-            self.young_maps[name].saveto_png(filepath, colours=self.config.colours)
+            # Make RGBA image
+            rgba = self.young_maps[name].to_rgba(scale=self.config.scale, colours=self.config.colours, absolute_alpha=True)
+            rgba.soften_edges(self.softening_ellipse.to_pixel(self.young_maps[name].wcs), self.softening_range)
+
+            # Save
+            rgba.saveto(filepath)
 
     # -----------------------------------------------------------------
 
@@ -690,8 +840,12 @@ class AllMapsPageGenerator(MapsComponent):
             mask = ellipse.to_mask(xsize, ysize).inverse()
             self.ionizing_maps[name][mask] = 0.0
 
-            # Save as PNG image
-            self.ionizing_maps[name].saveto_png(filepath, colours=self.config.colours)
+            # Make RGBA image
+            rgba = self.ionizing_maps[name].to_rgba(scale=self.config.scale, colours=self.config.colours, absolute_alpha=True)
+            rgba.soften_edges(self.softening_ellipse.to_pixel(self.ionizing_maps[name].wcs), self.softening_range)
+
+            # Save
+            rgba.saveto(filepath)
 
     # -----------------------------------------------------------------
 
@@ -723,8 +877,12 @@ class AllMapsPageGenerator(MapsComponent):
             mask = ellipse.to_mask(xsize, ysize).inverse()
             self.dust_maps[name][mask] = 0.0
 
-            # Save as PNG image
-            self.dust_maps[name].saveto_png(filepath, colours=self.config.colours)
+            # Make RGBA image
+            rgba = self.dust_maps[name].to_rgba(scale=self.config.scale, colours=self.config.colours, absolute_alpha=True)
+            rgba.soften_edges(self.softening_ellipse.to_pixel(self.dust_maps[name].wcs), self.softening_range)
+
+            # Save
+            rgba.saveto(filepath)
 
     # -----------------------------------------------------------------
 
@@ -1224,29 +1382,21 @@ def get_image_info(frame):
 
     info = []
 
-    fltr = headers.get_filter(name, header)
-    wavelength = fltr.wavelength
-    unit = headers.get_unit(header)
-    pixelscale = headers.get_pixelscale(header)
-    if pixelscale is None:
-        wcs = CoordinateSystem(header)
-        pixelscale = wcs.average_pixelscale
-    else:
-        pixelscale = pixelscale.average
-    fwhm = headers.get_fwhm(header)
-    #nxpixels = header["NAXIS1"]
-    #nypixels = header["NAXIS2"]
+    fltr = frame.filter
+    wavelength = fltr.wavelength if fltr is not None else None
+    pixelscale = frame.average_pixelscale
+    fwhm = frame.fwhm
 
     # Get filesize
     filesize = fs.file_size(frame.path).to("MB")
 
     info.append("Filter: " + tostr(fltr))
     info.append("Wavelength: " + tostr(wavelength))
-    info.append("Unit: " + tostr(unit))
+    info.append("Unit: " + tostr(frame.unit))
     info.append("Pixelscale: " + tostr(pixelscale))
     info.append("PSF filter: " + frame.psf_filter_name)
     info.append("FWHM: " + tostr(fwhm))
-    info.append("Dimensions: " + str((nxpixels, nypixels)))
+    info.append("Dimensions: " + str((frame.xsize, frame.ysize)))
     info.append("File size: " + tostr(filesize))
 
     # Return the info

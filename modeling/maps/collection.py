@@ -303,7 +303,7 @@ class MapsCollection(object):
         :return:
         """
 
-        return self.environment.map_ionizing_path
+        return self.environment.maps_ionizing_path
 
     # -----------------------------------------------------------------
 

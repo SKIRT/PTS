@@ -1652,6 +1652,19 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
+    def soften_edges(self, region, factor_range):
+
+        """
+        This function ...
+        :param region:
+        :param factor_range:
+        :return:
+        """
+
+        raise NotImplementedError("Not implemented yet")
+
+    # -----------------------------------------------------------------
+
     @property
     def center(self):
 

@@ -52,6 +52,7 @@ class EllipseRegion(Region):
 
         # Check the angle
         if angle is None: angle = Angle(0., "deg")
+        elif angle == 0: angle = Angle(0., "deg")
         elif not isinstance(angle, Angle): raise ValueError("Angle must be an Astropy Angle object")
 
         # Check whether axis1 > axis2
