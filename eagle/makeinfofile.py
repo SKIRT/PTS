@@ -39,6 +39,7 @@ _filterspecs = ( \
                 "WISE.W1", "WISE.W2", "WISE.W3", "WISE.W4",
                 "Pacs.blue","Pacs.green","Pacs.red",
                 "SPIRE.PSW","SPIRE.PMW","SPIRE.PLW",
+                "SCUBA2.450", "SCUBA2.850"
                 )
 
 # private list of uniform filters for which integrated fluxes should be calculated;
@@ -191,7 +192,7 @@ def makeinfofile(skirtrun, snaptag):
             addfluxinfo(info, simulation, name, filterspec, fluxdensity, "observer")
 
         # for the Herschel filters, calculate flux and magnitude excluding the carbon line emission peaks
-        for filterspec in ("Pacs.blue","Pacs.green","Pacs.red","SPIRE.PSW","SPIRE.PMW","SPIRE.PLW"):
+        for filterspec in ("Pacs.blue","Pacs.green","Pacs.red","SPIRE.PSW","SPIRE.PMW","SPIRE.PLW","SCUBA2.450","SCUBA2.850"):
             fluxdensity = regularfluxdensity(simulation, name, [1], wavelengths, cmask, _filters[filterspec])
             addfluxinfo(info, simulation, name, filterspec, fluxdensity, "continuum")
             if redshift>0.01:
