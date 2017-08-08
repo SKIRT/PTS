@@ -2183,6 +2183,19 @@ def nallowed_open_files():
 
 # -----------------------------------------------------------------
 
+def set_nallowed_open_files(number):
+
+    """
+    This function ...
+    :param number:
+    :return:
+    """
+
+    import resource
+    resource.setrlimit(resource.RLIMIT_NOFILE, (number, -1))
+
+# -----------------------------------------------------------------
+
 def open_files():
 
     """

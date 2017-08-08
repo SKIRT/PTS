@@ -167,6 +167,9 @@ class AllMapsPageGenerator(MapsComponent):
         # Call the setup function of the base class
         super(AllMapsPageGenerator, self).setup(**kwargs)
 
+        # Set the number of allowed open file handles
+        fs.set_nallowed_open_files(1024)
+
         # Make directory to contain the plots
         self.plots_path = fs.join(self.maps_html_path, plots_name)
         if fs.is_directory(self.plots_path):
@@ -429,16 +432,13 @@ class AllMapsPageGenerator(MapsComponent):
         if self.has_old_maps: self.get_old_info()
 
         # Young
-        #if self.has_young_maps: self.get_young_info()
-        self.get_young_info()
+        if self.has_young_maps: self.get_young_info()
 
         # Ionizing
-        #if self.has_ionizing_maps: self.get_ionizing_info()
-        self.get_ionizing_info()
+        if self.has_ionizing_maps: self.get_ionizing_info()
 
         # Dust
-        #if self.has_dust_maps: self.get_dust_info()
-        self.get_dust_info()
+        if self.has_dust_maps: self.get_dust_info()
 
     # -----------------------------------------------------------------
 

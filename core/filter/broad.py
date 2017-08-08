@@ -581,6 +581,8 @@ class BroadBandFilter(Filter):
         :return:
         """
 
+        if len(args) == 0: return super(BroadBandFilter, cls).__new__(cls)
+
         filterspec = args[0]
         if filterspec in cls.cached: return cls.cached[filterspec]
         else:

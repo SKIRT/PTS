@@ -108,6 +108,30 @@ class FileMonitor(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nopen_files(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len([entry for entry in self.openfiles if not entry[0].closed])
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_open_files(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nopen_files > 0
+
+    # -----------------------------------------------------------------
+
     def patch(self):
 
         """
@@ -153,9 +177,10 @@ class FileMonitor(object):
         indent = '  > '
         terminal_width = 80
 
-        print("")
-        print(fmt.red + "Open files:" + fmt.reset)
-        print("")
+        if self.has_open_files:
+            print("")
+            print(fmt.red + "Open files:" + fmt.reset)
+            print("")
 
         # Loop over the files
         for file, path, trace in self.openfiles:
