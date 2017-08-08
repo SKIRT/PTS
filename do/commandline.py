@@ -335,3 +335,16 @@ def get_description(script_path, subproject, command):
     return description
 
 # -----------------------------------------------------------------
+
+def print_welcome():
+
+    """
+    This function ...
+    :return: 
+    """
+
+    print("")
+    print("  ### Welcome to PTS ### ")
+    print("")
+
+# -----------------------------------------------------------------

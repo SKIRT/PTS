@@ -414,27 +414,30 @@ class AllMapsPageGenerator(MapsComponent):
         log.info("Getting image info ...")
 
         # Colour
-        self.get_colour_info()
+        if self.has_colour_maps: self.get_colour_info()
 
         # SSFR
-        self.get_ssfr_info()
+        if self.has_ssfr_maps: self.get_ssfr_info()
 
         # TIR
-        self.get_tir_info()
+        if self.has_tir_maps: self.get_tir_info()
 
         # Attenuation
-        self.get_attenuation_info()
+        if self.has_attenuation_maps: self.get_attenuation_info()
 
         # Old
-        self.get_old_info()
+        if self.has_old_maps: self.get_old_info()
 
         # Young
+        #if self.has_young_maps: self.get_young_info()
         self.get_young_info()
 
         # Ionizing
+        #if self.has_ionizing_maps: self.get_ionizing_info()
         self.get_ionizing_info()
 
-        # Dut
+        # Dust
+        #if self.has_dust_maps: self.get_dust_info()
         self.get_dust_info()
 
     # -----------------------------------------------------------------

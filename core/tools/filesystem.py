@@ -15,6 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 import os
 import sys
+import psutil
 import shutil
 import platform
 import subprocess
@@ -2167,5 +2168,46 @@ def update_directory(source, target, create=False, report=False, ignore_hidden=T
 
     # No update required
     else: return False
+
+# -----------------------------------------------------------------
+
+def nallowed_open_files():
+
+    """
+    This function ...
+    :return:
+    """
+
+    import resource
+    return resource.getrlimit(resource.RLIMIT_NOFILE)[0]
+
+# -----------------------------------------------------------------
+
+def open_files():
+
+    """
+    This function ...
+    :return:
+    """
+
+    all = []
+    for proc in psutil.process_iter():
+        try:
+            files = proc.open_files()
+            all.extend(fh.path for fh in files)
+        except psutil.AccessDenied: print("Acces denied for process", proc.name())
+    return all
+
+# -----------------------------------------------------------------
+
+def nopen_files():
+
+    """
+    This function ...
+    :return: 
+    """
+
+
+    return len(open_files())
 
 # -----------------------------------------------------------------

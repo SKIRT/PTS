@@ -27,11 +27,10 @@ from functools import partial
 from .map import Map
 from ..tools import parsing, stringify
 from ..tools import filesystem as fs
-from ..tools.logging import log, setup_log
+from ..tools.logging import log
 from .composite import SimplePropertyComposite
 from ..tools import introspection
 from ..tools import numbers, types
-from ..tools import time
 
 # -----------------------------------------------------------------
 
@@ -52,35 +51,6 @@ related_types.append(["quantity", "photometric_quantity", "photometric_density_q
 related_types.append(["unit", "photometric_unit", "photometric_density_unit"])
 related_types.append(["filter", "narrow_band_filter", "broad_band_filter"])
 related_types.append(["broad_band_filter_list", "lazy_filter_list", "narrow_band_list"])
-
-# -----------------------------------------------------------------
-
-def initialize_log(config, remote=None):
-
-    """
-    This function ...
-    :parma remote:
-    :return:
-    """
-
-    # Determine the log level
-    level = "INFO"
-    if config.debug: level = "DEBUG"
-    if config.brief: level = "SUCCESS"
-
-    # Determine log path
-    #if args.remote is None: logfile_path = fs.join(config.log_path, time.unique_name("log") + ".txt") if config.report else None
-    #else: logfile_path = None
-
-    # Determine the log file path
-    if remote is None: logfile_path = fs.join(config.log_path, time.unique_name("log") + ".txt") if config.report else None
-    else: logfile_path = None
-
-    # Initialize the logger
-    log = setup_log(level=level, path=logfile_path)
-
-    # Return the logger
-    return log
 
 # -----------------------------------------------------------------
 
@@ -142,8 +112,9 @@ def prompt_settings(name, definition, description=None, add_logging=True, add_cw
     setter = InteractiveConfigurationSetter(name, description=description, add_logging=add_logging, add_cwd=add_cwd)
     config = setter.run(definition, prompt_optional=True)
 
-    # Initialize the logger
-    log = initialize_log(config)
+    # Initialize PTS
+    from ...do.run import initialize_pts
+    initialize_pts(config)
 
     # Return the configuration
     return config
@@ -166,8 +137,9 @@ def parse_arguments(name, definition, description=None, add_logging=True, add_cw
     setter = ArgumentConfigurationSetter(name, description=description, add_logging=add_logging, add_cwd=add_cwd)
     config = setter.run(definition)
 
-    # Initialize the logger
-    log = initialize_log(config)
+    # Initialize PTS
+    from ...do.run import initialize_pts
+    initialize_pts(config)
 
     # Return the configuration
     return config

@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.core.tools.logging Provides functions for creating loggers and linking log files to them.
+## \package pts.core.tools.log Contains the global logger.
 
 # -----------------------------------------------------------------
 

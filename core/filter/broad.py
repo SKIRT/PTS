@@ -566,6 +566,29 @@ def generate_all_aliases():
 #
 class BroadBandFilter(Filter):
 
+    # -----------------------------------------------------------------
+
+    cached = {}
+
+    # -----------------------------------------------------------------
+
+    def __new__(cls, *args, **kwargs):
+
+        """
+        This function ...
+        :param filterspec:
+        :param name:
+        :return:
+        """
+
+        filterspec = args[0]
+        if filterspec in cls.cached: return cls.cached[filterspec]
+        else:
+            fltr = super(BroadBandFilter, cls).__new__(cls)
+            fltr.__init__(*args, **kwargs)
+            if fltr.true_filter: cls.cached[filterspec] = fltr
+            return fltr
+
     # ---------- Constructing -------------------------------------
 
     ## The constructor constructs a new Filter instance in one of two ways, depending on the type of the argument.
@@ -1202,7 +1225,7 @@ def load_svo(filterspec):
             if len(filterfiles) < 1: raise ValueError("no filter found with spec " + filterspec)
 
             # load the XML tree
-            tree = etree.parse(open(os.path.join(filterdir, filterfiles[0]), 'r'))
+            with open(os.path.join(filterdir, filterfiles[0]), 'r') as filterfile: tree = etree.parse(filterfile)
 
             # verify the wavelength unit to be Angstrom
             unit = tree.xpath("//RESOURCE/PARAM[@name='WavelengthUnit'][1]/@value")[0]
