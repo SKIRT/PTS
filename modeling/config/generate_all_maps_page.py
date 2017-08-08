@@ -25,6 +25,7 @@ definition.add_flag("show", "show the page", False)
 definition.add_optional("colours", "string", "colour or colour map", default=default_colormap, choices=colormaps)
 definition.add_optional("scale", "string", "image scaling", default=default_scale, choices=scales)
 definition.add_optional("softening_start", "real", "relative radius for softening to start (relative to truncation ellipse)", 0.75)
+definition.add_flag("view_png", "use the pngs for viewing instead of the original data", False)
 
 # Flags
 definition.add_flag("replot", "replot already existing figures", True)

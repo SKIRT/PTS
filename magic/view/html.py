@@ -334,7 +334,7 @@ class JS9Spawner(object):
     """
 
     def __init__(self, text, image, button=False, menubar=True, colorbar=False, width=None, height=None, regions=None,
-                 add_placeholder=True, background_color="white"):
+                 add_placeholder=True, background_color="white", replace=False):
 
         """
         This function ...
@@ -357,12 +357,13 @@ class JS9Spawner(object):
         self.regions = regions
         self.add_placeholder = add_placeholder
         self.background_color = background_color
+        self.replace = replace
 
     # -----------------------------------------------------------------
 
     @classmethod
     def from_path(cls, text, name, path, settings=None, button=False, menubar=True, colorbar=False, width=None,
-                  height=None, regions=None, add_placeholder=True, background_color="white"):
+                  height=None, regions=None, add_placeholder=True, background_color="white", replace=False):
 
         """
         This function ...
@@ -378,6 +379,7 @@ class JS9Spawner(object):
         :param regions:
         :param add_placeholder:
         :param background_color:
+        :param replace:
         :return:
         """
 
@@ -389,7 +391,7 @@ class JS9Spawner(object):
 
         # Create
         return cls(text, image, button=button, menubar=menubar, colorbar=colorbar, width=width, height=height,
-                   regions=regions, add_placeholder=add_placeholder, background_color=background_color)
+                   regions=regions, add_placeholder=add_placeholder, background_color=background_color, replace=replace)
 
     # -----------------------------------------------------------------
 
@@ -418,6 +420,30 @@ class JS9Spawner(object):
     # -----------------------------------------------------------------
 
     @property
+    def placeholder_start(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "<div id='" + self.spawn_div_name + "'>"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def placeholder_end(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return "</div>"
+
+    # -----------------------------------------------------------------
+
+    @property
     def placeholder(self):
 
         """
@@ -425,7 +451,7 @@ class JS9Spawner(object):
         :return:
         """
 
-        return "<div id='" + self.spawn_div_name + "'></div>"
+        return self.placeholder_start + self.placeholder_end
 
     # -----------------------------------------------------------------
 
@@ -483,7 +509,8 @@ class JS9Spawner(object):
         #       alert("unknown load type: "+loadtype);"""
 
         # Add html code
-        code += add_to_div(self.spawn_div_name, spawn_code)
+        if self.replace: code += replace_div(self.spawn_div_name, spawn_code)
+        else: code += add_to_div(self.spawn_div_name, spawn_code)
 
         # Add div ID to JS9
         code += "JS9.AddDivs('" + self.image.display + "');"
@@ -510,11 +537,15 @@ class JS9Spawner(object):
 
         code += "</script>"
 
+        if self.replace: code += self.placeholder_start
+
         code += click_code
 
-        code += "<br>"
+        if self.replace: code += self.placeholder_end
 
-        if self.add_placeholder: code += self.placeholder
+        if self.add_placeholder and not self.replace:
+            code += "<br>"
+            code += self.placeholder
 
         #code += "break;"
 
@@ -1175,12 +1206,32 @@ def add_to_div(div_id, text):
 
     code = ""
     code += 'html = "' + strings.make_single_quoted(text) + '";'
-
     code += "\n"
     # code += '$(html).appendTo($("body"));'
     code += '$(html).appendTo($("#' + div_id + '"));'
     code += "\n"
 
+    # Return the code
+    return code
+
+# -----------------------------------------------------------------
+
+def replace_div(div_id, text):
+
+    """
+    This function ...
+    :param div_id:
+    :param text:
+    :return:
+    """
+
+    code = ""
+    code += 'html = "' + strings.make_single_quoted(text) + '";'
+    code += "\n"
+    code += '$("#' + div_id + '").update(html);'
+    code += "\n"
+
+    # Return the code
     return code
 
 # -----------------------------------------------------------------

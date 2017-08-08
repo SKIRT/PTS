@@ -18,9 +18,9 @@ from ..component import MapsComponent
 from ...html.component import stylesheet_url, page_style, table_class, hover_table_class, top_title_size, title_size
 from ...core.environment import map_sub_names, colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name
 from ....core.tools import filesystem as fs
-from ....core.tools.html import HTMLPage, SimpleTable, updated_footing
+from ....core.tools.html import HTMLPage, SimpleTable, updated_footing, make_page_width
 from ....core.tools import html
-from ....magic.view.html import javascripts, css_scripts
+from ....magic.view.html import javascripts, css_scripts, JS9Spawner
 from ....core.tools import browser
 from ....core.tools.stringify import tostr
 from ....core.tools.utils import lazyproperty
@@ -32,6 +32,11 @@ from ....core.basics.range import RealRange
 plots_name = "plots"
 ncolumns = 2
 colour_map = "jet"
+background_color = "white"
+
+# -----------------------------------------------------------------
+
+page_width = 700
 
 # -----------------------------------------------------------------
 
@@ -83,6 +88,16 @@ class AllMapsPageGenerator(MapsComponent):
         self.ionizing_plots = dict()
         self.dust_plots = dict()
 
+        # The views
+        self.colour_views = dict()
+        self.ssfr_views = dict()
+        self.tir_views = dict()
+        self.attenuation_views = dict()
+        self.old_views = dict()
+        self.young_views = dict()
+        self.ionizing_views = dict()
+        self.dust_views = dict()
+
         # The tables
         self.colour_table = None
         self.ssfr_table = None
@@ -92,6 +107,16 @@ class AllMapsPageGenerator(MapsComponent):
         self.young_table = None
         self.ionizing_table = None
         self.dust_table = None
+
+        # Plot paths
+        self.colour_plots_paths = dict()
+        self.ssfr_plots_paths = dict()
+        self.tir_plots_paths = dict()
+        self.attenuation_plots_paths = dict()
+        self.old_plots_paths = dict()
+        self.young_plots_paths = dict()
+        self.ionizing_plots_paths = dict()
+        self.dust_plots_paths = dict()
 
         # The page
         self.page = None
@@ -114,6 +139,9 @@ class AllMapsPageGenerator(MapsComponent):
 
         # Make plots
         self.make_plots()
+
+        # Make the views
+        self.make_views()
 
         # Make the tables
         self.make_tables()
@@ -178,7 +206,7 @@ class AllMapsPageGenerator(MapsComponent):
         """
 
         #return 150
-        return None
+        return 0.4 * page_width
 
     # -----------------------------------------------------------------
 
@@ -190,7 +218,8 @@ class AllMapsPageGenerator(MapsComponent):
         :return:
         """
 
-        return 300
+        #return 300
+        return None
 
     # -----------------------------------------------------------------
 
@@ -424,7 +453,7 @@ class AllMapsPageGenerator(MapsComponent):
         for name in self.colour_maps:
 
             # Get info
-            info = get_image_info(self.colour_maps[name])
+            info = get_image_info(name, self.colour_maps[name])
 
             # Make list
             code = html.unordered_list(info)
@@ -444,6 +473,18 @@ class AllMapsPageGenerator(MapsComponent):
         # Inform the user
         log.info("Getting info about the sSFR maps ...")
 
+        # Loop over the maps
+        for name in self.ssfr_maps:
+
+            # Get info
+            info = get_image_info(name, self.ssfr_maps[name])
+
+            # Make list
+            code = html.unordered_list(info)
+
+            # Add info
+            self.ssfr_info[name] = code
+
     # -----------------------------------------------------------------
 
     def get_tir_info(self):
@@ -455,6 +496,18 @@ class AllMapsPageGenerator(MapsComponent):
 
         # Inform the user
         log.info("Getting info about the TIR maps ...")
+
+        # Loop over the maps
+        for name in self.tir_maps:
+
+            # Get info
+            info = get_image_info(name, self.tir_maps[name])
+
+            # Make list
+            code = html.unordered_list(info)
+
+            # Add info
+            self.tir_info[name] = code
 
     # -----------------------------------------------------------------
 
@@ -468,6 +521,18 @@ class AllMapsPageGenerator(MapsComponent):
         # Inform the user
         log.info("Getting info about the attenuation maps ...")
 
+        # Loop over the maps
+        for name in self.attenuation_maps:
+
+            # Get info
+            info = get_image_info(name, self.attenuation_maps[name])
+
+            # Make list
+            code = html.unordered_list(info)
+
+            # Add info
+            self.attenuation_info[name] = code
+
     # -----------------------------------------------------------------
 
     def get_old_info(self):
@@ -479,6 +544,18 @@ class AllMapsPageGenerator(MapsComponent):
 
         # Inform the user
         log.info("Getting info about the old stellar maps ...")
+
+        # Loop over the maps
+        for name in self.old_maps:
+
+            # Get info
+            info = get_image_info(name, self.old_maps[name])
+
+            # Make list
+            code = html.unordered_list(info)
+
+            # Add info
+            self.old_info[name] = code
 
     # -----------------------------------------------------------------
 
@@ -492,6 +569,18 @@ class AllMapsPageGenerator(MapsComponent):
         # Inform the user
         log.info("Getting info about the young stellar maps ...")
 
+        # Loop over the maps
+        for name in self.young_maps:
+
+            # Get info
+            info = get_image_info(name, self.young_maps[name])
+
+            # Make list
+            code = html.unordered_list(info)
+
+            # Add info
+            self.young_info[name] = code
+
     # -----------------------------------------------------------------
 
     def get_ionizing_info(self):
@@ -504,6 +593,18 @@ class AllMapsPageGenerator(MapsComponent):
         # Inform the user
         log.info("Getting info about the ionizing stellar maps ...")
 
+        # Loop over the maps
+        for name in self.ionizing_maps:
+
+            # Get info
+            info = get_image_info(name, self.ionizing_maps[name])
+
+            # Make list
+            code = html.unordered_list(info)
+
+            # Add info
+            self.ionizing_info[name] = code
+
     # -----------------------------------------------------------------
 
     def get_dust_info(self):
@@ -515,6 +616,18 @@ class AllMapsPageGenerator(MapsComponent):
 
         # Inform the user
         log.info("Getting info about the dust maps ...")
+
+        # Loop over the maps
+        for name in self.dust_maps:
+
+            # Get info
+            info = get_image_info(name, self.dust_maps[name])
+
+            # Make list
+            code = html.unordered_list(info)
+
+            # Add info
+            self.dust_info[name] = code
 
     # -----------------------------------------------------------------
 
@@ -551,6 +664,36 @@ class AllMapsPageGenerator(MapsComponent):
         """
 
         return RealRange(self.config.softening_start / self.softening_radius, 1. / self.softening_radius)
+
+    # -----------------------------------------------------------------
+
+    def make_rgba_plot(self, name, frame, filepath):
+
+        """
+        This function ...
+        :param frame:
+        :param filepath:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Making an RGBA plot from the '" + name + "' map at '" + filepath + "' ...")
+
+        # Crop the frame
+        frame = frame.cropped_to(self.truncation_box)
+
+        # Get the truncation mask and mask out the pixel beyond the truncation limit
+        wcs, xsize, ysize = frame.wcs, frame.xsize, frame.ysize
+        ellipse = self.truncation_ellipse.to_pixel(wcs)
+        mask = ellipse.to_mask(xsize, ysize).inverse()
+        frame[mask] = 0.0
+
+        # Make RGBA image
+        rgba = frame.to_rgba(scale=self.config.scale, colours=self.config.colours, absolute_alpha=True)
+        rgba.soften_edges(self.softening_ellipse.to_pixel(wcs), self.softening_range)
+
+        # Save
+        rgba.saveto(filepath)
 
     # -----------------------------------------------------------------
 
@@ -606,24 +749,23 @@ class AllMapsPageGenerator(MapsComponent):
             # Determine path
             filepath = fs.join(self.colour_plots_path, name + ".png")
 
+            # Set the filepath
+            self.colour_plots_paths[name] = filepath
+
             # Check if plot is already made
             if fs.is_file(filepath):
 
                 if self.config.replot: fs.remove_file(filepath)
                 else: continue
 
-            # Get the truncation mask and mask out the pixel beyond the truncation limit
-            wcs, xsize, ysize = self.colour_maps[name].wcs, self.colour_maps[name].xsize, self.colour_maps[name].ysize
-            ellipse = self.truncation_ellipse.to_pixel(wcs)
-            mask = ellipse.to_mask(xsize, ysize).inverse()
-            self.colour_maps[name][mask] = 0.0
+            # Make the plot
+            self.make_rgba_plot(name, self.colour_maps[name], filepath)
 
-            # Make RGBA image
-            rgba = self.colour_maps[name].to_rgba(scale=self.config.scale, colours=self.config.colours, absolute_alpha=True)
-            rgba.soften_edges(self.softening_ellipse.to_pixel(self.colour_maps[name].wcs), self.softening_range)
+            # Determine the relative path
+            relpath = fs.relative_to(filepath, self.maps_html_path)
 
-            # Save
-            rgba.saveto(filepath)
+            # Make image plot
+            self.colour_plots[name] = html.image(relpath, alttext=name, height=self.image_height, width=self.image_width, hover=None)
 
     # -----------------------------------------------------------------
 
@@ -643,24 +785,23 @@ class AllMapsPageGenerator(MapsComponent):
             # Determine path
             filepath = fs.join(self.ssfr_plots_path, name + ".png")
 
+            # Set the filepath
+            self.ssfr_plots_paths[name] = filepath
+
             # Check if plot is already made
             if fs.is_file(filepath):
 
                 if self.config.replot: fs.remove_file(filepath)
                 else: continue
 
-            # Get the truncation mask and mask out the pixel beyond the truncation limit
-            wcs, xsize, ysize = self.ssfr_maps[name].wcs, self.ssfr_maps[name].xsize, self.ssfr_maps[name].ysize
-            ellipse = self.truncation_ellipse.to_pixel(wcs)
-            mask = ellipse.to_mask(xsize, ysize).inverse()
-            self.ssfr_maps[name][mask] = 0.0
+            # Make the plot
+            self.make_rgba_plot(name, self.ssfr_maps[name], filepath)
 
-            # Make RGBA image
-            rgba = self.ssfr_maps[name].to_rgba(scale=self.config.scale, colours=self.config.colours, absolute_alpha=True)
-            rgba.soften_edges(self.softening_ellipse.to_pixel(self.ssfr_maps[name].wcs), self.softening_range)
+            # Determine the relative path
+            relpath = fs.relative_to(filepath, self.maps_html_path)
 
-            # Save
-            rgba.saveto(filepath)
+            # Make image plot
+            self.ssfr_plots[name] = html.image(relpath, alttext=name, height=self.image_height, width=self.image_width, hover=None)
 
     # -----------------------------------------------------------------
 
@@ -680,24 +821,23 @@ class AllMapsPageGenerator(MapsComponent):
             # Determine path
             filepath = fs.join(self.tir_plots_path, name + ".png")
 
+            # Set the filepath
+            self.tir_plots_paths[name] = filepath
+
             # Check if plot is already made
             if fs.is_file(filepath):
 
                 if self.config.replot: fs.remove_file(filepath)
                 else: continue
 
-            # Get the truncation mask and mask out the pixel beyond the truncation limit
-            wcs, xsize, ysize = self.tir_maps[name].wcs, self.tir_maps[name].xsize, self.tir_maps[name].ysize
-            ellipse = self.truncation_ellipse.to_pixel(wcs)
-            mask = ellipse.to_mask(xsize, ysize).inverse()
-            self.tir_maps[name][mask] = 0.0
+            # Make the plot
+            self.make_rgba_plot(name, self.tir_maps[name], filepath)
 
-            # Make RGBA image
-            rgba = self.tir_maps[name].to_rgba(scale=self.config.scale, colours=self.config.colours, absolute_alpha=True)
-            rgba.soften_edges(self.softening_ellipse.to_pixel(self.tir_maps[name].wcs), self.softening_range)
+            # Determine the relative path
+            relpath = fs.relative_to(filepath, self.maps_html_path)
 
-            # Save
-            rgba.saveto(filepath)
+            # Make image plot
+            self.tir_plots[name] = html.image(relpath, alttext=name, height=self.image_height, width=self.image_width, hover=None)
 
     # -----------------------------------------------------------------
 
@@ -717,24 +857,23 @@ class AllMapsPageGenerator(MapsComponent):
             # Determine path
             filepath = fs.join(self.attenuation_plots_path, name + ".png")
 
+            # Set the filepath
+            self.attenuation_plots_paths[name] = filepath
+
             # Check if plot is already made
             if fs.is_file(filepath):
 
                 if self.config.replot: fs.remove_file(filepath)
                 else: continue
 
-            # Get the truncation mask and mask out the pixel beyond the truncation limit
-            wcs, xsize, ysize = self.attenuation_maps[name].wcs, self.attenuation_maps[name].xsize, self.attenuation_maps[name].ysize
-            ellipse = self.truncation_ellipse.to_pixel(wcs)
-            mask = ellipse.to_mask(xsize, ysize).inverse()
-            self.attenuation_maps[name][mask] = 0.0
+            # Make the plot
+            self.make_rgba_plot(name, self.attenuation_maps[name], filepath)
 
-            # Make RGBA image
-            rgba = self.attenuation_maps[name].to_rgba(scale=self.config.scale, colours=self.config.colours, absolute_alpha=True)
-            rgba.soften_edges(self.softening_ellipse.to_pixel(self.attenuation_maps[name].wcs), self.softening_range)
+            # Determine the relative path
+            relpath = fs.relative_to(filepath, self.maps_html_path)
 
-            # Save
-            rgba.saveto(filepath)
+            # Make image plot
+            self.attenuation_plots[name] = html.image(relpath, alttext=name, height=self.image_height, width=self.image_width, hover=None)
 
     # -----------------------------------------------------------------
 
@@ -754,24 +893,23 @@ class AllMapsPageGenerator(MapsComponent):
             # Determine path
             filepath = fs.join(self.old_plots_path, name + ".png")
 
+            # Set the filepath
+            self.old_plots_paths[name] = filepath
+
             # Check if plot is already made
             if fs.is_file(filepath):
 
                 if self.config.replot: fs.remove_file(filepath)
                 else: continue
 
-            # Get the truncation mask and mask out the pixel beyond the truncation limit
-            wcs, xsize, ysize = self.old_maps[name].wcs, self.old_maps[name].xsize, self.old_maps[name].ysize
-            ellipse = self.truncation_ellipse.to_pixel(wcs)
-            mask = ellipse.to_mask(xsize, ysize).inverse()
-            self.old_maps[name][mask] = 0.0
+            # Make the plot
+            self.make_rgba_plot(name, self.old_maps[name], filepath)
 
-            # Make RGBA image
-            rgba = self.old_maps[name].to_rgba(scale=self.config.scale, colours=self.config.colours, absolute_alpha=True)
-            rgba.soften_edges(self.softening_ellipse.to_pixel(self.old_maps[name].wcs), self.softening_range)
+            # Determine the relative path
+            relpath = fs.relative_to(filepath, self.maps_html_path)
 
-            # Save
-            rgba.saveto(filepath)
+            # Make image plot
+            self.old_plots[name] = html.image(relpath, alttext=name, height=self.image_height, width=self.image_width, hover=None)
 
     # -----------------------------------------------------------------
 
@@ -791,24 +929,23 @@ class AllMapsPageGenerator(MapsComponent):
             # Determine path
             filepath = fs.join(self.young_plots_path, name + ".png")
 
+            # Set the filepath
+            self.young_plots_paths[name] = filepath
+
             # Check if plot is already made
             if fs.is_file(filepath):
 
                 if self.config.replot: fs.remove_file(filepath)
                 else: continue
 
-            # Get the truncation mask and mask out the pixel beyond the truncation limit
-            wcs, xsize, ysize = self.young_maps[name].wcs, self.young_maps[name].xsize, self.young_maps[name].ysize
-            ellipse = self.truncation_ellipse.to_pixel(wcs)
-            mask = ellipse.to_mask(xsize, ysize).inverse()
-            self.young_maps[name][mask] = 0.0
+            # Make the plot
+            self.make_rgba_plot(name, self.young_maps[name], filepath)
 
-            # Make RGBA image
-            rgba = self.young_maps[name].to_rgba(scale=self.config.scale, colours=self.config.colours, absolute_alpha=True)
-            rgba.soften_edges(self.softening_ellipse.to_pixel(self.young_maps[name].wcs), self.softening_range)
+            # Determine the relative path
+            relpath = fs.relative_to(filepath, self.maps_html_path)
 
-            # Save
-            rgba.saveto(filepath)
+            # Make image plot
+            self.young_plots[name] = html.image(relpath, alttext=name, height=self.image_height, width=self.image_width, hover=None)
 
     # -----------------------------------------------------------------
 
@@ -828,24 +965,23 @@ class AllMapsPageGenerator(MapsComponent):
             # Determine path
             filepath = fs.join(self.ionizing_plots_path, name + ".png")
 
+            # Set the filepath
+            self.ionizing_plots_paths[name] = filepath
+
             # Check if plot is already made
             if fs.is_file(filepath):
 
                 if self.config.replot: fs.remove_file(filepath)
                 else: continue
 
-            # Get the truncation mask and mask out the pixel beyond the truncation limit
-            wcs, xsize, ysize = self.ionizing_maps[name].wcs, self.ionizing_maps[name].xsize, self.ionizing_maps[name].ysize
-            ellipse = self.truncation_ellipse.to_pixel(wcs)
-            mask = ellipse.to_mask(xsize, ysize).inverse()
-            self.ionizing_maps[name][mask] = 0.0
+            # Make the plot
+            self.make_rgba_plot(name, self.ionizing_maps[name], filepath)
 
-            # Make RGBA image
-            rgba = self.ionizing_maps[name].to_rgba(scale=self.config.scale, colours=self.config.colours, absolute_alpha=True)
-            rgba.soften_edges(self.softening_ellipse.to_pixel(self.ionizing_maps[name].wcs), self.softening_range)
+            # Determine the relative path
+            relpath = fs.relative_to(filepath, self.maps_html_path)
 
-            # Save
-            rgba.saveto(filepath)
+            # Make image plot
+            self.ionizing_plots[name] = html.image(relpath, alttext=name, height=self.image_height, width=self.image_width, hover=None)
 
     # -----------------------------------------------------------------
 
@@ -865,24 +1001,23 @@ class AllMapsPageGenerator(MapsComponent):
             # Determine path
             filepath = fs.join(self.dust_plots_path, name + ".png")
 
+            # Set the filepath
+            self.dust_plots_paths[name] = filepath
+
             # Check if plot is already made
             if fs.is_file(filepath):
 
                 if self.config.replot: fs.remove_file(filepath)
                 else: continue
 
-            # Get the truncation mask and mask out the pixel beyond the truncation limit
-            wcs, xsize, ysize = self.dust_maps[name].wcs, self.dust_maps[name].xsize, self.dust_maps[name].ysize
-            ellipse = self.truncation_ellipse.to_pixel(wcs)
-            mask = ellipse.to_mask(xsize, ysize).inverse()
-            self.dust_maps[name][mask] = 0.0
+            # Make the plot
+            self.make_rgba_plot(name, self.dust_maps[name], filepath)
 
-            # Make RGBA image
-            rgba = self.dust_maps[name].to_rgba(scale=self.config.scale, colours=self.config.colours, absolute_alpha=True)
-            rgba.soften_edges(self.softening_ellipse.to_pixel(self.dust_maps[name].wcs), self.softening_range)
+            # Determine the relative path
+            relpath = fs.relative_to(filepath, self.maps_html_path)
 
-            # Save
-            rgba.saveto(filepath)
+            # Make image plot
+            self.dust_plots[name] = html.image(relpath, alttext=name, height=self.image_height, width=self.image_width, hover=None)
 
     # -----------------------------------------------------------------
 
@@ -895,6 +1030,302 @@ class AllMapsPageGenerator(MapsComponent):
         """
 
         return "realtable"
+
+    # -----------------------------------------------------------------
+
+    def make_view(self, name, filepath, plot):
+
+        """
+        This function ...
+        :param name:
+        :param filepath:
+        :param plot
+        :return:
+        """
+
+        # Debugging
+        log.debug("Making a view of the '" + name + "' map ...")
+
+        settings = dict()
+        settings["scale"] = self.config.scale
+        settings["colormap"] = self.config.colormap
+        settings["zoom"] = self.config.zoom
+
+        # Get region in image coordinates
+        #region = self.disk_ellipse.to_pixel(self.coordinate_systems[name])
+        #regions_for_loader = region if self.config.load_regions else None
+
+        # Add the region
+        #self.ellipses[name] = region
+
+        regions_for_loader = None
+
+        # Set text
+        text = plot
+
+        # Create the loader
+        loader = JS9Spawner.from_path(text, name, filepath, settings=settings, button=False,
+                                      menubar=self.config.menubar, colorbar=self.config.colorbar,
+                                      regions=regions_for_loader, background_color=background_color, replace=True)
+
+        #display_id = self.loaders[name].display_id
+        #self.windows[name] = self.loaders[name].placeholder
+
+        # Set load info
+        #load_info[display_id] = (name, path, regions_for_loader)
+        #images[display_id] = self.loaders[name].image
+        #placeholders[display_id] = self.loaders[name].spawn_div_name
+
+        # Return the loader
+        return loader
+
+    # -----------------------------------------------------------------
+
+    def relative_path(self, filepath):
+
+        """
+        This function ...
+        :param filepath:
+        :return:
+        """
+
+        return fs.relative_to(filepath, self.maps_html_path)
+
+    # -----------------------------------------------------------------
+
+    def make_views(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making views ...")
+
+        # Colours
+        if self.has_colour_maps: self.make_colour_views()
+
+        # sSFR
+        if self.has_ssfr_maps: self.make_ssfr_views()
+
+        # TIR
+        if self.has_tir_maps: self.make_tir_views()
+
+        # Attenuation
+        if self.has_attenuation_maps: self.make_attenuation_views()
+
+        # Old
+        if self.has_old_maps: self.make_old_views()
+
+        # Young
+        if self.has_young_maps: self.make_young_views()
+
+        # Ionizing
+        if self.has_ionizing_maps: self.make_ionizing_views()
+
+        # Dust
+        if self.has_dust_maps: self.make_dust_views()
+
+    # -----------------------------------------------------------------
+
+    def make_colour_views(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making views of the colour maps ...")
+
+        # Loop over the maps
+        for name in self.colour_maps:
+
+            # Get path
+            if self.config.view_png: path = self.relative_path(self.colour_plots_paths[name])
+            else: path = self.colour_maps[name].path
+
+            # Make the view
+            view = self.make_view(name, path, self.colour_plots[name])
+
+            # Add
+            self.colour_views[name] = view
+
+    # -----------------------------------------------------------------
+
+    def make_ssfr_views(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making views of the sSFR maps ...")
+
+        # Loop over the maps
+        for name in self.ssfr_maps:
+
+            # Get path
+            if self.config.view_png: path = self.relative_path(self.ssfr_plots_paths[name])
+            else: path = self.ssfr_maps[name].path
+
+            # Make the view
+            view = self.make_view(name, path, self.ssfr_plots[name])
+
+            # Add
+            self.ssfr_views[name] = view
+
+    # -----------------------------------------------------------------
+
+    def make_tir_views(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making views of the TIR maps ...")
+
+        # Loop over the maps
+        for name in self.tir_maps:
+
+            # Get path
+            if self.config.view_png: path = self.relative_path(self.tir_plots_paths[name])
+            else: path = self.tir_maps[name].path
+
+            # Make the view
+            view = self.make_view(name, path, self.tir_plots[name])
+
+            # Add
+            self.tir_views[name] = view
+
+    # -----------------------------------------------------------------
+
+    def make_attenuation_views(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making views of the attenuation maps ...")
+
+        # Loop over the maps
+        for name in self.attenuation_maps:
+
+            # Get path
+            if self.config.view_png: path = self.relative_path(self.attenuation_plots_paths[name])
+            else: path = self.attenuation_maps[name].path
+
+            # Make the view
+            view = self.make_view(name, path, self.attenuation_plots[name])
+
+            # Add
+            self.attenuation_views[name] = view
+
+    # -----------------------------------------------------------------
+
+    def make_old_views(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making views of the old stellar maps ...")
+
+        # Loop over the maps
+        for name in self.old_maps:
+
+            # Get path
+            if self.config.view_png: path = self.relative_path(self.old_plots_paths[name])
+            else: path = self.old_maps[name].path
+
+            # Make the view
+            view = self.make_view(name, path, self.old_plots[name])
+
+            # Add
+            self.old_views[name] = view
+
+    # -----------------------------------------------------------------
+
+    def make_young_views(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making views of the young stellar maps ...")
+
+        # Loop over the maps
+        for name in self.young_maps:
+
+            # Get path
+            if self.config.view_png: path = self.relative_path(self.young_plots_paths[name])
+            else: path = self.young_maps[name].path
+
+            # Make the view
+            view = self.make_view(name, path, self.young_plots[name])
+
+            # Add
+            self.young_views[name] = view
+
+    # -----------------------------------------------------------------
+
+    def make_ionizing_views(self):
+
+        """
+        This functino ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making views of the ionizing stellar maps ...")
+
+        # Loop over the maps
+        for name in self.ionizing_maps:
+
+            # Get path
+            if self.config.view_png: path = self.relative_path(self.ionizing_plots_paths[name])
+            else: path = self.ionizing_maps[name].path
+
+            # Make the view
+            view = self.make_view(name, path, self.ionizing_plots[name])
+
+            # Add
+            self.ionizing_views[name] = view
+
+    # -----------------------------------------------------------------
+
+    def make_dust_views(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making views of the dust maps ...")
+
+        # Loopover the maps
+        for name in self.dust_maps:
+
+            # Get path
+            if self.config.view_png: path = self.relative_path(self.dust_plots_paths[name])
+            else: path = self.dust_maps[name].path
+
+            # Make the view
+            view = self.make_view(name, path, self.dust_plots[name])
+
+            # Add
+            self.dust_views[name] = view
 
     # -----------------------------------------------------------------
 
@@ -949,17 +1380,17 @@ class AllMapsPageGenerator(MapsComponent):
         # Loop over the maps
         for name in self.colour_maps:
 
-            # Determine the relative path
-            path = fs.join(plots_name, colours_name, name + ".png")
-
-            # Make image
-            image = html.image(path, alttext=name, height=self.image_height, width=self.image_width, hover=None)
-
             # Make cell
             cell = ""
-            cell += html.center(name)
+            #cell += html.center(name)
+            #cell += html.newline
+            #cell += image
+
+            cell += html.center(str(self.colour_views[name]))
+
+            # Add info
             cell += html.newline
-            cell += image
+            cell += self.colour_info[name]
 
             # Add
             cells.append(cell)
@@ -984,17 +1415,16 @@ class AllMapsPageGenerator(MapsComponent):
         # Loop over the maps
         for name in self.ssfr_maps:
 
-            # Determine the relative path
-            path = fs.join(plots_name, ssfr_name, name + ".png")
-
-            # Make image
-            image = html.image(path, alttext=name, height=self.image_height, width=self.image_width, hover=None)
-
             # Make cell
             cell = ""
-            cell += html.center(name)
+            #cell += html.center(name)
+            #cell += html.newline
+
+            cell += html.center(str(self.ssfr_views[name]))
+
+            # Add info
             cell += html.newline
-            cell += image
+            cell += self.ssfr_info[name]
 
             # Add
             cells.append(cell)
@@ -1027,9 +1457,14 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Make cell
             cell = ""
-            cell += html.center(name)
+            #cell += html.center(name)
+            #cell += html.newline
+
+            cell += html.center(str(self.tir_views[name]))
+
+            # Add info
             cell += html.newline
-            cell += image
+            cell += self.tir_info[name]
 
             # Add
             cells.append(cell)
@@ -1062,9 +1497,14 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Make cell
             cell = ""
-            cell += html.center(name)
+            #cell += html.center(name)
+            #cell += html.newline
+
+            cell += html.center(str(self.attenuation_views[name]))
+
+            # Add info
             cell += html.newline
-            cell += image
+            cell += self.attenuation_info[name]
 
             # Add
             cells.append(cell)
@@ -1089,17 +1529,17 @@ class AllMapsPageGenerator(MapsComponent):
         # Loop over the maps
         for name in self.old_maps:
 
-            # Determine the relative path
-            path = fs.join(plots_name, old_name, name + ".png")
-
-            # Make iamge
-            image = html.image(path, alttext=name, height=self.image_height, width=self.image_width, hover=None)
-
             # Make cell
             cell = ""
-            cell += html.center(name)
+            #cell += html.center(name)
+            #cell += html.newline
+            #cell += image
+
+            cell += html.center(str(self.old_views[name]))
+
+            # Add info
             cell += html.newline
-            cell += image
+            cell += self.old_info[name]
 
             # Add
             cells.append(cell)
@@ -1124,17 +1564,16 @@ class AllMapsPageGenerator(MapsComponent):
         # Loop over the maps
         for name in self.young_maps:
 
-            # Determine the relative path
-            path = fs.join(plots_name, young_name, name + ".png")
-
-            # Make image
-            image = html.image(path, alttext=name, height=self.image_height, width=self.image_width, hover=None)
-
             # Make cell
             cell = ""
-            cell += html.center(name)
+            #cell += html.center(name)
+            #cell += html.newline
+
+            cell += html.center(str(self.young_views[name]))
+
+            # Add info
             cell += html.newline
-            cell += image
+            cell += self.young_info[name]
 
             # Add
             cells.append(cell)
@@ -1159,17 +1598,16 @@ class AllMapsPageGenerator(MapsComponent):
         # Loop over the maps
         for name in self.ionizing_maps:
 
-            # Determine the relative path
-            path = fs.join(plots_name, ionizing_name, name + ".png")
-
-            # Make image
-            image = html.image(path, alttext=name, height=self.image_height, width=self.image_width, hover=None)
-
             # Make cell
             cell = ""
-            cell += html.center(name)
+            #cell += html.center(name)
+            #cell += html.newline
+
+            cell += html.center(str(self.ionizing_views[name]))
+
+            # Add info
             cell += html.newline
-            cell += image
+            cell += self.ionizing_info[name]
 
             # Add
             cells.append(cell)
@@ -1194,17 +1632,16 @@ class AllMapsPageGenerator(MapsComponent):
         # Loop over the maps
         for name in self.dust_maps:
 
-            # Determine the relative path
-            path = fs.join(plots_name, dust_name, name + ".png")
-
-            # Make image
-            image = html.image(path, alttext=name, height=self.image_height, width=self.image_width, hover=None)
-
             # Make cell
             cell = ""
-            cell += html.center(name)
+            #cell += html.center(name)
+            #cell += html.newline
+
+            cell += html.center(str(self.dust_views[name]))
+
+            # Add info
             cell += html.newline
-            cell += image
+            cell += self.dust_info[name]
 
             # Add
             cells.append(cell)
@@ -1224,16 +1661,19 @@ class AllMapsPageGenerator(MapsComponent):
         # Inform the user
         log.info("Generating the page ...")
 
+        # Create list of css scripts
         css_paths = css_scripts[:]
         css_paths.append(stylesheet_url)
 
+        # Create CSS for the page width
+        css = make_page_width(page_width)
+
         # Create the page
-        self.page = HTMLPage(self.title, style=page_style, css_path=css_paths, javascript_path=javascripts, footing=updated_footing())
+        self.page = HTMLPage(self.title, css=css, style=page_style, css_path=css_paths, javascript_path=javascripts, footing=updated_footing())
 
         classes = dict()
         classes["JS9Menubar"] = "data-backgroundColor"
         self.page += html.center(html.make_theme_button(classes=classes))
-
         self.page += html.newline
 
         # Add the tables
@@ -1372,10 +1812,11 @@ class AllMapsPageGenerator(MapsComponent):
 
 # -----------------------------------------------------------------
 
-def get_image_info(frame):
+def get_image_info(name, frame):
 
     """
     This function ...
+    :param name:
     :param frame:
     :return:
     """
@@ -1390,6 +1831,7 @@ def get_image_info(frame):
     # Get filesize
     filesize = fs.file_size(frame.path).to("MB")
 
+    info.append("Name: " + name)
     info.append("Filter: " + tostr(fltr))
     info.append("Wavelength: " + tostr(wavelength))
     info.append("Unit: " + tostr(frame.unit))

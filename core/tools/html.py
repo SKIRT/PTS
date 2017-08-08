@@ -46,9 +46,6 @@
 # Ensure Python 3 functionality
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-import codecs
-
 # Import the relevant PTS classes and modules
 from .stringify import tostr, stringify_dict
 from . import numbers
@@ -108,6 +105,74 @@ bold_template = "<span style='font-weight:bold'>{text}</span>"
 fontsize_template = "<span style='font-size:{size}px'>{text}</span>"
 small_template = "<small>{text}</small>"
 center_template = "<div style='text-align:center;'>{text}</div>"
+
+# -----------------------------------------------------------------
+
+def make_css(contents):
+
+    """
+    This function ...
+    :return:
+    """
+
+    #code = """<style>
+    #body {background-color: powderblue;}
+    #h1   {color: blue;}
+    #p    {color: red;}
+    #</style>"""
+
+    # #lines.append('    <style type="text/css">\n%s\n</style>' % self.css)
+
+    # Add code
+    code = "<style type='text/css'>\n"
+    code += contents
+
+    # Return
+    code += "</style>\n"
+    return code
+
+# -----------------------------------------------------------------
+
+def make_body_settings(settings):
+
+    """
+    This function ...
+    :param settings:
+    :return:
+    """
+
+    # body
+    # {
+    #     background - color: powderblue;
+    # }
+
+    contents = "body\n"
+    contents += "{\n"
+
+    for name in settings:
+        value = settings[name]
+        contents += "    " + name + ": " + tostr(value) + ";"
+
+    contents += "}\n"
+
+    # Make the css code and return
+    #return make_css(contents)
+    return contents
+
+# -----------------------------------------------------------------
+
+def make_page_width(width):
+
+    """
+    This function ...
+    :param width:
+    :return:
+    """
+
+    settings = dict()
+    settings["max-width"] = str(width) + "px"
+    css_settings = make_body_settings(settings)
+    return css_settings
 
 # -----------------------------------------------------------------
 
@@ -1279,15 +1344,15 @@ class HTMLPage(object):
         lines.append('<html lang="' + self.language +'">')
         lines.append("<head>")
 
-        # Add css
-        if self.css is not None: lines.append('    <style type="text/css">\n%s\n</style>' % self.css)
-
         # Add css path(s)
         if self.css_path is not None:
             if types.is_string_sequence(self.css_path):
                 for url in self.css_path: lines.append('    <link rel="stylesheet" type="text/css" href="{url}">'.format(url=url))
             elif types.is_string_type(self.css_path): lines.append('    <link rel="stylesheet" type="text/css" href="{url}">'.format(url=self.css_path))
             else: raise ValueError("Invalid type for css_path")
+
+        # Add custom css
+        if self.css is not None: lines.append(make_css(self.css))
 
         # Add javascript path(s)
         if self.javascript_path is not None:

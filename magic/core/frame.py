@@ -29,7 +29,7 @@ from astropy.units import UnitConversionError
 # Import the relevant PTS classes and modules
 from .cutout import Cutout
 from ..basics.vector import Position
-from ..region.rectangle import SkyRectangleRegion
+from ..region.rectangle import SkyRectangleRegion, PixelRectangleRegion
 from ..basics.coordinate import SkyCoordinate
 from ..basics.stretch import SkyStretch
 from ..tools import cropping
@@ -1649,6 +1649,39 @@ class Frame(NDDataArray):
         # Replace the data and WCS
         self._data = new_data
         self._wcs = new_wcs
+
+    # -----------------------------------------------------------------
+
+    def cropped_to(self, region):
+
+        """
+        Ths function ...
+        :param region:
+        :return:
+        """
+
+        new = self.copy()
+        new.crop_to(region)
+        return new
+
+    # -----------------------------------------------------------------
+
+    def crop_to(self, region):
+
+        """
+        This function ...
+        :param region:
+        :return:
+        """
+
+        # Pixel rectangle
+        if isinstance(region, PixelRectangleRegion): self.crop(region.x_min, region.x_max, region.y_min, region.y_max)
+
+        # Sky rectangle: to pixel rectangle
+        elif isinstance(region, SkyRectangleRegion): self.crop_to(region.to_pixel(self.wcs))
+
+        # Other kind of shape
+        else: self.crop_to(region.bounding_box)
 
     # -----------------------------------------------------------------
 

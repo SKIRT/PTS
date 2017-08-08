@@ -36,6 +36,7 @@ from ...magic.basics.coordinatesystem import CoordinateSystem
 ncolumns = 3
 image_width = 300
 image_height = 300
+background_color = "white"
 
 # -----------------------------------------------------------------
 
@@ -325,30 +326,11 @@ class TruncationPageGenerator(TruncationComponent):
             # Get header -> FASTER (?)
             header = self.dataset.get_header(name)
 
-            info = []
-
-            fltr = headers.get_filter(name, header)
-            wavelength = fltr.wavelength
-            unit = headers.get_unit(header)
-            pixelscale = headers.get_pixelscale(header)
-            if pixelscale is None:
-                wcs = CoordinateSystem(header)
-                pixelscale = wcs.average_pixelscale
-            else: pixelscale = pixelscale.average
-            fwhm = headers.get_fwhm(header)
-            nxpixels = header["NAXIS1"]
-            nypixels = header["NAXIS2"]
-
             # Get filesize
             filesize = fs.file_size(self.dataset.get_frame_path(name)).to("MB")
 
-            info.append("Filter: " + tostr(fltr))
-            info.append("Wavelength: " + tostr(wavelength))
-            info.append("Unit: " + tostr(unit))
-            info.append("Pixelscale: " + tostr(pixelscale))
-            info.append("FWHM: " + tostr(fwhm))
-            info.append("Dimensions: " + str((nxpixels, nypixels)))
-            info.append("File size: " + tostr(filesize))
+            # Get the image info
+            info = get_image_info_from_header(name, header, filesize)
 
             # Make list
             code = unordered_list(info)
@@ -460,8 +442,6 @@ class TruncationPageGenerator(TruncationComponent):
         images = dict()
         region_loads = dict()
         placeholders = dict()
-
-        background_color = "white"
 
         # Loop over all prepared images, get the images
         #self.masks = dict()
@@ -794,5 +774,43 @@ class TruncationPageGenerator(TruncationComponent):
 
         # Open in browser
         browser.open_path(self.truncation_html_page_path)
+
+# -----------------------------------------------------------------
+
+def get_image_info_from_header(name, header, filesize=None):
+
+    """
+    This function ...
+    :param name:
+    :param header:
+    :param filesize:
+    :return:
+    """
+
+    info = []
+
+    fltr = headers.get_filter(name, header)
+    wavelength = fltr.wavelength
+    unit = headers.get_unit(header)
+    pixelscale = headers.get_pixelscale(header)
+    if pixelscale is None:
+        wcs = CoordinateSystem(header)
+        pixelscale = wcs.average_pixelscale
+    else:
+        pixelscale = pixelscale.average
+    fwhm = headers.get_fwhm(header)
+    nxpixels = header["NAXIS1"]
+    nypixels = header["NAXIS2"]
+
+    info.append("Filter: " + tostr(fltr))
+    info.append("Wavelength: " + tostr(wavelength))
+    info.append("Unit: " + tostr(unit))
+    info.append("Pixelscale: " + tostr(pixelscale))
+    info.append("FWHM: " + tostr(fwhm))
+    info.append("Dimensions: " + str((nxpixels, nypixels)))
+    if filesize is not None: info.append("File size: " + tostr(filesize))
+
+    # Return the info
+    return info
 
 # -----------------------------------------------------------------
