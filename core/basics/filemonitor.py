@@ -148,17 +148,28 @@ class FileMonitor(object):
         :return:
         """
 
+        from ..tools import formatting as fmt
+
         indent = '  > '
         terminal_width = 80
+
+        print("")
+        print(fmt.red + "Open files:" + fmt.reset)
+        print("")
+
+        # Loop over the files
         for file, path, trace in self.openfiles:
 
-            if file.closed and self.do_print_only_open:
-                continue
+            # Skip closed
+            if file.closed and self.do_print_only_open: continue
 
             if not self.short: print("-" * terminal_width)
 
             #print("  {} = {}".format('path', path))
-            print(path)
+            #print(path)
+
+            #log.error(path)
+            print(fmt.red + " - " + path + fmt.reset)
 
             if not self.short:
 
@@ -175,5 +186,7 @@ class FileMonitor(object):
                 print('\n'.join(lines))
                 print("-" * terminal_width)
                 print()
+
+        print("")
 
 # -----------------------------------------------------------------

@@ -32,7 +32,7 @@ from importlib import import_module
 # Import the relevant PTS classes and modules
 from . import filesystem as fs
 from ..basics.map import Map
-from .logging import log
+from ..basics.log import log
 from . import types
 
 # -----------------------------------------------------------------

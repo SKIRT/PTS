@@ -17,7 +17,7 @@ from subprocess import check_output
 import urllib
 import httplib
 from . import filesystem as fs
-from .logging import log
+from ..basics.log import log
 from . import archive
 from . import progress
 

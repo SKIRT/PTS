@@ -18,7 +18,7 @@ import numpy as np
 
 # Import the relevant PTS classes and modules
 from . import serialization
-from .logging import log
+from ..basics.log import log
 
 # -----------------------------------------------------------------
 

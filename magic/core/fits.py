@@ -545,8 +545,8 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
         # Get the name from the file path
         if name is None: name = fs.name(path[:-5])
 
-        # Return the frame
-        return cls(hdu.data[index],
+        # Create the frame
+        frame = cls(hdu.data[index],
                    wcs=wcs,
                    name=name,
                    description=description,
@@ -564,6 +564,12 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
                    psf_filter=psf_filter,
                    distance=distance)
 
+        # Close the FITS file
+        hdulist.close()
+
+        # Return the frame
+        return frame
+
     else:
 
         # Sometimes, the 2D frame is embedded in a 3D array with shape (1, xsize, ysize)
@@ -572,8 +578,8 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
         # Get the name from the file path
         if name is None: name = fs.name(path[:-5])
 
-        # Return the frame
-        return cls(hdu.data,
+        # Create the frame
+        frame = cls(hdu.data,
                    wcs=wcs,
                    name=name,
                    description=description,
@@ -590,6 +596,12 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
                    from_multiplane=False,
                    psf_filter=psf_filter,
                    distance=distance)
+
+        # Close the FITS file
+        hdulist.close()
+
+        # Return
+        return frame
 
 # -----------------------------------------------------------------
 

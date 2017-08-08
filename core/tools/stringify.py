@@ -224,7 +224,7 @@ def stringify_list(value, **kwargs):
         strings.append(val)
 
     from ..basics.configuration import parent_type
-    from .logging import log
+    from ..basics.log import log
 
     #print("PTYPES", ptypes)
 
@@ -324,7 +324,7 @@ def stringify_dict(value, **kwargs):
         parts.append(string)
 
     from ..basics.configuration import parent_type
-    from .logging import log
+    from ..basics.log import log
 
     keytypes = list(keytypes)
     ptypes = list(ptypes)

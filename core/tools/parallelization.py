@@ -21,7 +21,7 @@ from astropy.units import Unit
 # Import the relevant PTS classes and modules
 from . import introspection
 from . import terminal
-from .logging import log
+from ..basics.log import log
 
 # Check the multiprocessing state and import modules
 try:
