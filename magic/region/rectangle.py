@@ -29,6 +29,7 @@ from ..basics.stretch import PixelStretch, SkyStretch, PhysicalStretch
 from ..basics.mask import Mask
 from .region import add_info, make_rectangle_template, coordsys_name_mapping
 from ...core.units.parsing import parse_unit as u
+from ..tools import coordinates
 
 # -----------------------------------------------------------------
 
@@ -272,6 +273,122 @@ class RectangleRegion(Region):
         if coordinate.axis2 > self.axis2_max or coordinate.axis2 < self.axis2_min: return False
         return True
 
+    # -----------------------------------------------------------------
+
+    def __mul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        new = self.copy()
+        new *= value
+        return new
+
+    # -----------------------------------------------------------------
+
+    def __rmul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        new = self.copy()
+        new *= value
+        return new
+
+    # -----------------------------------------------------------------
+
+    def __imul__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self.radius *= value
+        return self
+
+    # -----------------------------------------------------------------
+
+    def __div__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        new = self.copy()
+        new /= value
+        return new
+
+    # -----------------------------------------------------------------
+
+    def __rdiv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        raise SyntaxError("You cannot divide by a region")
+
+    # -----------------------------------------------------------------
+
+    def __idiv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        self.radius /= value
+        return self
+
+    # -----------------------------------------------------------------
+
+    def __truediv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.__div__(value)
+
+    # -----------------------------------------------------------------
+
+    def __rtruediv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        raise SyntaxError("You cannot divide by a region")
+
+    # -----------------------------------------------------------------
+
+    def __itruediv__(self, value):
+
+        """
+        This function ...
+        :param value:
+        :return:
+        """
+
+        return self.__idiv__(value)
+
 # -----------------------------------------------------------------
 
 class PixelRectangleRegion(RectangleRegion, PixelRegion):
@@ -360,7 +477,9 @@ class PixelRectangleRegion(RectangleRegion, PixelRegion):
         if not self.rotated: return PixelCoordinate(self.center.x + self.radius.x, self.center.y - self.radius.y)
         else:
             angle_to_corner = 2.0 * np.pi - self._diagonal_angle + self.angle.to("radian").value
-            return PixelCoordinate(self.diagonal * np.cos(angle_to_corner), self.diagonal * np.sin(angle_to_corner))
+            x_to_corner = self.diagonal * np.cos(angle_to_corner)
+            y_to_corner = self.diagonal * np.sin(angle_to_corner)
+            return PixelCoordinate(self.center.x + x_to_corner, self.center.y + y_to_corner)
 
     # -----------------------------------------------------------------
 
@@ -375,7 +494,9 @@ class PixelRectangleRegion(RectangleRegion, PixelRegion):
         if not self.rotated: return PixelCoordinate(self.center.x + self.radius.x, self.center.y + self.radius.y)
         else:
             angle_to_corner = self._diagonal_angle + self.angle.to("radian").value
-            return PixelCoordinate(self.diagonal * np.cos(angle_to_corner), self.diagonal * np.sin(angle_to_corner))
+            x_to_corner = self.diagonal * np.cos(angle_to_corner)
+            y_to_corner = self.diagonal * np.sin(angle_to_corner)
+            return PixelCoordinate(self.center.x + x_to_corner, self.center.y + y_to_corner)
 
     # -----------------------------------------------------------------
 
@@ -390,7 +511,9 @@ class PixelRectangleRegion(RectangleRegion, PixelRegion):
         if not self.rotated: return PixelCoordinate(self.center.x - self.radius.x, self.center.y + self.radius.y)
         else:
             angle_to_corner = np.pi - self._diagonal_angle + self.angle.to("radian").value
-            return PixelCoordinate(self.diagonal * np.cos(angle_to_corner), self.diagonal * np.sin(angle_to_corner))
+            x_to_corner = self.diagonal * np.cos(angle_to_corner)
+            y_to_corner = self.diagonal * np.sin(angle_to_corner)
+            return PixelCoordinate(self.center.x + x_to_corner, self.center.y + y_to_corner)
 
     # -----------------------------------------------------------------
 
@@ -405,7 +528,9 @@ class PixelRectangleRegion(RectangleRegion, PixelRegion):
         if not self.rotated: return PixelCoordinate(self.center.x - self.radius.x, self.center.y - self.radius.y)
         else:
             angle_to_corner = np.pi + self._diagonal_angle + self.angle.to("radian").value
-            return PixelCoordinate(self.diagonal * np.cos(angle_to_corner), self.diagonal * np.sin(angle_to_corner))
+            x_to_corner = self.diagonal * np.cos(angle_to_corner)
+            y_to_corner = self.diagonal * np.sin(angle_to_corner)
+            return PixelCoordinate(self.center.x + x_to_corner, self.center.y + y_to_corner)
 
     # -----------------------------------------------------------------
 
@@ -548,26 +673,6 @@ class SkyRectangleRegion(RectangleRegion, SkyRegion):
     # -----------------------------------------------------------------
 
     @property
-    def min_ra(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-    # -----------------------------------------------------------------
-
-    @property
-    def max_ra(self):
-
-        """
-        This function ...
-        :return: 
-        """
-
-    # -----------------------------------------------------------------
-
-    @property
     def corner11(self):
 
         """
@@ -575,10 +680,15 @@ class SkyRectangleRegion(RectangleRegion, SkyRegion):
         :return:
         """
 
-        if not self.rotated: return SkyCoordinate(self.center.ra + self.radius.ra, self.center.dec - self.radius.dec)
+        if not self.rotated:
+            ra_min, ra_max = coordinates.ra_around(self.center.ra, self.radius.ra, self.center.dec)
+            return SkyCoordinate(ra_max, self.center.dec - self.radius.dec)
         else:
             angle_to_corner = 2.0 * np.pi - self._diagonal_angle + self.angle.to("radian").value
-            return SkyCoordinate(self.diagonal * np.cos(angle_to_corner), self.diagonal * np.sin(angle_to_corner))
+            ra_to_corner = self.diagonal * np.cos(angle_to_corner)
+            dec_to_corner = self.diagonal * np.sin(angle_to_corner)
+            ra_min, ra_max = coordinates.ra_around(self.center.ra, ra_to_corner, self.center.dec)
+            return SkyCoordinate(ra_max, self.center.dec + dec_to_corner)
 
     # -----------------------------------------------------------------
 
@@ -590,10 +700,15 @@ class SkyRectangleRegion(RectangleRegion, SkyRegion):
         :return:
         """
 
-        if not self.rotated: return SkyCoordinate(self.center.ra + self.radius.ra, self.center.dec + self.radius.dec)
+        if not self.rotated:
+            ra_min, ra_max = coordinates.ra_around(self.center.ra, self.radius.ra, self.center.dec)
+            return SkyCoordinate(ra_max, self.center.dec + self.radius.dec)
         else:
             angle_to_corner = self._diagonal_angle + self.angle.to("radian").value
-            return SkyCoordinate(self.diagonal * np.cos(angle_to_corner), self.diagonal * np.sin(angle_to_corner))
+            ra_to_corner = self.diagonal * np.cos(angle_to_corner)
+            dec_to_corner = self.diagonal * np.sin(angle_to_corner)
+            ra_min, ra_max = coordinates.ra_around(self.center.ra, ra_to_corner, self.center.dec)
+            return SkyCoordinate(ra_max, dec_to_corner)
 
     # -----------------------------------------------------------------
 
@@ -605,10 +720,15 @@ class SkyRectangleRegion(RectangleRegion, SkyRegion):
         :return:
         """
 
-        if not self.rotated: return SkyCoordinate(self.center.ra - self.radius.ra, self.center.dec + self.radius.dec)
+        if not self.rotated:
+            ra_min, ra_max = coordinates.ra_around(self.center.ra, self.radius.ra, self.center.dec)
+            return SkyCoordinate(ra_min, self.center.dec + self.radius.dec)
         else:
             angle_to_corner = np.pi - self._diagonal_angle + self.angle.to("radian").value
-            return SkyCoordinate(self.diagonal * np.cos(angle_to_corner), self.diagonal * np.sin(angle_to_corner))
+            ra_to_corner = self.diagonal * np.cos(angle_to_corner)
+            dec_to_corner = self.diagonal * np.sin(angle_to_corner)
+            ra_min, ra_max = coordinates.ra_around(self.center.ra, ra_to_corner, self.center.dec)
+            return SkyCoordinate(ra_min, self.center.dec + dec_to_corner)
 
     # -----------------------------------------------------------------
 
@@ -620,10 +740,15 @@ class SkyRectangleRegion(RectangleRegion, SkyRegion):
         :return:
         """
 
-        if not self.rotated: return SkyCoordinate(self.center.ra - self.radius.ra, self.center.dec - self.radius.dec)
+        if not self.rotated:
+            ra_min, ra_max = coordinates.ra_around(self.center.ra, self.radius.ra, self.center.dec)
+            return SkyCoordinate(ra_min, self.center.dec - self.radius.dec)
         else:
             angle_to_corner = np.pi + self._diagonal_angle + self.angle.to("radian").value
-            return SkyCoordinate(self.diagonal * np.cos(angle_to_corner), self.diagonal * np.sin(angle_to_corner))
+            ra_to_corner = self.diagonal * np.cos(angle_to_corner)
+            dec_to_corner = self.diagonal * np.sin(angle_to_corner)
+            ra_min, ra_max = coordinates.ra_around(self.center.ra, ra_to_corner, self.center.dec)
+            return SkyCoordinate(ra_min, self.center.dec + dec_to_corner)
 
     # -----------------------------------------------------------------
 

@@ -1625,6 +1625,7 @@ class Frame(NDDataArray):
         # Crop the frame
         new_data = cropping.crop_check(self._data, x_min, x_max, y_min, y_max)
 
+        # Adapt the WCS
         if self.wcs is not None:
 
             # Copy the current WCS
@@ -1652,36 +1653,40 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def cropped_to(self, region):
+    def cropped_to(self, region, factor=1):
 
         """
         Ths function ...
         :param region:
+        :param factor:
         :return:
         """
 
         new = self.copy()
-        new.crop_to(region)
+        new.crop_to(region, factor=factor)
         return new
 
     # -----------------------------------------------------------------
 
-    def crop_to(self, region):
+    def crop_to(self, region, factor=1):
 
         """
         This function ...
         :param region:
+        :param factor:
         :return:
         """
 
         # Pixel rectangle
-        if isinstance(region, PixelRectangleRegion): self.crop(region.x_min, region.x_max, region.y_min, region.y_max)
+        if isinstance(region, PixelRectangleRegion):
+            if factor != 1: region = region * factor
+            self.crop(region.x_min_pixel, region.x_max_pixel, region.y_min_pixel, region.y_max_pixel)
 
         # Sky rectangle: to pixel rectangle
-        elif isinstance(region, SkyRectangleRegion): self.crop_to(region.to_pixel(self.wcs))
+        elif isinstance(region, SkyRectangleRegion): self.crop_to(region.to_pixel(self.wcs), factor=factor)
 
         # Other kind of shape
-        else: self.crop_to(region.bounding_box)
+        else: self.crop_to(region.bounding_box, factor=factor)
 
     # -----------------------------------------------------------------
 

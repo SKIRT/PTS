@@ -680,12 +680,17 @@ class AllMapsPageGenerator(MapsComponent):
         log.debug("Making an RGBA plot from the '" + name + "' map at '" + filepath + "' ...")
 
         # Crop the frame
-        frame = frame.cropped_to(self.truncation_box)
+        frame = frame.cropped_to(self.truncation_box, factor=self.config.cropping_factor)
 
         # Get the truncation mask and mask out the pixel beyond the truncation limit
         wcs, xsize, ysize = frame.wcs, frame.xsize, frame.ysize
         ellipse = self.truncation_ellipse.to_pixel(wcs)
         mask = ellipse.to_mask(xsize, ysize).inverse()
+
+        #from ....magic.tools import plotting
+        #plotting.plot_mask(mask)
+        #plotting.plot_mask(self.truncation_box.to_pixel(wcs).to_mask(xsize, ysize).inverse())
+
         frame[mask] = 0.0
 
         # Make RGBA image

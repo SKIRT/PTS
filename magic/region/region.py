@@ -340,6 +340,18 @@ class PixelRegion(Region):
     # -----------------------------------------------------------------
 
     @property
+    def x_min_pixel(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return int(round(self.x_min))
+
+    # -----------------------------------------------------------------
+
+    @property
     def x_max(self):
 
         """
@@ -348,6 +360,18 @@ class PixelRegion(Region):
         """
 
         return self.axis1_max
+
+    # -----------------------------------------------------------------
+
+    @property
+    def x_max_pixel(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return int(round(self.x_max))
 
     # -----------------------------------------------------------------
 
@@ -364,6 +388,18 @@ class PixelRegion(Region):
     # -----------------------------------------------------------------
 
     @property
+    def y_min_pixel(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return int(round(self.y_min))
+
+    # -----------------------------------------------------------------
+
+    @property
     def y_max(self):
 
         """
@@ -372,6 +408,18 @@ class PixelRegion(Region):
         """
 
         return self.axis2_max
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_max_pixel(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return int(round(self.y_max))
 
     # -----------------------------------------------------------------
 
@@ -475,7 +523,7 @@ class SkyRegion(Region):
         from .rectangle import SkyRectangleRegion
 
         # Create the rectangle region and return it
-        return SkyRectangleRegion(self.center, self.radius)
+        return SkyRectangleRegion(self.center, self.unrotated_radius)
 
     # -----------------------------------------------------------------
 

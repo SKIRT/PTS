@@ -26,6 +26,7 @@ definition.add_optional("colours", "string", "colour or colour map", default=def
 definition.add_optional("scale", "string", "image scaling", default=default_scale, choices=scales)
 definition.add_optional("softening_start", "real", "relative radius for softening to start (relative to truncation ellipse)", 0.75)
 definition.add_flag("view_png", "use the pngs for viewing instead of the original data", False)
+definition.add_optional("cropping_factor", "positive_real", "multiply the cropping box with this factor", 1.3)
 
 # Flags
 definition.add_flag("replot", "replot already existing figures", True)
