@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ....core.data.sun import Sun
-from ....core.tools.logging import log
+from ....core.basics.log import log
 from ...component.galaxy import GalaxyModelingComponent
 from .base import FittingInitializerBase
 

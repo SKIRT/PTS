@@ -25,7 +25,7 @@ from astroquery.ned import Ned
 from astroquery import nasa_ads as ads
 
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.tools import filesystem as fs
 from ...core.filter.filter import parse_filter
 from ...core.filter.narrow import NarrowBandFilter

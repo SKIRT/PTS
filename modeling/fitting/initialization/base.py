@@ -17,7 +17,7 @@ from ..component import FittingComponent
 from ....core.tools import tables
 from ....core.tools import filesystem as fs
 from ....magic.tools import wavelengths
-from ....core.tools.logging import log
+from ....core.basics.log import log
 from ....core.prep.wavelengthgrids import WavelengthGridGenerator
 from ..tables import WeightsTable
 from ....core.tools.serialization import write_dict

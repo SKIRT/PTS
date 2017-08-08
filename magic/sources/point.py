@@ -31,7 +31,7 @@ from ..tools import statistics, fitting
 from ...core.basics.configurable import Configurable
 from ...core.tools import tables, arrays
 from ...core.tools import filesystem as fs
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ..tools import plotting
 from ..basics.stretch import PixelStretch
 from ...core.basics.table import SmartTable

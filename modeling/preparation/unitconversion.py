@@ -22,7 +22,7 @@ from astropy.units import spectral
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
 from ...core.tools import tables
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------

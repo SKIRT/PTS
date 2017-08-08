@@ -21,7 +21,7 @@ from ..tools import filesystem as fs
 from ..tools import introspection
 from ..basics.configurable import Configurable
 from ..launch.pts import launch_local, launch_remote, RemoteInstance
-from ..tools.logging import log
+from ..basics.log import log
 
 # -----------------------------------------------------------------
 

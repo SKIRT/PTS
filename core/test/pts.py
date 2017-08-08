@@ -17,7 +17,7 @@ import imp
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
-from ..tools.logging import log, write_log_to
+from ..basics.log import log, write_log_to
 from ..basics.configurable import Configurable
 from ..tools import introspection
 from ..tools import filesystem as fs

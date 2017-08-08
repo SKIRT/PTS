@@ -21,7 +21,7 @@ from ...core.data.sed import ObservedSED
 from ...core.tools import tables
 from ...core.tools import filesystem as fs
 from ...core.filter.filter import parse_filter
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.basics.errorbar import ErrorBar
 from ...dustpedia.data.seds import SEDFetcher as DustPediaSEDFetcher
 from ...core.basics.configurable import Configurable

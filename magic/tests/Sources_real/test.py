@@ -11,7 +11,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.do.commandline import Command
 from pts.core.test.implementation import TestImplementation
 from pts.magic.services.ned import get_image

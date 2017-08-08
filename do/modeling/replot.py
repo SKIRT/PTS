@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.modeling.component.component import load_modeling_configuration
 from pts.modeling.component.galaxy import get_observed_sed as get_sed_galaxy
 from pts.modeling.component.sed import get_observed_sed as get_sed_other

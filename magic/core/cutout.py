@@ -21,7 +21,7 @@ from scipy import ndimage
 from ..basics.vector import Position, Extent
 from ..region.rectangle import PixelRectangleRegion
 from ..tools import cropping, fitting, interpolation, plotting
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ..basics.coordinate import PixelCoordinate
 from .mask import MaskBase
 

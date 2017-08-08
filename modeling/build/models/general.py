@@ -17,7 +17,7 @@ from abc import ABCMeta, abstractmethod
 
 # Import the relevant PTS classes and modules
 from ..component import BuildComponent
-from ....core.tools.logging import log
+from ....core.basics.log import log
 from ....core.prep.smile import SKIRTSmileSchema
 from ....core.tools import filesystem as fs
 from ....core.tools.serialization import write_dict

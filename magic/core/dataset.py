@@ -25,7 +25,7 @@ from astropy.units import Quantity
 from ...core.tools import filesystem as fs
 from .frame import Frame
 from .fits import get_frame_names, get_mask_names, get_plane_names
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from .datacube import DataCube
 from .image import Image
 from .mask import Mask

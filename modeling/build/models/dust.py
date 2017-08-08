@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ....core.basics.configuration import prompt_proceed, ConfigurationDefinition, InteractiveConfigurationSetter, prompt_string, prompt_yn, prompt_filepath
-from ....core.tools.logging import log
+from ....core.basics.log import log
 from .general import GeneralBuilder
 from ..suite import model_map_filename
 from ....core.tools import filesystem as fs

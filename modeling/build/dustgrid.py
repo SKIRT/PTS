@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.basics.configurable import Configurable
 from ...core.prep.smile import SKIRTSmileSchema
 from ...core.launch.launcher import SKIRTLauncher

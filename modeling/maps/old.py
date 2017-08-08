@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from .component import MapsComponent
 from ...magic.maps.oldstars.disk import DiskOldStellarMapMaker
 from ...magic.maps.oldstars.bulge import BulgeOldStellarMapMaker

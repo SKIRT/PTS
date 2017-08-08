@@ -32,7 +32,7 @@ from photutils import source_properties, properties_table
 from ..tools import fitting, plotting, statistics, coordinates, cropping, interpolation, masks
 from ..core.detection import Detection
 from ..region.ellipse import PixelEllipseRegion
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ..region import tools as regions
 from ..basics.coordinate import PixelCoordinate
 from ..basics.stretch import PixelStretch

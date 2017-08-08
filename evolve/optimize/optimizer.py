@@ -18,7 +18,7 @@ from abc import ABCMeta, abstractmethod
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ..core.engine import GeneticEngine, RawScoreCriteria
 from ...core.basics.range import RealRange, IntegerRange
 from ...core.tools import formatting as fmt

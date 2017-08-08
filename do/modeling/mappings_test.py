@@ -17,7 +17,7 @@ import math
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import logging, time
+from pts.core.tools import time
 from pts.core.tools import filesystem as fs
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.filter.broad import BroadBandFilter

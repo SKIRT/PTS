@@ -15,12 +15,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import argparse
-import warnings
 import traceback, functools
-
-# -----------------------------------------------------------------
-
 import numpy as np
 import logging
 from collections import OrderedDict
@@ -37,7 +32,7 @@ from astropy.modeling.parameters import Parameter
 from astropy.modeling.fitting import LevMarLSQFitter
 
 # Import the relevant PTS classes and modules
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 
 # -----------------------------------------------------------------
 

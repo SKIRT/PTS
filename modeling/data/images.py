@@ -18,7 +18,7 @@ from collections import defaultdict
 # Import the relevant PTS classes and modules
 from .component import DataComponent
 from ...dustpedia.core.database import DustPediaDatabase, get_account
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.tools import filesystem as fs
 from ...core.launch.pts import PTSRemoteLauncher
 from ...core.tools import network, archive

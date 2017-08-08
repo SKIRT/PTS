@@ -54,7 +54,7 @@ import pts.evolve.core.constants as constants
 import pts.evolve.core.utils as utils
 
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.tools import serialization
 from ...core.tools.random import prng
 from ...core.tools.stringify import tostr

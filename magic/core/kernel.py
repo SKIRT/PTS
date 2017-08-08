@@ -26,7 +26,7 @@ from astropy.convolution.kernels import Gaussian2DKernel, AiryDisk2DKernel
 
 # Import the relevant PTS classes and modules
 from .frame import Frame
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ..tools import statistics
 from ...core.filter.filter import parse_filter
 from ..tools import fitting

@@ -19,7 +19,7 @@ from abc import ABCMeta, abstractmethod
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
 from ..remote.remote import Remote
-from ..tools.logging import log
+from ..basics.log import log
 from ..tools import introspection
 from .installation import find_qmake, build_skirt_on_remote, build_skirt_local, get_pts_dependencies_remote
 from .installation import has_valid_conda_environment_local, has_valid_conda_environment_remote, install_conda_remote

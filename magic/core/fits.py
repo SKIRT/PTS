@@ -20,7 +20,7 @@ from collections import OrderedDict
 from astropy.io import fits
 
 # Import the relevants PTS classes and modules
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.tools import filesystem as fs
 from ..basics.coordinatesystem import CoordinateSystem
 from ..tools import headers

@@ -19,7 +19,7 @@ from collections import defaultdict
 from ..basics.table import SmartTable
 from ..tools import tables, time
 from ..simulation.simulation import RemoteSimulation, SkirtSimulation
-from ..tools.logging import log
+from ..basics.log import log
 from ..simulation.discover import matching_npackages
 
 # -----------------------------------------------------------------

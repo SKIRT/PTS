@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 # Import the relevant PTS classes and modules
 from .component import DustHeatingAnalysisComponent
 from ....core.tools import filesystem as fs
-from ....core.tools.logging import log
+from ....core.basics.log import log
 from ....core.tools import tables
 from ....core.data.sed import SED
 from ....core.simulation.wavelengthgrid import WavelengthGrid

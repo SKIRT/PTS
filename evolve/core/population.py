@@ -36,7 +36,7 @@ from pts.evolve.core.statistics import Statistics
 from pts.core.basics.containers import NamedList
 
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.tools.parallelization import MULTI_PROCESSING, Pool
 from ...core.tools import strings
 from ...core.tools import sequences

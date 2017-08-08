@@ -14,7 +14,7 @@
 from math import sqrt as math_sqrt
 
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.tools.random import prng
 
 # -----------------------------------------------------------------

@@ -21,7 +21,7 @@ from matplotlib import pyplot as plt
 from .component import FittingComponent
 from ...core.tools import time
 from ...core.tools import filesystem as fs
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.basics.distribution import Distribution
 from ...core.basics.animation import Animation
 from .tables import ModelProbabilitiesTable, ParameterProbabilitiesTable

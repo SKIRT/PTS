@@ -17,7 +17,7 @@ from multiprocessing import Pool
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.tools import filesystem as fs
 from ...core.basics.configurable import Configurable
 from ..misc.calibration import CalibrationError

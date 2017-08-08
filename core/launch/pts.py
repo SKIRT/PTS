@@ -20,7 +20,7 @@ import tempfile
 # Import the relevant PTS classes and modules
 from ..remote.remote import Remote
 from ..tools import introspection
-from ..tools.logging import log
+from ..basics.log import log
 from ..tools import filesystem as fs
 from ..basics.task import Task
 from ...do.commandline import start_target

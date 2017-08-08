@@ -28,7 +28,7 @@ from .quantity import PhotometricQuantity
 from .utils import analyse_unit, divide_units_reverse, clean_unit_string, get_physical_type, interpret_physical_type
 from .parsing import parse_unit, parse_quantity
 from ..tools import types
-from ..tools.logging import log
+from ..basics.log import log
 
 # -----------------------------------------------------------------
 

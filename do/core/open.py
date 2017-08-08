@@ -18,7 +18,7 @@ from pts.core.remote.mounter import RemoteMounter
 from pts.core.remote.host import find_host_ids
 from pts.core.tools import filesystem as fs
 from pts.core.remote.remote import Remote
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 
 # -----------------------------------------------------------------
 

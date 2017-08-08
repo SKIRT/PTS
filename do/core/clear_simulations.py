@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.remote.host import find_host_ids
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.core.tools import introspection
 from pts.core.tools import filesystem as fs
 from pts.core.simulation.simulation import RemoteSimulation

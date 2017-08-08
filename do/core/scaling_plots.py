@@ -18,7 +18,7 @@ import os
 from subprocess import call, STDOUT
 
 # Import the relevant PTS classes and modules
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.tools import filesystem as fs
 from pts.core.tools import time

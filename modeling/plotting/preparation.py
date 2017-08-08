@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from .component import PlottingComponent
 from ..preparation.component import PreparationComponent
 from ...core.tools import filesystem as fs
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...magic.core.frame import Frame
 from ...magic.core.fits import get_frame_names
 from ...magic.basics.mask import Mask, get_mask_names

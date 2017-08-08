@@ -10,7 +10,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.test.implementation import TestImplementation
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.modeling.tests.base import m81_data_path
 from pts.core.tools import filesystem as fs
 from pts.core.launch.launcher import SKIRTLauncher

@@ -18,7 +18,7 @@ from abc import ABCMeta, abstractmethod
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable, write_input
-from ...core.tools.logging import log, add_log_file, write_log_to
+from ...core.basics.log import log, add_log_file, write_log_to
 from ...core.tools import filesystem as fs
 from ..fitting.explorer import ParameterExplorer
 from ..fitting.sedfitting import SEDFitter

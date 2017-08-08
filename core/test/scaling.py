@@ -20,7 +20,7 @@ from ..simulation.parallelization import Parallelization
 from ..basics.configurable import Configurable
 from ..tools import time
 from ..tools import filesystem as fs
-from ..tools.logging import log
+from ..basics.log import log
 from ..launch.options import SchedulingOptions
 from ..launch.batchlauncher import BatchLauncher
 from ..launch.timing import TimingTable

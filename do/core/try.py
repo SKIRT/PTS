@@ -17,7 +17,7 @@ import sys
 
 # Import the relevant PTS classes and modules
 from pts.core.simulation.skifile import SkiFile
-from pts.core.tools import logging
+from pts.core.basics.log import log
 
 # -----------------------------------------------------------------
 

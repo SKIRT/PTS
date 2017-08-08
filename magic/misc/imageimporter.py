@@ -22,7 +22,7 @@ from ..core.cutout import Cutout
 from ..basics.mask import Mask
 from ..region.list import PixelRegionList
 from ...core.basics.configurable import Configurable
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------

@@ -17,7 +17,7 @@ from .component import DustHeatingAnalysisComponent, contributions
 from ....core.tools import filesystem as fs
 from ....core.launch.batchlauncher import BatchLauncher
 from ....core.simulation.definition import SingleSimulationDefinition
-from ....core.tools.logging import log
+from ....core.basics.log import log
 from ....core.basics.emissionlines import EmissionLines
 from ....core.basics.range import RealRange
 from ....core.prep.wavelengthgrids import create_one_logarithmic_wavelength_grid

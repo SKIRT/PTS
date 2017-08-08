@@ -18,7 +18,7 @@ from astropy.coordinates import Angle
 from astropy.modeling.models import Sersic2D
 
 # Import the relevant PTS classes and modules
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.do.commandline import Command
 from pts.magic.core.mask import Mask
 from pts.core.tools import filesystem as fs

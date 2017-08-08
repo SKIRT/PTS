@@ -17,7 +17,7 @@ from collections import defaultdict
 
 # Import the relevant PTS classes and modules
 from .component import FittingPlottingComponent
-from ....core.tools.logging import log
+from ....core.basics.log import log
 from ....core.tools import filesystem as fs
 from ....core.basics.distribution import Distribution
 from ....core.launch.timing import TimingTable

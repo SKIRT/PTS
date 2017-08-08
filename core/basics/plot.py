@@ -27,7 +27,7 @@ from matplotlib import rc
 from scipy.interpolate import interp1d
 
 # Import the relevant PTS classes and modules
-from ..tools.logging import log
+from ..basics.log import log
 
 # -----------------------------------------------------------------
 

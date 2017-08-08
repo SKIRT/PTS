@@ -19,10 +19,9 @@ import matplotlib.pyplot as plt
 from astropy import constants
 
 # Import the relevant PTS classes and modules
-from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.magic.core.frame import Frame
-from pts.core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter
+from pts.core.basics.configuration import ConfigurationDefinition, prompt_settings
 from pts.core.simulation.wavelengthgrid import WavelengthGrid
 from pts.magic.core.datacube import DataCube
 from pts.magic.core.remote import RemoteDataCube
@@ -47,20 +46,7 @@ definition.add_optional("remote", "string", "remote host")
 definition.add_optional("nprocesses", "integer", "number of processes to use for the filter convolution calculation", 8)
 
 # Get configuration
-setter = InteractiveConfigurationSetter("check_simulated_images")
-config = setter.run(definition)
-
-# -----------------------------------------------------------------
-
-# Determine the log file path
-logfile_path = fs.join(fs.cwd(), "log", time.unique_name("log") + ".txt") if config.report else None
-
-# Determine the log level
-level = "DEBUG" if config.debug else "INFO"
-
-# Initialize the logger
-log = logging.setup_log(level=level, path=logfile_path)
-log.start("Starting check_simulated_images ...")
+config = prompt_settings("check_simulated_images", definition)
 
 # -----------------------------------------------------------------
 

@@ -17,7 +17,7 @@ from ...core.basics.configurable import Configurable
 from ..core.photometry import DustPediaPhotometry
 from ...core.tools import filesystem as fs
 from ..core.sample import DustPediaSample
-from ...core.tools.logging import log
+from ...core.basics.log import log
 
 # -----------------------------------------------------------------
 

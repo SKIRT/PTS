@@ -21,7 +21,7 @@ from textwrap import wrap
 import matplotlib.gridspec as gridspec
 
 # Import the relevant PTS classes and modules
-from ..tools.logging import log
+from ..basics.log import log
 from ...magic.tools.plotting import line_styles, filled_markers, pretty_colours
 
 # -----------------------------------------------------------------

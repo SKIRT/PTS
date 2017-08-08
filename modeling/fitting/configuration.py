@@ -17,7 +17,7 @@ from .component import FittingComponent
 from ...core.tools import filesystem as fs
 from ...core.tools import introspection
 from ...core.simulation.skifile import LabeledSkiFile
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ..config.parameters import definition as parameters_definition
 from ...core.basics.configuration import ConfigurationDefinition, InteractiveConfigurationSetter, Configuration
 from ...core.basics.configuration import DictConfigurationSetter, combine_configs

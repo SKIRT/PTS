@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..tools import catalogs
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from .extended import ExtendedSourceCatalog
 from .point import PointSourceCatalog
 from ...core.tools import types

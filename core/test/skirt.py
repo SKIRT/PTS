@@ -28,7 +28,7 @@ except ImportError: import astropy.io.fits as pyfits
 
 # Import the relevant PTS classes and modules
 from ..simulation.execute import SkirtExec
-from ..tools.logging import log
+from ..basics.log import log
 
 # -----------------------------------------------------------------
 #  SkirtTestSuite class

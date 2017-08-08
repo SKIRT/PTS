@@ -33,7 +33,7 @@ from pts.magic.basics.pixelscale import Pixelscale
 from pts.magic.convolution.aniano import AnianoKernels
 from pts.core.filter.filter import parse_filter
 from pts.core.test.implementation import TestImplementation
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.modeling.basics.models import SersicModel3D, ExponentialDiskModel3D, RingModel3D
 from pts.core.prep.wavelengthgrids import WavelengthGridGenerator
 from pts.core.prep.dustgrids import DustGridGenerator

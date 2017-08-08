@@ -32,7 +32,7 @@ import ipyvolume
 from ipyvolume.embed import embed_html, template, get_state, add_referring_widgets
 
 # Import the relevant PTS classes and modules
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 
 # -----------------------------------------------------------------
 

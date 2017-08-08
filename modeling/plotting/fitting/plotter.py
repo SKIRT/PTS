@@ -27,7 +27,7 @@ from .runtimes import RuntimesPlotter
 from .seds import SEDsPLotter
 from .images import ImagesPlotter
 from .geometries import GeometriesPlotter
-from ....core.tools.logging import log
+from ....core.basics.log import log
 from ....core.basics.configurable import Configurable
 
 # -----------------------------------------------------------------

@@ -22,7 +22,7 @@ from collections import defaultdict
 
 # Import the relevant PTS classes and modules
 from .plotter import Plotter
-from ..tools.logging import log
+from ..basics.log import log
 from ..tools import filesystem as fs
 from ..extract.timeline import TimeLineExtractor
 from ..basics.configurable import Configurable

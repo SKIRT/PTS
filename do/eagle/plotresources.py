@@ -24,7 +24,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Import the relevant PTS classes and modules
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.eagle import config
 from pts.eagle import database
 from pts.eagle.skirtrun import SkirtRun

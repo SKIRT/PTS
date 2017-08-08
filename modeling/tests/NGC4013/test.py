@@ -18,7 +18,7 @@ from astropy.table import Table
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
 from pts.core.tools import network
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.do.commandline import Command
 from pts.core.test.implementation import TestImplementation
 from pts.core.tools import introspection

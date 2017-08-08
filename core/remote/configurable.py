@@ -17,7 +17,7 @@ from abc import ABCMeta
 
 # Import the relevant PTS classes and modules
 from pts.core.remote.remote import Remote
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from ..basics.configurable import Configurable
 
 # -----------------------------------------------------------------

@@ -19,7 +19,7 @@ from collections import defaultdict, OrderedDict
 from .component import PlottingComponent
 from ..analysis.component import AnalysisComponent
 from ...core.tools import filesystem as fs
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ...core.basics.distribution import Distribution
 from ...core.launch.timing import TimingTable

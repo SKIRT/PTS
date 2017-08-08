@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from .component import PreparationComponent
 from ...magic.sources.finder import SourceFinder
 from ...core.tools import filesystem as fs
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...magic.misc.imageimporter import ImageImporter
 from ...magic.core.frame import Frame
 from ...magic.core.dataset import DataSet

@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..simulation.execute import SkirtExec
-from ..tools.logging import log
+from ..basics.log import log
 from ..basics.configurable import Configurable
 from ..launch.batchlauncher import BatchLauncher
 

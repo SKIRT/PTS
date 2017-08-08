@@ -24,7 +24,7 @@ from ...magic.core.frame import Frame
 from ...magic.region.list import SkyRegionList
 from ..basics.models import load_3d_model, load_2d_model
 from ..basics.properties import GalaxyProperties
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...magic.prepare.statistics import PreparationStatistics
 from .component import ModelingComponent
 from ...core.tools import types

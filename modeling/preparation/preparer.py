@@ -21,7 +21,7 @@ from ...magic.core.image import Image
 from ...magic.region.list import PixelRegionList
 from .component import PreparationComponent
 from ...core.tools import filesystem as fs
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...magic.core.dataset import DataSet
 from ...core.basics.containers import NamedFileList
 from ...magic.services.attenuation import GalacticAttenuation

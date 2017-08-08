@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.prep.uninstaller import Uninstaller
 from pts.core.remote.host import find_host_ids
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.core.remote.remote import Remote
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 

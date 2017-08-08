@@ -18,7 +18,7 @@ import numpy as np
 # Import the relevant PTS classes and modules
 from .component import PhotometryComponent
 from ...core.tools import filesystem as fs
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.data.sed import ObservedSED
 from ...core.basics.errorbar import ErrorBar, sum_errorbars_quadratically
 from ...core.plot.sed import SEDPlotter

@@ -23,7 +23,7 @@ from astropy.units import CompositeUnit
 # Import the relevant PTS classes and modules
 from ...core.filter.filter import parse_filter
 from ..basics.coordinatesystem import CoordinateSystem
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ..basics.pixelscale import Pixelscale
 from ...core.units.unit import PhotometricUnit
 from ...core.units.parsing import parse_unit as u

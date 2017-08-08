@@ -17,7 +17,7 @@ import math
 import random
 
 # Import the relevant PTS classes and modules
-from ..tools.logging import log
+from ..basics.log import log
 from ..basics.configurable import Configurable
 from .memoryestimator import MemoryEstimator
 from ..simulation.skifile import SkiFile

@@ -19,7 +19,7 @@ import numpy as np
 from astropy.io import fits
 
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log
+from ..basics.log import log
 from ..basics.mask import MaskBase
 from ..basics.mask import Mask as oldMask
 

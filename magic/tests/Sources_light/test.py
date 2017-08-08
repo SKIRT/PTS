@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.core.tools import filesystem as fs
 from pts.core.filter.filter import parse_filter
 from pts.magic.basics.coordinatesystem import CoordinateSystem

@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.simulation.wavelengthgrid import WavelengthGrid
 from ..basics.emissionlines import EmissionLines, EmissionLine
 from ..basics.configurable import Configurable

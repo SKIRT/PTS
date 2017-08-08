@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
-from pts.core.tools.logging import log
+from pts.core.basics.og import log
 from pts.core.remote.remote import Remote
 from pts.core.tools import filesystem as fs
 from pts.core.tools import terminal

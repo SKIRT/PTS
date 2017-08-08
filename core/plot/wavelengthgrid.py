@@ -21,7 +21,7 @@ from collections import OrderedDict
 from matplotlib.ticker import FormatStrFormatter
 
 # Import the relevant PTS classes and modules
-from ..tools.logging import log
+from ..basics.log import log
 
 # -----------------------------------------------------------------
 

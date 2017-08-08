@@ -28,7 +28,7 @@ from pts.core.plot.transmission import TransmissionPlotter
 from pts.core.data.transmission import TransmissionCurve
 from pts.core.units.stringify import represent_quantity
 from ..basics.configurable import Configurable
-from ..tools.logging import log
+from ..basics.log import log
 from ..tools import parsing
 from .broad import categorized_filters_sorted_labels as sorted_broad_labels
 from .narrow import categorized_filters_sorted_labels as sorted_narrow_labels

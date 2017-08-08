@@ -18,7 +18,7 @@ from abc import ABCMeta
 # Import the relevant PTS classes and modules
 from ..component import AnalysisComponent
 from ....core.tools import filesystem as fs
-from ....core.tools.logging import log
+from ....core.basics.log import log
 
 # -----------------------------------------------------------------
 

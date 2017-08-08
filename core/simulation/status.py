@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ..tools import filesystem as fs
 from ..tools import time
 from ..tools.progress import Bar, BAR_FILLED_CHAR, BAR_EMPTY_CHAR
-from ..tools.logging import log
+from ..basics.log import log
 from .logfile import get_last_phase, get_nprocesses, get_simulation_phase
 from ..basics.handle import ExecutionHandle
 from ..tools import terminal

@@ -22,7 +22,7 @@ from pts.core.tools import formatting as fmt
 from pts.core.test.pts import tests_for_subproject, path_for_test
 from pts.core.tools import filesystem as fs
 from pts.core.tools import sequences
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 
 # -----------------------------------------------------------------
 

@@ -20,7 +20,7 @@ from astropy.modeling.models import Gaussian2D, AiryDisk2D
 from photutils.datasets import make_noise_image
 
 # Import the relevant PTS classes and modules
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.do.commandline import Command
 from pts.core.test.implementation import TestImplementation
 from pts.magic.core.frame import Frame

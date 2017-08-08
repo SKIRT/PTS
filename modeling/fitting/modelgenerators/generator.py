@@ -17,7 +17,7 @@ from abc import abstractmethod, ABCMeta, abstractproperty
 from collections import OrderedDict, defaultdict
 
 # Import the relevant PTS classes and modules
-from ....core.tools.logging import log
+from ....core.basics.log import log
 from ..component import FittingComponent
 from ....magic.animation.scatter import ScatterAnimation
 from ....magic.animation.distribution import DistributionAnimation

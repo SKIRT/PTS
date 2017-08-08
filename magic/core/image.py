@@ -24,7 +24,7 @@ from ..region.list import PixelRegionList
 from ..basics.mask import Mask
 from .mask import Mask as newMask
 from ...core.tools import filesystem as fs
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from .frame import Frame, sum_frames
 from ...core.tools.stringify import tostr
 from ...core.units.unit import PhotometricUnit

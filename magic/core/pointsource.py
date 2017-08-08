@@ -22,7 +22,7 @@ from ..core.cutout import CutoutMask, Cutout
 from ..tools import statistics, fitting, masks, plotting
 from ..analysis import sources
 from ..region.ellipse import PixelEllipseRegion
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ..basics.stretch import PixelStretch
 from ...core.units.parsing import parse_unit as u
 

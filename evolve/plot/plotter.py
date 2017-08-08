@@ -21,7 +21,7 @@ from ...core.basics.plot import Plot
 from ...core.tools import filesystem as fs
 from ..analyse.database import load_database, get_runs
 from ...core.tools.serialization import write_dict
-from ...core.tools.logging import log
+from ...core.basics.log import log
 
 # -----------------------------------------------------------------
 

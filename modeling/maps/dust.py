@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from .component import MapsComponent
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...magic.maps.dust.blackbody import BlackBodyDustMapsMaker
 from ...magic.maps.dust.emission import EmissionDustMapsMaker
 from ...magic.maps.dust.attenuation import AttenuationDustMapsMaker

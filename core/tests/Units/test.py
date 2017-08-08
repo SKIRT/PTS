@@ -18,7 +18,7 @@ from astropy.units import spectral
 
 # Import the relevant PTS classes and modules
 from pts.core.test.implementation import TestImplementation
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.core.units.unit import PhotometricUnit
 from pts.core.units.parsing import parse_unit as u
 from pts.core.units.parsing import parse_quantity

@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ..optimize.continuous import ContinuousOptimizer
 from ...core.basics.configuration import ConfigurationDefinition
 from ..config.optimize import crossover_methods, mutation_methods, scaling_methods, selector_methods, genome_types

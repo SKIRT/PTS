@@ -25,7 +25,7 @@ from ..tools import filesystem as fs
 from ..simulation.simulation import SkirtSimulation
 from ..simulation.skifile import SkiFile
 from ..tools import formatting as fmt
-from ..tools.logging import log
+from ..basics.log import log
 from ..simulation.logfile import LogFile
 from ..basics.map import Map
 from ..tools import types

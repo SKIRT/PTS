@@ -32,7 +32,7 @@ from astropy.table import Table
 from ..basics.measurement import Measurement
 from ..basics.map import Map
 from .timeline import create_timeline_plot
-from ..tools.logging import log
+from ..basics.log import log
 from ..tools import filesystem as fs
 from ..basics.configurable import Configurable
 from ..launch.timing import TimingTable

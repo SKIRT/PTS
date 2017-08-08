@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
-from ..tools.logging import log
+from ..basics.log import log
 
 # -----------------------------------------------------------------
 

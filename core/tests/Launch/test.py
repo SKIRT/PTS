@@ -13,7 +13,7 @@ import numpy as np
 
 # Import the relevant PTS classes and modules
 from pts.core.test.implementation import TestImplementation
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.modeling.fitting.tables import GenerationsTable
 from pts.modeling.fitting.explorer import GenerationInfo
 from pts.core.basics.map import Map

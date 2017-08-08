@@ -18,7 +18,7 @@ import importlib
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
-from ..tools.logging import log
+from ..basics.log import log
 from ..basics.configurable import Configurable
 from ..tools import introspection
 from ..tools import filesystem as fs

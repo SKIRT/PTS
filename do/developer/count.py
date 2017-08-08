@@ -22,7 +22,7 @@ from inspect import getmembers, isfunction, getdoc
 from pts.core.tools import formatting as fmt
 from pts.core.tools import introspection
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
-from pts.core.tools.logging import setup_log
+from pts.core.basics.log import setup_log
 
 # -----------------------------------------------------------------
 

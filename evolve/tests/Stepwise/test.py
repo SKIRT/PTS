@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from pts.core.tools import filesystem as fs
 from pts.core.basics.range import RealRange
 from pts.core.test.implementation import TestImplementation
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.core.tools.loops import repeat_check
 from pts.evolve.optimize.stepwise import StepWiseOptimizer
 from pts.core.tools import types

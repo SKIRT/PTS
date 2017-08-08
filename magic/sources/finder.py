@@ -22,7 +22,7 @@ from .other import OtherSourceFinder
 from ..basics.mask import Mask
 from ..tools import wavelengths
 from ...core.basics.configurable import Configurable
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ..core.dataset import DataSet
 from ..region.list import SkyRegionList
 from ..core.image import Image

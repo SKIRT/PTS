@@ -22,7 +22,7 @@ from ..tools import stringify
 from ..filter.filter import Filter
 from ..units.stringify import represent_quantity
 from ..basics.configurable import Configurable
-from ..tools.logging import log
+from ..basics.log import log
 
 # -----------------------------------------------------------------
 

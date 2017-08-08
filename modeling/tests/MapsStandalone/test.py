@@ -10,7 +10,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.magic.maps.colour.colour import make_map as make_colour_map
 from pts.magic.maps.ssfr.colours import make_map as make_ssfr_map
 from pts.magic.maps.tir.multi import make_map as make_tir_map_multi

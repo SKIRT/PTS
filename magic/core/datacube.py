@@ -21,7 +21,7 @@ from .image import Image
 from .frame import Frame
 from ...core.data.sed import SED, ObservedSED
 from ...core.simulation.wavelengthgrid import WavelengthGrid
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ..basics.mask import Mask, MaskBase
 from ...core.basics.errorbar import ErrorBar
 from ...core.tools import introspection

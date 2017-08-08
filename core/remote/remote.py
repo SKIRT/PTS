@@ -26,7 +26,7 @@ from lxml import etree
 from .host import Host, load_host
 from .utils import HostDownException
 from .vpn import VPN
-from ..tools.logging import log
+from ..basics.log import log
 from ..tools import parsing
 from ..tools import filesystem as fs
 from ..tools import time

@@ -17,7 +17,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import logger
-from ..tools.logging import log
+from ..basics.log import log
 
 # Import standard modules
 import warnings

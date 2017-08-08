@@ -18,7 +18,7 @@ from astropy.units import Unit, dimensionless_angles
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
 from ...core.tools import filesystem as fs
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.launch.batchlauncher import BatchLauncher
 from ...core.advanced.runtimeestimator import RuntimeEstimator
 from ...core.launch.options import SchedulingOptions

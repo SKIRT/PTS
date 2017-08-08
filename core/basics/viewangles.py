@@ -18,7 +18,7 @@ import numpy as np
 import math
 
 # Import the relevant PTS classes and modules
-from ..tools.logging import log
+from ..basics.log import log
 
 # Use an interactive back-end that supports animation
 import matplotlib

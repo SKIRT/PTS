@@ -17,7 +17,7 @@ from pts.evolve.core import constants
 from pts.evolve.core.functionslot import FunctionSlot
 
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.tools.random import prng
 
 try:

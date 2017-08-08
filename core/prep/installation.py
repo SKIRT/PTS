@@ -21,7 +21,7 @@ from abc import ABCMeta, abstractmethod
 from ..basics.configurable import Configurable
 from ..tools import introspection
 from ..tools import filesystem as fs
-from ..tools.logging import log
+from ..basics.log import log
 from ..tools import network, archive
 from ..tools import terminal
 from ..tools import git

@@ -14,7 +14,7 @@ from collections import defaultdict
 
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.modeling.basics.instruments import SEDInstrument
 from pts.modeling.tests.base import M81TestBase, fitting_filter_names
 from pts.core.launch.options import AnalysisOptions

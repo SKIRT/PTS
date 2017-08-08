@@ -22,7 +22,7 @@ from .simulation import SkirtSimulation
 from ..basics.map import Map
 from ..tools import filesystem as fs
 from .definition import SingleSimulationDefinition, MultiSimulationDefinition
-from ..tools.logging import log
+from ..basics.log import log
 from .input import SimulationInput
 from ..tools import types
 

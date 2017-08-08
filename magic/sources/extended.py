@@ -26,7 +26,7 @@ from ..region.ellipse import PixelEllipseRegion, SkyEllipseRegion
 from ..core.frame import Frame
 from ...core.basics.configurable import Configurable
 from ...core.tools import filesystem as fs
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.basics.table import SmartTable
 from ..core.mask import Mask
 from ..basics.coordinate import SkyCoordinate

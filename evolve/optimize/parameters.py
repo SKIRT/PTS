@@ -17,7 +17,7 @@ import numpy as np
 
 # Import the relevant PTS classes and modules
 from ...core.tools import types, numbers
-from ...core.tools.logging import log
+from ...core.basics.log import log
 
 # -----------------------------------------------------------------
 

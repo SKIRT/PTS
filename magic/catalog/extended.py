@@ -18,7 +18,7 @@ from astropy.coordinates import Angle
 # Import the relevant PTS classes and modules
 from ...core.basics.table import SmartTable
 from ..basics.coordinate import SkyCoordinate
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ..core.extendedsource import ExtendedSource
 from ..region.list import SkyRegionList
 from ..region.list import PixelRegionList

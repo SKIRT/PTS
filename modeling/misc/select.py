@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ..fitting.run import get_ski_file_for_simulation
 from ..config.parameters import parameter_descriptions, default_units, parsing_types_for_parameter_types
 from ..config.parameters import types as parameter_types

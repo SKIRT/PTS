@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from scipy.optimize import minimize
 
 # Import the relevant PTS classes and modules
-from ....core.tools.logging import log
+from ....core.basics.log import log
 from ....magic.core.frame import Frame
 from ....core.launch.pts import PTSRemoteLauncher
 from .fitter import GridBlackBodyFitter, GeneticBlackBodyFitter

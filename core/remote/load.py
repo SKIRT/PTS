@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ..tools import formatting as fmt
-from ..tools.logging import log
+from ..basics.log import log
 from .configurable import RemotesConfigurable
 from ..units.parsing import parse_unit as u
 

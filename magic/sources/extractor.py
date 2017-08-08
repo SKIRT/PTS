@@ -21,7 +21,7 @@ from ..basics.mask import Mask
 from ..region.ellipse import PixelEllipseRegion
 from ..basics.coordinate import PixelCoordinate
 from ..core.detection import Detection
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.basics.configurable import Configurable
 from ..tools import masks
 from ...core.basics.animation import Animation

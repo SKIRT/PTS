@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import collections
 
 # Import the relevant PTS classes and modules
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.core.tools import parsing
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 

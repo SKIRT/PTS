@@ -18,7 +18,7 @@ from ..simulation.execute import SkirtExec
 from ..simulation.arguments import SkirtArguments
 from ..extract.timeline import TimeLineExtractor
 from ..tools import time
-from ..tools.logging import log
+from ..basics.log import log
 from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------

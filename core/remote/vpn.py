@@ -19,7 +19,7 @@ import warnings
 from subprocess import call, check_output
 
 # Import the relevant PTS classes and modules
-from ..tools.logging import log
+from ..basics.log import log
 
 # -----------------------------------------------------------------
 

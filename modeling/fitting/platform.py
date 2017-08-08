@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from .generation import Generation
 from .evaluate import get_parameter_values_from_genome
 from .reproduction import ReproductionEvent

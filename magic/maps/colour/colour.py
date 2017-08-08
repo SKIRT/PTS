@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import standard modules
 from ....core.basics.configurable import Configurable
-from ....core.tools.logging import log
+from ....core.basics.log import log
 from ...tools.colours import make_colour_map, get_filters_for_colour
 from ...core.list import FrameList
 from ...tools import colours

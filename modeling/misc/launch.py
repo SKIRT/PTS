@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from .interface import ModelSimulationInterface
 from ...core.tools.stringify import tostr
 from ..build.dustgrid import DustGridBuilder

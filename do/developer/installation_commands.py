@@ -19,7 +19,7 @@ from collections import defaultdict
 from pts.core.remote.host import find_host_ids
 from pts.core.remote.remote import Remote
 from pts.core.remote.modules import Modules
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.tools import introspection
 from pts.core.tools import git

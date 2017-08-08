@@ -21,7 +21,7 @@ from collections import OrderedDict
 # Import the relevant PTS classes and modules
 from ..core.kernel import ConvolutionKernel
 from ...core.tools import filesystem as fs
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.tools import archive
 from ...core.filter.filter import parse_filter
 from ...core.units.parsing import parse_unit

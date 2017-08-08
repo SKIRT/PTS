@@ -15,7 +15,6 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
 from pts.core.remote.host import find_host_ids
-from pts.core.tools import logging, time
 from pts.core.tools import filesystem as fs
 from pts.core.tools import introspection
 from pts.core.basics.task import Task
@@ -39,18 +38,6 @@ definition.add_flag("full", "fully clear the tasks, also remove remote simulatio
 
 # Parse the arguments into a configuration
 config = parse_arguments("clear_tasks", definition, description="Clear PTS tasks for a certain remote host")
-
-# -----------------------------------------------------------------
-
-# Determine the log file path
-logfile_path = fs.join(config.path, time.unique_name("status") + ".txt") if config.report else None
-
-# Determine the log level
-level = "DEBUG" if config.debug else "INFO"
-
-# Initialize the logger
-log = logging.setup_log(level=level, path=logfile_path)
-log.start("Starting clear_tasks ...")
 
 # -----------------------------------------------------------------
 

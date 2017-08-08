@@ -22,7 +22,7 @@ from scipy import interpolate
 from ...magic.region.list import SkyRegionList, PixelRegionList
 from .component import TruncationComponent
 from ...core.tools import filesystem as fs
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...magic.dist_ellipse import distance_ellipse
 from ...core.basics.range import RealRange
 from ...core.basics.map import Map

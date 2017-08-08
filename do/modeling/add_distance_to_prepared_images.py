@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.modeling.component.galaxy import get_galaxy_properties, get_prepared_dataset
 from pts.modeling.core.environment import verify_modeling_cwd
 

@@ -35,7 +35,7 @@ from .pixelscale import Pixelscale
 from ...core.units.parsing import parse_unit as u
 from ...core.basics.range import QuantityRange
 from pts.magic.basics.stretch import PixelStretch
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.tools import sequences
 
 # -----------------------------------------------------------------

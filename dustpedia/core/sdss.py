@@ -22,7 +22,7 @@ from astropy.io.fits import open as open_fits
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from .dataprocessing import DustPediaDataProcessing
 from .sample import DustPediaSample
 from ...core.tools import filesystem as fs

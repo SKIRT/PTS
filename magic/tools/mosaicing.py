@@ -23,7 +23,7 @@ from astropy.io.fits import Header
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from ...core.tools import introspection
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.tools import terminal
 from ...core.tools import formatting as fmt
 

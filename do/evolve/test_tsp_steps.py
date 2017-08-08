@@ -20,7 +20,7 @@ from pts.evolve.optimize.stepwise import StepWiseOptimizer
 from pts.evolve.optimize.optimizer import show_best
 from pts.evolve.tests.TravelingSalesman.test import settings_optimize, input_optimize, eval_func
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
-from pts.core.tools.logging import setup_log
+from pts.core.basics.log import setup_log
 
 # -----------------------------------------------------------------
 

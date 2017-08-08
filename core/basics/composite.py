@@ -19,7 +19,7 @@ from abc import ABCMeta
 
 # Import the relevant PTS classes and modules
 from ..tools import parsing
-from ..tools.logging import log
+from ..basics.log import log
 from ..tools import formatting as fmt
 from ..tools.stringify import stringify, tostr
 from .map import Map

@@ -18,7 +18,7 @@ import numpy as np
 import os.path
 
 # Import the relevant PTS classes and modules
-from ..tools.logging import log
+from ..basics.log import log
 
 # Use a non-interactive back-end to generate high-quality raster graphics
 import matplotlib

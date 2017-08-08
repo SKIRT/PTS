@@ -17,7 +17,7 @@ import numpy as np
 
 # Import the relevant PTS classes and modules
 from .component import ColourAnalysisComponent
-from ....core.tools.logging import log
+from ....core.basics.log import log
 from ....core.tools import filesystem as fs
 from ....magic.core.frame import Frame
 from ....magic.plot.imagegrid import ResidualImageGridPlotter

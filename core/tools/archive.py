@@ -69,7 +69,7 @@ def decompress_directory_in_place(filepath, remove=False, into_root=False):
     :return:
     """
 
-    from .logging import log
+    from ..basics.log import log
 
     # Inform the user
     log.info("Decompressing '" + filepath + "' ...")
@@ -116,7 +116,7 @@ def compress_directory_in_place(directory_path, remove=False):
     :return:
     """
 
-    from .logging import log
+    from ..basics.log import log
 
     # Determine filename
     name = fs.name(directory_path)
@@ -146,7 +146,7 @@ def decompress_file_in_place(path, remove=False):
     :return:
     """
 
-    from .logging import log
+    from ..basics.log import log
 
     # Inform the user
     log.info("Decompressing '" + path + "' ...")

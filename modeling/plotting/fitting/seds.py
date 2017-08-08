@@ -17,9 +17,9 @@ from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
 from .component import FittingPlottingComponent
-from ....core.tools.logging import log
+from ....core.basics.log import log
 from ....core.tools import filesystem as fs
-from ....core.tools.logging import log
+from ....core.basics.log import log
 from ....core.data.sed import SED, ObservedSED
 from ....core.plot.sed import SEDPlotter
 

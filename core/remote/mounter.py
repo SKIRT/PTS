@@ -17,7 +17,7 @@ import subprocess
 # Import the relevant PTS classes and modules
 from .host import Host, load_host
 from .vpn import VPN
-from ..tools.logging import log
+from ..basics.log import log
 from ..tools import filesystem as fs
 from ..tools import introspection
 from .remote import active_keys, add_key

@@ -21,7 +21,7 @@ from lxml import html
 from astropy.io.fits import getheader
 
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.tools import tables
 from ...magic.core.frame import Frame
 from ...core.tools import filesystem as fs

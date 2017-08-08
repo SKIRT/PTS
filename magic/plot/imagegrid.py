@@ -38,7 +38,7 @@ import matplotlib.colors as mpl_colors
 import matplotlib.colorbar as mpl_colorbar
 
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log
+from ...core.basics.log import log
 
 # -----------------------------------------------------------------
 

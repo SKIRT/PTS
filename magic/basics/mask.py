@@ -23,7 +23,7 @@ from photutils import detect_sources
 
 # Import the relevant PTS classes and modules
 from .vector import Position
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from .vector import Pixel
 
 # -----------------------------------------------------------------

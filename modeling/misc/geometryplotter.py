@@ -19,7 +19,7 @@ from matplotlib.patches import Ellipse as plt_Ellipse
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ..basics.models import SersicModel3D, ExponentialDiskModel3D, DeprojectionModel3D
 
 # -----------------------------------------------------------------

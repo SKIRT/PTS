@@ -22,7 +22,7 @@ from astropy.units import dimensionless_angles
 from astroquery.ned import Ned
 
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from .component import DataComponent
 from ...magic.basics.coordinate import SkyCoordinate
 from ..basics.properties import GalaxyProperties

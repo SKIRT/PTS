@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from .component import AnalysisComponent
 from ...core.tools import filesystem as fs
 from ...core.simulation.definition import SingleSimulationDefinition
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.launch.options import AnalysisOptions
 from ...core.launch.options import SchedulingOptions
 from ...core.launch.options import LoggingOptions

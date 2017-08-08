@@ -36,7 +36,7 @@ from photutils import make_source_mask
 from photutils.datasets import make_random_gaussians, make_noise_image, make_gaussian_sources
 
 # Import the relevant PTS classes and modules
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.do.commandline import Command
 from pts.core.test.implementation import TestImplementation
 from pts.magic.core.frame import Frame

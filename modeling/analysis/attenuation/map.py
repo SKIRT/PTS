@@ -17,7 +17,7 @@ import numpy as np
 
 # Import the relevant PTS classes and modules
 from .component import AttenuationAnalysisComponent
-from ....core.tools.logging import log
+from ....core.basics.log import log
 from ....core.tools import filesystem as fs
 from ....core.simulation.wavelengthgrid import WavelengthGrid
 from ....magic.core.datacube import DataCube

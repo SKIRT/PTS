@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from .component import MapsComponent
-from ...core.tools.logging import log
+from ...core.basics.logg import log
 from ...magic.maps.tir.single import SingleBandTIRMapMaker
 from ...magic.maps.tir.multi import MultiBandTIRMapMaker
 from ...core.filter.filter import parse_filter

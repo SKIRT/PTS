@@ -21,7 +21,7 @@ from astropy.units import spectral_density, spectral
 
 # Import the relevant PTS classes and modules
 from ..tools import filesystem as fs
-from ..tools.logging import log
+from ..basics.log import log
 from ..filter.broad import BroadBandFilter
 from ..filter.filter import parse_filter
 from ..data.sed import SED

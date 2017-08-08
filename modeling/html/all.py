@@ -23,7 +23,7 @@ from pts.modeling.html.fitting import FittingPageGenerator
 from pts.modeling.html.attenuation import AttenuationPageGenerator
 from pts.modeling.html.colours import ColoursPageGenerator
 from pts.modeling.html.heating import HeatingPageGenerator
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import filesystem as fs
 from ..core.progression import create_modeling_progression

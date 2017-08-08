@@ -22,7 +22,7 @@ from .arguments import SkirtArguments
 from .definition import SimulationDefinition
 from ..tools import introspection
 from ..tools import filesystem as fs
-from ..tools.logging import log, no_debugging
+from ..basics.log import log, no_debugging
 from .definition import SingleSimulationDefinition
 from .status import SimulationStatus
 

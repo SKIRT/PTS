@@ -27,7 +27,7 @@ from functools import partial
 from .map import Map
 from ..tools import parsing, stringify
 from ..tools import filesystem as fs
-from ..tools.logging import log
+from ..basics.log import log
 from .composite import SimplePropertyComposite
 from ..tools import introspection
 from ..tools import numbers, types

@@ -27,7 +27,7 @@ from scipy.interpolate import interp1d
 from operator import itemgetter
 
 # Import the relevant PTS classes and modules
-from ..tools.logging import log
+from ..basics.log import log
 from ..basics.configurable import Configurable
 from ..tools import filesystem as fs
 from ..data.sed import ObservedSED, SED

@@ -33,7 +33,7 @@ from ..region.rectangle import SkyRectangleRegion, PixelRectangleRegion
 from ..basics.coordinate import SkyCoordinate
 from ..basics.stretch import SkyStretch
 from ..tools import cropping
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ..basics.mask import Mask, MaskBase
 from ...core.tools import filesystem as fs
 from ...core.tools import archive

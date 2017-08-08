@@ -18,7 +18,7 @@ import numpy as np
 
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.tools import filesystem as fs
 from ...core.tools import tables, time
 from ...core.basics.table import SmartTable

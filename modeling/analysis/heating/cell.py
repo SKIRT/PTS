@@ -21,7 +21,7 @@ import rpy2.robjects as ro
 # Import the relevant PTS classes and modules
 from .component import DustHeatingAnalysisComponent, contributions
 from ....core.tools import filesystem as fs
-from ....core.tools.logging import log
+from ....core.basics.log import log
 from ....core.tools import tables, introspection
 from ....core.simulation.table import SkirtTable
 from ....core.basics.distribution import Distribution, Distribution2D

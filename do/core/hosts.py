@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.remote.host import all_host_ids, load_host
-from pts.core.tools.logging import setup_log
+from pts.core.basics.log import setup_log
 from pts.core.basics.configuration import parse_logging_arguments
 from pts.core.tools import formatting as fmt
 

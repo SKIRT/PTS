@@ -23,7 +23,7 @@ from astropy.table import Table
 from ..core.frame import Frame
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
-from ...core.tools.logging import log
+from ...core.basics.log import log
 
 # -----------------------------------------------------------------
 

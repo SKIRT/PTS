@@ -18,7 +18,7 @@ from abc import ABCMeta, abstractproperty
 # Import the relevant PTS classes and modules
 from ..component.galaxy import GalaxyModelingComponent
 from ...core.tools import filesystem as fs
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...magic.tools.colours import get_filters_for_colour
 from ...magic.core.frame import Frame
 from ...core.tools import types

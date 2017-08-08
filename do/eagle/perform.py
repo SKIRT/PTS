@@ -53,7 +53,7 @@ if stage == "observe":
 
 # Import the relevant PTS classes and modules
 # (the appropriate module for performing the requested stage is imported conditionally below)
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.eagle import performer
 
 # -----------------------------------------------------------------

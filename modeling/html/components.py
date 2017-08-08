@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 from ipyvolume.embed import embed_html
 
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from .component import HTMLPageComponent, table_class
 from ...core.tools import html
 from ...dustpedia.core.properties import DustPediaProperties

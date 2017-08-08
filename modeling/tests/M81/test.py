@@ -14,7 +14,7 @@ import inspect
 # Import the relevant PTS classes and modules
 from pts.core.tools import filesystem as fs
 from pts.core.units.parsing import parse_unit as u
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.do.commandline import Command
 from pts.magic.convolution.aniano import AnianoKernels
 from pts.magic.basics.coordinatesystem import CoordinateSystem

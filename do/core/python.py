@@ -22,7 +22,7 @@ from pts.core.remote.host import find_host_ids
 from pts.core.tools import formatting as fmt
 from pts.core.tools import introspection
 from pts.core.remote.remote import Remote
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.core.remote.python import RemotePythonSession
 
 # -----------------------------------------------------------------
@@ -121,7 +121,7 @@ log.info("Importing modules ...")
 # Load PTS modules
 console.runcode("from pts.core.tools import filesystem as fs")
 console.runcode("from pts.core.tools import introspection")
-console.runcode("from pts.core.tools.logging import log")
+console.runcode("from pts.core.basics.log import log")
 console.runcode("from pts.magic.core.frame import Frame")
 console.runcode("from pts.magic.core.image import Image")
 console.runcode("from pts.magic.core.datacube import DataCube")

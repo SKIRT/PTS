@@ -20,7 +20,7 @@ from . import utils
 
 # Import the relevant PTS classes and modules
 from ...core.tools.random import prng
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------

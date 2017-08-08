@@ -22,7 +22,7 @@ from astropy.units import dimensionless_angles
 from ..component import BuildComponent
 from ...component.galaxy import GalaxyModelingComponent
 from ....core.prep.dustgrids import DustGridGenerator
-from ....core.tools.logging import log
+from ....core.basics.log import log
 from ....core.basics.range import QuantityRange, RealRange
 from .galaxy import GalaxyRepresentationBuilder
 from ....core.tools import time

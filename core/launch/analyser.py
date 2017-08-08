@@ -17,7 +17,7 @@ from ..basics.configurable import Configurable
 from ..launch.basicanalyser import BasicAnalyser
 from ..launch.batchanalyser import BatchAnalyser
 from ..test.scalinganalyser import ScalingAnalyser
-from ..tools.logging import log
+from ..basics.log import log
 from ..simulation.simulation import RemoteSimulation
 from ..tools import filesystem as fs
 

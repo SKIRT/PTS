@@ -20,7 +20,7 @@ from astropy.units import dimensionless_angles
 
 # Import the relevant PTS classes and modules
 from ..simulation.grids import BinaryTreeDustGrid, OctTreeDustGrid, CartesianDustGrid
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.basics.range import zip_linear
 from ..basics.configurable import Configurable
 from ..basics.table import SmartTable

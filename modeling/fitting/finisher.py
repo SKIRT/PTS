@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from .component import FittingComponent
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...evolve.optimize.stepwise import StepWiseOptimizer
 from .modelgenerators.genetic import set_optimizer_settings, get_last_generation_scores_names_and_check, get_last_generation_name
 from ..fitting.sedfitting import SEDFitter

@@ -19,7 +19,7 @@ from collections import defaultdict
 from astropy import constants
 
 # Import the relevant PTS classes and modules
-from ..tools.logging import log
+from ..basics.log import log
 from ..tools import filesystem as fs
 from ..filter.filter import parse_filter
 from ...magic.core.kernel import ConvolutionKernel

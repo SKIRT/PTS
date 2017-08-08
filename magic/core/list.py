@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 import numpy as np
 
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.filter.filter import parse_filter
 from ..region.list import SkyRegionList
 from ...core.units.parsing import parse_unit as u

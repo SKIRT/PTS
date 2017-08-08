@@ -21,7 +21,7 @@ from scipy.constants import h,k,c
 from multiprocessing import Pool, current_process
 
 # Import the relevant PTS classes and modules
-from ....core.tools.logging import log
+from ....core.basics.log import log
 from ....magic.services.spire import SPIRE
 from ....core.basics.configurable import Configurable
 from ....core.basics.range import RealRange, QuantityRange

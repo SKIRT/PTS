@@ -14,7 +14,6 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.basics.configurable import Configurable
-from ...core.tools.logging import log
 
 # -----------------------------------------------------------------
 

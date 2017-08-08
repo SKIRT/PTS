@@ -19,7 +19,7 @@ from astropy.units import dimensionless_angles
 from .component import DeprojectionComponent
 from ..basics.models import DeprojectionModel3D
 from ...core.tools import filesystem as fs
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.simulation.execute import SkirtExec
 from ...core.tools import introspection
 from ...core.simulation.skifile import LabeledSkiFile

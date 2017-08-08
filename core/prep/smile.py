@@ -18,7 +18,7 @@ import subprocess
 from lxml import etree
 
 # Import the relevant PTS classes and modules
-from ..tools.logging import log
+from ..basics.log import log
 from ..tools import introspection
 from ..tools import filesystem as fs
 from ..basics.map import Map

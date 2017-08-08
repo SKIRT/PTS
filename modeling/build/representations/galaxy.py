@@ -17,7 +17,7 @@ import math
 
 # Import the relevant PTS classes and modules
 from ...basics.instruments import SEDInstrument, FrameInstrument, SimpleInstrument
-from ....core.tools.logging import log
+from ....core.basics.log import log
 from ...basics.projection import EdgeOnProjection, FaceOnProjection, GalaxyProjection
 from ....core.basics.configuration import prompt_string, prompt_yn, prompt_real
 from ....core.units.stringify import represent_quantity

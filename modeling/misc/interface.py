@@ -17,7 +17,7 @@ from abc import ABCMeta, abstractproperty, abstractmethod
 
 # Import the relevant PTS classes and modules
 from ..component.galaxy import GalaxyModelingComponent
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.basics.emissionlines import EmissionLines
 from ...core.prep.wavelengthgrids import create_one_subgrid_wavelength_grid
 from .select import select_from_model_suite, select_from_fitting_context

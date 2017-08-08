@@ -26,7 +26,7 @@ from ..plot.rgbimages import makergbimages
 from ..plot.wavemovie import makewavemovie
 from ..misc.fluxes import ObservedFluxCalculator
 from ..misc.images import ObservedImageMaker
-from ..tools.logging import log
+from ..basics.log import log
 from ..tools import filesystem as fs
 from ..plot.sed import SEDPlotter
 from ..data.sed import SED, ObservedSED

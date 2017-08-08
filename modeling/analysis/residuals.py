@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from .component import AnalysisComponent
 from ...core.tools import filesystem as fs
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...magic.core.frame import Frame
 from ...magic.plot.imagegrid import ResidualImageGridPlotter
 from ...magic.region.list import SkyRegionList

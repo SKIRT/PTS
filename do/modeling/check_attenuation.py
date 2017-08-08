@@ -18,7 +18,7 @@ from pts.modeling.core.environment import GalaxyModelingEnvironment
 from pts.modeling.preparation.preparer import load_statistics
 from pts.core.filter.filter import parse_filter
 from pts.magic.services.attenuation import GalacticAttenuation
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.modeling.component.galaxy import get_galaxy_properties
 from pts.modeling.core.environment import verify_modeling_cwd
 

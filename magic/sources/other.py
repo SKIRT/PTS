@@ -29,7 +29,7 @@ from ..tools import statistics, masks, plotting, general
 from ..analysis import sources
 from ..object.star import Star
 from ...core.basics.configurable import Configurable
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ..core.detection import Detection
 from ..region.list import PixelRegionList
 

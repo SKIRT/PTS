@@ -17,7 +17,7 @@ import numpy as np
 from copy import copy
 
 # Import the relevant PTS classes and modules
-from ....core.tools.logging import log
+from ....core.basics.log import log
 from ....core.basics.configurable import Configurable
 from ...calibrations.buat import BuatAttenuationCalibration
 from .tir_to_uv import make_tir_to_uv

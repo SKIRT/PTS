@@ -12,7 +12,6 @@ from __future__ import absolute_import, division, print_function
 from pts.dustpedia.core.database import DustPediaDatabase, get_account
 from pts.dustpedia.core.sample import DustPediaSample
 from pts.core.tools import filesystem as fs
-from pts.core.tools.logging import log
 
 # -----------------------------------------------------------------
 

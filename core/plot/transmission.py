@@ -26,7 +26,7 @@ from matplotlib.ticker import FormatStrFormatter
 from astropy.units import Unit
 
 # Import the relevant PTS classes and modules
-from ..tools.logging import log
+from ..basics.log import log
 from ..basics.configurable import Configurable
 from ..data.transmission import TransmissionCurve
 from ..basics.emissionlines import EmissionLines

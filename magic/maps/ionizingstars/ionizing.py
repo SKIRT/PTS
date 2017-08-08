@@ -19,7 +19,7 @@ from copy import copy
 from astropy import constants
 
 # Import the relevant PTS classes and modules
-from ....core.tools.logging import log
+from ....core.basics.log import log
 from ....core.units.parsing import parse_unit as u
 from ....core.basics.configurable import Configurable
 from ....core.filter.filter import parse_filter

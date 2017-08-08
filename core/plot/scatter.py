@@ -20,7 +20,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from scipy.stats import gaussian_kde
 
 # Import the relevant PTS classes and modules
-from ..tools.logging import log
+from ..basics.log import log
 from ..basics.scatter import Scatter
 from ..tools import strings
 

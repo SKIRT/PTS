@@ -19,7 +19,7 @@ from ..tools import introspection
 from ..tools import filesystem as fs
 from ..advanced.dustgridtool import get_statistics
 from ..tools import formatting as fmt
-from ..tools.logging import log
+from ..basics.log import log
 from ..simulation.memory import MemoryRequirement
 from ..units.parsing import parse_unit as u
 from ..tools import time

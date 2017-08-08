@@ -11,7 +11,7 @@ from __future__ import absolute_import, division, print_function
 # -----------------------------------------------------------------
 
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ..genomes.list1d import G1DList
 from ..genomes.list2d import G2DList
 from ..genomes.binarystring1d import G1DBinaryString

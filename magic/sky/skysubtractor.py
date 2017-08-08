@@ -54,7 +54,7 @@ from ..region.composite import PixelCompositeRegion
 from ..region.list import PixelRegionList, SkyRegionList
 from ..tools import plotting, statistics, fitting, plotting
 from ...core.basics.configurable import Configurable
-from ...core.tools.logging import log
+from ...core.basics.log import log
 #from ...core.basics.distribution import Distribution
 from ..misc import chrisfuncs
 from ..core.mask import Mask as newMask

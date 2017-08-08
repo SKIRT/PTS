@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from .component import PlottingComponent
 from ..truncation.component import TruncationComponent
 from ...core.tools import filesystem as fs
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...magic.core.frame import Frame
 from ...magic.plot.imagegrid import StandardImageGridPlotter
 

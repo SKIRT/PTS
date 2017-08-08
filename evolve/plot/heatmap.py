@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 
 # Import the relevant PTS classes and modules
 from .plotter import Plotter
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ..analyse.database import get_generations, get_scores, get_fitnesses
 
 # -----------------------------------------------------------------

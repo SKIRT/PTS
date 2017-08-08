@@ -87,7 +87,7 @@ class Pixelscale(Extent):
         if not np.isclose(x_pixelscale.value, y_pixelscale.value, rtol=0.001):
 
             # Warn about the difference in x and y pixelscale
-            from ...core.tools.logging import log
+            from ...core.basics.log import log
             log.warning("Averaging the pixelscale over the x and y direction may not be a good approximation:")
             log.warning("  * x pixelscale (absolute value) = " + str(x_pixelscale))
             log.warning("  * y pixelscale (absolute value) = " + str(y_pixelscale))

@@ -18,7 +18,7 @@ import os.path
 import time
 
 # Import the relevant PTS classes and modules
-from ..core.tools.logging import log
+from ..core.basics.log import log
 from . import config as config
 from .filelock import FileLock
 from .database import Database

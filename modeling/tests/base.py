@@ -21,7 +21,7 @@ from astropy.units import dimensionless_angles
 from pts.core.test.implementation import TestImplementation
 from pts.core.tools import filesystem as fs
 from pts.core.tools import introspection
-from pts.core.tools.logging import log
+from pts.core.basics.log import log
 from pts.modeling.basics.models import load_3d_model
 from pts.modeling.basics.properties import GalaxyProperties
 from pts.magic.core.frame import Frame

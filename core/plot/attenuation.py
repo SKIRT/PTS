@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from collections import OrderedDict
 
 # Import the relevant PTS classes and modules
-from ..tools.logging import log
+from ..basics.log import log
 from ...magic.tools.plotting import pretty_colours, line_styles, filled_markers
 
 # -----------------------------------------------------------------

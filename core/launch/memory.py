@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from ..basics.table import SmartTable
 from ..tools import tables, time
 from ..simulation.simulation import SkirtSimulation, RemoteSimulation
-from ..tools.logging import log
+from ..basics.log import log
 from ..units.parsing import parse_unit as u
 
 # -----------------------------------------------------------------

@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ..tools.logging import log
 from ..tools import filesystem as fs
 from ..tools import introspection
 from ..simulation.skifile import SkiFile

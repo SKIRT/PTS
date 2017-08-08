@@ -17,7 +17,7 @@ from abc import ABCMeta, abstractmethod, abstractproperty
 
 # Import the relevant PTS classes and modules
 from ..basics.configurable import Configurable
-from ..tools.logging import log
+from ..basics.log import log
 
 # -----------------------------------------------------------------
 

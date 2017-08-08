@@ -23,7 +23,7 @@ from .jobscript import JobScript, MultiJobScript, SKIRTJobScript
 from ..tools import time, introspection
 from ..tools import filesystem as fs
 from .simulation import RemoteSimulation
-from ..tools.logging import log, no_debugging
+from ..basics.log import log, no_debugging
 from ..launch.options import SchedulingOptions
 from ..simulation.parallelization import Parallelization
 from ..simulation.arguments import SkirtArguments

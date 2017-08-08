@@ -24,7 +24,7 @@ from ..remote.remote import Remote
 from .options import LoggingOptions
 from ..tools import introspection, time
 from ..tools import filesystem as fs
-from ..tools.logging import log
+from ..basics.log import log
 from ..remote.host import Host, load_host
 from .analyser import SimulationAnalyser
 from .options import AnalysisOptions

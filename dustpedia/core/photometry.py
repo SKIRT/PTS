@@ -17,7 +17,7 @@ from astropy.table import Table
 from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
 from ...core.tools import tables

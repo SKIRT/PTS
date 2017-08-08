@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ....core.tools.logging import log
+from ....core.basics.log import log
 from ....magic.core.frame import linear_combination
 from ....core.units.parsing import parse_unit as u
 from ....magic.calibrations.galametz import GalametzTIRCalibration

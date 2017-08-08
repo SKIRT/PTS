@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from abc import ABCMeta, abstractmethod, abstractproperty
 
 # Import the relevant PTS classes and modules
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.tools import html
 from ...core.tools import filesystem as fs
 from ..component.galaxy import GalaxyModelingComponent

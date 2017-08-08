@@ -20,7 +20,7 @@ from astropy.coordinates import Angle
 from .component import DecompositionComponent
 from ...core.tools import introspection
 from ...core.tools import filesystem as fs
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ...core.simulation.skifile import SkiFile
 from ...magic.basics.vector import Position
 from ...magic.basics.stretch import SkyStretch

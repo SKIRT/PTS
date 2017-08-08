@@ -13,16 +13,16 @@
 from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
-from ....core.tools.logging import log
-from .component import MapsComponent
-from ..html.component import stylesheet_url, page_style, table_class, hover_table_class, top_title_size, title_size
-from ..core.environment import map_sub_names, colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name
-from ...core.tools import filesystem as fs
-from ...core.tools.html import HTMLPage, SimpleTable, updated_footing
-from ...core.tools import html
-from ...magic.view.html import javascripts, css_scripts
-from ...core.tools import browser
-from ...core.tools.stringify import tostr
+from ....core.basics.log import log
+from ..component import MapsComponent
+from ...html.component import stylesheet_url, page_style, table_class, hover_table_class, top_title_size, title_size
+from ...core.environment import map_sub_names, colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name
+from ....core.tools import filesystem as fs
+from ....core.tools.html import HTMLPage, SimpleTable, updated_footing
+from ....core.tools import html
+from ....magic.view.html import javascripts, css_scripts
+from ....core.tools import browser
+from ....core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 

@@ -22,7 +22,7 @@ from ...core.tools.serialization import load_dict
 from ...magic.core.frame import Frame
 from ...magic.basics.coordinatesystem import CoordinateSystem
 from .representation import Representation
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from .construct import add_stellar_component, add_dust_component
 
 # -----------------------------------------------------------------

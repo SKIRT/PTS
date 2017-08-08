@@ -20,7 +20,7 @@ from ..basics.configurable import Configurable
 from ..simulation.remote import SkirtRemote
 from ..remote.remote import Remote
 from ..tools import filesystem as fs
-from ..tools.logging import log
+from ..basics.log import log
 from ..basics.task import Task
 from ..tools import formatting as fmt
 from ..tools import introspection

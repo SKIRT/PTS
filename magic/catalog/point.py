@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.basics.table import SmartTable
-from ...core.tools.logging import log
+from ...core.basics.log import log
 from ..core.pointsource import PointSource
 from ..basics.coordinate import SkyCoordinate
 from ..region.point import SkyPointRegion

@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 # Import the relevant PTS classes and modules
 from .plotter import Plotter
 from ..basics.map import Map
-from ..tools.logging import log
+from ..basics.log import log
 from ..tools import filesystem as fs
 
 # -----------------------------------------------------------------

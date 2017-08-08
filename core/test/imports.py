@@ -17,7 +17,7 @@ import importlib
 
 # Import the relevant PTS classes and modules
 from ..tools import introspection
-from ..tools.logging import log
+from ..basics.log import log
 from ..basics.configurable import Configurable
 from ..tools import filesystem as fs
 

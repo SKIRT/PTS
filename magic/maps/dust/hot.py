@@ -16,7 +16,7 @@ from __future__ import absolute_import, division, print_function
 from copy import copy
 
 # Import the relevant PTS classes and modules
-from ....core.tools.logging import log
+from ....core.basics.log import log
 from ....core.basics.configurable import Configurable
 from ...core.list import NamedFrameList
 from ....core.tools import sequences
