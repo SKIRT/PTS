@@ -1228,7 +1228,8 @@ def replace_div(div_id, text):
     code = ""
     code += 'html = "' + strings.make_single_quoted(text) + '";'
     code += "\n"
-    code += '$("#' + div_id + '").update(html);'
+    #code += '$("#' + div_id + '").update(html);'
+    code += '$("#' + div_id + '").html(html);'
     code += "\n"
 
     # Return the code

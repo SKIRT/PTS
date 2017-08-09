@@ -22,10 +22,10 @@ from ....core.tools.html import HTMLPage, SimpleTable, updated_footing, make_pag
 from ....core.tools import html
 from ....magic.view.html import javascripts, css_scripts, JS9Spawner
 from ....core.tools import browser
-from ....core.tools.stringify import tostr
 from ....core.tools.utils import lazyproperty
 from ....core.tools import numbers
 from ....core.basics.range import RealRange
+from ....magic.tools.info import get_image_info_strings, get_image_info
 
 # -----------------------------------------------------------------
 
@@ -33,10 +33,11 @@ plots_name = "plots"
 ncolumns = 2
 colour_map = "jet"
 background_color = "white"
+key_color = "#4180d3"
 
 # -----------------------------------------------------------------
 
-page_width = 700
+page_width = 600
 
 # -----------------------------------------------------------------
 
@@ -168,7 +169,7 @@ class AllMapsPageGenerator(MapsComponent):
         super(AllMapsPageGenerator, self).setup(**kwargs)
 
         # Set the number of allowed open file handles
-        fs.set_nallowed_open_files(1024)
+        fs.set_nallowed_open_files(self.config.nopen_files)
 
         # Make directory to contain the plots
         self.plots_path = fs.join(self.maps_html_path, plots_name)
@@ -456,10 +457,12 @@ class AllMapsPageGenerator(MapsComponent):
         for name in self.colour_maps:
 
             # Get info
+            #info = get_image_info_strings(name, self.colour_maps[name])
             info = get_image_info(name, self.colour_maps[name])
 
             # Make list
-            code = html.unordered_list(info)
+            #code = html.unordered_list(info)
+            code = html.dictionary(info, key_color=key_color)
 
             # Add info
             self.colour_info[name] = code
@@ -480,10 +483,12 @@ class AllMapsPageGenerator(MapsComponent):
         for name in self.ssfr_maps:
 
             # Get info
+            #info = get_image_info_strings(name, self.ssfr_maps[name])
             info = get_image_info(name, self.ssfr_maps[name])
 
             # Make list
-            code = html.unordered_list(info)
+            #code = html.unordered_list(info)
+            code = html.dictionary(info, key_color=key_color)
 
             # Add info
             self.ssfr_info[name] = code
@@ -504,10 +509,12 @@ class AllMapsPageGenerator(MapsComponent):
         for name in self.tir_maps:
 
             # Get info
+            #info = get_image_info_strings(name, self.tir_maps[name])
             info = get_image_info(name, self.tir_maps[name])
 
             # Make list
-            code = html.unordered_list(info)
+            #code = html.unordered_list(info)
+            code = html.dictionary(info, key_color=key_color)
 
             # Add info
             self.tir_info[name] = code
@@ -528,10 +535,12 @@ class AllMapsPageGenerator(MapsComponent):
         for name in self.attenuation_maps:
 
             # Get info
+            #info = get_image_info_strings(name, self.attenuation_maps[name])
             info = get_image_info(name, self.attenuation_maps[name])
 
             # Make list
-            code = html.unordered_list(info)
+            #code = html.unordered_list(info)
+            code = html.dictionary(info, key_color=key_color)
 
             # Add info
             self.attenuation_info[name] = code
@@ -552,10 +561,12 @@ class AllMapsPageGenerator(MapsComponent):
         for name in self.old_maps:
 
             # Get info
+            #info = get_image_info_strings(name, self.old_maps[name])
             info = get_image_info(name, self.old_maps[name])
 
             # Make list
-            code = html.unordered_list(info)
+            #code = html.unordered_list(info)
+            code = html.dictionary(info, key_color=key_color)
 
             # Add info
             self.old_info[name] = code
@@ -576,10 +587,12 @@ class AllMapsPageGenerator(MapsComponent):
         for name in self.young_maps:
 
             # Get info
+            #info = get_image_info_strings(name, self.young_maps[name])
             info = get_image_info(name, self.young_maps[name])
 
             # Make list
-            code = html.unordered_list(info)
+            #code = html.unordered_list(info)
+            code = html.dictionary(info, key_color=key_color)
 
             # Add info
             self.young_info[name] = code
@@ -600,10 +613,12 @@ class AllMapsPageGenerator(MapsComponent):
         for name in self.ionizing_maps:
 
             # Get info
+            #info = get_image_info_strings(name, self.ionizing_maps[name])
             info = get_image_info(name, self.ionizing_maps[name])
 
             # Make list
-            code = html.unordered_list(info)
+            #code = html.unordered_list(info)
+            code = html.dictionary(info, key_color=key_color)
 
             # Add info
             self.ionizing_info[name] = code
@@ -624,10 +639,12 @@ class AllMapsPageGenerator(MapsComponent):
         for name in self.dust_maps:
 
             # Get info
+            #info = get_image_info_strings(name, self.dust_maps[name])
             info = get_image_info(name, self.dust_maps[name])
 
             # Make list
-            code = html.unordered_list(info)
+            #code = html.unordered_list(info)
+            code = html.dictionary(info, key_color=key_color)
 
             # Add info
             self.dust_info[name] = code
@@ -760,20 +777,19 @@ class AllMapsPageGenerator(MapsComponent):
             # Set the filepath
             self.colour_plots_paths[name] = filepath
 
-            # Check if plot is already made
-            if fs.is_file(filepath):
-
-                if self.config.replot: fs.remove_file(filepath)
-                else: continue
-
-            # Make the plot
-            self.make_rgba_plot(name, self.colour_maps[name], filepath)
-
             # Determine the relative path
             relpath = fs.relative_to(filepath, self.maps_html_path)
 
             # Make image plot
             self.colour_plots[name] = html.image(relpath, alttext=name, height=self.image_height, width=self.image_width, hover=None)
+
+            # Check if plot is already made
+            if fs.is_file(filepath):
+                if self.config.replot: fs.remove_file(filepath)
+                else: continue
+
+            # Make the plot
+            self.make_rgba_plot(name, self.colour_maps[name], filepath)
 
     # -----------------------------------------------------------------
 
@@ -796,20 +812,19 @@ class AllMapsPageGenerator(MapsComponent):
             # Set the filepath
             self.ssfr_plots_paths[name] = filepath
 
-            # Check if plot is already made
-            if fs.is_file(filepath):
-
-                if self.config.replot: fs.remove_file(filepath)
-                else: continue
-
-            # Make the plot
-            self.make_rgba_plot(name, self.ssfr_maps[name], filepath)
-
             # Determine the relative path
             relpath = fs.relative_to(filepath, self.maps_html_path)
 
             # Make image plot
             self.ssfr_plots[name] = html.image(relpath, alttext=name, height=self.image_height, width=self.image_width, hover=None)
+
+            # Check if plot is already made
+            if fs.is_file(filepath):
+                if self.config.replot: fs.remove_file(filepath)
+                else: continue
+
+            # Make the plot
+            self.make_rgba_plot(name, self.ssfr_maps[name], filepath)
 
     # -----------------------------------------------------------------
 
@@ -832,20 +847,19 @@ class AllMapsPageGenerator(MapsComponent):
             # Set the filepath
             self.tir_plots_paths[name] = filepath
 
-            # Check if plot is already made
-            if fs.is_file(filepath):
-
-                if self.config.replot: fs.remove_file(filepath)
-                else: continue
-
-            # Make the plot
-            self.make_rgba_plot(name, self.tir_maps[name], filepath)
-
             # Determine the relative path
             relpath = fs.relative_to(filepath, self.maps_html_path)
 
             # Make image plot
             self.tir_plots[name] = html.image(relpath, alttext=name, height=self.image_height, width=self.image_width, hover=None)
+
+            # Check if plot is already made
+            if fs.is_file(filepath):
+                if self.config.replot: fs.remove_file(filepath)
+                else: continue
+
+            # Make the plot
+            self.make_rgba_plot(name, self.tir_maps[name], filepath)
 
     # -----------------------------------------------------------------
 
@@ -868,20 +882,19 @@ class AllMapsPageGenerator(MapsComponent):
             # Set the filepath
             self.attenuation_plots_paths[name] = filepath
 
-            # Check if plot is already made
-            if fs.is_file(filepath):
-
-                if self.config.replot: fs.remove_file(filepath)
-                else: continue
-
-            # Make the plot
-            self.make_rgba_plot(name, self.attenuation_maps[name], filepath)
-
             # Determine the relative path
             relpath = fs.relative_to(filepath, self.maps_html_path)
 
             # Make image plot
             self.attenuation_plots[name] = html.image(relpath, alttext=name, height=self.image_height, width=self.image_width, hover=None)
+
+            # Check if plot is already made
+            if fs.is_file(filepath):
+                if self.config.replot: fs.remove_file(filepath)
+                else: continue
+
+            # Make the plot
+            self.make_rgba_plot(name, self.attenuation_maps[name], filepath)
 
     # -----------------------------------------------------------------
 
@@ -904,20 +917,19 @@ class AllMapsPageGenerator(MapsComponent):
             # Set the filepath
             self.old_plots_paths[name] = filepath
 
-            # Check if plot is already made
-            if fs.is_file(filepath):
-
-                if self.config.replot: fs.remove_file(filepath)
-                else: continue
-
-            # Make the plot
-            self.make_rgba_plot(name, self.old_maps[name], filepath)
-
             # Determine the relative path
             relpath = fs.relative_to(filepath, self.maps_html_path)
 
             # Make image plot
             self.old_plots[name] = html.image(relpath, alttext=name, height=self.image_height, width=self.image_width, hover=None)
+
+            # Check if plot is already made
+            if fs.is_file(filepath):
+                if self.config.replot: fs.remove_file(filepath)
+                else: continue
+
+            # Make the plot
+            self.make_rgba_plot(name, self.old_maps[name], filepath)
 
     # -----------------------------------------------------------------
 
@@ -940,20 +952,19 @@ class AllMapsPageGenerator(MapsComponent):
             # Set the filepath
             self.young_plots_paths[name] = filepath
 
-            # Check if plot is already made
-            if fs.is_file(filepath):
-
-                if self.config.replot: fs.remove_file(filepath)
-                else: continue
-
-            # Make the plot
-            self.make_rgba_plot(name, self.young_maps[name], filepath)
-
             # Determine the relative path
             relpath = fs.relative_to(filepath, self.maps_html_path)
 
             # Make image plot
             self.young_plots[name] = html.image(relpath, alttext=name, height=self.image_height, width=self.image_width, hover=None)
+
+            # Check if plot is already made
+            if fs.is_file(filepath):
+                if self.config.replot: fs.remove_file(filepath)
+                else: continue
+
+            # Make the plot
+            self.make_rgba_plot(name, self.young_maps[name], filepath)
 
     # -----------------------------------------------------------------
 
@@ -976,20 +987,19 @@ class AllMapsPageGenerator(MapsComponent):
             # Set the filepath
             self.ionizing_plots_paths[name] = filepath
 
-            # Check if plot is already made
-            if fs.is_file(filepath):
-
-                if self.config.replot: fs.remove_file(filepath)
-                else: continue
-
-            # Make the plot
-            self.make_rgba_plot(name, self.ionizing_maps[name], filepath)
-
             # Determine the relative path
             relpath = fs.relative_to(filepath, self.maps_html_path)
 
             # Make image plot
             self.ionizing_plots[name] = html.image(relpath, alttext=name, height=self.image_height, width=self.image_width, hover=None)
+
+            # Check if plot is already made
+            if fs.is_file(filepath):
+                if self.config.replot: fs.remove_file(filepath)
+                else: continue
+
+            # Make the plot
+            self.make_rgba_plot(name, self.ionizing_maps[name], filepath)
 
     # -----------------------------------------------------------------
 
@@ -1012,20 +1022,19 @@ class AllMapsPageGenerator(MapsComponent):
             # Set the filepath
             self.dust_plots_paths[name] = filepath
 
-            # Check if plot is already made
-            if fs.is_file(filepath):
-
-                if self.config.replot: fs.remove_file(filepath)
-                else: continue
-
-            # Make the plot
-            self.make_rgba_plot(name, self.dust_maps[name], filepath)
-
             # Determine the relative path
             relpath = fs.relative_to(filepath, self.maps_html_path)
 
             # Make image plot
             self.dust_plots[name] = html.image(relpath, alttext=name, height=self.image_height, width=self.image_width, hover=None)
+
+            # Check if plot is already made
+            if fs.is_file(filepath):
+                if self.config.replot: fs.remove_file(filepath)
+                else: continue
+
+            # Make the plot
+            self.make_rgba_plot(name, self.dust_maps[name], filepath)
 
     # -----------------------------------------------------------------
 
@@ -1056,7 +1065,7 @@ class AllMapsPageGenerator(MapsComponent):
 
         settings = dict()
         settings["scale"] = self.config.scale
-        settings["colormap"] = self.config.colormap
+        settings["colormap"] = self.config.colours
         settings["zoom"] = self.config.zoom
 
         # Get region in image coordinates
@@ -1704,6 +1713,8 @@ class AllMapsPageGenerator(MapsComponent):
         self.page += html.line
         self.page += html.newline
         self.page += self.ssfr_table
+        self.page += html.newline
+        self.page += html.newline
         self.page += html.make_line("heavy")
         self.page += html.newline
 
@@ -1713,6 +1724,8 @@ class AllMapsPageGenerator(MapsComponent):
         self.page += html.line
         self.page += html.newline
         self.page += self.tir_table
+        self.page += html.newline
+        self.page += html.newline
         self.page += html.make_line("heavy")
         self.page += html.newline
 
@@ -1722,6 +1735,8 @@ class AllMapsPageGenerator(MapsComponent):
         self.page += html.line
         self.page += html.newline
         self.page += self.attenuation_table
+        self.page += html.newline
+        self.page += html.newline
         self.page += html.make_line("heavy")
         self.page += html.newline
 
@@ -1731,6 +1746,8 @@ class AllMapsPageGenerator(MapsComponent):
         self.page += html.line
         self.page += html.newline
         self.page += self.old_table
+        self.page += html.newline
+        self.page += html.newline
         self.page += html.make_line("heavy")
         self.page += html.newline
 
@@ -1740,6 +1757,8 @@ class AllMapsPageGenerator(MapsComponent):
         self.page += html.line
         self.page += html.newline
         self.page += self.young_table
+        self.page += html.newline
+        self.page += html.newline
         self.page += html.make_line("heavy")
         self.page += html.newline
 
@@ -1749,6 +1768,8 @@ class AllMapsPageGenerator(MapsComponent):
         self.page += html.line
         self.page += html.newline
         self.page += self.ionizing_table
+        self.page += html.newline
+        self.page += html.newline
         self.page += html.make_line("heavy")
         self.page += html.newline
 
@@ -1758,6 +1779,8 @@ class AllMapsPageGenerator(MapsComponent):
         self.page += html.line
         self.page += html.newline
         self.page += self.dust_table
+        self.page += html.newline
+        self.page += html.newline
         self.page += html.make_line("heavy")
         self.page += html.newline
 
@@ -1817,39 +1840,5 @@ class AllMapsPageGenerator(MapsComponent):
 
         # Open in browser
         browser.open_path(self.all_maps_html_page_path)
-
-# -----------------------------------------------------------------
-
-def get_image_info(name, frame):
-
-    """
-    This function ...
-    :param name:
-    :param frame:
-    :return:
-    """
-
-    info = []
-
-    fltr = frame.filter
-    wavelength = fltr.wavelength if fltr is not None else None
-    pixelscale = frame.average_pixelscale
-    fwhm = frame.fwhm
-
-    # Get filesize
-    filesize = fs.file_size(frame.path).to("MB")
-
-    info.append("Name: " + name)
-    info.append("Filter: " + tostr(fltr))
-    info.append("Wavelength: " + tostr(wavelength))
-    info.append("Unit: " + tostr(frame.unit))
-    info.append("Pixelscale: " + tostr(pixelscale))
-    info.append("PSF filter: " + frame.psf_filter_name)
-    info.append("FWHM: " + tostr(fwhm))
-    info.append("Dimensions: " + str((frame.xsize, frame.ysize)))
-    info.append("File size: " + tostr(filesize))
-
-    # Return the info
-    return info
 
 # -----------------------------------------------------------------

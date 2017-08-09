@@ -33,6 +33,7 @@ definition.add_optional("scale", "string", "scale", default_scale, choices=scale
 definition.add_optional("colormap", "string", "color map", default_colormap, choices=colormaps)
 definition.add_optional("zoom", "string", "zoom function", default_zoom, choices=zooms)
 
+# Other plot settings
 definition.add_flag("png", "convert to png", False)
 definition.add_flag("dynamic", "create the viewers dynamically", False)
 definition.add_flag("menubar", "add menubars", True)

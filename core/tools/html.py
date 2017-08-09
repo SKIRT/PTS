@@ -151,7 +151,7 @@ def make_body_settings(settings):
 
     for name in settings:
         value = settings[name]
-        contents += "    " + name + ": " + tostr(value) + ";"
+        contents += "    " + name + ": " + tostr(value) + ";\n"
 
     contents += "}\n"
 
@@ -277,6 +277,63 @@ def unordered_list(items, css_class=None):
 
 # -----------------------------------------------------------------
 
+def color(text, color):
+
+    """
+    This function ...
+    :param text:
+    :param color:
+    :return:
+    """
+
+    return '<font color="' + color + '">' + text + '</font>'
+
+# -----------------------------------------------------------------
+
+def bold(text):
+
+    """
+    This function ...
+    :param text:
+    :return:
+    """
+    return '<b>' + text + '</b>'
+
+# -----------------------------------------------------------------
+
+def dictionary(dct, css_class=None, key_color=None, value_color=None, bold_keys=False, bold_values=False, identity_symbol=": "):
+
+    """
+    This function ...
+    :param dct:
+    :param css_class:
+    :param key_color:
+    :param value_color:
+    :param bold_keys:
+    :param bold_values:
+    :param identity_symbol:
+    :return:
+    """
+
+    items = []
+    for name in dct:
+
+        key = tostr(name)
+        if key_color is not None: key = color(key, key_color)
+        if bold_keys: key = bold(key)
+
+        value = tostr(dct[name], round=True, html=True, decimal_places=1)
+        if value_color is not None: value = color(value, value_color)
+        if bold_values: value = bold(value)
+
+        item = key + identity_symbol + value
+        items.append(item)
+
+    # Return
+    return unordered_list(items, css_class=css_class)
+
+# -----------------------------------------------------------------
+
 def image(url, alttext=None, height=None, width=None, hover=None):
 
     """
@@ -290,9 +347,9 @@ def image(url, alttext=None, height=None, width=None, hover=None):
     """
 
     code = '<img src="' + url + '"'
-    if alttext is not None: code += 'alt="' + alttext + '"'
-    if height is not None: code += " height=" + str(height)
-    if width is not None: code += " width=" + str(width)
+    if alttext is not None: code += ' alt="' + alttext + '"'
+    if height is not None: code += " height=" + str(height) + "px"
+    if width is not None: code += " width=" + str(width) + "px"
     if hover is not None: code += ' onmouseover="this.src=' + "'" + hover + "';" + '" ' + 'onmouseout="this.src=' + "'" + url + "'" + ';"'
     code += ">"
     return code

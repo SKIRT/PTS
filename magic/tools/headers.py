@@ -158,6 +158,22 @@ def get_psf_filter(header):
 
 # -----------------------------------------------------------------
 
+def get_wavelength(header):
+
+    """
+    This function ...
+    :param header:
+    :return:
+    """
+
+    # # Get the wavelength
+    if "WAVELEN" in header: wavelength = get_quantity(header["WAVELEN"], "micron")
+    elif "WVLNGTH" in header: wavelength = get_quantity(header["WVLNGTH"], "micron")
+    else: wavelength = None
+    return wavelength
+
+# -----------------------------------------------------------------
+
 def get_filter(name, header=None):
 
     """
@@ -210,9 +226,7 @@ def get_filter(name, header=None):
         else: channel = None
 
         # Get the wavelength
-        if "WAVELEN" in header: wavelength = get_quantity(header["WAVELEN"], "micron")
-        elif "WVLNGTH" in header: wavelength = get_quantity(header["WVLNGTH"], "micron")
-        else: wavelength = None
+        wavelength = get_wavelength(header)
 
         # Get the frequency
         if "FREQ" in header: frequency = get_quantity(header["FREQ"], "GHz")

@@ -653,8 +653,8 @@ def str_from_real(real, **kwargs):
 
     else:
         if doround:
-            if ndigits is None: raise ValueError("number of digits not specified")
-            return repr(numbers.round_to_n_significant_digits(real, ndigits))
+            if ndigits is not None: return repr(numbers.round_to_n_significant_digits(real, ndigits))
+            return ("{:." + str(decimal_places) + "}").format(real)
         else: return repr(real)
 
 # -----------------------------------------------------------------

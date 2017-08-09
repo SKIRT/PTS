@@ -1491,6 +1491,18 @@ def get_lines(path):
 
 # -----------------------------------------------------------------
 
+def get_text(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    return "\n".join(get_lines(path))
+
+# -----------------------------------------------------------------
+
 def contains_lines(path):
 
     """

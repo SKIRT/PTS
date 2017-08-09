@@ -27,9 +27,7 @@ from ...core.filter.filter import parse_filter
 from .analytics import mask_names
 from ...core.tools import browser
 from ...magic.core.frame import Frame
-from ...core.tools.stringify import tostr
-from ...magic.tools import headers
-from ...magic.basics.coordinatesystem import CoordinateSystem
+from ...magic.tools.info import get_image_info_strings_from_header
 
 # -----------------------------------------------------------------
 
@@ -326,11 +324,9 @@ class TruncationPageGenerator(TruncationComponent):
             # Get header -> FASTER (?)
             header = self.dataset.get_header(name)
 
-            # Get filesize
-            filesize = fs.file_size(self.dataset.get_frame_path(name)).to("MB")
-
             # Get the image info
-            info = get_image_info_from_header(name, header, filesize)
+            path = self.dataset.get_frame_path(name)
+            info = get_image_info_strings_from_header(name, header, path=path, name=False)
 
             # Make list
             code = unordered_list(info)
@@ -774,43 +770,5 @@ class TruncationPageGenerator(TruncationComponent):
 
         # Open in browser
         browser.open_path(self.truncation_html_page_path)
-
-# -----------------------------------------------------------------
-
-def get_image_info_from_header(name, header, filesize=None):
-
-    """
-    This function ...
-    :param name:
-    :param header:
-    :param filesize:
-    :return:
-    """
-
-    info = []
-
-    fltr = headers.get_filter(name, header)
-    wavelength = fltr.wavelength
-    unit = headers.get_unit(header)
-    pixelscale = headers.get_pixelscale(header)
-    if pixelscale is None:
-        wcs = CoordinateSystem(header)
-        pixelscale = wcs.average_pixelscale
-    else:
-        pixelscale = pixelscale.average
-    fwhm = headers.get_fwhm(header)
-    nxpixels = header["NAXIS1"]
-    nypixels = header["NAXIS2"]
-
-    info.append("Filter: " + tostr(fltr))
-    info.append("Wavelength: " + tostr(wavelength))
-    info.append("Unit: " + tostr(unit))
-    info.append("Pixelscale: " + tostr(pixelscale))
-    info.append("FWHM: " + tostr(fwhm))
-    info.append("Dimensions: " + str((nxpixels, nypixels)))
-    if filesize is not None: info.append("File size: " + tostr(filesize))
-
-    # Return the info
-    return info
 
 # -----------------------------------------------------------------
