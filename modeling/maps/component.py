@@ -654,6 +654,18 @@ class MapsComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def maps_summary_html_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.maps_summary_html_page_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def significance_maps_html_page_path(self):
 
         """

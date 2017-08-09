@@ -46,7 +46,9 @@ def get_image_info(image_name, frame, **kwargs):
     # Set the info
     info = OrderedDict()
     if kwargs.pop("name", True): info["Name"] = image_name
+
     if kwargs.pop("path", True): info["Path"] = frame.path
+
     if kwargs.pop("filter", True): info["Filter"] = fltr
     if kwargs.pop("wavelength", True): info["Wavelength"] = wavelength
     if kwargs.pop("unit", True): info["Unit"] = frame.unit
@@ -106,15 +108,13 @@ def get_image_info_from_header(image_name, header, **kwargs):
     nxpixels = header["NAXIS1"]
     nypixels = header["NAXIS2"]
 
+    path = kwargs.pop("image_path", False)
+
     # Set the info
     info = OrderedDict()
     if kwargs.pop("name", True): info["Name"] = image_name
-    path = kwargs.pop("path", False)
-    if path:
-        if not types.is_string_type(path):
-            log.warning("Path is not specified")
-            path = False
-        else: info["Path"] = path
+
+    if path is not None and kwargs.pop("path", True): info["Path"] = path
 
     if kwargs.pop("filter", True): info["Filter"] = fltr
     if kwargs.pop("wavelength", True): info["Wavelength"] = wavelength
@@ -123,7 +123,7 @@ def get_image_info_from_header(image_name, header, **kwargs):
     if kwargs.pop("fwhm", True): info["FWHM"] = fwhm
     if kwargs.pop("shape", True): info["Dimensions"] = (nxpixels, nypixels)
 
-    if path and kwargs.pop("filesize", True):
+    if path is not None and kwargs.pop("filesize", True):
         filesize = fs.file_size(path).to("MB")
         info["File size"] = filesize
 

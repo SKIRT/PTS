@@ -108,7 +108,7 @@ class JS9Image(object):
         :param display:
         """
 
-        self.name = name.replace(" ", "")
+        self.name = make_usable(name)
         self.path = path
         self.settings = settings
         self.display = display
@@ -334,7 +334,8 @@ class JS9Spawner(object):
     """
 
     def __init__(self, text, image, button=False, menubar=True, colorbar=False, width=None, height=None, regions=None,
-                 add_placeholder=True, background_color="white", replace=False):
+                 add_placeholder=True, background_color="white", replace=False, resize=True, scrolling=True,
+                 center=True, replace_nans=False, replace_infs=False):
 
         """
         This function ...
@@ -345,6 +346,8 @@ class JS9Spawner(object):
         :param colorbar:
         :param regions:
         :param background_color:
+        :param resize:
+        :param scrolling:
         """
 
         self.text = text
@@ -358,12 +361,18 @@ class JS9Spawner(object):
         self.add_placeholder = add_placeholder
         self.background_color = background_color
         self.replace = replace
+        self.replace_nans = replace_nans
+        self.replace_infs = replace_infs
+
+        # Create view
+        self.view = JS9Viewer(self.image.display, width=width, height=height, resize=resize, scrolling=scrolling, center=center)
 
     # -----------------------------------------------------------------
 
     @classmethod
     def from_path(cls, text, name, path, settings=None, button=False, menubar=True, colorbar=False, width=None,
-                  height=None, regions=None, add_placeholder=True, background_color="white", replace=False):
+                  height=None, regions=None, add_placeholder=True, background_color="white", replace=False,
+                  resize=True, scrolling=True, center=True, replace_nans=False, replace_infs=False):
 
         """
         This function ...
@@ -380,18 +389,24 @@ class JS9Spawner(object):
         :param add_placeholder:
         :param background_color:
         :param replace:
+        :param resize:
+        :param scrolling:
+        :param center:
+        :param replace_nans:
+        :param replace_infs:
         :return:
         """
 
         # Generate display id
-        display_id = "JS9" + name.replace(" ", "")
+        display_id = "JS9" + make_usable(name)
 
         # Create image
         image = JS9Image(name, path, settings, display_id)
 
         # Create
         return cls(text, image, button=button, menubar=menubar, colorbar=colorbar, width=width, height=height,
-                   regions=regions, add_placeholder=add_placeholder, background_color=background_color, replace=replace)
+                   regions=regions, add_placeholder=add_placeholder, background_color=background_color, replace=replace,
+                   resize=resize, scrolling=scrolling, center=center, replace_nans=replace_nans, replace_infs=replace_infs)
 
     # -----------------------------------------------------------------
 
@@ -404,6 +419,18 @@ class JS9Spawner(object):
         """
 
         return self.image.display
+
+    # -----------------------------------------------------------------
+
+    @property
+    def image_name(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.image.name
 
     # -----------------------------------------------------------------
 
@@ -473,10 +500,10 @@ class JS9Spawner(object):
         function_name = "spawn_" + self.image.display
         function_call = function_name + "()"
 
-        #function_call += ";load_region_" + self.image.name.replace(" ", "") + "()"
+        #function_call += ";load_region_" + make_usable(self.image.name) + "()"
 
         if self.button:
-            buttonid = self.image.name.replace(" ", "") + "Spawner"
+            buttonid = make_usable(self.image.name) + "Spawner"
             #load_html = self.image.load()
             #return html.button(buttonid, self.text, load_html, quote_character=strings.other_quote_character(self.text, load_html))
             click_code = html.button(buttonid, self.text, function_call)
@@ -492,7 +519,7 @@ class JS9Spawner(object):
         code += "\n"
 
         # Make spawn code
-        spawn_code = make_spawn_code(self.image, menubar=self.menubar, colorbar=self.colorbar, width=self.width,
+        spawn_code = make_spawn_code(self.view, self.image, menubar=self.menubar, colorbar=self.colorbar, width=self.width,
                                      background_color=self.background_color)
 
         #print(spawn_code)
@@ -560,7 +587,7 @@ class JS9Viewer(object):
     This function ...
     """
 
-    def __init__(self, id, width=None, height=None, resize=True, scrolling=True):
+    def __init__(self, id, width=None, height=None, resize=True, scrolling=True, center=True):
 
         """
         This function ...
@@ -569,6 +596,7 @@ class JS9Viewer(object):
         :param height:
         :param resize:
         :param scrolling:
+        :param center:
         """
 
         self.id = id
@@ -576,6 +604,7 @@ class JS9Viewer(object):
         self.height = height
         self.resize = resize
         self.scrolling = scrolling
+        self.center = center
 
     # -----------------------------------------------------------------
 
@@ -593,6 +622,7 @@ class JS9Viewer(object):
 
         string += ' resize=' + str(int(self.resize))
         string += ' scrolling=' + str(int(self.scrolling))
+        string += ' center=' + str(int(self.center))
 
         string += '></div>'
         return string
@@ -774,7 +804,8 @@ class JS9Window(object):
     This function ...
     """
 
-    def __init__(self, name, width=None, height=None, background_color="white", menubar=True, colorbar=False, menubar_position="top", colorbar_position="bottom", resize=True):
+    def __init__(self, name, width=None, height=None, background_color="white", menubar=True, colorbar=False,
+                 menubar_position="top", colorbar_position="bottom", resize=True, scrolling=True):
 
         """
         This function ...
@@ -785,10 +816,11 @@ class JS9Window(object):
         :param menubar:
         :param colorbar:
         :param resize:
+        :param scrolling:
         """
 
         # Create view
-        self.view = JS9Viewer(name, width=width, height=height, resize=resize)
+        self.view = JS9Viewer(name, width=width, height=height, resize=resize, scrolling=scrolling)
 
         # Set names
         # Set menu name
@@ -1161,10 +1193,11 @@ def make_synchronize_regions(indicator_id, display_ids, ellipses, ndecimals=3):
 
 # -----------------------------------------------------------------
 
-def make_spawn_code(image, menubar=True, colorbar=False, width=None, background_color="white"):
+def make_spawn_code(view, image, menubar=True, colorbar=False, width=None, background_color="white"):
 
     """
     This function ...
+    :param view:
     :param image:
     :param menubar:
     :param colorbar:
@@ -1183,14 +1216,20 @@ def make_spawn_code(image, menubar=True, colorbar=False, width=None, background_
         menubar = JS9Menubar(menubar_id, width=width, background_color=background_color)
         # spawn_code += "<div class='JS9Menubar' id='" + menubar_id + "'></div>"
         spawn_code += str(menubar)
+        spawn_code += html.newline
 
     if colorbar:
 
         colorbar = JS9Colorbar(colorbar_id, width=width)
         # spawn_code += "<div class='JS9Colorbar' id = '" + colorbar_id + "'></div>"
         spawn_code += str(colorbar)
+        spawn_code += html.newline
 
-    spawn_code += '<div class="JS9" id="' + image.display + '"></div>'
+    #spawn_code += '<div class="JS9" id="' + image.display + '"></div>'
+
+    spawn_code += str(view)
+
+    # Return
     return spawn_code
 
 # -----------------------------------------------------------------
@@ -1234,5 +1273,173 @@ def replace_div(div_id, text):
 
     # Return the code
     return code
+
+# -----------------------------------------------------------------
+
+clip_function = """
+function (oraw, nraw, opts)
+{
+    var i, len;
+    opts = opts || {};
+    
+    if( opts.nmax === undefined )
+    {
+        opts.nmax = 0;
+    }
+    
+    len = nraw.width * nraw.height;
+    for(i=0; i<len; i++)
+    {
+        if( oraw.data[i] < opts.nmax )
+        {
+            nraw.data[i] = 0;
+        }
+        else
+        {
+            nraw.data[i] = oraw.data[i];
+        }
+    }
+    return true;
+}"""
+
+# -----------------------------------------------------------------
+
+add_function = """
+function (oraw, nraw, opts)
+{
+    var i, len;
+    opts = opts || {};
+    
+    if( opts.val === undefined )
+    {
+        opts.val = 1;
+    }
+    
+    len = nraw.width * nraw.height;
+    for(i=0; i<len; i++)
+    {
+        nraw.data[i] += opts.val;
+    }
+    return true;
+}
+"""
+
+# -----------------------------------------------------------------
+
+replace_function = """
+function (oraw, nraw, opts)
+{
+    var i, len;
+    opts = opts || {};
+    
+    len = nraw.width * nraw.height;
+    for(i=0; i<len; i++)
+    {
+        if ( (isNaN(opts.value) && isNaN(oraw.data[i])) || oraw.data[i] == opts.value)
+        {
+            nraw.data[i] = opts.replacement;
+        }
+    }
+    return true;
+}
+"""
+
+# -----------------------------------------------------------------
+
+replace_nans_function = """
+function replaceNans(oraw, nraw, opts)
+{
+    var i, len;
+    opts = opts || {};
+    
+    len = nraw.width * nraw.height;
+    for(i=0; i<len; i++)
+    {
+        if (isNaN(oraw.data[i])
+        {
+            nraw.data[i] = 0.0;
+        }
+    }
+    return true;
+}
+"""
+
+# -----------------------------------------------------------------
+
+replace_infs_function = """
+function replaceInfs(oraw, nraw, opts)
+{
+    var i, len;
+    opts = opts || {};
+    
+    len = nraw.width * nraw.height;
+    for(i=0; i<len; i++)
+    {
+        if (oraw.data[i] == Infinity || oraw.data[i] == -Infinity)
+        {
+            nraw.data[i] = 0.0;
+        }
+    }
+    return true;
+}
+"""
+
+# -----------------------------------------------------------------
+
+replace_nans_and_infs_function = """
+function replaceNansInfs(oraw, nraw, opts)
+{
+    var i, len;
+    opts = opts || {};
+    
+    len = nraw.width * nraw.height;
+    for(i=0; i<len; i++)
+    {
+        if (isNaN(oraw.data[i]) || oraw.data[i] == Infinity || oraw.data[i] == -Infinity)
+        {
+            nraw.data[i] = 0.0;
+        }
+    }
+    return true;
+}
+"""
+
+# -----------------------------------------------------------------
+
+def make_replace_nans_infs(display=None, quote_character='"'):
+
+    """
+    This function ...
+    :param display:
+    :param quote_character:
+    :return:
+    """
+
+    string = ""
+
+    string += replace_nans_and_infs_function
+    string += "\n"
+
+    string += "JS9.RawDataLayer({}, replaceNansInfs"
+
+    if display is not None:
+        if quote_character == '"': string += ', {display:"' + display + '"}'
+        elif quote_character == "'": string += ", {display:'" + display + "'}"
+        else: raise ValueError("Invalid quote character: " + quote_character)
+    string += ');'
+    string += "\n"
+
+    return string
+
+# -----------------------------------------------------------------
+
+def make_usable(name):
+
+    """
+    This function ...
+    :return:
+    """
+
+    return name.replace(" ", "").replace(".", "")  # CANNOT CONTAIN SPACES AND DOTS!!
 
 # -----------------------------------------------------------------

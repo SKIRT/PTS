@@ -31,6 +31,7 @@ from ..basics.log import log
 from .composite import SimplePropertyComposite
 from ..tools import introspection
 from ..tools import numbers, types
+from ..tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -1745,6 +1746,10 @@ class ConfigurationDefinition(object):
             if convert_default: default = parse_default(default, user_type, real_type)
             else: default = check_default(default, user_type)
 
+        # Check default
+        if default is not None and choices is not None:
+            if default not in choices: raise ValueError("The default value '" + tostr(default) + "' is not one of the choices (" + tostr(choices, delimiter=", ") + ")")
+
         # Add
         self.pos_optional[name] = Map(type=real_type, description=description, default=default, choices=choices,
                                       dynamic_list=dynamic_list, suggestions=suggestions, min_value=min_value,
@@ -1786,6 +1791,10 @@ class ConfigurationDefinition(object):
             # Convert or check default value
             if convert_default: default = parse_default(default, user_type, real_type)
             else: default = check_default(default, user_type)
+
+        # Check default
+        if default is not None and choices is not None:
+            if default not in choices: raise ValueError("The default value '" + tostr(default) + "' is not one of the choices (" + tostr(choices, delimiter=", ") + ")")
 
         # Add
         self.optional[name] = Map(type=real_type, description=description, default=default, choices=choices,

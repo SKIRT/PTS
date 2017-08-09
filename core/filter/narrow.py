@@ -266,6 +266,33 @@ class NarrowBandFilter(Filter):
     An instance of the NarrowBandFilter class represents a narrow band filter around a certain wavelength.
     """
 
+    # -----------------------------------------------------------------
+
+    cached = {}
+
+    # -----------------------------------------------------------------
+
+    def __new__(cls, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        if len(args) == 0: return super(NarrowBandFilter, cls).__new__(cls)
+
+        filterspec = args[0]
+        if filterspec in cls.cached: return cls.cached[filterspec]
+        else:
+            fltr = super(NarrowBandFilter, cls).__new__(cls)
+            fltr.__init__(*args, **kwargs)
+            if fltr.true_filter: cls.cached[filterspec] = fltr
+            return fltr
+
+    # -----------------------------------------------------------------
+
     def __init__(self, filterspec, name=None):
 
         """
@@ -322,6 +349,8 @@ class NarrowBandFilter(Filter):
             filter_id = self._name
             description = get_filter_description(filterspec)
 
+            true_filter = True
+
         # String is converted to a wavelength and a name or was a wavelength to begin with
         else:
 
@@ -342,6 +371,9 @@ class NarrowBandFilter(Filter):
             filter_id = self._name
             description = "Filter at a wavelength of " + wavelength_as_string
 
+            true_filter = False
+
+        self.true_filter = true_filter
         self.spec = filterspec
 
         # Call the constructor of the base class

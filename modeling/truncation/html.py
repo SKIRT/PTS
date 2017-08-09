@@ -17,17 +17,17 @@ import gc
 
 # Import the relevant PTS classes and modules
 from .component import TruncationComponent
-from ...core.tools.html import HTMLPage, SimpleTable, newline, updated_footing, make_theme_button, center, sleep_function, other_sleep_function, make_script_button, unordered_list, button
+from ...core.tools.html import HTMLPage, SimpleTable, newline, updated_footing, make_theme_button, center, sleep_function, other_sleep_function, make_script_button, unordered_list, button, dictionary
 from ...core.basics.log import log
 from ...magic.view.html import JS9Viewer, JS9Preloader, body_settings, javascripts, css_scripts, JS9Menubar, JS9Loader, JS9Spawner, JS9Colorbar, JS9Window, make_load_region_function, make_load_region, make_synchronize_regions
-from ...magic.view.html import make_spawn_code, add_to_div
+from ...magic.view.html import make_spawn_code, add_to_div, make_usable
 from ...core.tools import filesystem as fs
 from ...core.tools.utils import lazyproperty
 from ...core.filter.filter import parse_filter
 from .analytics import mask_names
 from ...core.tools import browser
 from ...magic.core.frame import Frame
-from ...magic.tools.info import get_image_info_strings_from_header
+from ...magic.tools.info import get_image_info_strings_from_header, get_image_info_from_header
 
 # -----------------------------------------------------------------
 
@@ -35,6 +35,7 @@ ncolumns = 3
 image_width = 300
 image_height = 300
 background_color = "white"
+key_color = "#4180d3"
 
 # -----------------------------------------------------------------
 
@@ -326,10 +327,12 @@ class TruncationPageGenerator(TruncationComponent):
 
             # Get the image info
             path = self.dataset.get_frame_path(name)
-            info = get_image_info_strings_from_header(name, header, path=path, name=False)
+            #info = get_image_info_strings_from_header(name, header, path=False, image_path=path, name=False)
+            info = get_image_info_from_header(name, header, image_path=path, path=False, name=False)
 
             # Make list
-            code = unordered_list(info)
+            #code = unordered_list(info)
+            code = dictionary(info, key_color=key_color)
 
             # Add
             self.info[name] = code
@@ -438,6 +441,7 @@ class TruncationPageGenerator(TruncationComponent):
         images = dict()
         region_loads = dict()
         placeholders = dict()
+        views = dict()
 
         # Loop over all prepared images, get the images
         #self.masks = dict()
@@ -454,8 +458,7 @@ class TruncationPageGenerator(TruncationComponent):
 
             # Get name
             #name = self.dataset.get_name_for_filter(fltr)
-
-            display_name = name.replace(" ", "") # CANNOT CONTAIN SPACES!!
+            display_name = make_usable(name)
 
             # Get path
             if self.config.png: path = self.plots_paths[name]
@@ -500,6 +503,7 @@ class TruncationPageGenerator(TruncationComponent):
                 display_id = display_name
 
                 # Set load info
+                views[display_id] = self.windows[name].view
                 load_info[display_id] = (name, path, regions_for_loader)
                 images[display_id] = image
 
@@ -515,6 +519,7 @@ class TruncationPageGenerator(TruncationComponent):
                 self.windows[name] = self.loaders[name].placeholder
 
                 # Set load info
+                views[display_id] = self.loaders[name].view
                 load_info[display_id] = (name, path, regions_for_loader)
                 images[display_id] = self.loaders[name].image
                 placeholders[display_id] = self.loaders[name].spawn_div_name
@@ -532,6 +537,7 @@ class TruncationPageGenerator(TruncationComponent):
                 display_id = display_name
 
                 # Set load info
+                views[display_id] = self.windows[name].view
                 load_info[display_id] = (name, path, regions_for_loader)
                 images[display_id] = self.loaders[name].image
 
@@ -566,6 +572,7 @@ class TruncationPageGenerator(TruncationComponent):
 
             #name, path, regions_for_loader = load_info[display_id]
             image = images[display_id]
+            view = views[display_id]
 
             load_image = image.load()
             load_region = region_loads[display_id]
@@ -575,7 +582,7 @@ class TruncationPageGenerator(TruncationComponent):
                 spawn_div_name = placeholders[display_id]
 
                 # Make spawn code
-                spawn_code = make_spawn_code(image, menubar=self.config.menubar, colorbar=self.config.colorbar, width=image_width,
+                spawn_code = make_spawn_code(view, image, menubar=self.config.menubar, colorbar=self.config.colorbar, width=image_width,
                                              background_color=background_color)
 
                 # Add html code to DIV

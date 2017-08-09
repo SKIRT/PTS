@@ -11,7 +11,8 @@ from pts.magic.view.html import scales, colormaps, zooms
 
 # -----------------------------------------------------------------
 
-default_colormap = "jet"
+default_colour = "jet"
+default_colormap = "viridis"
 default_scale = "log"
 default_zoom = "toFit"
 
@@ -21,11 +22,13 @@ default_zoom = "toFit"
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 definition.add_flag("show", "show the page", False)
 
-# Plot options
-# Basic
-definition.add_optional("colours", "string", "colour or colour map", default=default_colormap, choices=colormaps)
+# VIEW
+definition.add_optional("colormap", "string", "color map", default_colormap, choices=colormaps)
 definition.add_optional("scale", "string", "image scaling", default=default_scale, choices=scales)
 definition.add_optional("zoom", "string", "zoom function", default_zoom, choices=zooms)
+
+# For PNG
+definition.add_optional("colours", "string", "colour or colour map for plotting", default=default_colour)
 
 definition.add_optional("softening_start", "real", "relative radius for softening to start (relative to truncation ellipse)", 0.75)
 definition.add_flag("view_png", "use the pngs for viewing instead of the original data", False)
@@ -33,7 +36,7 @@ definition.add_optional("cropping_factor", "positive_real", "multiply the croppi
 
 # Exclusively for the views
 definition.add_flag("menubar", "add menubars", True)
-definition.add_flag("colorbar", "add colorbars", False)
+definition.add_flag("colorbar", "add colorbars", True)
 
 # Flags
 definition.add_flag("replot", "replot already existing figures", True)

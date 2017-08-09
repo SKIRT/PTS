@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.maps.html Contains the AllMapsPageGenerator class.
+## \package pts.modeling.maps.html.summary Contains the MapsSummaryPageGenerator class.
 
 # -----------------------------------------------------------------
 
@@ -23,7 +23,7 @@ from ...core.environment import map_sub_names, colours_name, ssfr_name, tir_name
 from ....core.tools import filesystem as fs
 from ....core.tools.html import HTMLPage, SimpleTable, updated_footing, make_page_width
 from ....core.tools import html
-from ....magic.view.html import javascripts, css_scripts, JS9Spawner, make_replace_nans_infs, make_load_region
+from ....magic.view.html import javascripts, css_scripts, JS9Spawner, make_replace_nans_infs
 from ....core.tools import browser
 from ....core.tools.utils import lazyproperty
 from ....core.tools import numbers
@@ -32,9 +32,6 @@ from ....magic.tools.info import get_image_info_strings, get_image_info
 
 # -----------------------------------------------------------------
 
-plots_name = "plots"
-ncolumns = 2
-colour_map = "jet"
 background_color = "white"
 key_color = "#4180d3"
 
@@ -44,7 +41,7 @@ page_width = 600
 
 # -----------------------------------------------------------------
 
-class AllMapsPageGenerator(MapsComponent):
+class MapsSummaryPageGenerator(MapsComponent):
 
     """
     This class...
@@ -59,18 +56,7 @@ class AllMapsPageGenerator(MapsComponent):
         """
 
         # Call the constructor of the base class
-        super(AllMapsPageGenerator, self).__init__(*args, **kwargs)
-
-        # Paths
-        self.plots_path = None
-        self.colour_plots_path = None
-        self.ssfr_plots_path = None
-        self.tir_plots_path = None
-        self.attenuation_plots_path = None
-        self.old_plots_path = None
-        self.young_plots_path = None
-        self.ionizing_plots_path = None
-        self.dust_plots_path = None
+        super(MapsSummaryPageGenerator, self).__init__(*args, **kwargs)
 
         # The image info
         self.colour_info = dict()
@@ -82,46 +68,6 @@ class AllMapsPageGenerator(MapsComponent):
         self.ionizing_info = dict()
         self.dust_info = dict()
 
-        # The regions
-        self.colour_regions = dict()
-        self.ssfr_regions = dict()
-        self.tir_regions = dict()
-        self.attenuation_regions = dict()
-        self.old_regions = dict()
-        self.young_regions = dict()
-        self.ionizing_regions = dict()
-        self.dust_regions = dict()
-
-        # The plots
-        self.colour_plots = dict()
-        self.ssfr_plots = dict()
-        self.tir_plots = dict()
-        self.attenuation_plots = dict()
-        self.old_plots = dict()
-        self.young_plots = dict()
-        self.ionizing_plots = dict()
-        self.dust_plots = dict()
-
-        # The views
-        self.colour_views = dict()
-        self.ssfr_views = dict()
-        self.tir_views = dict()
-        self.attenuation_views = dict()
-        self.old_views = dict()
-        self.young_views = dict()
-        self.ionizing_views = dict()
-        self.dust_views = dict()
-
-        # Buttons
-        self.colour_buttons = defaultdict(list)
-        self.ssfr_buttons = defaultdict(list)
-        self.tir_buttons = defaultdict(list)
-        self.attenuation_buttons = defaultdict(list)
-        self.old_buttons = defaultdict(list)
-        self.young_buttons = defaultdict(list)
-        self.ionizing_buttons = defaultdict(list)
-        self.dust_buttons = defaultdict(list)
-
         # The tables
         self.colour_table = None
         self.ssfr_table = None
@@ -131,16 +77,6 @@ class AllMapsPageGenerator(MapsComponent):
         self.young_table = None
         self.ionizing_table = None
         self.dust_table = None
-
-        # Plot paths
-        self.colour_plots_paths = dict()
-        self.ssfr_plots_paths = dict()
-        self.tir_plots_paths = dict()
-        self.attenuation_plots_paths = dict()
-        self.old_plots_paths = dict()
-        self.young_plots_paths = dict()
-        self.ionizing_plots_paths = dict()
-        self.dust_plots_paths = dict()
 
         # The page
         self.page = None
@@ -159,19 +95,7 @@ class AllMapsPageGenerator(MapsComponent):
         self.setup(**kwargs)
 
         # Get image info
-        if self.config.info: self.get_info()
-
-        # Load the regions
-        self.get_regions()
-
-        # Make plots
-        self.make_plots()
-
-        # Make the views
-        self.make_views()
-
-        # Make buttons for extra functionality
-        self.make_buttons()
+        self.get_info()
 
         # Make the tables
         self.make_tables()
@@ -195,26 +119,10 @@ class AllMapsPageGenerator(MapsComponent):
         """
 
         # Call the setup function of the base class
-        super(AllMapsPageGenerator, self).setup(**kwargs)
+        super(MapsSummaryPageGenerator, self).setup(**kwargs)
 
         # Set the number of allowed open file handles
-        fs.set_nallowed_open_files(self.config.nopen_files)
-
-        # Make directory to contain the plots
-        self.plots_path = fs.join(self.maps_html_path, plots_name)
-        if fs.is_directory(self.plots_path):
-            if self.config.replot: fs.clear_directory(self.plots_path)
-        else: fs.create_directory(self.plots_path)
-
-        # Create directories for each type of map
-        self.colour_plots_path = fs.create_directory_in(self.plots_path, colours_name)
-        self.ssfr_plots_path = fs.create_directory_in(self.plots_path, ssfr_name)
-        self.tir_plots_path = fs.create_directory_in(self.plots_path, tir_name)
-        self.attenuation_plots_path = fs.create_directory_in(self.plots_path, attenuation_name)
-        self.old_plots_path = fs.create_directory_in(self.plots_path, old_name)
-        self.young_plots_path = fs.create_directory_in(self.plots_path, young_name)
-        self.ionizing_plots_path = fs.create_directory_in(self.plots_path, ionizing_name)
-        self.dust_plots_path = fs.create_directory_in(self.plots_path, dust_name)
+        #fs.set_nallowed_open_files(self.config.nopen_files)
 
     # -----------------------------------------------------------------
 
@@ -226,57 +134,7 @@ class AllMapsPageGenerator(MapsComponent):
         :return:
         """
 
-        return "Maps"
-
-    # -----------------------------------------------------------------
-
-    @property
-    def image_width(self):
-
-        """
-        This fucntion ...
-        :return:
-        """
-
-        #return 150
-        return 0.4 * page_width
-
-    # -----------------------------------------------------------------
-
-    @property
-    def view_width(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return 0.5 * page_width
-
-    # -----------------------------------------------------------------
-
-    @property
-    def image_height(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        #return 300
-        return None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def view_height(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return None
+        return "Maps summary"
 
     # -----------------------------------------------------------------
 
@@ -772,210 +630,6 @@ class AllMapsPageGenerator(MapsComponent):
 
         # Save
         rgba.saveto(filepath)
-
-    # -----------------------------------------------------------------
-
-    def get_regions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Getting the regions ...")
-
-        # Colour
-        if self.has_colour_maps: self.get_colour_regions()
-
-        # sSFR
-        if self.has_ssfr_maps: self.get_ssfr_regions()
-
-        # TIR
-        if self.has_tir_maps: self.get_tir_regions()
-
-        # Attenuation
-        if self.has_attenuation_maps: self.get_attenuation_regions()
-
-        # Old stars
-        if self.has_old_maps: self.get_old_regions()
-
-        # Young stars
-        if self.has_young_maps: self.get_young_regions()
-
-        # Ionizing stars
-        if self.has_ionizing_maps: self.get_ionizing_regions()
-
-        # Dust
-        if self.has_dust_maps: self.get_dust_regions()
-
-    # -----------------------------------------------------------------
-
-    def get_colour_regions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the regions for colour maps ...")
-
-        # Loop over the maps
-        for name in self.colour_maps:
-
-            # Get truncation region in image coordinates
-            region = self.truncation_ellipse.to_pixel(self.colour_maps[name].wcs)
-
-            # Add
-            self.colour_regions[name] = region
-
-    # -----------------------------------------------------------------
-
-    def get_ssfr_regions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the regions for the sSFR maps ...")
-
-        # Loop over the maps
-        for name in self.ssfr_maps:
-
-            # Get truncation region in image coordinates
-            region = self.truncation_ellipse.to_pixel(self.ssfr_maps[name].wcs)
-
-            # Add
-            self.ssfr_regions[name] = region
-
-    # -----------------------------------------------------------------
-
-    def get_tir_regions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the regions for the TIR maps ...")
-
-        # Loop over the maps
-        for name in self.tir_maps:
-
-            # Get truncation region in image coordinates
-            region = self.truncation_ellipse.to_pixel(self.tir_maps[name].wcs)
-
-            # Add
-            self.tir_regions[name] = region
-
-    # -----------------------------------------------------------------
-
-    def get_attenuation_regions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the regions for the attenuation maps ...")
-
-        # Loop over the maps
-        for name in self.attenuation_maps:
-
-            # Get truncation region in image coordinates
-            region = self.truncation_ellipse.to_pixel(self.attenuation_maps[name].wcs)
-
-            # Add
-            self.attenuation_regions[name] = region
-
-    # -----------------------------------------------------------------
-
-    def get_old_regions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the regions for the old stellar maps ...")
-
-        # Loop over the maps
-        for name in self.old_maps:
-
-            # Get truncation region in image coordinates
-            region = self.truncation_ellipse.to_pixel(self.old_maps[name].wcs)
-
-            # Add
-            self.old_regions[name] = region
-
-    # -----------------------------------------------------------------
-
-    def get_young_regions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the regions for the young stellar maps ...")
-
-        # Loop over the maps
-        for name in self.young_maps:
-
-            # Get truncation region in image coordinates
-            region = self.truncation_ellipse.to_pixel(self.young_maps[name].wcs)
-
-            # Add
-            self.young_regions[name] = region
-
-    # -----------------------------------------------------------------
-
-    def get_ionizing_regions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the regions for the ionizing stellar maps ...")
-
-        # Loop over the maps
-        for name in self.ionizing_maps:
-
-            # Get truncation region in image coordinates
-            region = self.truncation_ellipse.to_pixel(self.ionizing_maps[name].wcs)
-
-            # Add
-            self.ionizing_regions[name] = region
-
-    # -----------------------------------------------------------------
-
-    def get_dust_regions(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Loading the regions for the dust maps ...")
-
-        # Loop over the maps
-        for name in self.dust_maps:
-
-            # Get truncation region in image coordinates
-            region = self.truncation_ellipse.to_pixel(self.dust_maps[name].wcs)
-
-            # Add
-            self.dust_regions[name] = region
 
     # -----------------------------------------------------------------
 
@@ -1590,7 +1244,7 @@ class AllMapsPageGenerator(MapsComponent):
         # Inform the user
         log.info("Making views of the dust maps ...")
 
-        # Loop over the maps
+        # Loopover the maps
         for name in self.dust_maps:
 
             # Get path
@@ -1602,346 +1256,6 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Add
             self.dust_views[name] = view
-
-    # -----------------------------------------------------------------
-
-    def make_buttons(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making buttons ...")
-
-        # Colours
-        if self.has_colour_maps: self.make_colour_buttons()
-
-        # sSFR
-        if self.has_ssfr_maps: self.make_ssfr_buttons()
-
-        # TIR
-        if self.has_tir_maps: self.make_tir_buttons()
-
-        # Attenuation
-        if self.has_attenuation_maps: self.make_attenuation_buttons()
-
-        # Old stellar maps
-        if self.has_old_maps: self.make_old_buttons()
-
-        # Young stellar maps
-        if self.has_young_maps: self.make_young_buttons()
-
-        # Ionizing stellar maps
-        if self.has_ionizing_maps: self.make_ionizing_buttons()
-
-        # Dust maps
-        if self.has_dust_maps: self.make_dust_buttons()
-
-    # -----------------------------------------------------------------
-
-    def make_colour_buttons(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making buttons for colour maps ...")
-
-        # Loop over the maps
-        for name in self.colour_maps:
-
-            ## NANS/INFS
-
-            # Create nan/infs replacer button
-            button_id = self.colour_views[name].image_name + "nansinfs"
-            replace_function_name = "replace_infs_nans_" + self.colour_views[name].image_name
-            replace_nans_infs = make_replace_nans_infs(self.colour_views[name].display_id)
-
-            # Create the button
-            button = html.make_script_button(button_id, "Replace infs/nans", replace_nans_infs, replace_function_name)
-            self.colour_buttons[name].append(button)
-
-            ## REGIONS
-
-            # Regions button
-            region_button_id = self.colour_views[name].image_name + "regionsbutton"
-            load_region_function_name = "load_regions_" + self.colour_views[name].image_name
-            load_region = make_load_region(self.colour_regions[name], display=self.colour_views[name].display_id, movable=False,
-                                           rotatable=False, removable=False, resizable=False, quote_character="'")
-
-            # Create region loader
-            region_button = html.make_script_button(region_button_id, "Load regions", load_region, load_region_function_name)
-            self.colour_buttons[name].append(region_button)
-
-    # -----------------------------------------------------------------
-
-    def make_ssfr_buttons(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making buttons for sSFR maps ...")
-
-        # Loop over the maps
-        for name in self.ssfr_maps:
-
-            ## NANS/INFS
-
-            # Create nan/infs replacer button
-            button_id = self.ssfr_views[name].image_name + "nansinfs"
-            replace_function_name = "replace_infs_nans_" + self.ssfr_views[name].image_name
-            replace_nans_infs = make_replace_nans_infs(self.ssfr_views[name].display_id)
-
-            # Create the button
-            button = html.make_script_button(button_id, "Replace infs/nans", replace_nans_infs, replace_function_name)
-            self.ssfr_buttons[name].append(button)
-
-            ## REGIONS
-
-            # Regions button
-            region_button_id = self.ssfr_views[name].image_name + "regionsbutton"
-            load_region_function_name = "load_regions_" + self.ssfr_views[name].image_name
-            load_region = make_load_region(self.ssfr_regions[name], display=self.ssfr_views[name].display_id, movable=False,
-                                           rotatable=False, removable=False, resizable=False, quote_character="'")
-
-            # Create region loader
-            region_button = html.make_script_button(region_button_id, "Load regions", load_region, load_region_function_name)
-            self.ssfr_buttons[name].append(region_button)
-
-    # -----------------------------------------------------------------
-
-    def make_tir_buttons(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making buttons for TIR maps ...")
-
-        # Loop over the maps
-        for name in self.tir_maps:
-
-            ## NANS/INFS
-
-            # Create nans/infs replacer button
-            button_id = self.tir_views[name].image_name + "nansinfs"
-            replace_function_name = "replace_infs_nans_" + self.tir_views[name].image_name
-            replace_nans_infs = make_replace_nans_infs(self.tir_views[name].display_id)
-
-            # Create the button
-            button = html.make_script_button(button_id, "Replace infs/nans", replace_nans_infs, replace_function_name)
-            self.tir_buttons[name].append(button)
-
-            ## REGIONS
-
-            # Regions button
-            region_button_id = self.tir_views[name].image_name + "regionsbutton"
-            load_region_function_name = "load_regions_" + self.tir_views[name].image_name
-            load_region = make_load_region(self.tir_regions[name], display=self.tir_views[name].display_id, movable=False,
-                                           rotatable=False, removable=False, resizable=False, quote_character="'")
-
-            # Create region loader
-            region_button = html.make_script_button(region_button_id, "Load regions", load_region, load_region_function_name)
-            self.tir_views[name].append(region_button)
-
-    # -----------------------------------------------------------------
-
-    def make_attenuation_buttons(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making buttons for attenuation maps ...")
-
-        # Loop over the maps
-        for name in self.attenuation_maps:
-
-            ## NANS/INFS
-
-            # Create nans/infs replacer button
-            button_id = self.attenuation_views[name].image_name + "nansinfs"
-            replace_function_name = "replace_infs_nans_" + self.attenuation_views[name].image_name
-            replace_nans_infs = make_replace_nans_infs(self.attenuation_views[name].display_id)
-
-            # Create the button
-            button = html.make_script_button(button_id, "Replace infs/nans", replace_nans_infs, replace_function_name)
-            self.attenuation_buttons[name].append(button)
-
-            ## REGIONS
-
-            # Regions button
-            region_button_id = self.attenuation_views[name].image_name + "regionsbutton"
-            load_region_function_name = "load_regions_" + self.attenuation_views[name].image_name
-            load_region = make_load_region(self.attenuation_regions[name], display=self.attenuation_views[name].display_id, movable=False,
-                                           rotatable=False, removable=False, resizable=False, quote_character="'")
-
-            # Create region loader
-            region_button = html.make_script_button(region_button_id, "Load regions", load_region, load_region_function_name)
-            self.attenuation_buttons[name].append(region_button)
-
-    # -----------------------------------------------------------------
-
-    def make_old_buttons(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making buttons for old stellar maps ...")
-
-        # Loop over the maps
-        for name in self.old_maps:
-
-            ## NANS/INFS
-
-            # Create nans/infs replacer button
-            button_id = self.old_views[name].image_name + "nansinfs"
-            replace_function_name = "replace_infs_nans_" + self.old_views[name].image_name
-            replace_nans_infs = make_replace_nans_infs(self.old_views[name].display_id)
-
-            # Create the button
-            button = html.make_script_button(button_id, "Replace infs/nans", replace_nans_infs, replace_function_name)
-            self.old_buttons[name].append(button)
-
-            ## REGIONS
-
-            # Regions button
-            region_button_id = self.old_views[name].image_name + "regionsbutton"
-            load_region_function_name = "load_regions_" + self.old_views[name].image_name
-            load_region = make_load_region(self.old_regions[name], display=self.old_views[name].display_id, movable=False,
-                                           rotatable=False, removable=False, resizable=False, quote_character="'")
-
-            # Create region loader
-            region_button = html.make_script_button(region_button_id, "Load regions", load_region, load_region_function_name)
-            self.old_buttons[name].append(region_button)
-
-    # -----------------------------------------------------------------
-
-    def make_young_buttons(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making buttons for young stellar maps ...")
-
-        # Loop over the maps
-        for name in self.young_maps:
-
-            ## NANS/INFS
-
-            # Create nans/infs replacer button
-            button_id = self.young_views[name].image_name + "nansinfs"
-            replace_function_name = "replace_infs_nans_" + self.young_views[name].image_name
-            replace_nans_infs = make_replace_nans_infs(self.young_views[name].display_id)
-
-            # Create the button
-            button = html.make_script_button(button_id, "Replace infs/nans", replace_nans_infs, replace_function_name)
-            self.young_buttons[name].append(button)
-
-            ## REGIONS
-
-            # Regions button
-            region_button_id = self.young_views[name].image_name + "regionsbutton"
-            load_region_function_name = "load_regions_" + self.young_views[name].image_name
-            load_region = make_load_region(self.young_regions[name], display=self.young_views[name].display_id, movable=False,
-                                           rotatable=False, removable=False, resizable=False, quote_character="'")
-
-            # Create region loader
-            region_button = html.make_script_button(region_button_id, "Load regions", load_region, load_region_function_name)
-            self.young_buttons[name].append(region_button)
-
-    # -----------------------------------------------------------------
-
-    def make_ionizing_buttons(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making buttons for ionizing stellar maps ...")
-
-        # Loop over the maps
-        for name in self.ionizing_maps:
-
-            ## NANS/INFS
-
-            # Create nans/infs replacer button
-            button_id = self.ionizing_views[name].image_name + "nansinfs"
-            replace_function_name = "replace_infs_nans_" + self.ionizing_views[name].image_name
-            replace_nans_infs = make_replace_nans_infs(self.ionizing_views[name].display_id)
-
-            # Create the button
-            button = html.make_script_button(button_id, "Replace infs/nans", replace_nans_infs, replace_function_name)
-            self.ionizing_buttons[name].append(button)
-
-            ## REGIONS
-
-            # Regions button
-            region_button_id = self.ionizing_views[name].image_name + "regionsbutton"
-            load_region_function_name = "load_regions_" + self.ionizing_views[name].image_name
-            load_region = make_load_region(self.ionizing_regions[name], display=self.ionizing_views[name].display_id, movable=False,
-                                           rotatable=False, removable=False, resizable=False, quote_character="'")
-
-            # Create region loader
-            region_button = html.make_script_button(region_button_id, "Load regions", load_region, load_region_function_name)
-            self.ionizing_buttons[name].append(region_button)
-
-    # -----------------------------------------------------------------
-
-    def make_dust_buttons(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Making buttons for dust maps ...")
-
-        # Loop over the maps
-        for name in self.dust_maps:
-
-            ## NANS/INFS
-
-            # Create nans/infs replacer button
-            button_id = self.dust_views[name].image_name + "nansinfs"
-            replace_function_name = "replace_infs_nans_" + self.dust_views[name].image_name
-            replace_nans_infs = make_replace_nans_infs(self.dust_views[name].display_id)
-
-            # Create button
-            button = html.make_script_button(button_id, "Replace infs/nans", replace_nans_infs, replace_function_name)
-            self.dust_buttons[name].append(button)
-
-            ## REGIONS
-
-            # Regions button
-            region_button_id = self.dust_views[name].image_name + "regionsbutton"
-            load_region_function_name = "load_regions_" + self.dust_views[name].image_name
-            load_region = make_load_region(self.dust_regions[name], display=self.dust_views[name].display_id, movable=False,
-                                           rotatable=False, removable=False, resizable=False, quote_character="'")
-
-            # Create region loader
-            region_button = html.make_script_button(region_button_id, "Load regions", load_region, load_region_function_name)
-            self.dust_buttons[name].append(region_button)
 
     # -----------------------------------------------------------------
 
@@ -1991,32 +1305,8 @@ class AllMapsPageGenerator(MapsComponent):
         # Inform the user
         log.info("Making the table of colour maps ...")
 
-        cells = []
-
-        # Loop over the maps
-        for name in self.colour_maps:
-
-            # Make cell
-            cell = ""
-            #cell += html.center(name)
-            #cell += html.newline
-            #cell += image
-
-            # Add buttons
-            for button in self.colour_buttons[name]: cell += html.center(str(button))
-
-            # Add the view
-            cell += html.center(str(self.colour_views[name]))
-
-            # Add info
-            cell += html.newline
-            cell += self.colour_info[name]
-
-            # Add
-            cells.append(cell)
-
         # Make
-        self.colour_table = SimpleTable.rasterize(cells, ncolumns=ncolumns, css_class=self.table_class)
+        self.colour_table = SimpleTable(cells, css_class=self.table_class)
 
     # -----------------------------------------------------------------
 
@@ -2030,31 +1320,8 @@ class AllMapsPageGenerator(MapsComponent):
         # Inform the user
         log.info("Making the table of sSFR maps ...")
 
-        cells = []
-
-        # Loop over the maps
-        for name in self.ssfr_maps:
-
-            # Make cell
-            cell = ""
-            #cell += html.center(name)
-            #cell += html.newline
-
-            # Add buttons
-            for button in self.ssfr_buttons[name]: cell += html.center(str(button))
-
-            # Add the view
-            cell += html.center(str(self.ssfr_views[name]))
-
-            # Add info
-            cell += html.newline
-            cell += self.ssfr_info[name]
-
-            # Add
-            cells.append(cell)
-
         # Make
-        self.ssfr_table = SimpleTable.rasterize(cells, ncolumns=ncolumns, css_class=self.table_class)
+        self.ssfr_table = SimpleTable(cells, css_class=self.table_class)
 
     # -----------------------------------------------------------------
 
@@ -2068,31 +1335,8 @@ class AllMapsPageGenerator(MapsComponent):
         # Inform the user
         log.info("Making the table of TIR maps ...")
 
-        cells = []
-
-        # Loop over the maps
-        for name in self.tir_maps:
-
-            # Make cell
-            cell = ""
-            #cell += html.center(name)
-            #cell += html.newline
-
-            # Add buttons
-            for button in self.tir_buttons[name]: cell += html.center(str(button))
-
-            # Add the view
-            cell += html.center(str(self.tir_views[name]))
-
-            # Add info
-            cell += html.newline
-            cell += self.tir_info[name]
-
-            # Add
-            cells.append(cell)
-
         # Make
-        self.tir_table = SimpleTable.rasterize(cells, ncolumns=ncolumns, css_class=self.table_class)
+        self.tir_table = SimpleTable(cells, css_class=self.table_class)
 
     # -----------------------------------------------------------------
 
@@ -2106,31 +1350,8 @@ class AllMapsPageGenerator(MapsComponent):
         # Inform the user
         log.info("Making the table of attenuation maps ...")
 
-        cells = []
-
-        # Loop over the maps
-        for name in self.attenuation_maps:
-
-            # Make cell
-            cell = ""
-            #cell += html.center(name)
-            #cell += html.newline
-
-            # Add buttons
-            for button in self.attenuation_buttons[name]: cell += html.center(str(button))
-
-            # Add the view
-            cell += html.center(str(self.attenuation_views[name]))
-
-            # Add info
-            cell += html.newline
-            cell += self.attenuation_info[name]
-
-            # Add
-            cells.append(cell)
-
         # Make
-        self.attenuation_table = SimpleTable.rasterize(cells, ncolumns=ncolumns, css_class=self.table_class)
+        self.attenuation_table = SimpleTable.rasterize(cells, css_class=self.table_class)
 
     # -----------------------------------------------------------------
 
@@ -2144,32 +1365,8 @@ class AllMapsPageGenerator(MapsComponent):
         # Inform the user
         log.info("Making the table of old stellar maps ...")
 
-        cells = []
-
-        # Loop over the maps
-        for name in self.old_maps:
-
-            # Make cell
-            cell = ""
-            #cell += html.center(name)
-            #cell += html.newline
-            #cell += image
-
-            # Add buttons
-            for button in self.old_buttons[name]: cell += html.center(str(button))
-
-            # Add the view
-            cell += html.center(str(self.old_views[name]))
-
-            # Add info
-            cell += html.newline
-            cell += self.old_info[name]
-
-            # Add
-            cells.append(cell)
-
         # Make
-        self.old_table = SimpleTable.rasterize(cells, ncolumns=ncolumns, css_class=self.table_class)
+        self.old_table = SimpleTable.rasterize(cells, css_class=self.table_class)
 
     # -----------------------------------------------------------------
 
@@ -2183,31 +1380,8 @@ class AllMapsPageGenerator(MapsComponent):
         # Inform the user
         log.info("Making the table of young stellar maps ...")
 
-        cells = []
-
-        # Loop over the maps
-        for name in self.young_maps:
-
-            # Make cell
-            cell = ""
-            #cell += html.center(name)
-            #cell += html.newline
-
-            # Add buttons
-            for button in self.young_buttons[name]: cell += html.center(str(button))
-
-            # Add the view
-            cell += html.center(str(self.young_views[name]))
-
-            # Add info
-            cell += html.newline
-            cell += self.young_info[name]
-
-            # Add
-            cells.append(cell)
-
         # Make
-        self.young_table = SimpleTable.rasterize(cells, ncolumns=ncolumns, css_class=self.table_class)
+        self.young_table = SimpleTable.rasterize(cells, css_class=self.table_class)
 
     # -----------------------------------------------------------------
 
@@ -2221,31 +1395,8 @@ class AllMapsPageGenerator(MapsComponent):
         # Inform the user
         log.info("Making the table of ionizing stellar maps ...")
 
-        cells = []
-
-        # Loop over the maps
-        for name in self.ionizing_maps:
-
-            # Make cell
-            cell = ""
-            #cell += html.center(name)
-            #cell += html.newline
-
-            # Add buttons
-            for button in self.ionizing_buttons[name]: cell += html.center(str(button))
-
-            # Add the view
-            cell += html.center(str(self.ionizing_views[name]))
-
-            # Add info
-            cell += html.newline
-            cell += self.ionizing_info[name]
-
-            # Add
-            cells.append(cell)
-
         # Make
-        self.ionizing_table = SimpleTable.rasterize(cells, ncolumns=ncolumns, css_class=self.table_class)
+        self.ionizing_table = SimpleTable.rasterize(cells, css_class=self.table_class)
 
     # -----------------------------------------------------------------
 
@@ -2259,31 +1410,8 @@ class AllMapsPageGenerator(MapsComponent):
         # Inform the user
         log.info("Making the table of dust maps ...")
 
-        cells = []
-
-        # Loop over the maps
-        for name in self.dust_maps:
-
-            # Make cell
-            cell = ""
-            #cell += html.center(name)
-            #cell += html.newline
-
-            # Add buttons
-            for button in self.dust_buttons[name]: cell += html.center(str(button))
-
-            # Add the view
-            cell += html.center(str(self.dust_views[name]))
-
-            # Add info
-            cell += html.newline
-            cell += self.dust_info[name]
-
-            # Add
-            cells.append(cell)
-
         # Make
-        self.dust_table = SimpleTable.rasterize(cells, ncolumns=ncolumns, css_class=self.table_class)
+        self.dust_table = SimpleTable.rasterize(cells, css_class=self.table_class)
 
     # -----------------------------------------------------------------
 
@@ -2311,9 +1439,6 @@ class AllMapsPageGenerator(MapsComponent):
         classes["JS9Menubar"] = "data-backgroundColor"
         self.page += html.center(html.make_theme_button(classes=classes))
         self.page += html.newline
-
-        # Add the tables
-        #self.page += self.table
 
         # Add the colours table
         self.page += "COLOURS"

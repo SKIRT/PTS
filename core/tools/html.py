@@ -780,12 +780,19 @@ def make_script_button(id, text, script, function_name):
     :param function_name:
     """
 
-    code = button(id, text, function_name + "()")
-    code += "\n"
-    code += "<script>"
+    # code = button(id, text, function_name + "()")
+    # code += "\n"
+    # code += "<script>"
+    # code += "\n"
+    # code += make_script_function(function_name, script)
+    # code += "\n</script>"
+
+    code = "<script>"
     code += "\n"
     code += make_script_function(function_name, script)
     code += "\n</script>"
+    code += "\n"
+    code += button(id, text, function_name + "()")
 
     # Return the code
     return code
