@@ -276,8 +276,16 @@ class SimplePropertyComposite(object):
         # Create a new instance
         composite = cls()
 
+        properties = dict()
+        for key in dictionary:
+            ptype, pvalue = stringify(dictionary[key])
+            description = key
+            name = key.replace(" ", "_").lower()
+            properties[name] = dictionary[key] # set the value
+            composite.add_property(name, ptype, description)
+
         # Set the properties from the dictionary
-        composite.set_properties(dictionary)
+        composite.set_properties(properties)
 
         # Return the new property composite
         return composite

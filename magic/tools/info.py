@@ -55,7 +55,9 @@ def get_image_info(image_name, frame, **kwargs):
     if kwargs.pop("pixelscale", True): info["Pixelscale"] = pixelscale
     if kwargs.pop("psf_filter", True): info["PSF filter"] = frame.psf_filter_name
     if kwargs.pop("fwhm", True): info["FWHM"] = fwhm
-    if kwargs.pop("shape", True): info["Dimensions"] = (frame.xsize, frame.ysize)
+    #if kwargs.pop("shape", True): info["Dimensions"] = (frame.xsize, frame.ysize)
+    if kwargs.pop("xsize", True): info["xsize"] = frame.xsize
+    if kwargs.pop("ysize", True): info["ysize"] = frame.ysize
     if kwargs.pop("filesize", True): info["File size"] = filesize
 
     # Return the info
@@ -121,7 +123,9 @@ def get_image_info_from_header(image_name, header, **kwargs):
     if kwargs.pop("unit", True): info["Unit"] = unit
     if kwargs.pop("pixelscale", True): info["Pixelscale"] = pixelscale
     if kwargs.pop("fwhm", True): info["FWHM"] = fwhm
-    if kwargs.pop("shape", True): info["Dimensions"] = (nxpixels, nypixels)
+    #if kwargs.pop("shape", True): info["Dimensions"] = (nxpixels, nypixels)
+    if kwargs.pop("xsize", True): info["xsize"] = nxpixels
+    if kwargs.pop("ysize", True): info["ysize"] = nypixels
 
     if path is not None and kwargs.pop("filesize", True):
         filesize = fs.file_size(path).to("MB")

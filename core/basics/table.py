@@ -83,6 +83,8 @@ class SmartTable(Table):
         labels = kwargs.pop("labels", None)
         label = kwargs.pop("label", "-")
 
+        #print(composites)
+
         # Get list of lists of property names
         property_names = [composite.property_names for composite in composites]
         #property_types = [composite.property_types for composite in composites]
@@ -105,6 +107,9 @@ class SmartTable(Table):
         column_types = []
         column_units = []
 
+        # COLUMNS FOR WHICH THE VALUE HAS TO BE CONVERTED TO STRING
+        to_string = []
+
         # Make the columns
         for name in column_names:
 
@@ -123,6 +128,7 @@ class SmartTable(Table):
 
                 # Determine column type, unit and description
                 column_type = sequences.get_all_equal_value(types)
+                #print(types, column_type)
                 column_unit = sequences.get_first_not_none_value(units)
                 column_description = sequences.get_first_not_none_value(descriptions)
 
@@ -133,7 +139,17 @@ class SmartTable(Table):
                 elif column_type.endswith("integer"): real_type = int
                 elif column_type.endswith("string"): real_type = str
                 elif column_type.endswith("boolean"): real_type = bool
-                else: raise ValueError("Column type not recognized: " + str(column_type))
+                elif column_type.endswith("quantity"): real_type = float
+
+                # UNIT HAVE TO BE CONVERTED TO STRINGS
+                elif column_type.endswith("unit"):
+                    to_string.append(name)
+                    real_type = str
+
+                # SPECIAL CASE: WAS NONE FOR EACH COMPOSITE
+                elif column_type == "None": real_type = str
+
+                else: raise ValueError("Column type not recognized: " + str(column_type) + " (" + str(type(column_type)) + ")")
 
             # Add the column info
             table.add_column_info(name, real_type, column_unit, column_description)
@@ -156,7 +172,9 @@ class SmartTable(Table):
                 else:
 
                     # Get the value
-                    if hasattr(composite, name): value = getattr(composite, name)
+                    if hasattr(composite, name):
+                        value = getattr(composite, name)
+                        if name in to_string: value = str(value)
                     else: value = None
 
                 # Add the value

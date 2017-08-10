@@ -854,3 +854,18 @@ def prepend(sequence, item):
     sequence.insert(0, item)
 
 # -----------------------------------------------------------------
+
+def is_subset(sequence, other_sequence):
+
+    """
+    This function ...
+    :param sequence:
+    :param other_sequence:
+    :return:
+    """
+
+    for item in sequence:
+        if item not in other_sequence: return False
+    return True
+
+# -----------------------------------------------------------------

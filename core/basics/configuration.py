@@ -32,6 +32,7 @@ from .composite import SimplePropertyComposite
 from ..tools import introspection
 from ..tools import numbers, types
 from ..tools.stringify import tostr
+from ..tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -1748,7 +1749,13 @@ class ConfigurationDefinition(object):
 
         # Check default
         if default is not None and choices is not None:
-            if default not in choices: raise ValueError("The default value '" + tostr(default) + "' is not one of the choices (" + tostr(choices, delimiter=", ") + ")")
+
+            # List-type default value
+            if types.is_sequence(default):
+                if not sequences.is_subset(default, choices): raise ValueError("The default value '" + tostr(default, delimiter=", ") + "' does not contain a subset of the choices (" + tostr(choices, delimiter=", ") + ")")
+
+            # Regular default value
+            elif default not in choices: raise ValueError("The default value '" + tostr(default) + "' is not one of the choices (" + tostr(choices, delimiter=", ") + ")")
 
         # Add
         self.pos_optional[name] = Map(type=real_type, description=description, default=default, choices=choices,
@@ -1794,7 +1801,13 @@ class ConfigurationDefinition(object):
 
         # Check default
         if default is not None and choices is not None:
-            if default not in choices: raise ValueError("The default value '" + tostr(default) + "' is not one of the choices (" + tostr(choices, delimiter=", ") + ")")
+
+            # List-type default value
+            if types.is_sequence(default):
+                if not sequences.is_subset(default, choices): raise ValueError("The default value '" + tostr(default, delimiter=", ") + "' does not contain a subset of the choices (" + tostr(choices, delimiter=", ")) + ")"
+
+            # Regular default value
+            elif default not in choices: raise ValueError("The default value '" + tostr(default) + "' is not one of the choices (" + tostr(choices, delimiter=", ") + ")")
 
         # Add
         self.optional[name] = Map(type=real_type, description=description, default=default, choices=choices,
