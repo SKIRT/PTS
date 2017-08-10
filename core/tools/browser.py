@@ -56,5 +56,19 @@ def open_html(html):
 
     temp_path = fs.join(introspection.pts_temp_dir, "page.html")
     fs.write_text(temp_path, html)
+    return open_path(temp_path)
+
+# -----------------------------------------------------------------
+
+def open_page(page):
+
+    """
+    This function ...
+    :param page:
+    :return:
+    """
+
+    html = str(page)
+    return open_html(html)
 
 # -----------------------------------------------------------------

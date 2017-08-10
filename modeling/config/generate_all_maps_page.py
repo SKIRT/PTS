@@ -27,6 +27,16 @@ definition.add_optional("colormap", "string", "color map", default_colormap, cho
 definition.add_optional("scale", "string", "image scaling", default=default_scale, choices=scales)
 definition.add_optional("zoom", "string", "zoom function", default_zoom, choices=zooms)
 
+# Scales for different kinds of maps
+definition.add_optional("colour_scale", "string", "scaling for colour maps", "histeq")
+definition.add_optional("ssfr_scale", "string", "scaling for ssfr maps", "log")
+definition.add_optional("tir_scale", "string", "scaling for TIR maps", "log")
+definition.add_optional("attenuation_scale", "string", "scaling for attenuation maps", "log")
+definition.add_optional("old_scale", "string", "scaling for old stellar maps", "log")
+definition.add_optional("young_scale", "string", "scaling for young stellar maps", "log")
+definition.add_optional("ionizing_scale", "string", "scaling for ionizing stellar maps", "log")
+definition.add_optional("dust_scale", "string", "scaling for dust maps", "log")
+
 # For PNG
 definition.add_optional("colours", "string", "colour or colour map for plotting", default=default_colour)
 
@@ -44,5 +54,6 @@ definition.add_flag("info", "add info about the images", True)
 
 # ADVANCED
 definition.add_optional("nopen_files", "positive_integer", "number of open files necessary to make the script work", 1024)
+definition.add_flag("replace_nans", "replace NaNs (and Infs) by zero (Infs are converted to NaN by default)", False)
 
 # -----------------------------------------------------------------

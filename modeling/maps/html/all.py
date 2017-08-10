@@ -23,7 +23,7 @@ from ...core.environment import map_sub_names, colours_name, ssfr_name, tir_name
 from ....core.tools import filesystem as fs
 from ....core.tools.html import HTMLPage, SimpleTable, updated_footing, make_page_width
 from ....core.tools import html
-from ....magic.view.html import javascripts, css_scripts, JS9Spawner, make_replace_nans_infs, make_load_region
+from ....magic.view.html import javascripts, css_scripts, JS9Spawner, make_replace_nans_infs, make_load_region, make_replace_infs_by_nans
 from ....core.tools import browser
 from ....core.tools.utils import lazyproperty
 from ....core.tools import numbers
@@ -1307,13 +1307,16 @@ class AllMapsPageGenerator(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def make_view(self, name, filepath, plot):
+    def make_view(self, name, filepath, plot, scale, colormap, zoom):
 
         """
         This function ...
         :param name:
         :param filepath:
-        :param plot
+        :param plot:
+        :param scale:
+        :param colormap:
+        :param zoom
         :return:
         """
 
@@ -1321,9 +1324,9 @@ class AllMapsPageGenerator(MapsComponent):
         log.debug("Making a view of the '" + name + "' map ...")
 
         settings = dict()
-        settings["scale"] = self.config.scale
-        settings["colormap"] = self.config.colormap
-        settings["zoom"] = self.config.zoom
+        settings["scale"] = scale
+        settings["colormap"] = colormap
+        settings["zoom"] = zoom
 
         # Get region in image coordinates
         #region = self.disk_ellipse.to_pixel(self.coordinate_systems[name])
@@ -1423,7 +1426,7 @@ class AllMapsPageGenerator(MapsComponent):
             else: path = self.colour_maps[name].path
 
             # Make the view
-            view = self.make_view(name, path, self.colour_plots[name])
+            view = self.make_view(name, path, self.colour_plots[name], self.config.colour_scale, self.config.colormap, self.config.zoom)
 
             # Add
             self.colour_views[name] = view
@@ -1448,7 +1451,7 @@ class AllMapsPageGenerator(MapsComponent):
             else: path = self.ssfr_maps[name].path
 
             # Make the view
-            view = self.make_view(name, path, self.ssfr_plots[name])
+            view = self.make_view(name, path, self.ssfr_plots[name], self.config.ssfr_scale, self.config.colormap, self.config.zoom)
 
             # Add
             self.ssfr_views[name] = view
@@ -1473,7 +1476,7 @@ class AllMapsPageGenerator(MapsComponent):
             else: path = self.tir_maps[name].path
 
             # Make the view
-            view = self.make_view(name, path, self.tir_plots[name])
+            view = self.make_view(name, path, self.tir_plots[name], self.config.tir_scale, self.config.colormap, self.config.zoom)
 
             # Add
             self.tir_views[name] = view
@@ -1498,7 +1501,7 @@ class AllMapsPageGenerator(MapsComponent):
             else: path = self.attenuation_maps[name].path
 
             # Make the view
-            view = self.make_view(name, path, self.attenuation_plots[name])
+            view = self.make_view(name, path, self.attenuation_plots[name], self.config.attenuation_scale, self.config.colormap, self.config.zoom)
 
             # Add
             self.attenuation_views[name] = view
@@ -1523,7 +1526,7 @@ class AllMapsPageGenerator(MapsComponent):
             else: path = self.old_maps[name].path
 
             # Make the view
-            view = self.make_view(name, path, self.old_plots[name])
+            view = self.make_view(name, path, self.old_plots[name], self.config.old_scale, self.config.colormap, self.config.zoom)
 
             # Add
             self.old_views[name] = view
@@ -1548,7 +1551,7 @@ class AllMapsPageGenerator(MapsComponent):
             else: path = self.young_maps[name].path
 
             # Make the view
-            view = self.make_view(name, path, self.young_plots[name])
+            view = self.make_view(name, path, self.young_plots[name], self.config.young_scale, self.config.colormap, self.config.zoom)
 
             # Add
             self.young_views[name] = view
@@ -1573,7 +1576,7 @@ class AllMapsPageGenerator(MapsComponent):
             else: path = self.ionizing_maps[name].path
 
             # Make the view
-            view = self.make_view(name, path, self.ionizing_plots[name])
+            view = self.make_view(name, path, self.ionizing_plots[name], self.config.ionizing_scale, self.config.colormap, self.config.zoom)
 
             # Add
             self.ionizing_views[name] = view
@@ -1598,7 +1601,7 @@ class AllMapsPageGenerator(MapsComponent):
             else: path = self.dust_maps[name].path
 
             # Make the view
-            view = self.make_view(name, path, self.dust_plots[name])
+            view = self.make_view(name, path, self.dust_plots[name], self.config.scale, self.config.colormap, self.config.zoom)
 
             # Add
             self.dust_views[name] = view
@@ -1659,7 +1662,8 @@ class AllMapsPageGenerator(MapsComponent):
             # Create nan/infs replacer button
             button_id = self.colour_views[name].image_name + "nansinfs"
             replace_function_name = "replace_infs_nans_" + self.colour_views[name].image_name
-            replace_nans_infs = make_replace_nans_infs(self.colour_views[name].display_id)
+            if self.config.replace_nans: replace_nans_infs = make_replace_nans_infs(self.colour_views[name].display_id)
+            else: replace_nans_infs = make_replace_infs_by_nans(self.colour_views[name].display_id)
 
             # Create the button
             button = html.make_script_button(button_id, "Replace infs/nans", replace_nans_infs, replace_function_name)
@@ -1697,7 +1701,8 @@ class AllMapsPageGenerator(MapsComponent):
             # Create nan/infs replacer button
             button_id = self.ssfr_views[name].image_name + "nansinfs"
             replace_function_name = "replace_infs_nans_" + self.ssfr_views[name].image_name
-            replace_nans_infs = make_replace_nans_infs(self.ssfr_views[name].display_id)
+            if self.config.replace_nans: replace_nans_infs = make_replace_nans_infs(self.ssfr_views[name].display_id)
+            else: replace_nans_infs = make_replace_infs_by_nans(self.ssfr_views[name].display_id)
 
             # Create the button
             button = html.make_script_button(button_id, "Replace infs/nans", replace_nans_infs, replace_function_name)
@@ -1735,7 +1740,8 @@ class AllMapsPageGenerator(MapsComponent):
             # Create nans/infs replacer button
             button_id = self.tir_views[name].image_name + "nansinfs"
             replace_function_name = "replace_infs_nans_" + self.tir_views[name].image_name
-            replace_nans_infs = make_replace_nans_infs(self.tir_views[name].display_id)
+            if self.config.replace_nans: replace_nans_infs = make_replace_nans_infs(self.tir_views[name].display_id)
+            else: replace_nans_infs = make_replace_infs_by_nans(self.tir_views[name].display_id)
 
             # Create the button
             button = html.make_script_button(button_id, "Replace infs/nans", replace_nans_infs, replace_function_name)
@@ -1751,7 +1757,7 @@ class AllMapsPageGenerator(MapsComponent):
 
             # Create region loader
             region_button = html.make_script_button(region_button_id, "Load regions", load_region, load_region_function_name)
-            self.tir_views[name].append(region_button)
+            self.tir_buttons[name].append(region_button)
 
     # -----------------------------------------------------------------
 
@@ -1773,7 +1779,8 @@ class AllMapsPageGenerator(MapsComponent):
             # Create nans/infs replacer button
             button_id = self.attenuation_views[name].image_name + "nansinfs"
             replace_function_name = "replace_infs_nans_" + self.attenuation_views[name].image_name
-            replace_nans_infs = make_replace_nans_infs(self.attenuation_views[name].display_id)
+            if self.config.replace_nans: replace_nans_infs = make_replace_nans_infs(self.attenuation_views[name].display_id)
+            else: replace_nans_infs = make_replace_infs_by_nans(self.attenuation_views[name].display_id)
 
             # Create the button
             button = html.make_script_button(button_id, "Replace infs/nans", replace_nans_infs, replace_function_name)
@@ -1811,7 +1818,8 @@ class AllMapsPageGenerator(MapsComponent):
             # Create nans/infs replacer button
             button_id = self.old_views[name].image_name + "nansinfs"
             replace_function_name = "replace_infs_nans_" + self.old_views[name].image_name
-            replace_nans_infs = make_replace_nans_infs(self.old_views[name].display_id)
+            if self.config.replace_nans: replace_nans_infs = make_replace_nans_infs(self.old_views[name].display_id)
+            else: replace_nans_infs = make_replace_infs_by_nans(self.old_views[name].display_id)
 
             # Create the button
             button = html.make_script_button(button_id, "Replace infs/nans", replace_nans_infs, replace_function_name)
@@ -1849,7 +1857,8 @@ class AllMapsPageGenerator(MapsComponent):
             # Create nans/infs replacer button
             button_id = self.young_views[name].image_name + "nansinfs"
             replace_function_name = "replace_infs_nans_" + self.young_views[name].image_name
-            replace_nans_infs = make_replace_nans_infs(self.young_views[name].display_id)
+            if self.config.replace_nans: replace_nans_infs = make_replace_nans_infs(self.young_views[name].display_id)
+            else: replace_nans_infs = make_replace_infs_by_nans(self.young_views[name].display_id)
 
             # Create the button
             button = html.make_script_button(button_id, "Replace infs/nans", replace_nans_infs, replace_function_name)
@@ -1887,7 +1896,8 @@ class AllMapsPageGenerator(MapsComponent):
             # Create nans/infs replacer button
             button_id = self.ionizing_views[name].image_name + "nansinfs"
             replace_function_name = "replace_infs_nans_" + self.ionizing_views[name].image_name
-            replace_nans_infs = make_replace_nans_infs(self.ionizing_views[name].display_id)
+            if self.config.replace_nans: replace_nans_infs = make_replace_nans_infs(self.ionizing_views[name].display_id)
+            else: replace_nans_infs = make_replace_infs_by_nans(self.ionizing_views[name].display_id)
 
             # Create the button
             button = html.make_script_button(button_id, "Replace infs/nans", replace_nans_infs, replace_function_name)
@@ -1925,7 +1935,8 @@ class AllMapsPageGenerator(MapsComponent):
             # Create nans/infs replacer button
             button_id = self.dust_views[name].image_name + "nansinfs"
             replace_function_name = "replace_infs_nans_" + self.dust_views[name].image_name
-            replace_nans_infs = make_replace_nans_infs(self.dust_views[name].display_id)
+            if self.config.replace_nans: replace_nans_infs = make_replace_nans_infs(self.dust_views[name].display_id)
+            else: replace_nans_infs = make_replace_infs_by_nans(self.dust_views[name].display_id)
 
             # Create button
             button = html.make_script_button(button_id, "Replace infs/nans", replace_nans_infs, replace_function_name)

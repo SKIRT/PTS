@@ -17,6 +17,8 @@ from ...core.tools import filesystem as fs
 from ...core.tools.stringify import stringify_dict, stringify_list
 from ...core.tools import html
 from ...core.tools import strings
+from ..region.list import RegionList
+from ...core.tools import types
 
 # -----------------------------------------------------------------
 
@@ -83,7 +85,7 @@ js9_elements = """
 
 scales = ["log", "linear", "histeq", "power", "sqrt", "squared", "asinh", "sinh"]
 colormaps = ["grey", "heat", "cool", "viridis", "magma", "sls", "a", "b", "red", "green", "blue", "inferno", "plasma", "i8", "aips0", "bb", "he", "hsv", "rainbow", "standard", "staircase", "color"]
-zooms = ["toFit"]
+zooms = ["toFit", "in", "out"]
 
 # -----------------------------------------------------------------
 
@@ -315,13 +317,13 @@ class JS9Preloader(object):
         """
 
         string = '<script type="text/javascript">\n'
-        string += '    function init()\n'
-        string += '    {\n'
+        string += 'function init()\n'
+        string += '{\n'
 
         # Preload all images
-        for image, regions in zip(self.images, self.regions): string += image.preload(regions=regions) + "\n"
+        for image, regions in zip(self.images, self.regions): string += "    " + image.preload(regions=regions) + "\n"
 
-        string += "    }\n"
+        string += "}\n"
         string += "</script>\n"
         return string
 
@@ -615,7 +617,12 @@ class JS9Viewer(object):
         :return:
         """
 
-        string = '<div class="JS9" id="' + self.id + '"'
+        string = ""
+
+        # CENTER THE DIV ON THE PAGE
+        if self.center: string += "<center>\n"
+
+        string += '<div class="JS9" id="' + self.id + '"'
 
         if self.width is not None: string += ' data-width="' + str(self.width) + 'px"'
         if self.height is not None: string += ' data-height="' + str(self.height) + 'px"'
@@ -625,6 +632,11 @@ class JS9Viewer(object):
         string += ' center=' + str(int(self.center))
 
         string += '></div>'
+
+        # CENTER THE DIV ON THE PAGE
+        if self.center: string += "\n</center>"
+
+        # Return the html
         return string
 
 # -----------------------------------------------------------------
@@ -635,7 +647,7 @@ class JS9Menubar(object):
     This function ...
     """
 
-    def __init__(self, id, width=None, background_color=None, displays=None):
+    def __init__(self, id, width=None, background_color=None, displays=None, center=True):
 
         """
         This function ...
@@ -648,6 +660,7 @@ class JS9Menubar(object):
         self.width = width
         self.background_color = background_color
         self.displays = displays
+        self.center = center
 
     # -----------------------------------------------------------------
 
@@ -658,13 +671,23 @@ class JS9Menubar(object):
         :return:
         """
 
-        string = '<div class="JS9Menubar" id="' + self.id + '"'
+        string = ""
+
+        # CENTER ON THE PAGE
+        if self.center: string += "<center>\n"
+
+        string += '<div class="JS9Menubar" id="' + self.id + '"'
         if self.width is not None: string += ' data-width="' + str(self.width) + 'px"'
         if self.background_color is not None: string += ' data-backgroundColor="' + self.background_color + '"'
         if self.displays is not None: string += ' data-displays="' + stringify_list(self.displays)[1] + '"'
 
         # End
         string += "></div>"
+
+        # CENTER ON THE PAGE
+        if self.center: string += "\n</center>"
+
+        # Return the HTML
         return string
 
 # -----------------------------------------------------------------
@@ -704,14 +727,20 @@ class JS9Magnifier(object):
     This class ...
     """
 
-    def __init__(self, id):
+    def __init__(self, id, center=True, toolbar=True, background_color=None):
 
         """
         This function ...
         :param id:
+        :param center:
+        :param toolbar:
+        :param background_color:
         """
 
         self.id = id
+        self.center = center
+        self.toolbar = toolbar
+        self.background_color = background_color
 
     # -----------------------------------------------------------------
 
@@ -722,7 +751,23 @@ class JS9Magnifier(object):
         :return:
         """
 
-        string = '<div class="JS9Magnifier" id="' + self.id + '"></div>'
+        string = ""
+
+        # CENTER ON THE PAGE
+        if self.center: string += "<center>\n"
+
+        string += '<div class="JS9Magnifier" id="' + self.id + '"'
+
+        string += ' data-toolbarseparate=' + str(self.toolbar).lower()
+
+        if self.background_color is not None: string += ' data-backgroundColor="' + self.background_color + '"'
+
+        string += "></div>"
+
+        # CENTER ON THE PAGE
+        if self.center: string += "\n</center>"
+
+        # Return the HTML
         return string
 
 # -----------------------------------------------------------------
@@ -733,16 +778,19 @@ class JS9Colorbar(object):
     This class ...
     """
 
-    def __init__(self, id, width=None):
+    def __init__(self, id, width=None, center=True, background_color=None):
 
         """
         This function ...
         :param id:
         :param width:
+        :param center:
         """
 
         self.id = id
         self.width = width
+        self.center = center
+        self.background_color = background_color
 
     # -----------------------------------------------------------------
 
@@ -753,11 +801,23 @@ class JS9Colorbar(object):
         :return:
         """
 
-        string = '<div class="JS9Colorbar" id="' + self.id + '"'
+        string = ""
+
+        # CENTER ON THE PAGE
+        if self.center: string += "<center>\n"
+
+        string += '<div class="JS9Colorbar" id="' + self.id + '"'
 
         if self.width is not None: string += ' data-width="' + str(self.width) + 'px"'
 
+        if self.background_color is not None: string += ' data-backgroundColor="' + self.background_color + '"'
+
         string += "></div>"
+
+        # CENTER ON THE PAGE
+        if self.center: string += "\n</center>"
+
+        # Return the HTML
         return string
 
 # -----------------------------------------------------------------
@@ -768,16 +828,23 @@ class JS9Panner(object):
     This function ...
     """
 
-    def __init__(self, id, width=None, height=None):
+    def __init__(self, id, width=None, height=None, center=None, toolbar=True, background_color=None):
 
         """
         This function ...
         :param id:
+        :param width:
+        :param height:
+        :param center:
+        :param toolbar:
         """
 
         self.id = id
         self.width = width
         self.height = height
+        self.center = center
+        self.toolbar = toolbar
+        self.background_color = background_color
 
     # -----------------------------------------------------------------
 
@@ -788,12 +855,25 @@ class JS9Panner(object):
         :return:
         """
 
-        string = '<div class="JS9Panner" id="' + self.id + '"'
+        string = ""
+
+        # CENTER ON THE PAGE
+        if self.center: string += "<center>\n"
+
+        string += '<div class="JS9Panner" id="' + self.id + '"'
 
         if self.width is not None: string += ' data-width="' + str(self.width) + 'px"'
         if self.height is not None: string += ' data-height="' + str(self.height) + 'px"'
+        string += ' data-toolbarseparate=' + str(self.toolbar).lower()
+
+        if self.background_color is not None: string += ' data-backgroundColor="' + self.background_color + '"'
 
         string += "></div>"
+
+        # CENTER ON THE PAGE
+        if self.center: string += "\n</center>"
+
+        # Return the HTML
         return string
 
 # -----------------------------------------------------------------
@@ -805,7 +885,8 @@ class JS9Window(object):
     """
 
     def __init__(self, name, width=None, height=None, background_color="white", menubar=True, colorbar=False,
-                 menubar_position="top", colorbar_position="bottom", resize=True, scrolling=True):
+                 menubar_position="top", colorbar_position="bottom", resize=True, scrolling=True, panner=False,
+                 magnifier=False, center=True, combine_panner_and_magnifier=True):
 
         """
         This function ...
@@ -817,10 +898,14 @@ class JS9Window(object):
         :param colorbar:
         :param resize:
         :param scrolling:
+        :param panner:
+        :param magnifier:
+        :param center:
+        :param combine_panner_and_magnifier:
         """
 
         # Create view
-        self.view = JS9Viewer(name, width=width, height=height, resize=resize, scrolling=scrolling)
+        self.view = JS9Viewer(name, width=width, height=height, resize=resize, scrolling=scrolling, center=center)
 
         # Set names
         # Set menu name
@@ -829,18 +914,32 @@ class JS9Window(object):
         # displays = [display_name]
         displays = None
         bar_name = name + "Colorbar"
+        panner_name = name + "Panner"
+        magnifier_name = name + "Magnifier"
 
         # Add menu bar
-        if menubar: self.menu = JS9Menubar(menu_name, displays=displays, width=width, background_color=background_color)
+        if menubar: self.menu = JS9Menubar(menu_name, displays=displays, width=width, background_color=background_color, center=center)
         else: self.menu = None
 
         # Add color bar
-        if colorbar: self.color = JS9Colorbar(bar_name, width=width)
+        if colorbar: self.color = JS9Colorbar(bar_name, width=width, center=center, background_color=background_color)
         else: self.color = None
+
+        # Add panner
+        if panner: self.panner = JS9Panner(panner_name, center=center, background_color=background_color)
+        else: self.panner = None
+
+        # Add magnifier
+        if magnifier: self.magnifier = JS9Magnifier(magnifier_name, center=center, background_color=background_color)
+        else: self.magnifier = None
 
         # Positions
         self.menubar_position = menubar_position
         self.colorbar_position = colorbar_position
+
+        # Flags
+        self.center = center
+        self.combine_panner_and_magnifier = combine_panner_and_magnifier
 
     # -----------------------------------------------------------------
 
@@ -861,10 +960,34 @@ class JS9Window(object):
         # Add view (if not dynamic)
         # if name in self.views: string += str(self.views[name])
 
+        # Combine panner and magnifier in a table
+        if self.panner is not None and self.magnifier is not None and self.combine_panner_and_magnifier:
+
+            # Make table
+            table = html.SimpleTable.from_cells(str(self.panner), str(self.magnifier))
+            if self.center: string += "<center>\n"
+            string += str(table)
+            if self.center: string += "\n</center>"
+            string += html.newline
+
+        else:
+
+            # Add panner
+            if self.panner is not None:
+                string += str(self.panner)
+                string += html.newline
+
+            # Add magnifier
+            if self.magnifier is not None:
+                string += str(self.magnifier)
+                string += html.newline
+
+        # Add menu to the top
         if self.menu is not None and self.menubar_position == "top":
             string += str(self.menu)
             string += html.newline
 
+        # Add colorbar to the top
         if self.color is not None and self.colorbar_position == "top":
             string += str(self.color)
             string += html.newline
@@ -872,10 +995,12 @@ class JS9Window(object):
         string += str(self.view)
         #string += html.newline
 
+        # Add colorbar to the bottom
         if self.color is not None and self.colorbar_position == "bottom":
             string += html.newline
             string += str(self.color)
 
+        # Add menubar to the bottom
         if self.menu is not None and self.menubar_position == "bottom":
             string += html.newline
             string += str(self.menu)
@@ -910,7 +1035,6 @@ def make_load_region(region, display=None, changeable=True, movable=True, resiza
     properties["lockRotation"] = str(lock_rotation).lower()
 
     string += "var region_id = JS9.AddRegions('" + str(region) + "'"
-
     string += ', {' + stringify_dict(properties, identity_symbol=":", quote_key=False, quote_value=False, quote_character=quote_character)[1] + '}'
 
     if display is not None:
@@ -918,7 +1042,7 @@ def make_load_region(region, display=None, changeable=True, movable=True, resiza
         elif quote_character == "'": string += ", {display:'" + display + "'}"
         else: raise ValueError("Invalid quote character: " + quote_character)
     string += ');'
-    string += "\n"
+    #string += "\n"
 
     #string += "window.alert(region_id);"
 
@@ -926,7 +1050,123 @@ def make_load_region(region, display=None, changeable=True, movable=True, resiza
 
 # -----------------------------------------------------------------
 
+def make_load_regions(regions, **kwargs):
+
+    """
+    This function ...
+    :param regions:
+    :param kwargs:
+    :return:
+    """
+
+    # Create string
+    if isinstance(regions, RegionList): regionstring = regions.to_string(add_header=False).replace("\n", "; ")
+    elif types.is_sequence(regions):
+        regionstring = ""
+        for region in regions: regionstring += str(region) + ";\n"
+    else: raise ValueError("The regions must be a region list or a sequence of regions")
+
+    regionstring = regionstring.replace("point=x", "point={x}")
+
+    # Load region string as it were a single reason ('hack' the make_load_region function)
+    return make_load_region(regionstring, **kwargs)
+
+# -----------------------------------------------------------------
+
+# def make_load_regions_test(regions, **kwargs):
+#
+#     """
+#     This function ...
+#     :param regions:
+#     :param kwargs:
+#     :return:
+#     """
+#
+#     string = ""
+#     for region in regions: string += make_load_region(region, **kwargs) + "\n"
+#     return string
+#
+# # -----------------------------------------------------------------
+#
+# def make_load_regions_not_working(regions, display=None, changeable=True, movable=True, resizable=True, rotatable=True,
+#                      removable=True, zoomable=True, lock_x=False, lock_y=False, lock_rotation=False,
+#                      quote_character='"'):
+#
+#     """
+#     This function ...
+#     :param regions:
+#     :param display:
+#     :param changeable:
+#     :param movable:
+#     :param resizable:
+#     :param rotatable:
+#     :param removable:
+#     :param zoomable:
+#     :param lock_x:
+#     :param lock_y:
+#     :param lock_rotation:
+#     :param quote_character:
+#     :return:
+#     """
+#
+#     string = ""
+#
+#     properties = dict()
+#     properties["changeable"] = str(changeable).lower()
+#     properties["movable"] = str(movable).lower()
+#     properties["resizable"] = str(resizable).lower()
+#     properties["rotatable"] = str(rotatable).lower()
+#     properties["removable"] = str(removable).lower()
+#     properties["zoomable"] = str(zoomable).lower()
+#     properties["lockMovementX"] = str(lock_x).lower()
+#     properties["lockMovementY"] = str(lock_y).lower()
+#     properties["lockRotation"] = str(lock_rotation).lower()
+#
+#     if len(regions) == 0: raise ValueError("No regions")
+#
+#     #regions_string = "[" + ", ".join("'" + str(region) + "'" for region in regions) + "]"
+#
+#     strings = []
+#     for region in regions:
+#         region_string = "'" + str(region) + "'"
+#         region_string += ', {' + stringify_dict(properties, identity_symbol=":", quote_key=False, quote_value=False, quote_character=quote_character)[1] + '}'
+#         strings.append(region_string)
+#
+#     regions_string = "[" + ", ".join(region_string for region_string in strings) + "]"
+#
+#     #string += "var region_id = JS9.AddRegions('" + str(region) + "'"
+#     string += "var region_id = JS9.AddRegions(" + regions_string
+#
+#     #string += ', {' + stringify_dict(properties, identity_symbol=":", quote_key=False, quote_value=False, quote_character=quote_character)[1] + '}'
+#
+#     if display is not None:
+#         if quote_character == '"': string += ', {display:"' + display + '"}'
+#         elif quote_character == "'": string += ", {display:'" + display + "'}"
+#         else: raise ValueError("Invalid quote character: " + quote_character)
+#     string += ');'
+#     #string += "\n"
+#
+#     #string += "window.alert(region_id);"
+#
+#     return string
+
+# -----------------------------------------------------------------
+
 def make_load_region_function(name, region, display=None):
+
+    """
+    This function ...
+    :param name:
+    :param region:
+    :param display:
+    :return:
+    """
+
+    return make_load_regions_function(name, [region], display=display)
+
+# -----------------------------------------------------------------
+
+def make_load_regions_function(name, regions, display=None):
 
     """
     This function ...
@@ -941,7 +1181,7 @@ def make_load_region_function(name, region, display=None):
     string += "\n"
     string += "{"
 
-    for line in make_load_region(region, display=display).split("\n"):
+    for line in make_load_regions(regions, display=display).split("\n"):
         string += "    " + line + "\n"
 
     string += "}"
@@ -949,25 +1189,25 @@ def make_load_region_function(name, region, display=None):
 
 # -----------------------------------------------------------------
 
-def make_load_regions(regions, display=None):
-
-    """
-    This function ...
-    :param regions:
-    :param display:
-    :return:
-    """
-
-    string = ""
-
-    for region in regions:
-
-        string += "JS9.AddRegions('" + str(region) + "'"
-        if display is not None: string += ', {display:"' + display + '"}'
-        string += ');'
-        string += "\n"
-
-    return string
+# def make_load_regions(regions, display=None):
+#
+#     """
+#     This function ...
+#     :param regions:
+#     :param display:
+#     :return:
+#     """
+#
+#     string = ""
+#
+#     for region in regions:
+#
+#         string += "JS9.AddRegions('" + str(region) + "'"
+#         if display is not None: string += ', {display:"' + display + '"}'
+#         string += ');'
+#         string += "\n"
+#
+#     return string
 
 # -----------------------------------------------------------------
 
@@ -1008,6 +1248,21 @@ def make_load_regions_function(name, regions, display=None):
         runMyAnalysis(lastim, lastreg);
       }
     }"""
+
+# -----------------------------------------------------------------
+
+def make_synchronize_regions_script(indicator_id, display_ids, ellipses, ndecimals=3):
+
+    """
+    This function ...
+    :param indicator_id:
+    :param display_ids:
+    :param ellipses:
+    :param ndecimals:
+    :return:
+    """
+
+    return "<script>\n" + make_synchronize_regions(indicator_id, display_ids, ellipses, ndecimals=ndecimals) + "</script>"
 
 # -----------------------------------------------------------------
 
@@ -1406,6 +1661,26 @@ function replaceNansInfs(oraw, nraw, opts)
 
 # -----------------------------------------------------------------
 
+replace_infs_by_nans_function = """
+function replaceInfsByNans(oraw, nraw, opts)
+{
+    var i, len;
+    opts = opts || {};
+    
+    len = nraw.width * nraw.height;
+    for(i=0; i<len; i++)
+    {
+        if (oraw.data[i] == Infinity || oraw.data[i] == -Infinity)
+        {
+            nraw.data[i] = NaN;
+        }
+    }
+    return true;
+}
+"""
+
+# -----------------------------------------------------------------
+
 def make_replace_nans_infs(display=None, quote_character='"'):
 
     """
@@ -1433,6 +1708,33 @@ def make_replace_nans_infs(display=None, quote_character='"'):
 
 # -----------------------------------------------------------------
 
+def make_replace_infs_by_nans(display=None, quote_character='"'):
+
+    """
+    This function ...
+    :param display:
+    :param quote_character:
+    :return:
+    """
+
+    string = ""
+
+    string += replace_infs_by_nans_function
+    string += "\n"
+
+    string += "JS9.RawDataLayer({}, replaceInfsByNans"
+
+    if display is not None:
+        if quote_character == '"': string += ', {display:"' + display + '"}'
+        elif quote_character == "'": string += ", {display:'" + display + "'}"
+        else: raise ValueError("Invalid quote character: " + quote_character)
+    string += ');'
+    string += "\n"
+
+    return string
+
+# -----------------------------------------------------------------
+
 def make_usable(name):
 
     """
@@ -1441,5 +1743,106 @@ def make_usable(name):
     """
 
     return name.replace(" ", "").replace(".", "")  # CANNOT CONTAIN SPACES AND DOTS!!
+
+# -----------------------------------------------------------------
+
+def add_region_aux_file(name, path, image=None):
+
+    """
+    This function ...
+    :param name:
+    :param path:
+    :param image:
+    :return:
+    """
+
+    code = "JS9.auxfiles.push("
+
+    code += '{"type": "regions",'
+    code += '"name": "' + name + '",'
+    if image is not None: code += '"image": "' + image + '",'
+    code += '"url": "' + path + '"}'
+    code += ');'
+
+    # Return the code
+    return code
+
+# -----------------------------------------------------------------
+
+def add_mask_aux_file(name, path, image=None):
+
+    """
+    This function ...
+    :param name:
+    :param path:
+    :param image:
+    :return:
+    """
+
+    code = "JS9.auxfiles.push("
+
+    code += '{"type": "mask",'
+    code += ' "name": "' + name + '",'
+    if image is not None: code += ' "image": "' + image + '",'
+    code += ' "url": "' + path + '"}'
+    code += ');'
+
+    # Return the code
+    return code
+
+# -----------------------------------------------------------------
+
+def load_aux_file(name):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    code = 'JS9.LoadAuxFile("' + name + '")'
+    return code
+
+# -----------------------------------------------------------------
+
+def make_load_regions_and_masks_script():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return "<script>\n" + make_load_regions_and_masks() + "<\script>"
+
+# -----------------------------------------------------------------
+
+def make_load_regions_and_masks():
+
+    """
+    This function ...
+    :return:
+    """
+
+    code = ""
+
+    """
+    // run this routine after loading each image
+    function onImageLoad(im){
+      JS9.LoadAuxFile("sciencemasks", function(im, aux){
+        // if we succeed in loading the mask, set up the onchange callback
+        im.onregionschange = regionOnChange;
+        // view the image through the mask data
+        im.maskData = aux.im.raw.data;
+        // I mean now!
+	im.displayImage("all");
+      });
+    JS9.LoadAuxFile("scienceregions");
+  }"""
+
+    # // tell JS9 about the onload callback
+    code += "JS9.imageOpts.onload = onImageLoad;"
+
+    # Return the code
+    return code
 
 # -----------------------------------------------------------------

@@ -866,7 +866,7 @@ def regular_to_string(reg, frame, radunit, fmt, coordsys):
 
 # -----------------------------------------------------------------
 
-def ds9_objects_to_string(regions, coordsys='fk5', fmt='.4f', radunit='deg'):
+def ds9_objects_to_string(regions, coordsys='fk5', fmt='.4f', radunit='deg', add_header=True):
 
     """
     Convert list of regions ato ds9 region strings.
@@ -876,8 +876,12 @@ def ds9_objects_to_string(regions, coordsys='fk5', fmt='.4f', radunit='deg'):
     :param radunit:
     """
 
-    output = '# Region file format: DS9 PTS/magic/region\n'
-    output += '{}\n'.format(coordsys)
+    output = ""
+
+    # Add the header
+    if add_header:
+        output += '# Region file format: DS9 PTS/magic/region\n'
+        output += '{}\n'.format(coordsys)
 
     # convert coordsys string to coordsys object
     if coordsys in coordsys_name_mapping: frame = frame_transform_graph.lookup_name(coordsys_name_mapping[coordsys])
@@ -1287,6 +1291,31 @@ class RegionList(list):
 
     # -----------------------------------------------------------------
 
+    def to_string(self, coordsys='fk5', add_header=True):
+        
+        """
+        This function ...
+        :param coordsys:
+        :param add_header:
+        :return: 
+        """
+
+        # Convert to string
+        return ds9_objects_to_string(self, coordsys, add_header=add_header)
+
+    # -----------------------------------------------------------------
+
+    def __str__(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.to_string()
+
+    # -----------------------------------------------------------------
+
     def saveto(self, path, coordsys='fk5'):
 
         """
@@ -1296,11 +1325,8 @@ class RegionList(list):
         :return:
         """
 
-        # Convert to string
-        output = ds9_objects_to_string(self, coordsys)
-
         # Write
-        with open(path, 'w') as fh: fh.write(output)
+        fs.write_text(path, self.to_string(coordsys=coordsys))
 
         # Update the path
         self.path = path
@@ -1940,6 +1966,18 @@ class PixelRegionList(RegionList):
         for shape in self:
             if max_y is None or shape.y_max > max_y: max_y = shape.y_max
         return max_y
+
+    # -----------------------------------------------------------------
+
+    def to_string(self, add_header=True):
+
+        """
+        This function ...
+        :param add_header:
+        :return:
+        """
+
+        return super(PixelRegionList, self).to_string(coordsys="image", add_header=add_header)
 
     # -----------------------------------------------------------------
 

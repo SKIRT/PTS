@@ -694,26 +694,30 @@ def make_theme_button(classes=None):
             class_code += "        var currentClass = thing.className;"
             class_code += "\n"
 
+            #class_code += "        window.alert(currentClass);\n"
+
             # Check class
-            class_code += "        if (currentClass == '" + class_name + "')\n        {"
-            class_code += "\n"
+            class_code += "        if (currentClass == '" + class_name + "')\n"
+            class_code += "        {\n"
 
-            property_name = classes[class_name]
-            sequence = property_name.split(".")
+            #class_code += "            window.alert(currentClass);\n"
 
-            property_sequence_string = "[" + "][".join("'" + s + "'"  for s in sequence) + "]"
-
-            # Set color for dark function
             dark_code = class_code
             light_code = class_code
 
-            dark_code += "            thing" + property_sequence_string + " = 'black';\n"
-            light_code += "            thing" + property_sequence_string + " = 'white';\n"
+            property_name = classes[class_name]
 
-            #property_name = classes[class_name]
+            ## DIDN'T WORK?
+            # sequence = property_name.split(".")
+            #
+            # property_sequence_string = "[" + "][".join("'" + s + "'"  for s in sequence) + "]"
+            #
+            # dark_code += "            thing" + property_sequence_string + " = 'black';\n"
+            # light_code += "            thing" + property_sequence_string + " = 'white';\n"
 
-            #dark_code += "\n"
-            #light_code += "\n"
+            ## NEW: only for one level!
+            dark_code += '            thing.setAttribute("' + property_name + '", "black");\n'
+            light_code += '            thing.setAttribute("' + property_name + '", "white");\n'
 
             dark_code += "        }\n        else {}"
             light_code += "        }\n        else {}"
@@ -1256,7 +1260,7 @@ class SimpleTable(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def rasterize(cls, cells, ncolumns=None, header_row=None, css_class=None, tostr_kwargs=None):
+    def rasterize(cls, cells, ncolumns=2, header_row=None, css_class=None, tostr_kwargs=None):
 
         """
         This function ...
@@ -1272,7 +1276,7 @@ class SimpleTable(object):
 
         rows = []
 
-        cellsiter = iter(cells + [""] * ncolumns)
+        cellsiter = iter(list(cells) + [""] * ncolumns)
 
         nrows = numbers.round_up_to_int(len(cells) / float(ncolumns))
 
@@ -1286,6 +1290,20 @@ class SimpleTable(object):
 
         # Create and return
         return cls(rows, header_row=header_row, css_class=css_class, tostr_kwargs=tostr_kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_cells(cls, *args, **kwargs):
+
+        """
+        This function ...
+        :param args:
+        :param kwargs:
+        :return:
+        """
+
+        return cls.rasterize(args, **kwargs)
 
     # -----------------------------------------------------------------
 

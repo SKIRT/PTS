@@ -263,7 +263,7 @@ class PixelCircleRegion(CircleRegion, PixelRegion):
         y = self.center.y
         r = self.radius
 
-        string = prefix + make_circle_template(fmt, unitstr).format(**locals())
+        string = prefix + make_circle_template(fmt, radunitstr).format(**locals())
         string = add_info(string, self)
         return string
 

@@ -19,7 +19,7 @@ import gc
 from .component import TruncationComponent
 from ...core.tools.html import HTMLPage, SimpleTable, newline, updated_footing, make_theme_button, center, sleep_function, other_sleep_function, make_script_button, unordered_list, button, dictionary
 from ...core.basics.log import log
-from ...magic.view.html import JS9Viewer, JS9Preloader, body_settings, javascripts, css_scripts, JS9Menubar, JS9Loader, JS9Spawner, JS9Colorbar, JS9Window, make_load_region_function, make_load_region, make_synchronize_regions
+from ...magic.view.html import JS9Viewer, JS9Preloader, body_settings, javascripts, css_scripts, JS9Menubar, JS9Loader, JS9Spawner, JS9Colorbar, JS9Window, make_load_region_function, make_load_region, make_synchronize_regions_script
 from ...magic.view.html import make_spawn_code, add_to_div, make_usable
 from ...core.tools import filesystem as fs
 from ...core.tools.utils import lazyproperty
@@ -711,7 +711,7 @@ class TruncationPageGenerator(TruncationComponent):
             ellipses[display_id] = self.ellipses[name]
 
         #ellipse = self.ellipses[name]
-        self.page += "<script>\n" + make_synchronize_regions(self.indicator_id, self.display_ids.values(), ellipses) + "</script>\n"
+        self.page += make_synchronize_regions_script(self.indicator_id, self.display_ids.values(), ellipses) + "\n"
 
         self.page += center(make_theme_button(classes=classes))
 
