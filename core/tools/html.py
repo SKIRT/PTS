@@ -1231,7 +1231,7 @@ class SimpleTable(object):
     table = SimpleTable(rows)
     """
 
-    def __init__(self, rows, header_row=None, css_class=None, bgcolors=None, tostr_kwargs=None):
+    def __init__(self, rows, header_row=None, css_class=None, bgcolors=None, tostr_kwargs=None, subheader_row=None):
 
         """
         Table constructor.
@@ -1242,6 +1242,7 @@ class SimpleTable(object):
                       responsibility to verify whether it was created with the
                       header flag set to True.
         css_class -- table CSS class
+        subheader_row:
         """
 
         if isinstance(rows[0], SimpleTableRow): self.rows = rows
@@ -1253,6 +1254,11 @@ class SimpleTable(object):
         if header_row is None: self.header_row = None
         elif isinstance(header_row, SimpleTableRow): self.header_row = header_row
         else: self.header_row = SimpleTableRow(header_row, header=True, tostr_kwargs=tostr_kwargs)
+
+        # Set subheader row
+        if subheader_row is None: self.subheader_row = None
+        elif isinstance(subheader_row, SimpleTableRow): self.subheader_row = subheader_row
+        else: self.subheader_row = SimpleTableRow(subheader_row, tostr_kwargs=tostr_kwargs)
 
         # Set CSS class
         self.css_class = css_class
@@ -1307,6 +1313,22 @@ class SimpleTable(object):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_table(cls, table, css_class=None, bgcolors=None, tostr_kwargs=None):
+
+        """
+        This function ...
+        :param table:
+        :param css_class:
+        :param bgcolors:
+        :param tostr_kwargs:
+        :return:
+        """
+
+        return cls(table.as_tuples(add_units=False), header_row=table.column_names, subheader_row=table.unit_strings, css_class=css_class, bgcolors=bgcolors, tostr_kwargs=tostr_kwargs)
+
+    # -----------------------------------------------------------------
+
     def __str__(self):
 
         """
@@ -1318,7 +1340,9 @@ class SimpleTable(object):
         if self.css_class: table.append('<table class=%s>' % self.css_class)
         else: table.append('<table>')
 
-        if self.header_row: table.append(str(self.header_row))
+        # Add header and subheader
+        if self.header_row is not None: table.append(str(self.header_row))
+        if self.subheader_row is not None: table.append(str(self.subheader_row))
 
         for row in self.rows: table.append(str(row))
 

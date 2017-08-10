@@ -24,6 +24,7 @@ from ....core.tools import browser
 from ....magic.tools.info import get_image_info_strings, get_image_info
 from ....core.basics.table import SmartTable
 from ....core.basics.composite import SimplePropertyComposite
+from ....core.tools.utils import lazyproperty
 
 # -----------------------------------------------------------------
 
@@ -313,6 +314,27 @@ class MapsSummaryPageGenerator(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def info_kwargs(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        kwargs = dict()
+        kwargs["path"] = False
+        kwargs["name"] = False
+        kwargs["xsize"] = False
+        kwargs["ysize"] = False
+        kwargs["psf_filter"] = False
+        kwargs["filesize"] = False
+        kwargs["filter"] = False
+        kwargs["wavelength"] = False
+        return kwargs
+
+    # -----------------------------------------------------------------
+
     def get_info(self):
 
         """
@@ -364,7 +386,7 @@ class MapsSummaryPageGenerator(MapsComponent):
 
             # Get info
             #info = get_image_info_strings(name, self.colour_maps[name])
-            info = get_image_info(name, self.colour_maps[name], path=False)
+            info = get_image_info(name, self.colour_maps[name], **self.info_kwargs)
 
             # Make list
             #code = html.unordered_list(info)
@@ -393,7 +415,7 @@ class MapsSummaryPageGenerator(MapsComponent):
 
             # Get info
             #info = get_image_info_strings(name, self.ssfr_maps[name])
-            info = get_image_info(name, self.ssfr_maps[name], path=False)
+            info = get_image_info(name, self.ssfr_maps[name], **self.info_kwargs)
 
             # Make list
             #code = html.unordered_list(info)
@@ -422,7 +444,7 @@ class MapsSummaryPageGenerator(MapsComponent):
 
             # Get info
             #info = get_image_info_strings(name, self.tir_maps[name])
-            info = get_image_info(name, self.tir_maps[name], path=False)
+            info = get_image_info(name, self.tir_maps[name], **self.info_kwargs)
 
             # Make list
             #code = html.unordered_list(info)
@@ -451,7 +473,7 @@ class MapsSummaryPageGenerator(MapsComponent):
 
             # Get info
             #info = get_image_info_strings(name, self.attenuation_maps[name])
-            info = get_image_info(name, self.attenuation_maps[name], path=False)
+            info = get_image_info(name, self.attenuation_maps[name], **self.info_kwargs)
 
             # Make list
             #code = html.unordered_list(info)
@@ -480,7 +502,7 @@ class MapsSummaryPageGenerator(MapsComponent):
 
             # Get info
             #info = get_image_info_strings(name, self.old_maps[name])
-            info = get_image_info(name, self.old_maps[name], path=False)
+            info = get_image_info(name, self.old_maps[name], **self.info_kwargs)
 
             # Make list
             #code = html.unordered_list(info)
@@ -509,7 +531,7 @@ class MapsSummaryPageGenerator(MapsComponent):
 
             # Get info
             #info = get_image_info_strings(name, self.young_maps[name])
-            info = get_image_info(name, self.young_maps[name], path=False)
+            info = get_image_info(name, self.young_maps[name], **self.info_kwargs)
 
             # Make list
             #code = html.unordered_list(info)
@@ -538,7 +560,7 @@ class MapsSummaryPageGenerator(MapsComponent):
 
             # Get info
             #info = get_image_info_strings(name, self.ionizing_maps[name])
-            info = get_image_info(name, self.ionizing_maps[name], path=False)
+            info = get_image_info(name, self.ionizing_maps[name], **self.info_kwargs)
 
             # Make list
             #code = html.unordered_list(info)
@@ -567,7 +589,7 @@ class MapsSummaryPageGenerator(MapsComponent):
 
             # Get info
             #info = get_image_info_strings(name, self.dust_maps[name])
-            info = get_image_info(name, self.dust_maps[name], path=False)
+            info = get_image_info(name, self.dust_maps[name], **self.info_kwargs)
 
             # Make list
             #code = html.unordered_list(info)
@@ -659,7 +681,7 @@ class MapsSummaryPageGenerator(MapsComponent):
         table = SmartTable.from_composites(*infos, labels=labels, label="Colour map")
 
         # Make
-        self.colour_table = SimpleTable(table.as_tuples(), header_row=table.column_names, css_class=self.table_class)
+        self.colour_table = SimpleTable.from_table(table, css_class=self.table_class)
 
     # -----------------------------------------------------------------
 
@@ -681,7 +703,7 @@ class MapsSummaryPageGenerator(MapsComponent):
         table = SmartTable.from_composites(*infos, labels=labels, label="sSFR map")
 
         # Make
-        self.ssfr_table = SimpleTable(table.as_tuples(), header_row=table.column_names, css_class=self.table_class)
+        self.ssfr_table = SimpleTable.from_table(table, css_class=self.table_class)
 
     # -----------------------------------------------------------------
 
@@ -703,7 +725,7 @@ class MapsSummaryPageGenerator(MapsComponent):
         table = SmartTable.from_composites(*infos, labels=labels, label="TIR map")
 
         # Make
-        self.tir_table = SimpleTable(table.as_tuples(), header_row=table.column_names, css_class=self.table_class)
+        self.tir_table = SimpleTable.from_table(table, css_class=self.table_class)
 
     # -----------------------------------------------------------------
 
@@ -725,7 +747,7 @@ class MapsSummaryPageGenerator(MapsComponent):
         table = SmartTable.from_composites(*infos, labels=labels, label="Attenuation map")
 
         # Make
-        self.attenuation_table = SimpleTable(table.as_tuples(), header_row=table.column_names, css_class=self.table_class)
+        self.attenuation_table = SimpleTable.from_table(table, css_class=self.table_class)
 
     # -----------------------------------------------------------------
 
@@ -747,7 +769,7 @@ class MapsSummaryPageGenerator(MapsComponent):
         table = SmartTable.from_composites(*infos, labels=labels, label="Old stellar map")
 
         # Make
-        self.old_table = SimpleTable(table.as_tuples(), header_row=table.column_names, css_class=self.table_class)
+        self.old_table = SimpleTable.from_table(table, css_class=self.table_class)
 
     # -----------------------------------------------------------------
 
@@ -769,7 +791,7 @@ class MapsSummaryPageGenerator(MapsComponent):
         table = SmartTable.from_composites(*infos, labels=labels, label="Young stellar map")
 
         # Make
-        self.young_table = SimpleTable(table.as_tuples(), header_row=table.column_names, css_class=self.table_class)
+        self.young_table = SimpleTable.from_table(table, css_class=self.table_class)
 
     # -----------------------------------------------------------------
 
@@ -791,7 +813,7 @@ class MapsSummaryPageGenerator(MapsComponent):
         table = SmartTable.from_composites(*infos, labels=labels, label="Ionizing stellar map")
 
         # Make
-        self.ionizing_table = SimpleTable(table.as_tuples(), header_row=table.column_names, css_class=self.table_class)
+        self.ionizing_table = SimpleTable.from_table(table, css_class=self.table_class)
 
     # -----------------------------------------------------------------
 
@@ -813,7 +835,7 @@ class MapsSummaryPageGenerator(MapsComponent):
         table = SmartTable.from_composites(*infos, labels=labels, label="Dust map")
 
         # Make
-        self.dust_table = SimpleTable(table.as_tuples(), header_row=table.column_names, css_class=self.table_class)
+        self.dust_table = SimpleTable.from_table(table, css_class=self.table_class)
 
     # -----------------------------------------------------------------
 

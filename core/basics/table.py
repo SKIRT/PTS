@@ -127,8 +127,8 @@ class SmartTable(Table):
                 descriptions = [composite.description_for_property(name) for composite in composites]
 
                 # Determine column type, unit and description
-                column_type = sequences.get_all_equal_value(types)
-                #print(types, column_type)
+                if sequences.all_equal_to(types, 'None') or sequences.all_none(types): column_type = 'None'
+                else: column_type = sequences.get_all_equal_value(types, ignore_none=True, ignore='None')
                 column_unit = sequences.get_first_not_none_value(units)
                 column_description = sequences.get_first_not_none_value(descriptions)
 
@@ -143,6 +143,11 @@ class SmartTable(Table):
 
                 # UNIT HAVE TO BE CONVERTED TO STRINGS
                 elif column_type.endswith("unit"):
+                    to_string.append(name)
+                    real_type = str
+
+                # FILTERS HAVE TO BE CONVERTED TO STRINGS
+                elif column_type.endswith("filter"):
                     to_string.append(name)
                     real_type = str
 
@@ -220,6 +225,20 @@ class SmartTable(Table):
         if column_name in self.meta["brightness"]: brightness = True
         else: brightness = False
         return u(self[column_name].unit, density=density, brightness=brightness)
+
+    # -----------------------------------------------------------------
+
+    def column_unit_string(self, column_name):
+
+        """
+        This function ...
+        :param column_name:
+        :return:
+        """
+
+        unit = self.column_unit(column_name)
+        if unit is None: return ""
+        else: return str(unit)
 
     # -----------------------------------------------------------------
 
@@ -498,22 +517,20 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
-    def get_value(self, colname, index):
+    def get_value(self, colname, index, add_unit=True):
 
         """
         This function ...
         :param colname:
         :param index:
+        :param add_unit:
         :return:
         """
 
         value = self[colname][index]
 
         if self[colname].mask[index]: value = None
-        elif self[colname].unit is not None:
-
-            # Add unit
-            value = value * self[colname].unit
+        elif self[colname].unit is not None and add_unit: value = value * self[colname].unit
 
         # Return the value
         return value
@@ -533,11 +550,12 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
-    def get_row(self, index):
+    def get_row(self, index, add_units=True):
 
         """
         This function ...
         :param index:
+        :param add_units:
         :return:
         """
 
@@ -546,7 +564,7 @@ class SmartTable(Table):
         for name in self.colnames:
 
             # Get the value
-            value = self.get_value(name, index)
+            value = self.get_value(name, index, add_unit=add_units)
 
             # Add the value
             row[name] = value
@@ -861,6 +879,34 @@ class SmartTable(Table):
     # -----------------------------------------------------------------
 
     @property
+    def units(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        units = []
+        for name in self.column_names: units.append(self.column_unit(name))
+        return units
+
+    # -----------------------------------------------------------------
+
+    @property
+    def unit_strings(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        strings = []
+        for name in self.column_names: strings.append(self.column_unit_string(name))
+        return strings
+
+    # -----------------------------------------------------------------
+
+    @property
     def ncolumns(self):
 
         """
@@ -884,16 +930,17 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
-    def as_tuples(self):
+    def as_tuples(self, add_units=True):
 
         """
         This function ...
+        :param add_units:
         :return:
         """
 
         tuples = []
         for index in range(len(self)):
-            values = self.get_row(index).values()
+            values = self.get_row(index, add_units=add_units).values()
             tuples.append(tuple(values))
         return tuples
 

@@ -175,12 +175,55 @@ def find_exact_index(seq, value):
 
 # -----------------------------------------------------------------
 
-def all_equal(lst, ignore_none=False):
+def all_equal_to(lst, value):
+
+    """
+    This function ...
+    :param lst:
+    :param value:
+    :return:
+    """
+
+    for item in lst:
+        if item != value: return False
+    return True
+
+# -----------------------------------------------------------------
+
+def all_identical_to(lst, value):
+
+    """
+    This function ...
+    :param lst:
+    :param value:
+    :return:
+    """
+
+    for item in lst:
+        if item is not value: return False
+    return True
+
+# -----------------------------------------------------------------
+
+def all_none(lst):
+
+    """
+    This function ...
+    :param lst:
+    :return:
+    """
+
+    return all_identical_to(lst, None)
+
+# -----------------------------------------------------------------
+
+def all_equal(lst, ignore_none=False, ignore=None):
 
     """
     This function ...
     :param lst:
     :param ignore_none:
+    :param ignore:
     :return:
     """
 
@@ -189,8 +232,13 @@ def all_equal(lst, ignore_none=False):
     first = lst[0]
 
     if first is None and ignore_none:
-        try: first = find_first_not_none(lst)
+        try: first = find_first_not_none(lst, ignore=ignore)
         except: raise ValueError("Cannot use empty list (except for Nones)") #return True # ALL NONE, SO ALL EQUAL
+
+    # ELIF because ignore is also passed to find_first_not_none
+    elif ignore is not None and first == ignore:
+        try: first = find_first(lst, ignore=ignore)
+        except: raise ValueError("Cannot use empty list (except for " + str(ignore) + ")")
 
     #print(first)
 
@@ -198,6 +246,9 @@ def all_equal(lst, ignore_none=False):
 
         # Ignore None?
         if ignore_none and lst[index] is None: continue
+
+        # Ignore other?
+        if ignore is not None and lst[index] == ignore: continue
 
         #print("comparing:")
         #print(first)
@@ -208,20 +259,26 @@ def all_equal(lst, ignore_none=False):
             #print("HEERE")
             return False
 
+    # All checks passed
     return True
 
 # -----------------------------------------------------------------
 
-def get_all_equal_value(sequence):
+def get_all_equal_value(sequence, ignore_none=False, ignore=None):
 
     """
     This function ...
     :param sequence:
+    :param ignore_none:
+    :param ignore:
     :return:
     """
 
-    if not all_equal(sequence): raise ValueError("Not all equal")
-    else: return sequence[0]
+    if not all_equal(sequence, ignore_none=ignore_none, ignore=ignore): raise ValueError("Not all equal: " + str(sequence))
+    else:
+        if ignore_none: return find_first_not_none(sequence, ignore=ignore)
+        elif ignore is not None: return find_first(sequence, ignore=ignore)
+        else: return sequence[0]
 
 # -----------------------------------------------------------------
 
@@ -305,19 +362,38 @@ def all_true(lst, ignore_none=False):
 
 # -----------------------------------------------------------------
 
-def find_first_not_none(lst):
+def find_first_not_none(lst, ignore=None):
 
     """
     This function ...
     :param lst:
+    :param ignore:
     :return:
     """
 
     for item in lst:
+        if ignore is not None and item == ignore: continue
         if item is not None: return item
 
     # Shouldn't get here
     raise ValueError("No not-None values")
+
+# -----------------------------------------------------------------
+
+def find_first(lst, ignore=None):
+
+    """
+    This function ...
+    :param lst:
+    :param ignore:
+    :return:
+    """
+
+    for item in lst:
+        if item != ignore: return item
+
+    # Shouldn't get here
+    raise ValueError("No not-" + str(ignore) + " values")
 
 # -----------------------------------------------------------------
 
