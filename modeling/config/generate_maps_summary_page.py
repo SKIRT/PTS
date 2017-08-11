@@ -20,4 +20,6 @@ definition.add_optional("nopen_files", "positive_integer", "number of open files
 # Flags
 definition.add_flag("thumbnails", "add map thumbnails", True)
 
+definition.add_optional("thumbnail_height", "positive_integer", "height of the thumbnails (in pixels)", 50)
+
 # -----------------------------------------------------------------

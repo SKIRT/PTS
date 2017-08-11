@@ -25,6 +25,7 @@ from ....magic.tools.info import get_image_info_strings, get_image_info
 from ....core.basics.table import SmartTable
 from ....core.basics.composite import SimplePropertyComposite
 from ....core.tools.utils import lazyproperty
+from .all import plots_name, colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name
 
 # -----------------------------------------------------------------
 
@@ -34,6 +35,10 @@ key_color = "#4180d3"
 # -----------------------------------------------------------------
 
 page_width = 600
+
+# -----------------------------------------------------------------
+
+thumbnail_title = "Thumbnail"
 
 # -----------------------------------------------------------------
 
@@ -132,6 +137,210 @@ class MapsSummaryPageGenerator(MapsComponent):
 
         # Set the number of allowed open file handles
         fs.set_nallowed_open_files(self.config.nopen_files)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def plots_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.maps_html_path, plots_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def colour_plots_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.plots_path, colours_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_colour_plots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_directory(self.colour_plots_path) and not fs.is_empty(self.colour_plots_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ssfr_plots_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.plots_path, ssfr_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ssfr_plots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_directory(self.ssfr_plots_path) and not fs.is_empty(self.ssfr_plots_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def tir_plots_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.plots_path, tir_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_tir_plots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_directory(self.tir_plots_path) and not fs.is_empty(self.tir_plots_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def attenuation_plots_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.plots_path, attenuation_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_attenuation_plots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_directory(self.attenuation_plots_path) and not fs.is_empty(self.attenuation_plots_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_plots_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.plots_path, old_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_old_plots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_directory(self.old_plots_path) and not fs.is_empty(self.old_plots_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_plots_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.plots_path, young_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_young_plots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_directory(self.young_plots_path) and not fs.is_empty(self.young_plots_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_plots_path(self):
+
+        """
+        Thisfunction ...
+        :return:
+        """
+
+        return fs.join(self.plots_path, ionizing_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_ionizing_plots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_directory(self.ionizing_plots_path) and not fs.is_empty(self.ionizing_plots_path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_plots_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.join(self.plots_path, dust_name)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_dust_plots(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.is_directory(self.dust_plots_path) and not fs.is_empty(self.dust_plots_path)
 
     # -----------------------------------------------------------------
 
@@ -651,28 +860,28 @@ class MapsSummaryPageGenerator(MapsComponent):
         log.info("Making thumbnails ...")
 
         # Colours
-        if self.has_colour_maps: self.make_colour_thumbnails()
+        if self.has_colour_maps and self.has_colour_plots: self.make_colour_thumbnails()
 
         # sSFR
-        if self.has_ssfr_maps: self.make_ssfr_thumbnails()
+        if self.has_ssfr_maps and self.has_ssfr_plots: self.make_ssfr_thumbnails()
 
         # TIR
-        if self.has_tir_maps: self.make_tir_thumbnails()
+        if self.has_tir_maps and self.has_tir_plots: self.make_tir_thumbnails()
 
         # Attenuation
-        if self.has_attenuation_maps: self.make_attenuation_thumbnails()
+        if self.has_attenuation_maps and self.has_attenuation_plots: self.make_attenuation_thumbnails()
 
         # Old
-        if self.has_old_maps: self.make_old_thumbnails()
+        if self.has_old_maps and self.has_old_plots: self.make_old_thumbnails()
 
         # Young
-        if self.has_young_maps: self.make_young_thumbnails()
+        if self.has_young_maps and self.has_young_plots: self.make_young_thumbnails()
 
         # Ionizing
-        if self.has_ionizing_maps: self.make_ionizing_thumbnails()
+        if self.has_ionizing_maps and self.has_ionizing_plots: self.make_ionizing_thumbnails()
 
         # Dust
-        if self.has_dust_maps: self.make_dust_thumbnails()
+        if self.has_dust_maps and self.has_dust_plots: self.make_dust_thumbnails()
 
     # -----------------------------------------------------------------
 
@@ -686,6 +895,21 @@ class MapsSummaryPageGenerator(MapsComponent):
         # Inform the user
         log.info("Making thumbnails of the colour maps ...")
 
+        # Loop over the maps
+        for name in self.colour_maps:
+
+            # Find the plot file
+            path = fs.join(self.colour_plots_path, name + ".png")
+
+            # Check
+            if not fs.is_file(path): continue
+
+            # Make image
+            image = html.image(path, alttext=name, height=self.config.thumbnail_height)
+
+            # Add the image
+            self.colour_thumbnails[name] = image
+
     # -----------------------------------------------------------------
 
     def make_ssfr_thumbnails(self):
@@ -697,6 +921,21 @@ class MapsSummaryPageGenerator(MapsComponent):
 
         # Inform the user
         log.info("Making thumbnails of the sSFR maps ...")
+
+        # Loop over the maps
+        for name in self.ssfr_maps:
+
+            # Find the plot file
+            path = fs.join(self.ssfr_plots_path, name + ".png")
+
+            # Check
+            if not fs.is_file(path): continue
+
+            # Make image
+            image = html.image(path, alttext=name, height=self.config.thumbnail_height)
+
+            # Add the image
+            self.ssfr_thumbnails[name] = image
 
     # -----------------------------------------------------------------
 
@@ -710,6 +949,21 @@ class MapsSummaryPageGenerator(MapsComponent):
         # Inform the user
         log.info("Making thumbnails of the TIR maps ...")
 
+        # Loop over the maps
+        for name in self.tir_maps:
+
+            # Find the plot file
+            path = fs.join(self.tir_plots_path, name + ".png")
+
+            # Check
+            if not fs.is_file(path): continue
+
+            # Make image
+            image = html.image(path, alttext=name, height=self.config.thumbnail_height)
+
+            # Add the image
+            self.tir_thumbnails[name] = image
+
     # -----------------------------------------------------------------
 
     def make_attenuation_thumbnails(self):
@@ -721,6 +975,21 @@ class MapsSummaryPageGenerator(MapsComponent):
 
         # Inform the user
         log.info("Making thumbnails of the attenuation maps ...")
+
+        # Loop over the maps
+        for name in self.attenuation_maps:
+
+            # Find the plot file
+            path = fs.join(self.attenuation_plots_path, name + ".png")
+
+            # Check
+            if not fs.is_file(path): continue
+
+            # Make image
+            image = html.image(path, alttext=name, height=self.config.thumbnail_height)
+
+            # Add the image
+            self.attenuation_thumbnails[name] = image
 
     # -----------------------------------------------------------------
 
@@ -734,6 +1003,21 @@ class MapsSummaryPageGenerator(MapsComponent):
         # Inform the user
         log.info("Making thumbnails of the old stellar maps ...")
 
+        # Loop over the maps
+        for name in self.old_maps:
+
+            # Find the plot file
+            path = fs.join(self.old_plots_path, name + ".png")
+
+            # Check
+            if not fs.is_file(path): continue
+
+            # Make image
+            image = html.image(path, alttext=name, height=self.config.thumbnail_height)
+
+            # Add the image
+            self.old_thumbnails[name] = image
+
     # -----------------------------------------------------------------
 
     def make_young_thumbnails(self):
@@ -745,6 +1029,21 @@ class MapsSummaryPageGenerator(MapsComponent):
 
         # Inform the user
         log.info("Making thumbnails of the young stellar maps ...")
+
+        # Loop over the maps
+        for name in self.young_maps:
+
+            # Find the plot file
+            path = fs.join(self.young_plots_path, name + ".png")
+
+            # Check
+            if not fs.is_file(path): continue
+
+            # Make image
+            image = html.image(path, alttext=name, height=self.config.thumbnail_height)
+
+            # Add the image
+            self.young_thumbnails[name] = image
 
     # -----------------------------------------------------------------
 
@@ -758,6 +1057,21 @@ class MapsSummaryPageGenerator(MapsComponent):
         # Inform the user
         log.info("Making thumbnails of the ionizing stellar maps ...")
 
+        # Loop over the maps
+        for name in self.ionizing_maps:
+
+            # Find the plot file
+            path = fs.join(self.ionizing_plots_path, name + ".png")
+
+            # Check
+            if not fs.is_file(path): continue
+
+            # Make image
+            image = html.image(path, alttext=name, height=self.config.thumbnail_height)
+
+            # Add the image
+            self.ionizing_thumbnails[name] = image
+
     # -----------------------------------------------------------------
 
     def make_dust_thumbnails(self):
@@ -769,6 +1083,21 @@ class MapsSummaryPageGenerator(MapsComponent):
 
         # Inform the user
         log.info("Making thumbnails of the dust maps ...")
+
+        # Loop over the maps
+        for name in self.dust_maps:
+
+            # Find the plot file
+            path = fs.join(self.dust_plots_path, name + ".png")
+
+            # Check
+            if not fs.is_file(path): continue
+
+            # Make image
+            image = html.image(path, alttext=name, height=self.config.thumbnail_height)
+
+            # Add the image
+            self.dust_thumbnails[name] = image
 
     # -----------------------------------------------------------------
 
@@ -822,15 +1151,16 @@ class MapsSummaryPageGenerator(MapsComponent):
         infos = self.colour_info.values()
         labels = self.colour_info.keys()
 
-        # Create the table
-        #table = SmartTable.from_composites(*infos, labels=labels, label="Colour map")
-
-        # Make
-        #self.colour_table = SimpleTable.from_table(table, css_class=self.table_class)
+        # Set the thumbnails
+        thumbnails = []
+        for label in labels:
+            if label in self.colour_thumbnails: thumbnails.append(html.center(self.colour_thumbnails[label]))
+            else: thumbnails.append("")
 
         # Make the table
         label = "Colour map"
-        self.colour_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label)
+        self.colour_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label,
+                                                        extra_column=thumbnails, extra_column_label=thumbnail_title)
 
     # -----------------------------------------------------------------
 
@@ -848,15 +1178,16 @@ class MapsSummaryPageGenerator(MapsComponent):
         infos = self.ssfr_info.values()
         labels = self.ssfr_info.keys()
 
-        # Create the table
-        #table = SmartTable.from_composites(*infos, labels=labels, label="sSFR map")
-
-        # Make
-        #self.ssfr_table = SimpleTable.from_table(table, css_class=self.table_class)
+        # Set the thumbnails
+        thumbnails = []
+        for label in labels:
+            if label in self.ssfr_thumbnails: thumbnails.append(html.center(self.ssfr_thumbnails[label]))
+            else: thumbnails.append("")
 
         # Make the table
         label = "sSFR map"
-        self.ssfr_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label)
+        self.ssfr_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label,
+                                                      extra_column=thumbnails, extra_column_label=thumbnail_title)
 
     # -----------------------------------------------------------------
 
@@ -874,15 +1205,16 @@ class MapsSummaryPageGenerator(MapsComponent):
         infos = self.tir_info.values()
         labels = self.tir_info.keys()
 
-        # Create the table
-        #table = SmartTable.from_composites(*infos, labels=labels, label="TIR map")
-
-        # Make
-        #self.tir_table = SimpleTable.from_table(table, css_class=self.table_class)
+        # Set the thumbnails
+        thumbnails = []
+        for label in labels:
+            if label in self.tir_thumbnails: thumbnails.append(html.center(self.tir_thumbnails[label]))
+            else: thumbnails.append("")
 
         # Make the table
         label = "TIR map"
-        self.tir_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label)
+        self.tir_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label,
+                                                     extra_column=thumbnails, extra_column_label=thumbnail_title)
 
     # -----------------------------------------------------------------
 
@@ -900,15 +1232,16 @@ class MapsSummaryPageGenerator(MapsComponent):
         infos = self.attenuation_info.values()
         labels = self.attenuation_info.keys()
 
-        # Create the table
-        #table = SmartTable.from_composites(*infos, labels=labels, label="Attenuation map")
-
-        # Make
-        #self.attenuation_table = SimpleTable.from_table(table, css_class=self.table_class)
+        # Set the thumbnails
+        thumbnails = []
+        for label in labels:
+            if label in self.attenuation_thumbnails: thumbnails.append(html.center(self.attenuation_thumbnails[label]))
+            else: thumbnails.append("")
 
         # Make the table
         label = "Attenuation map"
-        self.attenuation_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label)
+        self.attenuation_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label,
+                                                             extra_column=thumbnails, extra_column_label=thumbnail_title)
 
     # -----------------------------------------------------------------
 
@@ -926,15 +1259,16 @@ class MapsSummaryPageGenerator(MapsComponent):
         infos = self.old_info.values()
         labels = self.old_info.keys()
 
-        # Create the table
-        #table = SmartTable.from_composites(*infos, labels=labels, label="Old stellar map")
-
-        # Make
-        #self.old_table = SimpleTable.from_table(table, css_class=self.table_class)
+        # Set the thumbnails
+        thumbnails = []
+        for label in labels:
+            if label in self.old_thumbnails: thumbnails.append(html.center(self.old_thumbnails[label]))
+            else: thumbnails.append("")
 
         # Make the table
         label = "Old stellar map"
-        self.old_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label)
+        self.old_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label,
+                                                     extra_column=thumbnails, extra_column_label=thumbnail_title)
 
     # -----------------------------------------------------------------
 
@@ -952,15 +1286,16 @@ class MapsSummaryPageGenerator(MapsComponent):
         infos = self.young_info.values()
         labels = self.young_info.keys()
 
-        # Create the table
-        #table = SmartTable.from_composites(*infos, labels=labels, label="Young stellar map")
-
-        # Make
-        #self.young_table = SimpleTable.from_table(table, css_class=self.table_class)
+        # Set the thumbnails
+        thumbnails = []
+        for label in labels:
+            if label in self.young_thumbnails: thumbnails.append(html.center(self.young_thumbnails[label]))
+            else: thumbnails.append("")
 
         # Make the table
         label = "Young stellar map"
-        self.young_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label)
+        self.young_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label,
+                                                       extra_column=thumbnails, extra_column_label=thumbnail_title)
 
     # -----------------------------------------------------------------
 
@@ -978,15 +1313,16 @@ class MapsSummaryPageGenerator(MapsComponent):
         infos = self.ionizing_info.values()
         labels = self.ionizing_info.keys()
 
-        # Create the table
-        #table = SmartTable.from_composites(*infos, labels=labels, label="Ionizing stellar map")
-
-        # Make
-        #self.ionizing_table = SimpleTable.from_table(table, css_class=self.table_class)
+        # Set the thumbnails
+        thumbnails = []
+        for label in labels:
+            if label in self.ionizing_thumbnails: thumbnails.append(html.center(self.ionizing_thumbnails[label]))
+            else: thumbnails.append("")
 
         # Make the table
         label = "Ionizing stellar map"
-        self.ionizing_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label)
+        self.ionizing_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label,
+                                                          extra_column=thumbnails, extra_column_label=thumbnail_title)
 
     # -----------------------------------------------------------------
 
@@ -1004,15 +1340,16 @@ class MapsSummaryPageGenerator(MapsComponent):
         infos = self.dust_info.values()
         labels = self.dust_info.keys()
 
-        # Create the table
-        #table = SmartTable.from_composites(*infos, labels=labels, label="Dust map")
-
-        # Make
-        #self.dust_table = SimpleTable.from_table(table, css_class=self.table_class)
+        # Set the thumbnails
+        thumbnails = []
+        for label in labels:
+            if label in self.dust_thumbnails: thumbnails.append(html.center(self.dust_thumbnails[label]))
+            else: thumbnails.append("")
 
         # Make the table
         label = "Dust map"
-        self.dust_map = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label)
+        self.dust_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label,
+                                                    extra_column=thumbnails, extra_column_label=thumbnail_title)
 
     # -----------------------------------------------------------------
 

@@ -971,6 +971,22 @@ class SmartTable(Table):
 
     # -----------------------------------------------------------------
 
+    def as_lists(self, add_units=True):
+
+        """
+        This function ...
+        :param add_units:
+        :return:
+        """
+
+        lists = []
+        for index in range(len(self)):
+            values = self.get_row(index, add_units=add_units).values()
+            lists.append(values)
+        return lists
+
+    # -----------------------------------------------------------------
+
     def print_latex(self):
 
         """

@@ -1257,7 +1257,7 @@ class SimpleTable(object):
             if subheader is not None:
                 titles = []
                 for top, sub in zip(header, subheader):
-                    if sub is None: title = top + newline
+                    if sub is None: title = top + newline + " "
                     else: title = top + newline + sub
                     titles.append(title)
                 self.header_row = SimpleTableRow(titles, header=True, tostr_kwargs=tostr_kwargs)
@@ -1318,7 +1318,8 @@ class SimpleTable(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_table(cls, table, css_class=None, bgcolors=None, tostr_kwargs=None, column_names=None):
+    def from_table(cls, table, css_class=None, bgcolors=None, tostr_kwargs=None, column_names=None, extra_column=None,
+                   extra_column_label=None):
 
         """
         This function ...
@@ -1326,17 +1327,42 @@ class SimpleTable(object):
         :param css_class:
         :param bgcolors:
         :param tostr_kwargs:
-        :param column_names
+        :param column_names:
+        :param extra_column:
+        :param extra_column_label:
         :return:
         """
 
+        # Set column names
         if column_names is None: column_names = table.column_names
-        return cls(table.as_tuples(add_units=False), header=table.column_names, subheader=table.unit_strings, css_class=css_class, bgcolors=bgcolors, tostr_kwargs=tostr_kwargs)
+
+        # Check
+        if extra_column_label is not None and extra_column is None: raise ValueError("Extra column label is specified but extra column is not given")
+
+        # Get rows
+        #rows = table.as_tuples(add_units=False)
+        rows = table.as_lists(add_units=False)
+        if extra_column is not None:
+            for i in range(len(rows)): rows[i].append(extra_column[i])
+
+        # Set header
+        header = column_names
+        if extra_column is not None:
+            label = extra_column_label if extra_column_label is not None else ""
+            header.append(label)
+
+        # Set subheader
+        subheader = table.unit_strings
+        if extra_column is not None: subheader.append("")
+
+        # Create the HTML table
+        return cls(rows, header=header, subheader=subheader, css_class=css_class, bgcolors=bgcolors, tostr_kwargs=tostr_kwargs)
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_composites(cls, composites, css_class=None, bgcolors=None, tostr_kwargs=None, labels=None, label="-"):
+    def from_composites(cls, composites, css_class=None, bgcolors=None, tostr_kwargs=None, labels=None, label="-",
+                        extra_column=None, extra_column_label=None):
 
         """
         This function ...
@@ -1346,6 +1372,8 @@ class SimpleTable(object):
         :param tostr_kwargs:
         :param labels:
         :param label:
+        :param extra_column:
+        :param extra_column_label:
         :return:
         """
 
@@ -1353,7 +1381,8 @@ class SimpleTable(object):
         table = SmartTable.from_composites(*composites, labels=labels, label=label)
 
         # Create the HTML table
-        return cls.from_table(table, css_class=css_class, bgcolors=bgcolors, tostr_kwargs=tostr_kwargs, column_names=table.descriptions)
+        return cls.from_table(table, css_class=css_class, bgcolors=bgcolors, tostr_kwargs=tostr_kwargs,
+                              column_names=table.descriptions, extra_column=extra_column, extra_column_label=extra_column_label)
 
     # -----------------------------------------------------------------
 
