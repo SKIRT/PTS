@@ -13,7 +13,6 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
-import imageio
 import numpy as np
 
 # Import astronomical modules
@@ -22,52 +21,54 @@ from astropy.coordinates import Angle
 # Import the relevant PTS classes and modules
 from ...core.basics.colour import parse_colour
 from ..dist_ellipse import distance_ellipse
-from ..basics.vector import PixelShape
-from ..tools import plotting
+from .rgb import RGBImage
 
 # -----------------------------------------------------------------
 
-class RGBAImage(object):
+class RGBAImage(RGBImage):
 
     """
     This class...
     """
 
-    def __init__(self, data, **kwargs):
+    def __init__(self, red, green, blue, alpha, **kwargs):
 
         """
         The constructor ...
-        :param data:
+        :param red:
+        :param green:
+        :param blue:
+        :param alpha:
         :param kwargs:
         """
 
-        # Attributes
-        self.data = data
-        self.path = kwargs.pop("path", None)
+        # Call the constructor of the base class
+        super(RGBAImage, self).__init__(red, green, blue, **kwargs)
+
+        # Set the alpha channel
+        self.alpha = alpha
 
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_file(cls, path):
+    def from_array(cls, array):
 
         """
         This function ...
-        :param path:
+        :param array:
         :return:
         """
 
-        # Read image
-        data = imageio.imread(path)
-
         # CHECK WHETHER RGBA
-        #print(data)
-        #print(data.shape)
-        if data.shape[-1] != 4: data = rgb_to_rgba(data)
+        # print(data)
+        # print(data.shape)
+        if array.shape[-1] != 4: array = rgb_to_rgba(array)
 
-        #print(data[:,:,3])
+        # Split into components
+        red, green, blue, alpha = rgba_to_components(array)
 
-        # Create RGBA image
-        return cls(data, path=path)
+        # Create
+        return cls(red, green, blue, alpha)
 
     # -----------------------------------------------------------------
 
@@ -80,104 +81,20 @@ class RGBAImage(object):
         :return:
         """
 
-        data = frame_to_rgba(frame, interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha, colours=colours, absolute_alpha=absolute_alpha)
-        return cls(data)
+        #data = frame_to_rgba(frame, interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha, colours=colours, absolute_alpha=absolute_alpha)
+        red, green, blue, alpha = frame_to_components(frame, interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha, colours=colours, absolute_alpha=absolute_alpha)
+        return cls(red, green, blue, alpha)
 
     # -----------------------------------------------------------------
 
-    @property
-    def shape(self):
+    def invert_alpha(self):
 
         """
         This function ...
         :return:
         """
 
-        #return (self.data.shape[0], self.data.shape[1])
-        return PixelShape(self.data.shape[0], self.data.shape[1])
-
-    # -----------------------------------------------------------------
-
-    @property
-    def xsize(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.shape.x
-
-    # -----------------------------------------------------------------
-
-    @property
-    def ysize(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.shape.y
-
-    # -----------------------------------------------------------------
-
-    @property
-    def red(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.data[:, :, 0]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def green(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.data[:, :, 1]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def blue(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.data[:, :, 2]
-
-    # -----------------------------------------------------------------
-
-    @property
-    def alpha(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.data[:, :, 3]
-
-    # -----------------------------------------------------------------
-
-    def invert_colors(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        self.data[:, :, 0:3] = 255 - self.data[:, :, 0:3]
+        self.alpha = 255 - self.alpha
 
     # -----------------------------------------------------------------
 
@@ -277,56 +194,25 @@ class RGBAImage(object):
         #feathered[..., :3] = astro[:]
         #feathered[..., -1] = alpha_channel[:]
         #self.data[..., -1] = alpha_channel[:]
-        self.data[..., -1] = alpha_channel
+        #self.data[..., -1] = alpha_channel
+
+        # Replace alpha channel
+        self.alpha = alpha_channel
 
     # -----------------------------------------------------------------
 
-    def show(self):
+    def asarray(self):
 
         """
         This function ...
         :return:
         """
 
-        import matplotlib.pyplot as plt
-
-        import matplotlib.image as mpimg
-        #img = mpimg.imread('file-name.png')
-
-        plt.imshow(self.data)
-        plt.show()
-
-    # -----------------------------------------------------------------
-
-    def saveto(self, path, update_path=True):
-
-        """
-        This function ...
-        :param path:
-        :param update_path:
-        :return:
-        """
-
-        # Write
-        imageio.imwrite(path, self.data)
-
-        # Update path
-        if update_path: self.path = path
-
-    # -----------------------------------------------------------------
-
-    def save(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        self.saveto(self.path)
+        return components_to_rgba(self.red, self.green, self.blue, self.alpha)
 
 # -----------------------------------------------------------------
 
-def frame_to_rgba(frame, interval="pts", scale="log", alpha=True, peak_alpha=1., colours="red", absolute_alpha=False):
+def frame_to_components(frame, interval="pts", scale="log", alpha=True, peak_alpha=1., colours="red", absolute_alpha=False):
 
     """
     This function ...
@@ -443,7 +329,26 @@ def frame_to_rgba(frame, interval="pts", scale="log", alpha=True, peak_alpha=1.,
             blue = rgba[:, :, 2] * 255
             alpha = transparency * 255
 
-    # Make the image
+    # Return the components
+    return red, green, blue, alpha
+
+# -----------------------------------------------------------------
+
+def frame_to_rgba(frame, interval="pts", scale="log", alpha=True, peak_alpha=1., colours="red", absolute_alpha=False):  # Make the image
+
+    """
+    This function ...
+    :param frame:
+    :param interval:
+    :param scale:
+    :param alpha:
+    :param peak_alpha:
+    :param colours:
+    :param absolute_alpha:
+    :return:
+    """
+
+    red, green, blue, alpha = frame_to_components(frame, interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha, colours=colours, absolute_alpha=absolute_alpha)
     return components_to_rgba(red, green, blue, alpha)
 
 # -----------------------------------------------------------------
@@ -462,6 +367,37 @@ def rgb_to_rgba(rgb):
 
     # Create RGBa
     return components_to_rgba(red, green, blue)
+
+# -----------------------------------------------------------------
+
+def rgba_to_components(rgba):
+
+    """
+    This function ...
+    :param rgba:
+    :return:
+    """
+
+    red = rgba[:, :, 0]
+    green = rgba[:, :, 1]
+    blue = rgba[:, :, 2]
+    alpha = rgba[:, :, 3]
+    return red, green, blue, alpha
+
+# -----------------------------------------------------------------
+
+def rgb_to_components(rgb):
+
+    """
+    This function ...
+    :param rgb:
+    :return:
+    """
+
+    red = rgb[:, :, 0]
+    green = rgb[:, :, 1]
+    blue = rgb[:, :, 2]
+    return red, green, blue
 
 # -----------------------------------------------------------------
 

@@ -17,4 +17,7 @@ definition.add_flag("show", "show the page", False)
 # ADVANCED
 definition.add_optional("nopen_files", "positive_integer", "number of open files necessary to make the script work", 1024)
 
+# Flags
+definition.add_flag("thumbnails", "add map thumbnails", True)
+
 # -----------------------------------------------------------------

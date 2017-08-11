@@ -64,6 +64,16 @@ class MapsSummaryPageGenerator(MapsComponent):
         self.ionizing_info = dict()
         self.dust_info = dict()
 
+        # The map thumbnails
+        self.colour_thumbnails = dict()
+        self.ssfr_thumbnails = dict()
+        self.tir_thumbnails = dict()
+        self.attenuation_thumbnails = dict()
+        self.old_thumbnails = dict()
+        self.young_thumbnails = dict()
+        self.ionizing_thumbnails = dict()
+        self.dust_thumbnails = dict()
+
         # The tables
         self.colour_table = None
         self.ssfr_table = None
@@ -92,6 +102,9 @@ class MapsSummaryPageGenerator(MapsComponent):
 
         # Get image info
         self.get_info()
+
+        # Make the thumbnails
+        if self.config.thumbnails: self.make_thumbnails()
 
         # Make the tables
         self.make_tables()
@@ -627,6 +640,138 @@ class MapsSummaryPageGenerator(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    def make_thumbnails(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making thumbnails ...")
+
+        # Colours
+        if self.has_colour_maps: self.make_colour_thumbnails()
+
+        # sSFR
+        if self.has_ssfr_maps: self.make_ssfr_thumbnails()
+
+        # TIR
+        if self.has_tir_maps: self.make_tir_thumbnails()
+
+        # Attenuation
+        if self.has_attenuation_maps: self.make_attenuation_thumbnails()
+
+        # Old
+        if self.has_old_maps: self.make_old_thumbnails()
+
+        # Young
+        if self.has_young_maps: self.make_young_thumbnails()
+
+        # Ionizing
+        if self.has_ionizing_maps: self.make_ionizing_thumbnails()
+
+        # Dust
+        if self.has_dust_maps: self.make_dust_thumbnails()
+
+    # -----------------------------------------------------------------
+
+    def make_colour_thumbnails(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making thumbnails of the colour maps ...")
+
+    # -----------------------------------------------------------------
+
+    def make_ssfr_thumbnails(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making thumbnails of the sSFR maps ...")
+
+    # -----------------------------------------------------------------
+
+    def make_tir_thumbnails(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making thumbnails of the TIR maps ...")
+
+    # -----------------------------------------------------------------
+
+    def make_attenuation_thumbnails(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making thumbnails of the attenuation maps ...")
+
+    # -----------------------------------------------------------------
+
+    def make_old_thumbnails(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making thumbnails of the old stellar maps ...")
+
+    # -----------------------------------------------------------------
+
+    def make_young_thumbnails(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making thumbnails of the young stellar maps ...")
+
+    # -----------------------------------------------------------------
+
+    def make_ionizing_thumbnails(self):
+
+        """
+        This function
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making thumbnails of the ionizing stellar maps ...")
+
+    # -----------------------------------------------------------------
+
+    def make_dust_thumbnails(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making thumbnails of the dust maps ...")
+
+    # -----------------------------------------------------------------
+
     def make_tables(self):
 
         """
@@ -678,10 +823,14 @@ class MapsSummaryPageGenerator(MapsComponent):
         labels = self.colour_info.keys()
 
         # Create the table
-        table = SmartTable.from_composites(*infos, labels=labels, label="Colour map")
+        #table = SmartTable.from_composites(*infos, labels=labels, label="Colour map")
 
         # Make
-        self.colour_table = SimpleTable.from_table(table, css_class=self.table_class)
+        #self.colour_table = SimpleTable.from_table(table, css_class=self.table_class)
+
+        # Make the table
+        label = "Colour map"
+        self.colour_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label)
 
     # -----------------------------------------------------------------
 
@@ -700,10 +849,14 @@ class MapsSummaryPageGenerator(MapsComponent):
         labels = self.ssfr_info.keys()
 
         # Create the table
-        table = SmartTable.from_composites(*infos, labels=labels, label="sSFR map")
+        #table = SmartTable.from_composites(*infos, labels=labels, label="sSFR map")
 
         # Make
-        self.ssfr_table = SimpleTable.from_table(table, css_class=self.table_class)
+        #self.ssfr_table = SimpleTable.from_table(table, css_class=self.table_class)
+
+        # Make the table
+        label = "sSFR map"
+        self.ssfr_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label)
 
     # -----------------------------------------------------------------
 
@@ -722,10 +875,14 @@ class MapsSummaryPageGenerator(MapsComponent):
         labels = self.tir_info.keys()
 
         # Create the table
-        table = SmartTable.from_composites(*infos, labels=labels, label="TIR map")
+        #table = SmartTable.from_composites(*infos, labels=labels, label="TIR map")
 
         # Make
-        self.tir_table = SimpleTable.from_table(table, css_class=self.table_class)
+        #self.tir_table = SimpleTable.from_table(table, css_class=self.table_class)
+
+        # Make the table
+        label = "TIR map"
+        self.tir_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label)
 
     # -----------------------------------------------------------------
 
@@ -744,10 +901,14 @@ class MapsSummaryPageGenerator(MapsComponent):
         labels = self.attenuation_info.keys()
 
         # Create the table
-        table = SmartTable.from_composites(*infos, labels=labels, label="Attenuation map")
+        #table = SmartTable.from_composites(*infos, labels=labels, label="Attenuation map")
 
         # Make
-        self.attenuation_table = SimpleTable.from_table(table, css_class=self.table_class)
+        #self.attenuation_table = SimpleTable.from_table(table, css_class=self.table_class)
+
+        # Make the table
+        label = "Attenuation map"
+        self.attenuation_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label)
 
     # -----------------------------------------------------------------
 
@@ -766,10 +927,14 @@ class MapsSummaryPageGenerator(MapsComponent):
         labels = self.old_info.keys()
 
         # Create the table
-        table = SmartTable.from_composites(*infos, labels=labels, label="Old stellar map")
+        #table = SmartTable.from_composites(*infos, labels=labels, label="Old stellar map")
 
         # Make
-        self.old_table = SimpleTable.from_table(table, css_class=self.table_class)
+        #self.old_table = SimpleTable.from_table(table, css_class=self.table_class)
+
+        # Make the table
+        label = "Old stellar map"
+        self.old_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label)
 
     # -----------------------------------------------------------------
 
@@ -788,10 +953,14 @@ class MapsSummaryPageGenerator(MapsComponent):
         labels = self.young_info.keys()
 
         # Create the table
-        table = SmartTable.from_composites(*infos, labels=labels, label="Young stellar map")
+        #table = SmartTable.from_composites(*infos, labels=labels, label="Young stellar map")
 
         # Make
-        self.young_table = SimpleTable.from_table(table, css_class=self.table_class)
+        #self.young_table = SimpleTable.from_table(table, css_class=self.table_class)
+
+        # Make the table
+        label = "Young stellar map"
+        self.young_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label)
 
     # -----------------------------------------------------------------
 
@@ -810,10 +979,14 @@ class MapsSummaryPageGenerator(MapsComponent):
         labels = self.ionizing_info.keys()
 
         # Create the table
-        table = SmartTable.from_composites(*infos, labels=labels, label="Ionizing stellar map")
+        #table = SmartTable.from_composites(*infos, labels=labels, label="Ionizing stellar map")
 
         # Make
-        self.ionizing_table = SimpleTable.from_table(table, css_class=self.table_class)
+        #self.ionizing_table = SimpleTable.from_table(table, css_class=self.table_class)
+
+        # Make the table
+        label = "Ionizing stellar map"
+        self.ionizing_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label)
 
     # -----------------------------------------------------------------
 
@@ -832,10 +1005,14 @@ class MapsSummaryPageGenerator(MapsComponent):
         labels = self.dust_info.keys()
 
         # Create the table
-        table = SmartTable.from_composites(*infos, labels=labels, label="Dust map")
+        #table = SmartTable.from_composites(*infos, labels=labels, label="Dust map")
 
         # Make
-        self.dust_table = SimpleTable.from_table(table, css_class=self.table_class)
+        #self.dust_table = SimpleTable.from_table(table, css_class=self.table_class)
+
+        # Make the table
+        label = "Dust map"
+        self.dust_map = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label)
 
     # -----------------------------------------------------------------
 

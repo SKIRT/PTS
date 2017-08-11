@@ -724,6 +724,9 @@ class SourceFinder(Configurable):
                 # Weak search
                 config["weak"] = self.config.weak
 
+                # Set the output path
+                config["output"] = self.config.output
+
                 # Do the detection
                 # Call the target function
                 result = target(frame, self.extended_source_catalog, config, special_mask, ignore_mask, bad_mask)
@@ -919,6 +922,9 @@ class SourceFinder(Configurable):
 
                 # Weak search
                 config["weak"] = self.config.weak
+
+                # Set the output path
+                config["output"] = self.config.output
 
                 # Call the target function
                 result = target(frame, self.galaxies, self.point_source_catalog, config, special_mask, ignore_mask, bad_mask, self.principal_masks[name])

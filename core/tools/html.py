@@ -53,6 +53,7 @@ from . import filesystem as fs
 from . import types
 from . import time
 from . import strings
+from ..basics.table import SmartTable
 
 # -----------------------------------------------------------------
 
@@ -1231,16 +1232,13 @@ class SimpleTable(object):
     table = SimpleTable(rows)
     """
 
-    def __init__(self, rows, header_row=None, css_class=None, bgcolors=None, tostr_kwargs=None, subheader_row=None):
+    def __init__(self, rows, header=None, css_class=None, bgcolors=None, tostr_kwargs=None, subheader=None):
 
         """
         Table constructor.
         Keyword arguments:
         rows -- iterable of SimpleTableRow
-        header_row -- row that will be displayed at the beginning of the table.
-                      if this row is SimpleTableRow, it is the programmer's
-                      responsibility to verify whether it was created with the
-                      header flag set to True.
+        header:
         css_class -- table CSS class
         subheader_row:
         """
@@ -1250,15 +1248,20 @@ class SimpleTable(object):
             if bgcolors is not None: self.rows = [SimpleTableRow(row, bgcolors=bcolors, tostr_kwargs=tostr_kwargs) for row, bcolors in zip(rows, bgcolors)]
             else: self.rows = [SimpleTableRow(row, tostr_kwargs=tostr_kwargs) for row in rows]
 
-        # Set header row
-        if header_row is None: self.header_row = None
-        elif isinstance(header_row, SimpleTableRow): self.header_row = header_row
-        else: self.header_row = SimpleTableRow(header_row, header=True, tostr_kwargs=tostr_kwargs)
+        # Check
+        if subheader is not None and header is None: raise ValueError("Cannot specify subheader but not header")
 
-        # Set subheader row
-        if subheader_row is None: self.subheader_row = None
-        elif isinstance(subheader_row, SimpleTableRow): self.subheader_row = subheader_row
-        else: self.subheader_row = SimpleTableRow(subheader_row, tostr_kwargs=tostr_kwargs)
+        # Set header row
+        if header is None: self.header_row = None
+        else:
+            if subheader is not None:
+                titles = []
+                for top, sub in zip(header, subheader):
+                    if sub is None: title = top + newline
+                    else: title = top + newline + sub
+                    titles.append(title)
+                self.header_row = SimpleTableRow(titles, header=True, tostr_kwargs=tostr_kwargs)
+            else: self.header_row = SimpleTableRow(header, header=True, tostr_kwargs=tostr_kwargs)
 
         # Set CSS class
         self.css_class = css_class
@@ -1266,7 +1269,7 @@ class SimpleTable(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def rasterize(cls, cells, ncolumns=2, header_row=None, css_class=None, tostr_kwargs=None):
+    def rasterize(cls, cells, ncolumns=2, header=None, css_class=None, tostr_kwargs=None, subheader=None):
 
         """
         This function ...
@@ -1275,6 +1278,7 @@ class SimpleTable(object):
         :param header_row:
         :param css_class:
         :param tostr_kwargs:
+        :param header:
         :return:
         """
 
@@ -1295,7 +1299,7 @@ class SimpleTable(object):
             rows.append(row)
 
         # Create and return
-        return cls(rows, header_row=header_row, css_class=css_class, tostr_kwargs=tostr_kwargs)
+        return cls(rows, header=header, css_class=css_class, tostr_kwargs=tostr_kwargs, subheader=subheader)
 
     # -----------------------------------------------------------------
 
@@ -1314,7 +1318,7 @@ class SimpleTable(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_table(cls, table, css_class=None, bgcolors=None, tostr_kwargs=None):
+    def from_table(cls, table, css_class=None, bgcolors=None, tostr_kwargs=None, column_names=None):
 
         """
         This function ...
@@ -1322,10 +1326,52 @@ class SimpleTable(object):
         :param css_class:
         :param bgcolors:
         :param tostr_kwargs:
+        :param column_names
         :return:
         """
 
-        return cls(table.as_tuples(add_units=False), header_row=table.column_names, subheader_row=table.unit_strings, css_class=css_class, bgcolors=bgcolors, tostr_kwargs=tostr_kwargs)
+        if column_names is None: column_names = table.column_names
+        return cls(table.as_tuples(add_units=False), header=table.column_names, subheader=table.unit_strings, css_class=css_class, bgcolors=bgcolors, tostr_kwargs=tostr_kwargs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_composites(cls, composites, css_class=None, bgcolors=None, tostr_kwargs=None, labels=None, label="-"):
+
+        """
+        This function ...
+        :param composites:
+        :param css_class:
+        :param bgcolors:
+        :param tostr_kwargs:
+        :param labels:
+        :param label:
+        :return:
+        """
+
+        # Create the table
+        table = SmartTable.from_composites(*composites, labels=labels, label=label)
+
+        # Create the HTML table
+        return cls.from_table(table, css_class=css_class, bgcolors=bgcolors, tostr_kwargs=tostr_kwargs, column_names=table.descriptions)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_composite(cls, composite, css_class=None, bgcolors=None, tostr_kwargs=None, key_label="Property", value_label="Value"):
+
+        """
+        This function ...
+        :param composite:
+        :param css_class:
+        :param bgcolors:
+        :param tostr_kwargs:
+        :param key_label:
+        :param value_label:
+        :return:
+        """
+
+        return cls(composite.as_tuples(), header=[key_label, value_label], css_class=css_class)
 
     # -----------------------------------------------------------------
 
@@ -1342,7 +1388,6 @@ class SimpleTable(object):
 
         # Add header and subheader
         if self.header_row is not None: table.append(str(self.header_row))
-        if self.subheader_row is not None: table.append(str(self.subheader_row))
 
         for row in self.rows: table.append(str(row))
 

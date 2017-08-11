@@ -165,6 +165,7 @@ class RemoteMounter(object):
 
         # Debugging
         log.debug("Mounting command: '" + command + "'")
+        #print(command)
 
         # Create the pexpect child instance
         child = pexpect.spawn(command, timeout=30)
@@ -192,6 +193,7 @@ class RemoteMounter(object):
         for line in lines:
             if "error" in line: raise RuntimeError("Something went wrong: " + line)
 
+        # Check whether we have mounted
         if not fs.is_mount_point(mount_path): raise RuntimeError("An error occured during the mounting")
 
         # Set the path

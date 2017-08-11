@@ -171,7 +171,11 @@ class ModelPageGenerator(HTMLPageComponent):
         :return:
         """
 
-        self.old_bulge_table = html.SimpleTable(data.bulge.as_tuples(), header_row=["Property", "Value"], css_class=table_class)
+        # Inform the user
+        log.info("")
+
+        # Make the table
+        self.old_bulge_table = html.SimpleTable.from_composite(data.bulge, css_class=table_class)
 
     # -----------------------------------------------------------------
 
@@ -182,7 +186,7 @@ class ModelPageGenerator(HTMLPageComponent):
         :return: 
         """
 
-        self.old_disk_table = html.SimpleTable(data.old_deprojection.as_tuples(), header_row=["Property", "Value"], css_class=table_class)
+        self.old_disk_table = html.SimpleTable.from_composite(data.old_deprojection, css_class=table_class)
 
     # -----------------------------------------------------------------
 
@@ -193,7 +197,7 @@ class ModelPageGenerator(HTMLPageComponent):
         :return:
         """
 
-        self.young_table = html.SimpleTable(data.young_deprojection.as_tuples(), header_row=["Property", "Value"], css_class=table_class)
+        self.young_table = html.SimpleTable.from_composite(data.young_deprojection, css_class=table_class)
 
     # -----------------------------------------------------------------
 
@@ -204,7 +208,7 @@ class ModelPageGenerator(HTMLPageComponent):
         :return:
         """
 
-        self.ionizing_table = html.SimpleTable(data.ionizing_deprojection.as_tuples(), header_row=["Property", "Value"], css_class=table_class)
+        self.ionizing_table = html.SimpleTable.from_composite(data.ionizing_deprojection, css_class=table_class)
 
     # -----------------------------------------------------------------
 
@@ -215,7 +219,7 @@ class ModelPageGenerator(HTMLPageComponent):
         :return:
         """
 
-        self.dust_table = html.SimpleTable(data.dust_deprojection.as_tuples(), header_row=["Property", "Value"], css_class=table_class)
+        self.dust_table = html.SimpleTable.from_composite(data.dust_deprojection, css_class=table_class)
 
     # -----------------------------------------------------------------
 

@@ -126,7 +126,7 @@ class StatusPageGenerator(HTMLPageComponent):
         tuples.append(("Inclination", self.galaxy_properties.inclination))
 
         # Create the table
-        self.info_table = html.SimpleTable(tuples, header_row=["Property", "Value"], css_class=hover_table_class, tostr_kwargs=self.tostr_kwargs)
+        self.info_table = html.SimpleTable(tuples, header=["Property", "Value"], css_class=hover_table_class, tostr_kwargs=self.tostr_kwargs)
 
     # -----------------------------------------------------------------
 
@@ -144,7 +144,7 @@ class StatusPageGenerator(HTMLPageComponent):
         bgcolors = [(None, color) for color in self.status.colors]
 
         # Create the table
-        self.status_table = html.SimpleTable(self.status, header_row=["Step", "Status"], bgcolors=bgcolors, css_class=hover_table_class)
+        self.status_table = html.SimpleTable(self.status, header=["Step", "Status"], bgcolors=bgcolors, css_class=hover_table_class)
 
     # -----------------------------------------------------------------
 
@@ -159,7 +159,7 @@ class StatusPageGenerator(HTMLPageComponent):
         log.info("Making the history table ...")
 
         # Create the table
-        self.history_table = html.SimpleTable(self.history.as_tuples(), header_row=self.history.column_names, css_class=hover_table_class)
+        self.history_table = html.SimpleTable.from_table(self.history.as_tuples(), css_class=hover_table_class)
 
     # -----------------------------------------------------------------
 

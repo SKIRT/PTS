@@ -64,6 +64,9 @@ class SmartTable(Table):
         if "density" not in self.meta: self.meta["density"] = []
         if "brightness" not in self.meta: self.meta["brightness"] = []
 
+        # The column descriptions
+        self._descriptions = dict()
+
     # -----------------------------------------------------------------
 
     @classmethod
@@ -104,6 +107,7 @@ class SmartTable(Table):
         # Create the table
         table = cls()
 
+        # Create lists to contain the column types and units
         column_types = []
         column_units = []
 
@@ -260,12 +264,16 @@ class SmartTable(Table):
             name = entry[0]
             dtype = entry[1]
             unit = entry[2]
+            description = entry[3]
 
             data = []
 
             # Add column
             col = MaskedColumn(data=data, name=name, dtype=dtype, unit=unit)
             self.add_column(col)
+
+            # Set the description
+            self._descriptions[name] = description
 
             # Set whether this column is a spectral density
             if isinstance(unit, PhotometricUnit) and unit.density:
@@ -902,6 +910,23 @@ class SmartTable(Table):
 
         strings = []
         for name in self.column_names: strings.append(self.column_unit_string(name))
+        return strings
+
+    # -----------------------------------------------------------------
+
+    @property
+    def descriptions(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        strings = []
+        for name in self.column_names:
+            if name in self._descriptions: description = self._descriptions[name]
+            else: description = None
+            strings.append(description)
         return strings
 
     # -----------------------------------------------------------------
