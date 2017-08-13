@@ -357,6 +357,38 @@ def image(url, alttext=None, height=None, width=None, hover=None):
 
 # -----------------------------------------------------------------
 
+def get_image_url(image_code):
+
+    """
+    This function ...
+    :param image_code:
+    :return:
+    """
+
+    quote_character = image_code.split("src=")[1][0]
+    return image_code.split("src=" + quote_character)[1].split(quote_character)[0]
+
+# -----------------------------------------------------------------
+
+def image_preview(url, text, title=None):
+
+    """
+    This function ...
+    :param url:
+    :param text:
+    :param title:
+    :return:
+    """
+
+    code = '<a href="' + url + '" class="preview"'
+    if title is not None: code += 'title="' + title + '"'
+    code += '>'
+    code += text
+    code += '</a>'
+    return code
+
+# -----------------------------------------------------------------
+
 def hyperlink(url, text=None):
 
     """

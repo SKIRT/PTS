@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ....core.basics.log import log
 from ..component import MapsComponent
-from ...html.component import stylesheet_url, page_style, table_class, hover_table_class, top_title_size, title_size, sortable_url
+from ...html.component import stylesheet_url, page_style, table_class, hover_table_class, top_title_size, title_size, sortable_url, preview_url
 from ....core.tools import filesystem as fs
 from ....core.tools.html import HTMLPage, SimpleTable, updated_footing, make_page_width
 from ....core.tools import html
@@ -79,6 +79,16 @@ class MapsSummaryPageGenerator(MapsComponent):
         self.ionizing_thumbnails = dict()
         self.dust_thumbnails = dict()
 
+        # The map previews
+        self.colour_previews = dict()
+        self.ssfr_previews = dict()
+        self.tir_previews = dict()
+        self.attenuation_previews = dict()
+        self.old_previews = dict()
+        self.young_previews = dict()
+        self.ionizing_previews = dict()
+        self.dust_previews = dict()
+
         # The tables
         self.colour_table = None
         self.ssfr_table = None
@@ -110,6 +120,9 @@ class MapsSummaryPageGenerator(MapsComponent):
 
         # Make the thumbnails
         if self.config.thumbnails: self.make_thumbnails()
+
+        # Make the previews
+        if self.config.previews: self.make_previews()
 
         # Make the tables
         self.make_tables()
@@ -1101,6 +1114,233 @@ class MapsSummaryPageGenerator(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    def make_previews(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making previews ...")
+
+        # Colour maps
+        if self.has_colour_maps: self.make_colour_previews()
+
+        # sSFR maps
+        if self.has_ssfr_maps: self.make_ssfr_previews()
+
+        # TIR maps
+        if self.has_tir_maps: self.make_tir_previews()
+
+        # Attenuation
+        if self.has_attenuation_maps: self.make_attenuation_previews()
+
+        # Old stars
+        if self.has_old_maps: self.make_old_previews()
+
+        # Young stars
+        if self.has_young_maps: self.make_young_previews()
+
+        # Ionizing stars
+        if self.has_ionizing_maps: self.make_ionizing_previews()
+
+        # Dust
+        if self.has_dust_maps: self.make_dust_previews()
+
+    # -----------------------------------------------------------------
+
+    def make_colour_previews(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making previews for the colour maps ...")
+
+        # Loop over the maps
+        for name in self.colour_maps:
+
+            # Get the path
+            path = html.get_image_url(self.colour_thumbnails[name])
+
+            # Make preview
+            preview = html.image_preview(path, self.colour_thumbnails[name])
+
+            # Add
+            self.colour_previews[name] = preview
+
+    # -----------------------------------------------------------------
+
+    def make_ssfr_previews(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making previews for the sSFR maps ...")
+
+        # Loop over the maps
+        for name in self.ssfr_maps:
+
+            # Get the path
+            path = html.get_image_url(self.ssfr_thumbnails[name])
+
+            # Make preview
+            preview = html.image_preview(path, self.ssfr_thumbnails[name])
+
+            # Add
+            self.ssfr_previews[name] = preview
+
+    # -----------------------------------------------------------------
+
+    def make_tir_previews(self):
+
+        """
+        This function ..
+        """
+
+        # Inform the user
+        log.info("Making previews for the TIR maps ...")
+
+        # Loop over the maps
+        for name in self.tir_maps:
+
+            # Get the path
+            path = html.get_image_url(self.tir_thumbnails[name])
+
+            # Make preview
+            preview = html.image_preview(path, self.tir_thumbnails[name])
+
+            # Add
+            self.tir_previews[name] = preview
+
+    # -----------------------------------------------------------------
+
+    def make_attenuation_previews(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making previews for the attenuation maps ...")
+
+        # Loop over the maps
+        for name in self.attenuation_maps:
+
+            # Get the path
+            path = html.get_image_url(self.attenuation_thumbnails[name])
+
+            # Make preview
+            preview = html.image_preview(path, self.attenuation_thumbnails[name])
+
+            # Add
+            self.attenuation_previews[name] = preview
+
+    # -----------------------------------------------------------------
+
+    def make_old_previews(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making previews for the old stellar maps ...")
+
+        # Loop over the maps
+        for name in self.old_maps:
+
+            # Get the path
+            path = html.get_image_url(self.old_thumbnails[name])
+
+            # Make preview
+            preview = html.image_preview(path, self.old_thumbnails[name])
+
+            # Add
+            self.old_previews[name] = preview
+
+    # -----------------------------------------------------------------
+
+    def make_young_previews(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making previews for the young stellar maps ...")
+
+        # Loop over the maps
+        for name in self.young_maps:
+
+            # Get the path
+            path = html.get_image_url(self.young_thumbnails[name])
+
+            # Make preview
+            preview = html.image_preview(path, self.young_thumbnails[name])
+
+            # Add
+            self.young_previews[name] = preview
+
+    # -----------------------------------------------------------------
+
+    def make_ionizing_previews(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making previews for the ionizing stellar maps ...")
+
+        # Loop over the maps
+        for name in self.ionizing_maps:
+
+            # Get the path
+            path = html.get_image_url(self.ionizing_thumbnails[name])
+
+            # Make preview
+            preview = html.image_preview(path, self.ionizing_thumbnails[name])
+
+            # Add
+            self.ionizing_previews[name] = preview
+
+    # -----------------------------------------------------------------
+
+    def make_dust_previews(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making previews for the dust maps ...")
+
+        # Loop over the maps
+        for name in self.dust_maps:
+
+            # Get the path
+            path = html.get_image_url(self.dust_thumbnails[name])
+
+            # Make preview
+            preview = html.image_preview(path, self.dust_thumbnails[name])
+
+            # Add
+            self.dust_previews[name] = preview
+
+    # -----------------------------------------------------------------
+
     def make_tables(self):
 
         """
@@ -1154,7 +1394,8 @@ class MapsSummaryPageGenerator(MapsComponent):
         # Set the thumbnails
         thumbnails = []
         for label in labels:
-            if label in self.colour_thumbnails: thumbnails.append(html.center(self.colour_thumbnails[label]))
+            if label in self.colour_previews: thumbnails.append(html.center(self.colour_previews[label]))
+            elif label in self.colour_thumbnails: thumbnails.append(html.center(self.colour_thumbnails[label]))
             else: thumbnails.append("")
 
         # Make the table
@@ -1181,7 +1422,8 @@ class MapsSummaryPageGenerator(MapsComponent):
         # Set the thumbnails
         thumbnails = []
         for label in labels:
-            if label in self.ssfr_thumbnails: thumbnails.append(html.center(self.ssfr_thumbnails[label]))
+            if label in self.ssfr_previews: thumbnails.append(html.center(self.ssfr_previews[label]))
+            elif label in self.ssfr_thumbnails: thumbnails.append(html.center(self.ssfr_thumbnails[label]))
             else: thumbnails.append("")
 
         # Make the table
@@ -1208,7 +1450,8 @@ class MapsSummaryPageGenerator(MapsComponent):
         # Set the thumbnails
         thumbnails = []
         for label in labels:
-            if label in self.tir_thumbnails: thumbnails.append(html.center(self.tir_thumbnails[label]))
+            if label in self.tir_previews: thumbnails.append(html.center(self.tir_previews[label]))
+            elif label in self.tir_thumbnails: thumbnails.append(html.center(self.tir_thumbnails[label]))
             else: thumbnails.append("")
 
         # Make the table
@@ -1235,7 +1478,8 @@ class MapsSummaryPageGenerator(MapsComponent):
         # Set the thumbnails
         thumbnails = []
         for label in labels:
-            if label in self.attenuation_thumbnails: thumbnails.append(html.center(self.attenuation_thumbnails[label]))
+            if label in self.attenuation_previews: thumbnails.append(html.center(self.attenuation_previews[label]))
+            elif label in self.attenuation_thumbnails: thumbnails.append(html.center(self.attenuation_thumbnails[label]))
             else: thumbnails.append("")
 
         # Make the table
@@ -1262,7 +1506,8 @@ class MapsSummaryPageGenerator(MapsComponent):
         # Set the thumbnails
         thumbnails = []
         for label in labels:
-            if label in self.old_thumbnails: thumbnails.append(html.center(self.old_thumbnails[label]))
+            if label in self.old_previews: thumbnails.append(html.center(self.old_previews[label]))
+            elif label in self.old_thumbnails: thumbnails.append(html.center(self.old_thumbnails[label]))
             else: thumbnails.append("")
 
         # Make the table
@@ -1289,7 +1534,8 @@ class MapsSummaryPageGenerator(MapsComponent):
         # Set the thumbnails
         thumbnails = []
         for label in labels:
-            if label in self.young_thumbnails: thumbnails.append(html.center(self.young_thumbnails[label]))
+            if label in self.young_previews: thumbnails.append(html.center(self.young_previews[label]))
+            elif label in self.young_thumbnails: thumbnails.append(html.center(self.young_thumbnails[label]))
             else: thumbnails.append("")
 
         # Make the table
@@ -1316,7 +1562,8 @@ class MapsSummaryPageGenerator(MapsComponent):
         # Set the thumbnails
         thumbnails = []
         for label in labels:
-            if label in self.ionizing_thumbnails: thumbnails.append(html.center(self.ionizing_thumbnails[label]))
+            if label in self.ionizing_previews: thumbnails.append(html.center(self.ionizing_previews[label]))
+            elif label in self.ionizing_thumbnails: thumbnails.append(html.center(self.ionizing_thumbnails[label]))
             else: thumbnails.append("")
 
         # Make the table
@@ -1343,7 +1590,8 @@ class MapsSummaryPageGenerator(MapsComponent):
         # Set the thumbnails
         thumbnails = []
         for label in labels:
-            if label in self.dust_thumbnails: thumbnails.append(html.center(self.dust_thumbnails[label]))
+            if label in self.dust_previews: thumbnails.append(html.center(self.dust_previews[label]))
+            elif label in self.dust_thumbnails: thumbnails.append(html.center(self.dust_thumbnails[label]))
             else: thumbnails.append("")
 
         # Make the table
@@ -1373,6 +1621,7 @@ class MapsSummaryPageGenerator(MapsComponent):
         # Make javascripts urls
         javascript_paths = javascripts[:]
         javascript_paths.append(sortable_url)
+        javascript_paths.append(preview_url)
 
         # Create the page
         self.page = HTMLPage(self.title, css=css, style=page_style, css_path=css_paths, javascript_path=javascript_paths, footing=updated_footing())

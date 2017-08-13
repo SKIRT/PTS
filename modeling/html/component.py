@@ -27,6 +27,7 @@ from ...core.tools import browser
 
 stylesheet_url = "http://users.ugent.be/~sjversto/stylesheet.css"
 sortable_url = "http://users.ugent.be/~sjversto/sorttable.js"
+preview_url = "http://users.ugent.be/~sjversto/preview.js"
 
 # -----------------------------------------------------------------
 
