@@ -687,7 +687,7 @@ function lightImages()
 dark_tables_function = """
 function darkTables()
 {
-    var hovertable = getCSSRule('table.hovertable tr:hover');
+    var hovertable = getCSSRule('table.hovertable tr:hover, table.sortable tr:hover');
     //window.alert(hovertable);
     hovertable.style["background-color"] = "#3b3d3f";
 }
@@ -698,7 +698,7 @@ function darkTables()
 light_tables_function = """
 function lightTables()
 {
-    var hovertable = getCSSRule('table.hovertable tr:hover');
+    var hovertable = getCSSRule('table.hovertable tr:hover, table.sortable tr:hover');
     //window.alert(hovertable);
     hovertable.style["background-color"] = "lightgrey";
 }

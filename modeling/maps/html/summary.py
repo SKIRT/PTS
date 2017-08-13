@@ -1424,8 +1424,8 @@ class MapsSummaryPageGenerator(MapsComponent):
         log.info("Making the table of colour maps ...")
 
         # Initialize containers
-        infos = DefaultOrderedDict()
-        labels = DefaultOrderedDict()
+        infos = DefaultOrderedDict(list)
+        labels = DefaultOrderedDict(list)
 
         # Fill containers
         for name in self.colour_maps:
@@ -1461,8 +1461,8 @@ class MapsSummaryPageGenerator(MapsComponent):
         log.info("Making the table of sSFR maps ...")
 
         # Initialize containers
-        infos = DefaultOrderedDict()
-        labels = DefaultOrderedDict()
+        infos = DefaultOrderedDict(list)
+        labels = DefaultOrderedDict(list)
 
         # Fill containers
         for name in self.ssfr_maps:
@@ -1498,8 +1498,8 @@ class MapsSummaryPageGenerator(MapsComponent):
         log.info("Making the table of TIR maps ...")
 
         # Initialize containers
-        infos = DefaultOrderedDict()
-        labels = DefaultOrderedDict()
+        infos = DefaultOrderedDict(list)
+        labels = DefaultOrderedDict(list)
 
         # Fill containers
         for name in self.tir_maps:
@@ -1535,8 +1535,8 @@ class MapsSummaryPageGenerator(MapsComponent):
         log.info("Making the table of attenuation maps ...")
 
         # Initialize containers
-        infos = DefaultOrderedDict()
-        labels = DefaultOrderedDict()
+        infos = DefaultOrderedDict(list)
+        labels = DefaultOrderedDict(list)
 
         # Fill containers
         for name in self.attenuation_maps:
@@ -1572,8 +1572,8 @@ class MapsSummaryPageGenerator(MapsComponent):
         log.info("Making the table of old stellar maps ...")
 
         # Initialize the containers
-        infos = DefaultOrderedDict()
-        labels = DefaultOrderedDict()
+        infos = DefaultOrderedDict(list)
+        labels = DefaultOrderedDict(list)
 
         # Fill the containers
         for name in self.old_maps:
@@ -1609,11 +1609,11 @@ class MapsSummaryPageGenerator(MapsComponent):
         log.info("Making the table of young stellar maps ...")
 
         # Initialize the containers
-        infos = DefaultOrderedDict()
-        labels = DefaultOrderedDict()
+        infos = DefaultOrderedDict(list)
+        labels = DefaultOrderedDict(list)
 
         # Fill the containers
-        for name in self.young_tables:
+        for name in self.young_maps:
             method = self.young_methods[name]
             infos[method].append(self.young_info[name])
             labels[method].append(name)
@@ -1646,8 +1646,8 @@ class MapsSummaryPageGenerator(MapsComponent):
         log.info("Making the table of ionizing stellar maps ...")
 
         # Initialize the containers
-        infos = DefaultOrderedDict()
-        labels = DefaultOrderedDict()
+        infos = DefaultOrderedDict(list)
+        labels = DefaultOrderedDict(list)
 
         # Fill in the containers
         for name in self.ionizing_maps:
@@ -1683,8 +1683,8 @@ class MapsSummaryPageGenerator(MapsComponent):
         log.info("Making the table of dust maps ...")
 
         # Initialize the containers
-        infos = DefaultOrderedDict()
-        labels = DefaultOrderedDict()
+        infos = DefaultOrderedDict(list)
+        labels = DefaultOrderedDict(list)
 
         # Fill the containers
         for name in self.dust_maps:
@@ -1791,18 +1791,22 @@ class MapsSummaryPageGenerator(MapsComponent):
         self.page += html.line
         self.page += html.newline
 
-        if self.has_single_colour_table: self.page += self.single_colour_table
+        if self.has_single_colour_table:
+            self.page += self.single_colour_table
+            self.page += html.newline
+            #self.page += html.newline
         else:
 
             # Loop over the methods
             for method in self.colour_tables:
                 self.page += method.upper()
                 self.page += html.newline
+                self.page += html.newline
                 self.page += self.colour_tables[method]
+                self.page += html.newline
+                #self.page += html.newline
 
         # Finish
-        self.page += html.newline
-        self.page += html.newline
         self.page += html.make_line("heavy")
         self.page += html.newline
 
@@ -1849,18 +1853,22 @@ class MapsSummaryPageGenerator(MapsComponent):
         self.page += html.newline
 
 
-        if self.has_single_ssfr_table: self.page += self.single_ssfr_table
+        if self.has_single_ssfr_table:
+            self.page += self.single_ssfr_table
+            self.page += html.newline
+            #self.page += html.newline
         else:
 
             # Loop over the methods
             for method in self.ssfr_tables:
                 self.page += method.upper()
                 self.page += html.newline
+                self.page += html.newline
                 self.page += self.ssfr_tables[method]
+                self.page += html.newline
+                #self.page += html.newline
 
         # Finish
-        self.page += html.newline
-        self.page += html.newline
         self.page += html.make_line("heavy")
         self.page += html.newline
 
@@ -1906,18 +1914,22 @@ class MapsSummaryPageGenerator(MapsComponent):
         self.page += html.line
         self.page += html.newline
 
-        if self.has_single_tir_table: self.page += self.single_tir_table
+        if self.has_single_tir_table:
+            self.page += self.single_tir_table
+            self.page += html.newline
+            #self.page += html.newline
         else:
 
             # Loop over the methods
             for method in self.tir_tables:
                 self.page += method.upper()
                 self.page += html.newline
+                self.page += html.newline
                 self.page += self.tir_tables[method]
+                self.page += html.newline
+                #self.page += html.newline
 
         # Finish
-        self.page += html.newline
-        self.page += html.newline
         self.page += html.make_line("heavy")
         self.page += html.newline
 
@@ -1963,18 +1975,22 @@ class MapsSummaryPageGenerator(MapsComponent):
         self.page += html.line
         self.page += html.newline
 
-        if self.has_single_attenuation_table: self.page += self.single_attenuation_table
+        if self.has_single_attenuation_table:
+            self.page += self.single_attenuation_table
+            self.page += html.newline
+            #self.page += html.newline
         else:
 
             # Loop over the methods
             for method in self.attenuation_tables:
                 self.page += method.upper()
                 self.page += html.newline
+                self.page += html.newline
                 self.page += self.attenuation_tables[method]
+                self.page += html.newline
+                #self.page += html.newline
 
         # Finish
-        self.page += html.newline
-        self.page += html.newline
         self.page += html.make_line("heavy")
         self.page += html.newline
 
@@ -2020,18 +2036,22 @@ class MapsSummaryPageGenerator(MapsComponent):
         self.page += html.line
         self.page += html.newline
 
-        if self.has_single_old_table: self.page += self.single_old_table
+        if self.has_single_old_table:
+            self.page += self.single_old_table
+            self.page += html.newline
+            #self.page += html.newline
         else:
 
             # Loop over the methods
             for method in self.old_tables:
                 self.page += method.upper()
                 self.page += html.newline
+                self.page += html.newline
                 self.page += self.old_tables[method]
+                self.page += html.newline
+                #self.page += html.newline
 
         # Finish
-        self.page += html.newline
-        self.page += html.newline
         self.page += html.make_line("heavy")
         self.page += html.newline
 
@@ -2077,18 +2097,22 @@ class MapsSummaryPageGenerator(MapsComponent):
         self.page += html.line
         self.page += html.newline
 
-        if self.has_single_young_table: self.page += self.single_young_table
+        if self.has_single_young_table:
+            self.page += self.single_young_table
+            self.page += html.newline
+            #self.page += html.newline
         else:
 
             # Loop over the methods
             for method in self.young_tables:
                 self.page += method.upper()
                 self.page += html.newline
+                self.page += html.newline
                 self.page += self.young_tables[method]
+                self.page += html.newline
+                #self.page += html.newline
 
         # Finish
-        self.page += html.newline
-        self.page += html.newline
         self.page += html.make_line("heavy")
         self.page += html.newline
 
@@ -2134,18 +2158,22 @@ class MapsSummaryPageGenerator(MapsComponent):
         self.page += html.line
         self.page += html.newline
 
-        if self.has_single_ionizing_table: self.page += self.single_ionizing_table
+        if self.has_single_ionizing_table:
+            self.page += self.single_ionizing_table
+            self.page += html.newline
+            #self.page += html.newline
         else:
 
             # Loop over the methods
             for method in self.ionizing_tables:
                 self.page += method.upper()
                 self.page += html.newline
+                self.page += html.newline
                 self.page += self.ionizing_tables[method]
+                self.page += html.newline
+                #self.page += html.newline
 
         # Finish
-        self.page += html.newline
-        self.page += html.newline
         self.page += html.make_line("heavy")
         self.page += html.newline
 
@@ -2191,18 +2219,22 @@ class MapsSummaryPageGenerator(MapsComponent):
         self.page += html.line
         self.page += html.newline
 
-        if self.has_single_dust_table: self.page += self.single_dust_table
+        if self.has_single_dust_table:
+            self.page += self.single_dust_table
+            self.page += html.newline
+            #self.page += html.newline
         else:
 
             # Loop over the methods
             for method in self.dust_tables:
                 self.page += method.upper()
                 self.page += html.newline
+                self.page += html.newline
                 self.page += self.dust_tables[method]
+                self.page += html.newline
+                #self.page += html.newline
 
         # Finish
-        self.page += html.newline
-        self.page += html.newline
         self.page += html.make_line("heavy")
         self.page += html.newline
 
