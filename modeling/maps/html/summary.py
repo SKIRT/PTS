@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import OrderedDict
+
 # Import the relevant PTS classes and modules
 from ....core.basics.log import log
 from ..component import MapsComponent
@@ -22,10 +25,10 @@ from ....core.tools import html
 from ....magic.view.html import javascripts, css_scripts, JS9Spawner, make_replace_nans_infs
 from ....core.tools import browser
 from ....magic.tools.info import get_image_info_strings, get_image_info
-from ....core.basics.table import SmartTable
 from ....core.basics.composite import SimplePropertyComposite
 from ....core.tools.utils import lazyproperty
 from .all import plots_name, colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name
+from ....core.basics.containers import DefaultOrderedDict
 
 # -----------------------------------------------------------------
 
@@ -59,7 +62,17 @@ class MapsSummaryPageGenerator(MapsComponent):
         # Call the constructor of the base class
         super(MapsSummaryPageGenerator, self).__init__(*args, **kwargs)
 
-        # The image info
+        # The map methods
+        self.colour_methods = dict()
+        self.ssfr_methods = dict()
+        self.tir_methods = dict()
+        self.attenuation_methods = dict()
+        self.old_methods = dict()
+        self.young_methods = dict()
+        self.ionizing_methods = dict()
+        self.dust_methods = dict()
+
+        # The map info
         self.colour_info = dict()
         self.ssfr_info = dict()
         self.tir_info = dict()
@@ -90,14 +103,14 @@ class MapsSummaryPageGenerator(MapsComponent):
         self.dust_previews = dict()
 
         # The tables
-        self.colour_table = None
-        self.ssfr_table = None
-        self.tir_table = None
-        self.attenuation_table = None
-        self.old_table = None
-        self.young_table = None
-        self.ionizing_table = None
-        self.dust_table = None
+        self.colour_tables = OrderedDict()
+        self.ssfr_tables = OrderedDict()
+        self.tir_tables = OrderedDict()
+        self.attenuation_tables = OrderedDict()
+        self.old_tables = OrderedDict()
+        self.young_tables = OrderedDict()
+        self.ionizing_tables = OrderedDict()
+        self.dust_tables = OrderedDict()
 
         # The page
         self.page = None
@@ -138,6 +151,19 @@ class MapsSummaryPageGenerator(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    def get_method_for_path(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        if self.config.methods: return self.method_or_type_for_map_path(path)
+        else: self.type_for_map_path(path)
+
+    # -----------------------------------------------------------------
+
     def setup(self, **kwargs):
 
         """
@@ -150,6 +176,16 @@ class MapsSummaryPageGenerator(MapsComponent):
 
         # Set the number of allowed open file handles
         fs.set_nallowed_open_files(self.config.nopen_files)
+
+        # Set the methods
+        for name in self.colour_maps: self.colour_methods[name] = self.get_method_for_path(self.colour_maps[name].path)
+        for name in self.ssfr_maps: self.ssfr_methods[name] = self.get_method_for_path(self.ssfr_maps[name].path)
+        for name in self.tir_maps: self.tir_methods[name] = self.get_method_for_path(self.tir_maps[name].path)
+        for name in self.attenuation_maps: self.attenuation_methods[name] = self.get_method_for_path(self.attenuation_maps[name].path)
+        for name in self.old_maps: self.old_methods[name] = self.get_method_for_path(self.old_maps[name].path)
+        for name in self.young_maps: self.young_methods[name] = self.get_method_for_path(self.young_maps[name].path)
+        for name in self.ionizing_maps: self.ionizing_methods[name] = self.get_method_for_path(self.ionizing_maps[name].path)
+        for name in self.dust_maps: self.dust_methods[name] = self.get_method_for_path(self.dust_maps[name].path)
 
     # -----------------------------------------------------------------
 
@@ -1352,32 +1388,32 @@ class MapsSummaryPageGenerator(MapsComponent):
         log.info("Making tables ...")
 
         # Colours
-        if self.has_colour_maps: self.make_colour_table()
+        if self.has_colour_maps: self.make_colour_tables()
 
         # sSFR
-        if self.has_ssfr_maps: self.make_ssfr_table()
+        if self.has_ssfr_maps: self.make_ssfr_tables()
 
         # TIR
-        if self.has_tir_maps: self.make_tir_table()
+        if self.has_tir_maps: self.make_tir_tables()
 
         # Attenuation
-        if self.has_attenuation_maps: self.make_attenuation_table()
+        if self.has_attenuation_maps: self.make_attenuation_tables()
 
         # Old stars
-        if self.has_old_maps: self.make_old_table()
+        if self.has_old_maps: self.make_old_tables()
 
         # Young stars
-        if self.has_young_maps: self.make_young_table()
+        if self.has_young_maps: self.make_young_tables()
 
         # Ionizing stars
-        if self.has_ionizing_maps: self.make_ionizing_table()
+        if self.has_ionizing_maps: self.make_ionizing_tables()
 
         # Dust
-        if self.has_dust_maps: self.make_dust_table()
+        if self.has_dust_maps: self.make_dust_tables()
 
     # -----------------------------------------------------------------
 
-    def make_colour_table(self):
+    def make_colour_tables(self):
 
         """
         This function ...
@@ -1387,25 +1423,34 @@ class MapsSummaryPageGenerator(MapsComponent):
         # Inform the user
         log.info("Making the table of colour maps ...")
 
-        # Get info for each map and the map labels
-        infos = self.colour_info.values()
-        labels = self.colour_info.keys()
+        # Initialize containers
+        infos = DefaultOrderedDict()
+        labels = DefaultOrderedDict()
 
-        # Set the thumbnails
-        thumbnails = []
-        for label in labels:
-            if label in self.colour_previews: thumbnails.append(html.center(self.colour_previews[label]))
-            elif label in self.colour_thumbnails: thumbnails.append(html.center(self.colour_thumbnails[label]))
-            else: thumbnails.append("")
+        # Fill containers
+        for name in self.colour_maps:
+            method = self.colour_methods[name]
+            infos[method].append(self.colour_info[name])
+            labels[method].append(name)
 
-        # Make the table
-        label = "Colour map"
-        self.colour_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label,
-                                                        extra_column=thumbnails, extra_column_label=thumbnail_title)
+        # Create the tables
+        for method in infos:
+
+            # Set the thumbnails
+            thumbnails = []
+            for label in labels[method]:
+                if label in self.colour_previews: thumbnails.append(html.center(self.colour_previews[label]))
+                elif label in self.colour_thumbnails: thumbnails.append(html.center(self.colour_thumbnails[label]))
+                else: thumbnails.append("")
+
+            # Make the table
+            label = "Colour map"
+            self.colour_tables[method] = SimpleTable.from_composites(infos[method], css_class=self.table_class, labels=labels[method], label=label,
+                                                            extra_column=thumbnails, extra_column_label=thumbnail_title)
 
     # -----------------------------------------------------------------
 
-    def make_ssfr_table(self):
+    def make_ssfr_tables(self):
 
         """
         This function ...
@@ -1415,25 +1460,34 @@ class MapsSummaryPageGenerator(MapsComponent):
         # Inform the user
         log.info("Making the table of sSFR maps ...")
 
-        # Get info for each map and the map labels
-        infos = self.ssfr_info.values()
-        labels = self.ssfr_info.keys()
+        # Initialize containers
+        infos = DefaultOrderedDict()
+        labels = DefaultOrderedDict()
 
-        # Set the thumbnails
-        thumbnails = []
-        for label in labels:
-            if label in self.ssfr_previews: thumbnails.append(html.center(self.ssfr_previews[label]))
-            elif label in self.ssfr_thumbnails: thumbnails.append(html.center(self.ssfr_thumbnails[label]))
-            else: thumbnails.append("")
+        # Fill containers
+        for name in self.ssfr_maps:
+            method = self.ssfr_methods[name]
+            infos[method].append(self.ssfr_info[name])
+            labels[method].append(name)
 
-        # Make the table
-        label = "sSFR map"
-        self.ssfr_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label,
-                                                      extra_column=thumbnails, extra_column_label=thumbnail_title)
+        # Create the tables
+        for method in infos:
+
+            # Set the thumbnails
+            thumbnails = []
+            for label in labels[method]:
+                if label in self.ssfr_previews: thumbnails.append(html.center(self.ssfr_previews[label]))
+                elif label in self.ssfr_thumbnails: thumbnails.append(html.center(self.ssfr_thumbnails[label]))
+                else: thumbnails.append("")
+
+            # Make the table
+            label = "sSFR map"
+            self.ssfr_tables[method] = SimpleTable.from_composites(infos[method], css_class=self.table_class, labels=labels[method], label=label,
+                                                          extra_column=thumbnails, extra_column_label=thumbnail_title)
 
     # -----------------------------------------------------------------
 
-    def make_tir_table(self):
+    def make_tir_tables(self):
 
         """
         This function ...
@@ -1443,25 +1497,34 @@ class MapsSummaryPageGenerator(MapsComponent):
         # Inform the user
         log.info("Making the table of TIR maps ...")
 
-        # Get info for each map and the map labels
-        infos = self.tir_info.values()
-        labels = self.tir_info.keys()
+        # Initialize containers
+        infos = DefaultOrderedDict()
+        labels = DefaultOrderedDict()
 
-        # Set the thumbnails
-        thumbnails = []
-        for label in labels:
-            if label in self.tir_previews: thumbnails.append(html.center(self.tir_previews[label]))
-            elif label in self.tir_thumbnails: thumbnails.append(html.center(self.tir_thumbnails[label]))
-            else: thumbnails.append("")
+        # Fill containers
+        for name in self.tir_maps:
+            method = self.tir_methods[name]
+            infos[method].append(self.tir_info[name])
+            labels[method].append(name)
 
-        # Make the table
-        label = "TIR map"
-        self.tir_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label,
-                                                     extra_column=thumbnails, extra_column_label=thumbnail_title)
+        # Create the tables
+        for method in infos:
+
+            # Set the thumbnails
+            thumbnails = []
+            for label in labels[method]:
+                if label in self.tir_previews: thumbnails.append(html.center(self.tir_previews[label]))
+                elif label in self.tir_thumbnails: thumbnails.append(html.center(self.tir_thumbnails[label]))
+                else: thumbnails.append("")
+
+            # Make the table
+            label = "TIR map"
+            self.tir_tables[method] = SimpleTable.from_composites(infos[method], css_class=self.table_class, labels=labels[method], label=label,
+                                                         extra_column=thumbnails, extra_column_label=thumbnail_title)
 
     # -----------------------------------------------------------------
 
-    def make_attenuation_table(self):
+    def make_attenuation_tables(self):
 
         """
         This function ...
@@ -1471,25 +1534,34 @@ class MapsSummaryPageGenerator(MapsComponent):
         # Inform the user
         log.info("Making the table of attenuation maps ...")
 
-        # Get info for each map and the map labels
-        infos = self.attenuation_info.values()
-        labels = self.attenuation_info.keys()
+        # Initialize containers
+        infos = DefaultOrderedDict()
+        labels = DefaultOrderedDict()
 
-        # Set the thumbnails
-        thumbnails = []
-        for label in labels:
-            if label in self.attenuation_previews: thumbnails.append(html.center(self.attenuation_previews[label]))
-            elif label in self.attenuation_thumbnails: thumbnails.append(html.center(self.attenuation_thumbnails[label]))
-            else: thumbnails.append("")
+        # Fill containers
+        for name in self.attenuation_maps:
+            method = self.attenuation_methods[name]
+            infos[method].append(self.attenuation_info[name])
+            labels[method].append(name)
 
-        # Make the table
-        label = "Attenuation map"
-        self.attenuation_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label,
-                                                             extra_column=thumbnails, extra_column_label=thumbnail_title)
+        # Make the tables
+        for method in infos:
+
+            # Set the thumbnails
+            thumbnails = []
+            for label in labels[method]:
+                if label in self.attenuation_previews: thumbnails.append(html.center(self.attenuation_previews[label]))
+                elif label in self.attenuation_thumbnails: thumbnails.append(html.center(self.attenuation_thumbnails[label]))
+                else: thumbnails.append("")
+
+            # Make the table
+            label = "Attenuation map"
+            self.attenuation_tables[method] = SimpleTable.from_composites(infos[method], css_class=self.table_class, labels=labels[method], label=label,
+                                                                 extra_column=thumbnails, extra_column_label=thumbnail_title)
 
     # -----------------------------------------------------------------
 
-    def make_old_table(self):
+    def make_old_tables(self):
 
         """
         This function ...
@@ -1499,25 +1571,34 @@ class MapsSummaryPageGenerator(MapsComponent):
         # Inform the user
         log.info("Making the table of old stellar maps ...")
 
-        # Get info for each map and the map labels
-        infos = self.old_info.values()
-        labels = self.old_info.keys()
+        # Initialize the containers
+        infos = DefaultOrderedDict()
+        labels = DefaultOrderedDict()
 
-        # Set the thumbnails
-        thumbnails = []
-        for label in labels:
-            if label in self.old_previews: thumbnails.append(html.center(self.old_previews[label]))
-            elif label in self.old_thumbnails: thumbnails.append(html.center(self.old_thumbnails[label]))
-            else: thumbnails.append("")
+        # Fill the containers
+        for name in self.old_maps:
+            method = self.old_methods[name]
+            infos[method].append(self.old_info[name])
+            labels[method].append(name)
 
-        # Make the table
-        label = "Old stellar map"
-        self.old_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label,
-                                                     extra_column=thumbnails, extra_column_label=thumbnail_title)
+        # Make the tables
+        for method in infos:
+
+            # Set the thumbnails
+            thumbnails = []
+            for label in labels[method]:
+                if label in self.old_previews: thumbnails.append(html.center(self.old_previews[label]))
+                elif label in self.old_thumbnails: thumbnails.append(html.center(self.old_thumbnails[label]))
+                else: thumbnails.append("")
+
+            # Make the table
+            label = "Old stellar map"
+            self.old_tables[method] = SimpleTable.from_composites(infos[method], css_class=self.table_class, labels=labels[method], label=label,
+                                                         extra_column=thumbnails, extra_column_label=thumbnail_title)
 
     # -----------------------------------------------------------------
 
-    def make_young_table(self):
+    def make_young_tables(self):
 
         """
         This function ...
@@ -1527,25 +1608,34 @@ class MapsSummaryPageGenerator(MapsComponent):
         # Inform the user
         log.info("Making the table of young stellar maps ...")
 
-        # Get info for each map and the map labels
-        infos = self.young_info.values()
-        labels = self.young_info.keys()
+        # Initialize the containers
+        infos = DefaultOrderedDict()
+        labels = DefaultOrderedDict()
 
-        # Set the thumbnails
-        thumbnails = []
-        for label in labels:
-            if label in self.young_previews: thumbnails.append(html.center(self.young_previews[label]))
-            elif label in self.young_thumbnails: thumbnails.append(html.center(self.young_thumbnails[label]))
-            else: thumbnails.append("")
+        # Fill the containers
+        for name in self.young_tables:
+            method = self.young_methods[name]
+            infos[method].append(self.young_info[name])
+            labels[method].append(name)
 
-        # Make the table
-        label = "Young stellar map"
-        self.young_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label,
-                                                       extra_column=thumbnails, extra_column_label=thumbnail_title)
+        # Make the tables
+        for method in infos:
+
+            # Set the thumbnails
+            thumbnails = []
+            for label in labels[method]:
+                if label in self.young_previews: thumbnails.append(html.center(self.young_previews[label]))
+                elif label in self.young_thumbnails: thumbnails.append(html.center(self.young_thumbnails[label]))
+                else: thumbnails.append("")
+
+            # Make the table
+            label = "Young stellar map"
+            self.young_tables[method] = SimpleTable.from_composites(infos[method], css_class=self.table_class, labels=labels[method], label=label,
+                                                           extra_column=thumbnails, extra_column_label=thumbnail_title)
 
     # -----------------------------------------------------------------
 
-    def make_ionizing_table(self):
+    def make_ionizing_tables(self):
 
         """
         This function ...
@@ -1555,25 +1645,34 @@ class MapsSummaryPageGenerator(MapsComponent):
         # Inform the user
         log.info("Making the table of ionizing stellar maps ...")
 
-        # Get info for each map and the map labels
-        infos = self.ionizing_info.values()
-        labels = self.ionizing_info.keys()
+        # Initialize the containers
+        infos = DefaultOrderedDict()
+        labels = DefaultOrderedDict()
 
-        # Set the thumbnails
-        thumbnails = []
-        for label in labels:
-            if label in self.ionizing_previews: thumbnails.append(html.center(self.ionizing_previews[label]))
-            elif label in self.ionizing_thumbnails: thumbnails.append(html.center(self.ionizing_thumbnails[label]))
-            else: thumbnails.append("")
+        # Fill in the containers
+        for name in self.ionizing_maps:
+            method = self.ionizing_methods[name]
+            infos[method].append(self.ionizing_info[name])
+            labels[method].append(name)
 
-        # Make the table
-        label = "Ionizing stellar map"
-        self.ionizing_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label,
-                                                          extra_column=thumbnails, extra_column_label=thumbnail_title)
+        # Make the tables
+        for method in infos:
+
+            # Set the thumbnails
+            thumbnails = []
+            for label in labels[method]:
+                if label in self.ionizing_previews: thumbnails.append(html.center(self.ionizing_previews[label]))
+                elif label in self.ionizing_thumbnails: thumbnails.append(html.center(self.ionizing_thumbnails[label]))
+                else: thumbnails.append("")
+
+            # Make the table
+            label = "Ionizing stellar map"
+            self.ionizing_tables[method] = SimpleTable.from_composites(infos[method], css_class=self.table_class, labels=labels[method], label=label,
+                                                              extra_column=thumbnails, extra_column_label=thumbnail_title)
 
     # -----------------------------------------------------------------
 
-    def make_dust_table(self):
+    def make_dust_tables(self):
 
         """
         This function ...
@@ -1583,21 +1682,30 @@ class MapsSummaryPageGenerator(MapsComponent):
         # Inform the user
         log.info("Making the table of dust maps ...")
 
-        # Get info for each map and the map labels
-        infos = self.dust_info.values()
-        labels = self.dust_info.keys()
+        # Initialize the containers
+        infos = DefaultOrderedDict()
+        labels = DefaultOrderedDict()
 
-        # Set the thumbnails
-        thumbnails = []
-        for label in labels:
-            if label in self.dust_previews: thumbnails.append(html.center(self.dust_previews[label]))
-            elif label in self.dust_thumbnails: thumbnails.append(html.center(self.dust_thumbnails[label]))
-            else: thumbnails.append("")
+        # Fill the containers
+        for name in self.dust_maps:
+            method = self.dust_methods[name]
+            infos[method].append(self.dust_info[name])
+            labels[method].append(name)
 
-        # Make the table
-        label = "Dust map"
-        self.dust_table = SimpleTable.from_composites(infos, css_class=self.table_class, labels=labels, label=label,
-                                                    extra_column=thumbnails, extra_column_label=thumbnail_title)
+        # Make the tables
+        for method in infos:
+
+            # Set the thumbnails
+            thumbnails = []
+            for label in labels[method]:
+                if label in self.dust_previews: thumbnails.append(html.center(self.dust_previews[label]))
+                elif label in self.dust_thumbnails: thumbnails.append(html.center(self.dust_thumbnails[label]))
+                else: thumbnails.append("")
+
+            # Make the table
+            label = "Dust map"
+            self.dust_tables[method] = SimpleTable.from_composites(infos[method], css_class=self.table_class, labels=labels[method], label=label,
+                                                        extra_column=thumbnails, extra_column_label=thumbnail_title)
 
     # -----------------------------------------------------------------
 
@@ -1628,92 +1736,471 @@ class MapsSummaryPageGenerator(MapsComponent):
 
         classes = dict()
         classes["JS9Menubar"] = "data-backgroundColor"
-        self.page += html.center(html.make_theme_button(classes=classes))
+        self.page += html.center(html.make_theme_button(classes=classes, images=False))
         self.page += html.newline
+
+        # Add the tables
+        self.add_colour_tables()
+        self.add_ssfr_tables()
+        self.add_tir_tables()
+        self.add_attenuation_tables()
+        self.add_old_tables()
+        self.add_young_tables()
+        self.add_ionizing_tables()
+        self.add_dust_tables()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_colour_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.colour_tables) == 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_colour_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.colour_tables[self.colour_tables.keys()[0]]
+
+    # -----------------------------------------------------------------
+
+    def add_colour_tables(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adding the colour maps tables ...")
 
         # Add the colours table
         self.page += "COLOURS"
         self.page += html.newline
         self.page += html.line
         self.page += html.newline
-        self.page += self.colour_table
+
+        if self.has_single_colour_table: self.page += self.single_colour_table
+        else:
+
+            # Loop over the methods
+            for method in self.colour_tables:
+                self.page += method.upper()
+                self.page += html.newline
+                self.page += self.colour_tables[method]
+
+        # Finish
         self.page += html.newline
         self.page += html.newline
         self.page += html.make_line("heavy")
         self.page += html.newline
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_ssfr_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.ssfr_tables) == 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_ssfr_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ssfr_tables[self.ssfr_tables.keys()[0]]
+
+    # -----------------------------------------------------------------
+
+    def add_ssfr_tables(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adding the sSFR maps tables ...")
 
         # Add the sSFR table
         self.page += "SSFR"
         self.page += html.newline
         self.page += html.line
         self.page += html.newline
-        self.page += self.ssfr_table
+
+
+        if self.has_single_ssfr_table: self.page += self.single_ssfr_table
+        else:
+
+            # Loop over the methods
+            for method in self.ssfr_tables:
+                self.page += method.upper()
+                self.page += html.newline
+                self.page += self.ssfr_tables[method]
+
+        # Finish
         self.page += html.newline
         self.page += html.newline
         self.page += html.make_line("heavy")
         self.page += html.newline
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_tir_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.tir_tables) == 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_tir_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.tir_tables[self.tir_tables.keys()[0]]
+
+    # -----------------------------------------------------------------
+
+    def add_tir_tables(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adding the TIR maps tables ...")
 
         # Add the TIR table
         self.page += "TIR"
         self.page += html.newline
         self.page += html.line
         self.page += html.newline
-        self.page += self.tir_table
+
+        if self.has_single_tir_table: self.page += self.single_tir_table
+        else:
+
+            # Loop over the methods
+            for method in self.tir_tables:
+                self.page += method.upper()
+                self.page += html.newline
+                self.page += self.tir_tables[method]
+
+        # Finish
         self.page += html.newline
         self.page += html.newline
         self.page += html.make_line("heavy")
         self.page += html.newline
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_attenuation_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.attenuation_tables) == 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_attenuation_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.attenuation_tables[self.attenuation_tables.keys()[0]]
+
+    # -----------------------------------------------------------------
+
+    def add_attenuation_tables(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adding the attenuation maps tables ...")
 
         # Add the attenuation table
         self.page += "ATTENUATION"
         self.page += html.newline
         self.page += html.line
         self.page += html.newline
-        self.page += self.attenuation_table
+
+        if self.has_single_attenuation_table: self.page += self.single_attenuation_table
+        else:
+
+            # Loop over the methods
+            for method in self.attenuation_tables:
+                self.page += method.upper()
+                self.page += html.newline
+                self.page += self.attenuation_tables[method]
+
+        # Finish
         self.page += html.newline
         self.page += html.newline
         self.page += html.make_line("heavy")
         self.page += html.newline
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_old_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.old_tables) == 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_old_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.old_tables[self.old_tables.keys()[0]]
+
+    # -----------------------------------------------------------------
+
+    def add_old_tables(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adding the old stellar maps tables ...")
 
         # Add the old table
         self.page += "OLD STARS"
         self.page += html.newline
         self.page += html.line
         self.page += html.newline
-        self.page += self.old_table
+
+        if self.has_single_old_table: self.page += self.single_old_table
+        else:
+
+            # Loop over the methods
+            for method in self.old_tables:
+                self.page += method.upper()
+                self.page += html.newline
+                self.page += self.old_tables[method]
+
+        # Finish
         self.page += html.newline
         self.page += html.newline
         self.page += html.make_line("heavy")
         self.page += html.newline
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_young_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.young_tables) == 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_young_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.young_tables[self.young_tables.keys()[0]]
+
+    # -----------------------------------------------------------------
+
+    def add_young_tables(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adding the young stellar maps tables ...")
 
         # Add the young table
         self.page += "YOUNG STARS"
         self.page += html.newline
         self.page += html.line
         self.page += html.newline
-        self.page += self.young_table
+
+        if self.has_single_young_table: self.page += self.single_young_table
+        else:
+
+            # Loop over the methods
+            for method in self.young_tables:
+                self.page += method.upper()
+                self.page += html.newline
+                self.page += self.young_tables[method]
+
+        # Finish
         self.page += html.newline
         self.page += html.newline
         self.page += html.make_line("heavy")
         self.page += html.newline
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_ionizing_table(self):
+
+        """
+        Thsi function ...
+        :return:
+        """
+
+        return len(self.ionizing_tables) == 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_ionizing_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.ionizing_tables[self.ionizing_tables.keys()[0]]
+
+    # -----------------------------------------------------------------
+
+    def add_ionizing_tables(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adding the ionizing stellar maps tables ...")
 
         # Add the ionizing table
         self.page += "IONIZING STARS"
         self.page += html.newline
         self.page += html.line
         self.page += html.newline
-        self.page += self.ionizing_table
+
+        if self.has_single_ionizing_table: self.page += self.single_ionizing_table
+        else:
+
+            # Loop over the methods
+            for method in self.ionizing_tables:
+                self.page += method.upper()
+                self.page += html.newline
+                self.page += self.ionizing_tables[method]
+
+        # Finish
         self.page += html.newline
         self.page += html.newline
         self.page += html.make_line("heavy")
         self.page += html.newline
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_single_dust_table(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.dust_tables) == 1
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_dust_table(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return self.dust_tables[self.dust_tables.keys()[0]]
+
+    # -----------------------------------------------------------------
+
+    def add_dust_tables(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Adding the dust maps tables ...")
 
         # Add the dust table
         self.page += "DUST"
         self.page += html.newline
         self.page += html.line
         self.page += html.newline
-        self.page += self.dust_table
+
+        if self.has_single_dust_table: self.page += self.single_dust_table
+        else:
+
+            # Loop over the methods
+            for method in self.dust_tables:
+                self.page += method.upper()
+                self.page += html.newline
+                self.page += self.dust_tables[method]
+
+        # Finish
         self.page += html.newline
         self.page += html.newline
         self.page += html.make_line("heavy")

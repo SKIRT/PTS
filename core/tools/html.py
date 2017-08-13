@@ -528,6 +528,32 @@ function darkTheme()
 
 # -----------------------------------------------------------------
 
+def make_dark_theme_function(background=True, text=True, images=True, tables=True, extra=True):
+
+    """
+    This function ...
+    :param background:
+    :param text:
+    :param images:
+    :param tables:
+    :param extra:
+    :return:
+    """
+
+    code = "function darkTheme()\n"
+    code += "{\n"
+
+    if background: code += "    darkBackground();\n"
+    if text: code += "    darkText();\n"
+    if images: code += "    darkImages();\n"
+    if tables: code += "    darkTables();\n"
+    if extra: code += "    darkExtra();\n"
+
+    code += "}"
+    return code
+
+# -----------------------------------------------------------------
+
 light_theme_function = """
 function lightTheme()
 {
@@ -538,6 +564,27 @@ function lightTheme()
     lightExtra();
 }
 """
+
+# -----------------------------------------------------------------
+
+def make_light_theme_function(background=True, text=True, images=True, tables=True, extra=True):
+
+    """
+    This function ...
+    :return:
+    """
+
+    code = "function lightTheme()\n"
+    code += "{\n"
+
+    if background: code += "    lightBackground();\n"
+    if text: code += "    lightText();\n"
+    if images: code += "    lightImages();\n"
+    if tables: code += "    lightTables();\n"
+    if extra: code += "    lightExtra();\n"
+
+    code += "}"
+    return code
 
 # -----------------------------------------------------------------
 
@@ -659,11 +706,12 @@ function lightTables()
 
 # -----------------------------------------------------------------
 
-def make_theme_button(classes=None):
+def make_theme_button(classes=None, images=True):
 
     """
     This function ...
-    :param classes
+    :param classes:
+    :param images:
     :return:
     """
 
@@ -686,9 +734,11 @@ def make_theme_button(classes=None):
     code += "\n"
     code += make_change_theme_function_template(button_id)
     code += "\n"
-    code += dark_theme_function
+    #code += dark_theme_function
+    code += make_dark_theme_function(images=images)
     code += "\n"
-    code += light_theme_function
+    #code += light_theme_function
+    code += make_light_theme_function(images=images)
     code += "\n"
     code += dark_background_function
     code += "\n"

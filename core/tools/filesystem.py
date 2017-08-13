@@ -1850,6 +1850,18 @@ def relative_to(path, base_path):
 
 # -----------------------------------------------------------------
 
+def base_directory(path):
+
+    """
+    This function ...
+    :param path:
+    :return:
+    """
+
+    return path.split("/")[0]
+
+# -----------------------------------------------------------------
+
 def replace_strings(path, replacement_dict):
 
     """

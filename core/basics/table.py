@@ -121,7 +121,7 @@ class SmartTable(Table):
 
                 real_type = str
                 column_unit = None
-                column_description = "label"
+                column_description = label
 
             else:
 
@@ -158,6 +158,7 @@ class SmartTable(Table):
                 # SPECIAL CASE: WAS NONE FOR EACH COMPOSITE
                 elif column_type == "None": real_type = str
 
+                # NOT RECOGNIZED
                 else: raise ValueError("Column type not recognized: " + str(column_type) + " (" + str(type(column_type)) + ")")
 
             # Add the column info

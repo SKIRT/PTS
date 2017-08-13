@@ -168,6 +168,55 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def type_for_map_path(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Determine map type (colour/sSFR/TIR/attenuation/old/young/ionizing/dust)
+        relative = fs.relative_to(path, self.maps_path)
+        map_type = fs.base_directory(relative)
+        return map_type
+
+    # -----------------------------------------------------------------
+
+    def method_for_map_path(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        # Get type
+        map_type = self.type_for_map_path(path)
+
+        map_directory = fs.directory_of(path)
+        map_directory_name = fs.name(map_directory)
+
+        if map_directory_name == map_type: return None
+        else: return map_directory_name
+
+    # -----------------------------------------------------------------
+
+    def method_or_type_for_map_path(self, path):
+
+        """
+        This function ...
+        :param path:
+        :return:
+        """
+
+        method = self.method_for_map_path(path)
+
+        if method is None: return self.type_for_map_path(path)
+        else: return method
+
+    # -----------------------------------------------------------------
+
     def perform_checks(self):
 
         """
