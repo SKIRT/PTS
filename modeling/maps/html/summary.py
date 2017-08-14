@@ -1739,6 +1739,20 @@ class MapsSummaryPageGenerator(MapsComponent):
         self.page += html.center(html.make_theme_button(classes=classes, images=False))
         self.page += html.newline
 
+        # Add the anchor links
+        self.page += html.make_line("heavy") + html.newline
+        self.page += html.anchor_link(colours_name, "Colour maps") + html.newline
+        self.page += html.anchor_link(ssfr_name, "sSFR maps") + html.newline
+        self.page += html.anchor_link(tir_name, "TIR maps") + html.newline
+        self.page += html.anchor_link(attenuation_name, "Attenuation maps") + html.newline
+        self.page += html.anchor_link(old_name, "Old stellar maps") + html.newline
+        self.page += html.anchor_link(young_name, "Young stellar maps") + html.newline
+        self.page += html.anchor_link(ionizing_name, "Ionizing stellar maps") + html.newline
+        self.page += html.anchor_link(dust_name, "Dust maps") + html.newline
+        self.page += html.newline
+        self.page += html.make_line("heavy")
+        self.page += html.newline
+
         # Add the tables
         self.add_colour_tables()
         self.add_ssfr_tables()
@@ -1786,7 +1800,7 @@ class MapsSummaryPageGenerator(MapsComponent):
         log.info("Adding the colour maps tables ...")
 
         # Add the colours table
-        self.page += "COLOURS"
+        self.page += html.anchor(colours_name, "COLOURS")
         self.page += html.newline
         self.page += html.line
         self.page += html.newline
@@ -1847,7 +1861,7 @@ class MapsSummaryPageGenerator(MapsComponent):
         log.info("Adding the sSFR maps tables ...")
 
         # Add the sSFR table
-        self.page += "SSFR"
+        self.page += html.anchor(ssfr_name, "SSFR")
         self.page += html.newline
         self.page += html.line
         self.page += html.newline
@@ -1909,7 +1923,7 @@ class MapsSummaryPageGenerator(MapsComponent):
         log.info("Adding the TIR maps tables ...")
 
         # Add the TIR table
-        self.page += "TIR"
+        self.page += html.anchor(tir_name, "TIR")
         self.page += html.newline
         self.page += html.line
         self.page += html.newline
@@ -1970,7 +1984,7 @@ class MapsSummaryPageGenerator(MapsComponent):
         log.info("Adding the attenuation maps tables ...")
 
         # Add the attenuation table
-        self.page += "ATTENUATION"
+        self.page += html.anchor(attenuation_name, "ATTENUATION")
         self.page += html.newline
         self.page += html.line
         self.page += html.newline
@@ -2031,7 +2045,7 @@ class MapsSummaryPageGenerator(MapsComponent):
         log.info("Adding the old stellar maps tables ...")
 
         # Add the old table
-        self.page += "OLD STARS"
+        self.page += html.anchor(old_name, "OLD STARS")
         self.page += html.newline
         self.page += html.line
         self.page += html.newline
@@ -2092,7 +2106,7 @@ class MapsSummaryPageGenerator(MapsComponent):
         log.info("Adding the young stellar maps tables ...")
 
         # Add the young table
-        self.page += "YOUNG STARS"
+        self.page += html.anchor(young_name, "YOUNG STARS")
         self.page += html.newline
         self.page += html.line
         self.page += html.newline
@@ -2153,7 +2167,7 @@ class MapsSummaryPageGenerator(MapsComponent):
         log.info("Adding the ionizing stellar maps tables ...")
 
         # Add the ionizing table
-        self.page += "IONIZING STARS"
+        self.page += html.anchor(ionizing_name, "IONIZING STARS")
         self.page += html.newline
         self.page += html.line
         self.page += html.newline
@@ -2214,7 +2228,7 @@ class MapsSummaryPageGenerator(MapsComponent):
         log.info("Adding the dust maps tables ...")
 
         # Add the dust table
-        self.page += "DUST"
+        self.page += html.anchor(dust_name, "DUST")
         self.page += html.newline
         self.page += html.line
         self.page += html.newline

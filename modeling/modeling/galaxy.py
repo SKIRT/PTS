@@ -820,7 +820,7 @@ class GalaxyModeler(ModelerBase):
         """
 
         # Inform the user
-        log.info("Making truncation masks for the galaxy images ...")
+        log.info("Setting truncation boundary for the galaxy images ...")
 
         # Create configuration
         config = dict()

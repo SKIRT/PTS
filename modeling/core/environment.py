@@ -36,6 +36,7 @@ from ...magic.region.ellipse import SkyEllipseRegion
 from ...magic.basics.stretch import SkyStretch
 from ...core.tools import tables
 from ..basics.properties import GalaxyProperties
+from ...core.tools.serialization import load_dict
 
 # -----------------------------------------------------------------
 
@@ -304,6 +305,7 @@ statistics_name = "statistics.dat"
 
 disk_region_filename = "disk.reg"
 truncation_ellipse_filename = "ellipse.reg"
+significance_levels_filename = "levels.dat"
 
 # -----------------------------------------------------------------
 
@@ -348,6 +350,9 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
         # TRUNCATION ELLIPSE PATH
         self.truncation_ellipse_path = fs.join(self.truncation_path, truncation_ellipse_filename)
+
+        # SIGNIFICANCE LEVELS PATH
+        self.significance_levels_path = fs.join(self.truncation_path, significance_levels_filename)
 
         # DATA
 
@@ -1111,6 +1116,18 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         """
 
         return self.truncation_ellipse.bounding_box
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def significance_levels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return load_dict(self.significance_levels_path)
 
 # -----------------------------------------------------------------
 

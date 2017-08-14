@@ -396,6 +396,35 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    def get_all_filters_sub_name(self, name, method=None):
+
+        """
+        This function ...
+        :param name:
+        :param method:
+        :return:
+        """
+
+        filters = set()
+        origins = self.get_origins_sub_name(name, flatten=True, method=method)
+        for name in origins: filters.update(origins[name])
+        return list(filters)
+
+    # -----------------------------------------------------------------
+
+    def get_all_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        filters = set()
+        for name in self.maps_sub_names: filters.update(self.get_all_filters_sub_name(name))
+        return list(filters)
+
+    # -----------------------------------------------------------------
+
     def get_methods_sub_name(self, name, flatten=False, method=None):
 
         """
@@ -519,6 +548,96 @@ class MapsCollection(object):
         """
 
         return self.get_origins_sub_name(self.maps_dust_name, flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    # FILTERS
+
+    def get_all_colours_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_all_filters_sub_name(self.maps_colours_name)
+
+    # -----------------------------------------------------------------
+
+    def get_all_ssfr_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_all_filters_sub_name(self.maps_ssfr_name)
+
+    # -----------------------------------------------------------------
+
+    def get_all_tir_filters(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        return self.get_all_filters_sub_name(self.maps_tir_name)
+
+    # -----------------------------------------------------------------
+
+    def get_all_attenuation_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_all_filters_sub_name(self.maps_attenuation_name)
+
+    # -----------------------------------------------------------------
+
+    def get_all_old_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_all_filters_sub_name(self.maps_old_name)
+
+    # -----------------------------------------------------------------
+
+    def get_all_young_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_all_filters_sub_name(self.maps_young_name)
+
+    # -----------------------------------------------------------------
+
+    def get_all_ionizing_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_all_filters_sub_name(self.maps_ionizing_name)
+
+    # -----------------------------------------------------------------
+
+    def get_all_dust_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_all_filters_sub_name(self.maps_dust_name)
 
     # -----------------------------------------------------------------
 

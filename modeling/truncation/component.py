@@ -20,7 +20,11 @@ from ...core.tools import filesystem as fs
 
 analytics_name = "analytics"
 html_name = "html"
-page_filename = "index.html"
+
+# -----------------------------------------------------------------
+
+ellipse_page_filename = "ellipse.html"
+significance_page_filename = "significance.html"
 
 # -----------------------------------------------------------------
 
@@ -47,8 +51,8 @@ class TruncationComponent(GalaxyModelingComponent):
         # HTML directory
         self.truncation_html_path = None
 
-        # page
-        self.truncation_html_page_path = None
+        # Ellipse page
+        self.ellipse_page_path = None
 
     # -----------------------------------------------------------------
 
@@ -69,7 +73,8 @@ class TruncationComponent(GalaxyModelingComponent):
         # Set the path to the HTML directory
         self.truncation_html_path = fs.create_directory_in(self.truncation_path, html_name)
 
-        # Page path
-        self.truncation_html_page_path = fs.join(self.truncation_html_path, page_filename)
+        # Page paths
+        self.ellipse_page_path = fs.join(self.truncation_html_path, ellipse_page_filename)
+        self.significance_page_path = fs.join(self.truncation_html_path, significance_page_filename)
 
 # -----------------------------------------------------------------

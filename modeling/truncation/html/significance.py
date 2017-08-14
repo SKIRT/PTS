@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.maps.html.significance Contains the SignificanceMapsPageGenerator class.
+## \package pts.modeling.truncation.html.significance Contains the SignificanceLevelsPageGenerator class.
 
 # -----------------------------------------------------------------
 
@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ....core.basics.log import log
-from ..component import MapsComponent
+from ..component import TruncationComponent
 from ...html.component import stylesheet_url, page_style, table_class, hover_table_class, top_title_size, title_size
 from ....core.tools.html import HTMLPage, SimpleTable, updated_footing
 from ....core.tools import html
@@ -34,7 +34,7 @@ colour_map = "jet"
 
 # -----------------------------------------------------------------
 
-class SignificanceMapsPageGenerator(MapsComponent):
+class SignificanceLevelsPageGenerator(TruncationComponent):
 
     """
     This class...
@@ -49,7 +49,7 @@ class SignificanceMapsPageGenerator(MapsComponent):
         """
 
         # Call the constructor of the base class
-        super(SignificanceMapsPageGenerator, self).__init__(*args, **kwargs)
+        super(SignificanceLevelsPageGenerator, self).__init__(*args, **kwargs)
 
         # Plot paths for each filter
         self.filter_plot_paths = dict()
@@ -89,20 +89,31 @@ class SignificanceMapsPageGenerator(MapsComponent):
         """
 
         # Call the setup function of the base class
-        super(SignificanceMapsPageGenerator, self).setup(**kwargs)
+        super(SignificanceLevelsPageGenerator, self).setup(**kwargs)
 
         # Make directory to contain the plots
-        self.significance_plots_path = fs.join(self.maps_html_path, significance_plots_name)
-
-        if fs.is_directory(self.significance_plots_path):
-            if self.config.replot: fs.clear_directory(self.significance_plots_path)
-        else: fs.create_directory(self.significance_plots_path)
+        self.plots_path = fs.join(self.truncation_html_path, "significance")
+        if fs.is_directory(self.plots_path):
+            if self.config.replot: fs.clear_directory(self.plots_path)
+        else: fs.create_directory(self.plots_path)
 
         # Create directories for each filter
-        for fltr in self.maps_filters:
-            fltr_path = fs.join(self.significance_plots_path, str(fltr))
+        for fltr in self.filters:
+            fltr_path = fs.join(self.plots_path, str(fltr))
             self.filter_plot_paths[fltr] = fltr_path
             if not fs.is_directory(fltr_path): fs.create_directory(fltr_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dataset.filters
 
     # -----------------------------------------------------------------
 
@@ -143,18 +154,6 @@ class SignificanceMapsPageGenerator(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    @lazyproperty
-    def maps_filters(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.get_all_filters()
-
-    # -----------------------------------------------------------------
-
     def make_plots(self):
 
         """
@@ -166,16 +165,23 @@ class SignificanceMapsPageGenerator(MapsComponent):
         log.info("Making plots ...")
 
         # Loop over the filters
-        for fltr in self.maps_filters:
+        #for fltr in self.filters:
+        # Loop over the frames
+        for name in self.dataset.names: # FASTER
+
+            # Get the filter
+            fltr = self.dataset.get_filter(name)
 
             # Get plot path
             plot_path = self.filter_plot_paths[fltr]
 
             # Get frame
-            frame = self.dataset.get_frame_for_filter(fltr)
+            #frame = self.dataset.get_frame_for_filter(fltr)
+            frame = self.dataset.get_frame(name)
 
             # Get error map list
-            errormap = self.dataset.get_errormap_for_filter(fltr)
+            #errormap = self.dataset.get_errormap_for_filter(fltr)
+            errormap = self.dataset.get_errormap(name)
 
             # Create the significance map
             significance = frame / errormap

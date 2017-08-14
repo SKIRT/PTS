@@ -389,7 +389,39 @@ def image_preview(url, text, title=None):
 
 # -----------------------------------------------------------------
 
-def hyperlink(url, text=None):
+def anchor(name, text=None):
+
+    """
+    This function ...
+    :param name:
+    :param text:
+    :return:
+    """
+
+    code = '<a name="' + name + '"'
+    code += ">"
+
+    if text is not None: code += text
+
+    code += "</a>"
+    return code
+
+# -----------------------------------------------------------------
+
+def anchor_link(name, text):
+
+    """
+    This function ...
+    :param name:
+    :param text:
+    :return:
+    """
+
+    return hyperlink("#" + name, text)
+
+# -----------------------------------------------------------------
+
+def hyperlink(url, text):
 
     """
     This function ...

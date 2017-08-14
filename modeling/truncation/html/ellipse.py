@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.truncation.html Contains the TruncationPageGenerator class.
+## \package pts.modeling.truncation.html.ellipse Contains the TruncationEllipsePageGenerator class.
 
 # -----------------------------------------------------------------
 
@@ -16,18 +16,18 @@ from __future__ import absolute_import, division, print_function
 import gc
 
 # Import the relevant PTS classes and modules
-from .component import TruncationComponent
-from ...core.tools.html import HTMLPage, SimpleTable, newline, updated_footing, make_theme_button, center, sleep_function, other_sleep_function, make_script_button, unordered_list, button, dictionary
-from ...core.basics.log import log
-from ...magic.view.html import JS9Viewer, JS9Preloader, body_settings, javascripts, css_scripts, JS9Menubar, JS9Loader, JS9Spawner, JS9Colorbar, JS9Window, make_load_region_function, make_load_region, make_synchronize_regions_script
-from ...magic.view.html import make_spawn_code, add_to_div, make_usable
-from ...core.tools import filesystem as fs
-from ...core.tools.utils import lazyproperty
-from ...core.filter.filter import parse_filter
-from .analytics import mask_names
-from ...core.tools import browser
-from ...magic.core.frame import Frame
-from ...magic.tools.info import get_image_info_strings_from_header, get_image_info_from_header
+from ..component import TruncationComponent
+from ....core.tools.html import HTMLPage, SimpleTable, newline, updated_footing, make_theme_button, center, sleep_function, other_sleep_function, make_script_button, unordered_list, button, dictionary
+from ....core.basics.log import log
+from ....magic.view.html import JS9Preloader, body_settings, javascripts, css_scripts, JS9Menubar, JS9Loader, JS9Spawner, JS9Colorbar, JS9Window, make_load_region_function, make_load_region, make_synchronize_regions_script
+from ....magic.view.html import make_spawn_code, add_to_div, make_usable
+from ....core.tools import filesystem as fs
+from ....core.tools.utils import lazyproperty
+from ....core.filter.filter import parse_filter
+from ..analytics import mask_names
+from ....core.tools import browser
+from ....magic.core.frame import Frame
+from ....magic.tools.info import get_image_info_strings_from_header, get_image_info_from_header
 
 # -----------------------------------------------------------------
 
@@ -47,7 +47,7 @@ style = "ugentstyle"
 
 # -----------------------------------------------------------------
 
-class TruncationPageGenerator(TruncationComponent):
+class TruncationEllipsePageGenerator(TruncationComponent):
     
     """
     This class...
@@ -62,7 +62,7 @@ class TruncationPageGenerator(TruncationComponent):
         """
 
         # Call the constructor of the base class
-        super(TruncationPageGenerator, self).__init__(*args, **kwargs)
+        super(TruncationEllipsePageGenerator, self).__init__(*args, **kwargs)
 
         # --- Attributes ---
 
@@ -162,7 +162,7 @@ class TruncationPageGenerator(TruncationComponent):
         """
 
         # Call the setup function of the base class
-        super(TruncationPageGenerator, self).setup(**kwargs)
+        super(TruncationEllipsePageGenerator, self).setup(**kwargs)
 
         # Set the preloader
         #if self.config.preload: self.preloader = JS9Preloader()
@@ -174,7 +174,7 @@ class TruncationPageGenerator(TruncationComponent):
             if self.config.replot: fs.clear_directory(self.plots_path)
         else: fs.create_directory(self.plots_path)
 
-        # make directory to contain the mask plots
+        # Make directory to contain the mask plots
         self.masks_path  = fs.join(self.truncation_html_path, "masks")
         if fs.is_directory(self.masks_path):
             if self.config.replot: fs.clear_directory(self.masks_path)
@@ -761,7 +761,7 @@ class TruncationPageGenerator(TruncationComponent):
         log.info("Writing the page ...")
 
         # Save
-        self.page.saveto(self.truncation_html_page_path)
+        self.page.saveto(self.ellipse_page_path)
 
     # -----------------------------------------------------------------
 
@@ -776,6 +776,6 @@ class TruncationPageGenerator(TruncationComponent):
         log.info("Showing the page ...")
 
         # Open in browser
-        browser.open_path(self.truncation_html_page_path)
+        browser.open_path(self.ellipse_page_path)
 
 # -----------------------------------------------------------------

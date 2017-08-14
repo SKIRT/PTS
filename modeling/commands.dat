@@ -98,10 +98,11 @@ fitskirt | -- | fitting.fitskirt.FitSKIRTLauncher | arguments | Launch FitSKIRT
 analyse_mosaic | -- | data.analyser.MosaicAnalyser | arguments | Analyse mosaics and Poisson error mosaic maps
 build_grid | -- | build.dustgrid.DustGridBuilder | arguments | Build dust grid
 launch_model | -- | misc.launch.ModelLauncher | arguments | Launch a certain model
+generate_truncation_ellipse_page | -- | truncation.html.ellipse.TruncationEllipsePageGenerator | arguments | Generate the truncation ellipse page
+generate_significance_levels_page | -- | truncation.html.significance.SignificanceLevelsPageGenerator | arguments | Generate the significance levels page
 generate_all_maps_page | -- | maps.html.all.AllMapsPageGenerator | arguments | Generate the all maps page
 generate_maps_summary_page | -- | maps.html.summary.MapsSummaryPageGenerator | arguments | Generate the maps summary page
 generate_significance_maps_page | -- | maps.html.significance.SignificanceMapsPageGenerator | arguments | Generate the significance maps page
-generate_truncation_page | -- | truncation.html.TruncationPageGenerator | arguments | Generate the truncation page
 
 # HTML
 generate_all_pages | -- | html.all.AllPagesGenerator | arguments | Generate all the pages

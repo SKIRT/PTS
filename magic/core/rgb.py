@@ -18,6 +18,7 @@ import numpy as np
 
 # Import the relevant PTS classes and modules
 from ..basics.vector import PixelShape
+from ...core.basics.colour import parse_colour
 
 # -----------------------------------------------------------------
 
@@ -107,6 +108,22 @@ class RGBImage(object):
 
         from .rgba import frame_to_components
         red, green, blue, alpha = frame_to_components(frame, interval=interval, scale=scale, alpha=False, peak_alpha=peak_alpha, colours=colours, absolute_alpha=False)
+        return cls(red, green, blue)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_mask(cls, mask, colour="black", background_color="white"):
+
+        """
+        This function ...
+        :param mask:
+        :param colour:
+        :param background_color:
+        :return:
+        """
+
+        red, green, blue = mask_to_components(mask, colour=colour, background_color=background_color)
         return cls(red, green, blue)
 
     # -----------------------------------------------------------------
@@ -268,5 +285,53 @@ def components_to_rgb(red, green, blue):
 
     # Return
     return image
+
+# -----------------------------------------------------------------
+
+def mask_to_components(mask, colour="black", background_color="white"):
+
+    """
+    This function ...
+    :param mask:
+    :param colour:
+    :param background_color:
+    :return:
+    """
+
+    if colour == "red":
+
+        red = mask.astype(np.uint8) * 255
+        green = np.zeros_like(mask, dtype=np.uint8)
+        blue = np.zeros_like(mask, dtype=np.uint8)
+
+    elif colour == "green":
+
+        red = np.zeros_like(mask, dtype=np.uint8)
+        green = mask.astype(np.uint8) * 255
+        blue = np.zeros_like(mask, dtype=np.uint8)
+
+    elif colour == "blue":
+
+        red = np.zeros_like(mask, dtype=np.uint8)
+        green = np.zeros_like(mask, dtype=np.uint8)
+        blue = mask.astype(np.uint8) * 255
+
+    else:
+
+        ones = np.ones_like(mask, dtype=np.uint8)
+
+        colour = parse_colour(colour)
+        red = ones * colour.red
+        green = ones * colour.green
+        blue = ones * colour.blue
+
+    inverted = mask.inverse()
+    background_color = parse_colour(background_color)
+    red[inverted] = background_color.red
+    green[inverted] = background_color.green
+    blue[inverted] = background_color.blue
+
+    # Return the components
+    return red, green, blue
 
 # -----------------------------------------------------------------

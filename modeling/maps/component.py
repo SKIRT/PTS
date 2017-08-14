@@ -752,6 +752,27 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    def get_all_filters_sub_name(self, name, method=None):
+
+        """
+        This function ...
+        """
+
+        return self.collection.get_all_filters_sub_name(name, method=method)
+
+    # -----------------------------------------------------------------
+
+    def get_all_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.get_all_filters()
+
+    # -----------------------------------------------------------------
+
     def get_maps_sub_names(self, flatten=False):
 
         """
@@ -859,6 +880,96 @@ class MapsComponent(GalaxyModelingComponent):
         """
 
         return self.collection.get_dust_origins(flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    # FILTERS
+
+    def get_all_colours_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.get_all_colours_filters()
+
+    # -----------------------------------------------------------------
+
+    def get_all_ssfr_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.get_all_ssfr_filters()
+
+    # -----------------------------------------------------------------
+
+    def get_all_tir_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.get_all_tir_filters()
+
+    # -----------------------------------------------------------------
+
+    def get_all_attenuation_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.get_all_attenuation_filters()
+
+    # -----------------------------------------------------------------
+
+    def get_all_old_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.get_all_old_filters()
+        
+    # -----------------------------------------------------------------
+
+    def get_all_young_filters(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return self.collection.get_all_young_filters()
+
+    # -----------------------------------------------------------------
+
+    def get_all_ionizing_filters(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.collection.get_all_ionizing_filters()
+
+    # -----------------------------------------------------------------
+
+    def get_all_dust_filters(self):
+
+        """
+        This function ..
+        :return:
+        """
+
+        return self.collection.get_all_dust_filters()
 
     # -----------------------------------------------------------------
 
