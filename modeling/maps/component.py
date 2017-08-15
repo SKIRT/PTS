@@ -337,7 +337,7 @@ class MapsComponent(GalaxyModelingComponent):
         """
 
         name = self.sub_name_for_command(command)
-        return fs.join(self.maps_path, name)
+        return fs.join(self.maps_raw_path, name)
 
     # -----------------------------------------------------------------
 

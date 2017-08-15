@@ -275,6 +275,10 @@ playground_name = "playground"
 
 # -----------------------------------------------------------------
 
+maps_raw_name = "raw"
+
+# -----------------------------------------------------------------
+
 colours_name = "colours"
 ssfr_name = "ssfr"
 tir_name = "tir"
@@ -373,32 +377,35 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
 
         # DIFFERENT MAPS SUBDIRECTORIES:
 
+        # The maps raw directory
+        self.maps_raw_path = fs.create_directory_in(self.maps_path, maps_raw_name)
+
         # The path to the maps/colours directory
-        self.maps_colours_path = fs.create_directory_in(self.maps_path, colours_name)
+        self.maps_colours_path = fs.create_directory_in(self.maps_raw_path, colours_name)
 
         # The path to the maps/ssfr directory
-        self.maps_ssfr_path = fs.create_directory_in(self.maps_path, ssfr_name)
+        self.maps_ssfr_path = fs.create_directory_in(self.maps_raw_path, ssfr_name)
 
         # The path to the maps/TIR directory
-        self.maps_tir_path = fs.create_directory_in(self.maps_path, tir_name)
+        self.maps_tir_path = fs.create_directory_in(self.maps_raw_path, tir_name)
 
         # The path to the maps/attenuation directory
-        self.maps_attenuation_path = fs.create_directory_in(self.maps_path, attenuation_name)
+        self.maps_attenuation_path = fs.create_directory_in(self.maps_raw_path, attenuation_name)
 
         # Set the path to the maps/old directory
-        self.maps_old_path = fs.create_directory_in(self.maps_path, old_name)
+        self.maps_old_path = fs.create_directory_in(self.maps_raw_path, old_name)
 
         # Set the path to the maps/young directory
-        self.maps_young_path = fs.create_directory_in(self.maps_path, young_name)
+        self.maps_young_path = fs.create_directory_in(self.maps_raw_path, young_name)
 
         # Set the path to the maps/ionizing directory
-        self.maps_ionizing_path = fs.create_directory_in(self.maps_path, ionizing_name)
+        self.maps_ionizing_path = fs.create_directory_in(self.maps_raw_path, ionizing_name)
 
         # Set the path to the maps/dust directory
-        self.maps_dust_path = fs.create_directory_in(self.maps_path, dust_name)
+        self.maps_dust_path = fs.create_directory_in(self.maps_raw_path, dust_name)
 
         # NEW: Set the path to the maps/html directory
-        self.maps_html_path = fs.create_directory_in(self.maps_path, "html")
+        self.maps_html_path = fs.create_directory_in(self.maps_path, html_name)
         self.all_maps_html_page_path = fs.join(self.maps_html_path, all_maps_filename)
         self.maps_summary_html_page_path = fs.join(self.maps_html_path, maps_summary_filename)
         self.significance_maps_html_page_path = fs.join(self.maps_html_path, significance_maps_filename)

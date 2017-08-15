@@ -183,7 +183,7 @@ class SignificanceMaskCreator(MapsComponent):
         for sub_name in self.origins_dict:
 
             # Set
-            maps_sub_path = fs.join(self.maps_path, sub_name)
+            maps_sub_path = fs.join(self.maps_raw_path, sub_name)
 
             # Get
             origins = self.origins_dict[sub_name]

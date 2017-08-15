@@ -278,6 +278,18 @@ class GalaxyModelingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def maps_raw_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.maps_raw_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def components_path(self):
 
         """

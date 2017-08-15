@@ -110,7 +110,7 @@ class MapsCollection(object):
         :return:
         """
 
-        maps_path = fs.join(modeling_path, "maps")
+        maps_path = fs.join(modeling_path, "maps", "raw")
         return cls(maps_path)
 
     # -----------------------------------------------------------------
