@@ -567,10 +567,10 @@ class MaskBase(object):
 
         # If the center pixel is identified as being part of the background, create an empty mask (the center does not
         # correspond to a segment)
-        if label == 0: return Mask(np.zeros_like(self.data, dtype=bool))
+        if label == 0: return MaskBase(np.zeros_like(self.data, dtype=bool))
 
         # Create a mask of the center segment
-        else: return Mask((segments == label))
+        else: return MaskBase((segments == label))
 
     # -----------------------------------------------------------------
 

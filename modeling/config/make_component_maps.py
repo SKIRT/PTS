@@ -12,6 +12,10 @@ from pts.modeling.maps.collection import MapsCollection
 
 # -----------------------------------------------------------------
 
+default_sigma_level = 3.0
+
+# -----------------------------------------------------------------
+
 # Set the modeling path
 modeling_path = fs.cwd()
 
@@ -58,7 +62,7 @@ definition.add_flag("all", "select all maps")
 
 # Levels
 definition.add_optional("levels", "string_real_dictionary", "significance levels for the different images")
-definition.add_optional("default_level", "real", "default significance level", 3.0)
+definition.add_optional("default_level", "real", "default significance level", default_sigma_level)
 
 # Image edge softening
 definition.add_optional("softening_start", "real", "relative radius for softening to start (relative to truncation ellipse)", 0.75)
