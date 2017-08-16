@@ -313,15 +313,15 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
-    @property
-    def deprojection_path(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.environment.deprojection_path
+    # @property
+    # def deprojection_path(self):
+    #
+    #     """
+    #     This function ...
+    #     :return:
+    #     """
+    #
+    #     return self.environment.deprojection_path
 
     # -----------------------------------------------------------------
 

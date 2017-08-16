@@ -349,12 +349,16 @@ class ComponentMapsMaker(MapsComponent):
         # Inform the user
         log.info("Loading the selected maps ...")
 
+        # Load the old stellar maps
         self.load_old()
 
+        # Load the young stellar maps
         self.load_young()
 
+        # Load the ionizing stellar maps
         self.load_ionizing()
 
+        # Load the dust maps
         self.load_dust()
 
     # -----------------------------------------------------------------
@@ -384,6 +388,7 @@ class ComponentMapsMaker(MapsComponent):
         # Inform the user
         log.info("Loading the selected young stellar maps ...")
 
+        # Load
         for name in self.young_selection: self.young_maps[name] = Frame.from_file(self.young_map_paths[name])
 
     # -----------------------------------------------------------------
@@ -398,6 +403,7 @@ class ComponentMapsMaker(MapsComponent):
         # Inform the user
         log.info("Loading the selected ionizing stellar maps ...")
 
+        # Load
         for name in self.ionizing_selection: self.ionizing_maps[name] = Frame.from_file(self.ionizing_map_paths[name])
 
     # -----------------------------------------------------------------
@@ -412,6 +418,7 @@ class ComponentMapsMaker(MapsComponent):
         # Inform the user
         log.info("Loading the selected dust maps ...")
 
+        # Load
         for name in self.dust_selection: self.dust_maps[name] = Frame.from_file(self.dust_map_paths[name])
 
     # -----------------------------------------------------------------
@@ -426,6 +433,7 @@ class ComponentMapsMaker(MapsComponent):
         # Inform the user
         log.info("Processing the maps ...")
 
+        # Truncate
         self.truncate_maps()
 
         #self.
@@ -434,6 +442,16 @@ class ComponentMapsMaker(MapsComponent):
     # -----------------------------------------------------------------
 
     def truncate_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Truncating the maps ...")
+
+
 
     # -----------------------------------------------------------------
 
@@ -485,6 +503,11 @@ class ComponentMapsMaker(MapsComponent):
     # -----------------------------------------------------------------
 
     def write_old(self):
+
+        """
+        This function ...
+        :return:
+        """
 
     # -----------------------------------------------------------------
 

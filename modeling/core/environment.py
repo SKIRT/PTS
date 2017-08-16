@@ -347,7 +347,7 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         self.phot_path = fs.create_directory_in(self.path, phot_name)
         self.maps_path = fs.create_directory_in(self.path, maps_name)
         self.components_path = fs.create_directory_in(self.path, components_name)
-        self.deprojection_path = fs.create_directory_in(self.path, deprojection_name)
+        #self.deprojection_path = fs.create_directory_in(self.path, deprojection_name)
         self.playground_path = fs.create_directory_in(self.path, playground_name)
 
         # DISK REGION PATH
