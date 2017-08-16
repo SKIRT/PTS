@@ -23,6 +23,7 @@ from ...core.tools import numbers
 from ...core.basics.range import RealRange
 from ...core.tools.stringify import tostr
 from ...magic.core.mask import intersection
+from ...core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -72,6 +73,9 @@ class ComponentMapsMaker(MapsComponent):
         self.young_maps = dict()
         self.ionizing_maps = dict()
         self.dust_maps = dict()
+
+        # Cached clip masks
+        self.clip_masks = dict()
 
         # The clip masks
         self.old_masks = dict()
@@ -141,6 +145,21 @@ class ComponentMapsMaker(MapsComponent):
         self.ionizing_deprojection_path = fs.create_directory_in(self.ionizing_component_maps_path, deprojected_name)
         self.dust_deprojection_path = fs.create_directory_in(self.dust_component_maps_path, deprojected_name)
 
+        # Set random
+        if self.config.random: self.config.random_old = self.config.random_young = self.config.random_ionizing = self.config.random_dust = self.config.random
+
+        # Check
+        if self.config.old is not None and self.config.random_old is not None: raise ValueError("Cannot specifiy 'old' and choose 'random_old'")
+        if self.config.young is not None and self.config.random_young is not None: raise ValueError()
+        if self.config.ionizing is not None and self.config.random_ionizing is not None: raise ValueError()
+        if self.config.dust is not None and self.config.random_dust is not None: raise ValueError()
+
+        # Random selection
+        if self.config.random_old is not None: self.old_selection = sequences.random_subset(self.old_map_names, self.config.random_old, ignore=self.config.not_old, avoid_duplication=True)
+        if self.config.random_young is not None: self.young_selection = sequences.random_subset(self.young_map_names, self.config.random_young, ignore=self.config.not_young, avoid_duplication=True)
+        if self.config.random_ionizing is not None: self.ionizing_selection = sequences.random_subset(self.ionizing_map_names, self.config.random_ionizing, ignore=self.config.not_ionizing)
+        if self.config.random_dust is not None: self.dust_selection = sequences.random_subset(self.dust_map_names, self.config.random_dust, ignore=self.config.not_dust)
+
         # Check
         if self.config.old is not None and self.config.not_old is not None: raise ValueError("Cannot specify both 'old' and 'not_old'")
         if self.config.young is not None and self.config.not_young is not None: raise ValueError("Cannot specify both 'young' and 'not_young'")
@@ -153,8 +172,20 @@ class ComponentMapsMaker(MapsComponent):
         if self.config.ionizing is not None: self.ionizing_selection = self.config.ionizing
         if self.config.dust is not None: self.dust_selection = self.config.dust
 
+        # Set selections based on which not
+        if self.config.not_old is not None and self.config.random_old is None: self.old_selection = sequences.all_except(self.old_map_names, self.config.not_old)
+        if self.config.not_young is not None and self.config.random_young is None: self.young_selection = sequences.all_except(self.young_map_names, self.config.not_young)
+        if self.config.not_ionizing is not None and self.config.random_ionizing is None: self.ionizing_selection = sequences.all_except(self.ionizing_map_names, self.config.not_ionizing)
+        if self.config.not_dust is not None and self.config.random_dust is None: self.dust_selection = sequences.all_except(self.dust_map_names, self.config.not_dust)
+
         # All maps?
         if self.config.all: self.config.all_old = self.config.all_young = self.config.all_ionizing = self.config.all_dust = True
+
+        # Check
+        if self.config.old is not None and self.config.all_old: raise ValueError("")
+        if self.config.young is not None and self.config.all_young: raise ValueError("")
+        if self.config.ionizing is not None and self.config.all_ionizing: raise ValueError("")
+        if self.config.dust is not None and self.config.all_dust: raise ValueError("")
 
         # Check
         if self.config.all_old and self.config.not_old is not None: raise ValueError("Cannot specify 'not_old' with 'all_old' enabled")
@@ -873,6 +904,29 @@ class ComponentMapsMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    def get_clip_mask(self, origins):
+
+        """
+        This function ...
+        :param origins:
+        :return:
+        """
+
+        # Check if cached
+        if tuple(origins) in self.clip_masks: return self.clip_masks[tuple(origins)]
+        else:
+
+            # Make the mask
+            mask = self.make_clip_mask(origins)
+
+            # Cache the mask
+            self.clip_masks[tuple(origins)] = mask
+
+            # Return the mask
+            return mask
+
+    # -----------------------------------------------------------------
+
     def make_clip_mask(self, origins):
 
         """
@@ -969,7 +1023,7 @@ class ComponentMapsMaker(MapsComponent):
             origins = self.old_map_origins[name]
 
             # Create the clip mask
-            mask = self.make_clip_mask(origins)
+            mask = self.get_clip_mask(origins)
 
             # Set the mask
             self.old_masks[name] = mask
@@ -999,7 +1053,7 @@ class ComponentMapsMaker(MapsComponent):
             origins = self.young_map_origins[name]
 
             # Create the clip mask
-            mask = self.make_clip_mask(origins)
+            mask = self.get_clip_mask(origins)
 
             # Set the mask
             self.young_masks[name] = mask
@@ -1029,7 +1083,7 @@ class ComponentMapsMaker(MapsComponent):
             origins = self.ionizing_map_origins[name]
 
             # Create the clip mask
-            mask = self.make_clip_mask(origins)
+            mask = self.get_clip_mask(origins)
 
             # Set the mask
             self.ionizing_masks[name] = mask
@@ -1059,7 +1113,7 @@ class ComponentMapsMaker(MapsComponent):
             origins = self.dust_map_origins[name]
 
             # Create the clip mask
-            mask = self.make_clip_mask(origins)
+            mask = self.get_clip_mask(origins)
 
             # Set the mask
             self.dust_masks[name] = mask

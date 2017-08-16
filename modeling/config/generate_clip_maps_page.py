@@ -55,6 +55,12 @@ definition.add_optional("not_young", "string_list", "ignore young stellar maps",
 definition.add_optional("not_ionizing", "string_list", "ignore ionizing stellar maps", choices=ionizing_map_names)
 definition.add_optional("not_dust", "string_list", "ignore dust maps", choices=dust_map_names)
 
+# Random selections
+definition.add_optional("random_old", "positive_integer", "select x random old stellar maps")
+definition.add_optional("random_young", "positive_integer", "select x random young stellar maps")
+definition.add_optional("random_ionizing", "positive_integer", "select x random ionizing stellar maps")
+definition.add_optional("random_dust", "positive_integer", "select x random dust maps")
+
 # Flags
 definition.add_flag("all_old", "select all old stellar maps")
 definition.add_flag("all_young", "select all young stellar maps")

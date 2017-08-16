@@ -699,6 +699,21 @@ def find_unique(sequence, element):
 
 # -----------------------------------------------------------------
 
+def find_unique_indices(sequence, elements):
+
+    """
+    This function ...
+    :param sequence:
+    :param elements:
+    :return:
+    """
+
+    indices = []
+    for element in elements: indices.append(find_unique(sequence, element))
+    return indices
+
+# -----------------------------------------------------------------
+
 def pack(*sequences):
 
     """
@@ -957,5 +972,48 @@ def is_subset(sequence, other_sequence):
     for item in sequence:
         if item not in other_sequence: return False
     return True
+
+# -----------------------------------------------------------------
+
+def random_subset(sequence, nsamples, avoid_duplication=False, ignore=None):
+
+    """
+    This function ...
+    :param sequence:
+    :param nsamples:
+    :param avoid_duplication:
+    :param ignore:
+    :return:
+    """
+
+    # Set probabilities
+    probabilities = None
+    if ignore is not None:
+        indices = find_unique_indices(sequence, ignore)
+        probabilities = [1] * len(sequence)
+        for index in indices: probabilities[index] = 0
+
+    # Lower the number of samples if the sequence is not long enough to take unique samples
+    if avoid_duplication and nsamples > len(sequence): nsamples = len(sequence)
+
+    import numpy as np
+    return np.random.choice(sequence, nsamples, replace=not avoid_duplication, p=probabilities)
+
+# -----------------------------------------------------------------
+
+def all_except(sequence, ignore):
+
+    """
+    This function ...
+    :param sequence:
+    :param ignore:
+    :return:
+    """
+
+    new = []
+    for item in sequence:
+        if item in ignore: continue
+        new.append(item)
+    return new
 
 # -----------------------------------------------------------------
