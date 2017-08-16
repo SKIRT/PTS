@@ -889,6 +889,40 @@ def make_script_function(name, script):
 
 # -----------------------------------------------------------------
 
+def make_script(script):
+
+    """
+    This function ...
+    :param script:
+    :return:
+    """
+
+    code = "<script>"
+    code += "\n"
+    code += script
+    code += "\n</script>"
+    return code
+
+# -----------------------------------------------------------------
+
+def make_script_function_script(function_name, script):
+
+    """
+    This function ...
+    :param function_name:
+    :param script:
+    :return:
+    """
+
+    code = "<script>"
+    code += "\n"
+    code += make_script_function(function_name, script)
+    code += "\n</script>"
+
+    return code
+
+# -----------------------------------------------------------------
+
 def make_script_button(id, text, script, function_name):
 
     """
@@ -906,10 +940,7 @@ def make_script_button(id, text, script, function_name):
     # code += make_script_function(function_name, script)
     # code += "\n</script>"
 
-    code = "<script>"
-    code += "\n"
-    code += make_script_function(function_name, script)
-    code += "\n</script>"
+    code = make_script_function_script(function_name, script)
     code += "\n"
     code += button(id, text, function_name + "()")
 
@@ -995,165 +1026,6 @@ def make_slider(id, min_value, max_value, stepsize, default_value=None, action_f
 
 # -----------------------------------------------------------------
 
-custom_slider_css = """
-@mixin rangeThumb {
-  width: 18px;
-  height: 18px;
-  margin: -8px 0  0;
-  border-radius: 50%;
-  background: #37adbf;
-  cursor: pointer;
-  border: 0 !important;
-}
-
-@mixin rangeTrack {
-  width: 100%;
-  height: 2px;
-  cursor: pointer;
-  background: #b2b2b2;
-}
-
-.range {
-  position: relative;
-  width: 550px;
-  height: 5px;
-}
-
-.range input {
-  width: 100%;
-  position: absolute;
-  top: 2px;
-  height: 0;
-  -webkit-appearance: none;
-
-  // Thumb
-  &::-webkit-slider-thumb {
-    -webkit-appearance: none; // needed again for Chrome & Safari
-    @include rangeThumb;
-  }
-
-  &::-moz-range-thumb {
-    @include rangeThumb;
-  }
-
-  &::-ms-thumb {
-    @include rangeThumb;
-  }
-
-  // Track
-  &::-webkit-slider-runnable-track {
-    @include rangeTrack;
-  }
-
-  &::-moz-range-track {
-    @include rangeTrack;
-  }
-
-  &::-ms-track {
-    @include rangeTrack;
-  }
-
-  &:focus { // override outline/background on focus
-    background: none;
-    outline: none;
-  }
-
-  &::-ms-track { // A little somethin' somethin' for IE
-    width: 100%;
-    cursor: pointer;
-    background: transparent;
-    border-color: transparent;
-    color: transparent;
-  }
-}
-
-// Labels below slider
-.range-labels {
-  margin: 18px -41px 0;
-  padding: 0;
-  list-style: none;
-  
-  li {
-    position: relative;
-    float: left;
-    width: 90.25px;
-    text-align: center;
-    color: #b2b2b2;
-    font-size: 14px;
-    cursor: pointer;
-    
-    &::before {
-      position: absolute;
-      top: -25px;
-      right: 0;
-      left: 0;
-      content: "";
-      margin: 0 auto;
-      width: 9px;
-      height: 9px;
-      background: #b2b2b2;
-      border-radius: 50%;
-    }
-  }
-  
-  .active {
-    color: #37adbf;
-  }
-  
-  .selected::before {
-    background: #37adbf;
-  }
-  
-  .active.selected::before {
-    display: none;
-  }
-}"""
-
-# -----------------------------------------------------------------
-
-custom_slider_javascript = """
-var sheet = document.createElement('style'),  
-  $rangeInput = $('.range input'),
-  prefs = ['webkit-slider-runnable-track', 'moz-range-track', 'ms-track'];
-
-document.body.appendChild(sheet);
-
-var getTrackStyle = function (el) {  
-  var curVal = el.value,
-      val = (curVal - 1) * 16.666666667,
-      style = '';
-  
-  // Set active label
-  $('.range-labels li').removeClass('active selected');
-  
-  var curLabel = $('.range-labels').find('li:nth-child(' + curVal + ')');
-  
-  curLabel.addClass('active selected');
-  curLabel.prevAll().addClass('selected');
-  
-  // Change background gradient
-  for (var i = 0; i < prefs.length; i++) {
-    style += '.range {background: linear-gradient(to right, #37adbf 0%, #37adbf ' + val + '%, #fff ' + val + '%, #fff 100%)}';
-    style += '.range input::-' + prefs[i] + '{background: linear-gradient(to right, #37adbf 0%, #37adbf ' + val + '%, #b2b2b2 ' + val + '%, #b2b2b2 100%)}';
-  }
-
-  return style;
-}
-
-$rangeInput.on('input', function () {
-  sheet.textContent = getTrackStyle(this);
-});
-
-// Change input value on label click
-$('.range-labels li').on('click', function () {
-  var index = $(this).index();
-  
-  $rangeInput.val(index + 1).trigger('input');
-  
-});"""
-
-# -----------------------------------------------------------------
-
 def make_custom_slider(id, options, default=None, action_function=None):
 
     """
@@ -1188,7 +1060,8 @@ def make_custom_slider(id, options, default=None, action_function=None):
     code = "<div class='range'>"
 
     code += "  <input id='" + id + "' type='range' min='1' max='" + str(noptions) + "' steps='1' value='" + str(default_index) + "'"
-    if action_function is not None: code += " onchange='" + action_function + "(this.value)'"
+    #if action_function is not None: code += " onchange='" + action_function + "(this.value)'"
+    if action_function is not None: code += " onchange='" + action_function + "(this.value)' oninput='" + action_function+ "(this.value)'"
     code += ">\n"
 
     code += "</div>\n"
@@ -1203,6 +1076,86 @@ def make_custom_slider(id, options, default=None, action_function=None):
     code += "</ul>\n"
 
     # Return the code
+    return code
+
+# -----------------------------------------------------------------
+
+def make_image_slider(image_id, urls, labels, default, width=None, height=None):
+
+    """
+    This function ...
+    :param image_id:
+    :param urls:
+    :param labels:
+    :param default:
+    :param width:
+    :param height:
+    :return:
+    """
+
+    # Set slider ID
+    slider_id = image_id + "Slider"
+
+    # Set span ID
+    span_id = image_id + "Span"
+
+    # Set function name
+    function_name = "update" + image_id
+
+    # Get the default URL
+    #default_index = labels.index(default)
+    #default_url = urls[default_index]
+
+    code = ""
+
+    code += make_custom_slider(slider_id, labels, default=default, action_function=function_name)
+
+    # Code for image holder
+    code += '<img id="' + image_id + '"'
+    if width is not None: code += ' width="' + str(width)  + 'px"'
+    if height is not None: code += ' height="' + str(height) + 'px"'
+    code += '>'
+
+    code += '\n'
+    code += '<span id="' + span_id + '">' + str(default) + "</span>"
+    code += "\n"
+
+    # Make script
+    script = ""
+
+    labels_variable_name = "labels_" + image_id
+    urls_variable_name = "urls_" + image_id
+
+    string_labels = [str(label) for label in labels]
+    script += 'var ' + labels_variable_name + ' = [' + tostr(string_labels, add_quotes=True) + '];\n'
+    script += 'var ' + urls_variable_name + ' = [' + tostr(urls, add_quotes=True) + '];\n'
+
+    script += "\n"
+
+    # get_url_function_name = 'get' + image_id + 'URL'
+    # script += 'function ' + get_url_function_name + '(label)\n'
+    # script += '{\n'
+    # script += '    var index = labels.indexOf("label");\n'
+    # script += '    return urls[index];\n'
+    # script += '}\n'
+
+    script += "\n"
+
+    script += 'var val = document.getElementById("' + slider_id + '").value;\n'
+    script += 'document.getElementById("' + span_id + '").innerHTML = val;\n'
+    #script += 'document.getElementById("' + image_id + '").src = ' + get_url_function_name + '(val);\n'
+    script += 'document.getElementById("' + image_id + '").src = ' + urls_variable_name + '[val - 1];\n'
+    script += "\n"
+    script += 'function ' + function_name + '(newVal)\n'
+    script += '{\n'
+    script += '    document.getElementById("' + span_id + '").innerHTML = newVal;\n'
+    script += '    document.getElementById("' + image_id + '").src = ' + urls_variable_name + '[newVal - 1];\n'
+    script += '\n}'
+
+    # Add javascript
+    code += make_script(script)
+
+    # Return the HTML code
     return code
 
 # -----------------------------------------------------------------
@@ -1577,7 +1530,8 @@ class HTMLPage(object):
     A class to create HTML pages containing CSS and tables.
     """
 
-    def __init__(self, title, css=None, css_path=None, style=None, encoding="utf-8", language="en", head=None, footing=None, body_settings=None, javascript_path=None):
+    def __init__(self, title, css=None, css_path=None, style=None, encoding="utf-8", language="en", head=None,
+                 footing=None, body_settings=None, javascript=None, javascript_path=None):
 
         """
         HTML page constructor.
@@ -1590,6 +1544,7 @@ class HTMLPage(object):
         :param head:
         :param footing:
         :param body_settings:
+        :param javascript:
         :param javascript_path:
         """
 
@@ -1603,6 +1558,7 @@ class HTMLPage(object):
         self.head = head
         self.footing = footing
         self.body_settings = body_settings
+        self.javascript = javascript
         self.javascript_path = javascript_path
 
         # The contents
@@ -1670,7 +1626,11 @@ class HTMLPage(object):
 
         if self.body_settings is not None: body_start = "<body " + stringify_dict(self.body_settings, identity_symbol="=", quote_key=False)[1] + ">"
         else: body_start = "<body>"
+
         lines.append(body_start)
+
+        # Add custom javascript
+        if self.javascript is not None: lines.append(make_script(self.javascript))
 
         # Start of styled div
         if self.style is not None: lines.append('<div class="' + self.style + '">')

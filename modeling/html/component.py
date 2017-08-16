@@ -25,9 +25,14 @@ from ...core.tools import browser
 
 # -----------------------------------------------------------------
 
+# Stylesheets
 stylesheet_url = "http://users.ugent.be/~sjversto/stylesheet.css"
+slider_stylesheet_url = "http://users.ugent.be/~sjversto/slider.css"
+
+# Scripts
 sortable_url = "http://users.ugent.be/~sjversto/sorttable.js"
 preview_url = "http://users.ugent.be/~sjversto/preview.js"
+slider_url = "http://users.ugent.be/~sjversto/slider.js"
 
 # -----------------------------------------------------------------
 

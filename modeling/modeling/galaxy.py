@@ -31,6 +31,7 @@ from ..maps.dust import DustMapMaker
 from ..maps.colour import ColoursMapMaker
 from ..maps.attenuation import AttenuationMapMaker
 from ..maps.tir import TIRMapMaker
+from ..maps.components import ComponentMapsMaker
 from ..fitting.configuration import FittingConfigurer
 from ..fitting.initialization.galaxy import GalaxyFittingInitializer
 from ...core.basics.range import QuantityRange
@@ -1024,6 +1025,18 @@ class GalaxyModeler(ModelerBase):
 
     # -----------------------------------------------------------------
 
+    @property
+    def needs_component_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.check_needs_step("make_component_maps")
+
+    # -----------------------------------------------------------------
+
     def make_maps(self):
 
         """
@@ -1059,7 +1072,9 @@ class GalaxyModeler(ModelerBase):
         if self.needs_ionizing_stellar_maps: self.make_ionizing_stellar_maps()
 
         # Calculate the significance masks
-        if not self.history.finished("create_significance_masks"): self.create_significance_masks()
+        #if not self.history.finished("create_significance_masks"): self.create_significance_masks()
+
+        if self.needs_component_maps: self.make_component_maps()
 
     # -----------------------------------------------------------------
 
@@ -1262,6 +1277,30 @@ class GalaxyModeler(ModelerBase):
 
         # Set log path
         with self.write_log(creator), self.register(creator), self.write_config(creator): creator.run()
+
+    # -----------------------------------------------------------------
+
+    def make_component_maps(self):
+
+        """
+        Thins function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making the component maps ...")
+
+        # Create the configuration
+        config = dict()
+
+        # Create the map maker
+        maker = ComponentMapsMaker(config)
+
+        # Set the working directory
+        maker.config.path = self.modeling_path
+
+        # Run
+        with self.write_log(maker), self.register(maker), self.write_config(maker): maker.run()
 
     # -----------------------------------------------------------------
 

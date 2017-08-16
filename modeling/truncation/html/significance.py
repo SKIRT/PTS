@@ -12,10 +12,14 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+from collections import defaultdict, OrderedDict
+
 # Import the relevant PTS classes and modules
 from ....core.basics.log import log
 from ..component import TruncationComponent
-from ...html.component import stylesheet_url, page_style, table_class, hover_table_class, top_title_size, title_size
+from ...html.component import stylesheet_url, page_style
+from ...html.component import slider_stylesheet_url, slider_url
 from ....core.tools.html import HTMLPage, SimpleTable, updated_footing
 from ....core.tools import html
 from ....magic.view.html import javascripts, css_scripts
@@ -25,12 +29,16 @@ from ....core.tools.utils import lazyproperty
 from ....magic.core.rgb import RGBImage
 from ....core.tools import filesystem as fs
 from ....magic.core.mask import Mask
+from ....core.tools import sequences
+from ....core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
 significance_plots_name = "significance_plots"
 ncolumns = 2
 colour_map = "jet"
+
+page_width = 600
 
 # -----------------------------------------------------------------
 
@@ -54,6 +62,12 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
         # Plot paths for each filter
         self.filter_plot_paths = dict()
 
+        # Paths of the images
+        self.level_plot_paths = defaultdict(OrderedDict)
+
+        # The sliders
+        self.sliders = dict()
+
     # -----------------------------------------------------------------
 
     def run(self, **kwargs):
@@ -69,6 +83,9 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
 
         # Make plots
         self.make_plots()
+
+        # Make the sliders
+        self.make_sliders()
 
         # Generate the page
         self.generate_page()
@@ -103,6 +120,9 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
             self.filter_plot_paths[fltr] = fltr_path
             if not fs.is_directory(fltr_path): fs.create_directory(fltr_path)
 
+        # Set the default sigma level
+        self.config.default_level = sequences.find_closest_value(self.config.sigma_levels, self.config.default_level)
+
     # -----------------------------------------------------------------
 
     @lazyproperty
@@ -114,6 +134,18 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
         """
 
         return self.dataset.filters
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.dataset.names
 
     # -----------------------------------------------------------------
 
@@ -137,8 +169,7 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
         :return:
         """
 
-        #return 150
-        return None
+        return self.config.image_width
 
     # -----------------------------------------------------------------
 
@@ -150,7 +181,61 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
         :return:
         """
 
-        return 300
+        return self.config.image_height
+
+    # -----------------------------------------------------------------
+
+    def has_all_plots(self, name):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Get plot path
+        plot_path = self.filter_plot_paths[parse_filter(name)]
+
+        #print(fs.files_in_path(plot_path, returns="name", extension="png", convert=float), self.config.sigma_levels)
+
+        # Loop over the levels
+        for level in self.config.sigma_levels:
+
+            # Determine path
+            path = fs.join(plot_path, str(level) + ".png")
+
+            # Check
+            if not fs.is_file(path): return False
+
+        # All checks passed
+        return True
+
+    # -----------------------------------------------------------------
+
+    def check_plots(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        # Get the plot path
+        plot_path = self.filter_plot_paths[parse_filter(name)]
+
+        has_all = True
+
+        # Loop over the levels
+        for level in self.config.sigma_levels:
+
+            # Determine path
+            path = fs.join(plot_path, str(level) + ".png")
+
+            # Check
+            if fs.is_file(path): self.level_plot_paths[name][level] = path
+            else: has_all = False
+
+        # Return
+        return has_all
 
     # -----------------------------------------------------------------
 
@@ -164,10 +249,12 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
         # Inform the user
         log.info("Making plots ...")
 
-        # Loop over the filters
-        #for fltr in self.filters:
         # Loop over the frames
-        for name in self.dataset.names: # FASTER
+        for name in self.names:
+
+            # Check whether not all plots are already present
+            #if self.has_all_plots(name): continue
+            if self.check_plots(name): continue
 
             # Get the filter
             fltr = self.dataset.get_filter(name)
@@ -189,6 +276,12 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
             # Create the plots
             for level in self.config.sigma_levels:
 
+                # Determine path
+                path = fs.join(plot_path, str(level) + ".png")
+
+                # Check
+                if fs.is_file(path): continue
+
                 # Create the mask
                 mask = Mask(significance > level)
 
@@ -201,11 +294,39 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
                 # Create RGB image
                 image = RGBImage.from_mask(mask)
 
-                # Determine path
-                path = fs.join(plot_path, str(level) + ".png")
-
                 # Save the image
                 image.saveto(path)
+
+                # Set the path
+                self.level_plot_paths[name][level] = path
+
+    # -----------------------------------------------------------------
+
+    def make_sliders(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Making the image sliders ...")
+
+        # Loop over the images
+        for name in self.names:
+
+            # Get the labels and the urls
+            labels = self.level_plot_paths[name].keys()
+            paths = self.level_plot_paths[name].values()
+
+            # Create image ID
+            image_id = name.replace("_", "").replace(" ", "")
+
+            # Create the slider
+            slider = html.make_image_slider(image_id, paths, labels, self.config.default_level, width=self.image_width, height=self.image_height)
+
+            # Set the slider
+            self.sliders[name] = slider
 
     # -----------------------------------------------------------------
 
@@ -219,11 +340,23 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
         # Inform the user
         log.info("Generating the page ...")
 
+        # Create list of css scripts
         css_paths = css_scripts[:]
         css_paths.append(stylesheet_url)
+        css_paths.append(slider_stylesheet_url)
+
+        # Create CSS for the page width
+        css = html.make_page_width(page_width)
+
+        # Make javascripts urls
+        javascript_paths = javascripts[:]
+        #javascript_paths.append(sortable_url)
+        #javascript_paths.append(preview_url)
+        javascript_paths.append(slider_url)
 
         # Create the page
-        self.page = HTMLPage(self.title, style=page_style, css_path=css_paths, javascript_path=javascripts, footing=updated_footing())
+        self.page = HTMLPage(self.title, style=page_style, css_path=css_paths,
+                             javascript_path=javascripts, footing=updated_footing())
 
         classes = dict()
         classes["JS9Menubar"] = "data-backgroundColor"
@@ -231,19 +364,22 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
 
         self.page += html.newline
 
+        self.page += html.line
+        self.page += html.newline
 
+        # Add the sliders
+        for name in self.names:
 
-    # -----------------------------------------------------------------
+            # Add the name
+            self.page += name.upper()
+            self.page += html.newline
 
-    @property
-    def maps_sub_path(self):
+            # Add the image slider
+            self.page += self.sliders[name]
 
-        """
-        This function ...
-        :return:
-        """
-
-        return None
+            # Add line
+            self.page += html.line
+            self.page += html.newline
 
     # -----------------------------------------------------------------
 
@@ -273,7 +409,7 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
         log.info("Writing the page ...")
 
         # Save
-        self.page.saveto(self.significance_maps_html_page_path)
+        self.page.saveto(self.significance_page_path)
 
     # -----------------------------------------------------------------
 
@@ -288,6 +424,6 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
         log.info("Showing the page ...")
 
         # Open in browser
-        browser.open_path(self.significance_maps_html_page_path)
+        browser.open_path(self.significance_page_path)
 
 # -----------------------------------------------------------------

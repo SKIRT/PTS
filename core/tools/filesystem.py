@@ -868,7 +868,7 @@ def nitems_in_path(*args, **kwargs):
 
 def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None, contains=None, not_contains=None,
                   extensions=False, returns="path", exact_name=None, exact_not_name=None, startswith=None, endswith=None,
-                  sort=None, contains_operator="OR", recursion_level=None, unpack=False):
+                  sort=None, contains_operator="OR", recursion_level=None, unpack=False, convert=None):
 
     """
     This function ...
@@ -888,6 +888,7 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
     :param contains_operator: relevant for when 'contains' is specified as a sequence (should they be all contained or only at least one?)
     :param recursion_level:
     :param unpack:
+    :param convert:
     :return:
     """
 
@@ -1043,6 +1044,9 @@ def files_in_path(path=None, recursive=False, ignore_hidden=True, extension=None
                 elif return_value == "directory": thing.append(directory)
                 else: raise ValueError("Invalid option for 'returns': should be (a list of) 'path', 'name' or 'directory'")
 
+        # CONVERT?
+        if convert is not None: thing = convert(thing)
+
         # Add to the list
         file_paths.append(thing)
 
@@ -1085,7 +1089,7 @@ def find_file_in_path(path, recursive=False, ignore_hidden=True, extension=None,
 
 def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains=None, not_contains=None,
                         returns="path", exact_name=None, exact_not_name=None, startswith=None, endswith=None, sort=None,
-                        recursion_level=None, unpack=False):
+                        recursion_level=None, unpack=False, convert=None):
 
     """
     This function ...
@@ -1102,6 +1106,7 @@ def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains
     :param sort: a function which determines how the directories should be sorted based on their name. Hidden items (starting with .) are placed first.
     :param recursion_level:
     :param unpack:
+    :param convert:
     :return:
     """
 
@@ -1202,6 +1207,10 @@ def directories_in_path(path=None, recursive=False, ignore_hidden=True, contains
                 elif return_value == "directory": thing.append(directory)
                 else: raise ValueError("Invalid option for 'returns': should be (a list of) 'path', 'name' or 'directory'")
 
+        # Convert
+        if convert is not None: thing = convert(thing)
+
+        # Add
         directory_paths.append(thing)
 
     # Return the list of directory paths

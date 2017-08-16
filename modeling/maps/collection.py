@@ -123,7 +123,7 @@ class MapsCollection(object):
         :return:
         """
 
-        return fs.directory_of(self.maps_path)
+        return fs.directory_of(fs.directory_of(self.maps_path))
 
     # -----------------------------------------------------------------
 
@@ -1361,6 +1361,40 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
+    def get_hot_dust_map_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_map_paths_sub_name(dust_name, method="hot")
+
+    # -----------------------------------------------------------------
+
+    def get_not_hot_dust_maps(self, flatten=False):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.get_maps_sub_name(dust_name, not_method="hot", flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_not_hot_dust_map_paths(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.get_map_paths_sub_name(dust_name, not_method="hot", flatten=flatten)
+
+    # -----------------------------------------------------------------
+
     def get_hot_dust_origins(self):
 
         """
@@ -1387,21 +1421,23 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_map_paths_sub_name(self, name, flatten=False, method=None):
+    def get_map_paths_sub_name(self, name, flatten=False, method=None, not_method=None, not_methods=None):
 
         """
         This function ...
         :param name:
         :param flatten:
         :param method:
+        :param not_method:
+        :param not_methods:
         :return:
         """
 
-        return get_map_paths_sub_name(self.environment, name, flatten=flatten, method=method)
+        return get_map_paths_sub_name(self.environment, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
 
     # -----------------------------------------------------------------
 
-    def get_maps_sub_name(self, name, flatten=False, framelist=False, method=None):
+    def get_maps_sub_name(self, name, flatten=False, framelist=False, method=None, not_method=None, not_methods=None):
 
         """
         This function ...
@@ -1409,10 +1445,12 @@ class MapsCollection(object):
         :param flatten:
         :param framelist:
         :param method:
+        :param not_method:
+        :param not_methods:
         :return:
         """
 
-        return get_maps_sub_name(self.environment, self.history, name, flatten=flatten, framelist=framelist, method=method)
+        return get_maps_sub_name(self.environment, self.history, name, flatten=flatten, framelist=framelist, method=method, not_method=not_method, not_methods=not_methods)
 
     # -----------------------------------------------------------------
 
@@ -1861,7 +1899,7 @@ StaticMapsCollection = create_lazified_class(MapsCollection, "StaticMapsCollecti
 
 # -----------------------------------------------------------------
 
-def get_map_paths_sub_name(environment, name, flatten=False, method=None):
+def get_map_paths_sub_name(environment, name, flatten=False, method=None, not_method=None, not_methods=None):
 
     """
     This function ...
@@ -1869,6 +1907,8 @@ def get_map_paths_sub_name(environment, name, flatten=False, method=None):
     :param name:
     :param flatten:
     :param method:
+    :param not_method:
+    :param not_methods:
     :return:
     """
 
@@ -1879,11 +1919,19 @@ def get_map_paths_sub_name(environment, name, flatten=False, method=None):
     # No subdirectories
     # if fs.is_file(direct_origins_path): origins = load_dict(direct_origins_path)
 
+    if not_method is not None:
+        if not types.is_string_type(not_method): raise ValueError("'not_method' must be a string")
+        if not_methods is not None: raise ValueError("Cannot specifify both 'not_method' and 'not_methods'")
+        not_methods = [not_method]
+
     # Subdirectories
     if fs.contains_directories(sub_path):
 
         # One method is specified
         if method is not None:
+
+            # Check
+            if not_methods is not None: raise ValueError("Cannot specify both 'method' and 'not_methods' simultaneously")
 
             # Check whether valid method
             method_path = fs.join(sub_path, method)
@@ -1902,6 +1950,9 @@ def get_map_paths_sub_name(environment, name, flatten=False, method=None):
 
                 # Skip other method if method is defined
                 if method is not None and method_name != method: continue
+
+                # Skip methods in not_method
+                if not_methods is not None and method_name in not_methods: continue
 
                 # Get dictionary of file paths, but only FITS files
                 files = fs.files_in_path(method_path, returns="dict", extension="fits")
@@ -1922,6 +1973,9 @@ def get_map_paths_sub_name(environment, name, flatten=False, method=None):
         # Method cannot be defined
         if method is not None: raise ValueError("Specified method '" + method + "', but all maps are in one directory")
 
+        # Not method cannot be defined
+        if not_methods is not None: raise ValueError("All maps are in one directory (no different methods)")
+
         # Return the file paths
         return fs.files_in_path(sub_path, returns="dict", extension="fits")
 
@@ -1930,7 +1984,7 @@ def get_map_paths_sub_name(environment, name, flatten=False, method=None):
 
 # -----------------------------------------------------------------
 
-def get_maps_sub_name(environment, history, name, flatten=False, framelist=False, method=None):
+def get_maps_sub_name(environment, history, name, flatten=False, framelist=False, method=None, not_method=None, not_methods=None):
 
     """
     This function ...
@@ -1940,6 +1994,8 @@ def get_maps_sub_name(environment, history, name, flatten=False, framelist=False
     :param flatten:
     :param framelist:
     :param method:
+    :param not_method:
+    :param not_methods:
     :return:
     """
 
@@ -1947,7 +2003,7 @@ def get_maps_sub_name(environment, history, name, flatten=False, framelist=False
     maps = dict()
 
     # Get map paths
-    paths = get_map_paths_sub_name(environment, name, flatten=flatten, method=method)
+    paths = get_map_paths_sub_name(environment, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
 
     # Loop over the entries
     for method_or_name in paths:
@@ -1993,7 +2049,7 @@ def get_maps_sub_name(environment, history, name, flatten=False, framelist=False
 
 # -----------------------------------------------------------------
 
-def get_origins_sub_name(environment, name, flatten=False, method=None):
+def get_origins_sub_name(environment, name, flatten=False, method=None, not_method=None, not_methods=None):
 
     """
     This function ...
@@ -2001,6 +2057,8 @@ def get_origins_sub_name(environment, name, flatten=False, method=None):
     :param name:
     :param flatten:
     :param method:
+    :param not_method:
+    :param not_methods:
     :return:
     """
 
@@ -2009,13 +2067,25 @@ def get_origins_sub_name(environment, name, flatten=False, method=None):
     if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
     direct_origins_path = fs.join(sub_path, origins_filename)
 
+    if not_method is not None:
+        if not types.is_string_type(not_method): raise ValueError("'not_method' must be a string")
+        if not_methods is not None: raise ValueError("Cannot specifify both 'not_method' and 'not_methods'")
+        not_methods = [not_method]
+
     # No subdirectories
-    if fs.is_file(direct_origins_path): origins = load_dict(direct_origins_path)
+    if fs.is_file(direct_origins_path):
+
+        if method is not None: raise ValueError("No different methods")
+        if not_methods is not None: raise ValueError("No different methods")
+
+        origins = load_dict(direct_origins_path)
 
     # Subdirectories
     else:
 
         if method is not None:
+
+            if not_methods is not None: raise ValueError("Cannot specify both 'method' and 'not_methods' simultaneously")
 
             # Check whether valid method
             method_path = fs.join(sub_path, method)
@@ -2040,6 +2110,9 @@ def get_origins_sub_name(environment, name, flatten=False, method=None):
                 # Determine method
                 method_name = fs.name(method_path)
 
+                # Skip methods
+                if not_methods is not None and method_name in not_methods: continue
+
                 # Load the origins for this method
                 origins_method = load_dict(origins_path)
 
@@ -2055,7 +2128,7 @@ def get_origins_sub_name(environment, name, flatten=False, method=None):
 
 # -----------------------------------------------------------------
 
-def get_methods_sub_name(environment, name, flatten=False, method=None):
+def get_methods_sub_name(environment, name, flatten=False, method=None, not_method=None, not_methods=None):
 
     """
     This function ...
@@ -2063,6 +2136,8 @@ def get_methods_sub_name(environment, name, flatten=False, method=None):
     :param name:
     :param flatten:
     :param method:
+    :param not_method:
+    :param not_methods:
     :return:
     """
 
@@ -2071,13 +2146,25 @@ def get_methods_sub_name(environment, name, flatten=False, method=None):
     if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
     direct_methods_path = fs.join(sub_path, methods_filename)
 
+    if not_method is not None:
+        if not types.is_string_type(not_method): raise ValueError("'not_method' must be a string")
+        if not_methods is not None: raise ValueError("Cannot specifify both 'not_method' and 'not_methods'")
+        not_methods = [not_method]
+
     # No subdirectories
-    if fs.is_file(direct_methods_path): methods = load_dict(direct_methods_path)
+    if fs.is_file(direct_methods_path):
+
+        if method is not None: raise ValueError("No different methods")
+        if not_methods is not None: raise ValueError("No different methods")
+
+        methods = load_dict(direct_methods_path)
 
     # Subdirectories
     else:
 
         if method is not None:
+
+            if not_methods is not None: raise ValueError("Cannot specify both 'method' and 'not_methods' simultaneously")
 
             # Check whether valid method
             method_path = fs.join(sub_path, method)
@@ -2102,6 +2189,9 @@ def get_methods_sub_name(environment, name, flatten=False, method=None):
 
                 # Determine method
                 method_name = fs.name(method_path)
+
+                # Skip methods
+                if not_methods is not None and method_name in not_methods: continue
 
                 # Load the origins for this method
                 methods_method = load_dict(methods_filepath)

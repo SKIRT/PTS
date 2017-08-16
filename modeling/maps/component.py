@@ -30,6 +30,7 @@ from ...core.tools.stringify import tostr
 from ...core.launch.pts import find_match
 from ...core.tools import introspection
 from .collection import MapsCollection, StaticMapsCollection
+from .selection import ComponentMapsSelection, StaticComponentMapsSelection
 from pts.core.tools.utils import lazyproperty
 from ..core.environment import colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name
 
@@ -662,7 +663,7 @@ class MapsComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return MapsCollection(self.maps_path)
+        return MapsCollection(self.maps_raw_path)
 
     # -----------------------------------------------------------------
 
@@ -674,7 +675,31 @@ class MapsComponent(GalaxyModelingComponent):
         :return:
         """
 
-        return StaticMapsCollection(self.maps_path)
+        return StaticMapsCollection(self.maps_raw_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def selection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return ComponentMapsSelection(self.maps_components_path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def static_selection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return StaticComponentMapsSelection(self.maps_components_path)
 
     # -----------------------------------------------------------------
 

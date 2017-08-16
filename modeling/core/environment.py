@@ -276,6 +276,7 @@ playground_name = "playground"
 # -----------------------------------------------------------------
 
 maps_raw_name = "raw"
+maps_components_name = "components"
 
 # -----------------------------------------------------------------
 
@@ -380,28 +381,14 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         # The maps raw directory
         self.maps_raw_path = fs.create_directory_in(self.maps_path, maps_raw_name)
 
-        # The path to the maps/colours directory
+        # Set the paths to the raw maps subdirectories
         self.maps_colours_path = fs.create_directory_in(self.maps_raw_path, colours_name)
-
-        # The path to the maps/ssfr directory
         self.maps_ssfr_path = fs.create_directory_in(self.maps_raw_path, ssfr_name)
-
-        # The path to the maps/TIR directory
         self.maps_tir_path = fs.create_directory_in(self.maps_raw_path, tir_name)
-
-        # The path to the maps/attenuation directory
         self.maps_attenuation_path = fs.create_directory_in(self.maps_raw_path, attenuation_name)
-
-        # Set the path to the maps/old directory
         self.maps_old_path = fs.create_directory_in(self.maps_raw_path, old_name)
-
-        # Set the path to the maps/young directory
         self.maps_young_path = fs.create_directory_in(self.maps_raw_path, young_name)
-
-        # Set the path to the maps/ionizing directory
         self.maps_ionizing_path = fs.create_directory_in(self.maps_raw_path, ionizing_name)
-
-        # Set the path to the maps/dust directory
         self.maps_dust_path = fs.create_directory_in(self.maps_raw_path, dust_name)
 
         # NEW: Set the path to the maps/html directory
@@ -409,6 +396,15 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         self.all_maps_html_page_path = fs.join(self.maps_html_path, all_maps_filename)
         self.maps_summary_html_page_path = fs.join(self.maps_html_path, maps_summary_filename)
         self.significance_maps_html_page_path = fs.join(self.maps_html_path, significance_maps_filename)
+
+        # NEW: Set the path to the maps/components directory
+        self.maps_components_path = fs.create_directory_in(self.maps_path, maps_components_name)
+
+        # Set the paths to the component maps subdirectories
+        self.maps_old_component_path = fs.create_directory_in(self.maps_components_path, old_name)
+        self.maps_young_component_path = fs.create_directory_in(self.maps_components_path, young_name)
+        self.maps_ionizing_component_path = fs.create_directory_in(self.maps_components_path, ionizing_name)
+        self.maps_dust_component_path = fs.create_directory_in(self.maps_components_path, dust_name)
 
         # NEW
 

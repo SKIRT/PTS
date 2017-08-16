@@ -202,6 +202,10 @@ def stringify_list(value, **kwargs):
     value_kwargs = copy.copy(kwargs)
     if "value_delimiter" in value_kwargs: value_kwargs["delimiter"] = value_kwargs.pop("value_delimiter")
 
+    # If quotes have to be added
+    add_quotes = kwargs.pop("add_quotes", False)
+    quote_character = kwargs.pop("quote_character", "'")
+
     strings = []
     ptype = None
     ptypes = set()
@@ -211,6 +215,10 @@ def stringify_list(value, **kwargs):
 
         #parsetype, val = stringify_not_list(entry)
         parsetype, val = stringify(entry, **kwargs)
+
+        #from ..basics.configuration import parent_type
+        #if add_quotes and parent_type(parsetype) == "string":
+        if add_quotes and types.is_string_type(entry): val = quote_character + val + quote_character
 
         if ptype is None: ptype = parsetype
         elif ptype != parsetype:

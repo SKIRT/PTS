@@ -48,7 +48,8 @@ single_commands["make_dust_map"] = galaxy_modeling
 single_commands["make_old_stellar_maps"] = galaxy_modeling
 single_commands["make_young_stellar_maps"] = galaxy_modeling
 single_commands["make_ionizing_stellar_maps"] = galaxy_modeling
-single_commands["create_significance_masks"] = galaxy_modeling
+#single_commands["create_significance_masks"] = galaxy_modeling
+single_commands["make_component_maps"] = galaxy_modeling
 single_commands["plot_sed"] = sed_modeling # only for SEDModeler
 single_commands["build_model_galaxy"] = galaxy_modeling
 single_commands["build_model_sed"] = sed_modeling
@@ -184,7 +185,9 @@ def output_paths_for_single_command(environment, command_name):
     elif command_name == "make_ionizing_stellar_maps": return [environment.maps_ionizing_path]
 
     #
-    elif command_name == "create_significance_masks": return []
+    #elif command_name == "create_significance_masks": return []
+
+    elif command_name == "make_component_maps": return [environment.maps_components_path]
 
     # Plot SED
     elif command_name == "plot_sed": return []
@@ -293,7 +296,9 @@ def cached_directory_name_for_single_command(environment, command_name):
     elif command_name == "make_ionizing_stellar_maps": return None
 
     #
-    elif command_name == "create_significance_masks": return None
+    #elif command_name == "create_significance_masks": return None
+
+    elif command_name == "make_component_maps": return None
 
     # Plot SED
     elif command_name == "plot_sed": return None

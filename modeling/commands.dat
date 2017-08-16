@@ -32,6 +32,7 @@ make_old_stellar_maps | -- | maps.old.OldStellarMapMaker | arguments | Make map 
 make_young_stellar_maps | -- | maps.young.YoungStellarMapMaker | arguments | Make map of young stars
 make_ionizing_stellar_maps | -- | maps.ionizing.IonizingStellarMapMaker | arguments | Make map of ionizing stars
 make_dust_map | -- | maps.dust.DustMapMaker | arguments | Make dust map
+make_component_maps | -- | maps.components.ComponentMapsMaker | arguments | Make maps for the different model components
 create_significance_masks | -- | maps.significance.SignificanceMaskCreator | arguments | Make significance masks
 
 # PHOTOMETRY
