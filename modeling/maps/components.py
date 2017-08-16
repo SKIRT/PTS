@@ -21,6 +21,13 @@ from ...magic.core.frame import Frame
 from ...core.tools import filesystem as fs
 from ...core.tools import numbers
 from ...core.basics.range import RealRange
+from ...core.tools.stringify import tostr
+from ...magic.core.mask import intersection
+
+# -----------------------------------------------------------------
+
+masks_name = "masks"
+deprojected_name = "deprojected"
 
 # -----------------------------------------------------------------
 
@@ -41,6 +48,16 @@ class ComponentMapsMaker(MapsComponent):
         # Call the constructor of the base class
         super(ComponentMapsMaker, self).__init__(*args, **kwargs)
 
+        # Paths
+        self.old_masks_path = None
+        self.young_masks_path = None
+        self.ionizing_masks_path = None
+        self.dust_masks_path = None
+        self.old_deprojection_path = None
+        self.young_deprojection_path = None
+        self.ionizing_deprojection_path = None
+        self.dust_deprojection_path = None
+
         # The selections
         self.old_selection = None
         self.young_selection = None
@@ -55,6 +72,12 @@ class ComponentMapsMaker(MapsComponent):
         self.young_maps = dict()
         self.ionizing_maps = dict()
         self.dust_maps = dict()
+
+        # The clip masks
+        self.old_masks = dict()
+        self.young_masks = dict()
+        self.ionizing_masks = dict()
+        self.dust_masks = dict()
 
         # The deprojected maps
         self.old_deprojected = dict()
@@ -103,6 +126,24 @@ class ComponentMapsMaker(MapsComponent):
         # Call the setup function of the base class
         super(ComponentMapsMaker, self).setup(**kwargs)
 
+        # Masks directories
+        self.old_masks_path = fs.create_directory_in(self.old_component_maps_path, masks_name)
+        self.young_masks_path = fs.create_directory_in(self.young_component_maps_path, masks_name)
+        self.ionizing_masks_path = fs.create_directory_in(self.ionizing_component_maps_path, masks_name)
+        self.dust_masks_path = fs.create_directory_in(self.dust_component_maps_path, masks_name)
+
+        # Deprojected directories
+        self.old_deprojection_path = fs.create_directory_in(self.old_component_maps_path, deprojected_name)
+        self.young_deprojection_path = fs.create_directory_in(self.young_component_maps_path, deprojected_name)
+        self.ionizing_deprojection_path = fs.create_directory_in(self.ionizing_component_maps_path, deprojected_name)
+        self.dust_deprojection_path = fs.create_directory_in(self.dust_component_maps_path, deprojected_name)
+
+        # Check
+        if self.config.old is not None and self.config.not_old is not None: raise ValueError("Cannot specify both 'old' and 'not_old'")
+        if self.config.young is not None and self.config.not_young is not None: raise ValueError("Cannot specify both 'young' and 'not_young'")
+        if self.config.ionizing is not None and self.config.not_ionizing is not None: raise ValueError("Cannot specify both 'ionizing' and 'not_ionizing'")
+        if self.config.dust is not None and self.config.not_dust is not None: raise ValueError("Cannot specifiy both 'dust' and 'not_dust'")
+
         # Set selections
         if self.config.old is not None: self.old_selection = self.config.old
         if self.config.young is not None: self.young_selection = self.config.young
@@ -112,8 +153,14 @@ class ComponentMapsMaker(MapsComponent):
         # All maps?
         if self.config.all: self.config.all_old = self.config.all_young = self.config.all_ionizing = self.config.all_dust = True
 
+        # Check
+        if self.config.all_old and self.config.not_old is not None: raise ValueError("Cannot specify 'not_old' with 'all_old' enabled")
+        if self.config.all_young and self.config.not_young is not None: raise ValueError("Cannot specify 'not_young' with 'all_young' enabled")
+        if self.config.all_ionizing and self.config.not_ionizing is not None: raise ValueError("Cannot specify 'not_ionizing' with 'all_ionizing' enabled")
+        if self.config.all_dust and self.config.not_dust is not None: raise ValueError("Cannot specify 'not_dust' with 'all_dust' enabled")
+
         # All
-        if self.config.all_dust: self.old_selection = self.dust_map_names
+        if self.config.all_old: self.old_selection = self.old_map_names
         if self.config.all_young: self.young_selection = self.young_map_names
         if self.config.all_ionizing: self.ionizing_selection = self.ionizing_map_names
         if self.config.all_dust: self.dust_selection = self.dust_map_names
@@ -786,6 +833,82 @@ class ComponentMapsMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    def make_clip_mask(self, origins):
+
+        """
+        This function ...
+        :param origins:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Making a clip mask for the filters: " + tostr(origins) + " ...")
+
+        # Get frame list
+        frames = self.dataset.get_framelist_for_filters(origins)
+
+        # Get error map list
+        errors = self.dataset.get_errormaplist_for_filters(origins)
+
+        # Convolve to same resolution
+        frames.convolve_to_highest_resolution()
+
+        # Convolve
+        frames.convolve_to_highest_fwhm()
+        errors.convolve_to_highest_fwhm()
+
+        # Rebin the frames to the same pixelgrid
+        frames.rebin_to_highest_pixelscale()
+        errors.rebin_to_highest_pixelscale()
+
+        # Convert the frames to the same unit
+        frames.convert_to_same_unit(unit="Jy")
+        errors.convert_to_same_unit(unit="Jy")
+
+        # # Get the significance maps
+        # significances = NamedFrameList()
+        # for name in frames.names:
+        #     frame = frames[name]
+        #     errormap = errors[name]
+        #     significances.append(frame / errormap, name=name)
+        #
+        # # Create the masks
+        # masks = []
+        # combination_names = []
+        #
+        # for index in range(len(significances)):
+        #     sigma_level = sigma_levels[index]
+        #     significance = significances[index]
+        #     string = significances.names[index] + str(sigma_level)
+        #     combination_names.append(string)
+        #     mask = significance > sigma_level
+        #     masks.append(mask)
+
+        masks = []
+        for name in frames.names:
+            frame = frames[name]
+            errormap = errors[name]
+            level = self.levels[frame.filter]
+            mask = frame > level * errormap
+            masks.append(mask)
+
+        # Determine name for the mask
+        #mask_name = "_".join(combination_names)
+
+        # Create intersection mask
+        mask = intersection(*masks)
+
+        # Fill holes
+        mask.fill_holes()
+
+        # Invert
+        mask.invert()
+
+        # Return the mask
+        return mask
+
+    # -----------------------------------------------------------------
+
     def clip_old_maps(self):
 
         """
@@ -795,6 +918,21 @@ class ComponentMapsMaker(MapsComponent):
 
         # Inform the user
         log.info("Clipping the old stellar maps ...")
+
+        # Loop over the maps
+        for name in self.old_maps:
+
+            # Get the origins
+            origins = self.old_map_origins[name]
+
+            # Create the clip mask
+            mask = self.make_clip_mask(origins)
+
+            # Set the mask
+            self.old_masks[name] = mask
+
+            # Clip
+            self.old_maps[name][mask] = 0.0
 
     # -----------------------------------------------------------------
 
@@ -808,6 +946,21 @@ class ComponentMapsMaker(MapsComponent):
         # Inform the user
         log.info("Clipping the young stellar maps ...")
 
+        # Loop over the maps
+        for name in self.young_maps:
+
+            # Get the origins
+            origins = self.young_map_origins[name]
+
+            # Create the clip mask
+            mask = self.make_clip_mask(origins)
+
+            # Set the mask
+            self.young_masks[name] = mask
+
+            # Clip
+            self.young_maps[name][mask] = 0.0
+
     # -----------------------------------------------------------------
 
     def clip_ionizing_maps(self):
@@ -820,6 +973,21 @@ class ComponentMapsMaker(MapsComponent):
         # Inform the user
         log.info("Clipping the ionizing stellar maps ...")
 
+        # Loop over the maps
+        for name in self.ionizing_maps:
+
+            # Get the origins
+            origins = self.ionizing_map_origins[name]
+
+            # Create the clip mask
+            mask = self.make_clip_mask(origins)
+
+            # Set the mask
+            self.ionizing_masks[name] = mask
+
+            # Clip
+            self.ionizing_maps[name][mask] = 0.0
+
     # -----------------------------------------------------------------
 
     def clip_dust_maps(self):
@@ -831,6 +999,21 @@ class ComponentMapsMaker(MapsComponent):
 
         # Inform the user
         log.info("Clipping the dust maps ...")
+
+        # Loop over the maps
+        for name in self.dust_maps:
+
+            # Get the origins
+            origins = self.dust_map_origins[name]
+
+            # Create the clip mask
+            mask = self.make_clip_mask(origins)
+
+            # Set the mask
+            self.dust_masks[name] = mask
+
+            # Clip
+            self.dust_maps[name][mask] = 0.0
 
     # -----------------------------------------------------------------
 
@@ -1051,6 +1234,9 @@ class ComponentMapsMaker(MapsComponent):
         # Write the maps
         self.write_maps()
 
+        # Write the clip masks
+        self.write_masks()
+
         # Write the deprojected maps
         self.write_deprojected()
 
@@ -1164,6 +1350,114 @@ class ComponentMapsMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    def write_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the clip masks ...")
+
+        # Old
+        self.write_old_masks()
+
+        # Young
+        self.write_young_masks()
+
+        # Ionizing
+        self.write_ionizing_masks()
+
+        # Dust
+        self.write_dust_masks()
+
+    # -----------------------------------------------------------------
+
+    def write_old_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the masks of the old stellar maps ...")
+
+        # Loop over the masks
+        for name in self.old_masks:
+
+            # Determine the path
+            path = fs.join(self.old_masks_path, name + ".fits")
+
+            # Write
+            self.old_masks[name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_young_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the masks of the young stellar maps ...")
+
+        # Loop over the masks
+        for name in self.young_masks:
+
+            # Determine the path
+            path = fs.join(self.young_masks_path, name + ".fits")
+
+            # Write
+            self.young_masks[name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_ionizing_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the masks of the ionizing stellar maps ...")
+
+        # Loop over the masks
+        for name in self.ionizing_masks:
+
+            # Determine the path
+            path = fs.join(self.ionizing_masks_path, name + ".fits")
+
+            # Write
+            self.ionizing_masks[name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_dust_masks(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the masks of the dust maps ...")
+
+        # Loop over the masks
+        for name in self.dust_masks:
+
+            # Determine the path
+            path = fs.join(self.dust_masks_path, name + ".fits")
+
+            # Write
+            self.dust_masks[name].saveto(path)
+
+    # -----------------------------------------------------------------
+
     def write_deprojected(self):
 
         """
@@ -1173,5 +1467,101 @@ class ComponentMapsMaker(MapsComponent):
 
         # Inform the user
         log.info("Writing the deprojected maps ...")
+
+        # Old
+        self.write_old_deprojected()
+
+        # Young
+        self.write_young_deprojected()
+
+        # Ionizing
+        self.write_ionizing_deprojected()
+
+        # Dust
+        self.write_dust_deprojected()
+
+    # -----------------------------------------------------------------
+
+    def write_old_deprojected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the deprojected old stellar maps ...")
+
+        # Loop over the maps
+        for name in self.old_deprojected:
+
+            # Determine path
+            path = fs.join(self.old_deprojection_path, name + ".fits")
+
+            # Write
+            self.old_deprojected[name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_young_deprojected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the deprojected young stellar maps ...")
+
+        # Loop over the maps
+        for name in self.young_deprojected:
+
+            # Determine path
+            path = fs.join(self.young_deprojection_path, name + ".fits")
+
+            # Write
+            self.young_deprojected[name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_ionizing_deprojected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the deprojected ionizing stellar maps ...")
+
+        # Loop over the maps
+        for name in self.ionizing_deprojected:
+
+            # Determine the path
+            path = fs.join(self.ionizing_deprojection_path, name + ".fits")
+
+            # Write
+            self.ionizing_deprojected[name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_dust_deprojected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the deprojected dust maps ...")
+
+        # Loop over the maps
+        for name in self.dust_deprojected:
+
+            # Determine the path
+            path = fs.join(self.dust_deprojection_path, name + ".fits")
+
+            # Write
+            self.dust_deprojected[name].saveto(path)
 
 # -----------------------------------------------------------------
