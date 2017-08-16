@@ -5,7 +5,7 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.maps.html.significance Contains the SignificanceMapsPageGenerator class.
+## \package pts.modeling.maps.html.clip Contains the ClipMapsPageGenerator class.
 
 # -----------------------------------------------------------------
 
@@ -34,7 +34,7 @@ colour_map = "jet"
 
 # -----------------------------------------------------------------
 
-class SignificanceMapsPageGenerator(MapsComponent):
+class ClipMapsPageGenerator(MapsComponent):
 
     """
     This class...
@@ -49,7 +49,7 @@ class SignificanceMapsPageGenerator(MapsComponent):
         """
 
         # Call the constructor of the base class
-        super(SignificanceMapsPageGenerator, self).__init__(*args, **kwargs)
+        super(ClipMapsPageGenerator, self).__init__(*args, **kwargs)
 
         # Plot paths for each filter
         self.filter_plot_paths = dict()
@@ -89,7 +89,7 @@ class SignificanceMapsPageGenerator(MapsComponent):
         """
 
         # Call the setup function of the base class
-        super(SignificanceMapsPageGenerator, self).setup(**kwargs)
+        super(ClipMapsPageGenerator, self).setup(**kwargs)
 
         # Make directory to contain the plots
         self.significance_plots_path = fs.join(self.maps_html_path, significance_plots_name)
@@ -267,7 +267,7 @@ class SignificanceMapsPageGenerator(MapsComponent):
         log.info("Writing the page ...")
 
         # Save
-        self.page.saveto(self.significance_maps_html_page_path)
+        self.page.saveto(self.clip_maps_html_page_path)
 
     # -----------------------------------------------------------------
 
@@ -282,6 +282,6 @@ class SignificanceMapsPageGenerator(MapsComponent):
         log.info("Showing the page ...")
 
         # Open in browser
-        browser.open_path(self.significance_maps_html_page_path)
+        browser.open_path(self.clip_maps_html_page_path)
 
 # -----------------------------------------------------------------

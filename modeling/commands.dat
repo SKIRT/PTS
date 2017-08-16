@@ -33,7 +33,6 @@ make_young_stellar_maps | -- | maps.young.YoungStellarMapMaker | arguments | Mak
 make_ionizing_stellar_maps | -- | maps.ionizing.IonizingStellarMapMaker | arguments | Make map of ionizing stars
 make_dust_map | -- | maps.dust.DustMapMaker | arguments | Make dust map
 make_component_maps | -- | maps.components.ComponentMapsMaker | arguments | Make maps for the different model components
-create_significance_masks | -- | maps.significance.SignificanceMaskCreator | arguments | Make significance masks
 
 # PHOTOMETRY
 photometry | -- | photometry.photometry.PhotoMeter | interactive | Calculate the photometry of the different input images
@@ -103,7 +102,7 @@ generate_truncation_ellipse_page | -- | truncation.html.ellipse.TruncationEllips
 generate_significance_levels_page | -- | truncation.html.significance.SignificanceLevelsPageGenerator | arguments | Generate the significance levels page
 generate_all_maps_page | -- | maps.html.all.AllMapsPageGenerator | arguments | Generate the all maps page
 generate_maps_summary_page | -- | maps.html.summary.MapsSummaryPageGenerator | arguments | Generate the maps summary page
-generate_significance_maps_page | -- | maps.html.significance.SignificanceMapsPageGenerator | arguments | Generate the significance maps page
+generate_clip_maps_page | -- | maps.html.clip.ClipMapsPageGenerator | arguments | Generate the clip maps page
 
 # HTML
 generate_all_pages | -- | html.all.AllPagesGenerator | arguments | Generate all the pages

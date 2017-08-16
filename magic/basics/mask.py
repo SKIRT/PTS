@@ -544,6 +544,36 @@ class MaskBase(object):
 
     # -----------------------------------------------------------------
 
+    def central(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Perform the segmentation
+        segments = detect_sources(self.data.astype(float), 0.5, 1).data
+
+        # To plot the multiple segments that are detected
+        # if segments.max() > 1: plotting.plot_box(np.ma.masked_array(box, mask=segments.astype(bool)))
+
+        # Center
+        center_x = 0.5 * (self.xsize + 1) - 1
+        center_y = 0.5 * (self.ysize + 1) - 1
+
+        # Get the label of the center segment
+        #rel_center = self.cutout.rel_position(self.center)
+        label = segments[int(round(center_y)), int(round(center_x))]
+
+        # If the center pixel is identified as being part of the background, create an empty mask (the center does not
+        # correspond to a segment)
+        if label == 0: return Mask(np.zeros_like(self.data, dtype=bool))
+
+        # Create a mask of the center segment
+        else: return Mask((segments == label))
+
+    # -----------------------------------------------------------------
+
     def fill_holes(self):
 
         """

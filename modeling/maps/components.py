@@ -898,6 +898,9 @@ class ComponentMapsMaker(MapsComponent):
         # Create intersection mask
         mask = intersection(*masks)
 
+        # Only keep central
+        mask = mask.central()
+
         # Fill holes
         mask.fill_holes()
 
@@ -1192,6 +1195,9 @@ class ComponentMapsMaker(MapsComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Deprojecting the old stellar maps ...")
+
     # -----------------------------------------------------------------
 
     def deproject_young(self):
@@ -1200,6 +1206,9 @@ class ComponentMapsMaker(MapsComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Deprojecting the young stellar maps ...")
 
     # -----------------------------------------------------------------
 
@@ -1210,6 +1219,9 @@ class ComponentMapsMaker(MapsComponent):
         :return:
         """
 
+        # Inform the user
+        log.info("Deprojecting the ionizing stellar maps ...")
+
     # -----------------------------------------------------------------
 
     def deproject_dust(self):
@@ -1218,6 +1230,9 @@ class ComponentMapsMaker(MapsComponent):
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Deprojecting the dust maps ...")
 
     # -----------------------------------------------------------------
 

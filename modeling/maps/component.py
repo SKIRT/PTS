@@ -788,7 +788,7 @@ class MapsComponent(GalaxyModelingComponent):
     # -----------------------------------------------------------------
 
     @property
-    def significance_maps_html_page_path(self):
+    def clip_maps_html_page_path(self):
 
         """
         This function ...

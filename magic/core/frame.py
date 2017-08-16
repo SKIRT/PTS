@@ -25,6 +25,7 @@ from astropy.io import fits
 from astropy.convolution import convolve, convolve_fft
 from astropy.nddata import NDDataArray
 from astropy.units import UnitConversionError
+from astropy.coordinates import Angle
 
 # Import the relevant PTS classes and modules
 from .cutout import Cutout
@@ -48,6 +49,7 @@ from ..basics.vector import PixelShape
 from ...core.tools.stringify import tostr
 from ...core.units.stringify import represent_unit
 from ..basics.pixelscale import Pixelscale
+from ..dist_ellipse import distance_ellipse
 
 # -----------------------------------------------------------------
 
@@ -1699,7 +1701,28 @@ class Frame(NDDataArray):
         :return:
         """
 
-        raise NotImplementedError("Not implemented yet")
+        center = region.center
+
+        angle = - region.angle + Angle(-90., "deg")
+        # angle = region.angle
+
+        # Determine the ratio of semimajor and semiminor
+        ratio = region.semiminor / region.semimajor
+        radius = distance_ellipse(self.shape, center, ratio, angle) / region.semiminor
+
+        outside_max = radius > factor_range.max
+        inside_min = radius < factor_range.min
+
+        test = (factor_range.max - radius) / factor_range.span
+
+        alpha_channel = test
+        alpha_channel[inside_min] = 1
+        alpha_channel[outside_max] = 0
+
+        #alpha_channel = self.alpha * alpha_channel
+
+        # Apply alpha
+        self._data *= alpha_channel
 
     # -----------------------------------------------------------------
 

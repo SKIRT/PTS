@@ -316,7 +316,7 @@ significance_levels_filename = "levels.dat"
 
 all_maps_filename = "all.html"
 maps_summary_filename = "summary.html"
-significance_maps_filename = "significance.html"
+clip_maps_filename = "clip.html"
 
 # -----------------------------------------------------------------
 
@@ -395,7 +395,7 @@ class GalaxyModelingEnvironment(ModelingEnvironment):
         self.maps_html_path = fs.create_directory_in(self.maps_path, html_name)
         self.all_maps_html_page_path = fs.join(self.maps_html_path, all_maps_filename)
         self.maps_summary_html_page_path = fs.join(self.maps_html_path, maps_summary_filename)
-        self.significance_maps_html_page_path = fs.join(self.maps_html_path, significance_maps_filename)
+        self.clip_maps_html_page_path = fs.join(self.maps_html_path, clip_maps_filename)
 
         # NEW: Set the path to the maps/components directory
         self.maps_components_path = fs.create_directory_in(self.maps_path, maps_components_name)
