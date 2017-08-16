@@ -10,8 +10,8 @@ from pts.core.basics.configuration import ConfigurationDefinition
 
 # -----------------------------------------------------------------
 
-sigma_levels = [1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5.]
-default_sigma_level = 3.
+sigma_levels = [0.5, 0.75, 1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5.]
+default_sigma_level = 1.
 
 # -----------------------------------------------------------------
 

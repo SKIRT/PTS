@@ -19,6 +19,12 @@ definition.add_optional("young")
 definition.add_optional("ionizing")
 definition.add_optional("dust")
 
+# Anti-selections
+definition.add_optional("not_old")
+definition.add_optional("not_young")
+definition.add_optional("not_ionizing")
+definition.add_optional("not_dust")
+
 # Flags
 definition.add_flag("all_old")
 definition.add_flag("all_young")

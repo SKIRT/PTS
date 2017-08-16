@@ -18,6 +18,7 @@ from .component import MapsComponent
 from ...core.basics.configuration import prompt_string_list
 from ...core.tools.utils import lazyproperty
 from ...magic.core.frame import Frame
+from ...core.tools import filesystem as fs
 
 # -----------------------------------------------------------------
 
@@ -492,38 +493,99 @@ class ComponentMapsMaker(MapsComponent):
         log.info("Writing the maps ...")
 
         # Old
-        self.write_old()
+        self.write_old_maps()
 
-        self.write_young()
+        # Young
+        self.write_young_maps()
 
-        self.write_ionizing()
+        # Ionizing
+        self.write_ionizing_maps()
 
-        self.write_dust()
+        # Dust
+        self.write_dust_maps()
 
     # -----------------------------------------------------------------
 
-    def write_old(self):
+    def write_old_maps(self):
 
         """
         This function ...
         :return:
         """
 
+        # Inform the user
+        log.info("Writing the old stellar maps ...")
+
+        # Loop over the maps
+        for name in self.old_maps:
+
+            # Determine the path
+            path = fs.join(self.old_component_maps_path, name + ".fits")
+
+            # Save the map
+            self.old_maps[name].saveto(path)
+
     # -----------------------------------------------------------------
 
-    def write_young(self):
-
-    # -----------------------------------------------------------------
-
-    def write_ionizing(self):
-
-    # -----------------------------------------------------------------
-
-    def write_dust(self):
+    def write_young_maps(self):
 
         """
         This function ...
         :return:
         """
+
+        # Inform the user
+        log.info("Writing the young stellar maps ...")
+
+        # Loop over the maps
+        for name in self.young_maps:
+
+            # Determine the path
+            path = fs.join(self.young_component_maps_path, name + ".fits")
+
+            # Save the map
+            self.young_maps[name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_ionizing_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the ionizing stellar maps ...")
+
+        # Loop over the maps
+        for name in self.ionizing_maps:
+
+            # Determine the path
+            path = fs.join(self.ionizing_component_maps_path, name + ".fits")
+
+            # Save the map
+            self.ionizing_maps[name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_dust_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the dust maps ...")
+
+        # Loop over the maps
+        for name in self.dust_maps:
+
+            # Determine the path
+            path = fs.join(self.dust_component_maps_path, name + ".fits")
+
+            # Save the map
+            self.dust_maps[name].saveto(path)
 
 # -----------------------------------------------------------------

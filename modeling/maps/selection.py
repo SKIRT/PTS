@@ -19,6 +19,7 @@ from ..core.environment import GalaxyModelingEnvironment
 from ..core.history import ModelingHistory
 from pts.core.tools.utils import lazyproperty
 from ...core.tools.utils import create_lazified_class
+from ..core.environment import old_name, young_name, ionizing_name, dust_name
 
 # -----------------------------------------------------------------
 
@@ -92,8 +93,56 @@ class ComponentMapsSelection(object):
 
         return ModelingHistory.from_file(self.environment.history_file_path)
 
+    # -----------------------------------------------------------------
+
+    @property
+    def old_component_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.maps_old_component_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_component_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.maps_young_component_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_component_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.maps_ionizing_component_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_component_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.maps_dust_component_path
+
 # -----------------------------------------------------------------
 
-StaticComponentMapsSelection = create_lazified_class(MapsCollection, "StaticComponentMapsSelection")
+StaticComponentMapsSelection = create_lazified_class(ComponentMapsSelection, "StaticComponentMapsSelection")
 
 # -----------------------------------------------------------------

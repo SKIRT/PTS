@@ -31,6 +31,7 @@ from ....core.tools import filesystem as fs
 from ....magic.core.mask import Mask
 from ....core.tools import sequences
 from ....core.filter.filter import parse_filter
+from ....core.tools import network, introspection
 
 # -----------------------------------------------------------------
 
@@ -145,7 +146,9 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
         :return:
         """
 
-        return self.dataset.names
+        #return self.dataset.names
+        # SORT BASED ON WAVELENGTH
+        return sorted(self.dataset.names, key=lambda name: parse_filter(name).wavelength.to("micron").value)
 
     # -----------------------------------------------------------------
 
@@ -323,7 +326,8 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
             image_id = name.replace("_", "").replace(" ", "")
 
             # Create the slider
-            slider = html.make_image_slider(image_id, paths, labels, self.config.default_level, width=self.image_width, height=self.image_height)
+            slider = html.make_image_slider(image_id, paths, labels, self.config.default_level,
+                                            width=self.image_width, height=self.image_height, basic=True, img_class="pixelated")
 
             # Set the slider
             self.sliders[name] = slider
@@ -341,22 +345,36 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
         log.info("Generating the page ...")
 
         # Create list of css scripts
-        css_paths = css_scripts[:]
+        #css_paths = css_scripts[:]
+        css_paths = []
         css_paths.append(stylesheet_url)
-        css_paths.append(slider_stylesheet_url)
+
+        # LATEST ATTEMPT
+        #css_url = "https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css"
+        #css_paths.append(css_url)
+        #css_paths.append(slider_stylesheet_url)
 
         # Create CSS for the page width
         css = html.make_page_width(page_width)
 
         # Make javascripts urls
-        javascript_paths = javascripts[:]
+        #javascript_paths = javascripts[:]
+        javascript_paths = []
         #javascript_paths.append(sortable_url)
         #javascript_paths.append(preview_url)
-        javascript_paths.append(slider_url)
+        #javascript_paths.append(slider_url)
+
+        # Download
+        #filepath = network.download_file(slider_url, introspection.pts_temp_dir)
+        #javascript = fs.get_text(filepath)
+
+        # LATEST ATTEMPT
+        #jquery_url = "http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"
+        #javascript_paths_body = [jquery_url, slider_url]
+        javascript_paths_body = None
 
         # Create the page
-        self.page = HTMLPage(self.title, style=page_style, css_path=css_paths,
-                             javascript_path=javascripts, footing=updated_footing())
+        self.page = HTMLPage(self.title, style=page_style, css=css, css_path=css_paths, javascript_path=javascript_paths, javascript_path_body=javascript_paths_body, footing=updated_footing())
 
         classes = dict()
         classes["JS9Menubar"] = "data-backgroundColor"

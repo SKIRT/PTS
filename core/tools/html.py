@@ -1026,6 +1026,33 @@ def make_slider(id, min_value, max_value, stepsize, default_value=None, action_f
 
 # -----------------------------------------------------------------
 
+def make_basic_custom_slider(id, options, default=None, action_function=None):
+
+    """
+    This function ...
+    :param id:
+    :param options:
+    :param default:
+    :param action_function:
+    :return:
+    """
+
+    noptions = len(options)
+
+    if default is not None: default_index = options.index(default) + 1
+    else: default_index = 1
+
+    code = ""
+    code += "  <input id='" + id + "' type='range' min='1' max='" + str(noptions) + "' steps='1' value='" + str(default_index) + "'"
+    # if action_function is not None: code += " onchange='" + action_function + "(this.value)'"
+    if action_function is not None: code += " onchange='" + action_function + "(this.value)' oninput='" + action_function + "(this.value)'"
+    code += ">\n"
+
+    # Return the code
+    return code
+
+# -----------------------------------------------------------------
+
 def make_custom_slider(id, options, default=None, action_function=None):
 
     """
@@ -1037,6 +1064,7 @@ def make_custom_slider(id, options, default=None, action_function=None):
     :return:
     """
 
+    # EXAMPLE:
     """
     <div class="range">
       <input type="range" min="1" max="7" steps="1" value="1">
@@ -1080,7 +1108,7 @@ def make_custom_slider(id, options, default=None, action_function=None):
 
 # -----------------------------------------------------------------
 
-def make_image_slider(image_id, urls, labels, default, width=None, height=None):
+def make_image_slider(image_id, urls, labels, default, width=None, height=None, basic=True, img_class=None):
 
     """
     This function ...
@@ -1090,6 +1118,8 @@ def make_image_slider(image_id, urls, labels, default, width=None, height=None):
     :param default:
     :param width:
     :param height:
+    :param basic:
+    :param img_class:
     :return:
     """
 
@@ -1108,17 +1138,28 @@ def make_image_slider(image_id, urls, labels, default, width=None, height=None):
 
     code = ""
 
-    code += make_custom_slider(slider_id, labels, default=default, action_function=function_name)
+    # Add slider
+    if basic: code += center(make_basic_custom_slider(slider_id, labels, default=default, action_function=function_name))
+    else: code += center(make_custom_slider(slider_id, labels, default=default, action_function=function_name))
+
+    code += newline
+
+    code += '\n'
+    code += "<center>"
+    code += '<span align="center" id="' + span_id + '">' + str(default) + "</span>"
+    code += "</center>"
+    code += "\n"
+
+    code += newline
 
     # Code for image holder
+    code += "<center>"
     code += '<img id="' + image_id + '"'
+    if img_class is not None: code += ' class="' + img_class + '"'
     if width is not None: code += ' width="' + str(width)  + 'px"'
     if height is not None: code += ' height="' + str(height) + 'px"'
     code += '>'
-
-    code += '\n'
-    code += '<span id="' + span_id + '">' + str(default) + "</span>"
-    code += "\n"
+    code += "</center>"
 
     # Make script
     script = ""
@@ -1142,14 +1183,16 @@ def make_image_slider(image_id, urls, labels, default, width=None, height=None):
     script += "\n"
 
     script += 'var val = document.getElementById("' + slider_id + '").value;\n'
-    script += 'document.getElementById("' + span_id + '").innerHTML = val;\n'
+    script += 'var index = val - 1;\n'
+    script += 'document.getElementById("' + span_id + '").innerHTML = ' + labels_variable_name + '[index];\n'
     #script += 'document.getElementById("' + image_id + '").src = ' + get_url_function_name + '(val);\n'
-    script += 'document.getElementById("' + image_id + '").src = ' + urls_variable_name + '[val - 1];\n'
+    script += 'document.getElementById("' + image_id + '").src = ' + urls_variable_name + '[index];\n'
     script += "\n"
     script += 'function ' + function_name + '(newVal)\n'
     script += '{\n'
-    script += '    document.getElementById("' + span_id + '").innerHTML = newVal;\n'
-    script += '    document.getElementById("' + image_id + '").src = ' + urls_variable_name + '[newVal - 1];\n'
+    script += '    var newIndex = newVal - 1;\n'
+    script += '    document.getElementById("' + span_id + '").innerHTML = ' + labels_variable_name + '[newIndex];\n'
+    script += '    document.getElementById("' + image_id + '").src = ' + urls_variable_name + '[newIndex];\n'
     script += '\n}'
 
     # Add javascript
@@ -1531,7 +1574,7 @@ class HTMLPage(object):
     """
 
     def __init__(self, title, css=None, css_path=None, style=None, encoding="utf-8", language="en", head=None,
-                 footing=None, body_settings=None, javascript=None, javascript_path=None):
+                 footing=None, body_settings=None, javascript=None, javascript_path=None, javascript_path_body=None):
 
         """
         HTML page constructor.
@@ -1546,6 +1589,7 @@ class HTMLPage(object):
         :param body_settings:
         :param javascript:
         :param javascript_path:
+        :param javascript_path_body:
         """
 
         # Set properties
@@ -1560,6 +1604,7 @@ class HTMLPage(object):
         self.body_settings = body_settings
         self.javascript = javascript
         self.javascript_path = javascript_path
+        self.javascript_path_body = javascript_path_body
 
         # The contents
         self.contents = []
@@ -1629,9 +1674,6 @@ class HTMLPage(object):
 
         lines.append(body_start)
 
-        # Add custom javascript
-        if self.javascript is not None: lines.append(make_script(self.javascript))
-
         # Start of styled div
         if self.style is not None: lines.append('<div class="' + self.style + '">')
 
@@ -1643,6 +1685,18 @@ class HTMLPage(object):
 
         # End of styled div
         if self.style is not None: lines.append('</div>')
+
+        # Add custom javascript
+        if self.javascript is not None: lines.append(make_script(self.javascript))
+
+        # Add javascript body scripts
+        if self.javascript_path_body is not None:
+
+            if types.is_string_sequence(self.javascript_path_body):
+                for url in self.javascript_path_body:
+                    lines.append('<script src="' + url + '"></script>')
+            elif types.is_string_type(self.javascript_path_body): lines.append('<script src="' + self.javascript_path_body + '"></script>')
+            else: raise ValueError("Invalid value for 'javascript_path_body'")
 
         # End of body and page
         lines.append("</body>")
