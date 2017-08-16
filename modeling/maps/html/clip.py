@@ -28,7 +28,7 @@ from ....magic.core.mask import Mask
 
 # -----------------------------------------------------------------
 
-significance_plots_name = "significance_plots"
+clipped_name = "clipped"
 ncolumns = 2
 colour_map = "jet"
 
@@ -91,16 +91,19 @@ class ClipMapsPageGenerator(MapsComponent):
         # Call the setup function of the base class
         super(ClipMapsPageGenerator, self).setup(**kwargs)
 
-        # Make directory to contain the plots
-        self.significance_plots_path = fs.join(self.maps_html_path, significance_plots_name)
+        # Set the number of allowed open file handles
+        fs.set_nallowed_open_files(self.config.nopen_files)
 
-        if fs.is_directory(self.significance_plots_path):
-            if self.config.replot: fs.clear_directory(self.significance_plots_path)
-        else: fs.create_directory(self.significance_plots_path)
+        # Make directory to contain the plots
+        self.clipped_plots_path = fs.join(self.maps_html_path, clipped_name)
+
+        if fs.is_directory(self.clipped_plots_path):
+            if self.config.replot: fs.clear_directory(self.clipped_plots_path)
+        else: fs.create_directory(self.clipped_plots_path)
 
         # Create directories for each filter
         for fltr in self.maps_filters:
-            fltr_path = fs.join(self.significance_plots_path, str(fltr))
+            fltr_path = fs.join(self.clipped_plots_path, str(fltr))
             self.filter_plot_paths[fltr] = fltr_path
             if not fs.is_directory(fltr_path): fs.create_directory(fltr_path)
 
@@ -114,7 +117,7 @@ class ClipMapsPageGenerator(MapsComponent):
         :return:
         """
 
-        return "Significance maps"
+        return "Clip maps"
 
     # -----------------------------------------------------------------
 

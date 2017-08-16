@@ -63,8 +63,12 @@ definition.add_flag("all", "select all maps")
 # Levels
 definition.add_optional("levels", "string_real_dictionary", "significance levels for the different images")
 definition.add_optional("default_level", "real", "default significance level", default_sigma_level)
+definition.add_flag("all_levels", "use the default sigma level for all maps")
 
 # Image edge softening
 definition.add_optional("softening_start", "real", "relative radius for softening to start (relative to truncation ellipse)", 0.75)
+
+# ADVANCED
+definition.add_optional("nopen_files", "positive_integer", "number of open files necessary to make the script work", 1024)
 
 # -----------------------------------------------------------------

@@ -126,6 +126,9 @@ class ComponentMapsMaker(MapsComponent):
         # Call the setup function of the base class
         super(ComponentMapsMaker, self).setup(**kwargs)
 
+        # Set the number of allowed open file handles
+        fs.set_nallowed_open_files(self.config.nopen_files)
+
         # Masks directories
         self.old_masks_path = fs.create_directory_in(self.old_component_maps_path, masks_name)
         self.young_masks_path = fs.create_directory_in(self.young_component_maps_path, masks_name)
@@ -558,7 +561,8 @@ class ComponentMapsMaker(MapsComponent):
             id = filter_name.lower().replace(" ", "_")
 
             # Prompt for the level
-            level = prompt_real(id + "_level", "sigma level for the " + filter_name + " image", default=self.config.default_level)
+            if not self.config.all_levels: level = prompt_real(id + "_level", "sigma level for the " + filter_name + " image", default=self.config.default_level)
+            else: level = self.config.default_level
 
             # Set the level
             self.levels[fltr] = level
