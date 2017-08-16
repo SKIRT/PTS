@@ -503,6 +503,42 @@ class ModelingComponent(Configurable):
     # -----------------------------------------------------------------
 
     @property
+    def static_maps_collection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.static_maps_collection
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_selection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.maps_selection
+
+    # -----------------------------------------------------------------
+
+    @property
+    def static_maps_selection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.static_maps_selection
+
+    # -----------------------------------------------------------------
+
+    @property
     def model_suite(self):
 
         """

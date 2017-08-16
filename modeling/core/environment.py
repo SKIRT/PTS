@@ -226,6 +226,45 @@ class ModelingEnvironment(object):
     # -----------------------------------------------------------------
 
     @lazyproperty
+    def static_maps_collection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..maps.collection import StaticMapsCollection
+        return StaticMapsCollection.from_modeling_path(self.path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def maps_selection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..maps.selection import ComponentMapsSelection
+        return ComponentMapsSelection.from_modeling_path(self.path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def static_maps_selection(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        from ..maps.selection import StaticComponentMapsSelection
+        return StaticComponentMapsSelection.from_modeling_path(self.path)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
     def model_suite(self):
 
         """

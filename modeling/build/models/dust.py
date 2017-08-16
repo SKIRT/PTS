@@ -243,22 +243,14 @@ class DustBuilder(GeneralBuilder, GalaxyModelingComponent):
         # Inform the user
         log.info("Loading a dust disk map from the modeling pipeline ...")
 
-        # Get paths
-        map_paths = self.maps_collection.get_dust_map_paths(flatten=True)
-        names = map_paths.keys()
-
-        # Get the path to the dust maps directory
-        #directory_path = get_dust_maps_path(self.config.path)
-
-        # Get the present filenames
-        #names = fs.files_in_path(directory_path, extension="fits", returns="name")
+        # Get the map names
+        names = self.static_maps_selection.dust_map_paths.keys()
 
         # Ask for the dust map to use
         name = prompt_string("dust_map", "dust disk map to use for this model", choices=names)
 
-        #path = fs.join(directory_path, name + ".fits")
-
-        filepath = map_paths[name]
+        # Set the path
+        filepath = self.static_maps_selection.dust_map_paths[name]
 
         # Set the map
         self.maps["disk"] = Frame.from_file(filepath)

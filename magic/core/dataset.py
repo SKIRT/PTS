@@ -923,7 +923,15 @@ class DataSet(object):
         :return: 
         """
 
-        return NamedFrameList.from_paths(**self.get_errormap_names_and_paths_for_filters(filters))
+        # Doesn't work when error frames are in the same FITS file as the primar frames!!
+        #return NamedFrameList.from_paths(**self.get_errormap_names_and_paths_for_filters(filters))
+
+        #frame_paths = self.get_frame_names_and_paths_for_filters(filters)
+        #errormaps = {name: Frame.from_file(frame_paths[name], plane="errors") for name in frame_paths}
+
+        # Create dict of error maps
+        errormaps = {name: self.get_errormap(name) for name in self.get_names_for_filters(filters)}
+        return NamedFrameList(**errormaps)
 
     # -----------------------------------------------------------------
 

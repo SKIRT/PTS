@@ -141,6 +141,150 @@ class ComponentMapsSelection(object):
 
         return self.environment.maps_dust_component_path
 
+    # -----------------------------------------------------------------
+
+    @property
+    def old_map_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.old_component_path, returns="name", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_map_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.young_component_path, returns="name", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_map_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.ionizing_component_path, returns="name", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_map_names(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.dust_component_path, returns="name", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    def get_old_map_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.old_component_path, returns="dict", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    def get_young_map_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.young_component_path, returns="dict", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    def get_ionizing_map_paths(self):
+
+        """
+        This funtion ...
+        :return:
+        """
+
+        return fs.files_in_path(self.ionizing_component_path, returns="dict", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    def get_dust_map_paths(self):
+
+        """
+        Thisj function ...
+        :return:
+        """
+
+        return fs.files_in_path(self.dust_component_path, returns="dict", extension="fits")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def old_map_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # CAN BE LAZIFIED
+        return self.get_old_map_paths()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_map_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # CAN BE LAZIFIED
+        return self.get_young_map_paths()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_map_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # CAN BE LAZIFIED
+        return self.get_ionizing_map_paths()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_map_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # CAN BE LAZIFIED
+        return self.get_dust_map_paths()
+
 # -----------------------------------------------------------------
 
 StaticComponentMapsSelection = create_lazified_class(ComponentMapsSelection, "StaticComponentMapsSelection")

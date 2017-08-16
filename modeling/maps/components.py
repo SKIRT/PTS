@@ -600,7 +600,13 @@ class ComponentMapsMaker(MapsComponent):
         log.info("Loading the selected old stellar maps ...")
 
         # Load
-        for name in self.old_selection: self.old_maps[name] = Frame.from_file(self.old_map_paths[name])
+        for name in self.old_selection:
+
+            # Debugging
+            log.debug("Loading the '" + name + "' old stellar map ...")
+
+            # Load
+            self.old_maps[name] = Frame.from_file(self.old_map_paths[name])
 
     # -----------------------------------------------------------------
 
@@ -615,7 +621,13 @@ class ComponentMapsMaker(MapsComponent):
         log.info("Loading the selected young stellar maps ...")
 
         # Load
-        for name in self.young_selection: self.young_maps[name] = Frame.from_file(self.young_map_paths[name])
+        for name in self.young_selection:
+
+            # Debugging
+            log.debug("Loading the '" + name + "' young stellar map ...")
+
+            # Load
+            self.young_maps[name] = Frame.from_file(self.young_map_paths[name])
 
     # -----------------------------------------------------------------
 
@@ -630,7 +642,13 @@ class ComponentMapsMaker(MapsComponent):
         log.info("Loading the selected ionizing stellar maps ...")
 
         # Load
-        for name in self.ionizing_selection: self.ionizing_maps[name] = Frame.from_file(self.ionizing_map_paths[name])
+        for name in self.ionizing_selection:
+
+            # Debugging
+            log.debug("Loading the '" + name + "' ionizing stellar map ...")
+
+            # Load
+            self.ionizing_maps[name] = Frame.from_file(self.ionizing_map_paths[name])
 
     # -----------------------------------------------------------------
 
@@ -645,7 +663,13 @@ class ComponentMapsMaker(MapsComponent):
         log.info("Loading the selected dust maps ...")
 
         # Load
-        for name in self.dust_selection: self.dust_maps[name] = Frame.from_file(self.dust_map_paths[name])
+        for name in self.dust_selection:
+
+            # Debugging
+            log.debug("Loading the '" + name + "' dust map ...")
+
+            # Load
+            self.dust_maps[name] = Frame.from_file(self.dust_map_paths[name])
 
     # -----------------------------------------------------------------
 
@@ -726,6 +750,9 @@ class ComponentMapsMaker(MapsComponent):
         # Loop over the maps
         for name in self.old_maps:
 
+            # Debugging
+            log.debug("Truncating the '" + name + "' old stellar map ...")
+
             # Get the map
             old_map = self.old_maps[name]
 
@@ -749,6 +776,9 @@ class ComponentMapsMaker(MapsComponent):
 
         # Loop over the maps
         for name in self.young_maps:
+
+            # Debugging
+            log.debug("Truncating the '" + name + "' young stellar map ...")
 
             # Get the map
             young_map = self.young_maps[name]
@@ -774,6 +804,9 @@ class ComponentMapsMaker(MapsComponent):
         # Loop over the maps
         for name in self.ionizing_maps:
 
+            # Debugging
+            log.debug("Truncating the '" + name + "' ionizing stellar map ...")
+
             # Get the map
             ionizing_map = self.ionizing_maps[name]
 
@@ -797,6 +830,9 @@ class ComponentMapsMaker(MapsComponent):
 
         # Loop over the maps
         for name in self.dust_maps:
+
+            # Debugging
+            log.debug("Truncating the '" + name + "' dust map ...")
 
             # Get the map
             dust_map = self.dust_maps[name]
@@ -849,9 +885,6 @@ class ComponentMapsMaker(MapsComponent):
 
         # Get error map list
         errors = self.dataset.get_errormaplist_for_filters(origins)
-
-        # Convolve to same resolution
-        frames.convolve_to_highest_resolution()
 
         # Convolve
         frames.convolve_to_highest_fwhm()
@@ -925,6 +958,9 @@ class ComponentMapsMaker(MapsComponent):
         # Loop over the maps
         for name in self.old_maps:
 
+            # Debugging
+            log.debug("Clipping the '" + name + "' old stellar map ...")
+
             # Get the origins
             origins = self.old_map_origins[name]
 
@@ -951,6 +987,9 @@ class ComponentMapsMaker(MapsComponent):
 
         # Loop over the maps
         for name in self.young_maps:
+
+            # Debugging
+            log.debug("Clipping the '" + name + "' young stellar map ...")
 
             # Get the origins
             origins = self.young_map_origins[name]
@@ -979,6 +1018,9 @@ class ComponentMapsMaker(MapsComponent):
         # Loop over the maps
         for name in self.ionizing_maps:
 
+            # Debugging
+            log.debug("Clipping the '" + name + "' ionizing stellar map ...")
+
             # Get the origins
             origins = self.ionizing_map_origins[name]
 
@@ -1005,6 +1047,9 @@ class ComponentMapsMaker(MapsComponent):
 
         # Loop over the maps
         for name in self.dust_maps:
+
+            # Debugging
+            log.debug("Clipping the '" + name + "' dust map ...")
 
             # Get the origins
             origins = self.dust_map_origins[name]
@@ -1093,6 +1138,9 @@ class ComponentMapsMaker(MapsComponent):
         # Loop over the maps
         for name in self.old_maps:
 
+            # Debugging
+            log.debug("Softening the edges of the '" + name + "' old stellar map ...")
+
             # Get ellipse
             ellipse = self.softening_ellipse.to_pixel(self.old_maps[name].wcs)
 
@@ -1113,6 +1161,9 @@ class ComponentMapsMaker(MapsComponent):
 
         # Loop over the maps
         for name in self.young_maps:
+
+            # Debugging
+            log.debug("Softening the edges of the '" + name + "' young stellar map ...")
 
             # Get ellipse
             ellipse = self.softening_ellipse.to_pixel(self.young_maps[name].wcs)
@@ -1135,6 +1186,9 @@ class ComponentMapsMaker(MapsComponent):
         # Loop over the maps
         for name in self.ionizing_maps:
 
+            # Debugging
+            log.debug("Softening the edges of the '" + name + "' ionizing stellar map ...")
+
             # Get ellipse
             ellipse = self.softening_ellipse.to_pixel(self.ionizing_maps[name].wcs)
 
@@ -1155,6 +1209,9 @@ class ComponentMapsMaker(MapsComponent):
 
         # Loop over the maps
         for name in self.dust_maps:
+
+            # Debugging
+            log.debug("Softening the edges of the '" + name + "' dust map ...")
 
             # Get ellipse
             ellipse = self.softening_ellipse.to_pixel(self.dust_maps[name].wcs)
@@ -1294,6 +1351,9 @@ class ComponentMapsMaker(MapsComponent):
         # Loop over the maps
         for name in self.old_maps:
 
+            # Debugging
+            log.debug("Writing the '" + name + "' old stellar map ...")
+
             # Determine the path
             path = fs.join(self.old_component_maps_path, name + ".fits")
 
@@ -1314,6 +1374,9 @@ class ComponentMapsMaker(MapsComponent):
 
         # Loop over the maps
         for name in self.young_maps:
+
+            # Debugging
+            log.debug("Writing the '" + name + "' young stellar map ...")
 
             # Determine the path
             path = fs.join(self.young_component_maps_path, name + ".fits")
@@ -1336,6 +1399,9 @@ class ComponentMapsMaker(MapsComponent):
         # Loop over the maps
         for name in self.ionizing_maps:
 
+            # Debugging
+            log.debug("Writing the '" + name + "' ionizing stellar map ...")
+
             # Determine the path
             path = fs.join(self.ionizing_component_maps_path, name + ".fits")
 
@@ -1356,6 +1422,9 @@ class ComponentMapsMaker(MapsComponent):
 
         # Loop over the maps
         for name in self.dust_maps:
+
+            # Debugging
+            log.debug("Writing the '" + name + "' dust map ...")
 
             # Determine the path
             path = fs.join(self.dust_component_maps_path, name + ".fits")
@@ -1402,6 +1471,9 @@ class ComponentMapsMaker(MapsComponent):
         # Loop over the masks
         for name in self.old_masks:
 
+            # Debugging
+            log.debug("Writing the '" + name + "' old stellar mask ...")
+
             # Determine the path
             path = fs.join(self.old_masks_path, name + ".fits")
 
@@ -1422,6 +1494,9 @@ class ComponentMapsMaker(MapsComponent):
 
         # Loop over the masks
         for name in self.young_masks:
+
+            # Debugging
+            log.debug("Writing the '" + name + "' young stellar mask ...")
 
             # Determine the path
             path = fs.join(self.young_masks_path, name + ".fits")
@@ -1444,6 +1519,9 @@ class ComponentMapsMaker(MapsComponent):
         # Loop over the masks
         for name in self.ionizing_masks:
 
+            # Debugging
+            log.debug("Writing the '" + name + "' ionizing stellar mask ...")
+
             # Determine the path
             path = fs.join(self.ionizing_masks_path, name + ".fits")
 
@@ -1464,6 +1542,9 @@ class ComponentMapsMaker(MapsComponent):
 
         # Loop over the masks
         for name in self.dust_masks:
+
+            # Debugging
+            log.debug("Writing the '" + name + "' dust mask ...")
 
             # Determine the path
             path = fs.join(self.dust_masks_path, name + ".fits")
@@ -1510,6 +1591,9 @@ class ComponentMapsMaker(MapsComponent):
         # Loop over the maps
         for name in self.old_deprojected:
 
+            # Debugging
+            log.debug("Writing the '" + name + "' deprojected old stellar map ...")
+
             # Determine path
             path = fs.join(self.old_deprojection_path, name + ".fits")
 
@@ -1530,6 +1614,9 @@ class ComponentMapsMaker(MapsComponent):
 
         # Loop over the maps
         for name in self.young_deprojected:
+
+            # Debugging
+            log.debug("Writing the '" + name + "' deprojected young stellar map ...")
 
             # Determine path
             path = fs.join(self.young_deprojection_path, name + ".fits")
@@ -1552,6 +1639,9 @@ class ComponentMapsMaker(MapsComponent):
         # Loop over the maps
         for name in self.ionizing_deprojected:
 
+            # Debugging
+            log.debug("Writing the '" + name + "' deprojected ionizing stellar map ...")
+
             # Determine the path
             path = fs.join(self.ionizing_deprojection_path, name + ".fits")
 
@@ -1572,6 +1662,9 @@ class ComponentMapsMaker(MapsComponent):
 
         # Loop over the maps
         for name in self.dust_deprojected:
+
+            # Debugging
+            log.debug("Writing the '" + name + "' deprojected dust map ...")
 
             # Determine the path
             path = fs.join(self.dust_deprojection_path, name + ".fits")

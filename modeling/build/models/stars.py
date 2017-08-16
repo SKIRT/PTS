@@ -400,23 +400,14 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         # Inform the user
         log.info("Loading the map of old stars from the modeling pipeline ...")
 
-        # Get the path to the old stellar maps directory
-        #directory_path = get_old_stars_maps_path(self.config.path)
-
-        map_paths = self.maps_collection.get_old_stellar_disk_map_paths()
-        names = map_paths.keys()
-
-        # Get the present filenames
-        #names = fs.files_in_path(directory_path, extension="fits", returns="name")
+        # Get the map names
+        names = self.static_maps_selection.old_map_paths.keys()
 
         # Ask for the old stellar map
         name = prompt_string("old_map", "old stellar disk map to use for this model", choices=names)
-        #path = fs.join(directory_path, name + ".fits")
-
-        # TODO: ask for significance mask
 
         # Get the filepath
-        filepath = map_paths[name]
+        filepath = self.static_maps_selection.old_map_paths[name]
 
         # Set the map
         self.maps["old"] = Frame.from_file(filepath)
@@ -565,22 +556,14 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         # Inform the user
         log.info("Loading a young stellar disk map from the modeling pipeline ...")
 
-        # Get the path to the young stellar maps directory
-        #directory_path = get_young_stars_maps_path(self.config.path)
-
-        map_paths = self.maps_collection.get_young_map_paths(flatten=True)
-        names = map_paths.keys()
-
-        # Get the present filenames
-        #names = fs.files_in_path(directory_path, extension="fits", returns="name")
+        # Get the map names
+        names = self.static_maps_selection.young_map_paths.keys()
 
         # Ask for the young stellar map
         name = prompt_string("young_map", "young stellar disk map to use for this model", choices=names)
-        #path = fs.join(directory_path, name + ".fits")
 
-        # TODO: ask for significance map
-
-        filepath = map_paths[name]
+        # Get the path
+        filepath = self.static_maps_selection.young_map_paths[name]
 
         # Set the map
         self.maps["young"] = Frame.from_file(filepath)
@@ -738,23 +721,14 @@ class StarsBuilder(GeneralBuilder, GalaxyModelingComponent):
         # Inform the user
         log.info("Loading a ionizing stellar disk map from the modeling pipeline ...")
 
-        # Get map paths
-        map_paths = self.maps_collection.get_ionizing_map_paths(flatten=True)
-        names = map_paths.keys()
-
-        # Get the path to the ionizing stellar maps directory
-        #directory_path = get_ionizing_stars_maps_path(self.config.path)
-
-        # Get the present filenames
-        #names = fs.files_in_path(directory_path, extension="fits", returns="name")
+        # Get map names
+        names = self.static_maps_selection.ionizing_map_names.keys()
 
         # Ask for the ionizing stellar map
         name = prompt_string("ionizing_map", "ionizing stellar disk map to use for this model", choices=names)
-        #path = fs.join(directory_path, name + ".fits")
 
-        # TODO: ask for the significance map
-
-        filepath = map_paths[name]
+        # Set the path
+        filepath = self.static_maps_selection.ionizing_map_names[name]
 
         # Set the map
         self.maps["ionizing"] = Frame.from_file(filepath)
