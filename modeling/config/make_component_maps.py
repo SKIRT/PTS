@@ -32,4 +32,10 @@ definition.add_flag("all_ionizing")
 definition.add_flag("all_dust")
 definition.add_flag("all")
 
+# Levels
+definition.add_optional("levels", "string_real_dictionary", "significance levels for the different images")
+
+# Image edge softening
+definition.add_optional("softening_start", "real", "relative radius for softening to start (relative to truncation ellipse)", 0.75)
+
 # -----------------------------------------------------------------
