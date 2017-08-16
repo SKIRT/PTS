@@ -58,6 +58,7 @@ definition.add_flag("all", "select all maps")
 
 # Levels
 definition.add_optional("levels", "string_real_dictionary", "significance levels for the different images")
+definition.add_optional("default_level", "real", "default significance level", 3.0)
 
 # Image edge softening
 definition.add_optional("softening_start", "real", "relative radius for softening to start (relative to truncation ellipse)", 0.75)

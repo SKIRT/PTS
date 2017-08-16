@@ -1927,7 +1927,7 @@ def get_map_paths_sub_name(environment, name, flatten=False, method=None, not_me
     """
 
     # Determine path
-    sub_path = fs.join(environment.maps_path, name)
+    sub_path = fs.join(environment.maps_raw_path, name)
     if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
     # direct_origins_path = fs.join(sub_path, origins_filename)
     # No subdirectories
@@ -2077,7 +2077,7 @@ def get_origins_sub_name(environment, name, flatten=False, method=None, not_meth
     """
 
     # Determine path
-    sub_path = fs.join(environment.maps_path, name)
+    sub_path = fs.join(environment.maps_raw_path, name)
     if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
     direct_origins_path = fs.join(sub_path, origins_filename)
 
@@ -2156,7 +2156,7 @@ def get_methods_sub_name(environment, name, flatten=False, method=None, not_meth
     """
 
     # Determine path
-    sub_path = fs.join(environment.maps_path, name)
+    sub_path = fs.join(environment.maps_raw_path, name)
     if not fs.is_directory(sub_path): raise ValueError("Invalid name '" + name + "'")
     direct_methods_path = fs.join(sub_path, methods_filename)
 

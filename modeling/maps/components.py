@@ -415,7 +415,7 @@ class ComponentMapsMaker(MapsComponent):
         log.info("Prompting for the old stellar maps ...")
 
         # Ask for the old stellar maps
-        self.old_selection = prompt_string_list("old_maps", "selection of old stellar disk maps", choices=self.old_map_names)
+        self.old_selection = prompt_string_list("old_maps", "selection of old stellar disk maps", choices=self.old_map_names, all_default=True)
 
     # -----------------------------------------------------------------
 
@@ -430,7 +430,7 @@ class ComponentMapsMaker(MapsComponent):
         log.info("Prompting for the young stellar maps ...")
 
         # Ask for the young stellar maps
-        self.young_selection = prompt_string_list("young_maps", "selection of young stellar disk maps", choices=self.young_map_names)
+        self.young_selection = prompt_string_list("young_maps", "selection of young stellar disk maps", choices=self.young_map_names, all_default=True)
 
     # -----------------------------------------------------------------
 
@@ -445,7 +445,7 @@ class ComponentMapsMaker(MapsComponent):
         log.info("Prompting for the ionizing stellar maps ...")
 
         # Ask for the ionizing stellar map
-        self.ionizing_selection = prompt_string_list("ionizing_maps", "selection of ionizing stellar disk maps", choices=self.ionizing_map_names)
+        self.ionizing_selection = prompt_string_list("ionizing_maps", "selection of ionizing stellar disk maps", choices=self.ionizing_map_names, all_default=True)
 
     # -----------------------------------------------------------------
 
@@ -460,7 +460,7 @@ class ComponentMapsMaker(MapsComponent):
         log.info("Prompting for the dust maps ...")
 
         # Ask for the dust map to use
-        self.dust_selection = prompt_string_list("dust_maps", "selection of dust disk maps", choices=self.dust_map_names)
+        self.dust_selection = prompt_string_list("dust_maps", "selection of dust disk maps", choices=self.dust_map_names, all_default=True)
 
     # -----------------------------------------------------------------
 
@@ -558,7 +558,7 @@ class ComponentMapsMaker(MapsComponent):
             id = filter_name.lower().replace(" ", "_")
 
             # Prompt for the level
-            level = prompt_real(id + "_level", "sigma level for the " + filter_name + " image")
+            level = prompt_real(id + "_level", "sigma level for the " + filter_name + " image", default=self.config.default_level)
 
             # Set the level
             self.levels[fltr] = level
@@ -1578,5 +1578,17 @@ class ComponentMapsMaker(MapsComponent):
 
             # Write
             self.dust_deprojected[name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def maps_sub_path(self):
+
+        """
+        This function ...
+        :return: 
+        """
+
+        return None
 
 # -----------------------------------------------------------------

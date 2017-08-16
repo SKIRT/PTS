@@ -236,7 +236,7 @@ def prompt_proceed(description=None):
 
 # -----------------------------------------------------------------
 
-def prompt_variable(name, parsing_type, description, choices=None, default=None, required=True):
+def prompt_variable(name, parsing_type, description, choices=None, default=None, required=True, default_alias=None):
 
     """
     This function ....
@@ -244,7 +244,8 @@ def prompt_variable(name, parsing_type, description, choices=None, default=None,
     :param parsing_type: 
     :param description: 
     :param choices: 
-    :param default: 
+    :param default:
+    :param default_alias:
     :return: 
     """
 
@@ -252,7 +253,7 @@ def prompt_variable(name, parsing_type, description, choices=None, default=None,
     definition = ConfigurationDefinition(write_config=False)
 
     # Add setting
-    if default is not None: definition.add_optional(name, parsing_type, description, choices=choices, default=default)
+    if default is not None: definition.add_optional(name, parsing_type, description, choices=choices, default=default, default_alias=default_alias)
     elif required: definition.add_required(name, parsing_type, description, choices=choices)
     else: definition.add_optional(name, parsing_type, description, choices=choices)
 
@@ -265,7 +266,7 @@ def prompt_variable(name, parsing_type, description, choices=None, default=None,
 
 # -----------------------------------------------------------------
 
-def prompt_string_list(name, description, choices=None, default=None, required=True):
+def prompt_string_list(name, description, choices=None, default=None, required=True, all_default=False):
 
     """
     This function ...
@@ -277,7 +278,17 @@ def prompt_string_list(name, description, choices=None, default=None, required=T
     :return: 
     """
 
-    return prompt_variable(name, "string_list", description, choices=choices, default=default, required=required)
+    # Check
+    if default is not None and all_default: raise ValueError("Cannot specify 'default' with 'all_default' enabled")
+
+    # All default
+    if all_default:
+        if choices is None: raise ValueError("Choices are not given")
+        default = choices
+        default_alias = "all"
+
+    # Prompt
+    return prompt_variable(name, "string_list", description, choices=choices, default=default, required=required, default_alias=default_alias)
 
 # -----------------------------------------------------------------
 
@@ -1716,7 +1727,7 @@ class ConfigurationDefinition(object):
 
     def add_positional_optional(self, name, user_type, description, default=None, choices=None,
                                 convert_default=False, dynamic_list=False, suggestions=None, min_value=None,
-                                max_value=None, forbidden=None):
+                                max_value=None, forbidden=None, default_alias=None):
 
         """
         This function ...
@@ -1731,6 +1742,7 @@ class ConfigurationDefinition(object):
         :param min_value:
         :param max_value:
         :param forbidden:
+        :param default_alias:
         :return:
         """
 
@@ -1760,12 +1772,12 @@ class ConfigurationDefinition(object):
         # Add
         self.pos_optional[name] = Map(type=real_type, description=description, default=default, choices=choices,
                                       dynamic_list=dynamic_list, suggestions=suggestions, min_value=min_value,
-                                      max_value=max_value, forbidden=forbidden)
+                                      max_value=max_value, forbidden=forbidden, default_alias=default_alias)
 
     # -----------------------------------------------------------------
 
     def add_optional(self, name, user_type, description, default=None, choices=None, letter=None, convert_default=False,
-                     dynamic_list=False, suggestions=None, min_value=None, max_value=None, forbidden=None):
+                     dynamic_list=False, suggestions=None, min_value=None, max_value=None, forbidden=None, default_alias=None):
 
         """
         This function ...
@@ -1781,6 +1793,7 @@ class ConfigurationDefinition(object):
         :param min_value:
         :param max_value:
         :param forbidden:
+        :param default_alias:
         :return:
         """
 
@@ -1812,7 +1825,7 @@ class ConfigurationDefinition(object):
         # Add
         self.optional[name] = Map(type=real_type, description=description, default=default, choices=choices,
                                   letter=letter, dynamic_list=dynamic_list, suggestions=suggestions,
-                                  min_value=min_value, max_value=max_value, forbidden=forbidden)
+                                  min_value=min_value, max_value=max_value, forbidden=forbidden, default_alias=default_alias)
 
     # -----------------------------------------------------------------
 
@@ -3256,6 +3269,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         min_value = definition.pos_optional[name].min_value
         max_value = definition.pos_optional[name].max_value
         forbidden = definition.pos_optional[name].forbidden
+        default_alias = definition.pos_optional[name].default_alias
 
         # Get list of choices and a dict of their descriptions
         if choices is not None:
@@ -3272,8 +3286,9 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         # Give name and description
         log.success(name + ": " + description)
 
-        #
-        log.info("Press ENTER to use the default value (" + stringify.stringify(default)[1] + ")")
+        # Show default value
+        if default_alias is not None: log.info("Press ENTER to use the default value (" + default_alias + ")")
+        else: log.info("Press ENTER to use the default value (" + stringify.stringify(default)[1] + ")")
 
         # Choices are not given
         if choices_list is None:
@@ -3472,6 +3487,7 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         min_value = definition.optional[name].min_value
         max_value = definition.optional[name].max_value
         forbidden = definition.optional[name].forbidden
+        default_alias = definition.optional[name].default_alias
 
         # Get list of choices and a dict of their descriptions
         if choices is not None:
@@ -3488,8 +3504,9 @@ def add_settings_interactive(config, definition, prompt_optional=True):
         # Give name and description
         log.success(name + ": " + description)
 
-        #
-        log.info("Press ENTER to use the default value (" + stringify.stringify(default)[1] + ")")
+        # Show default value
+        if default_alias is not None: log.info("Press ENTER to use the default value (" + default_alias + ")")
+        else: log.info("Press ENTER to use the default value (" + stringify.stringify(default)[1] + ")")
 
         # Choices are not given
         if choices_list is None:
