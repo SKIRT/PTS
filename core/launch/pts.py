@@ -232,6 +232,9 @@ def construct_pts_command_string(python_path, pts_main_path, args, kwargs):
             # Get the definition if not yet done
             if _definition is None: _definition = get_definition_for_command(command)
 
+            # Check
+            if name not in _definition.flags: raise ValueError("There is no '" + name + "' flag in the configuration definition")
+
             if kwargs[name]: # value of True
 
                 # If default is True, this option should not be specified on the command line

@@ -3749,7 +3749,7 @@ class Remote(object):
             for path in origin:
                 name = fs.name(path)
                 local_path = fs.join(destination, name)
-                if not fs.is_file(local_path): raise RuntimeError("Something went wrong: file " + name + " is missing from destination")
+                if not fs.is_file(local_path): raise RuntimeError("Something went wrong: file " + name + " is missing from destination (" + local_path + ")")
 
         elif origin_type == "file":
 
@@ -3757,7 +3757,7 @@ class Remote(object):
 
                 name = fs.name(origin) if new_name is None else new_name
                 local_path = fs.join(destination, name)
-                if not fs.is_file(local_path): raise RuntimeError("Something went wrong: file " + name + " is missing from destination")
+                if not fs.is_file(local_path): raise RuntimeError("Something went wrong: file " + name + " is missing from destination (" + local_path + ")")
 
             # It must be a file then
             elif not fs.is_file(destination): raise RuntimeError("Something went wrong: file " + destination + " is missing")
@@ -3767,12 +3767,12 @@ class Remote(object):
             for remote_path in self.files_in_path(origin):
                 filename = fs.name(remote_path)
                 local_path = fs.join(destination, filename)
-                if not fs.is_file(local_path): raise RuntimeError("Something went wrong: file " + filename + " is missing")
+                if not fs.is_file(local_path): raise RuntimeError("Something went wrong: file " + filename + " is missing (" + local_path + ")")
 
             for remote_path in self.directories_in_path(origin):
                 dirname = fs.name(remote_path)
                 local_path = fs.join(destination, dirname)
-                if not fs.is_directory(local_path): raise RuntimeError("Something went wrong: directory " + dirname + " is missing")
+                if not fs.is_directory(local_path): raise RuntimeError("Something went wrong: directory " + dirname + " is missing (" + local_path + ")")
 
         else: raise ValueError("Invalid origin type")
 
@@ -4054,7 +4054,7 @@ class Remote(object):
             for filepath in origin:
                 filename = fs.name(filepath)
                 remote_path = fs.join(destination, filename)
-                if not self.is_file(remote_path): raise RuntimeError("Something went wrong: file " + filename + " is not present at destination")
+                if not self.is_file(remote_path): raise RuntimeError("Something went wrong: file " + filename + " is not present at destination (" + remote_path + ")")
 
         elif origin_type == "file":
 
@@ -4062,23 +4062,26 @@ class Remote(object):
 
                 filename = fs.name(origin) if new_name is None else new_name
                 remote_path = fs.join(destination, filename)
-                if not self.is_file(remote_path): raise RuntimeError("Something went wrong: file " + filename + " is not present at destination")
+                if not self.is_file(remote_path): raise RuntimeError("Something went wrong: file " + filename + " is not present at destination (" + remote_path + ")")
 
             elif not self.is_file(destination): raise RuntimeError("Something went wrong: file " + destination + " is not present")
 
         elif origin_type == "directory":
 
+            directory_name = fs.name(origin)
+
             for local_path in fs.files_in_path(origin):
 
                 filename = fs.name(local_path)
-                remote_path = fs.join(destination, filename)
-                if not self.is_file(remote_path): raise RuntimeError("Something went wrong: file " + filename + " is not present at destination")
+                #remote_path = fs.join(destination, filename)
+                remote_path = fs.join(destination, directory_name, filename)
+                if not self.is_file(remote_path): raise RuntimeError("Something went wrong: file " + filename + " is not present at destination (" + remote_path + ")")
 
             for local_path in fs.directories_in_path(origin):
 
                 dirname = fs.name(local_path)
-                remote_path = fs.join(destination, dirname)
-                if not self.is_directory(remote_path): raise RuntimeError("Something went wrong: directory " + dirname + " is not present at destination")
+                remote_path = fs.join(destination, directory_name, dirname)
+                if not self.is_directory(remote_path): raise RuntimeError("Something went wrong: directory " + dirname + " is not present at destination (" + remote_path + ")")
 
         else: raise ValueError("Invalid origin type: " + str(origin_type))
 

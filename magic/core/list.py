@@ -2684,6 +2684,16 @@ def rebin_to_highest_pixelscale(*frames, **kwargs):
     # Get the remote
     remote = kwargs.pop("remote", None)
 
+    # Check
+    if len(frames) == 1:
+
+        # Success
+        log.success("Only one frame: not rebinning")
+
+        frame = frames[0]
+        frame.name = names[0]
+        return [frame]
+
     # Inform the user
     log.info("Rebinning frames to the coordinate system with the highest pixelscale ...")
 
@@ -2726,6 +2736,16 @@ def rebin_to_median_pixelscale(*frames, **kwargs):
 
     # Get the remote
     remote = kwargs.pop("remote", None)
+
+    # Check
+    if len(frames) == 1:
+
+        # Success
+        log.success("Only one frame: not rebinning")
+
+        frame = frames[0]
+        frame.name = names[0]
+        return [frame]
 
     # Inform the user
     log.info("Rebinning frames to the coordinate system with the median pixelscale ...")
@@ -2796,7 +2816,7 @@ def rebin_to_pixelscale_remote(*frames, **kwargs):
     remote_temp_path = remote.upload_directory_to(temp_path, remote.pts_temp_path, compress=True, show_output=log.is_debug())
 
     # Run PTS remotely
-    output = execute_pts_remote("rebin", cwd=remote_temp_path, show_output=log.is_debug(), wcs=wcs, backup=False)
+    output = execute_pts_remote(remote, "rebin", cwd=remote_temp_path, show_output=log.is_debug(), wcs=wcs, backup=False)
 
     # Download the rebinned frames
     temp_path = remote.download_file_to(remote_temp_path, introspection.pts_temp_dir)
@@ -2978,6 +2998,16 @@ def convolve_to_highest_fwhm(*frames, **kwargs):
     # Get remote
     remote = kwargs.pop("remote", None)
 
+    # Check
+    if len(frames) == 1:
+
+        # Success
+        log.success("Only one frame: not convolving")
+
+        frame = frames[0]
+        frame.name = names[0]
+        return [frame]
+
     # Inform the user
     log.info("Convolving frames to the resolution of the frame with the highest FWHM ...")
 
@@ -3062,7 +3092,7 @@ def convolve_to_fwhm_remote(*frames, **kwargs):
     remote_temp_path = remote.upload_directory_to(temp_path, remote.pts_temp_path, compress=True, show_output=log.is_debug())
 
     # Run PTS remotely
-    output = execute_pts_remote("convolve", cwd=remote_temp_path, show_output=log.is_debug(), filter=fltr, fwhm=fwhm, backup=False)
+    output = execute_pts_remote(remote, "convolve", cwd=remote_temp_path, show_output=log.is_debug(), filter=fltr, fwhm=fwhm, backup=False)
 
     # Download the rebinned frames
     temp_path = remote.download_file_to(remote_temp_path, introspection.pts_temp_dir)

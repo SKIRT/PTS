@@ -27,6 +27,9 @@ definition.add_optional("name", "string", "convolve to the resolution of the ima
 definition.add_optional("filter", "filter", "convolve to this filter's resolution")
 definition.add_optional("fwhm", "angle", "specify the FWHM if the filter has a variable FWHM")
 
+# Flags
+definition.add_flag("backup", "make backups", True)
+
 # Parse the command line arguments
 config = parse_arguments("convolve", definition)
 
