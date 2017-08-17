@@ -72,7 +72,7 @@ analyse_residuals | -- | analysis.residuals.ResidualAnalyser | arguments | Analy
 
 # OTHER
 report | -- | reporting.reporting.Reporter | arguments | Make (a) report(s) of certain steps of the radiative transfer modeling procedure (or all steps)
-deproject | -- | deprojection.deprojector.Deprojector | arguments | Deproject the maps
+deproject | -- | deprojection.deprojector.Deprojector | arguments | Deproject maps
 info | -- | misc.info.InfoShower | arguments | Show information about the radiative transfer model
 
 # PLOTTING
@@ -103,6 +103,7 @@ generate_significance_levels_page | -- | truncation.html.significance.Significan
 generate_all_maps_page | -- | maps.html.all.AllMapsPageGenerator | arguments | Generate the all maps page
 generate_maps_summary_page | -- | maps.html.summary.MapsSummaryPageGenerator | arguments | Generate the maps summary page
 generate_clip_maps_page | -- | maps.html.clip.ClipMapsPageGenerator | arguments | Generate the clip maps page
+generate_maps_selection_page | -- | maps.html.selection.MapsSelectionPageGenerator | arguments | Generate the maps selection page
 
 # HTML
 generate_all_pages | -- | html.all.AllPagesGenerator | arguments | Generate all the pages

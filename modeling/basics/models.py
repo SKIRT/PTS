@@ -934,6 +934,26 @@ class ExponentialDiskModel3D(Model3D):
 
     # -----------------------------------------------------------------
 
+    def surface_density(self, x, y):
+
+        """
+        This function ...
+        :param x:
+        :param y:
+        :return:
+        """
+
+        radius = np.sqrt(x ** 2 + y ** 2)
+
+        # Checks
+        if self.radial_truncation > 0.0 and radius > self.radial_truncation: return 0.0
+        if radius < self.inner_radius: return 0.0
+
+        # Return the surface density
+        return self.rho0 * np.exp(- radius / self.radial_scale)
+
+    # -----------------------------------------------------------------
+
     def density(self, x, y, z):
 
         """
@@ -944,18 +964,50 @@ class ExponentialDiskModel3D(Model3D):
         :return:
         """
 
-        radius = np.sqrt(x**2 + y**2)
-
         absz = abs(z)
 
-        if self.radial_truncation > 0.0 and radius > self.radial_truncation: return 0.0
+        # Check
+        if self.axial_truncation > 0.0 and absz > self.axial_truncation: return 0.0
 
-        elif self.axial_truncation > 0.0 and absz > self.axial_truncation: return 0.0
+        # Return the density
+        return self.surface_density(x, y) * np.exp(- absz / self.axial_scale)
 
-        elif radius < self.inner_radius: return 0.0
+    # -----------------------------------------------------------------
 
-        #
-        return self.rho0 * np.exp(- radius / self.radial_scale) * np.exp(- absz / self.axial_scale)
+    def surface_density_function(self, unit="pc", normalize=False):
+
+        """
+        This function ...
+        :param unit:
+        :param normalize:
+        :return:
+        """
+
+        # Parse the unit
+        unit = u(unit)
+        density_unit = unit ** -3
+
+        amplitude = self.rho0.to(density_unit).value
+        radialtrunc = self.radial_truncation.to(unit).value if self.radial_truncation > 0.0 else None
+        innerradius = self.inner_radius.to(unit).value if self.inner_radius > 0.0 else None
+
+        radialscale = self.radial_scale.to(unit).value
+
+        # Define the function
+        def exponentialdisk(x, y, z):
+
+            radius = np.sqrt(x ** 2 + y ** 2)
+
+            density = amplitude * np.exp(- radius / radialscale)
+
+            if radialtrunc is not None: density[radius > radialtrunc] = 0.0
+            if innerradius is not None: density[radius < innerradius] = 0.0
+
+            if normalize: density /= np.sum(density)
+            return density
+
+        # Return the function
+        return exponentialdisk
 
     # -----------------------------------------------------------------
 
@@ -2022,6 +2074,43 @@ class DeprojectionModel3D(Model3D):
 
     # -----------------------------------------------------------------
 
+    def surface_density(self, x, y):
+
+        """
+        This function ...
+        :param x:
+        :param y:
+        :return:
+        """
+
+        # Project and rotate the x and y coordinates
+        x = self.project(x)
+        x, y = self.rotate(x, y)
+
+        # Find the corresponding pixel in the image
+        i = numbers.round_down_to_int((x - self.map_xmin) / self.deltay)
+        j = numbers.round_down_to_int((y - self.map_ymin) / self.deltay)
+
+        # Not on the image
+        if i < 0 or i >= self.x_size or j < 0 or j >= self.y_size: return 0.0
+
+        # Return the density
+        return self.map[j, i]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def density_normalization(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return 1. / (2. * self.scale_height) / (self.deltax * self.deltay)
+
+    # -----------------------------------------------------------------
+
     def density(self, x, y, z):
 
         """
@@ -2032,22 +2121,9 @@ class DeprojectionModel3D(Model3D):
         :return:
         """
 
-        # Project and rotate the x and y coordinates
-        x = self.project(x)
-        x, y = self.rotate(x, y)
-
-        # Find the corresponding pixel in the image
-        #i = int(floor(x-_xmin) / _deltay)
-        #j = int(floor(y-_ymin) / _deltay)
-        i = numbers.round_down_to_int((x - self.map_xmin) / self.deltay)
-        j = numbers.round_down_to_int((y - self.map_ymin) / self.deltay)
-
-        # Not on the image
-        if i < 0 or i >= self.x_size or j < 0 or j >= self.y_size: return 0.0
-
         # Return the density
         z = abs(z)
-        return self.map[j,i] * np.exp(- z / self.scale_height) / (2. * self.scale_height) / (self.deltax * self.deltay)
+        return self.surface_density(x, y) * np.exp(- z / self.scale_height) * self.density_normalization
 
     # -----------------------------------------------------------------
 
@@ -2072,6 +2148,65 @@ class DeprojectionModel3D(Model3D):
         """
 
         return self.shape.ntotalpixels
+
+    # -----------------------------------------------------------------
+
+    def surface_density_function(self, unit="pc", normalize=False):
+
+        """
+        This function ...
+        :param unit:
+        :param normalize:
+        :return:
+        """
+
+        # Get properties as scalars (no units)
+        xmin_scalar = self.map_xmin.to(unit).value
+        ymin_scalar = self.map_ymin.to(unit).value
+        deltay_scalar = self.deltay.to(unit).value
+        deltax_scalar = self.deltax.to(unit).value
+
+        # Define the density function
+        def deprojection(x, y, z):
+
+            # Project and rotate coordinates
+            x = self.project_array(x)
+            x, y = self.rotate_arrays(x, y)
+
+            # Determine the coordinate mapping
+            x_mapping = ((x - xmin_scalar) / deltay_scalar - 0.5).astype(int)
+            y_mapping = ((y - ymin_scalar) / deltay_scalar - 0.5).astype(int)
+
+            xy = x_mapping + self.xsize * y_mapping
+
+            nx = xy.shape[0]
+            ny = xy.shape[1]
+
+            xy = xy[:, :, 0]
+
+            arrangement_x = range(self.xsize) * self.ysize
+            lists = [[value] * self.xsize for value in range(self.ysize)]
+
+            arrangement_y = list(itertools.chain.from_iterable(lists))
+
+            xy_flattened = xy.flatten()
+
+            x_mapping = [arrangement_x[k] if 0 <= k < self.npixels else -1 for k in xy_flattened]
+            y_mapping = [arrangement_y[k] if 0 <= k < self.npixels else -1 for k in xy_flattened]
+            mapping = [y_mapping, x_mapping]
+
+            cval = 0.0
+            data = ndimage.map_coordinates(self.map.data, mapping, mode='constant', cval=cval)
+
+            # Reshape into the
+            deprojected = data.reshape((ny, nx, 1))
+
+            # Normalize?
+            if normalize: deprojected /= np.sum(deprojected)
+            return deprojected
+
+        # Return the function
+        return deprojection
 
     # -----------------------------------------------------------------
 

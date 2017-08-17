@@ -434,20 +434,8 @@ class ModelSuite(object):
         :return:
         """
 
-        # Get the galaxy distance, the inclination and position angle
-        distance = galaxy_properties.distance
-        inclination = galaxy_properties.inclination
-        position_angle = disk_position_angle
-
-        # Get center coordinate of galaxy
-        galaxy_center = galaxy_properties.center
-
-        # Create deprojection
-        # wcs, galaxy_center, distance, pa, inclination, filepath, scale_height
-        deprojection = DeprojectionModel3D.from_wcs(wcs, galaxy_center, distance, position_angle, inclination, filename, scaleheight)
-
-        # Return the deprojection
-        return deprojection
+        # Create the deprojection
+        return create_deprojection_for_wcs(galaxy_properties, disk_position_angle, wcs, filename, scaleheight)
 
     # -----------------------------------------------------------------
 
@@ -463,11 +451,8 @@ class ModelSuite(object):
         :return:
         """
 
-        # Get the WCS
-        reference_wcs = map.wcs
-
         # Create the deprojection
-        return self.create_deprojection_for_wcs(galaxy_properties, disk_position_angle, reference_wcs, filename, scaleheight)
+        return create_deprojection_for_map(galaxy_properties, disk_position_angle, map, filename, scaleheight)
 
     # -----------------------------------------------------------------
 
@@ -859,5 +844,54 @@ class ModelSuite(object):
 #     """
 #
 #     return fs.files_in_path(get_input_path(modeling_path, model_name)) + get_stellar_map_paths(modeling_path, model_name) + get_dust_map_paths(modeling_path, model_name)
+
+# -----------------------------------------------------------------
+
+def create_deprojection_for_wcs(galaxy_properties, disk_position_angle, wcs, filename, scaleheight):
+
+    """
+    This function ...
+    :param galaxy_properties:
+    :param disk_position_angle:
+    :param wcs:
+    :param filename:
+    :param scaleheight:
+    :return:
+    """
+
+    # Get the galaxy distance, the inclination and position angle
+    distance = galaxy_properties.distance
+    inclination = galaxy_properties.inclination
+    position_angle = disk_position_angle
+
+    # Get center coordinate of galaxy
+    galaxy_center = galaxy_properties.center
+
+    # Create deprojection
+    # wcs, galaxy_center, distance, pa, inclination, filepath, scale_height
+    deprojection = DeprojectionModel3D.from_wcs(wcs, galaxy_center, distance, position_angle, inclination, filename, scaleheight)
+
+    # Return the deprojection
+    return deprojection
+
+# -----------------------------------------------------------------
+
+def create_deprojection_for_map(galaxy_properties, disk_position_angle, map, filename, scaleheight):
+
+    """
+    This function ...
+    :param galaxy_properties:
+    :param disk_position_angle:
+    :param map:
+    :param filename:
+    :param scaleheight:
+    :return:
+    """
+
+    # Get the WCS
+    reference_wcs = map.wcs
+
+    # Create the deprojection
+    return create_deprojection_for_wcs(galaxy_properties, disk_position_angle, reference_wcs, filename, scaleheight)
 
 # -----------------------------------------------------------------

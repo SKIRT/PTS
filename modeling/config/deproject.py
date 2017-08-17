@@ -5,22 +5,20 @@
 # **       © Astronomical Observatory, Ghent University          **
 # *****************************************************************
 
-## \package pts.modeling.misc.deproject
+# Import the relevant PTS classes and modules
+from pts.core.basics.configuration import ConfigurationDefinition
 
 # -----------------------------------------------------------------
 
-# Ensure Python 3 compatibility
-from __future__ import absolute_import, division, print_function
-
-# Import standard modules
-import math
-from skimage import transform as tf
+methods = ["skirt", "pts"]
+default_method = "pts"
 
 # -----------------------------------------------------------------
 
-#tform = tf.SimilarityTransform(scale=1, rotation=math.pi / 4,
-#                               translation=(text.shape[0] / 2, -100))
-#rotated = tf.warp(text, tform)
+# Create the configuration
+definition = ConfigurationDefinition(log_path="log", config_path="config")
+
+# Method
+definition.add_optional("method", "string", "method for deprojection", default_method, choices=methods)
 
 # -----------------------------------------------------------------
-

@@ -25,6 +25,7 @@ from ....core.tools.utils import lazyproperty
 from ....magic.core.rgb import RGBImage
 from ....core.tools import filesystem as fs
 from ....magic.core.mask import Mask
+from ....core.tools import sequences
 
 # -----------------------------------------------------------------
 
@@ -106,6 +107,18 @@ class ClipMapsPageGenerator(MapsComponent):
             fltr_path = fs.join(self.clipped_plots_path, str(fltr))
             self.filter_plot_paths[fltr] = fltr_path
             if not fs.is_directory(fltr_path): fs.create_directory(fltr_path)
+
+        # Set random
+        if self.config.random: self.config.random_old = self.config.random_young = self.config.random_ionizing = self.config.random_dust = self.config.random
+
+        # Set all
+        if self.config.all: self.config.all_old = self.config.all_young = self.config.all_ionizing = self.config.all_dust = True
+
+        # Make selections
+        self.old_selection = sequences.make_selection(self.old_map_names, self.config.old, self.config.not_old, nrandom=self.config.random_old, all=self.config.all_old)
+        self.young_selection = sequences.make_selection(self.young_map_names, self.config.young, self.config.not_young, nrandom=self.config.random_young, all=self.config.all_young)
+        self.ionizing_selection = sequences.make_selection(self.ionizing_map_names, self.config.ionizing, self.config.not_ionizing, nrandom=self.config.random_ionizing, all=self.config.all_ionizing)
+        self.dust_selection = sequences.make_selection(self.dust_map_names, self.config.dust, self.config.not_dust, nrandom=self.config.random_dust, all=self.config.all_dust)
 
     # -----------------------------------------------------------------
 

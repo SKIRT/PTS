@@ -202,7 +202,7 @@ def plot_galaxy_components(components, draw=True, show=True, shape=128, unit="pc
     :return:
     """
 
-    # Detemrine the limits
+    # Determine the limits
     limits = determine_model_limits(components, unit, symmetric=True)
 
     # Debugging

@@ -1017,3 +1017,54 @@ def all_except(sequence, ignore):
     return new
 
 # -----------------------------------------------------------------
+
+def make_selection(sequence, selected, not_selected, nrandom=None, all=False, none=False):
+
+    """
+    This function ...
+    :param sequence:
+    :param selected:
+    :param not_selected:
+    :param nrandom:
+    :param all:
+    :param none:
+    :return:
+    """
+
+    if selected is not None and none: raise ValueError("Selection is made but 'none' is enabled")
+    if all and none: raise ValueError("Cannot enable 'all' and 'none' simultaneously")
+
+    # Return empty list
+    if none: return []
+
+    # Initialize selection
+    selection = None
+
+    # Check
+    if selected is not None and nrandom is not None: raise ValueError("Cannot specifiy selection and choose random")
+
+    # Random selection
+    if nrandom is not None: selection = random_subset(sequence, nrandom, ignore=not_selected, avoid_duplication=True)
+
+    # Check
+    if selected is not None and not_selected is not None: raise ValueError("Cannot specify both selection and not_selection")
+
+    # Set selections
+    if selected is not None: selection = selected
+
+    # Set selections based on which not
+    if not_selected is not None and nrandom is None: selection = all_except(sequence, not_selected)
+
+    # Check
+    if selected is not None and all: raise ValueError("Cannot make selection and enable 'all'")
+
+    # Check
+    if all and not_selected is not None: raise ValueError("Cannot make not_selection and enable 'all'")
+
+    # All
+    if all: selection = sequence
+
+    # Return the selection
+    return selection
+
+# -----------------------------------------------------------------

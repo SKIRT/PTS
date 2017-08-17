@@ -24,6 +24,7 @@ from ...core.basics.range import RealRange
 from ...core.tools.stringify import tostr
 from ...magic.core.mask import intersection
 from ...core.tools import sequences
+from ..misc.deprojector import Deprojector
 
 # -----------------------------------------------------------------
 
@@ -148,56 +149,14 @@ class ComponentMapsMaker(MapsComponent):
         # Set random
         if self.config.random: self.config.random_old = self.config.random_young = self.config.random_ionizing = self.config.random_dust = self.config.random
 
-        # Check
-        if self.config.old is not None and self.config.random_old is not None: raise ValueError("Cannot specifiy 'old' and choose 'random_old'")
-        if self.config.young is not None and self.config.random_young is not None: raise ValueError()
-        if self.config.ionizing is not None and self.config.random_ionizing is not None: raise ValueError()
-        if self.config.dust is not None and self.config.random_dust is not None: raise ValueError()
-
-        # Random selection
-        if self.config.random_old is not None: self.old_selection = sequences.random_subset(self.old_map_names, self.config.random_old, ignore=self.config.not_old, avoid_duplication=True)
-        if self.config.random_young is not None: self.young_selection = sequences.random_subset(self.young_map_names, self.config.random_young, ignore=self.config.not_young, avoid_duplication=True)
-        if self.config.random_ionizing is not None: self.ionizing_selection = sequences.random_subset(self.ionizing_map_names, self.config.random_ionizing, ignore=self.config.not_ionizing)
-        if self.config.random_dust is not None: self.dust_selection = sequences.random_subset(self.dust_map_names, self.config.random_dust, ignore=self.config.not_dust)
-
-        # Check
-        if self.config.old is not None and self.config.not_old is not None: raise ValueError("Cannot specify both 'old' and 'not_old'")
-        if self.config.young is not None and self.config.not_young is not None: raise ValueError("Cannot specify both 'young' and 'not_young'")
-        if self.config.ionizing is not None and self.config.not_ionizing is not None: raise ValueError("Cannot specify both 'ionizing' and 'not_ionizing'")
-        if self.config.dust is not None and self.config.not_dust is not None: raise ValueError("Cannot specifiy both 'dust' and 'not_dust'")
-
-        # Set selections
-        if self.config.old is not None: self.old_selection = self.config.old
-        if self.config.young is not None: self.young_selection = self.config.young
-        if self.config.ionizing is not None: self.ionizing_selection = self.config.ionizing
-        if self.config.dust is not None: self.dust_selection = self.config.dust
-
-        # Set selections based on which not
-        if self.config.not_old is not None and self.config.random_old is None: self.old_selection = sequences.all_except(self.old_map_names, self.config.not_old)
-        if self.config.not_young is not None and self.config.random_young is None: self.young_selection = sequences.all_except(self.young_map_names, self.config.not_young)
-        if self.config.not_ionizing is not None and self.config.random_ionizing is None: self.ionizing_selection = sequences.all_except(self.ionizing_map_names, self.config.not_ionizing)
-        if self.config.not_dust is not None and self.config.random_dust is None: self.dust_selection = sequences.all_except(self.dust_map_names, self.config.not_dust)
-
-        # All maps?
+        # Set all
         if self.config.all: self.config.all_old = self.config.all_young = self.config.all_ionizing = self.config.all_dust = True
 
-        # Check
-        if self.config.old is not None and self.config.all_old: raise ValueError("")
-        if self.config.young is not None and self.config.all_young: raise ValueError("")
-        if self.config.ionizing is not None and self.config.all_ionizing: raise ValueError("")
-        if self.config.dust is not None and self.config.all_dust: raise ValueError("")
-
-        # Check
-        if self.config.all_old and self.config.not_old is not None: raise ValueError("Cannot specify 'not_old' with 'all_old' enabled")
-        if self.config.all_young and self.config.not_young is not None: raise ValueError("Cannot specify 'not_young' with 'all_young' enabled")
-        if self.config.all_ionizing and self.config.not_ionizing is not None: raise ValueError("Cannot specify 'not_ionizing' with 'all_ionizing' enabled")
-        if self.config.all_dust and self.config.not_dust is not None: raise ValueError("Cannot specify 'not_dust' with 'all_dust' enabled")
-
-        # All
-        if self.config.all_old: self.old_selection = self.old_map_names
-        if self.config.all_young: self.young_selection = self.young_map_names
-        if self.config.all_ionizing: self.ionizing_selection = self.ionizing_map_names
-        if self.config.all_dust: self.dust_selection = self.dust_map_names
+        # Make selections
+        self.old_selection = sequences.make_selection(self.old_map_names, self.config.old, self.config.not_old, nrandom=self.config.random_old, all=self.config.all_old)
+        self.young_selection = sequences.make_selection(self.young_map_names, self.config.young, self.config.not_young, nrandom=self.config.random_young, all=self.config.all_young)
+        self.ionizing_selection = sequences.make_selection(self.ionizing_map_names, self.config.ionizing, self.config.not_ionizing, nrandom=self.config.random_ionizing, all=self.config.all_ionizing)
+        self.dust_selection = sequences.make_selection(self.dust_map_names, self.config.dust, self.config.not_dust, nrandom=self.config.random_dust, all=self.config.all_dust)
 
         # Levels
         if self.config.levels is not None: self.levels = self.config.levels
@@ -721,6 +680,9 @@ class ComponentMapsMaker(MapsComponent):
         # 1. Truncate
         self.truncate_maps()
 
+        # 2. Crop
+        self.crop_maps()
+
         # 2. Clip
         self.clip_maps()
 
@@ -880,6 +842,114 @@ class ComponentMapsMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    def crop_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Cropping the maps ...")
+
+        # Old
+        self.crop_old_maps()
+
+        # Young
+        self.crop_young_maps()
+
+        # Ionizing
+        self.crop_ionizing_maps()
+
+        # Dust
+        self.crop_dust_maps()
+
+    # -----------------------------------------------------------------
+
+    def crop_old_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Cropping the old stellar maps ...")
+
+        # Loop over the maps
+        for name in self.old_maps:
+
+            # Debugging
+            log.debug("Cropping the '" + name + "' old stellar map ...")
+
+            # Crop the map
+            self.old_maps[name].crop_to(self.truncation_box, factor=self.config.cropping_factor)
+
+    # -----------------------------------------------------------------
+
+    def crop_young_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Cropping the young stellar maps ...")
+
+        # Loop over the maps
+        for name in self.young_maps:
+
+            # Debugging
+            log.debug("Cropping the '" + name + "' young stellar map ...")
+
+            # Crop the map
+            self.young_maps[name].crop_to(self.truncation_box, factor=self.config.cropping_factor)
+
+    # -----------------------------------------------------------------
+
+    def crop_ionizing_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Cropping the ionizing stellar maps ...")
+
+        # Loop over the maps
+        for name in self.ionizing_maps:
+
+            # Debugging
+            log.debug("Cropping the '" + name + "' ionizing stellar map ...")
+
+            # Crop the map
+            self.ionizing_maps[name].crop_to(self.truncation_box, factor=self.config.cropping_factor)
+
+    # -----------------------------------------------------------------
+
+    def crop_dust_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Cropping the dust maps ...")
+
+        # Loop over the maps
+        for name in self.dust_maps:
+
+            # Debugging
+            log.debug("Cropping the '" + name + "' dust map ...")
+
+            # Crop the map
+            self.dust_maps[name].crop_to(self.truncation_box, factor=self.config.cropping_factor)
+
+    # -----------------------------------------------------------------
+
     def clip_maps(self):
 
         """
@@ -904,34 +974,36 @@ class ComponentMapsMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def get_clip_mask(self, origins):
+    def get_clip_mask(self, origins, wcs=None):
 
         """
         This function ...
         :param origins:
+        :param None:
         :return:
         """
 
         # Check if cached
-        if tuple(origins) in self.clip_masks: return self.clip_masks[tuple(origins)]
+        if wcs is None and tuple(origins) in self.clip_masks: return self.clip_masks[tuple(origins)]
         else:
 
             # Make the mask
-            mask = self.make_clip_mask(origins)
+            mask = self.make_clip_mask(origins, wcs=wcs)
 
             # Cache the mask
-            self.clip_masks[tuple(origins)] = mask
+            if wcs is None: self.clip_masks[tuple(origins)] = mask
 
             # Return the mask
             return mask
 
     # -----------------------------------------------------------------
 
-    def make_clip_mask(self, origins):
+    def make_clip_mask(self, origins, wcs=None):
 
         """
         This function ...
         :param origins:
+        :param wcs:
         :return:
         """
 
@@ -948,9 +1020,18 @@ class ComponentMapsMaker(MapsComponent):
         frames.convolve_to_highest_fwhm()
         errors.convolve_to_highest_fwhm()
 
-        # Rebin the frames to the same pixelgrid
-        frames.rebin_to_highest_pixelscale()
-        errors.rebin_to_highest_pixelscale()
+        # WCS is specified: rebin to this WCS
+        if wcs is not None:
+
+            frames.rebin_to_wcs(wcs)
+            errors.rebin_to_wcs(wcs)
+
+        # Otherwise, rebin to the highest pixelscale WCS
+        else:
+
+            # Rebin the frames to the same pixelgrid
+            frames.rebin_to_highest_pixelscale()
+            errors.rebin_to_highest_pixelscale()
 
         # Convert the frames to the same unit
         frames.convert_to_same_unit(unit="Jy")
@@ -1023,7 +1104,7 @@ class ComponentMapsMaker(MapsComponent):
             origins = self.old_map_origins[name]
 
             # Create the clip mask
-            mask = self.get_clip_mask(origins)
+            mask = self.get_clip_mask(origins, wcs=self.old_maps[name].wcs)
 
             # Set the mask
             self.old_masks[name] = mask
@@ -1053,7 +1134,7 @@ class ComponentMapsMaker(MapsComponent):
             origins = self.young_map_origins[name]
 
             # Create the clip mask
-            mask = self.get_clip_mask(origins)
+            mask = self.get_clip_mask(origins, wcs=self.young_maps[name].wcs)
 
             # Set the mask
             self.young_masks[name] = mask
@@ -1083,7 +1164,7 @@ class ComponentMapsMaker(MapsComponent):
             origins = self.ionizing_map_origins[name]
 
             # Create the clip mask
-            mask = self.get_clip_mask(origins)
+            mask = self.get_clip_mask(origins, wcs=self.ionizing_maps[name].wcs)
 
             # Set the mask
             self.ionizing_masks[name] = mask
@@ -1113,7 +1194,7 @@ class ComponentMapsMaker(MapsComponent):
             origins = self.dust_map_origins[name]
 
             # Create the clip mask
-            mask = self.get_clip_mask(origins)
+            mask = self.get_clip_mask(origins, wcs=self.dust_maps[name].wcs)
 
             # Set the mask
             self.dust_masks[name] = mask
@@ -1279,6 +1360,55 @@ class ComponentMapsMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def old_scaleheight(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        scale_height = self.disk2d_model.scalelength / self.config.scalelength_to_scaleheight
+        return scale_height
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_scaleheight(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.young_scaleheight_ratio * self.old_scaleheight
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def ionizing_scaleheight(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.ionizing_scaleheight_ratio * self.old_scaleheight
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_scaleheight(self):
+
+        """
+        This fucntion ...
+        :return:
+        """
+
+        return self.config.dust_scaleheight_ratio * self.old_scaleheight
+
+    # -----------------------------------------------------------------
+
     def deproject(self):
 
         """
@@ -1313,6 +1443,18 @@ class ComponentMapsMaker(MapsComponent):
         # Inform the user
         log.info("Deprojecting the old stellar maps ...")
 
+        # Create the deprojector
+        deprojector = Deprojector()
+
+        # Set settings
+        deprojector.config.method = "pts"
+
+        # Run the deprojector
+        deprojector.run(maps=self.old_maps, scaleheight=self.old_scaleheight, root_path=self.old_deprojection_path)
+
+        # Get the deprojected maps
+        self.old_deprojected = deprojector.deprojected
+
     # -----------------------------------------------------------------
 
     def deproject_young(self):
@@ -1324,6 +1466,18 @@ class ComponentMapsMaker(MapsComponent):
 
         # Inform the user
         log.info("Deprojecting the young stellar maps ...")
+
+        # Create the deprojector
+        deprojector = Deprojector()
+
+        # Set settings
+        deprojector.config.method = "pts"
+
+        # Run the deprojector
+        deprojector.run(maps=self.young_maps, scaleheight=self.young_scaleheight, root_path=self.young_deprojection_path)
+
+        # Get the deprojected maps
+        self.young_deprojected = deprojector.deprojected
 
     # -----------------------------------------------------------------
 
@@ -1337,6 +1491,18 @@ class ComponentMapsMaker(MapsComponent):
         # Inform the user
         log.info("Deprojecting the ionizing stellar maps ...")
 
+        # Create the deprojector
+        deprojector = Deprojector()
+
+        # Set settings
+        deprojector.config.method = "pts"
+
+        # Run the deprojector
+        deprojector.run(maps=self.ionizing_maps, scaleheight=self.ionizing_scaleheight, root_path=self.ionizing_deprojection_path)
+
+        # Get the deprojected maps
+        self.ionizing_deprojected = deprojector.deprojected
+
     # -----------------------------------------------------------------
 
     def deproject_dust(self):
@@ -1348,6 +1514,18 @@ class ComponentMapsMaker(MapsComponent):
 
         # Inform the user
         log.info("Deprojecting the dust maps ...")
+
+        # Create the deprojector
+        deprojector = Deprojector()
+
+        # Set settings
+        deprojector.config.method = "pts"
+
+        # Run the deprojector
+        deprojector.run(maps=self.dust_maps, scaleheight=self.dust_scaleheight, root_path=self.dust_deprojection_path)
+
+        # Get the deprojected maps
+        self.dust_deprojected = deprojector.deprojected
 
     # -----------------------------------------------------------------
 

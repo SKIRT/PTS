@@ -12,12 +12,7 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import astronomical modules
-from astropy.units import dimensionless_angles
-
 # Import the relevant PTS classes and modules
-from .component import DeprojectionComponent
-from ..basics.models import DeprojectionModel3D
 from ...core.tools import filesystem as fs
 from ...core.basics.log import log
 from ...core.simulation.execute import SkirtExec
@@ -26,6 +21,8 @@ from ...core.simulation.skifile import LabeledSkiFile
 from ..basics.instruments import FrameInstrument
 from ...magic.core.frame import Frame
 from ...core.units.parsing import parse_unit as u
+from ..component.galaxy import GalaxyModelingComponent
+from ..build.suite import create_deprojection_for_map
 
 # -----------------------------------------------------------------
 
@@ -33,7 +30,7 @@ template_ski_path = fs.join(introspection.pts_dat_dir("modeling"), "ski", "label
 
 # -----------------------------------------------------------------
 
-class Deprojector(DeprojectionComponent):
+class Deprojector(GalaxyModelingComponent):
     
     """
     This class...
@@ -53,16 +50,38 @@ class Deprojector(DeprojectionComponent):
         # The SKIRT execution environment
         self.skirt = SkirtExec()
 
-        # The deprojection models for the different components
+        ##
+
+        # Paths
+        self.root_path = None
+
+        # The maps
+        self.maps = dict()
+
+        # The map paths
+        self.map_paths = None
+
+        # The scale heights
+        self.scale_heights = dict()
+
+        # The deprojection models
         self.deprojections = dict()
+
+        # The deprojected maps
+        self.deprojected = dict()
+
+        ##
+
+        # The output paths
+        self.output_paths = dict()
+
+        ##
 
         # The ski files
         self.ski_files = dict()
 
         # The ski file paths
         self.ski_paths = dict()
-
-        self.output_paths = dict()
 
     # -----------------------------------------------------------------
 
@@ -77,17 +96,17 @@ class Deprojector(DeprojectionComponent):
         # 1. Call the setup function
         self.setup(**kwargs)
 
-        # Create the deprojection models
-        self.create_deprojection_models()
+        # 2. Create the deprojection models
+        self.create_models()
 
-        # Create the ski files
-        self.create_ski_files()
+        # 3. Create the ski files
+        self.create_ski()
 
-        # Write
+        # 4. Write
         self.write()
 
-        # Simulate
-        self.simulate()
+        # 5. Launch
+        self.deproject()
 
     # -----------------------------------------------------------------
 
@@ -102,148 +121,379 @@ class Deprojector(DeprojectionComponent):
         # Call the setup function of the base class
         super(Deprojector, self).setup(**kwargs)
 
-        self.ski_paths["old stars"] = fs.join(self.deprojection_path, "old_stars.ski")
-        self.ski_paths["young stars"] = fs.join(self.deprojection_path, "young_stars.ski")
-        self.ski_paths["ionizing stars"] = fs.join(self.deprojection_path, "ionizing_stars.ski")
-        self.ski_paths["dust"] = fs.join(self.deprojection_path, "dust.ski")
+        # Get paths
+        self.root_path = kwargs.pop("root_path", None)
 
-        self.output_paths["old stars"] = fs.create_directory_in(self.deprojection_path, "old stars")
-        self.output_paths["young stars"] = fs.create_directory_in(self.deprojection_path, "young stars")
-        self.output_paths["ionizing stars"] = fs.create_directory_in(self.deprojection_path, "ionizing stars")
-        self.output_paths["dust"] = fs.create_directory_in(self.deprojection_path, "dust")
+        # Checks
+        if "map" in kwargs and "maps" in kwargs: raise ValueError("Cannot specify 'map' and 'maps' simultaneously")
+
+        # Get the single map
+        if "map" in kwargs:
+            if "name" not in kwargs: raise ValueError("When passing only one map, a name must be specified")
+            name = kwargs.pop("name")
+            self.maps[name] = kwargs.pop("name")
+
+        # Get the maps
+        elif "maps" in kwargs: self.maps = kwargs.pop("maps")
+
+        # Checks
+        if "map_path" in kwargs and "map_paths" in kwargs: raise ValueError("Cannot specify 'map_path' and 'map_paths' simultaneously")
+
+        if "map_path" in kwargs or "map_paths" in kwargs:
+
+            # No maps -> load the maps from file
+            if self.no_maps:
+
+                if "map_path" in kwargs:
+                    if "name" not in kwargs: raise ValueError("When passing only one map path, a name must be specified")
+                    name = kwargs.pop("name")
+                    self.maps[name] = Frame.from_file(kwargs.pop("map_path"))
+
+                if "map_paths" in kwargs:
+                    paths = kwargs.pop("map_paths")
+                    for name in paths:
+                        self.maps[name] = Frame.from_file(paths[name])
+
+            else:
+
+                # Check
+                if "map_path" in kwargs and not self.has_single_map: raise ValueError("Specified a single map path but not single map")
+
+                # Set the map path
+                if "map_path" in kwargs: self.map_paths[self.single_map_name] = kwargs.pop("map_path")
+
+                # Set the map paths
+                if "map_paths" in kwargs: self.map_paths = kwargs.pop("map_paths")
+
+        # Check that each map has a path, otherwise set it via the map's path attribute
+        for name in self.maps:
+            if name not in self.map_paths or self.map_paths[name] is None:
+                path = self.maps[name].path
+                if path is None: raise ValueError("The path of the '" + name + "' map is undefined")
+                self.map_paths[name] = path
+
+        # Checks
+        if "scale_height" in kwargs and "scale_heights" in kwargs: raise ValueError("Cannot specify 'scale_height' and 'scale_heights' simultaneously")
+
+        # Set the same scale height for each map
+        if "scale_height" in kwargs:
+            scale_height = kwargs.pop("scale_height")
+            for name in self.maps: self.scale_heights[name] = scale_height
+
+        # Set the scale heights for each map
+        elif "scale_heights" in kwargs: self.scale_heights = kwargs.pop("scale_heights")
+
+        # Check that each map has a scale height
+        for name in self.maps:
+            if name not in self.scale_heights: raise ValueError("Scale height for '" + name + "' map is not defined")
+
+        # Make directories
+        if self.root_path is not None: self.create_directories()
 
     # -----------------------------------------------------------------
 
-    def create_deprojection_models(self):
+    def create_directories(self):
 
         """
         This function ...
         :return:
         """
 
-        # Generate default deprojection model
-        deprojection = self.create_default_deprojection_model()
+        # Debugging
+        log.debug("Creating the directories ...")
 
-        # Create the ...
-        self.create_old_deprojection_model(deprojection)
-        self.create_young_deprojection_model(deprojection)
-        self.create_ionizing_deprojection_model(deprojection)
-        self.create_dust_deprojection_model(deprojection)
+        # Loop over the maps
+        for name in self.map_names: self.output_paths[name] = fs.create_directory_in(self.root_path, name)
 
     # -----------------------------------------------------------------
 
-    def create_default_deprojection_model(self):
+    @property
+    def map_names(self):
 
         """
         This function ...
         :return:
         """
 
-        # Not specified
-        filename = None
-        hz = None
-
-        # Get the galaxy distance, the inclination and position angle
-        distance = self.galaxy_properties.distance
-        inclination = self.galaxy_properties.inclination
-        pa = self.earth_projection.position_angle
-
-        # Get the center pixel
-        pixel_center = self.galaxy_properties.center.to_pixel(self.reference_wcs)
-        xc = pixel_center.x
-        yc = pixel_center.y
-
-        # Get the pixelscale in physical units
-        pixelscale_angular = self.reference_wcs.average_pixelscale #* u("pix")  # in deg
-        pixelscale = (pixelscale_angular * distance).to("pc", equivalencies=dimensionless_angles())
-
-        # Get the number of x and y pixels
-        x_size = self.reference_wcs.xsize
-        y_size = self.reference_wcs.ysize
-
-        # Create the deprojection model
-        deprojection = DeprojectionModel3D(filename, pixelscale, pa, inclination, x_size, y_size, xc, yc, hz)
-
-        # Return the default deprojection model
-        return deprojection
+        return self.maps.keys()
 
     # -----------------------------------------------------------------
 
-    def create_old_deprojection_model(self, default):
+    @property
+    def nmaps(self):
 
         """
         This function ...
         :return:
         """
 
-        # Does not really matter
-        #scale_height = self.disk2d_model.scalelength / 8.26
-        scale_height = 100. * u("pc")
-
-        # Set the parameters of the evolved stellar component
-        deprojection = default.copy()
-        deprojection.filename = self.old_stellar_map_filename
-        deprojection.scale_height = scale_height
-        self.deprojections["old stars"] = deprojection
+        return len(self.maps)
 
     # -----------------------------------------------------------------
 
-    def create_young_deprojection_model(self, default):
+    @property
+    def no_maps(self):
 
         """
         This function ...
         :return:
         """
 
-        # Does not really matter
-        scale_height = 100. * u("pc")
-
-        # Set the parameters of the young stellar component
-        deprojection = default.copy()
-        deprojection.filename = self.young_stellar_map_filename
-        deprojection.scale_height = scale_height
-        self.deprojections["young stars"] = deprojection
+        return self.nmaps == 0
 
     # -----------------------------------------------------------------
 
-    def create_ionizing_deprojection_model(self, default):
+    @property
+    def has_single_map(self):
 
         """
         This function ...
         :return:
         """
 
-        # Does not really matter
-        scale_height = 100. * u("pc")
-
-        # Set the parameters of the ionizing stellar component
-        deprojection = default.copy()
-        deprojection.filename = self.ionizing_stellar_map_filename
-        deprojection.scale_height = scale_height
-        self.deprojections["ionizing stars"] = deprojection
+        return self.nmaps == 1
 
     # -----------------------------------------------------------------
 
-    def create_dust_deprojection_model(self, default):
+    @property
+    def single_map_name(self):
 
         """
         This function ...
-        :param default:
         :return:
         """
 
-        # Does not really matter
-        scale_height = 100. * u("pc")
-
-        # Set the parameters of the ionizing stellar component
-        deprojection = default.copy()
-        deprojection.filename = self.dust_map_filename
-        deprojection.scale_height = scale_height
-        self.deprojections["dust"] = deprojection
+        if not self.has_single_map: raise ValueError("Not a single map")
+        return self.map_names[0]
 
     # -----------------------------------------------------------------
 
-    def create_ski_files(self):
+    @property
+    def single_map(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.maps[self.single_map_name]
+
+    # -----------------------------------------------------------------
+
+    @property
+    def single_deprojected(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.deprojected[self.single_map_name]
+
+    # -----------------------------------------------------------------
+
+    def create_models(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Creating the deprojection models ...")
+
+        # Loop over the maps
+        for name in self.map_names:
+
+            # Debugging
+            log.debug("Creating the deprojection model for the '" + name + "' map ...")
+
+            # Get the file path
+            if self.map_paths is not None: filename = self.map_paths[name]
+            else: filename = None
+
+            # Get the scale height
+            scaleheight = self.scale_heights[name]
+
+            # Create deprojection model
+            deprojection = create_deprojection_for_map(self.galaxy_properties, self.disk_position_angle, self.maps[name], filename, scaleheight)
+
+            # Set the deprojection
+            self.deprojections[name] = deprojection
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_map_paths(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.map_paths is None
+
+    # -----------------------------------------------------------------
+
+    def write(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing ...")
+
+        # Write the maps
+        if not self.has_map_paths: self.write_maps()
+
+        # Write the deprojection
+        self.write_deprojections()
+
+    # -----------------------------------------------------------------
+
+    def write_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the maps ...")
+
+        # Loop over the maps
+        for name in self.maps:
+
+            # Determine the path
+            path = fs.join(self.output_paths[name], "map.fits")
+
+            # Save the map
+            self.maps[name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    def write_deprojections(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Writing the deprojection models ...")
+
+        # Loop over the maps
+        for name in self.deprojections:
+
+            # Determine the path
+            path = fs.join(self.output_paths[name], "deprojection.mod")
+
+            # Save the deprojection
+            self.deprojections[name].saveto(path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def deproject_with_pts(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.method == "pts"
+
+    # -----------------------------------------------------------------
+
+    @property
+    def deproject_with_skirt(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.config.method == "skirt"
+
+    # -----------------------------------------------------------------
+
+    def deproject(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Deprojecting the maps ...")
+
+        # Deproject within PTS
+        if self.deproject_with_pts: self.deproject_pts()
+
+        # Deproject with SKIRT
+        elif self.deproject_with_skirt: self.deproject_skirt()
+
+    # -----------------------------------------------------------------
+
+    def deproject_pts(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Deprojecting the maps with PTS ...")
+
+        unit = "pc"
+
+        # Create coordinate data
+        x, y, z, r, theta, phi = xyz(shape=shape, limits=limits, spherical=True)
+        #data = r * 0
+
+        # Loop over the components
+        for name in self.deprojections:
+
+            # Debugging
+            log.debug("Computing the deprojected surface density of the '" + name + "' map ...")
+
+            # Determine the limits
+            x_min_scalar = component.xmin.to(unit).value
+            x_max_scalar = component.xmax.to(unit).value
+            y_min_scalar = component.ymin.to(unit).value
+            y_max_scalar = component.ymax.to(unit).value
+            z_min_scalar = component.zmin.to(unit).value
+            z_max_scalar = component.zmax.to(unit).value
+
+            # Calculate the surface density
+            density = self.deprojections[name].surface_density_function(normalize=True)(x, y)
+
+            # Create deprojected map
+            deprojected = Frame(density, wcs=self.maps[name].wcs)
+
+            # Set
+            self.deprojected[name] = deprojected
+
+    # -----------------------------------------------------------------
+
+    def deproject_skirt(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Deprojecting by launching SKIRT simulations ...")
+
+        # Creat the ski files
+        self.create_ski()
+
+    # -----------------------------------------------------------------
+
+    def create_ski(self):
 
         """
         This function ...
@@ -254,7 +504,7 @@ class Deprojector(DeprojectionComponent):
         log.info("Creating ski files ...")
 
         # Create instrument
-        #self.instrument = FrameInstrument.from_projection(self.earth_projection)
+        # self.instrument = FrameInstrument.from_projection(self.earth_projection)
         self.instrument = FrameInstrument.from_projection(self.faceon_projection)
 
         # Load ski template
@@ -275,80 +525,40 @@ class Deprojector(DeprojectionComponent):
 
         # Old
 
-        old_ski = self.ski_template.copy()
-        old_ski.remove_stellar_components_except("Evolved stellar disk")
-        #old_ski.remove_dust_system()
-        old_ski.set_stellar_component_geometry("Evolved stellar disk", self.deprojections["old stars"])
-        self.ski_files["old stars"] = old_ski
-
-        young_ski = self.ski_template.copy()
-        young_ski.remove_stellar_components_except("Young stars")
-        young_ski.set_stellar_component_geometry("Young stars", self.deprojections["young stars"])
-        self.ski_files["young stars"] = young_ski
-
-
-        ionizing_ski = self.ski_template.copy()
-        ionizing_ski.remove_stellar_components_except("Ionizing stars")
-        ionizing_ski.set_stellar_component_geometry("Ionizing stars", self.deprojections["ionizing stars"])
-        self.ski_files["ionizing stars"] = ionizing_ski
-
-        dust_ski = self.ski_template.copy()
-        dust_ski.remove_stellar_components_except("Ionizing stars")
-        dust_ski.set_stellar_component_geometry("Ionizing stars", self.deprojections["dust"])
-        self.ski_files["dust"] = dust_ski
+        # old_ski = self.ski_template.copy()
+        # old_ski.remove_stellar_components_except("Evolved stellar disk")
+        # # old_ski.remove_dust_system()
+        # old_ski.set_stellar_component_geometry("Evolved stellar disk", self.deprojections["old stars"])
+        # self.ski_files["old stars"] = old_ski
+        #
+        # young_ski = self.ski_template.copy()
+        # young_ski.remove_stellar_components_except("Young stars")
+        # young_ski.set_stellar_component_geometry("Young stars", self.deprojections["young stars"])
+        # self.ski_files["young stars"] = young_ski
+        #
+        # ionizing_ski = self.ski_template.copy()
+        # ionizing_ski.remove_stellar_components_except("Ionizing stars")
+        # ionizing_ski.set_stellar_component_geometry("Ionizing stars", self.deprojections["ionizing stars"])
+        # self.ski_files["ionizing stars"] = ionizing_ski
+        #
+        # dust_ski = self.ski_template.copy()
+        # dust_ski.remove_stellar_components_except("Ionizing stars")
+        # dust_ski.set_stellar_component_geometry("Ionizing stars", self.deprojections["dust"])
+        # self.ski_files["dust"] = dust_ski
 
     # -----------------------------------------------------------------
 
-    def write(self):
+    def launch_skirt(self):
 
         """
         This function ...
         :return:
         """
 
-        self.write_deprojections()
-
-        self.write_ski_files()
-
-    # -----------------------------------------------------------------
-
-    def write_deprojections(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        pass
-
-    # -----------------------------------------------------------------
-
-    def write_ski_files(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Write the ...
+        # Loop over the ski files
         for name in self.ski_files:
 
-            self.ski_files[name].saveto(self.ski_paths[name])
-
-    # -----------------------------------------------------------------
-
-    def simulate(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Deprojecting by launching SKIRT simulations ...")
-
-        for name in self.ski_files:
-
+            #
             ski_path = self.ski_paths[name]
             out_path = self.output_paths[name]
 
@@ -368,5 +578,22 @@ class Deprojector(DeprojectionComponent):
 
             # Save frame
             frame.saveto(frame_path)
+
+            # Set the deprojected map
+            self.deprojected[name] = frame
+
+# -----------------------------------------------------------------
+
+# DEPROJECT WITH PYTHON:
+
+# Import standard modules
+#import math
+#from skimage import transform as tf
+
+# -----------------------------------------------------------------
+
+#tform = tf.SimilarityTransform(scale=1, rotation=math.pi / 4,
+#                               translation=(text.shape[0] / 2, -100))
+#rotated = tf.warp(text, tform)
 
 # -----------------------------------------------------------------

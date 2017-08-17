@@ -1796,6 +1796,18 @@ class NamedFrameList(NamedList):
 
     # -----------------------------------------------------------------
 
+    def convolve_to_filter(self, fltr, fwhm=None):
+
+        """
+        This function ...
+        :param fltr:
+        :return:
+        """
+
+        raise NotImplementedError("This function is not implemented yet")
+
+    # -----------------------------------------------------------------
+
     def rebin_to_name(self, name):
 
         """
@@ -1807,6 +1819,24 @@ class NamedFrameList(NamedList):
         # Get pixelscale and wcs
         pixelscale = self[name].average_pixelscale
         wcs = self[name].wcs
+
+        # Rebin and replace
+        new_frames = rebin_to_pixelscale(*self.values, names=self.names, pixelscale=pixelscale, wcs=wcs)
+        self.remove_all()
+        for frame in new_frames: self.append(frame)
+
+    # -----------------------------------------------------------------
+
+    def rebin_to_wcs(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        # Get pixelscale
+        pixelscale = wcs.average_pixelscale
 
         # Rebin and replace
         new_frames = rebin_to_pixelscale(*self.values, names=self.names, pixelscale=pixelscale, wcs=wcs)
