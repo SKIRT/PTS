@@ -33,6 +33,11 @@ from ..convolution.aniano import AnianoKernels
 from ..convolution.matching import MatchingKernels
 from ..convolution.kernels import get_fwhm
 from ...core.tools import sequences, types
+from ...core.launch.pts import execute_pts_remote
+from ...core.remote.remote import Remote
+from ...core.remote.host import Host
+from ...core.tools import introspection
+from ...core.tools import time
 
 # -----------------------------------------------------------------
 
@@ -1419,27 +1424,29 @@ class FrameList(FilterBasedList):
 
     # -----------------------------------------------------------------
 
-    def rebin_to_highest_pixelscale(self):
+    def rebin_to_highest_pixelscale(self, remote=None):
 
         """
         This function ...
+        :param remote:
         :return: 
         """
 
-        new_frames = rebin_to_highest_pixelscale(*self.values, names=self.filter_names)
+        new_frames = rebin_to_highest_pixelscale(*self.values, names=self.filter_names, remote=remote)
         self.remove_all()
         for frame in new_frames: self.append(frame)
 
     # -----------------------------------------------------------------
 
-    def convolve_and_rebin(self):
+    def convolve_and_rebin(self, remote=None):
 
         """
         This function ...
+        :param remote:
         :return:
         """
 
-        new_frames = convolve_and_rebin(*self.values, names=self.filter_names)
+        new_frames = convolve_and_rebin(*self.values, names=self.filter_names, remote=remote)
         self.remove_all()
         for frame in new_frames: self.append(frame)
 
@@ -1788,11 +1795,12 @@ class NamedFrameList(NamedList):
 
     # -----------------------------------------------------------------
 
-    def convolve_to_name(self, name):
+    def convolve_to_name(self, name, remote=None):
 
         """
         This function ...
         :param name:
+        :param remote:
         :return:
         """
 
@@ -1801,29 +1809,34 @@ class NamedFrameList(NamedList):
         psf_filter = self[name].psf_filter
 
         # Convolve and replace
-        new_frames = convolve_to_fwhm(*self.values, names=self.names, fwhm=fwhm, filter=psf_filter)
+        new_frames = convolve_to_fwhm(*self.values, names=self.names, fwhm=fwhm, filter=psf_filter, remote=remote)
         self.remove_all()
         for frame in new_frames: self.append(frame)
 
     # -----------------------------------------------------------------
 
-    def convolve_to_filter(self, fltr, fwhm=None):
+    def convolve_to_filter(self, fltr, fwhm=None, remote=None):
 
         """
         This function ...
         :param fltr:
+        :param remote:
         :return:
         """
 
-        raise NotImplementedError("This function is not implemented yet")
+        # Convolve and replace
+        new_frames = convolve_to_fwhm(*self.values, names=self.names, fwhm=fwhm, filter=fltr, remote=remote)
+        self.remove_all()
+        for frame in new_frames: self.append(frame)
 
     # -----------------------------------------------------------------
 
-    def rebin_to_name(self, name):
+    def rebin_to_name(self, name, remote=None):
 
         """
         This function ...
         :param name:
+        :param remote:
         :return:
         """
 
@@ -1832,17 +1845,18 @@ class NamedFrameList(NamedList):
         wcs = self[name].wcs
 
         # Rebin and replace
-        new_frames = rebin_to_pixelscale(*self.values, names=self.names, pixelscale=pixelscale, wcs=wcs)
+        new_frames = rebin_to_pixelscale(*self.values, names=self.names, pixelscale=pixelscale, wcs=wcs, remote=remote)
         self.remove_all()
         for frame in new_frames: self.append(frame)
 
     # -----------------------------------------------------------------
 
-    def rebin_to_wcs(self, wcs):
+    def rebin_to_wcs(self, wcs, remote=None):
 
         """
         This function ...
         :param wcs:
+        :param remote:
         :return:
         """
 
@@ -1850,7 +1864,7 @@ class NamedFrameList(NamedList):
         pixelscale = wcs.average_pixelscale
 
         # Rebin and replace
-        new_frames = rebin_to_pixelscale(*self.values, names=self.names, pixelscale=pixelscale, wcs=wcs)
+        new_frames = rebin_to_pixelscale(*self.values, names=self.names, pixelscale=pixelscale, wcs=wcs, remote=remote)
         self.remove_all()
         for frame in new_frames: self.append(frame)
 
@@ -1930,23 +1944,25 @@ class NamedFrameList(NamedList):
 
     # -----------------------------------------------------------------
 
-    def rebin_to_highest_pixelscale(self):
+    def rebin_to_highest_pixelscale(self, remote=None):
 
         """
         This function ...
+        :param remote:
         :return:
         """
 
-        new_frames = rebin_to_highest_pixelscale(*self.values, names=self.names)
+        new_frames = rebin_to_highest_pixelscale(*self.values, names=self.names, remote=remote)
         self.remove_all()
         for frame in new_frames: self.append(frame)
 
     # -----------------------------------------------------------------
 
-    def convolve_and_rebin(self):
+    def convolve_and_rebin(self, remote=None):
 
         """
         This function ...
+        :param remote:
         :return:
         """
 
@@ -2665,6 +2681,9 @@ def rebin_to_highest_pixelscale(*frames, **kwargs):
     # Get frame names
     names = kwargs.pop("names", None)
 
+    # Get the remote
+    remote = kwargs.pop("remote", None)
+
     # Inform the user
     log.info("Rebinning frames to the coordinate system with the highest pixelscale ...")
 
@@ -2689,7 +2708,7 @@ def rebin_to_highest_pixelscale(*frames, **kwargs):
     if names is not None: log.debug("The frame with the highest pixelscale is the '" + names[highest_pixelscale_index] + "' frame ...")
 
     # Rebin
-    return rebin_to_pixelscale(*frames, names=names, pixelscale=highest_pixelscale, wcs=highest_pixelscale_wcs)
+    return rebin_to_pixelscale(*frames, names=names, pixelscale=highest_pixelscale, wcs=highest_pixelscale_wcs, remote=remote)
 
 # -----------------------------------------------------------------
 
@@ -2704,6 +2723,9 @@ def rebin_to_median_pixelscale(*frames, **kwargs):
 
     # Get frame names
     names = kwargs.pop("names", None)
+
+    # Get the remote
+    remote = kwargs.pop("remote", None)
 
     # Inform the user
     log.info("Rebinning frames to the coordinate system with the median pixelscale ...")
@@ -2720,11 +2742,84 @@ def rebin_to_median_pixelscale(*frames, **kwargs):
     if names is not None: log.debug("The frame with the median pixelscale is the '" + names[median_index] + "' frame ...")
 
     # Rebin
-    return rebin_to_pixelscale(*frames, names=names, pixelscale=pixelscale, wcs=wcs)
+    return rebin_to_pixelscale(*frames, names=names, pixelscale=pixelscale, wcs=wcs, remote=remote)
 
 # -----------------------------------------------------------------
 
 def rebin_to_pixelscale(*frames, **kwargs):
+
+    """
+    This function ...
+    :param frames:
+    :param kwargs:
+    :return:
+    """
+
+    if "remote" in kwargs and kwargs["remote"] is not None: return rebin_to_pixelscale_remote(*frames, **kwargs)
+    else: return rebin_to_pixelscale_local(*frames, **kwargs)
+
+# -----------------------------------------------------------------
+
+def rebin_to_pixelscale_remote(*frames, **kwargs):
+
+    """
+    This function ...
+    :param frames:
+    :param kwargs:
+    :return:
+    """
+
+    # Get input
+    names = kwargs.pop("names")
+    #pixelscale = kwargs.pop("pixelscale")
+    wcs = kwargs.pop("wcs")
+
+    # Get remote
+    remote = kwargs.pop("remote")
+
+    # Make remote
+    if types.is_string_type(remote): remote = Remote(host_id=remote)
+    elif isinstance(remote, Host): remote = Remote(host_id=remote)
+    elif not isinstance(remote, Remote): raise ValueError("Remote must be string, Host or Remote object")
+
+    # Create temporary directory
+    dirname = time.unique_name("rebin")
+    temp_path = fs.create_directory_in(introspection.pts_temp_dir, dirname)
+
+    # Save the frames
+    for index, frame in enumerate(frames):
+        name = names[index]
+        filepath = fs.join(temp_path, name + ".fits")
+        frame.saveto(filepath)
+
+    # Upload temporary directory to the remote
+    remote_temp_path = remote.upload_directory_to(temp_path, remote.pts_temp_path, compress=True, show_output=log.is_debug())
+
+    # Run PTS remotely
+    output = execute_pts_remote("rebin", cwd=remote_temp_path, show_output=log.is_debug(), wcs=wcs, backup=False)
+
+    # Download the rebinned frames
+    temp_path = remote.download_file_to(remote_temp_path, introspection.pts_temp_dir)
+
+    # Initialize list for rebinned frames
+    new_frames = []
+
+    # Load the frames
+    for name in names:
+
+        # Determine the filepath
+        filepath = fs.join(temp_path, name + ".fits")
+
+        # Load the frame
+        frame = Frame.from_file(filepath)
+        new_frames.append(frame)
+
+    # Return the list of rebinned frames
+    return new_frames
+
+# -----------------------------------------------------------------
+
+def rebin_to_pixelscale_local(*frames, **kwargs):
 
     """
     THis function ...
@@ -2918,6 +3013,79 @@ def convolve_to_highest_fwhm(*frames, **kwargs):
 # -----------------------------------------------------------------
 
 def convolve_to_fwhm(*frames, **kwargs):
+
+    """
+    This function ...
+    :param frames:
+    :param kwargs:
+    :return:
+    """
+
+    if "remote" in kwargs and kwargs["remote"] is not None: return convolve_to_fwhm_remote(*frames, **kwargs)
+    else: return convolve_to_fwhm_local(*frames, **kwargs)
+
+# -----------------------------------------------------------------
+
+def convolve_to_fwhm_remote(*frames, **kwargs):
+
+    """
+    This function ...
+    :param frames:
+    :param kwargs:
+    :return:
+    """
+
+    # Get input
+    names = kwargs.pop("names")
+    fwhm = kwargs.pop("fwhm")
+    fltr = kwargs.pop("filter")
+
+    # Get remote
+    remote = kwargs.pop("remote")
+
+    # Make remote
+    if types.is_string_type(remote): remote = Remote(host_id=remote)
+    elif isinstance(remote, Host): remote = Remote(host_id=remote)
+    elif not isinstance(remote, Remote): raise ValueError("Remote must be string, Host or Remote object")
+
+    # Create temporary directory
+    dirname = time.unique_name("convolve")
+    temp_path = fs.create_directory_in(introspection.pts_temp_dir, dirname)
+
+    # Save the frames
+    for index, frame in enumerate(frames):
+        name = names[index]
+        filepath = fs.join(temp_path, name + ".fits")
+        frame.saveto(filepath)
+
+    # Upload temporary directory to the remote
+    remote_temp_path = remote.upload_directory_to(temp_path, remote.pts_temp_path, compress=True, show_output=log.is_debug())
+
+    # Run PTS remotely
+    output = execute_pts_remote("convolve", cwd=remote_temp_path, show_output=log.is_debug(), filter=fltr, fwhm=fwhm, backup=False)
+
+    # Download the rebinned frames
+    temp_path = remote.download_file_to(remote_temp_path, introspection.pts_temp_dir)
+
+    # Initialize list for rebinned frames
+    new_frames = []
+
+    # Load the frames
+    for name in names:
+
+        # Determine the filepath
+        filepath = fs.join(temp_path, name + ".fits")
+
+        # Load the frame
+        frame = Frame.from_file(filepath)
+        new_frames.append(frame)
+
+    # Return the list of rebinned frames
+    return new_frames
+
+# -----------------------------------------------------------------
+
+def convolve_to_fwhm_local(*frames, **kwargs):
 
     """
     This function ...

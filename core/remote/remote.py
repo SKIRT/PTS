@@ -3810,6 +3810,35 @@ class Remote(object):
 
     # -----------------------------------------------------------------
 
+    def download_directory_to(self, dirpath, destination, remove=False, new_name=None):
+
+        """
+        This function ...
+        :param dirpath:
+        :param destination:
+        :param remove:
+        :param new_name:
+        :return:
+        """
+
+        # Determine the local path
+        dirname = new_name if new_name is not None else fs.name(dirpath)
+        local_path = fs.join(destination, dirname)
+
+        # Download
+        self.download(dirpath, destination)
+
+        # Check whether present
+        if not fs.is_directory(local_path): raise RuntimeError("Something went wrong downloading the directory")
+
+        # Now we can safely remove the remote directory if requested
+        if remove: self.remove_directory(dirpath)
+
+        # Return the local path
+        return local_path
+
+    # -----------------------------------------------------------------
+
     #def upload_file_buffer(self):
 
         #"""
@@ -4079,6 +4108,33 @@ class Remote(object):
         if remove: fs.remove_file(filepath)
 
         # Return the remote file path
+        return remote_path
+
+    # -----------------------------------------------------------------
+
+    def upload_directory_to(self, dirpath, destination, remove=False, compress=False, show_output=False):
+
+        """
+        This function ...
+        :param dirpath:
+        :param destination:
+        :param remove:
+        :param compress:
+        :param show_output:
+        :return:
+        """
+
+        # Determine remote directory name
+        remote_path = fs.join(destination, fs.name(dirpath))
+        self.upload(dirpath, destination, compress=compress, show_output=show_output)
+
+        # Check whether present
+        if not self.is_directory(remote_path): raise RuntimeError("Something went wrong uploading the directory")
+
+        # Now we can safely remove the local directory if requested
+        if remove: fs.remove_directory(dirpath)
+
+        # Return the remote directory path
         return remote_path
 
     # -----------------------------------------------------------------
