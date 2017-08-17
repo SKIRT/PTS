@@ -1004,6 +1004,7 @@ def load_mapping(mappingfile, mapping, indent=""):
                 if value == "None": value = None
                 else:
 
+                    #print(line)
                     parsing_function = getattr(parsing, specification)
                     value = parsing_function(value)
 

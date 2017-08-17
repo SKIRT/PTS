@@ -96,7 +96,7 @@ def multiple_matches(matches, table_matches, tables):
 
     # Show error
     from pts.core.basics.log import setup_log
-    log = logging.setup_log()
+    log = setup_log()
     log.error("The command you provided is ambigious. Possible matches:")
     show_possible_matches(matches, table_matches, tables)
 

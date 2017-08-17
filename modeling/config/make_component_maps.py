@@ -43,7 +43,7 @@ dust_map_names = dust_map_paths.keys()
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
 # Remote
-definition.add_positional_optional("remote", "string", "remote host to use for creating the clip masks", choices=find_host_ids(schedulers=False))
+definition.add_optional("remote", "string", "remote host to use for creating the clip masks", choices=find_host_ids(schedulers=False))
 
 # Flags
 definition.add_flag("convolve", "perform convolution during the creation of the clip masks", True)
