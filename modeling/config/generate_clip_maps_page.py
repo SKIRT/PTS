@@ -9,6 +9,7 @@
 from pts.core.basics.configuration import ConfigurationDefinition
 from pts.core.tools import filesystem as fs
 from pts.modeling.maps.collection import MapsCollection
+from pts.core.remote.host import find_host_ids
 
 # -----------------------------------------------------------------
 
@@ -42,6 +43,12 @@ dust_map_names = dust_map_paths.keys()
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 definition.add_flag("show", "show the page", False)
+
+# Remote
+definition.add_positional_optional("remote", "string", "remote host to use for creating the clip masks", choices=find_host_ids(schedulers=False))
+
+# Flags
+definition.add_flag("convolve", "perform convolution during the creation of the clip masks", False)
 
 # Selections
 definition.add_optional("old", "string_list", "selected old stellar maps", choices=old_map_names)

@@ -2257,3 +2257,47 @@ def nopen_files():
     return len(open_files())
 
 # -----------------------------------------------------------------
+
+def backup_file(filepath, suffix="backup"):
+
+    """
+    This function ...
+    :param filepath:
+    :param suffix:
+    :return:
+    """
+
+    backup_filepath = appended_filepath(filepath, "_" + suffix)
+    if is_file(backup_filepath): raise IOError("Backup file path already exists (" + backup_filepath + ")")
+    copy_file(filepath, backup_filepath)
+
+# -----------------------------------------------------------------
+
+def backup_files(filepaths, suffix="backup"):
+
+    """
+    This function ...
+    :param filepaths:
+    :param suffix:
+    :return:
+    """
+
+    for filepath in filepaths: backup_file(filepath, suffix=suffix)
+
+# -----------------------------------------------------------------
+
+def backup_files_in_directory(path, suffix="backup", extension=None, contains=None):
+
+    """
+    This function ...
+    :param path:
+    :param suffix:
+    :param extension:
+    :param contains:
+    :return:
+    """
+
+    paths = files_in_path(path, extension=extension, contains=contains)
+    return backup_files(paths, suffix=suffix)
+
+# -----------------------------------------------------------------

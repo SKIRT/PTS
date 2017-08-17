@@ -867,11 +867,13 @@ class FrameList(FilterBasedList):
 
     # -----------------------------------------------------------------
 
-    def write_to_directory(self, path):
+    def write_to_directory(self, path, update_path=False, replace=True):
 
         """
         This function ...
         :param path:
+        :param update_path:
+        :param replace:
         :return:
         """
 
@@ -887,8 +889,11 @@ class FrameList(FilterBasedList):
             # Determine the filepath
             filepath = fs.join(path, str(fltr) + ".fits")
 
+            # Check
+            if fs.is_file(filepath) and not replace: raise IOError("File '" + filepath + "' already exists")
+
             # Save the frame
-            frame.saveto(filepath, update_path=False)
+            frame.saveto(filepath, update_path=update_path)
 
     # -----------------------------------------------------------------
 
@@ -1400,14 +1405,15 @@ class FrameList(FilterBasedList):
 
     # -----------------------------------------------------------------
 
-    def convolve_to_highest_fwhm(self):
+    def convolve_to_highest_fwhm(self, remote=None):
 
         """
         This function ...
+        :param remote:
         :return: 
         """
 
-        new_frames = convolve_to_highest_fwhm(*self.values, names=self.filter_names)
+        new_frames = convolve_to_highest_fwhm(*self.values, names=self.filter_names, remote=remote)
         self.remove_all()
         for frame in new_frames: self.append(frame)
 
@@ -1705,11 +1711,13 @@ class NamedFrameList(NamedList):
 
     # -----------------------------------------------------------------
 
-    def write_to_directory(self, path):
+    def write_to_directory(self, path, update_path=False, replace=True):
 
         """
         This function ...
         :param path:
+        :param update_path:
+        :param replace:
         :return:
         """
 
@@ -1725,8 +1733,11 @@ class NamedFrameList(NamedList):
             # Determine the path
             filepath = fs.join(path, name + ".fits")
 
+            # Check
+            if fs.is_file(filepath) and not replace: raise IOError("File '" + filepath + "' already exists")
+
             # Save the frame
-            frame.saveto(filepath, update_path=False)
+            frame.saveto(filepath, update_path=update_path)
 
     # -----------------------------------------------------------------
 
@@ -1905,14 +1916,15 @@ class NamedFrameList(NamedList):
 
     # -----------------------------------------------------------------
 
-    def convolve_to_highest_fwhm(self):
+    def convolve_to_highest_fwhm(self, remote=None):
 
         """
         This function ...
+        :param remote:
         :return:
         """
 
-        new_frames = convolve_to_highest_fwhm(*self.values, names=self.names)
+        new_frames = convolve_to_highest_fwhm(*self.values, names=self.names, remote=remote)
         self.remove_all()
         for frame in new_frames: self.append(frame)
 
@@ -2868,6 +2880,9 @@ def convolve_to_highest_fwhm(*frames, **kwargs):
     # Get frame names
     names = kwargs.pop("names", None)
 
+    # Get remote
+    remote = kwargs.pop("remote", None)
+
     # Inform the user
     log.info("Convolving frames to the resolution of the frame with the highest FWHM ...")
 
@@ -2898,7 +2913,7 @@ def convolve_to_highest_fwhm(*frames, **kwargs):
     if names is not None: log.debug("The frame with the highest FWHM is the '" + names[highest_fwhm_index] + "' frame ...")
 
     # Convolve
-    return convolve_to_fwhm(*frames, names=names, fwhm=highest_fwhm, filter=highest_fwhm_filter)
+    return convolve_to_fwhm(*frames, names=names, fwhm=highest_fwhm, filter=highest_fwhm_filter, remote=remote)
 
 # -----------------------------------------------------------------
 

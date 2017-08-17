@@ -1017,8 +1017,10 @@ class ComponentMapsMaker(MapsComponent):
         errors = self.dataset.get_errormaplist_for_filters(origins)
 
         # Convolve
-        frames.convolve_to_highest_fwhm()
-        errors.convolve_to_highest_fwhm()
+        if self.config.convolve:
+
+            frames.convolve_to_highest_fwhm(remote=self.config.remote)
+            errors.convolve_to_highest_fwhm(remote=self.config.remote)
 
         # WCS is specified: rebin to this WCS
         if wcs is not None:

@@ -1292,6 +1292,8 @@ class GalaxyModeler(ModelerBase):
 
         # Create the configuration
         config = dict()
+        config["remote"] = self.moderator.host_id_for_single("other")
+        #config["attached"] = self.config.attached
 
         # Create the map maker
         maker = ComponentMapsMaker(config)
