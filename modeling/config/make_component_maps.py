@@ -42,6 +42,9 @@ dust_map_names = dust_map_paths.keys()
 # Create the configuration
 definition = ConfigurationDefinition(log_path="log", config_path="config")
 
+# Steps
+definition.add_flag("steps", "save the results of intermediate steps", True)
+
 # Remote
 definition.add_optional("remote", "string", "remote host to use for creating the clip masks", choices=find_host_ids(schedulers=False))
 

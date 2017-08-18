@@ -139,6 +139,7 @@ class Deprojector(GalaxyModelingComponent):
         # Checks
         if "map_path" in kwargs and "map_paths" in kwargs: raise ValueError("Cannot specify 'map_path' and 'map_paths' simultaneously")
 
+        # Path(s) are given
         if "map_path" in kwargs or "map_paths" in kwargs:
 
             # No maps -> load the maps from file
@@ -166,11 +167,17 @@ class Deprojector(GalaxyModelingComponent):
                 if "map_paths" in kwargs: self.map_paths = kwargs.pop("map_paths")
 
         # Check that each map has a path, otherwise set it via the map's path attribute
-        for name in self.maps:
-            if name not in self.map_paths or self.map_paths[name] is None:
-                path = self.maps[name].path
-                if path is None: raise ValueError("The path of the '" + name + "' map is undefined")
-                self.map_paths[name] = path
+        if self.map_paths is not None:
+            for name in self.maps:
+                if name not in self.map_paths or self.map_paths[name] is None:
+                    path = self.maps[name].path
+                    if path is None: raise ValueError("The path of the '" + name + "' map is undefined")
+                    self.map_paths[name] = path
+
+        # Check if each map has a path, then set them
+        elif self.all_maps_have_path:
+            self.map_paths = dict()
+            for name in self.maps: self.map_paths[name] = self.maps[name].path
 
         # Checks
         if "scale_height" in kwargs and "scale_heights" in kwargs: raise ValueError("Cannot specify 'scale_height' and 'scale_heights' simultaneously")
@@ -189,6 +196,20 @@ class Deprojector(GalaxyModelingComponent):
 
         # Make directories
         if self.root_path is not None: self.create_directories()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def all_maps_have_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        for name in self.maps:
+            if self.maps[name].path is None: return False
+        return True
 
     # -----------------------------------------------------------------
 

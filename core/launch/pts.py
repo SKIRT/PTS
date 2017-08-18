@@ -226,6 +226,8 @@ def construct_pts_command_string(python_path, pts_main_path, args, kwargs):
     optional_parts = []
     for name in kwargs:
 
+        original_name = name
+
         # A flag option
         if types.is_boolean_type(kwargs[name]):
 
@@ -255,10 +257,10 @@ def construct_pts_command_string(python_path, pts_main_path, args, kwargs):
         if strings.is_character(name): option_name = "-" + name
         else: option_name = "--" + name
 
-        if types.is_boolean_type(kwargs[name]): optional_parts.append(option_name)
+        if types.is_boolean_type(kwargs[original_name]): optional_parts.append(option_name)
         else:
             #value = strings.add_quotes_if_spaces(str(kwargs[name]))
-            value = strings.add_quotes_if_spaces(tostr(kwargs[name]))
+            value = strings.add_quotes_if_spaces(tostr(kwargs[original_name]))
             optional_parts.append(option_name + " " + value)
 
     # Create string of optional arguments

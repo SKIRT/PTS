@@ -2589,10 +2589,13 @@ def convert_to_same_unit(*frames, **kwargs):
     log.info("Converting frames to the same unit ...")
 
     # Check if the unit is defined
-    if "unit" in kwargs:
+    if "unit" in kwargs and kwargs["unit"] is not None:
         unit = kwargs.pop("unit")
         #if types.is_string_type(unit): unit = u(unit, **kwargs) # not necessary: converted_to() of frame takes **kwargs
     else: unit = frames[0].unit
+
+    # Remove unit from kwargs (if None stays in), otherwise frame.converted_to call will crash
+    if "unit" in kwargs: kwargs.pop("unit")
 
     # Debugging
     log.debug("Converting frames to unit '" + str(unit) + "' ...")

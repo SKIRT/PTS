@@ -37,6 +37,19 @@ multiplication = "\u00D7".decode("utf8")
 
 # -----------------------------------------------------------------
 
+def noccurences(string, character):
+
+    """
+    This function ...
+    :param string:
+    :param character:
+    :return:
+    """
+
+    return string.count(character)
+
+# -----------------------------------------------------------------
+
 def superscript(index):
 
     """

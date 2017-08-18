@@ -33,6 +33,7 @@ from .collection import MapsCollection, StaticMapsCollection
 from .selection import ComponentMapsSelection, StaticComponentMapsSelection
 from pts.core.tools.utils import lazyproperty
 from ..core.environment import colours_name, ssfr_name, tir_name, attenuation_name, old_name, young_name, ionizing_name, dust_name
+from ...magic.core.mask import intersection
 
 # -----------------------------------------------------------------
 
@@ -2194,5 +2195,98 @@ class MapsComponent(GalaxyModelingComponent):
             # No different methods
             else:
                 if method not in self.methods: raise ValueError("Method for '" + method + "' map is not defined")
+
+    # -----------------------------------------------------------------
+
+    def make_clip_mask(self, origins, wcs=None, convolve=True, remote=None):
+
+        """
+        This function ...
+        :param origins:
+        :param wcs:
+        :param convolve:
+        :param remote:
+        :return:
+        """
+
+        # Debugging
+        log.debug("Making a clip mask for the filters: " + tostr(origins) + " ...")
+
+        # Get frame list
+        frames = self.dataset.get_framelist_for_filters(origins)
+
+        # Get error map list
+        errors = self.dataset.get_errormaplist_for_filters(origins)
+
+        # Convolve
+        if convolve:
+
+            frames.convolve_to_highest_fwhm(remote=remote)
+            errors.convolve_to_highest_fwhm(remote=remote)
+
+        # WCS is specified: rebin to this WCS
+        if wcs is not None:
+
+            frames.rebin_to_wcs(wcs)
+            errors.rebin_to_wcs(wcs)
+
+        # Otherwise, rebin to the highest pixelscale WCS
+        else:
+
+            # Rebin the frames to the same pixelgrid
+            frames.rebin_to_highest_pixelscale()
+            errors.rebin_to_highest_pixelscale()
+
+        # NOT REALLY NECESSARY!!
+        # Convert the frames to the same unit
+        # frames.convert_to_same_unit(unit="Jy")
+        # errors.convert_to_same_unit(unit="Jy")
+        # frames.convert_to_same_unit()
+        # errors.convert_to_same_unit()
+
+        # # Get the significance maps
+        # significances = NamedFrameList()
+        # for name in frames.names:
+        #     frame = frames[name]
+        #     errormap = errors[name]
+        #     significances.append(frame / errormap, name=name)
+        #
+        # # Create the masks
+        # masks = []
+        # combination_names = []
+        #
+        # for index in range(len(significances)):
+        #     sigma_level = sigma_levels[index]
+        #     significance = significances[index]
+        #     string = significances.names[index] + str(sigma_level)
+        #     combination_names.append(string)
+        #     mask = significance > sigma_level
+        #     masks.append(mask)
+
+        masks = []
+        for name in frames.names:
+            frame = frames[name]
+            errormap = errors[name]
+            level = self.levels[frame.filter]
+            mask = frame > level * errormap
+            masks.append(mask)
+
+        # Determine name for the mask
+        # mask_name = "_".join(combination_names)
+
+        # Create intersection mask
+        mask = intersection(*masks)
+
+        # Only keep central
+        mask = mask.central()
+
+        # Fill holes
+        mask.fill_holes()
+
+        # Invert
+        mask.invert()
+
+        # Return the mask
+        return mask
 
 # -----------------------------------------------------------------
