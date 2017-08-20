@@ -443,13 +443,57 @@ class PointSource(Source):
 
             if self.special: log.debug("Initial saturation source found")
 
-            # Calculate the elliptical contour
-            # contour = sources.find_contour(saturation_source.cutout, saturation_source.mask, config.apertures.sigma_level)
             x_min = saturation_source.x_min
             x_max = saturation_source.x_max
             y_min = saturation_source.y_min
             y_max = saturation_source.y_max
-            contour = sources.find_contour(Cutout(saturation_source.mask.astype(int), x_min, x_max, y_min, y_max), saturation_source.mask, config.apertures.sigma_level)  # determine the segment properties of the actual mask segment
+
+            # DEBLEND FIRST
+            if config.deblend:
+
+                import numpy as np
+                from photutils.segmentation import deblend_sources
+
+                # from astropy.convolution import Kernel2D
+                # Kernel2D._model = self.psf_model
+                # if self.psf_model is not None:
+                #     kernelsize = 2 * int(round(fitting.sigma(self.psf_model) * 3.))
+                #     print("kernelsize", kernelsize)
+                #     kernel = Kernel2D(x_size=kernelsize)
+                # else: kernel = None
+                kernel = None
+
+                segments = deblend_sources(saturation_source.cutout, saturation_source.mask.astype(int),
+                                           npixels=config.deblending.min_npixels, contrast=config.deblending.contrast,
+                                           mode=config.deblending.mode, nlevels=config.deblending.nlevels,
+                                           filter_kernel=kernel)
+
+                smallest_distance = None
+                smallest_distance_mask = None
+                for index in np.unique(segments)[1:]:
+
+                    where = segments == index
+                    fake_box = Cutout(where.astype(int), x_min, x_max, y_min, y_max)
+                    contour = sources.find_contour(fake_box, where, sigma_level=1)
+
+                    difference = contour.center - self.pixel_position(frame.wcs)
+                    distance = difference.norm
+
+                    if smallest_distance is None or distance < smallest_distance:
+                        smallest_distance = distance
+                        smallest_distance_mask = where
+
+                        # print(index, difference.norm)
+
+                # SET NEW MASK
+                saturation_source.mask = smallest_distance_mask
+
+            # AFTER DEBLENDING, CALCULATE CONTOUR
+            # Calculate the elliptical contour
+            # contour = sources.find_contour(saturation_source.cutout, saturation_source.mask, config.apertures.sigma_level)
+            contour = sources.find_contour(Cutout(saturation_source.mask.astype(int), x_min, x_max, y_min, y_max),
+                                           saturation_source.mask,
+                                           config.apertures.sigma_level)  # determine the segment properties of the actual mask segment
 
             # Check whether the source centroid matches the star position
             if config.check_centroid:

@@ -100,6 +100,14 @@ definition.add_optional("source_outer_factor", "real", "source outer factor", 1.
 
 definition.add_section("saturation", "saturated stars")
 
+# NEW
+definition.sections["saturation"].add_flag("deblend", "apply deblending", False)
+definition.sections["saturation"].add_section("deblending", "deblending options")
+definition.sections["saturation"].sections["deblending"].add_optional("min_npixels", "positive_integer", "minimum npixels for detection", 1)
+definition.sections["saturation"].sections["deblending"].add_optional("contrast", "real", "contrast value", 0.001)
+definition.sections["saturation"].sections["deblending"].add_optional("mode", "string", "mode", "exponential", ["exponential", "linear"])
+definition.sections["saturation"].sections["deblending"].add_optional("nlevels", "positive_integer", "number of deblending levels", 10)
+
 definition.sections["saturation"].add_flag("only_brightest", "only brightest")
 definition.sections["saturation"].add_optional("brightest_method", "string", "brightest method", "percentage", choices=["percentage", "sigma clipping"])
 definition.sections["saturation"].add_optional("brightest_level", "real", "for 'percentage': a percentage, for 'sigma clipping': a sigma level", 10.)
@@ -120,7 +128,7 @@ definition.sections["saturation"].sections["kernel"].add_optional("cutoff_level"
 definition.sections["saturation"].add_flag("expand", "expand", True)
 definition.sections["saturation"].add_optional("max_expansion_level", "positive_integer", "maximum expansion level", 7)
 
-definition.sections["saturation"].add_flag("allow_overlap", "Do not normally allow overlap between the center segment and the background mask of the source")
+definition.sections["saturation"].add_flag("allow_overlap", "do not normally allow overlap between the center segment and the background mask of the source")
 
 definition.sections["saturation"].add_optional("interpolation_method", "string", "interpolation method for removing the saturation", "local_mean")
 definition.sections["saturation"].add_flag("sigma_cip", "sigma clip", True)
