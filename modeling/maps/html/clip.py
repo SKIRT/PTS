@@ -13,6 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import standard modules
+import gc
 from collections import defaultdict
 
 # Import the relevant PTS classes and modules
@@ -61,6 +62,12 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         self.young_plot_path = None
         self.ionizing_plot_path = None
         self.dust_plot_path = None
+
+        # Directory paths
+        self.old_plot_map_paths = dict()
+        self.young_plot_map_paths = dict()
+        self.ionizing_plot_map_paths = dict()
+        self.dust_plot_map_paths = dict()
 
         # The plots
         self.old_plots = dict()
@@ -149,6 +156,109 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         self.young_selection = sequences.make_selection(self.young_map_names, self.config.young, self.config.not_young, nrandom=self.config.random_young, all=self.config.all_young, none=not self.config.add_young)
         self.ionizing_selection = sequences.make_selection(self.ionizing_map_names, self.config.ionizing, self.config.not_ionizing, nrandom=self.config.random_ionizing, all=self.config.all_ionizing, none=not self.config.add_ionizing)
         self.dust_selection = sequences.make_selection(self.dust_map_names, self.config.dust, self.config.not_dust, nrandom=self.config.random_dust, all=self.config.all_dust, none=not self.config.add_dust)
+
+        # Create plot directories for each image
+        self.create_plot_directories()
+
+    # -----------------------------------------------------------------
+
+    def create_plot_directories(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Debugging
+        log.debug("Creating plot directories for the selected maps ...")
+
+        # Old
+        self.create_plot_directories_old()
+
+        # Young
+        self.create_plot_directories_young()
+
+        # Ionizing
+        self.create_plot_directories_ionizing()
+
+        # Dust
+        self.create_plot_directories_dust()
+
+    # -----------------------------------------------------------------
+
+    def create_plot_directories_old(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the old stellar maps
+        for name in self.old_selection:
+
+            # Determine path for this map
+            dirpath = fs.join(self.old_plot_path, name)
+            if not fs.is_directory(dirpath): fs.create_directory(dirpath)
+
+            # Set
+            self.old_plot_map_paths[name] = dirpath
+
+    # -----------------------------------------------------------------
+
+    def create_plot_directories_young(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the young stlelar maps
+        for name in self.young_selection:
+
+            # Determine the path for this map
+            dirpath = fs.join(self.young_plot_path, name)
+            if not fs.is_directory(dirpath): fs.create_directory(dirpath)
+
+            # Set
+            self.young_plot_map_paths[name] = dirpath
+
+    # -----------------------------------------------------------------
+
+    def create_plot_directories_ionizing(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        # Loop over the ionizing stellar maps
+        for name in self.ionizing_selection:
+
+            # Determine the path for this map
+            dirpath = fs.join(self.ionizing_plot_path, name)
+            if not fs.is_directory(dirpath): fs.create_directory(dirpath)
+
+            # Set
+            self.ionizing_plot_map_paths[name] = dirpath
+
+    # -----------------------------------------------------------------
+
+    def create_plot_directories_dust(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Loop over the dust maps
+        for name in self.dust_selection:
+
+            # Determine the path for this map
+            dirpath = fs.join(self.dust_plot_path, name)
+            if not fs.is_directory(dirpath): fs.create_directory(dirpath)
+
+            # Set
+            self.dust_plot_map_paths[name] = dirpath
 
     # -----------------------------------------------------------------
 
@@ -372,6 +482,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             # Correct the map
             self.correct_map(self.old_maps[name])
 
+            # Cleanup
+            gc.collect()
+
     # -----------------------------------------------------------------
 
     def correct_young_maps(self):
@@ -392,6 +505,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
             # Correct the map
             self.correct_map(self.young_maps[name])
+
+            # Cleanup
+            gc.collect()
 
     # -----------------------------------------------------------------
 
@@ -414,6 +530,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             # Correct the map
             self.correct_map(self.ionizing_maps[name])
 
+            # Cleanup
+            gc.collect()
+
     # -----------------------------------------------------------------
 
     def correct_dust_maps(self):
@@ -434,6 +553,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
             # Correct the map
             self.correct_map(self.dust_maps[name])
+
+            # Cleanup
+            gc.collect()
 
     # -----------------------------------------------------------------
 
@@ -480,6 +602,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             # Crop the map
             self.crop_map(self.old_maps[name], self.config.cropping_factor)
 
+            # Cleanup
+            gc.collect()
+
     # -----------------------------------------------------------------
 
     def crop_young_maps(self):
@@ -500,6 +625,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
             # Crop the map
             self.crop_map(self.young_maps[name], self.config.cropping_factor)
+
+            # Cleanup
+            gc.collect()
 
     # -----------------------------------------------------------------
 
@@ -522,6 +650,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             # Crop the map
             self.crop_map(self.ionizing_maps[name], self.config.cropping_factor)
 
+            # Cleanup
+            gc.collect()
+
     # -----------------------------------------------------------------
 
     def crop_dust_maps(self):
@@ -542,6 +673,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
             # Crop the map
             self.crop_map(self.dust_maps[name], self.config.cropping_factor)
+
+            # Cleanup
+            gc.collect()
 
     # -----------------------------------------------------------------
 
@@ -594,6 +728,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             # Replace by a dictionary of maps
             self.old_maps[name] = maps
 
+            # Cleanup
+            gc.collect()
+
     # -----------------------------------------------------------------
 
     def clip_young_maps(self):
@@ -620,6 +757,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
             # Replace by a dictionary of maps
             self.young_maps[name] = maps
+
+            # Cleanup
+            gc.collect()
 
     # -----------------------------------------------------------------
 
@@ -648,6 +788,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             # Replace by a dictionary of maps
             self.ionizing_maps[name] = maps
 
+            # Cleanup
+            gc.collect()
+
     # -----------------------------------------------------------------
 
     def clip_dust_maps(self):
@@ -674,6 +817,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
             # Replace by a dictionary of maps
             self.dust_maps[name] = maps
+
+            # Cleanup
+            gc.collect()
 
     # -----------------------------------------------------------------
 
@@ -819,9 +965,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Loop over the maps
         for name in self.old_maps:
 
-            # Determine path for this map
-            dirpath = fs.join(self.old_plot_path, name)
-            if not fs.is_directory(dirpath): fs.create_directory(dirpath)
+            # Get path
+            dirpath = self.old_plot_map_paths[name]
 
             # Debugging
             log.debug("Making plots of the '" + name + "' old stellar map ...")
@@ -859,9 +1004,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Loop over the maps
         for name in self.young_maps:
 
-            # Determine the path for this map
-            dirpath = fs.join(self.young_plot_path, name)
-            if not fs.is_directory(dirpath): fs.create_directory(dirpath)
+            # Get path
+            dirpath = self.young_plot_map_paths[name]
 
             # Debugging
             log.debug("Making plots of the '" + name + "' young stellar map ...")
@@ -899,9 +1043,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Loop over the maps
         for name in self.ionizing_maps:
 
-            # Determine the path for this map
-            dirpath = fs.join(self.ionizing_plot_path, name)
-            if not fs.is_directory(dirpath): fs.create_directory(dirpath)
+            # Determine the path
+            dirpath = self.ionizing_plot_map_paths[name]
 
             # Debugging
             log.debug("Making plots of the '" + name + "' ionizing stellar map ...")
@@ -939,9 +1082,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Loop over the maps
         for name in self.dust_maps:
 
-            # Determine the path for this map
-            dirpath = fs.join(self.dust_plot_path, name)
-            if not fs.is_directory(dirpath): fs.create_directory(dirpath)
+            # Determine the path
+            dirpath = self.dust_plot_map_paths[name]
 
             # Debugging
             log.debug("Making plots of the '" + name + "' dust map ...")
