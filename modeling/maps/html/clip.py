@@ -723,7 +723,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             origins = self.old_map_origins[name]
 
             # Clip the map
-            maps = self.make_clipped_maps(self.old_maps[name], origins, self.config.sigma_levels, convolve=self.config.convolve, remote=self.config.remote)
+            maps = self.make_clipped_maps(self.old_maps[name], origins, self.config.sigma_levels, convolve=self.config.convolve, remote=self.config.remote, rebin_remote_threshold=self.config.rebin_remote_threshold)
 
             # Replace by a dictionary of maps
             self.old_maps[name] = maps

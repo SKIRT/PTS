@@ -18,6 +18,7 @@ import numpy as np
 import urllib
 from scipy import ndimage
 import tempfile
+from sys import getsizeof
 
 # Import astronomical modules
 from reproject import reproject_exact, reproject_interp
@@ -2289,6 +2290,31 @@ class Frame(NDDataArray):
 
         from .rgba import RGBAImage
         return RGBAImage.from_frame(self, interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha, colours=colours, absolute_alpha=absolute_alpha)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def file_size(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.path is None: raise ValueError("Path is not defined")
+        return fs.file_size(self.path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def data_size(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return (self._data.nbytes * u("byte")).to("GB")
 
     # -----------------------------------------------------------------
 

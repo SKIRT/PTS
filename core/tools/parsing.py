@@ -1206,6 +1206,21 @@ def mass_surface_density_quantity(argument):
 
 # -----------------------------------------------------------------
 
+def data_quantity(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from ..units.parsing import parse_quantity
+    qty = parse_quantity(argument)
+    if qty.unit.physical_type != "data quantity": raise ValueError("Not a data quantity")
+    return qty
+
+# -----------------------------------------------------------------
+
 def angle(argument):
 
     """

@@ -365,7 +365,7 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def make_clipped_maps(self, the_map, origins, levels_dict, convolve=True, remote=None):
+    def make_clipped_maps(self, the_map, origins, levels_dict, convolve=True, remote=None, rebin_remote_threshold=None):
 
         """
         This function ...
@@ -374,13 +374,12 @@ class MapsSelectionComponent(MapsComponent):
         :param levels_dict:
         :param convolve:
         :param remote:
+        :param rebin_remote_threshold:
         :return:
         """
 
-
-
         # Make the masks
-        masks = self.make_clip_masks(origins, levels_dict, wcs=the_map.wcs, convolve=convolve, remote=remote)
+        masks = self.make_clip_masks(origins, levels_dict, wcs=the_map.wcs, convolve=convolve, remote=remote, rebin_remote_threshold=rebin_remote_threshold)
 
         # The maps
         maps = dict()
@@ -523,7 +522,7 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def make_clip_masks(self, origins, levels_dict, wcs=None, convolve=True, remote=None):
+    def make_clip_masks(self, origins, levels_dict, wcs=None, convolve=True, remote=None, rebin_remote_threshold=None):
 
         """
         Thisn function ...
@@ -532,6 +531,7 @@ class MapsSelectionComponent(MapsComponent):
         :param wcs:
         :param convolve:
         :param remote:
+        :parma rebin_remote_threshold:
         :return:
         """
 
@@ -553,15 +553,15 @@ class MapsSelectionComponent(MapsComponent):
         # WCS is specified: rebin to this WCS
         if wcs is not None:
 
-            frames.rebin_to_wcs(wcs)
-            errors.rebin_to_wcs(wcs)
+            frames.rebin_to_wcs(wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold)
+            errors.rebin_to_wcs(wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold)
 
         # Otherwise, rebin to the highest pixelscale WCS
         else:
 
             # Rebin the frames to the same pixelgrid
-            frames.rebin_to_highest_pixelscale()
-            errors.rebin_to_highest_pixelscale()
+            frames.rebin_to_highest_pixelscale(remote=remote, rebin_remote_threshold=rebin_remote_threshold)
+            errors.rebin_to_highest_pixelscale(remote=remote, rebin_remote_threshold=rebin_remote_threshold)
 
         # Get the number of frames
         names = frames.names

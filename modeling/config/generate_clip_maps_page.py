@@ -51,13 +51,16 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 definition.add_flag("show", "show the page", False)
 
 # Remote
-definition.add_positional_optional("remote", "string", "remote host to use for creating the clip masks", choices=find_host_ids(schedulers=False))
+definition.add_optional("remote", "string", "remote host to use for creating the clip masks", choices=find_host_ids(schedulers=False))
 
 # Flags
 definition.add_flag("convolve", "perform convolution during the creation of the clip masks", False)
 
 # CROPPING
 definition.add_optional("cropping_factor", "positive_real", "multiply the cropping box with this factor", 1.3)
+
+# REBINNING
+definition.add_optional("rebin_remote_threshold", "data_quantity", "data size threshold for remote rebinning", "0.5 GB", convert_default=True)
 
 # Flags
 definition.add_flag("add_old", "add old stellar maps", True)
