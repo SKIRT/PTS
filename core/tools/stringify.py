@@ -294,10 +294,19 @@ def stringify_dict(value, **kwargs):
     quote_value = kwargs.pop("quote_value", True)
     quote_character = kwargs.pop("quote_character", "'")
 
+    replace_spaces_keys = kwargs.pop("replace_spaces_keys", None)
+    replace_spaces_values = kwargs.pop("replace_spaces_values", None)
+
+    replace_in_keys = kwargs.pop("replace_in_keys", None)
+    replace_in_values = kwargs.pop("replace_in_values", None)
+
     # Loop over the dictionary keys
     for key in value:
 
+        # Stringify the key
         ktype, kstring = stringify(key, **kwargs)
+        if replace_spaces_keys is not None: kstring = kstring.replace(" ", replace_spaces_keys)
+        if replace_in_keys is not None: kstring = strings.replace_from_dict(kstring, replace_in_keys)
 
         # Add key type
         keytypes.add(ktype)
@@ -310,6 +319,8 @@ def stringify_dict(value, **kwargs):
 
         # Stringify the value
         vtype, vstring = stringify(v, **value_kwargs)
+        if replace_spaces_values is not None: vstring = vstring.replace(" ", replace_spaces_values)
+        if replace_in_values is not None: vstring = strings.replace_from_dict(vstring, replace_in_values)
 
         # Add value type
         ptypes.add(vtype)

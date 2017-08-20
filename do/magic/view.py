@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition, parse_arguments
-from pts.magic.view.html import javascripts, css_scripts, JS9Preloader, JS9Window, make_usable, scales, colormaps, zooms
+from pts.magic.view.html import javascripts, css_scripts, JS9Preloader, JS9Window, scales, colormaps, zooms
 from pts.magic.view.html import body_settings, make_replace_infs_by_nans, make_load_regions, make_load_region
 from pts.core.tools import html
 from pts.core.tools import filesystem as fs
@@ -93,7 +93,7 @@ page += html.newline
 
 # -----------------------------------------------------------------
 
-image_name = make_usable(name)
+image_name = html.make_usable(name)
 display_name = "JS9" + image_name
 
 # -----------------------------------------------------------------

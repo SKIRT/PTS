@@ -897,3 +897,17 @@ def make_double_quoted(string):
     else: return string
 
 # -----------------------------------------------------------------
+
+def replace_from_dict(string, replace_dict):
+
+    """
+    This function ...
+    :param string:
+    :param replace_dict:
+    :return:
+    """
+
+    for pattern in replace_dict: string = string.replace(pattern, replace_dict[pattern])
+    return string
+
+# -----------------------------------------------------------------

@@ -54,6 +54,7 @@ from . import types
 from . import time
 from . import strings
 from ..basics.table import SmartTable
+from . import sequences
 
 # -----------------------------------------------------------------
 
@@ -1026,7 +1027,7 @@ def make_slider(id, min_value, max_value, stepsize, default_value=None, action_f
 
 # -----------------------------------------------------------------
 
-def make_basic_custom_slider(id, options, default=None, action_function=None):
+def make_basic_custom_slider(id, options, default=None, action_function=None, pass_value=True):
 
     """
     This function ...
@@ -1034,6 +1035,7 @@ def make_basic_custom_slider(id, options, default=None, action_function=None):
     :param options:
     :param default:
     :param action_function:
+    :param pass_value:
     :return:
     """
 
@@ -1045,7 +1047,9 @@ def make_basic_custom_slider(id, options, default=None, action_function=None):
     code = ""
     code += "  <input id='" + id + "' type='range' min='1' max='" + str(noptions) + "' steps='1' value='" + str(default_index) + "'"
     # if action_function is not None: code += " onchange='" + action_function + "(this.value)'"
-    if action_function is not None: code += " onchange='" + action_function + "(this.value)' oninput='" + action_function + "(this.value)'"
+    if action_function is not None:
+        if pass_value: code += " onchange='" + action_function + "(this.value)' oninput='" + action_function + "(this.value)'"
+        else: code += " onchange='" + action_function + "()' oninput='" + action_function + "()'"
     code += ">\n"
 
     # Return the code
@@ -1053,7 +1057,7 @@ def make_basic_custom_slider(id, options, default=None, action_function=None):
 
 # -----------------------------------------------------------------
 
-def make_custom_slider(id, options, default=None, action_function=None):
+def make_custom_slider(id, options, default=None, action_function=None, pass_value=True):
 
     """
     This function ...
@@ -1061,6 +1065,7 @@ def make_custom_slider(id, options, default=None, action_function=None):
     :param options:
     :param default:
     :param action_function:
+    :param pass_value:
     :return:
     """
 
@@ -1089,7 +1094,9 @@ def make_custom_slider(id, options, default=None, action_function=None):
 
     code += "  <input id='" + id + "' type='range' min='1' max='" + str(noptions) + "' steps='1' value='" + str(default_index) + "'"
     #if action_function is not None: code += " onchange='" + action_function + "(this.value)'"
-    if action_function is not None: code += " onchange='" + action_function + "(this.value)' oninput='" + action_function+ "(this.value)'"
+    if action_function is not None:
+        if pass_value: code += " onchange='" + action_function + "(this.value)' oninput='" + action_function+ "(this.value)'"
+        else: code += " onchange='" + action_function + "()' oninput='" + action_function+ "()'"
     code += ">\n"
 
     code += "</div>\n"
@@ -1203,9 +1210,297 @@ def make_image_slider(image_id, urls, labels, default, width=None, height=None, 
 
 # -----------------------------------------------------------------
 
+def make_usable(name):
+
+    """
+    This function ...
+    :return:
+    """
+
+    return name.replace(" ", "").replace(".", "")  # CANNOT CONTAIN SPACES AND DOTS!!
+
+# -----------------------------------------------------------------
+
+def make_if_statement(labels, values):
+
+    """
+    This function ...
+    :param labels:
+    :param values:
+    :return:
+    """
+
+    code = ""
+
+    code += "if ("
+
+    comparison_strings = []
+    for label, value in zip(labels, values):
+        string = label + " == " + str(value)
+        comparison_strings.append(string)
+
+    code += " && ".join(comparison_strings)
+
+    code += ")\n"
+
+    return code
+
+# -----------------------------------------------------------------
+
+def make_else_statement(labels, values):
+
+    """
+    This function ...
+    :param labels:
+    :param values:
+    :return:
+    """
+
+    code = ""
+
+    code += '} else if ('
+
+    comparison_strings = []
+    for label, value in zip(labels, values):
+        string = label + " == " + str(value)
+        comparison_strings.append(string)
+
+    code += " && ".join(comparison_strings)
+
+    code += ")\n"
+
+    return code
+
+# -----------------------------------------------------------------
+
+def make_multi_image_sliders(image_names, urls, regulator_names, labels, default, width=None, height=None, basic=True, img_class=None):
+
+    """
+    This function ...
+    :param image_names:
+    :param urls:
+    :param regulator_ids:
+    :param labels:
+    :param default:
+    :param width:
+    :param height:
+    :param basic:
+    :param img_class:
+    :return:
+    """
+
+    # Set labels and default values
+    if types.is_sequence(labels): labels = {regulator_name: labels for regulator_name in regulator_names}
+    if not types.is_dictionary(default): default = {regulator_name: default for regulator_name in regulator_names}
+
+    regulator_ids = [make_usable(regulator_name) for regulator_name in regulator_names]
+
+    # Transform labels and default dicts
+    labels = {make_usable(regulator_name): label for regulator_name, label in labels.items()}
+    default = {make_usable(regulator_name): value for regulator_name, value in default.items()}
+
+    code = ""
+
+    #function_names = dict()
+    function_name = "update_images"
+
+    span_ids = dict()
+    slider_ids = dict()
+
+    # Loop over the regulators
+    for regulator_id in regulator_ids:
+
+        # Set slider ID
+        slider_id = regulator_id + "Slider"
+
+        # Set span ID
+        span_id = regulator_id + "Span"
+
+        # Set function name
+        #function_name = "update" + regulator_id
+
+        # Get the default URL
+        # default_index = labels.index(default)
+        # default_url = urls[default_index]
+
+        # Add slider
+        if basic: code += center(make_basic_custom_slider(slider_id, labels[regulator_id], default=default[regulator_id], action_function=function_name, pass_value=False))
+        else: code += center(make_custom_slider(slider_id, labels[regulator_id], default=default[regulator_id], action_function=function_name, pass_value=False))
+
+        code += newline
+
+        code += '\n'
+        code += "<center>"
+        code += '<span align="center" id="' + span_id + '">' + str(default[regulator_id]) + "</span>"
+        code += "</center>"
+        code += "\n"
+
+        code += newline
+
+        span_ids[regulator_id] = span_id
+        slider_ids[regulator_id] = slider_id
+
+        # remember function names
+        #function_names[regulator_id] = function_name
+
+    # Create image IDs
+    #image_ids = [make_usable(image_name) for image_name in image_names]
+    image_ids = []
+    categories_and_names_for_image_id = dict()
+    for category in image_names:
+        for name in image_names[category]:
+            image_id = category + "___" + make_usable(name)
+            image_ids.append(image_id)
+            categories_and_names_for_image_id[image_id] = (category, name)
+
+    # Loop over the images
+    for image_id in image_ids:
+
+        # Code for image holder
+        code += "<center>"
+        code += '<img id="' + image_id + '"'
+        if img_class is not None: code += ' class="' + img_class + '"'
+        if width is not None: code += ' width="' + str(width) + 'px"'
+        if height is not None: code += ' height="' + str(height) + 'px"'
+        code += '>'
+        code += "</center>"
+
+    # Make script
+    script = ""
+
+    # # Set labels
+    labels_variable_names = dict()
+    for regulator_id in regulator_ids:
+    #
+         labels_variable_name = "labels_" + regulator_id
+    #     urls_variable_name = "urls_" + image_id
+    #
+         labels_variable_names[regulator_id] = labels_variable_name
+
+         string_labels = [str(label) for label in labels]
+         script += 'var ' + labels_variable_name + ' = [' + tostr(string_labels, add_quotes=True) + '];\n'
+    #     script += 'var ' + urls_variable_name + ' = [' + tostr(urls, add_quotes=True) + '];\n'
+
+    # script += 'var val = document.getElementById("' + slider_id + '").value;\n'
+    # script += 'var index = val - 1;\n'
+    # script += 'document.getElementById("' + span_id + '").innerHTML = ' + labels_variable_name + '[index];\n'
+    # # script += 'document.getElementById("' + image_id + '").src = ' + get_url_function_name + '(val);\n'
+    # script += 'document.getElementById("' + image_id + '").src = ' + urls_variable_name + '[index];\n'
+    # script += "\n"
+
+    # Initialize images
+    script += function_name + '()\n'
+    script += "\n"
+
+    # # Make function for each regulator
+    # for regulator_id in regulator_ids:
+    #
+    #     # Get function name
+    #     function_name = function_names[regulator_id]
+    #
+    #     script += 'function ' + function_name + '(newVal)\n'
+    #     script += '{\n'
+    #     #script += '    var newIndex = newVal - 1;\n'
+    #     #script += '    document.getElementById("' + span_id + '").innerHTML = ' + labels_variable_name + '[newIndex];\n'
+    #     #script += '    document.getElementById("' + image_id + '").src = ' + urls_variable_name + '[newIndex];\n'
+    #     script += '\n}'
+
+    # Make the image change functions
+    # Loop over the images, change them
+    dependencies = dict()
+    for image_id in image_ids:
+
+        image_change_function_name = "update_" + image_id
+
+        category, name = categories_and_names_for_image_id[image_id]
+
+        keys_list = []
+        for levels_dict in urls[category][name]:
+            keys = levels_dict.keys()
+            #keys_list.append(list(sorted(keys)))
+            keys_list.append(keys)
+
+        regulator_names_image = sequences.get_all_equal_value(keys_list)
+        regulator_ids_image = [make_usable(regulator_name) for regulator_name in regulator_names_image]
+        dependencies[image_id] = regulator_ids_image
+
+        regulator_ids_value_names = [regulator_id + "_value" for regulator_id in regulator_ids_image]
+
+        script += 'function ' + image_change_function_name + '(' + tostr(regulator_ids_value_names) + ')\n'
+        script += '{\n'
+
+        # Make if statements
+        first = True
+        for levels_dict in urls[category][name]:
+
+            levels_values = []
+            for rni in regulator_names_image:
+                sigma_level = levels_dict[rni]
+                levels_values.append(sigma_level)
+
+            if first: script += make_if_statement(regulator_ids_value_names, levels_values)
+            else: script += make_else_statement(regulator_ids_value_names, levels_values)
+
+            first = False
+
+            # Path or URL
+            path = urls[category][name][levels_dict]
+
+            script += '    {\n'
+
+            #script += '    document.getElementById("' + span_id + '").innerHTML = ' + labels_variable_name + '[newIndex];\n'
+            script += '        document.getElementById("' + image_id + '").src = "' + path + '";\n'
+
+        script += '    } else {\n'
+        script += '        window.alert("ERROR");\n'
+        script += '    }\n'
+
+        script += '}\n'
+        script += '\n'
+
+    # Make the function
+    script += 'function ' + function_name + '()\n'
+    script += '{\n'
+
+    # Get values for regulators
+    for regulator_id in regulator_ids:
+
+        labels_variable_name = labels_variable_names[regulator_id]
+        span_id = span_ids[regulator_id]
+        slider_id = slider_ids[regulator_id]
+
+        script += '    var val_' + regulator_id + ' = document.getElementById("' + slider_id + '").value;\n'
+        script += '    var index_' + regulator_id + ' = val - 1;\n'
+        script += '    document.getElementById("' + span_id + '").innerHTML = ' + labels_variable_name + '[index_' + regulator_id + '];\n'
+        script += '\n'
+
+    # Update all images
+    for image_id in image_ids:
+
+        image_change_function_name = "update_" + image_id
+
+        script += '    arguments_' + image_id + ' = [];\n'
+        for regulator_id in dependencies[image_id]:
+            script += '    arguments_' + image_id + '.push(val_' + regulator_id + ');\n'
+
+        # UPDATE THE IMAGE
+        #script += '    ' + image_change_function_name + '(arguments_' + image_id + ');\n'
+        script += '    ' + image_change_function_name + '.apply(this, arguments_' + image_id + ');\n'
+
+    script += '\n}'
+
+    # Add javascript
+    code += make_script(script)
+
+    # Return the HTML code
+    return code
+
+# -----------------------------------------------------------------
+
 class SimpleTableCell(object):
 
-    """A table class to create table cells.
+    """
+    A table class to create table cells.
     Example:
     cell = SimpleTableCell('Hello, world!')
     """

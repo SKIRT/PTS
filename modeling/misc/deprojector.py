@@ -23,6 +23,7 @@ from ...magic.core.frame import Frame
 from ...core.units.parsing import parse_unit as u
 from ..component.galaxy import GalaxyModelingComponent
 from ..build.suite import create_deprojection_for_map
+from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
@@ -98,9 +99,6 @@ class Deprojector(GalaxyModelingComponent):
 
         # 2. Create the deprojection models
         self.create_models()
-
-        # 3. Create the ski files
-        self.create_ski()
 
         # 4. Write
         self.write()
@@ -196,6 +194,9 @@ class Deprojector(GalaxyModelingComponent):
 
         # Make directories
         if self.root_path is not None: self.create_directories()
+
+        # Check leftover arguments
+        if len(kwargs) > 0: raise ValueError("Could not resolve all input: " + tostr(kwargs))
 
     # -----------------------------------------------------------------
 
@@ -370,7 +371,7 @@ class Deprojector(GalaxyModelingComponent):
         if not self.has_map_paths: self.write_maps()
 
         # Write the deprojection
-        self.write_deprojections()
+        if self.config.writing.deprojections: self.write_deprojections()
 
     # -----------------------------------------------------------------
 

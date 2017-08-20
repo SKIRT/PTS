@@ -18,6 +18,12 @@ default_sigma_level = 1.0
 
 # -----------------------------------------------------------------
 
+scales = ["log", "sqrt"]
+default_colour = "jet"
+default_interval = "pts"
+
+# -----------------------------------------------------------------
+
 # Set the modeling path
 modeling_path = fs.cwd()
 
@@ -50,6 +56,12 @@ definition.add_positional_optional("remote", "string", "remote host to use for c
 # Flags
 definition.add_flag("convolve", "perform convolution during the creation of the clip masks", False)
 
+# Flags
+definition.add_flag("add_old", "add old stellar maps", True)
+definition.add_flag("add_young", "add young stellar maps", True)
+definition.add_flag("add_ionizing", "add ionizing stellar maps", True)
+definition.add_flag("add_dust", "add dust maps", True)
+
 # Selections
 definition.add_optional("old", "string_list", "selected old stellar maps", choices=old_map_names)
 definition.add_optional("young", "string_list", "selected young stellar maps", choices=young_map_names)
@@ -77,11 +89,23 @@ definition.add_flag("all", "select all maps")
 
 # Sigma levels
 definition.add_positional_optional("sigma_levels", "real_list", "different sigma levels for which to generate significance masks", sigma_levels)
+definition.add_optional("default_sigma_level", "real", "default sigma level", default_sigma_level)
 
 # Flags
 definition.add_flag("replot", "replot already existing figures", True)
 
 # ADVANCED
 definition.add_optional("nopen_files", "positive_integer", "number of open files necessary to make the script work", 1024)
+
+# Image
+definition.add_optional("image_width", "positive_integer", "width of the image")
+definition.add_optional("image_height", "positive_integer", "height of the image", 300)
+
+# For PNG
+definition.add_optional("scale", "string", "scaling", "log", scales)
+definition.add_optional("interval", "string", "interval", default_interval)
+definition.add_optional("colours", "string", "colour or colour scale", "red")
+definition.add_flag("alpha", "use alpha", True)
+definition.add_optional("peak_alpha", "real", "alpha of peak value", 1.)
 
 # -----------------------------------------------------------------

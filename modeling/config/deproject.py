@@ -21,4 +21,8 @@ definition = ConfigurationDefinition(log_path="log", config_path="config")
 # Method
 definition.add_optional("method", "string", "method for deprojection", default_method, choices=methods)
 
+# Writing
+definition.add_section("writing", "writing options")
+definition.sections["writing"].add_flag("deprojections", "write the deprojections", True)
+
 # -----------------------------------------------------------------

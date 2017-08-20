@@ -334,8 +334,6 @@ def frame_to_components(frame, interval="pts", scale="log", alpha=True, peak_alp
 
 # -----------------------------------------------------------------
 
-
-
 def frame_to_rgba(frame, interval="pts", scale="log", alpha=True, peak_alpha=1., colours="red", absolute_alpha=False):  # Make the image
 
     """

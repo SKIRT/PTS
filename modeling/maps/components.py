@@ -14,7 +14,7 @@ from __future__ import absolute_import, division, print_function
 
 # Import the relevant PTS classes and modules
 from ...core.basics.log import log
-from .component import MapsComponent
+from .selectioncomponent import MapsSelectionComponent
 from ...core.basics.configuration import prompt_string_list, prompt_real
 from ...core.tools.utils import lazyproperty
 from ...magic.core.frame import Frame
@@ -32,11 +32,12 @@ deprojected_name = "deprojected"
 
 # -----------------------------------------------------------------
 
+correct_step = "corrected"
 truncate_step = "truncated"
 crop_step = "cropped"
 clip_step = "clipped"
 softened_step = "softened"
-steps = [truncate_step, crop_step, clip_step, softened_step]
+steps = [correct_step, truncate_step, crop_step, clip_step, softened_step]
 
 # -----------------------------------------------------------------
 
@@ -96,7 +97,7 @@ def steps_after_and_including(step):
 
 # -----------------------------------------------------------------
 
-class ComponentMapsMaker(MapsComponent):
+class ComponentMapsMaker(MapsSelectionComponent):
 
     """
     This class...
@@ -128,24 +129,6 @@ class ComponentMapsMaker(MapsComponent):
         self.young_deprojection_path = None
         self.ionizing_deprojection_path = None
         self.dust_deprojection_path = None
-
-        # The selections
-        self.old_selection = None
-        self.young_selection = None
-        self.ionizing_selection = None
-        self.dust_selection = None
-
-        # The significance levels
-        self.levels = None
-
-        # The maps
-        self.old_maps = dict()
-        self.young_maps = dict()
-        self.ionizing_maps = dict()
-        self.dust_maps = dict()
-
-        # Cached clip masks
-        self.clip_masks = dict()
 
         # The clip masks
         self.old_masks = dict()
@@ -241,213 +224,6 @@ class ComponentMapsMaker(MapsComponent):
 
         # Levels
         if self.config.levels is not None: self.levels = self.config.levels
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_old_selection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.old_selection is not None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_young_selection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.young_selection is not None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_ionizing_selection(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.ionizing_selection is not None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_dust_selection(self):
-
-        """
-        Thisf unctino ...
-        :return:
-        """
-
-        return self.dust_selection is not None
-
-    # -----------------------------------------------------------------
-
-    @property
-    def has_levels(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.levels is not None
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def old_map_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.maps_collection.get_old_stellar_disk_map_paths()
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def old_map_origins(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.maps_collection.get_old_stellar_disk_origins()
-
-    # -----------------------------------------------------------------
-
-    @property
-    def old_map_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.old_map_paths.keys()
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def young_map_paths(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.maps_collection.get_young_map_paths(flatten=True)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def young_map_origins(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.maps_collection.get_young_origins(flatten=True)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def young_map_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.young_map_paths.keys()
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def ionizing_map_paths(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        # Get map paths
-        return self.maps_collection.get_ionizing_map_paths(flatten=True)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def ionizing_map_origins(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.maps_collection.get_ionizing_origins(flatten=True)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def ionizing_map_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.ionizing_map_paths.keys()
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def dust_map_paths(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        # Get paths
-        # map_paths = self.maps_collection.get_dust_map_paths(flatten=True)
-        return self.maps_collection.get_not_hot_dust_map_paths(flatten=True)
-
-    # -----------------------------------------------------------------
-
-    @lazyproperty
-    def dust_map_origins(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.maps_collection.get_not_hot_dust_origins(flatten=True)
-
-    # -----------------------------------------------------------------
-
-    @property
-    def dust_map_names(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.dust_map_paths.keys()
 
     # -----------------------------------------------------------------
 
@@ -1042,17 +818,207 @@ class ComponentMapsMaker(MapsComponent):
         # Inform the user
         log.info("Processing the maps ...")
 
-        # 1. Truncate
+        # 1. Correct
+        self.correct_maps()
+
+        # 2. Truncate
         self.truncate_maps()
 
-        # 2. Crop
+        # 3. Crop
         self.crop_maps()
 
-        # 2. Clip
+        # 4. Clip
         self.clip_maps()
 
-        # 3. Soften the edges
+        # 5. Soften the edges
         self.soften_edges()
+
+    # -----------------------------------------------------------------
+
+    def correct_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Correcting the maps ...")
+
+    # -----------------------------------------------------------------
+
+    def is_corrected_old(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.old_maps[name].metadata[correct_step]
+
+    # -----------------------------------------------------------------
+
+    def is_corrected_young(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.young_maps[name].metadata[correct_step]
+
+    # -----------------------------------------------------------------
+
+    def is_corrected_ionizing(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.ionizing_maps[name].metadata[correct_step]
+
+    # -----------------------------------------------------------------
+
+    def is_corrected_dust(self, name):
+
+        """
+        This function ...
+        :param name:
+        :return:
+        """
+
+        return self.dust_maps[name].metadata[correct_step]
+
+    # -----------------------------------------------------------------
+
+    def correct_old_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Correcting the old stellar maps ...")
+
+        # Loop over the maps
+        for name in self.old_maps:
+
+            # Check
+            if self.is_corrected_old(name):
+                log.success("The '" + name + "' old stellar map is already corrected")
+                continue
+
+            # Debugging
+            log.debug("Correcting the '" + name + "' old stellar map ...")
+
+            # Correct the map
+            self.correct_map(self.old_maps[name])
+
+            # Set flag
+            self.old_maps[name].metadata[correct_step] = True
+
+            # Save intermediate result
+            if self.config.steps: self.old_maps[name].saveto(self.old_step_path_for_map(name, correct_step))
+
+    # -----------------------------------------------------------------
+
+    def correct_young_maps(self):
+
+        """
+        Thisn function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Correcting the young stellar maps ...")
+
+        # Loop over the maps
+        for name in self.young_maps:
+
+            # Check
+            if self.is_corrected_young(name):
+                log.success("The '" + name + "' young stellar map is already corrected")
+                continue
+
+            # Debugging
+            log.debug("Correcting the '" + name + "' young stellar map ...")
+
+            # Correct the map
+            self.correct_map(self.young_maps[name])
+
+            # Set flag
+            self.young_maps[name].metadata[correct_step] = True
+
+            # Save intermediate result
+            if self.config.steps: self.young_maps[name].saveto(self.young_step_path_for_map(name, correct_step))
+
+    # -----------------------------------------------------------------
+
+    def correct_ionizing_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Correcting the ionizing stellar maps ...")
+
+        # Loop over the maps
+        for name in self.ionizing_maps:
+
+            # Check
+            if self.is_corrected_ionizing(name):
+                log.success("The '" + name + "' ionizing stellar map is already corrected")
+                continue
+
+            # Debugging
+            log.debug("Correcting the '" + name + "' ionizing stellar map ...")
+
+            # Correct the map
+            self.correct_map(self.ionizing_maps[name])
+
+            # Set flag
+            self.ionizing_maps[name].metadata[correct_step] = True
+
+            # Save intermediate result
+            if self.config.steps: self.ionizing_maps[name].saveto(self.ionizing_step_path_for_map(name, correct_step))
+
+    # -----------------------------------------------------------------
+
+    def correct_dust_maps(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Correcting the dust maps ...")
+
+        # Loop over the maps
+        for name in self.dust_maps:
+
+            # Check
+            if self.is_corrected_dust(name):
+                log.success("The '" + name + "' dust map is already corrected")
+
+            # Debugging
+            log.debug("Correcting the '" + name + "' dust map ...")
+
+            # Correct the map
+            self.correct_map(self.dust_maps[name])
+
+            # Set flag
+            self.dust_maps[name].metadata[correct_step] = True
+
+            # Save intermediate result
+            if self.config.step: self.dust_maps[name].saveto(self.dust_step_path_for_map(name, correct_step))
 
     # -----------------------------------------------------------------
 
@@ -1077,25 +1043,6 @@ class ComponentMapsMaker(MapsComponent):
 
         # Dust
         self.truncate_dust_maps()
-
-    # -----------------------------------------------------------------
-
-    def get_truncation_mask_for_map(self, the_map):
-
-        """
-        This function ...
-        :param the_map:
-        :return:
-        """
-
-        # Create the truncation ellipse in pixel coordinates
-        ellipse = self.truncation_ellipse.to_pixel(the_map.wcs)
-
-        # Create mask
-        mask = ellipse.to_mask(the_map.xsize, the_map.ysize).inverse()
-
-        # Return the mask
-        return mask
 
     # -----------------------------------------------------------------
 
@@ -1168,20 +1115,14 @@ class ComponentMapsMaker(MapsComponent):
             # Debugging
             log.debug("Truncating the '" + name + "' old stellar map ...")
 
-            # Get the map
-            old_map = self.old_maps[name]
-
-            # Get the truncation mask
-            mask = self.get_truncation_mask_for_map(old_map)
-
-            # Mask
-            old_map[mask] = 0.0
+            # Truncate the map
+            self.truncate_map(self.old_maps[name])
 
             # Set flag
             self.old_maps[name].metadata[truncate_step] = True
 
             # Save intermediate result
-            if self.config.steps: old_map.saveto(self.old_step_path_for_map(name, truncate_step))
+            if self.config.steps: self.old_maps[name].saveto(self.old_step_path_for_map(name, truncate_step))
 
     # -----------------------------------------------------------------
 
@@ -1206,20 +1147,14 @@ class ComponentMapsMaker(MapsComponent):
             # Debugging
             log.debug("Truncating the '" + name + "' young stellar map ...")
 
-            # Get the map
-            young_map = self.young_maps[name]
-
-            # Get the truncation mask
-            mask = self.get_truncation_mask_for_map(young_map)
-
-            # Mask
-            young_map[mask] = 0.0
+            # Truncate the map
+            self.truncate_map(self.young_maps[name])
 
             # Set flag
             self.young_maps[name].metadata[truncate_step] = True
 
             # Save intermediate result
-            if self.config.steps: young_map.saveto(self.young_step_path_for_map(name, truncate_step))
+            if self.config.steps: self.young_maps[name].saveto(self.young_step_path_for_map(name, truncate_step))
 
     # -----------------------------------------------------------------
 
@@ -1244,20 +1179,14 @@ class ComponentMapsMaker(MapsComponent):
             # Debugging
             log.debug("Truncating the '" + name + "' ionizing stellar map ...")
 
-            # Get the map
-            ionizing_map = self.ionizing_maps[name]
-
-            # Get the truncation mask
-            mask = self.get_truncation_mask_for_map(ionizing_map)
-
-            # Mask
-            ionizing_map[mask] = 0.0
+            # Truncate the map
+            self.truncate_map(self.ionizing_maps[name])
 
             # Set flag
             self.ionizing_maps[name].metadata[truncate_step] = True
 
             # Save intermediate result
-            if self.config.steps: ionizing_map.saveto(self.ionizing_step_path_for_map(name, truncate_step))
+            if self.config.steps: self.ionizing_maps[name].saveto(self.ionizing_step_path_for_map(name, truncate_step))
 
     # -----------------------------------------------------------------
 
@@ -1282,20 +1211,14 @@ class ComponentMapsMaker(MapsComponent):
             # Debugging
             log.debug("Truncating the '" + name + "' dust map ...")
 
-            # Get the map
-            dust_map = self.dust_maps[name]
-
-            # Get the truncation mask
-            mask = self.get_truncation_mask_for_map(dust_map)
-
-            # mask
-            dust_map[mask] = 0.0
+            # Truncate the map
+            self.truncate_map(self.dust_maps[name])
 
             # Set flag
             self.dust_maps[name].metadata[truncate_step] = True
 
             # Save intermediate result
-            if self.config.steps: dust_map.saveto(self.dust_step_path_for_map(name, truncate_step))
+            if self.config.steps: self.dust_maps[name].saveto(self.dust_step_path_for_map(name, truncate_step))
 
     # -----------------------------------------------------------------
 
@@ -1393,7 +1316,7 @@ class ComponentMapsMaker(MapsComponent):
             log.debug("Cropping the '" + name + "' old stellar map ...")
 
             # Crop the map
-            self.old_maps[name].crop_to(self.truncation_box, factor=self.config.cropping_factor)
+            self.crop_map(self.old_maps[name], self.config.cropping_factor)
 
             # Set flag
             self.old_maps[name].metadata[crop_step] = True
@@ -1425,7 +1348,7 @@ class ComponentMapsMaker(MapsComponent):
             log.debug("Cropping the '" + name + "' young stellar map ...")
 
             # Crop the map
-            self.young_maps[name].crop_to(self.truncation_box, factor=self.config.cropping_factor)
+            self.crop_map(self.young_maps[name], self.config.cropping_factor)
 
             # Set flag
             self.young_maps[name].metadata[crop_step] = True
@@ -1457,7 +1380,7 @@ class ComponentMapsMaker(MapsComponent):
             log.debug("Cropping the '" + name + "' ionizing stellar map ...")
 
             # Crop the map
-            self.ionizing_maps[name].crop_to(self.truncation_box, factor=self.config.cropping_factor)
+            self.crop_map(self.ionizing_maps[name], self.config.cropping_factor)
 
             # Set flag
             self.ionizing_maps[name].metadata[crop_step] = True
@@ -1489,7 +1412,7 @@ class ComponentMapsMaker(MapsComponent):
             log.debug("Cropping the '" + name + "' dust map ...")
 
             # Crop the map
-            self.dust_maps[name].crop_to(self.truncation_box, factor=self.config.cropping_factor)
+            self.crop_map(self.dust_maps[name], self.config.cropping_factor)
 
             # Set flag
             self.dust_maps[name].metadata[crop_step] = True
@@ -1571,30 +1494,6 @@ class ComponentMapsMaker(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def get_clip_mask(self, origins, wcs=None):
-
-        """
-        This function ...
-        :param origins:
-        :param None:
-        :return:
-        """
-
-        # Check if cached
-        if wcs is None and tuple(origins) in self.clip_masks: return self.clip_masks[tuple(origins)]
-        else:
-
-            # Make the mask
-            mask = self.make_clip_mask(origins, wcs=wcs, convolve=self.config.convolve, remote=self.config.remote)
-
-            # Cache the mask
-            if wcs is None: self.clip_masks[tuple(origins)] = mask
-
-            # Return the mask
-            return mask
-
-    # -----------------------------------------------------------------
-
     def clip_old_maps(self):
 
         """
@@ -1619,14 +1518,8 @@ class ComponentMapsMaker(MapsComponent):
             # Get the origins
             origins = self.old_map_origins[name]
 
-            # Create the clip mask
-            mask = self.get_clip_mask(origins, wcs=self.old_maps[name].wcs)
-
-            # Set the mask
-            self.old_masks[name] = mask
-
-            # Clip
-            self.old_maps[name][mask] = 0.0
+            # Clip the map (returns the mask)
+            self.old_masks[name] = self.clip_map(self.old_maps[name], origins, convolve=self.config.convolve, remote=self.config.remote)
 
             # Set flag
             self.old_maps[name].metadata[clip_step] = True
@@ -1660,14 +1553,8 @@ class ComponentMapsMaker(MapsComponent):
             # Get the origins
             origins = self.young_map_origins[name]
 
-            # Create the clip mask
-            mask = self.get_clip_mask(origins, wcs=self.young_maps[name].wcs)
-
-            # Set the mask
-            self.young_masks[name] = mask
-
-            # Clip
-            self.young_maps[name][mask] = 0.0
+            # Clip the map (returns the mask)
+            self.young_masks[name] = self.clip_map(self.young_maps[name], origins, convolve=self.config.convolve, remote=self.config.remote)
 
             # Set flag
             self.young_maps[name].metadata[clip_step] = True
@@ -1701,14 +1588,8 @@ class ComponentMapsMaker(MapsComponent):
             # Get the origins
             origins = self.ionizing_map_origins[name]
 
-            # Create the clip mask
-            mask = self.get_clip_mask(origins, wcs=self.ionizing_maps[name].wcs)
-
-            # Set the mask
-            self.ionizing_masks[name] = mask
-
-            # Clip
-            self.ionizing_maps[name][mask] = 0.0
+            # Clip the map (returns the mask)
+            self.ionizing_masks[name] = self.clip_map(self.ionizing_maps[name], origins, convolve=self.config.convolve, remote=self.config.remote)
 
             # Set flag
             self.ionizing_maps[name].metadata[clip_step] = True
@@ -1742,14 +1623,8 @@ class ComponentMapsMaker(MapsComponent):
             # Get the origins
             origins = self.dust_map_origins[name]
 
-            # Create the clip mask
-            mask = self.get_clip_mask(origins, wcs=self.dust_maps[name].wcs)
-
-            # Set the mask
-            self.dust_masks[name] = mask
-
-            # Clip
-            self.dust_maps[name][mask] = 0.0
+            # Clip the map (returns the mask)
+            self.dust_masks[name] = self.clip_map(self.dust_maps[name], origins, convolve=self.config.convolve, remote=self.config.remote)
 
             # Set flag
             self.dust_maps[name].metadata[clip_step] = True
@@ -1888,11 +1763,8 @@ class ComponentMapsMaker(MapsComponent):
             # Debugging
             log.debug("Softening the edges of the '" + name + "' old stellar map ...")
 
-            # Get ellipse
-            ellipse = self.softening_ellipse.to_pixel(self.old_maps[name].wcs)
-
-            # Soften edges
-            self.old_maps[name].soften_edges(ellipse, self.softening_range)
+            # Soften
+            self.soften_map(self.old_maps[name], self.softening_ellipse, self.softening_range)
 
             # Set flag
             self.old_maps[name].metadata[softened_step] = True
@@ -1923,11 +1795,8 @@ class ComponentMapsMaker(MapsComponent):
             # Debugging
             log.debug("Softening the edges of the '" + name + "' young stellar map ...")
 
-            # Get ellipse
-            ellipse = self.softening_ellipse.to_pixel(self.young_maps[name].wcs)
-
-            # Soften edges
-            self.young_maps[name].soften_edges(ellipse, self.softening_range)
+            # Soften
+            self.soften_map(self.young_maps[name], self.softening_ellipse, self.softening_range)
 
             # Set flag
             self.young_maps[name].metadata[softened_step] = True
@@ -1958,11 +1827,8 @@ class ComponentMapsMaker(MapsComponent):
             # Debugging
             log.debug("Softening the edges of the '" + name + "' ionizing stellar map ...")
 
-            # Get ellipse
-            ellipse = self.softening_ellipse.to_pixel(self.ionizing_maps[name].wcs)
-
-            # Soften edges
-            self.ionizing_maps[name].soften_edges(ellipse, self.softening_range)
+            # Soften
+            self.soften_map(self.ionizing_maps[name], self.softening_ellipse, self.softening_range)
 
             # Set flag
             self.ionizing_maps[name].metadata[softened_step] = True
@@ -1993,11 +1859,8 @@ class ComponentMapsMaker(MapsComponent):
             # Debugging
             log.debug("Softening the edges of the '" + name + "' dust map ...")
 
-            # Get ellipse
-            ellipse = self.softening_ellipse.to_pixel(self.dust_maps[name].wcs)
-
-            # Soften edges
-            self.dust_maps[name].soften_edges(ellipse, self.softening_range)
+            # Soften the map
+            self.soften_map(self.dust_maps[name], self.softening_ellipse, self.softening_range)
 
             # Set flag
             self.dust_maps[name].metadata[softened_step] = True
@@ -2095,9 +1958,10 @@ class ComponentMapsMaker(MapsComponent):
 
         # Set settings
         deprojector.config.method = "pts"
+        deprojector.config.writing.deprojections = False
 
         # Run the deprojector
-        deprojector.run(maps=self.old_maps, scaleheight=self.old_scaleheight, root_path=self.old_deprojection_path)
+        deprojector.run(maps=self.old_maps, scale_height=self.old_scaleheight, root_path=self.old_deprojection_path)
 
         # Get the deprojected maps
         self.old_deprojected = deprojector.deprojected
@@ -2119,9 +1983,10 @@ class ComponentMapsMaker(MapsComponent):
 
         # Set settings
         deprojector.config.method = "pts"
+        deprojector.config.writing.deprojections = False
 
         # Run the deprojector
-        deprojector.run(maps=self.young_maps, scaleheight=self.young_scaleheight, root_path=self.young_deprojection_path)
+        deprojector.run(maps=self.young_maps, scale_height=self.young_scaleheight, root_path=self.young_deprojection_path)
 
         # Get the deprojected maps
         self.young_deprojected = deprojector.deprojected
@@ -2143,9 +2008,10 @@ class ComponentMapsMaker(MapsComponent):
 
         # Set settings
         deprojector.config.method = "pts"
+        deprojector.config.writing.deprojections = False
 
         # Run the deprojector
-        deprojector.run(maps=self.ionizing_maps, scaleheight=self.ionizing_scaleheight, root_path=self.ionizing_deprojection_path)
+        deprojector.run(maps=self.ionizing_maps, scale_height=self.ionizing_scaleheight, root_path=self.ionizing_deprojection_path)
 
         # Get the deprojected maps
         self.ionizing_deprojected = deprojector.deprojected
@@ -2167,9 +2033,10 @@ class ComponentMapsMaker(MapsComponent):
 
         # Set settings
         deprojector.config.method = "pts"
+        deprojector.config.writing.deprojections = False
 
         # Run the deprojector
-        deprojector.run(maps=self.dust_maps, scaleheight=self.dust_scaleheight, root_path=self.dust_deprojection_path)
+        deprojector.run(maps=self.dust_maps, scale_height=self.dust_scaleheight, root_path=self.dust_deprojection_path)
 
         # Get the deprojected maps
         self.dust_deprojected = deprojector.deprojected

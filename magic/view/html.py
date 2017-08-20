@@ -110,7 +110,7 @@ class JS9Image(object):
         :param display:
         """
 
-        self.name = make_usable(name)
+        self.name = html.make_usable(name)
         self.path = path
         self.settings = settings
         self.display = display
@@ -400,7 +400,7 @@ class JS9Spawner(object):
         """
 
         # Generate display id
-        display_id = "JS9" + make_usable(name)
+        display_id = "JS9" + html.make_usable(name)
 
         # Create image
         image = JS9Image(name, path, settings, display_id)
@@ -505,7 +505,7 @@ class JS9Spawner(object):
         #function_call += ";load_region_" + make_usable(self.image.name) + "()"
 
         if self.button:
-            buttonid = make_usable(self.image.name) + "Spawner"
+            buttonid = html.make_usable(self.image.name) + "Spawner"
             #load_html = self.image.load()
             #return html.button(buttonid, self.text, load_html, quote_character=strings.other_quote_character(self.text, load_html))
             click_code = html.button(buttonid, self.text, function_call)
@@ -1735,14 +1735,7 @@ def make_replace_infs_by_nans(display=None, quote_character='"'):
 
 # -----------------------------------------------------------------
 
-def make_usable(name):
 
-    """
-    This function ...
-    :return:
-    """
-
-    return name.replace(" ", "").replace(".", "")  # CANNOT CONTAIN SPACES AND DOTS!!
 
 # -----------------------------------------------------------------
 

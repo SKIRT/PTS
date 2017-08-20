@@ -19,7 +19,6 @@ from ..core.environment import GalaxyModelingEnvironment
 from ..core.history import ModelingHistory
 from pts.core.tools.utils import lazyproperty
 from ...core.tools.utils import create_lazified_class
-from ..core.environment import old_name, young_name, ionizing_name, dust_name
 
 # -----------------------------------------------------------------
 
