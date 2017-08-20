@@ -867,10 +867,7 @@ class SourceFinder(Configurable):
 
         # Get minimum pixelscale
         min_pixelscale = self.min_pixelscale
-        
-        # self.config.point.fetching.catalogs # This property does not exist => FIXED
-        #catalogs = 'NOMAD'
-    
+
         # Fetch
         self.point_source_catalog = self.fetcher.get_point_source_catalog(self.catalog_coordinate_box, min_pixelscale, self.config.point.fetching.catalogs)
 

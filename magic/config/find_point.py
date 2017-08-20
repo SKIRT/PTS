@@ -7,6 +7,7 @@
 
 # Import the relevant PTS classes and modules
 from pts.core.basics.configuration import ConfigurationDefinition
+from pts.magic.tools.catalogs import stellar_catalog_descriptions
 
 # -----------------------------------------------------------------
 
@@ -28,9 +29,8 @@ definition.add_flag("find_saturation", "find saturated stars", True)
 definition.add_section("fetching", "fetching")
 
 # THE CATALOGS
-default_catalogs = ["II/246"]
-possible_catalogs = ["UCAC4", "NOMAD", "PPMXL", "II/246"]
-definition.sections["fetching"].add_optional("catalogs", "string_list", "catalogs for point sources", default_catalogs, possible_catalogs)
+default_catalogs = ["2MASS"]
+definition.sections["fetching"].add_optional("catalogs", "string_list", "catalogs for point sources", default_catalogs, stellar_catalog_descriptions)
 
 # -----------------------------------------------------------------
 
@@ -39,7 +39,7 @@ definition.sections["fetching"].add_optional("statistics_path", "file_path", "st
 
 definition.sections["fetching"].add_flag("cross_reference_with_galaxies", "blabla", True)
 
-definition.sections["fetching"].add_section("min_distance_from_galaxy", " minimum distance the star has to be seperated from the galaxy center to be positively identified as a star")
+definition.sections["fetching"].add_section("min_distance_from_galaxy", "minimum distance the star has to be seperated from the galaxy center to be positively identified as a star")
 definition.sections["fetching"].sections["min_distance_from_galaxy"].add_optional("principal", "real", "in pixels", 20.0)
 definition.sections["fetching"].sections["min_distance_from_galaxy"].add_optional("companion", "real", "in pixels", 15.0)
 definition.sections["fetching"].sections["min_distance_from_galaxy"].add_optional("other", "real", "in pixels", 15.0)

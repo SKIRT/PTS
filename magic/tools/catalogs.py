@@ -33,10 +33,117 @@ from ...core.basics.log import log
 from ..basics.coordinate import SkyCoordinate
 from ..basics.vector import Extent
 from ...core.units.parsing import parse_unit as u
+from ...core.tools.stringify import tostr
 
 # -----------------------------------------------------------------
 
 leda_search_object_url = "http://leda.univ-lyon1.fr/ledacat.cgi?"
+
+# -----------------------------------------------------------------
+
+stellar_catalogs = dict()
+stellar_catalogs["GSC2.3"] = "I/305/out"
+stellar_catalogs["NOMAD"] = "I/297/out"
+stellar_catalogs["PPMX"] = "I/312"
+stellar_catalogs["SDSS9"] = "V/139"
+stellar_catalogs["UCAC4"] = "I/322A/out"
+stellar_catalogs["URAT1"] = "I/329"
+stellar_catalogs["2MASS"] = "II/246/out"
+
+# -----------------------------------------------------------------
+
+stellar_catalog_descriptions = dict()
+stellar_catalog_descriptions["GSC2.3"] = "The Guide Star Catalog, Version 2.3.2"
+stellar_catalog_descriptions["NOMAD"] = "NOMAD-1 Catalog"
+stellar_catalog_descriptions["PPMX"] = "PPMX Catalog of positions and proper motions"
+stellar_catalog_descriptions["SDSS9"] = "SDSS Release 9"
+stellar_catalog_descriptions["UCAC4"] = "Fourth U.S. Naval Observatory CCD Astrograph Catalog"
+stellar_catalog_descriptions["URAT1"] = "URAT1 catalog"
+stellar_catalog_descriptions["2MASS"] = "2MASS Point Sources"
+
+# -----------------------------------------------------------------
+
+stellar_catalog_star_id_colname = dict()
+stellar_catalog_star_id_colname["GSC2.3"] = "GSC2.3"
+stellar_catalog_star_id_colname["NOMAD"] = "NOMAD1"
+stellar_catalog_star_id_colname["PPMX"] = "PPMX"
+stellar_catalog_star_id_colname["SDSS9"] = "SDSS9"
+stellar_catalog_star_id_colname["UCAC4"] = "UCAC4"
+stellar_catalog_star_id_colname["URAT1"] = "URAT1"
+stellar_catalog_star_id_colname["2MASS"] = "2MASS"
+
+# -----------------------------------------------------------------
+
+def get_star_id(catalog_name, catalog, index):
+
+    """
+    This function ...
+    :param catalog_name:
+    :param catalog:
+    :param index:
+    :return:
+    """
+
+    colname = get_star_id_colname_for_name(catalog_name)
+    return catalog[colname][index]
+
+# -----------------------------------------------------------------
+
+def get_star_id_colname_for_name(name):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    return stellar_catalog_star_id_colname[name]
+
+# -----------------------------------------------------------------
+
+def get_stellar_catalog_names():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return stellar_catalogs.keys()
+
+# -----------------------------------------------------------------
+
+def get_stellar_catalog_codes():
+
+    """
+    This function ...
+    :return:
+    """
+
+    return stellar_catalogs.values()
+
+# -----------------------------------------------------------------
+
+def get_stellar_catalog_code_for_name(name):
+
+    """
+    This function ...
+    :param name:
+    :return:
+    """
+
+    return stellar_catalogs[name]
+
+# -----------------------------------------------------------------
+
+def get_stellar_catalog_name_for_code(code):
+
+    """
+    This function ...
+    :param code:
+    :return:
+    """
+
+    return stellar_catalogs.keys()[stellar_catalogs.values().index(code)]
 
 # -----------------------------------------------------------------
 
@@ -296,13 +403,14 @@ def from_galaxies(galaxies):
 
 # -----------------------------------------------------------------
 
-def create_star_catalog(coordinate_box, pixelscale, catalogs=None, check_in_box=False):
+def create_star_catalog(coordinate_box, pixelscale, catalogs, check_in_box=False):
 
     """
     This function ...
     :param coordinate_box:
     :param pixelscale:
     :param catalogs:
+    :param check_in_box:
     :return:
     """
 
@@ -332,6 +440,9 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs=None, check_in_box=
     # Loop over the different catalogs
     for catalog in catalogs:
 
+        # Get catalog code
+        code = get_stellar_catalog_code_for_name(catalog)
+
         # Initialize a list to specify which of the stars added to the columns from other catalogs is already
         # matched to a star of the current catalog
         encountered = [False] * len(catalog_column)
@@ -340,7 +451,7 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs=None, check_in_box=
         log.debug("Querying the " + catalog + " catalog ...")
 
         # Query Vizier and obtain the resulting table
-        result = viz.query_region(center.to_astropy(), width=ra_span, height=dec_span, catalog=catalog)
+        result = viz.query_region(center.to_astropy(), width=ra_span, height=dec_span, catalog=code)
         table = result[0]
 
         number_of_stars = 0
@@ -374,11 +485,8 @@ def create_star_catalog(coordinate_box, pixelscale, catalogs=None, check_in_box=
 
             # -- General information --
 
-            # Get the ID of this star in the catalog
-            if catalog == "UCAC4": star_id = table["UCAC4"][i]
-            elif catalog == "NOMAD": star_id = table["NOMAD1"][i]
-            elif catalog == "II/246": star_id = table["_2MASS"][i]
-            else: raise ValueError("Catalogs other than 'UCAC4', 'NOMAD' or 'II/246' are currently not supported")
+            # Get the ID of the star in the catalog
+            star_id = get_star_id(catalog, table, i)
 
             # -- Positional information --
 

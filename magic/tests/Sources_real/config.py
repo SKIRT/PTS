@@ -23,7 +23,7 @@ definition.add_optional("year", "positive_integer", "year of the image")
 definition.import_section("sources", "options for the source finder", sources_definition)
 
 # Flags
-default_catalogs = ["II/246"]
+default_catalogs = ["2MASS"]
 definition.add_optional("catalogs", "string_list", "catalogs for point sources", default_catalogs)
 definition.add_flag("catalog_overlapping", "only fetch catalog data in the area where all images are overlapping", True)
 

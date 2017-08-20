@@ -198,7 +198,7 @@ class PixelCircleRegion(CircleRegion, PixelRegion):
         radius = (region.radius / wcs.average_pixelscale).to("").value
 
         # Create the pixel circle region
-        return cls(center, radius, meta=region.meta)
+        return cls(center, radius, meta=region.meta, label=region.label, include=region.include, appearance=region.appearance)
 
     # -----------------------------------------------------------------
 

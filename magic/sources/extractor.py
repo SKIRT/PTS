@@ -207,28 +207,28 @@ class SourceExtractor(Configurable):
         # Load the galaxy region
         if "galaxy_region" in kwargs: self.galaxy_region = kwargs.pop("galaxy_region")
         else:
-            if "name" in kwargs: galaxy_region_path = self.input_path_file("galaxies_"+kwargs.pop("name")+".reg")
+            if "name" in kwargs: galaxy_region_path = self.input_path_file("galaxies_" + kwargs["name"] + ".reg")
             else: galaxy_region_path = self.input_path_file("galaxies.reg")
             self.galaxy_region = load_as_pixel_region_list(galaxy_region_path, self.frame.wcs) if fs.is_file(galaxy_region_path) else None
 
         # Load the star region
         if "star_region" in kwargs: self.star_region = kwargs.pop("star_region")
         else:
-            if "name" in kwargs: star_region_path = self.input_path_file("stars_"+kwargs.pop("name")+".reg")
+            if "name" in kwargs: star_region_path = self.input_path_file("stars_" + kwargs["name"] + ".reg")
             else: star_region_path = self.input_path_file("stars.reg")
             self.star_region = load_as_pixel_region_list(star_region_path, self.frame.wcs) if fs.is_file(star_region_path) else None
 
         # Load the saturation region
         if "saturation_region" in kwargs: self.saturation_region = kwargs.pop("saturation_region")
         else:
-            if "name" in kwargs: saturation_region_path = self.input_path_file("saturation_"+kwargs.pop("name")+".reg")
+            if "name" in kwargs: saturation_region_path = self.input_path_file("saturation_" + kwargs["name"] + ".reg")
             else: saturation_region_path = self.input_path_file("saturation.reg")
             self.saturation_region = load_as_pixel_region_list(saturation_region_path, self.frame.wcs) if fs.is_file(saturation_region_path) else None
 
         # Load the region of other sources
         if "other_region" in kwargs: self.other_region = kwargs.pop("other_region")
         else:
-            if "name" in kwargs: other_region_path = self.input_path_file("other_sources_"+kwargs.pop("name")+".reg")
+            if "name" in kwargs: other_region_path = self.input_path_file("other_sources_" + kwargs["name"] + ".reg")
             else: other_region_path = self.input_path_file("other_sources.reg")
             self.other_region = load_as_pixel_region_list(other_region_path, self.frame.wcs) if fs.is_file(other_region_path) else None
 
@@ -259,19 +259,23 @@ class SourceExtractor(Configurable):
         segments = None
         if "segments" in kwargs: segments = kwargs.pop("segments")
         else:
-            if "name" in kwargs: segments_path = self.input_path_file("segments_"+kwargs.pop("name")+".fits")
+            if "name" in kwargs: segments_path = self.input_path_file("segments_" + kwargs["name"] + ".fits")
             else: segments_path = self.input_path_file("segments.fits")
 
             if not fs.is_file(segments_path): log.warning("No segmentation maps found, using regions to define the to be extracted patches")
             else: segments = Image.from_file(segments_path, no_filter=True)
 
+        #print(segments)
+
         # If segments is not None
         if segments is not None:
 
+            #print(segments.frames.keys())
+
             # Get the segmentation maps
-            self.galaxy_segments = segments.frames["galaxies"] if "galaxies" in segments.frames else None
-            self.star_segments = segments.frames["stars"] if "stars" in segments.frames else None
-            self.other_segments = segments.frames["other_sources"] if "other_sources" in segments.frames else None
+            self.galaxy_segments = segments.frames["extended"] if "extended" in segments.frames else None
+            self.star_segments = segments.frames["point"] if "point" in segments.frames else None
+            self.other_segments = segments.frames["other"] if "other" in segments.frames else None
 
         # Debugging
         if self.galaxy_segments is not None: log.debug("Galaxy segments: PRESENT")
@@ -324,6 +328,10 @@ class SourceExtractor(Configurable):
             #if "text" not in shape.meta: continue
             if shape.label is None: continue
 
+            # Debugging
+            log.debug("Adding galaxy '" + shape.label + "' ...")
+
+            # Segments are passed
             if self.galaxy_segments is not None:
 
                 # Get the coordinate of the center for this galaxy
@@ -375,6 +383,8 @@ class SourceExtractor(Configurable):
         # Loop over all stars in the region
         for shape in self.star_region:
 
+            #print(shape.label)
+
             # Ignore shapes without text, these should be just the positions of the peaks
             #if "text" not in shape.meta: continue
             if shape.label is None: continue
@@ -384,6 +394,9 @@ class SourceExtractor(Configurable):
 
             # Get the star index
             index = int(shape.label)
+
+            # Debugging
+            log.debug("Adding star " + str(index) + " ...")
 
             # Get the saturation source
             saturation_source = self.find_saturation_source(index)
@@ -517,6 +530,10 @@ class SourceExtractor(Configurable):
             # This is a source found by SourceFinder
             if shape.label is not None:
 
+                # Debugging
+                log.debug("Adding other source '" + shape.label + "' ...")
+
+                # Get integer label
                 label = int(shape.label)
 
                 # Create a source
@@ -559,10 +576,8 @@ class SourceExtractor(Configurable):
                 ## END DILATION CODE
 
             # This is a shape drawn by the user and added to the other sources region
-            else:
-
-                # Create a source
-                source = Detection.from_shape(self.frame, shape, self.config.source_outer_factor)
+            # # Create a source
+            else: source = Detection.from_shape(self.frame, shape, self.config.source_outer_factor)
 
             # Check whether source is 'special'
             source.special = self.special_mask.masks(shape.center) if self.special_mask is not None else False

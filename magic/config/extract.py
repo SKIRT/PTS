@@ -42,4 +42,7 @@ definition.add_flag("only_foreground", "only interpolate over the stars that are
 
 definition.add_flag("write", "do writing", True)
 
+# Flags
+definition.add_flag("remove_companions", "remove companion galaxies", False)
+
 # -----------------------------------------------------------------

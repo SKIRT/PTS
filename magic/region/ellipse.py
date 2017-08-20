@@ -331,7 +331,7 @@ class PixelEllipseRegion(EllipseRegion, PixelRegion):
         else: angle = Angle(0.0, "deg")
 
         # Create a new PixelEllipse
-        return cls(center, radius, angle, meta=region.meta)
+        return cls(center, radius, angle, meta=region.meta, label=region.label, include=region.include, appearance=region.appearance)
 
     # -----------------------------------------------------------------
 

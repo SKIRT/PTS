@@ -323,8 +323,13 @@ def meta_parser(meta_str):
     equals_inds = [i for i, x in enumerate(meta_token_split) if x is '=']
     result = {meta_token_split[ii - 1]:" ".join(meta_token_split[ii + 1:jj - 1 if jj is not None else None]) for ii, jj in zip(equals_inds, equals_inds[1:] + [None])}
 
+    #print(result)
+
     for label in result:
+        result[label] = result[label].strip()
         if is_wrapped_by_quotes_or_curlybrackets(result[label]): result[label] = result[label][1:-1]
+
+    #print(result)
 
     return result
 
