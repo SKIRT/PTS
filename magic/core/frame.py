@@ -1670,7 +1670,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def crop_to(self, region, factor=1):
+    def crop_to(self, region, factor=1.):
 
         """
         This function ...

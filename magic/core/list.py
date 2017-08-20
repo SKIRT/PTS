@@ -2924,7 +2924,9 @@ def rebin_to_pixelscale_local(*frames, **kwargs):
                     print("OUTPUT WCS:", highest_pixelscale_wcs)
                     print("")
                     raise RuntimeError("Rebinning the " + name + " image failed: " + str(e))
-                rebinned *= ratio
+
+                # Multiply with ratio
+                if ratio != 1.0: rebinned *= ratio
 
                 #print(rebinned)
 

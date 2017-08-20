@@ -56,6 +56,9 @@ definition.add_positional_optional("remote", "string", "remote host to use for c
 # Flags
 definition.add_flag("convolve", "perform convolution during the creation of the clip masks", False)
 
+# CROPPING
+definition.add_optional("cropping_factor", "positive_real", "multiply the cropping box with this factor", 1.3)
+
 # Flags
 definition.add_flag("add_old", "add old stellar maps", True)
 definition.add_flag("add_young", "add young stellar maps", True)
@@ -79,6 +82,7 @@ definition.add_optional("random_old", "positive_integer", "select x random old s
 definition.add_optional("random_young", "positive_integer", "select x random young stellar maps")
 definition.add_optional("random_ionizing", "positive_integer", "select x random ionizing stellar maps")
 definition.add_optional("random_dust", "positive_integer", "select x random dust maps")
+definition.add_optional("random", "positive_integer", "select x maps for old stars, young stars, ionizing stars and dust")
 
 # Flags
 definition.add_flag("all_old", "select all old stellar maps")

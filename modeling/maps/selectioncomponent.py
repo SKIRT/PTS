@@ -23,6 +23,8 @@ from ...core.tools import sequences
 from ...core.tools.stringify import tostr
 from ...core.tools.utils import lazyproperty
 from ...core.basics.containers import hashdict
+from ...core.tools import types
+from ...core.filter.filter import parse_filter
 
 # -----------------------------------------------------------------
 
@@ -363,19 +365,22 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def make_clipped_maps(self, the_map, origins, levels, convolve=True, remote=None):
+    def make_clipped_maps(self, the_map, origins, levels_dict, convolve=True, remote=None):
 
         """
         This function ...
         :param the_map:
         :param origins:
+        :param levels_dict:
         :param convolve:
         :param remote:
         :return:
         """
 
+
+
         # Make the masks
-        masks = self.make_clip_masks(origins, levels, wcs=the_map.wcs, convolve=convolve, remote=remote)
+        masks = self.make_clip_masks(origins, levels_dict, wcs=the_map.wcs, convolve=convolve, remote=remote)
 
         # The maps
         maps = dict()
@@ -518,12 +523,12 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def make_clip_masks(self, origins, levels, wcs=None, convolve=True, remote=None):
+    def make_clip_masks(self, origins, levels_dict, wcs=None, convolve=True, remote=None):
 
         """
         Thisn function ...
         :param origins:
-        :param levels:
+        :param levels_dict:
         :param wcs:
         :param convolve:
         :param remote:
@@ -558,10 +563,24 @@ class MapsSelectionComponent(MapsComponent):
             frames.rebin_to_highest_pixelscale()
             errors.rebin_to_highest_pixelscale()
 
-        # Get list of level lists, sorted on the order of the frames
+        # Get the number of frames
         names = frames.names
-        frame_levels = [levels[name] for name in names]
         nframes = len(names)
+
+        # Get list of level lists, sorted on the order of the frames
+
+        #frame_levels = [levels[name] for name in names]
+
+        frame_levels = []
+        if types.is_sequence(levels_dict):
+            for _ in range(nframes): frame_levels.append(levels_dict)
+
+        elif types.is_dictionary(levels_dict):
+            levels_dict = {parse_filter(fltr): levels for fltr, levels in levels_dict.items()}
+            for fltr in frames.filters: frame_levels.append(levels_dict[fltr])
+
+        # Invalid
+        else: raise ValueError("Levels must be specified as list (same for each image) or dictionary keyed on filter")
 
         # Container to keep the set of masks
         #masks_levels = []
