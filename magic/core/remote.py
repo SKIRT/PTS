@@ -1005,12 +1005,12 @@ class RemoteFrame(object):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_local(cls, frame, host_id):
+    def from_local(cls, frame, session):
 
         """
         This function ...
         :param frame:
-        :param host_id:
+        :param session:
         :return:
         """
 
@@ -1024,7 +1024,7 @@ class RemoteFrame(object):
         frame.saveto(local_path)
 
         # Create the remoteframe from the locally saved frame
-        remoteframe = cls.from_file(local_path, host_id)
+        remoteframe = cls.from_file(local_path, session)
 
         # Remove the local file
         fs.remove_file(local_path)

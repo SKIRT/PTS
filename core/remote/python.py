@@ -47,6 +47,21 @@ class RemotePythonSession(object):
         # The remote instance
         self.remote = None
 
+        # Generate session ID
+        self.session_id = time.unique_name()
+
+    # -----------------------------------------------------------------
+
+    @property
+    def session_temp_directory(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.remote.session_temp_directory
+
     # -----------------------------------------------------------------
 
     def import_pts(self):
@@ -649,6 +664,9 @@ class AttachedPythonSession(RemotePythonSession):
 
         self.send_line(name, show_output=show_output)
 
+        print(self.parent.ssh.before)
+        print(list(self.parent.ssh.before))
+
         # Return the value
         return eval(self.parent.ssh.before)
 
@@ -703,8 +721,7 @@ class DetachedPythonSession(RemotePythonSession):
         # The last number of lines in the session output
         self.previous_length = 0
 
-        # Generate session ID and screen name
-        self.session_id = time.unique_name()
+        # Generate screen name
         self.screen_name = "pts_remotepython_" + self.session_id
 
         # Flag that indicates whether the session is attached
@@ -1084,18 +1101,6 @@ class DetachedPythonSession(RemotePythonSession):
 
         # Return the output
         return output
-
-    # -----------------------------------------------------------------
-
-    @property
-    def session_temp_directory(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.remote.session_temp_directory
 
     # -----------------------------------------------------------------
 

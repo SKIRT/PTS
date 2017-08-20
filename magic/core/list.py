@@ -2852,6 +2852,21 @@ def rebin_to_pixelscale_remote(*frames, **kwargs):
 
 # -----------------------------------------------------------------
 
+def any_frame_above_threshold(frames, threshold):
+
+    """
+    This function ...
+    :param frames:
+    :param threshold:
+    :return:
+    """
+
+    for frame in frames:
+        if frame.data_size > threshold: return True
+    return False
+
+# -----------------------------------------------------------------
+
 def rebin_to_pixelscale_local(*frames, **kwargs):
 
     """
@@ -2870,9 +2885,21 @@ def rebin_to_pixelscale_local(*frames, **kwargs):
     new_frames = []
 
     # FOR SOME FRAMES TO BE REBINNED REMOTELY
+    session = None
     remote = kwargs.pop("remote", None)
     rebin_remote_threshold = kwargs.pop("rebin_remote_threshold", None)
-    if rebin_remote_threshold is not None and remote is None: raise ValueError("Cannot specify 'rebin_remote_threshold' when 'remote' is not specified")
+    if rebin_remote_threshold is not None:
+        if remote is None: raise ValueError("Cannot specify 'rebin_remote_threshold' when 'remote' is not specified")
+
+        # Make remote session, ONLY IF IT WILL BE NECESSARY
+        if any_frame_above_threshold(frames, rebin_remote_threshold):
+            # Make remote
+            if types.is_string_type(remote): remote = Remote(host_id=remote)
+            elif isinstance(remote, Host): remote = Remote(host_id=remote)
+            elif not isinstance(remote, Remote): raise ValueError("Remote must be string, Host or Remote object")
+
+            # START SESSION
+            session = remote.start_python_session(attached=True, new_connection_for_attached=True)
 
     # Rebin
     index = 0
@@ -2913,7 +2940,7 @@ def rebin_to_pixelscale_local(*frames, **kwargs):
                 if rebin_remote_threshold is not None and frame.data_size > rebin_remote_threshold:
 
                     from .remote import RemoteFrame
-                    remoteframe = RemoteFrame.from_local(frame, remote)
+                    remoteframe = RemoteFrame.from_local(frame, session)
                     remoteframe.rebinned(highest_pixelscale_wcs)
                     rebinned = remoteframe.to_local()
 
@@ -2951,7 +2978,7 @@ def rebin_to_pixelscale_local(*frames, **kwargs):
                 if rebin_remote_threshold is not None and frame.data_size > rebin_remote_threshold:
 
                     from .remote import RemoteFrame
-                    remoteframe = RemoteFrame.from_local(frame, remote)
+                    remoteframe = RemoteFrame.from_local(frame, session)
                     remoteframe.rebinned(highest_pixelscale_wcs)
                     rebinned = remoteframe.to_local()
 

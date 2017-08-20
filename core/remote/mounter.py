@@ -22,6 +22,7 @@ from ..tools import filesystem as fs
 from ..tools import introspection
 from .remote import active_keys, add_key
 from ..tools import types
+from ..tools import terminal
 
 # -----------------------------------------------------------------
 
@@ -113,7 +114,108 @@ class RemoteMounter(object):
 
     # -----------------------------------------------------------------
 
-    def mount(self, host_id, path=None):
+    def mount(self, host_id, path=None, pexpect=False):
+
+        """
+        This function ...
+        :param host_id:
+        :param path:
+        :param pexpect:
+        :return:
+        """
+
+        if pexpect: return self.mount_pexpect(host_id, path=path)
+        else: return self.mount_process(host_id, path=path)
+
+    # -----------------------------------------------------------------
+
+    def get_mount_command(self, host, mount_path):
+
+        """
+        This function ...
+        :param host_id:
+        :param path:
+        :return:
+        """
+
+        # If a VPN connection is required for the remote host
+        if host.requires_vpn: self.connect_to_vpn(host)
+
+        # Check if key is active
+        if host.key is not None:
+            if host.key not in active_keys(): add_key(host.key)
+
+        # If mount point is defined
+        if host.mount_point is not None: mount_point_string = "/" + host.mount_point
+        else: mount_point_string = ""
+
+        # Debug flags for sshfs
+        debug_flags = "-f -d " if log.is_debug() else ""
+
+        # e.g. sshfs xxx@nancy.ugent.be: ~/PTS/remotes/nancy -C -o volname=nancy
+        # SMB EXAMPLE: mount_smbfs //sjversto:password@files.ugent.be/sjversto/www/users ~/Remotes/WWW
+        if host.protocol == "ssh":
+
+            if host.password is not None:
+
+                command = "sshfs -o password_stdin " + debug_flags + host.user + "@" + host.name + ":" + mount_point_string + " " + mount_path + " -C -o volname=" + host.id
+                command += " <<< '" + host.password + "'"
+
+            else: command = "sshfs " + debug_flags + host.user + "@" + host.name + ":" + mount_point_string + " " + mount_path + " -C -o volname=" + host.id
+
+        elif host.protocol == "smb":
+            #fs.remove_directory(mount_path)
+            command = "mount_smbfs //" + host.user + "@" + host.name + mount_point_string + " " + mount_path
+        else: raise ValueError("Unknown host protocol: " + host.protocol)
+
+        # Return the command
+        return command
+
+    # -----------------------------------------------------------------
+
+    def mount_process(self, host_id, path=None):
+
+        """
+        This function ...
+        :param host_id:
+        :param path:
+        :return:
+        """
+
+        # Get host ID
+        if isinstance(host_id, Host): the_host_id = host_id.id
+        elif types.is_string_type(host_id): the_host_id = host_id
+        else: raise ValueError("Invalid value for 'host_id'")
+
+        # Check if already mounted
+        if self.is_mounted(the_host_id):
+            log.warning("The remote host '" + the_host_id + "' is already mounted")
+            return self.mount_paths[the_host_id]
+
+        # Get host
+        if isinstance(host_id, Host): host = host_id
+        elif types.is_string_type(host_id): host = load_host(host_id)
+        else: raise ValueError("Invalid value for 'host_id'")
+
+        # Create directory for remote
+        if path is not None: mount_path = fs.create_directory_in(path, host.id)
+        else: mount_path = fs.create_directory_in(pts_remotes_path, host.id)
+
+        # Get command
+        command = self.get_mount_command(host, mount_path)
+
+        # Debugging
+        log.debug("Mounting command: '" + command + "'")
+
+        # Execute
+        output = terminal.execute_no_pexpect(command, show_output=True)
+
+        # Return the path
+        return mount_path
+
+    # -----------------------------------------------------------------
+
+    def mount_pexpect(self, host_id, path=None):
 
         """
         This function ...
@@ -137,55 +239,47 @@ class RemoteMounter(object):
         elif types.is_string_type(host_id): host = load_host(host_id)
         else: raise ValueError("Invalid value for 'host_id'")
 
-        # If a VPN connection is required for the remote host
-        if host.requires_vpn: self.connect_to_vpn(host)
-
-        # Check if key is active
-        if host.key is not None:
-            if host.key not in active_keys(): add_key(host.key)
-
         # Create directory for remote
         if path is not None: mount_path = fs.create_directory_in(path, host.id)
         else: mount_path = fs.create_directory_in(pts_remotes_path, host.id)
 
-        # Debug flags for sshfs
-        debug_flags = "-f -d " if log.is_debug() else ""
-
-        # If mount point is defined
-        if host.mount_point is not None: mount_point_string = "/" + host.mount_point
-        else: mount_point_string = ""
-
-        # e.g. sshfs xxx@nancy.ugent.be: ~/PTS/remotes/nancy -C -o volname=nancy
-        # SMB EXAMPLE: mount_smbfs //sjversto:password@files.ugent.be/sjversto/www/users ~/Remotes/WWW
-        if host.protocol == "ssh": command = "sshfs " + debug_flags + host.user + "@" + host.name + ":" + mount_point_string + " " + mount_path + " -C -o volname=" + host.id
-        elif host.protocol == "smb":
-            #fs.remove_directory(mount_path)
-            command = "mount_smbfs //" + host.user + "@" + host.name + mount_point_string + " " + mount_path
-        else: raise ValueError("Unknown host protocol: " + host.protocol)
+        # Get command
+        command = self.get_mount_command(host, mount_path)
 
         # Debugging
         log.debug("Mounting command: '" + command + "'")
-        #print(command)
+        print(command)
 
         # Create the pexpect child instance
         child = pexpect.spawn(command, timeout=30)
-        if host.password is not None:
-            index = child.expect(['password: ', 'Password for ' + host.name + ": ", pexpect.EOF, pexpect.TIMEOUT])
-            if index == 0 or index == 1: child.sendline(host.password)
-            elif index == 2:
-                output = child.before.split("\r\n")[:-1]
-                for line in output:
-                    if "File exists" in line: raise IOError("Remote host is already mounted somewhere else")
-                else:
-                    print("\n".join(output))
-                    exit()
-            elif index == 3: raise RuntimeError("A timeout has occurred")
-            else: raise RuntimeError("Unknown error")
+        #child.logfile = sys.stdout
+
+        # if host.password is not None:
+        #     index = child.expect(['password: ', 'Password for ' + host.name + ": ", pexpect.EOF, pexpect.TIMEOUT])
+        #     #print(index)
+        #     #print(child.before, child.after)
+        #     if index == 0 or index == 1: child.sendline(host.password)
+        #     elif index == 2:
+        #         output = child.before.split("\r\n")[:-1]
+        #         for line in output:
+        #             if "File exists" in line: raise IOError("Remote host is already mounted somewhere else")
+        #         else:
+        #             print("\n".join(output))
+        #             exit()
+        #     elif index == 3: raise RuntimeError("A timeout has occurred")
+        #     else: raise RuntimeError("Unknown error")
 
         if log.is_debug(): child.logfile = sys.stdout
 
         # Execute the command and get the output
-        child.expect(pexpect.EOF, timeout=None)
+        child.logfile = sys.stdout
+        #child.expect(pexpect.EOF, timeout=None)
+        index = child.expect([pexpect.EOF, pexpect.TIMEOUT])
+        #print(child.before, child.after)
+        #print(child.after)
+        #print(index)
+        #print(child.after)
+        if index != 0: raise RuntimeError("Timeout exceeded")
         output = child.before
         child.close()
 
@@ -194,7 +288,7 @@ class RemoteMounter(object):
             if "error" in line: raise RuntimeError("Something went wrong: " + line)
 
         # Check whether we have mounted
-        if not fs.is_mount_point(mount_path): raise RuntimeError("An error occured during the mounting")
+        #if not fs.is_mount_point(mount_path): raise RuntimeError("An error occured during the mounting")
 
         # Set the path
         self.mount_paths[the_host_id] = mount_path
