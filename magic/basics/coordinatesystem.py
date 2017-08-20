@@ -94,6 +94,33 @@ class CoordinateSystem(wcs.WCS):
     # -----------------------------------------------------------------
 
     @classmethod
+    def from_header(cls, header):
+
+        """
+        This function ...
+        :param header:
+        :return:
+        """
+
+        return cls(header=header)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_header_string(cls, string):
+
+        """
+        This function ...
+        :param string:
+        :return:
+        """
+
+        header = Header.fromstring(string)
+        return cls.from_header(header)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
     def from_file(cls, path):
 
         """

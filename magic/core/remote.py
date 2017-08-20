@@ -218,7 +218,7 @@ class RemoteFrame(object):
         :return:
         """
 
-        classname = cls.local_classname
+        classname = cls.local_classname()
         return globals()[classname]
 
     # -----------------------------------------------------------------
@@ -811,7 +811,9 @@ class RemoteFrame(object):
         if not self.has_wcs: raise RuntimeError("Cannot rebin a frame without coordinate system")
 
         # Upload the WCS
-        self.session.send_line('reference_wcs = CoordinateSystem("' + reference_wcs.to_header_string() + '")')
+        output = self.session.send_line('reference_wcs = CoordinateSystem.from_header_string("' + reference_wcs.to_header_string() + '")')
+        for line in output:
+            if "Error:" in line: raise RuntimeError(line)
 
         # Create remote frame label for the footprint
         footprint_label = get_new_label("Frame", self.session)
@@ -1724,7 +1726,9 @@ class RemoteImage(object):
         if not self.has_wcs: raise RuntimeError("Cannot rebin a frame without coordinate system")
 
         # Upload the WCS
-        self.session.send_line('reference_wcs = CoordinateSystem("' + reference_wcs.to_header_string() + '")')
+        output = self.session.send_line('reference_wcs = CoordinateSystem.from_header_string("' + reference_wcs.to_header_string() + '")')
+        for line in output:
+            if "Error:" in line: raise RuntimeError(line)
 
         # Rebin remotely
         self.session.send_line(self.label + ".rebin(reference_wcs, exact=" + str(exact) + ", parallel=" + str(parallel) + ")", show_output=True, timeout=None)
