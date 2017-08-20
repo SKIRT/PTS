@@ -239,6 +239,20 @@ class RemotePythonSession(object):
 
     # -----------------------------------------------------------------
 
+    def evaluate_boolean_expression(self, expression):
+
+        """
+        This function ...
+        :param expression:
+        :return:
+        """
+
+        result = self.get_simple_variable(expression)
+        print(result)
+        return result == "True"
+
+    # -----------------------------------------------------------------
+
     def get_string(self, name):
 
         """
@@ -664,11 +678,17 @@ class AttachedPythonSession(RemotePythonSession):
 
         self.send_line(name, show_output=show_output)
 
-        print(self.parent.ssh.before)
-        print(list(self.parent.ssh.before))
+        #print(self.parent.ssh.before)
+        #print(list(self.parent.ssh.before))
+
+        output = self.parent.ssh.before.strip()
+
+        lines = output.split("\r\n")
+        if lines[0] == name: lines = lines[1:]
+        print(lines)
 
         # Return the value
-        return eval(self.parent.ssh.before)
+        return eval(lines[0])
 
     # -----------------------------------------------------------------
 
