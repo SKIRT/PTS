@@ -49,6 +49,12 @@ if not fs.is_directory(kernels_path): fs.create_directory(kernels_path)
 # FWHMS for different bands
 fwhms = {"GALEX FUV": 4.48 * u("arcsec"),
          "GALEX NUV": 5.05 * u("arcsec"),
+         "UVOT U": 2.3 * u("arcsec"), # *
+         "UVOT B": 2.0 * u("arcsec"), # *
+         "UVOT V": 1.6 * u("arcsec"), # *
+         "UVOT UVW1": 1.7 * u("arcsec"), # *
+         "UVOT UVM2": 2.0 * u("arcsec"), # *
+         "UVOT UVW2": 2.3 * u("arcsec"), # *
          "Halpha": 2.0 * u("arcsec"),
          "IRAC I1": 1.90 * u("arcsec"),
          "IRAC I2": 1.81 * u("arcsec"),
@@ -76,6 +82,11 @@ fwhms = {"GALEX FUV": 4.48 * u("arcsec"),
          "Planck 4260": 799. * u("arcsec"),
          "Planck 6810": 1630. * u("arcsec"),
          "Planck 10600": 1940. * u("arcsec")}
+
+# -----------------------------------------------------------------
+
+# REFERENCES:
+# * from https://www.mssl.ucl.ac.uk/www_astro/uvot/uvot_instrument/filterwheel/filterwheel.html
 
 # -----------------------------------------------------------------
 
