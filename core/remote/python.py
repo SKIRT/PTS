@@ -248,8 +248,7 @@ class RemotePythonSession(object):
         """
 
         result = self.get_simple_variable(expression)
-        print(result)
-        return result == "True"
+        return result
 
     # -----------------------------------------------------------------
 
