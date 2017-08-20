@@ -753,7 +753,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             origins = self.young_map_origins[name]
 
             # Clip the map
-            maps = self.make_clipped_maps(self.young_maps[name], origins, self.config.sigma_levels, convolve=self.config.convolve, remote=self.config.remote)
+            maps = self.make_clipped_maps(self.young_maps[name], origins, self.config.sigma_levels, convolve=self.config.convolve, remote=self.config.remote, rebin_remote_threshold=self.config.rebin_remote_threshold)
 
             # Replace by a dictionary of maps
             self.young_maps[name] = maps
@@ -783,7 +783,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             origins = self.ionizing_map_origins[name]
 
             # Clip the map
-            maps = self.make_clipped_maps(self.ionizing_maps[name], origins, self.config.sigma_levels, convolve=self.config.convolve, remote=self.config.remote)
+            maps = self.make_clipped_maps(self.ionizing_maps[name], origins, self.config.sigma_levels, convolve=self.config.convolve, remote=self.config.remote, rebin_remote_threshold=self.config.rebin_remote_threshold)
 
             # Replace by a dictionary of maps
             self.ionizing_maps[name] = maps
@@ -813,7 +813,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             origins = self.dust_map_origins[name]
 
             # Clip the map
-            maps = self.make_clipped_maps(self.dust_maps[name], origins, self.config.sigma_levels, convolve=self.config.convolve, remote=self.config.remote)
+            maps = self.make_clipped_maps(self.dust_maps[name], origins, self.config.sigma_levels, convolve=self.config.convolve, remote=self.config.remote, rebin_remote_threshold=self.config.rebin_remote_threshold)
 
             # Replace by a dictionary of maps
             self.dust_maps[name] = maps
