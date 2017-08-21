@@ -1439,11 +1439,12 @@ class FrameList(FilterBasedList):
 
     # -----------------------------------------------------------------
 
-    def convolve_and_rebin(self, remote=None):
+    def convolve_and_rebin(self, remote=None, rebin_remote_threshold=None):
 
         """
         This function ...
         :param remote:
+        :param rebin_remote_threshold:
         :return:
         """
 
@@ -2941,7 +2942,7 @@ def rebin_to_pixelscale_local(*frames, **kwargs):
 
                     from .remote import RemoteFrame
                     remoteframe = RemoteFrame.from_local(frame, session)
-                    remoteframe.rebinned(highest_pixelscale_wcs)
+                    remoteframe.rebin(highest_pixelscale_wcs)
                     rebinned = remoteframe.to_local()
 
                 else: rebinned = frame.rebinned(highest_pixelscale_wcs)
@@ -2979,7 +2980,7 @@ def rebin_to_pixelscale_local(*frames, **kwargs):
 
                     from .remote import RemoteFrame
                     remoteframe = RemoteFrame.from_local(frame, session)
-                    remoteframe.rebinned(highest_pixelscale_wcs)
+                    remoteframe.rebin(highest_pixelscale_wcs)
                     rebinned = remoteframe.to_local()
 
                 else:

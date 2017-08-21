@@ -337,7 +337,7 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
 
 # -----------------------------------------------------------------
 
-wcs_keywords = ["RA", "DEC", "CD1_1", "CD1_2", "CD2_1", "CD2_2", "EQUINOX", "EPOCH", "WCSDIM", "NAXIS", "CRPIX1", "CRPIX2", "LONPOLE", "CTYPE2", "CTYPE1", "NAXIS1", "NAXIS2", "WCSAXES", "NAXIS3", "RADESYS", "CDELT1", "CDELT2", "LATPOLE", "CUNIT1", "CUNIT2", "CRVAL1", "CRVAL2"]
+wcs_keywords = ["RA", "DEC", "CD1_1", "CD1_2", "CD2_1", "CD2_2", "PC1_1", "PC1_2", "PC2_1", "PC2_2", "EQUINOX", "EPOCH", "WCSDIM", "NAXIS", "CRPIX1", "CRPIX2", "LONPOLE", "CTYPE2", "CTYPE1", "NAXIS1", "NAXIS2", "WCSAXES", "NAXIS3", "RADESYS", "CDELT1", "CDELT2", "LATPOLE", "CUNIT1", "CUNIT2", "CRVAL1", "CRVAL2"]
 other_ignore_keywords = ["ORIGIN", "BITPIX", "FILTER", "UNIT", "FWHM", "PHYSTYPE", "DISTANCE", "SIGUNIT", "PSFFLTR", "BUNIT"]
 
 # -----------------------------------------------------------------
@@ -424,12 +424,12 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     header_pixelscale = headers.get_pixelscale(header)  # NOTE: SOMETIMES PLAIN WRONG IN THE HEADER !!
 
     # REMOVE ALL KEYWORDS FROM THE FLAT HEADER THAT ARE NOT REQUIRED TO INTERPRET THE COORDINATE SYSTEM
-    flat_header.remove("", remove_all=True)
+    if "" in flat_header.keys(): flat_header.remove("", remove_all=True)
     keys = flat_header.keys()
     for key in keys:
-        if key in wcs_keywords: log.debug("--WCS--" + key)
+        if key in wcs_keywords: pass #log.debug("--WCS-- " + key)
         else:
-            log.debug("--REMOVING--", key)
+            #log.debug("--REMOVING-- " + key)
             flat_header.remove(key)
 
     # Check CTYPE1
