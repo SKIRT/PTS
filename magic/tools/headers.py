@@ -204,18 +204,36 @@ def get_filter(name, header=None):
         if "ORIGIN" in header: filterid += " " + get_string(header["ORIGIN"]).lower()
         if "OBSERVAT" in header: filterid += " " + get_string(header["OBSERVAT"]).lower()
 
+        for filter_index in range(5):
+
+            filter_index_keyword = "FILTER" + str(filter_index)
+            if filter_index_keyword in header:
+                try:
+                    #print(header[filter_index_keyword])
+                    filter = parse_filter(header[filter_index_keyword].upper())
+                    return filter
+                except ValueError: pass
+
+        # FILTERS
+        if "FILTERS" in header:
+            try:
+                #print(header["FILTERS"])
+                filter = parse_filter(header["FILTERS"].upper())
+                return filter
+            except ValueError: pass
+
         # Get a name describing the filter
         if "FILTER" in header:
             # One-letter filters are too ambiguous!
             if len(header["FILTER"]) > 1:
                 try:
-                    filter = parse_filter(header["FILTER"])
+                    filter = parse_filter(header["FILTER"].upper())
                     return filter
                 except ValueError: pass
             filterid += " " + get_string(header['FILTER']).lower()
         if "FLTRNM" in header:
             try:
-                filter = parse_filter(header["FLTRNM"])
+                filter = parse_filter(header["FLTRNM"].upper())
                 return filter
             except ValueError: pass
             filterid += " " + get_string(header['FLTRNM']).lower()
