@@ -616,107 +616,129 @@ class BroadBandFilter(Filter):
     #
     def __init__(self, filterspec, name=None):
 
-        # Check aliases if the filterspec is not exactly equal to predefined specs
-        if isinstance(filterspec, types.StringTypes):
-            if filterspec not in identifiers:
-                for spec, alias in generate_all_aliases():
-                    if filterspec == alias:
-                        filterspec = spec
-                        break
-                # Break not encountered
-                else: raise ValueError("Could not recognize the filter: " + filterspec)
-
-        # Planck filters have to be handled seperately
-        if isinstance(filterspec, types.StringTypes) and "planck" in filterspec.lower():
-
-            # Load properties
-            wavelengths, transmissions, instrument, frequency_string = load_planck(filterspec)
-
-            # Determine ID and description
-            filter_id = "Planck/" + instrument + "." + frequency_string
-            description = instrument + " " + frequency_string
-
-            true_filter = True
-
-            # Initialize
-            self._initialize2(wavelengths, transmissions)
-
-            # Set central wavelength
-            # HFI: 3, 2, 1.5, 0.9, 0.5, 0.3 mm
-            # LFI: 10, 7, 4 mm
-            if instrument == "HFI":
-
-                central_wavelengths = [0.3, 0.5, 0.9, 1.5, 2., 3.]
-                index = find_planck_index_instrument(instrument, frequency_string)
-                self._WavelengthCen = central_wavelengths[index] * 1000.
-
-            elif instrument == "LFI":
-
-                central_wavelengths = [4., 7., 10.]
-                index = find_planck_index_instrument(instrument, frequency_string)
-                self._WavelengthCen = central_wavelengths[index] * 1000.
-
-        # ALMA filters have to be handled seperately
-        elif isinstance(filterspec, types.StringTypes) and "alma" in filterspec.lower():
+        # CTIO filters are special
+        if isinstance(filterspec, types.StringTypes) and "ctio" in filterspec.lower():
 
             # Load
-            wavelengths, transmissions = load_alma(filterspec)
+            name, filtercode, center, fwhm, wavelengths, transmission = load_ctio(filterspec)
 
-            # Determine ID and description
-            identifier = identifiers[filterspec]
-            filter_id = "ALMA/ALMA." + str(identifier.channel)
-            description = "ALMA " + str(identifier.channel)
+            if wavelengths is not None:
+                self._Wavelengths = [wavelength.to("micron").value for wavelength in wavelengths]
+                self._Transmission = transmission
 
-            true_filter = True
+            category = "Various"
+            #filter_id = "CTIO/" + category + "." + filtercode.replace("/", "_")
+            filter_id = "CTIO/CTIO." + category + "_" + filtercode.replace("/", "_")
 
-            # Initialize
-            self._initialize2(wavelengths, transmissions)
-
-        # string --> load from appropriate resource file
-        elif isinstance(filterspec, types.StringTypes):
-
-            # Load
-            min_wavelength, max_wavelength, center_wavelength, mean_wavelength, eff_wavelength, filter_id, description, \
-            fwhm, eff_width, photon_counter, wavelengths, transmissions = load_svo(filterspec)
-
-            # Set properties
-            self._WavelengthMin = min_wavelength
-            self._WavelengthMax = max_wavelength
-            self._WavelengthCen = center_wavelength
-            self._WavelengthMean = mean_wavelength
-            self._WavelengthEff = eff_wavelength
-            self._EffWidth = eff_width
-            self._FWHM = fwhm
-            self._Wavelengths = wavelengths
-            self._Transmission = transmissions
-            self._PhotonCounter = photon_counter
+            description = name
 
             true_filter = True
 
-            # Initialize
-            self._initialize1()
+            self._WavelengthCen = center.to("micron").value
 
-        # range --> construct ad hoc uniform bolometer
         else:
 
-            if name is None: name = "Uniform"
-            self._WavelengthMin, self._WavelengthMax = map(float, filterspec)
-            self._WavelengthCen = 0.5 * (self._WavelengthMin + self._WavelengthMax)
-            self._WavelengthMean = self._WavelengthCen
-            self._WavelengthEff = self._WavelengthCen
-            self._Wavelengths = np.array((self._WavelengthMin,self._WavelengthMax))
-            self._Transmission = np.ones((2,))
-            self._PhotonCounter = False
-            self._IntegratedTransmission = self._WavelengthMax - self._WavelengthMin
-            self._WavelengthPivot = np.sqrt(self._WavelengthMin * self._WavelengthMax)
-            self._EffWidth = self._WavelengthMax - self._WavelengthMin
-            self._FWHM = None
+            # Check aliases if the filterspec is not exactly equal to predefined specs
+            if isinstance(filterspec, types.StringTypes):
+                if filterspec not in identifiers:
+                    for spec, alias in generate_all_aliases():
+                        if filterspec == alias:
+                            filterspec = spec
+                            break
+                    # Break not encountered
+                    else: raise ValueError("Could not recognize the filter: " + filterspec)
 
-            true_filter = False
+            # Planck filters have to be handled seperately
+            if isinstance(filterspec, types.StringTypes) and "planck" in filterspec.lower():
 
-            # Determine filter ID and description
-            filter_id = name + "_[{},{}]".format(self._WavelengthMin, self._WavelengthMax)
-            description = name + " filter in range [{},{}]".format(self._WavelengthMin, self._WavelengthMax)
+                # Load properties
+                wavelengths, transmissions, instrument, frequency_string = load_planck(filterspec)
+
+                # Determine ID and description
+                filter_id = "Planck/" + instrument + "." + frequency_string
+                description = instrument + " " + frequency_string
+
+                true_filter = True
+
+                # Initialize
+                self._initialize2(wavelengths, transmissions)
+
+                # Set central wavelength
+                # HFI: 3, 2, 1.5, 0.9, 0.5, 0.3 mm
+                # LFI: 10, 7, 4 mm
+                if instrument == "HFI":
+
+                    central_wavelengths = [0.3, 0.5, 0.9, 1.5, 2., 3.]
+                    index = find_planck_index_instrument(instrument, frequency_string)
+                    self._WavelengthCen = central_wavelengths[index] * 1000.
+
+                elif instrument == "LFI":
+
+                    central_wavelengths = [4., 7., 10.]
+                    index = find_planck_index_instrument(instrument, frequency_string)
+                    self._WavelengthCen = central_wavelengths[index] * 1000.
+
+            # ALMA filters have to be handled seperately
+            elif isinstance(filterspec, types.StringTypes) and "alma" in filterspec.lower():
+
+                # Load
+                wavelengths, transmissions = load_alma(filterspec)
+
+                # Determine ID and description
+                identifier = identifiers[filterspec]
+                filter_id = "ALMA/ALMA." + str(identifier.channel)
+                description = "ALMA " + str(identifier.channel)
+
+                true_filter = True
+
+                # Initialize
+                self._initialize2(wavelengths, transmissions)
+
+            # string --> load from appropriate resource file
+            elif isinstance(filterspec, types.StringTypes):
+
+                # Load
+                min_wavelength, max_wavelength, center_wavelength, mean_wavelength, eff_wavelength, filter_id, description, \
+                fwhm, eff_width, photon_counter, wavelengths, transmissions = load_svo(filterspec)
+
+                # Set properties
+                self._WavelengthMin = min_wavelength
+                self._WavelengthMax = max_wavelength
+                self._WavelengthCen = center_wavelength
+                self._WavelengthMean = mean_wavelength
+                self._WavelengthEff = eff_wavelength
+                self._EffWidth = eff_width
+                self._FWHM = fwhm
+                self._Wavelengths = wavelengths
+                self._Transmission = transmissions
+                self._PhotonCounter = photon_counter
+
+                true_filter = True
+
+                # Initialize
+                self._initialize1()
+
+            # range --> construct ad hoc uniform bolometer
+            else:
+
+                if name is None: name = "Uniform"
+                self._WavelengthMin, self._WavelengthMax = map(float, filterspec)
+                self._WavelengthCen = 0.5 * (self._WavelengthMin + self._WavelengthMax)
+                self._WavelengthMean = self._WavelengthCen
+                self._WavelengthEff = self._WavelengthCen
+                self._Wavelengths = np.array((self._WavelengthMin,self._WavelengthMax))
+                self._Transmission = np.ones((2,))
+                self._PhotonCounter = False
+                self._IntegratedTransmission = self._WavelengthMax - self._WavelengthMin
+                self._WavelengthPivot = np.sqrt(self._WavelengthMin * self._WavelengthMax)
+                self._EffWidth = self._WavelengthMax - self._WavelengthMin
+                self._FWHM = None
+
+                true_filter = False
+
+                # Determine filter ID and description
+                filter_id = name + "_[{},{}]".format(self._WavelengthMin, self._WavelengthMax)
+                description = name + " filter in range [{},{}]".format(self._WavelengthMin, self._WavelengthMax)
 
         self.true_filter = true_filter
         self.spec = filterspec
@@ -1207,6 +1229,75 @@ def load_alma(filterspec, pwv=0.2):
 
     # Return
     return wavelengths, transmissions
+
+# -----------------------------------------------------------------
+
+ctio_transmission_url = "http://www.ctio.noao.edu/noao/sites/default/files/instruments/filters/"
+
+# -----------------------------------------------------------------
+
+def load_ctio(filterspec):
+
+    """
+    This function ...
+    :param filterspec:
+    :return:
+    """
+
+    #print("FILTERSPEC", filterspec)
+
+    # Load the table
+    from astropy.table import Table
+    this_path = os.path.dirname(os.path.abspath(__file__))
+    core_path = os.path.dirname(this_path)
+    ctio_path = os.path.join(core_path, "dat", "filters", "CTIO")
+    ctio_table_path = os.path.join(ctio_path, "CTIO.html")
+    table = Table.read(ctio_table_path)
+    names = list(table["FILTSET"])
+
+    import difflib
+    import numpy as np
+    from ..units.parsing import parse_unit as u
+
+    # Find the best match with this tring
+    phrase = filterspec.lower().split("ctio")[1].strip()
+
+    similarities = []
+    for index, item in enumerate(names):
+        if isinstance(item, np.ma.core.MaskedConstant): similarities.append(0.0)
+        elif not item.strip(): similarities.append(0.)
+        else:
+            sim = difflib.SequenceMatcher(None, a=phrase, b=item.lower()).ratio()
+            similarities.append(sim)
+
+    index = np.argmax(np.array(similarities))
+
+    name = names[index]
+    filtercode = table["FILTER/width"][index]
+    center = table["Cent. (A.)"][index] * u("Angstrom")
+    fwhm = table["fwhm (A.)"][index] * u("Angstrom")
+    #transcurvefile = table["Transm curve (.txt)"][index]
+    #print(filtercode, center, fwhm, transcurvefile)
+
+    transmission_file_url = os.path.join(ctio_transmission_url, filtercode.replace("/", "-") + ".txt")
+    #print(transmission_file_url)
+
+    from ..tools import network
+    from ..tools import introspection
+    from ..tools import filesystem as fs
+
+    if network.exists(transmission_file_url):
+        #print("exists")
+        filepath = network.download_file(transmission_file_url, introspection.pts_temp_dir, overwrite=True)
+        fs.remove_first_lines(filepath, "WAVELENGTH")
+        #for line in fs.get_lines(filepath): print(line)
+        transmission_table = Table.read(filepath, format="ascii")
+        wavelengths = [value * u("Angstrom") for value in transmission_table["col1"]]
+        transmission = list(transmission_table["col2"])
+    else: wavelengths = transmission = None
+
+    # Return
+    return name, filtercode, center, fwhm, wavelengths, transmission
 
 # -----------------------------------------------------------------
 

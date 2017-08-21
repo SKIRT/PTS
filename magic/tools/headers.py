@@ -204,15 +204,43 @@ def get_filter(name, header=None):
         if "ORIGIN" in header: filterid += " " + get_string(header["ORIGIN"]).lower()
         if "OBSERVAT" in header: filterid += " " + get_string(header["OBSERVAT"]).lower()
 
-        for filter_index in range(5):
+        # Look for explicit telescope or instrument specifications
+        if "OBSERVAT" in header:
 
-            filter_index_keyword = "FILTER" + str(filter_index)
-            if filter_index_keyword in header:
-                try:
-                    #print(header[filter_index_keyword])
-                    filter = parse_filter(header[filter_index_keyword].upper())
-                    return filter
-                except ValueError: pass
+            value = header["OBSERVAT"]
+            if "CTIO" in value:
+
+                # CTIO FILTER
+                if "FILTER" in header: filter_name = header["FILTER"]
+                else: filter_name = ""
+
+                # Search for FNAMES
+                fltrname = get_filter_name_from_fnamei_keys(header)
+                if fltrname is not None: filter_name += " " + fltrname
+
+                # Create filterstring
+                filterstring = "CTIO " + filter_name
+                return parse_filter(filterstring)
+
+        if "TELESCOP" in header:
+
+            value = header["TELESCOP"]
+            if "CTIO" in value:
+
+                # CTIO FILTER
+                if "FILTER" in header: filter_name = header["FILTER"]
+                else: filter_name = ""
+
+                # SEARCH FOR FNAMES
+                fltrname = get_filter_name_from_fnamei_keys(header)
+                if fltrname is not None: filter_name += " " + fltrname
+
+                # Create filterstring
+                filterstring = "CTIO " + filter_name
+                return parse_filter(filterstring)
+
+        fltr = get_filter_from_filteri_keys(header)
+        if fltr is not None: return fltr
 
         # FILTERS
         if "FILTERS" in header:
@@ -468,26 +496,6 @@ def get_filter(name, header=None):
 
     # Planck
     elif "planck" in filterid:
-
-        # ngc3031_planck_10600
-        # ngc3031_planck_1380
-        # ngc3031_planck_2100
-        # ngc3031_planck_3000
-        # ngc3031_planck_350
-        # ngc3031_planck_4260
-        # ngc3031_planck_550
-        # ngc3031_planck_6810
-        # ngc3031_planck_850
-
-        # planck_info["Planck_350"] = ("857", "HFI")
-        # planck_info["Planck_550"] = ("545", "HFI")
-        # planck_info["Planck_850"] = ("353", "HFI")
-        # planck_info["Planck_1380"] = ("217", "HFI")
-        # planck_info["Planck_2100"] = ("143", "HFI")
-        # planck_info["Planck_3000"] = ("100", "HFI")
-        # planck_info["Planck_4260"] = ("070", "LFI")
-        # planck_info["Planck_6810"] = ("044", "LFI")
-        # planck_info["Planck_10600"] = ("030", "LFI")
 
         if "350" in filterid: final_filter_name = "Planck 350"
         elif "550" in filterid: final_filter_name = "Planck 550"
@@ -1053,5 +1061,48 @@ def get_int(entry):
     except ValueError:
         value = entry.split("   / ")[0].rstrip()
         return int(value)
+
+# -----------------------------------------------------------------
+
+def get_filter_from_filteri_keys(header):
+
+    """
+    This function ...
+    :param header:
+    :return:
+    """
+
+    # Find FILTERI keywords
+    for filter_index in range(5):
+
+        filter_index_keyword = "FILTER" + str(filter_index)
+        if filter_index_keyword in header:
+            try:
+                # print(header[filter_index_keyword])
+                filter = parse_filter(header[filter_index_keyword].upper())
+                return filter
+            except ValueError:
+                pass
+
+    return None
+
+# -----------------------------------------------------------------
+
+def get_filter_name_from_fnamei_keys(header):
+
+    """
+    This function ...
+    :param header:
+    :return:
+    """
+
+    for filter_index in range(5):
+
+        filter_index_keyword = "FNAME" + str(filter_index)
+        if filter_index_keyword in header:
+            if "diaphragm" in header[filter_index_keyword].lower(): continue # just a diaphragm
+            return header[filter_index_keyword]
+
+    return None
 
 # -----------------------------------------------------------------

@@ -1603,6 +1603,34 @@ def read_lines_reversed(path, buf_size=8192):
 
 # -----------------------------------------------------------------
 
+def remove_first_lines(filepath, startswith):
+
+    """
+    This function ...
+    :param filepath:
+    :param startswith:
+    :return:
+    """
+
+    lines = []
+
+    for line in read_lines_reversed(filepath):
+
+        # Skip empty
+        if line.strip() == ".": continue
+        if not line.strip(): continue
+
+        if line.strip().startswith(startswith): break
+        lines.append(line)
+
+    # Remove
+    remove_file(filepath)
+
+    # Write
+    write_lines(filepath, reversed(lines))
+
+# -----------------------------------------------------------------
+
 def write_line(filepath, line):
 
     """
