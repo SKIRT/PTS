@@ -329,6 +329,7 @@ def get_models_path(modeling_path):
     :return:
     """
 
+    from .suite import models_name
     return fs.join(modeling_path, "build", models_name)
 
 # -----------------------------------------------------------------
@@ -341,6 +342,7 @@ def get_representations_path(modeling_path):
     :return:
     """
 
+    from .suite import representations_name
     return fs.join(modeling_path, "build", representations_name)
 
 # -----------------------------------------------------------------
@@ -353,6 +355,7 @@ def get_definitions_table_path(modeling_path):
     :return:
     """
 
+    from .suite import models_table_filename
     return fs.join(get_models_path(modeling_path), models_table_filename)
 
 # -----------------------------------------------------------------
@@ -365,6 +368,7 @@ def get_representations_table_path(modeling_path):
     :return:
     """
 
+    from .suite import representations_name, representations_table_filename
     return fs.join(modeling_path, "build", representations_name, representations_table_filename)
 
 # -----------------------------------------------------------------
@@ -416,6 +420,7 @@ def get_representation_path(modeling_path, name):
     :return:
     """
 
+    from .suite import representations_name
     return fs.join(modeling_path, "build", representations_name, name)
 
 # -----------------------------------------------------------------
