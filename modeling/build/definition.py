@@ -20,9 +20,9 @@ from ...magic.core.list import NamedCoordinateSystemList
 from ...core.basics.containers import NamedFileList
 #from .stars import basic_stellar_maps_names
 #from .dust import basic_dust_maps_names
-from .stars import basic_old_map_name, basic_young_map_name, basic_ionizing_map_name
-from .dust import basic_dust_map_name
-from .general import parameters_filename, deprojection_filename
+from .models.stars import basic_old_map_name, basic_young_map_name, basic_ionizing_map_name
+from .models.dust import basic_dust_map_name
+from .models.general import parameters_filename, deprojection_filename
 from ...core.basics.configuration import open_mapping
 from ..basics.models import DeprojectionModel3D
 from pts.core.tools.utils import lazyproperty

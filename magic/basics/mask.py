@@ -725,7 +725,7 @@ class Mask(np.ndarray):
         """
 
         # Show which image we are importing
-        log.info("Reading in file " + path + " ...")
+        log.info("Reading in file '" + path + "' ...")
 
         # Open the HDU list for the FITS file
         hdulist = fits.open(path)

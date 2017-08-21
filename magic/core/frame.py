@@ -778,7 +778,7 @@ class Frame(NDDataArray):
         """
 
         # Show which image we are importing
-        if not silent: log.info("Reading in file " + path + " ...")
+        if not silent: log.info("Reading in file '" + path + "' ...")
 
         from ..core.fits import load_frame
         # PASS CLS TO ENSURE THIS CLASSMETHOD WORKS FOR ENHERITED CLASSES!!

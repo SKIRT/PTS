@@ -2900,7 +2900,8 @@ def rebin_to_pixelscale_local(*frames, **kwargs):
             elif not isinstance(remote, Remote): raise ValueError("Remote must be string, Host or Remote object")
 
             # START SESSION
-            session = remote.start_python_session(attached=True, new_connection_for_attached=True)
+            new_connection = False
+            session = remote.start_python_session(attached=True, new_connection_for_attached=new_connection)
 
     # Rebin
     index = 0

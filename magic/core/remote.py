@@ -529,7 +529,7 @@ class RemoteFrame(object):
         """
 
         # Show which image we are importing
-        log.info("Reading in file " + path + " ...")
+        log.info("Reading in file '" + path + "' ...")
 
         # Prepare session if necessary
         prepare_session(session)
@@ -577,7 +577,7 @@ class RemoteFrame(object):
         """
 
         # Show which image we are importing
-        log.info("Reading in file " + path + " ...")
+        log.info("Reading in file '" + path + "' ...")
 
         # Prepare session if necessary
         prepare_session(session)
@@ -1315,7 +1315,7 @@ class RemoteImage(object):
         """
 
         # Show which image we are importing
-        log.info("Reading in file " + path + " ...")
+        log.info("Reading in file '" + path + "' ...")
 
         # Get the remote instance
         prepare_session(session)
@@ -1758,7 +1758,7 @@ class RemoteDataCube(RemoteImage):
         """
 
         # Show which image we are importing
-        log.info("Reading in file " + path + " ...")
+        log.info("Reading in file '" + path + "' ...")
 
         # Get the remote instance
         prepare_session(session)

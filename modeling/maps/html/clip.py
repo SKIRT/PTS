@@ -24,13 +24,12 @@ from ....core.tools import html
 from ....magic.view.html import javascripts, css_scripts
 from ....core.tools import browser
 from ....core.tools.utils import lazyproperty
-from ....magic.core.rgb import RGBImage
 from ....core.tools import filesystem as fs
-from ....magic.core.mask import Mask
 from ....core.tools import sequences
 from ....magic.core.frame import Frame
 from ..selectioncomponent import MapsSelectionComponent
 from ....core.tools.stringify import tostr
+from ....core.remote.remote import Remote
 
 # -----------------------------------------------------------------
 
@@ -159,6 +158,19 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
         # Create plot directories for each image
         self.create_plot_directories()
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.remote is None: return None
+        else: return Remote(host_id=self.config.remote)
 
     # -----------------------------------------------------------------
 
@@ -723,7 +735,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             origins = self.old_map_origins[name]
 
             # Clip the map
-            maps = self.make_clipped_maps(self.old_maps[name], origins, self.config.sigma_levels, convolve=self.config.convolve, remote=self.config.remote, rebin_remote_threshold=self.config.rebin_remote_threshold)
+            maps = self.make_clipped_maps(self.old_maps[name], origins, self.config.sigma_levels, convolve=self.config.convolve, remote=self.remote, rebin_remote_threshold=self.config.rebin_remote_threshold)
 
             # Replace by a dictionary of maps
             self.old_maps[name] = maps
@@ -753,7 +765,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             origins = self.young_map_origins[name]
 
             # Clip the map
-            maps = self.make_clipped_maps(self.young_maps[name], origins, self.config.sigma_levels, convolve=self.config.convolve, remote=self.config.remote, rebin_remote_threshold=self.config.rebin_remote_threshold)
+            maps = self.make_clipped_maps(self.young_maps[name], origins, self.config.sigma_levels, convolve=self.config.convolve, remote=self.remote, rebin_remote_threshold=self.config.rebin_remote_threshold)
 
             # Replace by a dictionary of maps
             self.young_maps[name] = maps
@@ -783,7 +795,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             origins = self.ionizing_map_origins[name]
 
             # Clip the map
-            maps = self.make_clipped_maps(self.ionizing_maps[name], origins, self.config.sigma_levels, convolve=self.config.convolve, remote=self.config.remote, rebin_remote_threshold=self.config.rebin_remote_threshold)
+            maps = self.make_clipped_maps(self.ionizing_maps[name], origins, self.config.sigma_levels, convolve=self.config.convolve, remote=self.remote, rebin_remote_threshold=self.config.rebin_remote_threshold)
 
             # Replace by a dictionary of maps
             self.ionizing_maps[name] = maps
@@ -813,7 +825,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             origins = self.dust_map_origins[name]
 
             # Clip the map
-            maps = self.make_clipped_maps(self.dust_maps[name], origins, self.config.sigma_levels, convolve=self.config.convolve, remote=self.config.remote, rebin_remote_threshold=self.config.rebin_remote_threshold)
+            maps = self.make_clipped_maps(self.dust_maps[name], origins, self.config.sigma_levels, convolve=self.config.convolve, remote=self.remote, rebin_remote_threshold=self.config.rebin_remote_threshold)
 
             # Replace by a dictionary of maps
             self.dust_maps[name] = maps
