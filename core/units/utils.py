@@ -222,6 +222,8 @@ nanomaggy_string = "(3.613e-6 Jy)"
 
 # Input string->unit replacements
 input_replacements = OrderedDict()
+input_replacements["COUNTS"] = "count"
+input_replacements["PIXEL"] = "pix"
 input_replacements["DN"] = "count"
 input_replacements["SEC"] = "second"
 input_replacements["nanomaggy"] = nanomaggy_string

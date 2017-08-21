@@ -29,6 +29,7 @@ from .frame import Frame, sum_frames
 from ...core.tools.stringify import tostr
 from ...core.units.unit import PhotometricUnit
 from ...core.units.stringify import represent_unit
+from ...core.units.unit import parse_unit as u
 
 # -----------------------------------------------------------------
 
@@ -648,6 +649,43 @@ class Image(object):
 
     # -----------------------------------------------------------------
 
+    @property
+    def file_size(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.path is None: raise ValueError("Path is not defined")
+        return fs.file_size(self.path)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def data_size(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        total_nbytes = 0.
+
+        # Loop over all currently selected frames
+        for frame_name in self.frames: total_nbytes += self.frames[frame_name].data.nbytes
+
+        # Loop over the masks
+        for mask_name in self.masks: total_nbytes += self.masks[mask_name].data.nbytes
+
+        # Loop over the segmentation maps
+        for segments_name in self.segments: total_nbytes += self.segments[segments_name].data.nbytes
+
+        # Return the size in GB
+        return (total_nbytes * u("byte")).to("GB")
+
+    # -----------------------------------------------------------------
+
     def save(self):
 
         """
@@ -1155,6 +1193,8 @@ class Image(object):
             # data, name, description
             self.masks[mask_name] = Mask(mask_frame > 0.5, name=self.masks[mask_name].name, description=self.masks[mask_name].description)
 
+        # TODO: REBIN THE SEGMENTATION MAPS!!
+
         # If there was any frame or mask, we have footprint
         if footprint is not None:
 
@@ -1192,6 +1232,15 @@ class Image(object):
 
             # Crop this mask
             self.masks[mask_name] = self.masks[mask_name][y_min:y_max, x_min:x_max]
+
+        # Loop over all segmentation maps
+        for segments_name in self.segments:
+
+            # Inform the user
+            log.debug("Cropping the " + segments_name + " segmentation map ...")
+
+            # Crop
+            self.segments[segments_name] = self.segments[segments_name][y_min:y_max, x_min:x_max]
 
         # Loop over all regions
         for region_name in self.regions:

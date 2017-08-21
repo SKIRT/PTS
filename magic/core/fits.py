@@ -27,6 +27,7 @@ from ..tools import headers
 from ..basics.mask import Mask
 from .frame import Frame
 from .segmentationmap import SegmentationMap
+from ...core.tools import strings
 
 # -----------------------------------------------------------------
 
@@ -336,7 +337,7 @@ def load_frames(path, index=None, name=None, description=None, always_call_first
 
 # -----------------------------------------------------------------
 
-wcs_keywords = ["NAXIS", "CRPIX1", "CRPIX2", "LONPOLE", "CTYPE2", "CTYPE1", "NAXIS1", "NAXIS2", "WCSAXES", "NAXIS3", "RADESYS", "CDELT1", "CDELT2", "LATPOLE", "CUNIT1", "CUNIT2", "CRVAL1", "CRVAL2"]
+wcs_keywords = ["RA", "DEC", "CD1_1", "CD1_2", "CD2_1", "CD2_2", "EQUINOX", "EPOCH", "WCSDIM", "NAXIS", "CRPIX1", "CRPIX2", "LONPOLE", "CTYPE2", "CTYPE1", "NAXIS1", "NAXIS2", "WCSAXES", "NAXIS3", "RADESYS", "CDELT1", "CDELT2", "LATPOLE", "CUNIT1", "CUNIT2", "CRVAL1", "CRVAL2"]
 other_ignore_keywords = ["ORIGIN", "BITPIX", "FILTER", "UNIT", "FWHM", "PHYSTYPE", "DISTANCE", "SIGUNIT", "PSFFLTR", "BUNIT"]
 
 # -----------------------------------------------------------------
@@ -413,8 +414,6 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     if extra_meta is not None:
         for key in extra_meta: metadata[key] = extra_meta[key]
 
-    #print("METADATA", metadata)
-
     # Check whether multiple planes are present in the FITS image
     nframes = headers.get_number_of_frames(header)
 
@@ -424,11 +423,46 @@ def load_frame(cls, path, index=None, name=None, description=None, plane=None, h
     # Load the frames
     header_pixelscale = headers.get_pixelscale(header)  # NOTE: SOMETIMES PLAIN WRONG IN THE HEADER !!
 
+    # REMOVE ALL KEYWORDS FROM THE FLAT HEADER THAT ARE NOT REQUIRED TO INTERPRET THE COORDINATE SYSTEM
+    flat_header.remove("", remove_all=True)
+    keys = flat_header.keys()
+    for key in keys:
+        if key in wcs_keywords: log.debug("--WCS--" + key)
+        else:
+            log.debug("--REMOVING--", key)
+            flat_header.remove(key)
+
+    # Check CTYPE1
+    if len(flat_header["CTYPE1"]) != 8:
+        ndashes = strings.noccurences(flat_header["CTYPE1"], "-")
+        to_replace = "-" * ndashes
+        difference = len(flat_header["CTYPE1"]) - 8
+        new_ndashes = ndashes - difference
+        if new_ndashes < 1: raise RuntimeError("Something is going wrong reading this header")
+        replacement = "-" * new_ndashes
+        flat_header["CTYPE1"] = flat_header["CTYPE1"].replace(to_replace, replacement)
+
+    # Check CTYPE2
+    if len(flat_header["CTYPE2"]) != 8:
+        ndashes = strings.noccurences(flat_header["CTYPE2"], "-")
+        to_replace = "-" * ndashes
+        difference = len(flat_header["CTYPE2"]) - 8
+        new_ndashes = ndashes - difference
+        if new_ndashes < 1: raise RuntimeError("Something is going wrong reading this header")
+        replacement = "-" * new_ndashes
+        flat_header["CTYPE2"] = flat_header["CTYPE2"].replace(to_replace, replacement)
+
     # Obtain the world coordinate system from the 'flattened' header
     try:
+        #for key in flat_header: print(key, flat_header[key])
+        #for key in flat_header: print(key)
         wcs = CoordinateSystem(flat_header)
         pixelscale = wcs.pixelscale
-    except ValueError:
+    except ValueError as e:
+        log.warning("An error occured while trying to interpret the coordinate system of the image:")
+        for line in e.message.split("\n"):
+            if not line.strip(): continue
+            log.warning("  " + line)
         wcs = None
         pixelscale = None
 

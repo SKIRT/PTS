@@ -2301,7 +2301,13 @@ class Frame(NDDataArray):
         :return:
         """
 
+        # Give warning message
+        log.warning("The size of the frame in itself is perhaps not accurately represented by the size of the file it originates from, because it possibly contains muliple frames")
+
+        # Check if path is defined
         if self.path is None: raise ValueError("Path is not defined")
+
+        # Return the file size, if the frame has a path
         return fs.file_size(self.path)
 
     # -----------------------------------------------------------------
