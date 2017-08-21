@@ -52,7 +52,6 @@ from ...core.remote.utils import DetachedCalculation
 from ...core.tools.utils import UserIntervention
 from ..maps.ssfr import SSFRMapMaker
 from ...core.tools import types
-#from ..maps.significance import SignificanceMaskCreator
 from ..preparation.inspector import PreparationInspector
 from ..component.galaxy import get_observed_sed_file_path, get_reference_seds
 from ...core.plot.sed import SEDPlotter
@@ -1071,9 +1070,7 @@ class GalaxyModeler(ModelerBase):
         # Create the map of the ionizing stellar population
         if self.needs_ionizing_stellar_maps: self.make_ionizing_stellar_maps()
 
-        # Calculate the significance masks
-        #if not self.history.finished("create_significance_masks"): self.create_significance_masks()
-
+        # Create the maps for the different RT model components
         if self.needs_component_maps: self.make_component_maps()
 
     # -----------------------------------------------------------------
@@ -1253,30 +1250,6 @@ class GalaxyModeler(ModelerBase):
 
         # Run the ionizing stellar map maker
         with self.write_log(maker), self.register(maker), self.write_config(maker): maker.run()
-
-    # -----------------------------------------------------------------
-
-    # def create_significance_masks(self):
-    #
-    #     """
-    #     This function ...
-    #     :return:
-    #     """
-    #
-    #     # Inform the user
-    #     log.info("Creating significance masks ...")
-    #
-    #     # Create the configuration
-    #     config = dict()
-    #
-    #     # Create the significance mask creator
-    #     creator = SignificanceMaskCreator(config)
-    #
-    #     # Set the working directory
-    #     creator.config.path = self.modeling_path
-    #
-    #     # Set log path
-    #     with self.write_log(creator), self.register(creator), self.write_config(creator): creator.run()
 
     # -----------------------------------------------------------------
 

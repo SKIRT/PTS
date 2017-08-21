@@ -71,6 +71,9 @@ class Deprojector(GalaxyModelingComponent):
         # The deprojected maps
         self.deprojected = dict()
 
+        # The edge-on maps
+        self.edgeon = dict()
+
         ##
 
         # The output paths
@@ -103,7 +106,7 @@ class Deprojector(GalaxyModelingComponent):
         # 4. Write
         self.write()
 
-        # 5. Launch
+        # 5. Deproject
         self.deproject()
 
     # -----------------------------------------------------------------
@@ -471,10 +474,6 @@ class Deprojector(GalaxyModelingComponent):
 
         unit = "pc"
 
-        # Create coordinate data
-        x, y, z, r, theta, phi = xyz(shape=shape, limits=limits, spherical=True)
-        #data = r * 0
-
         # Loop over the components
         for name in self.deprojections:
 
@@ -488,6 +487,10 @@ class Deprojector(GalaxyModelingComponent):
             y_max_scalar = component.ymax.to(unit).value
             z_min_scalar = component.zmin.to(unit).value
             z_max_scalar = component.zmax.to(unit).value
+
+            # Create coordinate data
+            x, y, z, r, theta, phi = xyz(shape=shape, limits=limits, spherical=True)
+            # data = r * 0
 
             # Calculate the surface density
             density = self.deprojections[name].surface_density_function(normalize=True)(x, y)

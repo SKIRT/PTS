@@ -468,6 +468,8 @@ class PointSource(Source):
                                            mode=config.deblending.mode, nlevels=config.deblending.nlevels,
                                            filter_kernel=kernel)
 
+                plotting.plot_box(segments)
+
                 smallest_distance = None
                 smallest_distance_mask = None
                 for index in np.unique(segments)[1:]:
