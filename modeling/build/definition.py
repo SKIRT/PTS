@@ -92,7 +92,7 @@ class ModelDefinition(object):
         # Determine component_path
         component_path = fs.join(self.stellar_path, name)
 
-        from .component import load_component
+        from .suite import load_component
         return load_component(component_path, add_map=add_map)
 
     # -----------------------------------------------------------------
@@ -109,7 +109,7 @@ class ModelDefinition(object):
         # Determine component path
         component_path = fs.join(self.dust_path, name)
 
-        from .component import load_component
+        from .suite import load_component
         return load_component(component_path, add_map=add_map)
 
     # -----------------------------------------------------------------
@@ -1002,7 +1002,7 @@ class ModelDefinition(object):
         :return: 
         """
 
-        from .component import load_component
+        from .suite import load_component
         return load_component(self.old_stars_component_path, add_map=add_map)
 
     # -----------------------------------------------------------------
@@ -1015,7 +1015,7 @@ class ModelDefinition(object):
         :return: 
         """
 
-        from .component import load_component
+        from .suite import load_component
         return load_component(self.young_stars_component_path, add_map=add_map)
 
     # -----------------------------------------------------------------
@@ -1028,7 +1028,7 @@ class ModelDefinition(object):
         :return: 
         """
 
-        from .component import load_component
+        from .suite import load_component
         return load_component(self.ionizing_stars_component_path, add_map=add_map)
 
     # -----------------------------------------------------------------
@@ -1041,7 +1041,7 @@ class ModelDefinition(object):
         :return: 
         """
 
-        from .component import load_component
+        from .suite import load_component
         return load_component(self.dust_component_path, add_map=add_map)
 
 # -----------------------------------------------------------------

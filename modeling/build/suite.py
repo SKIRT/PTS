@@ -465,46 +465,7 @@ class ModelSuite(object):
         :return:
         """
 
-        # Create a map
-        component = Map()
-
-        # Set the name
-        component.name = fs.name(path)
-
-        # Load the parameters
-        parameters_path = fs.join(path, parameters_filename)
-        if fs.is_file(parameters_path):
-            parameters = open_mapping(parameters_path)
-            component.parameters = parameters
-
-        # Load the deprojection
-        deprojection_path = fs.join(path, deprojection_filename)
-        if fs.is_file(deprojection_path):
-            deprojection = DeprojectionModel3D.from_file(deprojection_path)
-            component.deprojection = deprojection
-
-        # Load the map
-        map_path = fs.join(path, model_map_filename)
-        if fs.is_file(map_path):
-            component.map_path = map_path
-            if add_map:
-                map = Frame.from_file(map_path)
-                component.map = map
-
-        # Load the model
-        model_path = fs.join(path, model_filename)
-        if fs.is_file(model_path):
-            model = load_3d_model(model_path)
-            component.model = model
-
-        # Load the properties
-        properties_path = fs.join(path, properties_filename)
-        if fs.is_file(properties_path):
-            properties = load_dict(properties_path)
-            component.properties = properties
-
-        # Return the component
-        return component
+        return load_component(path, add_map=add_map)
 
     # -----------------------------------------------------------------
 
@@ -893,5 +854,56 @@ def create_deprojection_for_map(galaxy_properties, disk_position_angle, map, fil
 
     # Create the deprojection
     return create_deprojection_for_wcs(galaxy_properties, disk_position_angle, reference_wcs, filename, scaleheight)
+
+# -----------------------------------------------------------------
+
+def load_component(path, add_map=False):
+
+    """
+    This function ...
+    :param add_map:
+    :return:
+    """
+
+    # Create a map
+    component = Map()
+
+    # Set the name
+    component.name = fs.name(path)
+
+    # Load the parameters
+    parameters_path = fs.join(path, parameters_filename)
+    if fs.is_file(parameters_path):
+        parameters = open_mapping(parameters_path)
+        component.parameters = parameters
+
+    # Load the deprojection
+    deprojection_path = fs.join(path, deprojection_filename)
+    if fs.is_file(deprojection_path):
+        deprojection = DeprojectionModel3D.from_file(deprojection_path)
+        component.deprojection = deprojection
+
+    # Load the map
+    map_path = fs.join(path, model_map_filename)
+    if fs.is_file(map_path):
+        component.map_path = map_path
+        if add_map:
+            map = Frame.from_file(map_path)
+            component.map = map
+
+    # Load the model
+    model_path = fs.join(path, model_filename)
+    if fs.is_file(model_path):
+        model = load_3d_model(model_path)
+        component.model = model
+
+    # Load the properties
+    properties_path = fs.join(path, properties_filename)
+    if fs.is_file(properties_path):
+        properties = load_dict(properties_path)
+        component.properties = properties
+
+    # Return the component
+    return component
 
 # -----------------------------------------------------------------
