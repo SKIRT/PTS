@@ -22,7 +22,6 @@ from ...core.basics.log import log
 from ...core.tools import filesystem as fs
 from ...core.tools import tables, time
 from ...core.basics.table import SmartTable
-from .component import load_fitting_run
 
 # -----------------------------------------------------------------
 
@@ -214,7 +213,7 @@ class SEDFitModelAnalyser(FittingComponent):
         fitting_run_name = fs.name(fs.directory_of(fs.directory_of(generation_path)))
 
         # Load the fitting run
-        self.fitting_run = load_fitting_run(self.config.path, fitting_run_name)
+        self.fitting_run = self.load_fitting_run(fitting_run_name)
 
         # Load the weights table
         #self.weights = tables.from_file(self.weights_table_path, fix_floats=True) # For some reason, the weights are parsed as strings instead of floats (but not from the command line!!??)

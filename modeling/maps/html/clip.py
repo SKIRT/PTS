@@ -996,7 +996,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 if fs.is_file(filepath): continue
 
                 # Debugging
-                log.debug(" - Making plots for the levels '" + tostr(levels) + "' ...")
+                log.debug(" - Making plots for the levels {" + tostr(levels) + "} ...")
 
                 # Save as RGBA
                 self.make_rgba_plot(self.old_maps[name][levels], filepath)
@@ -1035,7 +1035,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 if fs.is_file(filepath): continue
 
                 # Debugging
-                log.debug(" - Making plots for the levels '" + tostr(levels) + "' ...")
+                log.debug(" - Making plots for the levels {" + tostr(levels) + "} ...")
 
                 # Save as RGBA
                 self.make_rgba_plot(self.young_maps[name][levels], filepath)
@@ -1074,7 +1074,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 if fs.is_file(filepath): continue
 
                 # Debugging
-                log.debug(" - Making plots for the levels '" + tostr(levels) + "' ...")
+                log.debug(" - Making plots for the levels {" + tostr(levels) + "} ...")
 
                 # Save as RGBA
                 self.make_rgba_plot(self.ionizing_maps[name][levels], filepath)
@@ -1113,7 +1113,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
                 if fs.is_file(filepath): continue
 
                 # Debugging
-                log.debug(" - Making plots for the levels '" + tostr(levels) + "' ...")
+                log.debug(" - Making plots for the levels {" + tostr(levels) + "} ...")
 
                 # Save as RGBA
                 self.make_rgba_plot(self.dust_maps[name][levels], filepath)
