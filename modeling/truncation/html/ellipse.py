@@ -405,19 +405,11 @@ class TruncationEllipsePageGenerator(TruncationComponent):
 
             if fs.is_file(filepath): continue # plot already there
 
-            #
-            # Make plot
-            # Save as PNG image
-            #if fs.is_file(filepath):
-            #    if self.config.replot: frame.saveto_png(filepath, colours=self.config.colormap, absolute_alpha=True)
-            #    else: raise ValueError("The plot file '" + filepath + "' already exists")
-            #else: frame.saveto_png(filepath, colours=self.config.colormap, absolute_alpha=True)
-
             # REPROJECT
             if rebin_wcs is not None: frame.rebin(rebin_wcs, exact=False)
 
             # Save
-            frame.saveto_png(filepath, colours=self.config.colormap, absolute_alpha=True)
+            frame.saveto_png(filepath, colours=self.config.colormap, alpha="absolute")
 
     # -----------------------------------------------------------------
 

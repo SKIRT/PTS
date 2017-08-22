@@ -12,9 +12,6 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
-# Import standard modules
-from collections import defaultdict, OrderedDict
-
 # Import the relevant PTS classes and modules
 from ....core.basics.log import log
 from ..component import TruncationComponent
@@ -26,12 +23,12 @@ from ....magic.view.html import javascripts, css_scripts
 from ....core.tools import browser
 from ....core.tools.stringify import tostr
 from ....core.tools.utils import lazyproperty
-from ....magic.core.rgb import RGBImage
 from ....core.tools import filesystem as fs
 from ....magic.core.mask import Mask
+from ....magic.core.alpha import AlphaMask
 from ....core.tools import sequences
 from ....core.filter.filter import parse_filter
-from ....core.tools import network, introspection
+from ....core.basics.range import RealRange
 
 # -----------------------------------------------------------------
 
@@ -61,10 +58,7 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
         super(SignificanceLevelsPageGenerator, self).__init__(*args, **kwargs)
 
         # Plot paths for each filter
-        self.filter_plot_paths = dict()
-
-        # Paths of the images
-        self.level_plot_paths = defaultdict(OrderedDict)
+        self.image_plot_paths = dict()
 
         # The sliders
         self.sliders = dict()
@@ -116,10 +110,11 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
         else: fs.create_directory(self.plots_path)
 
         # Create directories for each filter
-        for fltr in self.filters:
-            fltr_path = fs.join(self.plots_path, str(fltr))
-            self.filter_plot_paths[fltr] = fltr_path
-            if not fs.is_directory(fltr_path): fs.create_directory(fltr_path)
+        for name in self.names:
+        #for fltr in self.filters:
+            image_path = fs.join(self.plots_path, name)
+            self.image_plot_paths[name] = image_path
+            if not fs.is_directory(image_path): fs.create_directory(image_path)
 
         # Set the default sigma level
         self.config.default_level = sequences.find_closest_value(self.config.sigma_levels, self.config.default_level)
@@ -196,7 +191,8 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
         """
 
         # Get plot path
-        plot_path = self.filter_plot_paths[parse_filter(name)]
+        #plot_path = self.filter_plot_paths[parse_filter(name)]
+        plot_path = self.image_plot_paths[name]
 
         #print(fs.files_in_path(plot_path, returns="name", extension="png", convert=float), self.config.sigma_levels)
 
@@ -223,9 +219,9 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
         """
 
         # Get the plot path
-        plot_path = self.filter_plot_paths[parse_filter(name)]
+        plot_path = self.image_plot_paths[name]
 
-        has_all = True
+        #has_all = True
 
         # Loop over the levels
         for level in self.config.sigma_levels:
@@ -233,12 +229,105 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
             # Determine path
             path = fs.join(plot_path, str(level) + ".png")
 
+            # Determine mask path
+            mask_path = fs.join(plot_path, str(level) + "_mask.png")
+
             # Check
-            if fs.is_file(path): self.level_plot_paths[name][level] = path
-            else: has_all = False
+            #if fs.is_file(path) and fs.is_file(mask_path): pass
+            #else: has_all = False
+            if not fs.is_file(path) or not fs.is_file(mask_path): return False
 
         # Return
-        return has_all
+        #return has_all
+        return True
+
+    # -----------------------------------------------------------------
+
+    def create_mask_for_level(self, significance, level):
+
+        """
+        This function ...
+        :param significance:
+        :param level:
+        :return:
+        """
+
+        # Create the mask
+        mask = Mask(significance > level)
+
+        # Only keep largest patch
+        mask = mask.largest(npixels=self.config.min_npixels, connectivity=self.config.connectivity)
+
+        # Fill holes
+        mask.fill_holes()
+
+        # Return the mask
+        return mask
+
+    # -----------------------------------------------------------------
+
+    def create_fuzzy_mask_for_level(self, significance, level):
+
+        """
+        This function ...
+        :param significance:
+        :param level:
+        :return:
+        """
+
+        # Construct value range
+        lower_relative = 1. - self.config.fuzziness # example: 1. - 0.1
+        upper_relative = 1. + self.config.fuzziness
+        value_range = RealRange.around(level, lower_relative, upper_relative)
+
+        # Create the mask
+        mask = AlphaMask.between(significance, value_range)
+
+        # Only keep largest patch
+        mask = mask.largest(npixels=self.config.min_npixels, connectivity=self.config.connectivity)
+
+        # Fill holes
+        mask.fill_holes()
+
+        # Return the mask
+        return mask
+
+    # -----------------------------------------------------------------
+
+    def make_plots_for_level(self, frame, significance, plot_path, level):
+
+        """
+        This function ...
+        :param frame:
+        :param significance:
+        :param plot_path:
+        :param level:
+        :return:
+        """
+
+        # Determine path
+        path = fs.join(plot_path, str(level) + ".png")
+
+        # Determine path for the mask
+        mask_path = fs.join(plot_path, str(level) + "_mask.png")
+
+        # Check
+        if fs.is_file(path) and fs.is_file(mask_path): return
+
+        # Create the mask
+        if self.config.fuzzy_mask: mask = self.create_fuzzy_mask_for_level(significance, level)
+        else: mask = self.create_mask_for_level(significance, level)
+
+        # Mask the frame
+        if self.config.fuzzy_mask: frame = frame.applied_alpha_mask(mask)
+        else: frame = frame.applied_mask(mask, invert=True)
+
+        # Save the frame
+        frame.saveto_png(path, colours=self.config.colours, interval=self.config.interval, scale=self.config.scale,
+                         alpha=self.config.alpha_method, peak_alpha=self.config.peak_alpha)
+
+        # Save the mask
+        mask.saveto_png(mask_path, colour=self.config.mask_colour, alpha=self.config.mask_alpha)
 
     # -----------------------------------------------------------------
 
@@ -256,52 +345,27 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
         for name in self.names:
 
             # Check whether not all plots are already present
-            #if self.has_all_plots(name): continue
+            # if self.has_all_plots(name): continue
             if self.check_plots(name): continue
 
-            # Get the filter
-            fltr = self.dataset.get_filter(name)
-
             # Get plot path
-            plot_path = self.filter_plot_paths[fltr]
+            plot_path = self.image_plot_paths[name]
 
             # Get frame
-            #frame = self.dataset.get_frame_for_filter(fltr)
             frame = self.dataset.get_frame(name)
 
-            # Get error map list
-            #errormap = self.dataset.get_errormap_for_filter(fltr)
+            # Crop the frame
+            frame.crop_to(self.truncation_box, factor=self.config.cropping_factor)
+
+            # Get error map and crop as well
             errormap = self.dataset.get_errormap(name)
+            errormap.rebin(frame.wcs)
 
             # Create the significance map
             significance = frame / errormap
 
             # Create the plots
-            for level in self.config.sigma_levels:
-
-                # Determine path
-                path = fs.join(plot_path, str(level) + ".png")
-
-                # Check
-                if fs.is_file(path): continue
-
-                # Create the mask
-                mask = Mask(significance > level)
-
-                # Fill holes
-                mask.fill_holes()
-
-                # Invert
-                #mask.invert()
-
-                # Create RGB image
-                image = RGBImage.from_mask(mask)
-
-                # Save the image
-                image.saveto(path)
-
-                # Set the path
-                self.level_plot_paths[name][level] = path
+            for level in self.config.sigma_levels: self.make_plots_for_level(frame, significance, plot_path, level)
 
     # -----------------------------------------------------------------
 
@@ -318,16 +382,17 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
         # Loop over the images
         for name in self.names:
 
-            # Get the labels and the urls
-            labels = self.level_plot_paths[name].keys()
-            paths = self.level_plot_paths[name].values()
+            labels = self.config.sigma_levels
+            paths = [fs.join(self.image_plot_paths[name], str(level) + ".png") for level in labels]
+            mask_paths = [fs.join(self.image_plot_paths[name], str(level) + ".png") for level in labels]
 
             # Create image ID
             image_id = name.replace("_", "").replace(" ", "")
 
             # Create the slider
-            slider = html.make_image_slider(image_id, paths, labels, self.config.default_level,
-                                            width=self.image_width, height=self.image_height, basic=True, img_class="pixelated")
+            slider = html.make_image_slider(image_id, mask_paths, labels, self.config.default_level,
+                                            width=self.image_width, height=self.image_height, basic=True,
+                                            img_class="pixelated", extra_urls=paths)
 
             # Set the slider
             self.sliders[name] = slider

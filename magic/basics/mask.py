@@ -544,15 +544,17 @@ class MaskBase(object):
 
     # -----------------------------------------------------------------
 
-    def central(self):
+    def central(self, npixels=1, connectivity=8):
 
         """
         This function ...
+        :param npixels: number of connected pixels
+        :param connectivity:
         :return:
         """
 
         # Perform the segmentation
-        segments = detect_sources(self.data.astype(float), 0.5, 1).data
+        segments = detect_sources(self.data.astype(float), 0.5, npixels=npixels, connectivity=connectivity).data
 
         # To plot the multiple segments that are detected
         # if segments.max() > 1: plotting.plot_box(np.ma.masked_array(box, mask=segments.astype(bool)))
@@ -567,10 +569,48 @@ class MaskBase(object):
 
         # If the center pixel is identified as being part of the background, create an empty mask (the center does not
         # correspond to a segment)
-        if label == 0: return MaskBase(np.zeros_like(self.data, dtype=bool))
+        if label == 0: return self.__class__(np.zeros_like(self.data, dtype=bool))
 
         # Create a mask of the center segment
-        else: return MaskBase((segments == label))
+        else: return self.__class__(segments == label)
+
+    # -----------------------------------------------------------------
+
+    def largest(self, npixels=1, connectivity=8):
+
+        """
+        This function ...
+        :param npixels:
+        :param connectivity:
+        :return:
+        """
+
+        # Perform the segmentation
+        segments = detect_sources(self.data.astype(float), 0.5, npixels=npixels, connectivity=connectivity).data
+
+        # Get counts for each label
+        unique, counts = np.unique(segments, return_counts=True)
+
+        # Get indices of the unique values (sorted on
+        sorted_indices = np.argsort(counts)
+
+        # Check last index
+        last_index = sorted_indices[-1]
+        value = unique[last_index]
+
+        # Get the label
+        if value == 0:
+
+            # No other labels: no patches
+            if len(sorted_indices) == 1: return self.__class__(np.zeros_like(self.data, dtype=bool))
+
+            second_last_index = sorted_indices[-2]
+            label = unique[second_last_index]
+
+        else: label = value
+
+        # Return the patch as a mask
+        return self.__class__(segments == label)
 
     # -----------------------------------------------------------------
 
@@ -661,7 +701,7 @@ class MaskBase(object):
         if isinstance(other_mask, MaskBase): other = other_mask.data
         else: other = other_mask
 
-        not_covered = other_mask & self.inverse().data
+        not_covered = other & self.inverse().data
         return not np.any(not_covered)
 
     # -----------------------------------------------------------------

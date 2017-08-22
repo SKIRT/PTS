@@ -17,6 +17,7 @@ from pts.core.basics.configuration import ConfigurationDefinition, parse_argumen
 from pts.core.tools import filesystem as fs
 from pts.magic.core.frame import Frame
 from pts.core.basics.log import log
+from pts.magic.core.rgba import alpha_methods
 
 # -----------------------------------------------------------------
 
@@ -29,7 +30,7 @@ definition.add_required("filename", "file_path", "path of the FITS file")
 definition.add_optional("scale", "string", "scaling", "log", scales)
 definition.add_optional("interval", "string", "interval", "pts")
 definition.add_optional("colours", "string", "colour or colour scale", "red")
-definition.add_flag("alpha", "use alpha", True)
+definition.add_optional("alpha", "string", "alpha method", "absolute", choices=alpha_methods)
 definition.add_optional("output", "string", "output filepath", letter="o")
 definition.add_optional("peak_alpha", "real", "alpha of peak value", 1.)
 definition.add_flag("show", "show after creating", False)

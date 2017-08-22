@@ -798,15 +798,66 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def apply_mask(self, mask, fill=0.0):
+    def apply_mask(self, mask, fill=0.0, invert=False):
 
         """
         This function ...
         :param mask:
         :param fill:
+        :param invert:
         """
 
-        self[mask] = fill
+        if invert: self[mask.inverse()] = fill
+        else: self[mask] = fill
+
+    # -----------------------------------------------------------------
+
+    def applied_mask(self, mask, fill=0.0, invert=False):
+
+        """
+        This function ...
+        :param mask:
+        :param fill:
+        :param invert:
+        :return:
+        """
+
+        new = self.copy()
+        new.apply_mask(mask, fill=fill, invert=invert)
+        return new
+
+    # -----------------------------------------------------------------
+
+    def apply_alpha_mask(self, mask, invert=False):
+
+        """
+        This function ...
+        :param mask:
+        :param invert:
+        :return:
+        """
+
+        data = mask.as_real()
+        #print(data)
+        if invert: data = 1. - data
+
+        # Multiply the data with the alpha mask
+        self._data *= data
+
+    # -----------------------------------------------------------------
+
+    def applied_alpha_mask(self, mask, invert=False):
+
+        """
+        This function ...
+        :param mask:
+        :param invert:
+        :return:
+        """
+
+        new = self.copy()
+        new.apply_alpha_mask(mask, invert=invert)
+        return new
 
     # -----------------------------------------------------------------
 
@@ -2275,7 +2326,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def to_rgba(self, interval="pts", scale="log", alpha=True, peak_alpha=1., colours="red", absolute_alpha=False):
+    def to_rgba(self, interval="pts", scale="log", alpha="absolute", peak_alpha=1., colours="red"):
 
         """
         This function ...
@@ -2284,12 +2335,11 @@ class Frame(NDDataArray):
         :param alpha:
         :param peak_alpha:
         :param colours:
-        :param absolute_alpha:
         :return:
         """
 
         from .rgba import RGBAImage
-        return RGBAImage.from_frame(self, interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha, colours=colours, absolute_alpha=absolute_alpha)
+        return RGBAImage.from_frame(self, interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha, colours=colours)
 
     # -----------------------------------------------------------------
 
@@ -2459,7 +2509,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def saveto_png(self, path, interval="pts", scale="log", alpha=True, peak_alpha=1., colours="red", absolute_alpha=False):
+    def saveto_png(self, path, interval="pts", scale="log", alpha="absolute", peak_alpha=1., colours="red"):
 
         """
         This function ...
@@ -2469,12 +2519,11 @@ class Frame(NDDataArray):
         :param alpha:
         :param peak_alpha:
         :param colours:
-        :param absolute_alpha:
         :return:
         """
 
         # Get image values
-        image = self.to_rgba(interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha, colours=colours, absolute_alpha=absolute_alpha)
+        image = self.to_rgba(interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha, colours=colours)
 
         # Save
         image.saveto(path)

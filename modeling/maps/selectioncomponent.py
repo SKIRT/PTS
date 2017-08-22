@@ -343,7 +343,7 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def clip_map(self, the_map, origins, convolve=True, remote=None):
+    def clip_map(self, the_map, origins, convolve=True, remote=None, npixels=1, connectivity=8):
 
         """
         This function ...
@@ -351,11 +351,13 @@ class MapsSelectionComponent(MapsComponent):
         :param origins:
         :param convolve:
         :param remote:
+        :param npixels:
+        :param connectivity:
         :return:
         """
 
         # Create the clip mask
-        mask = self.get_clip_mask(origins, wcs=the_map.wcs, convolve=convolve, remote=remote)
+        mask = self.get_clip_mask(origins, wcs=the_map.wcs, convolve=convolve, remote=remote, npixels=npixels, connectivity=connectivity)
 
         # Clip
         the_map[mask] = 0.0
@@ -365,7 +367,8 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def make_clipped_maps(self, the_map, origins, levels_dict, convolve=True, remote=None, rebin_remote_threshold=None):
+    def make_clipped_maps(self, the_map, origins, levels_dict, convolve=True, remote=None, rebin_remote_threshold=None,
+                          npixels=1, connectivity=8):
 
         """
         This function ...
@@ -375,11 +378,14 @@ class MapsSelectionComponent(MapsComponent):
         :param convolve:
         :param remote:
         :param rebin_remote_threshold:
+        :param npixels:
+        :param connectivity:
         :return:
         """
 
         # Make the masks
-        masks = self.make_clip_masks(origins, levels_dict, wcs=the_map.wcs, convolve=convolve, remote=remote, rebin_remote_threshold=rebin_remote_threshold)
+        masks = self.make_clip_masks(origins, levels_dict, wcs=the_map.wcs, convolve=convolve, remote=remote,
+                                     rebin_remote_threshold=rebin_remote_threshold, npixels=npixels, connectivity=connectivity)
 
         # The maps
         maps = dict()
@@ -402,7 +408,7 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def get_clip_mask(self, origins, wcs=None, convolve=True, remote=None):
+    def get_clip_mask(self, origins, wcs=None, convolve=True, remote=None, npixels=1, connectivity=8):
 
         """
         This function ...
@@ -410,6 +416,8 @@ class MapsSelectionComponent(MapsComponent):
         :param wcs:
         :param convolve:
         :param remote:
+        :param npixels:
+        :param connectivity:
         :return:
         """
 
@@ -418,7 +426,7 @@ class MapsSelectionComponent(MapsComponent):
         else:
 
             # Make the mask
-            mask = self.make_clip_mask(origins, self.levels, wcs=wcs, convolve=convolve, remote=remote)
+            mask = self.make_clip_mask(origins, self.levels, wcs=wcs, convolve=convolve, remote=remote, npixels=npixels, connectivity=connectivity)
 
             # Cache the mask
             if wcs is None: self.clip_masks[tuple(origins)] = mask
@@ -428,7 +436,7 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def make_clip_mask(self, origins, levels, wcs=None, convolve=True, remote=None):
+    def make_clip_mask(self, origins, levels, wcs=None, convolve=True, remote=None, npixels=1, connectivity=8):
 
         """
         This function ...
@@ -437,6 +445,8 @@ class MapsSelectionComponent(MapsComponent):
         :param wcs:
         :param convolve:
         :param remote:
+        :param npixels:
+        :param connectivity:
         :return:
         """
 
@@ -509,7 +519,8 @@ class MapsSelectionComponent(MapsComponent):
         mask = intersection(*masks)
 
         # Only keep central
-        mask = mask.central()
+        #mask = mask.central()
+        mask = mask.largest(npixels=npixels, connectivity=connectivity)
 
         # Fill holes
         mask.fill_holes()
@@ -522,7 +533,8 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def make_clip_masks(self, origins, levels_dict, wcs=None, convolve=True, remote=None, rebin_remote_threshold=None):
+    def make_clip_masks(self, origins, levels_dict, wcs=None, convolve=True, remote=None, rebin_remote_threshold=None,
+                        npixels=1, connectivity=8):
 
         """
         Thisn function ...
@@ -532,6 +544,8 @@ class MapsSelectionComponent(MapsComponent):
         :param convolve:
         :param remote:
         :parma rebin_remote_threshold:
+        :param npixels:
+        :param connectivity:
         :return:
         """
 
@@ -606,7 +620,8 @@ class MapsSelectionComponent(MapsComponent):
             mask = intersection(*masks)
 
             # Only keep central
-            mask = mask.central()
+            #mask = mask.central()
+            mask = mask.largest(npixels=npixels, connectivity=connectivity)
 
             # Fill holes
             mask.fill_holes()

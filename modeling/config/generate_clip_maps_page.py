@@ -13,8 +13,11 @@ from pts.core.remote.host import find_host_ids
 
 # -----------------------------------------------------------------
 
-sigma_levels = [0.5, 0.75, 1., 1.5, 2., 2.5, 3., 3.5, 4.]
-default_sigma_level = 1.0
+#sigma_levels = [0.5, 0.75, 1., 1.5, 2., 2.5, 3., 3.5, 4.]
+#default_sigma_level = 1.0
+
+relative_sigma_levels = [0.5, 1., 1.5]
+default_relative_sigma_level = 1.0
 
 # -----------------------------------------------------------------
 
@@ -95,8 +98,8 @@ definition.add_flag("all_dust", "select all dust maps")
 definition.add_flag("all", "select all maps")
 
 # Sigma levels
-definition.add_positional_optional("sigma_levels", "real_list", "different sigma levels for which to generate significance masks", sigma_levels)
-definition.add_optional("default_sigma_level", "real", "default sigma level", default_sigma_level)
+definition.add_positional_optional("sigma_levels", "real_list", "different sigma levels for which to generate significance masks", relative_sigma_levels)
+definition.add_optional("default_sigma_level", "real", "default sigma level", default_relative_sigma_level)
 
 # Flags
 definition.add_flag("replot", "replot already existing figures", True)
@@ -108,11 +111,19 @@ definition.add_optional("nopen_files", "positive_integer", "number of open files
 definition.add_optional("image_width", "positive_integer", "width of the image")
 definition.add_optional("image_height", "positive_integer", "height of the image", 300)
 
+# -----------------------------------------------------------------
+
 # For PNG
 definition.add_optional("scale", "string", "scaling", "log", scales)
 definition.add_optional("interval", "string", "interval", default_interval)
 definition.add_optional("colours", "string", "colour or colour scale", "red")
-definition.add_flag("alpha", "use alpha", True)
+definition.add_optional("alpha_method", "string", "alpha method", "absolute")
 definition.add_optional("peak_alpha", "real", "alpha of peak value", 1.)
+
+# -----------------------------------------------------------------
+
+# For clip mask
+definition.add_optional("min_npixels", "positive_integer", "minimum number of pixels", 1)
+definition.add_optional("connectivity", "positive_integer", "connectiviy", 4)
 
 # -----------------------------------------------------------------

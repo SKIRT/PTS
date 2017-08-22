@@ -1519,7 +1519,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
             origins = self.old_map_origins[name]
 
             # Clip the map (returns the mask)
-            self.old_masks[name] = self.clip_map(self.old_maps[name], origins, convolve=self.config.convolve, remote=self.config.remote)
+            self.old_masks[name] = self.clip_map(self.old_maps[name], origins, convolve=self.config.convolve,
+                                                 remote=self.config.remote, npixels=self.config.min_npixels,
+                                                 connectivity=self.config.connectivity)
 
             # Set flag
             self.old_maps[name].metadata[clip_step] = True
@@ -1554,7 +1556,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
             origins = self.young_map_origins[name]
 
             # Clip the map (returns the mask)
-            self.young_masks[name] = self.clip_map(self.young_maps[name], origins, convolve=self.config.convolve, remote=self.config.remote)
+            self.young_masks[name] = self.clip_map(self.young_maps[name], origins, convolve=self.config.convolve,
+                                                   remote=self.config.remote, npixels=self.config.min_npixels,
+                                                   connectivity=self.config.connectivity)
 
             # Set flag
             self.young_maps[name].metadata[clip_step] = True
@@ -1589,7 +1593,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
             origins = self.ionizing_map_origins[name]
 
             # Clip the map (returns the mask)
-            self.ionizing_masks[name] = self.clip_map(self.ionizing_maps[name], origins, convolve=self.config.convolve, remote=self.config.remote)
+            self.ionizing_masks[name] = self.clip_map(self.ionizing_maps[name], origins, convolve=self.config.convolve,
+                                                      remote=self.config.remote, npixels=self.config.min_npixels,
+                                                      connectivity=self.config.connectivity)
 
             # Set flag
             self.ionizing_maps[name].metadata[clip_step] = True
@@ -1624,7 +1630,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
             origins = self.dust_map_origins[name]
 
             # Clip the map (returns the mask)
-            self.dust_masks[name] = self.clip_map(self.dust_maps[name], origins, convolve=self.config.convolve, remote=self.config.remote)
+            self.dust_masks[name] = self.clip_map(self.dust_maps[name], origins, convolve=self.config.convolve,
+                                                  remote=self.config.remote, npixels=self.config.min_npixels,
+                                                  connectivity=self.config.connectivity)
 
             # Set flag
             self.dust_maps[name].metadata[clip_step] = True

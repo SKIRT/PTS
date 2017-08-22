@@ -767,7 +767,7 @@ class AllMapsPageGenerator(MapsComponent):
         frame[mask] = 0.0
 
         # Make RGBA image
-        rgba = frame.to_rgba(scale=self.config.scale, colours=self.config.colours, absolute_alpha=True)
+        rgba = frame.to_rgba(scale=self.config.scale, colours=self.config.colours)
         rgba.soften_edges(self.softening_ellipse.to_pixel(wcs), self.softening_range)
 
         # Save

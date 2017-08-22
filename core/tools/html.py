@@ -1115,7 +1115,7 @@ def make_custom_slider(id, options, default=None, action_function=None, pass_val
 
 # -----------------------------------------------------------------
 
-def make_image_slider(image_id, urls, labels, default, width=None, height=None, basic=True, img_class=None):
+def make_image_slider(image_id, urls, labels, default, width=None, height=None, basic=True, img_class=None, extra_urls=None):
 
     """
     This function ...
@@ -1127,6 +1127,7 @@ def make_image_slider(image_id, urls, labels, default, width=None, height=None, 
     :param height:
     :param basic:
     :param img_class:
+    :param extra_urls:
     :return:
     """
 
@@ -1166,6 +1167,18 @@ def make_image_slider(image_id, urls, labels, default, width=None, height=None, 
     if width is not None: code += ' width="' + str(width)  + 'px"'
     if height is not None: code += ' height="' + str(height) + 'px"'
     code += '>'
+
+    if extra_urls is not None:
+
+        extra_image_id = image_id + "_extra"
+        code += '<img id="' + extra_image_id + '"'
+        if img_class is not None: code += ' class="' + img_class + '"'
+        if width is not None: code += ' width="' + str(width) + 'px"'
+        if height is not None: code += ' height="' + str(height) + 'px"'
+        code += '>'
+
+    else: extra_image_id = None
+
     code += "</center>"
 
     # Make script
@@ -1177,6 +1190,11 @@ def make_image_slider(image_id, urls, labels, default, width=None, height=None, 
     string_labels = [str(label) for label in labels]
     script += 'var ' + labels_variable_name + ' = [' + tostr(string_labels, add_quotes=True) + '];\n'
     script += 'var ' + urls_variable_name + ' = [' + tostr(urls, add_quotes=True) + '];\n'
+
+    if extra_urls is not None:
+        extra_urls_variable_name = "urls_" + extra_image_id
+        script += 'var ' + extra_urls_variable_name + ' = [' + tostr(extra_urls, add_quotes=True) + '];\n'
+    else: extra_urls_variable_name = None
 
     script += "\n"
 
@@ -1194,12 +1212,18 @@ def make_image_slider(image_id, urls, labels, default, width=None, height=None, 
     script += 'document.getElementById("' + span_id + '").innerHTML = ' + labels_variable_name + '[index];\n'
     #script += 'document.getElementById("' + image_id + '").src = ' + get_url_function_name + '(val);\n'
     script += 'document.getElementById("' + image_id + '").src = ' + urls_variable_name + '[index];\n'
+
+    if extra_urls is not None: script += 'document.getElementById("' + extra_image_id + '").src = ' + extra_urls_variable_name + '[index];\n'
+
     script += "\n"
     script += 'function ' + function_name + '(newVal)\n'
     script += '{\n'
     script += '    var newIndex = newVal - 1;\n'
     script += '    document.getElementById("' + span_id + '").innerHTML = ' + labels_variable_name + '[newIndex];\n'
     script += '    document.getElementById("' + image_id + '").src = ' + urls_variable_name + '[newIndex];\n'
+
+    if extra_urls is not None: script += '    document.getElementById("' + extra_image_id + '").src = ' + extra_urls_variable_name + '[newIndex];\n'
+
     script += '\n}'
 
     # Add javascript

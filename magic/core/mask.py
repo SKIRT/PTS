@@ -107,6 +107,33 @@ class Mask(MaskBase):
 
     # -----------------------------------------------------------------
 
+    def to_rgb(self, colour="black", background_color="white"):
+
+        """
+        This function ...
+        :param colour:
+        :param background_color:
+        :return:
+        """
+
+        from .rgb import RGBImage
+        return RGBImage.from_mask(self, colour=colour, background_color=background_color)
+
+    # -----------------------------------------------------------------
+
+    def to_rgba(self, colour="black"):
+
+        """
+        This function ...
+        :param colour:
+        :return:
+        """
+
+        from .rgba import RGBAImage
+        return RGBAImage.from_mask(self, colour=colour)
+
+    # -----------------------------------------------------------------
+
     def save(self):
 
         """
@@ -125,49 +152,105 @@ class Mask(MaskBase):
 
     # -----------------------------------------------------------------
 
-    def saveto(self, path, header=None):
+    def saveto(self, path, header=None, update_path=True, colour="black", background_color="white"):
 
         """
         This function ...
         :param path:
         :param header:
+        :param update_path:
+        :param colour:
+        :param background_color:
+        :return:
+        """
+
+        # FITS format
+        if path.endswith(".fits"): self.saveto_fits(path, header=header, update_path=update_path)
+
+        # ASDF format
+        elif path.endswith(".asdf"): self.saveto_asdf(path, header=header, update_path=update_path)
+
+        # PNG format
+        elif path.endswith(".png"): self.saveto_png(path, colour=colour, background_color=background_color)
+
+        # Invalid
+        else: raise ValueError("Invalid file format")
+
+    # -----------------------------------------------------------------
+
+    def saveto_fits(self, path, header=None, update_path=True):
+
+        """
+        This function ...
+        :param path:
+        :param header:
+        :param update_path:
         :return:
         """
 
         # If a header is not specified, created it from the WCS
         if header is None: header = self.header
 
-        # FITS format
-        if path.endswith(".fits"):
+        from .fits import write_frame  # Import here because io imports Mask
 
-            from .fits import write_frame  # Import here because io imports Mask
-
-            # Write to a FITS file
-            write_frame(self._data.astype(int), header, path)
-
-        # ASDF format
-        elif path.endswith(".asdf"):
-
-            # Import
-            from asdf import AsdfFile
-
-            # Create the tree
-            tree = dict()
-
-            tree["data"] = self._data
-            tree["header"] = header
-
-            # Create the asdf file
-            ff = AsdfFile(tree)
-
-            # Write
-            ff.write_to(path)
-
-        # Only FITS or ASDF format is allowed
-        else: raise ValueError("Only the FITS or ASDF filetypes are supported")
+        # Write to a FITS file
+        write_frame(self._data.astype(int), header, path)
 
         # Update the path
-        self.path = path
+        if update_path: self.path = path
+
+    # -----------------------------------------------------------------
+
+    def saveto_asdf(self, path, header=None, update_path=True):
+
+        """
+        This function ...
+        :param path:
+        :param header:
+        :param update_path:
+        :return:
+        """
+
+        # If a header is not specified, created it from the WCS
+        if header is None: header = self.header
+
+        # Import
+        from asdf import AsdfFile
+
+        # Create the tree
+        tree = dict()
+
+        tree["data"] = self._data
+        tree["header"] = header
+
+        # Create the asdf file
+        ff = AsdfFile(tree)
+
+        # Write
+        ff.write_to(path)
+
+        # Update the path
+        if update_path: self.path = path
+
+    # -----------------------------------------------------------------
+
+    def saveto_png(self, path, colour="black", background_color="white", alpha=False):
+
+        """
+        This function ...
+        :param path:
+        :param colour:
+        :param background_color:
+        :param alpha:
+        :return:
+        """
+
+        # Get RGB image
+        if alpha: image = self.to_rgba(colour=colour)
+        else: image = self.to_rgb(colour=colour, background_color=background_color)
+
+        # Save RGB image
+        image.saveto(path)
 
 # -----------------------------------------------------------------
 

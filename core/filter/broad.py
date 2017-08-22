@@ -626,9 +626,9 @@ class BroadBandFilter(Filter):
                 self._Wavelengths = [wavelength.to("micron").value for wavelength in wavelengths]
                 self._Transmission = transmission
 
-            category = "Various"
+            #category = "Various"
             #filter_id = "CTIO/" + category + "." + filtercode.replace("/", "_")
-            filter_id = "CTIO/CTIO." + category + "_" + filtercode.replace("/", "_")
+            filter_id = "CTIO/CTIO." + filtercode.replace("/", "-")
 
             description = name
 

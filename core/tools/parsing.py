@@ -1707,3 +1707,15 @@ def colour(argument):
     return parse_colour(argument)
 
 # -----------------------------------------------------------------
+
+def percentage(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    return real(argument) / 100.
+
+# -----------------------------------------------------------------

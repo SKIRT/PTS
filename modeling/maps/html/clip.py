@@ -735,7 +735,10 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             origins = self.old_map_origins[name]
 
             # Clip the map
-            maps = self.make_clipped_maps(self.old_maps[name], origins, self.config.sigma_levels, convolve=self.config.convolve, remote=self.remote, rebin_remote_threshold=self.config.rebin_remote_threshold)
+            maps = self.make_clipped_maps(self.old_maps[name], origins, self.config.sigma_levels,
+                                          convolve=self.config.convolve, remote=self.remote,
+                                          rebin_remote_threshold=self.config.rebin_remote_threshold,
+                                          npixels=self.config.min_npixels, connectivity=self.config.connectivity)
 
             # Replace by a dictionary of maps
             self.old_maps[name] = maps
@@ -765,7 +768,10 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             origins = self.young_map_origins[name]
 
             # Clip the map
-            maps = self.make_clipped_maps(self.young_maps[name], origins, self.config.sigma_levels, convolve=self.config.convolve, remote=self.remote, rebin_remote_threshold=self.config.rebin_remote_threshold)
+            maps = self.make_clipped_maps(self.young_maps[name], origins, self.config.sigma_levels,
+                                          convolve=self.config.convolve, remote=self.remote,
+                                          rebin_remote_threshold=self.config.rebin_remote_threshold,
+                                          npixels=self.config.min_npixels, connectivity=self.config.connectivity)
 
             # Replace by a dictionary of maps
             self.young_maps[name] = maps
@@ -795,7 +801,10 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             origins = self.ionizing_map_origins[name]
 
             # Clip the map
-            maps = self.make_clipped_maps(self.ionizing_maps[name], origins, self.config.sigma_levels, convolve=self.config.convolve, remote=self.remote, rebin_remote_threshold=self.config.rebin_remote_threshold)
+            maps = self.make_clipped_maps(self.ionizing_maps[name], origins, self.config.sigma_levels,
+                                          convolve=self.config.convolve, remote=self.remote,
+                                          rebin_remote_threshold=self.config.rebin_remote_threshold,
+                                          npixels=self.config.min_npixels, connectivity=self.config.connectivity)
 
             # Replace by a dictionary of maps
             self.ionizing_maps[name] = maps
@@ -825,7 +834,10 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             origins = self.dust_map_origins[name]
 
             # Clip the map
-            maps = self.make_clipped_maps(self.dust_maps[name], origins, self.config.sigma_levels, convolve=self.config.convolve, remote=self.remote, rebin_remote_threshold=self.config.rebin_remote_threshold)
+            maps = self.make_clipped_maps(self.dust_maps[name], origins, self.config.sigma_levels,
+                                          convolve=self.config.convolve, remote=self.remote,
+                                          rebin_remote_threshold=self.config.rebin_remote_threshold,
+                                          npixels=self.config.min_npixels, connectivity=self.config.connectivity)
 
             # Replace by a dictionary of maps
             self.dust_maps[name] = maps
@@ -920,7 +932,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         :return:
         """
 
-        return tostr(levels, identity_symbol="_", delimiter="__", replace_spaces_keys="-")
+        return tostr(levels, identity_symbol="_", delimiter="__", replace_spaces_keys="-", quote_key=False, quote_value=False)
 
     # -----------------------------------------------------------------
 
@@ -935,8 +947,8 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
         # Plot as RGB
         the_map.saveto_png(filepath, interval=self.config.interval, scale=self.config.scale,
-                           alpha=self.config.alpha, peak_alpha=self.config.peak_alpha,
-                           colours=self.config.colours, absolute_alpha=True)
+                           alpha=self.config.alpha_method, peak_alpha=self.config.peak_alpha,
+                           colours=self.config.colours)
 
     # -----------------------------------------------------------------
 

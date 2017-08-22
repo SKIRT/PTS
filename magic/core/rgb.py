@@ -107,7 +107,7 @@ class RGBImage(object):
         """
 
         from .rgba import frame_to_components
-        red, green, blue, alpha = frame_to_components(frame, interval=interval, scale=scale, alpha=False, peak_alpha=peak_alpha, colours=colours, absolute_alpha=False)
+        red, green, blue, alpha = frame_to_components(frame, interval=interval, scale=scale, alpha=None, peak_alpha=peak_alpha, colours=colours)
         return cls(red, green, blue)
 
     # -----------------------------------------------------------------
@@ -124,6 +124,22 @@ class RGBImage(object):
         """
 
         red, green, blue = mask_to_components(mask, colour=colour, background_color=background_color)
+        return cls(red, green, blue)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_alpha_mask(cls, mask, colour="black", background_color="white"):
+
+        """
+        This function ...
+        :param mask:
+        :param colour:
+        :param background_color:
+        :return:
+        """
+
+        red, green, blue = alpha_mask_to_components(mask, colour=colour, background_color=background_color)
         return cls(red, green, blue)
 
     # -----------------------------------------------------------------
@@ -288,6 +304,28 @@ def components_to_rgb(red, green, blue):
 
 # -----------------------------------------------------------------
 
+def make_components(shape, colour):
+
+    """
+    This function ...
+    :param shape:
+    :param colour:
+    :return:
+    """
+
+    # Create all ones
+    ones = np.ones(shape, dtype=np.uint8)
+
+    colour = parse_colour(colour)
+    red = ones * colour.red
+    green = ones * colour.green
+    blue = ones * colour.blue
+
+    # Return the components
+    return red, green, blue
+
+# -----------------------------------------------------------------
+
 def mask_to_components(mask, colour="black", background_color="white"):
 
     """
@@ -298,38 +336,90 @@ def mask_to_components(mask, colour="black", background_color="white"):
     :return:
     """
 
+    # FLIP UP-DOWN
+    data = np.flipud(mask.data)
+
     if colour == "red":
 
-        red = mask.astype(np.uint8) * 255
-        green = np.zeros_like(mask, dtype=np.uint8)
-        blue = np.zeros_like(mask, dtype=np.uint8)
+        red = data.astype(np.uint8) * 255
+        green = np.zeros_like(data, dtype=np.uint8)
+        blue = np.zeros_like(data, dtype=np.uint8)
 
     elif colour == "green":
 
-        red = np.zeros_like(mask, dtype=np.uint8)
-        green = mask.astype(np.uint8) * 255
-        blue = np.zeros_like(mask, dtype=np.uint8)
+        red = np.zeros_like(data, dtype=np.uint8)
+        green = data.astype(np.uint8) * 255
+        blue = np.zeros_like(data, dtype=np.uint8)
 
     elif colour == "blue":
 
-        red = np.zeros_like(mask, dtype=np.uint8)
-        green = np.zeros_like(mask, dtype=np.uint8)
-        blue = mask.astype(np.uint8) * 255
+        red = np.zeros_like(data, dtype=np.uint8)
+        green = np.zeros_like(data, dtype=np.uint8)
+        blue = data.astype(np.uint8) * 255
 
     else:
 
-        ones = np.ones_like(mask, dtype=np.uint8)
+        ones = np.ones_like(data, dtype=np.uint8)
 
         colour = parse_colour(colour)
         red = ones * colour.red
         green = ones * colour.green
         blue = ones * colour.blue
 
-    inverted = mask.inverse()
+    #inverted = mask.inverse()
+    inverted = np.logical_not(data)
     background_color = parse_colour(background_color)
     red[inverted] = background_color.red
     green[inverted] = background_color.green
     blue[inverted] = background_color.blue
+
+    # Return the components
+    return red, green, blue
+
+# -----------------------------------------------------------------
+
+def alpha_mask_to_components(mask, colour="black", background_color="white"):
+
+    """
+    This function ...
+    :param mask:
+    :param colour:
+    :param background_color:
+    :return:
+    """
+
+    # FLIP UP-DOWN
+    data = np.flipud(mask.data)
+    inverted = 255 - data
+
+    background_color = parse_colour(background_color)
+
+    if colour == "red":
+
+        red = background_color.red * inverted + data
+        green = background_color.green * inverted
+        blue = background_color.blue * inverted
+
+    elif colour == "green":
+
+        red = background_color.red * inverted
+        green = background_color.green * inverted + data
+        blue = background_color.blue * inverted
+
+    elif colour == "blue":
+
+        red = background_color.red * inverted
+        green = background_color.green * inverted
+        blue = background_color.blue * inverted + data
+
+    else:
+
+        ones = np.ones_like(data, dtype=np.uint8)
+        colour = parse_colour(colour)
+
+        red = background_color.red * inverted + colour.red * data
+        green = background_color.green * inverted + colour.green * data
+        blue = background_color.blue * inverted + colour.blue * data
 
     # Return the components
     return red, green, blue

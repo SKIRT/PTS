@@ -21,7 +21,11 @@ from astropy.coordinates import Angle
 # Import the relevant PTS classes and modules
 from ...core.basics.colour import parse_colour
 from ..dist_ellipse import distance_ellipse
-from .rgb import RGBImage
+from .rgb import RGBImage, mask_to_components, make_components
+
+# -----------------------------------------------------------------
+
+alpha_methods = ["absolute", "relative", "combined"]
 
 # -----------------------------------------------------------------
 
@@ -73,16 +77,55 @@ class RGBAImage(RGBImage):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_frame(cls, frame, interval="pts", scale="log", alpha=True, peak_alpha=1., colours="red", absolute_alpha=False):
+    def from_frame(cls, frame, interval="pts", scale="log", alpha="absolute", peak_alpha=1., colours="red"):
 
         """
         This function ...
         :param frame:
+        :param interval:
+        :param scale:
+        :param alpha:
+        :param peak_alpha:
+        :param colours:
         :return:
         """
 
-        #data = frame_to_rgba(frame, interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha, colours=colours, absolute_alpha=absolute_alpha)
-        red, green, blue, alpha = frame_to_components(frame, interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha, colours=colours, absolute_alpha=absolute_alpha)
+        red, green, blue, alpha = frame_to_components(frame, interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha, colours=colours)
+        return cls(red, green, blue, alpha)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_mask(cls, mask, colour="black"):
+
+        """
+        This function ...
+        :param mask:
+        :param colour:
+        :param background_color:
+        :return:
+        """
+
+        red, green, blue = mask_to_components(mask, colour=colour)
+        alpha = np.zeros_like(red, dtype=red.dtype)
+        flipped = np.flipud(mask.data)
+        alpha[flipped] = 255
+        return cls(red, green, blue, alpha)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_alpha_mask(cls, mask, colour="black"):
+
+        """
+        This function ...
+        :param mask:
+        :param colour:
+        :return:
+        """
+
+        red, green, blue = make_components(mask.shape, colour)
+        alpha = np.flipud(mask.data)
         return cls(red, green, blue, alpha)
 
     # -----------------------------------------------------------------
@@ -212,7 +255,7 @@ class RGBAImage(RGBImage):
 
 # -----------------------------------------------------------------
 
-def frame_to_components(frame, interval="pts", scale="log", alpha=True, peak_alpha=1., colours="red", absolute_alpha=False):
+def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", peak_alpha=1., colours="red"):
 
     """
     This function ...
@@ -222,7 +265,6 @@ def frame_to_components(frame, interval="pts", scale="log", alpha=True, peak_alp
     :param alpha:
     :param peak_alpha:
     :param colours:
-    :param absolute_alpha:
     :return:
     """
 
@@ -271,13 +313,45 @@ def frame_to_components(frame, interval="pts", scale="log", alpha=True, peak_alp
     # Normalize
     normalized = norm(data)
 
+    # OLD WAY
     # Determine transparency
-    if absolute_alpha:
+    # if absolute_alpha:
+    #     transparency = np.ones_like(normalized, dtype=np.uint8)
+    #     transparency[np.isnan(data)] = 0
+    #     transparency[data == 0] = 0
+    # elif alpha:
+    #     transparency = peak_alpha * normalized / np.nanmax(normalized)
+    #     #transparency = np.log10(transparency)
+    # else: transparency = np.ones_like(normalized, dtype=np.uint8)
+
+    # NEW
+    if alpha is None: transparency = np.ones_like(normalized, dtype=np.uint8)
+
+    # Absolute alpha
+    elif alpha == "absolute":
+
         transparency = np.ones_like(normalized, dtype=np.uint8)
         transparency[np.isnan(data)] = 0
+        transparency[data < 0] = 0
         transparency[data == 0] = 0
-    elif alpha: transparency = peak_alpha * normalized / np.nanmax(normalized)
-    else: transparency = np.ones_like(normalized, dtype=np.uint8)
+
+    # Relative alpha
+    elif alpha == "relative":
+
+        transparency = peak_alpha * normalized / np.nanmax(normalized)
+        transparency[transparency > 1] = 1
+
+    # Combined alpha
+    elif alpha == "combined":
+
+        transparency = peak_alpha * normalized / np.nanmax(normalized)
+        transparency[transparency > 1] = 1
+        transparency[np.isnan(data)] = 0
+        transparency[data < 0] = 0
+        transparency[data == 0] = 0
+
+    # Invalid
+    else: raise ValueError("Invalid alpha method: '" + str(alpha) + "'")
 
     # CREATE THE CHANNEL ARRAYS
 
@@ -334,7 +408,7 @@ def frame_to_components(frame, interval="pts", scale="log", alpha=True, peak_alp
 
 # -----------------------------------------------------------------
 
-def frame_to_rgba(frame, interval="pts", scale="log", alpha=True, peak_alpha=1., colours="red", absolute_alpha=False):  # Make the image
+def frame_to_rgba(frame, interval="pts", scale="log", alpha="absolute", peak_alpha=1., colours="red"):  # Make the image
 
     """
     This function ...
@@ -344,11 +418,10 @@ def frame_to_rgba(frame, interval="pts", scale="log", alpha=True, peak_alpha=1.,
     :param alpha:
     :param peak_alpha:
     :param colours:
-    :param absolute_alpha:
     :return:
     """
 
-    red, green, blue, alpha = frame_to_components(frame, interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha, colours=colours, absolute_alpha=absolute_alpha)
+    red, green, blue, alpha = frame_to_components(frame, interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha, colours=colours)
     return components_to_rgba(red, green, blue, alpha)
 
 # -----------------------------------------------------------------

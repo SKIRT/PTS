@@ -101,3 +101,9 @@ definition.add_optional("ionizing_scaleheight_ratio", "real", "ratio of the ioni
 definition.add_optional("dust_scaleheight_ratio", "real", "ratio of the dust scaleheight to the old stellar scaleheight", 0.5)
 
 # -----------------------------------------------------------------
+
+# For clip mask
+definition.add_optional("min_npixels", "positive_integer", "minimum number of pixels", 1)
+definition.add_optional("connectivity", "positive_integer", "connectiviy", 4)
+
+# -----------------------------------------------------------------
