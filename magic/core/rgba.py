@@ -291,6 +291,8 @@ def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", pe
     # FLIP UP-DOWN
     data = np.flipud(data)
 
+    #print("DATA", data)
+
     # DETERMINE NORMALIZE MIN AND MAX: ONLY FOR PTS INTERVAL METHOD FOR NOW
     from ..region.region import SkyRegion, PixelRegion
     if normalize_in is not None:
@@ -327,6 +329,10 @@ def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", pe
     # Normalize
     normalized = norm(data)
 
+    #print(type(normalized[0, 0]))
+    #print(normalized)
+    normalized[np.isnan(normalized)] = 0.0
+
     # ALSO TAKE INTO ACCOUNT 'NORMALIZE_IN' FOR ALPHA CHANNEL CALCULATION
     if normalize_in is not None:
         maskdata = np.flipud(normalize_in.data)
@@ -355,7 +361,13 @@ def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", pe
     elif alpha == "combined":
 
         transparency = peak_alpha * normalized / normalized_max
-        transparency[transparency > 1] = 1
+        #print(np.isnan(transparency))
+        #print(np.isinf(transparency))
+        #print(type(transparency[0, 0]))
+        #print("TRANSP", transparency)
+        transparency[transparency > 1] = 1 # IMPORTANT! WEIRD THINGS HAPPEN DURING CONVERSION TO UNIT8 ARRAY WHEN OVERFLOW
+        transparency[transparency < 0] = 0 # IMPORTANT! WEIRD THINGS HAPPEN DURING CONVERSION TO UNIT8 ARRAY WHEN OVERFLOW
+        #print("TRANSP2", transparency)
         transparency[np.isnan(data)] = 0
         transparency[data < 0] = 0
         transparency[data == 0] = 0
@@ -396,7 +408,9 @@ def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", pe
         # Try to parse the colour
         try:
 
+            #print("COLOURS", colours)
             colour = parse_colour(colours)
+            #print("COLOUR", colour)
             red = normalized * colour.red
             green = normalized * colour.green
             blue = normalized * colour.blue
@@ -412,6 +426,7 @@ def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", pe
             green = rgba[:, :, 1] * 255
             blue = rgba[:, :, 2] * 255
             alpha = transparency * 255
+            #print("ALPHA", alpha)
 
     # Return the components
     return red, green, blue, alpha
