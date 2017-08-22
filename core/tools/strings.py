@@ -845,6 +845,31 @@ def is_double_quoted(string):
 
 # -----------------------------------------------------------------
 
+def is_quoted(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    return is_single_quoted(string) or is_double_quoted(string)
+
+# -----------------------------------------------------------------
+
+def unquote(string):
+
+    """
+    This function ...
+    :param string:
+    :return:
+    """
+
+    if is_quoted(string): return string[1:-1]
+    else: return string
+
+# -----------------------------------------------------------------
+
 def other_quote_character(*strings):
 
     """

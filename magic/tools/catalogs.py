@@ -26,6 +26,7 @@ from astroquery.simbad import Simbad
 from astroquery.ned import Ned
 import astroquery.exceptions
 from astropy.coordinates import Angle
+from astropy.units import UnrecognizedUnit
 
 # Import the relevant PTS classes and modules
 from ...core.tools import tables
@@ -817,6 +818,70 @@ def get_galaxy_s4g_one_component_info(name):
 
 # -----------------------------------------------------------------
 
+def get_ra_dec_degrees_from_table(table, index):
+
+    """
+    This function ...
+    :param table: 
+    :param index: 
+    :return: 
+    """
+
+    ra_unit = table["RAJ2000"]
+    dec_unit = table["DEJ2000"]
+
+    ra_value = table["RAJ2000"][index]
+    dec_value = table["DEJ2000"][index]
+
+    return get_ra_dec_degrees_from_values(ra_value, dec_value, ra_unit, dec_unit)
+
+# -----------------------------------------------------------------
+
+def get_ra_dec_degrees_from_values(ra, dec, ra_unit, dec_unit):
+
+    """
+    This function ...
+    :param ra:
+    :param dec:
+    :param ra_unit:
+    :param dec_unit:
+    :return:
+    """
+
+    from ...core.tools.strings import unquote
+    from . import coordinates
+
+    if isinstance(ra_unit, UnrecognizedUnit):
+
+        ra_unit_string = unquote(str(ra_unit.name))
+        if ra_unit_string == "h:m:s":
+
+            ra_degrees = float(coordinates.hms_to_degrees(ra=ra))
+            ra_with_unit = ra_degrees * u("deg")
+
+        else: raise ValueError("The only allowed unit in string format for RA is 'h:m:s'")
+
+    else: ra_with_unit = ra * ra_unit
+
+    if isinstance(dec_unit, UnrecognizedUnit):
+
+        dec_unit_string = unquote(str(dec_unit.name))
+        if dec_unit_string == "d:m:s":
+
+            dec_degrees = float(coordinates.hms_to_degrees(dec=dec))
+            dec_with_unit = dec_degrees * u("deg")
+
+        else: raise ValueError("The only allowed unit in string format for DEC is 'd:m:s'")
+
+    else: dec_with_unit = dec * dec_unit
+
+    #print(type(ra_with_unit), type(dec_with_unit))
+
+    # Return in degrees
+    return ra_with_unit.to("deg").value, dec_with_unit.to("deg").value
+
+# -----------------------------------------------------------------
+
 def get_galaxy_info(name, position):
 
     """
@@ -868,11 +933,23 @@ def get_galaxy_info(name, position):
 
     table = result[0]
 
+    #print(type(table["RAJ2000"].unit))
+    #print(table["_RAJ2000"].unit)
+    #print(table["_DEJ2000"].unit)
+    #print(table["RAJ2000"].unit)
+    #print(table["DEJ2000"].unit)
+
+    ra_unit = table["RAJ2000"].unit
+    dec_unit = table["DEJ2000"].unit
+
     # Get the correct entry (sometimes, for example for mergers, querying with the name of one galaxy gives two hits! We have to obtain the right one each time!)
     if len(table) == 0: raise ValueError("The galaxy could not be found under this name")
-    elif len(table) == 1: entry = table[0]
+    elif len(table) == 1:
+        #entry_index = 0
+        entry = table[0]
     else:
 
+        #entry_index = None
         entry = None
 
         # Some rows don't have names, if no match is found based on the name just take the row that has other names defined
@@ -896,16 +973,22 @@ def get_galaxy_info(name, position):
 
         # If no matches are found, look for the table entry for which the coordinate matches the given position (if any)
         if entry is None and position is not None:
-            for row in table:
-                if np.isclose(row["RAJ2000"], position.ra.value) and np.isclose(row["DEJ2000"], position.dec.value):
+            #for row in table:
+            for index in range(len(table)):
+                ra, dec = get_ra_dec_degrees_from_table(table, index)
+                if np.isclose(ra, position.ra.to("deg").value) and np.isclose(dec, position.dec.to("deg").value):
                     entry = row
                     break
 
     # Note: another temporary fix
     if entry is None: return name, position, None, None, [], None, None, None, None, None, None
 
+    # Get coordinate
+    ra, dec = get_ra_dec_degrees_from_values(entry["RAJ2000"], entry["DEJ2000"], ra_unit, dec_unit)
+
     # Get the right ascension and the declination
-    position = SkyCoordinate(ra=entry["RAJ2000"], dec=entry["DEJ2000"], unit="deg", frame="fk5")
+    #position = SkyCoordinate(ra=entry["RAJ2000"], dec=entry["DEJ2000"], unit="deg", frame="fk5")
+    position = SkyCoordinate(ra=ra, dec=dec, unit="deg", frame="fk5")
 
     # Get the names given to this galaxy
     gal_names = entry["ANames"].split() if entry["ANames"] else []
