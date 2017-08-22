@@ -27,6 +27,10 @@ from .mask import MaskBase
 
 # -----------------------------------------------------------------
 
+interpolation_methods = ["polynomial", "local_mean", "idw", "mean", "median", "biharmonic", "pts"]
+
+# -----------------------------------------------------------------
+
 class CutoutMask(np.ndarray):
 
     """
@@ -666,7 +670,6 @@ class Cutout(np.ndarray):
 
         # Use the 'PTS' method
         elif method == "pts":
-
 
             #test = no_clip_mask is not None
 

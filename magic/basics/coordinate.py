@@ -146,6 +146,19 @@ class SkyCoordinate(SkyCoord, Coordinate):
 
     # -----------------------------------------------------------------
 
+    @classmethod
+    def from_astropy(cls, coordinate):
+
+        """
+        This function ...
+        :param coordinate:
+        :return:
+        """
+
+        return cls(ra=coordinate.ra, dec=coordinate.dec)
+
+    # -----------------------------------------------------------------
+
     @property
     def axis1(self):
 

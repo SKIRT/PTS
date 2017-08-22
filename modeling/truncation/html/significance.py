@@ -12,6 +12,9 @@
 # Ensure Python 3 compatibility
 from __future__ import absolute_import, division, print_function
 
+# Import standard modules
+import gc
+
 # Import the relevant PTS classes and modules
 from ....core.basics.log import log
 from ..component import TruncationComponent
@@ -294,16 +297,20 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
 
     # -----------------------------------------------------------------
 
-    def make_plots_for_level(self, frame, significance, plot_path, level):
+    def make_plots_for_level(self, name, frame, significance, plot_path, level):
 
         """
         This function ...
+        :param name:
         :param frame:
         :param significance:
         :param plot_path:
         :param level:
         :return:
         """
+
+        # Debugging
+        log.debug("Making plots for the '" + name + "' image at a sigma level of '" + str(level) + "' ...")
 
         # Determine path
         path = fs.join(plot_path, str(level) + ".png")
@@ -365,7 +372,10 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
             significance = frame / errormap
 
             # Create the plots
-            for level in self.config.sigma_levels: self.make_plots_for_level(frame, significance, plot_path, level)
+            for level in self.config.sigma_levels: self.make_plots_for_level(name, frame, significance, plot_path, level)
+
+            # Clean
+            gc.collect()
 
     # -----------------------------------------------------------------
 

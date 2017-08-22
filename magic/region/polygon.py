@@ -13,7 +13,7 @@
 from __future__ import absolute_import, division, print_function
 
 # Import astronomical modules
-from astropy.coordinates import frame_transform_graph
+from astropy.coordinates import frame_transform_graph, SkyCoord
 
 # Import the relevant PTS classes and modules
 from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
@@ -110,6 +110,44 @@ class PixelPolygonRegion(PolygonRegion, PixelRegion):
         string = add_info(string, self)
         return string
 
+    # -----------------------------------------------------------------
+
+    def to_sky(self, wcs):
+
+        """
+        This function ...
+        :param wcs:
+        :return:
+        """
+
+        return SkyPolygonRegion.from_pixel(self, wcs)
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_sky(cls, region, wcs):
+
+        """
+        This function ...
+        :param region:
+        :param wcs:
+        :return:
+        """
+
+        points = []
+
+        for coordinate in region.points:
+
+            # Convert
+            point = PixelCoordinate.from_sky(coordinate, wcs)
+
+            # Add the point
+            points.append(point)
+
+        # Create the pixel circle region
+        return cls(*points, meta=region.meta, label=region.label, include=region.include,
+                   appearance=region.appearance)
+
 # -----------------------------------------------------------------
 
 class SkyPolygonRegion(PolygonRegion, SkyRegion):
@@ -127,7 +165,7 @@ class SkyPolygonRegion(PolygonRegion, SkyRegion):
         """
 
         # Verify the points
-        for arg in args:
+        for index, arg in enumerate(args):
             if not isinstance(arg, SkyCoordinate): raise ValueError("Points should be of type 'SkyCoordinate'")
 
         # Call the constructor of the base class
@@ -183,6 +221,40 @@ class SkyPolygonRegion(PolygonRegion, SkyRegion):
         string = prefix + make_polygon_template().format(**locals())
         string = add_info(string, self)
         return string
+
+    # -----------------------------------------------------------------
+
+    @classmethod
+    def from_pixel(cls, region, wcs):
+
+        """
+        This function ...
+        :parma region:
+        :param wcs:
+        :return:
+        """
+
+        coordinates = []
+
+        for point in region.points:
+            coordinate = SkyCoordinate.from_pixel(point, wcs)
+            coordinates.append(coordinate)
+
+        # Create and return
+        return cls(*coordinates, meta=region.meta, label=region.label, include=region.include,
+                   appearance=region.appearance)
+
+    # -----------------------------------------------------------------
+
+    def to_pixel(self, wcs):
+
+        """
+        Thisn function ...
+        :param wcs:
+        :return:
+        """
+
+        return PixelPolygonRegion.from_sky(self, wcs)
 
 # -----------------------------------------------------------------
 

@@ -23,7 +23,8 @@ from astropy.units import Quantity, dimensionless_unscaled
 
 # Import the relevant PTS classes and modules
 from ..basics.vector import Extent
-from ..basics.mask import Mask
+#from ..basics.mask import Mask
+from ..core.mask import Mask
 from ..basics.coordinate import Coordinate, PixelCoordinate, SkyCoordinate, PhysicalCoordinate
 from ..basics.stretch import PixelStretch, SkyStretch, PhysicalStretch
 from .region import Region, PixelRegion, SkyRegion, PhysicalRegion
@@ -45,11 +46,12 @@ from .region import add_info, coordsys_name_mapping, coordinate_systems
 
 # -----------------------------------------------------------------
 
-def load_region_list(path):
+def load_region_list(path, **kwargs):
 
     """
     Thisf unction ...
-    :param path: 
+    :param path:
+    :param kwargs:
     :return: 
     """
 
@@ -58,37 +60,39 @@ def load_region_list(path):
     third_line = fs.get_line(path, 2)
 
     # Image coordinates or sky coordinates
-    if "image" in second_line or "image" in third_line: return PixelRegionList.from_file(path)
-    else: return SkyRegionList.from_file(path)
+    if "image" in second_line or "image" in third_line: return PixelRegionList.from_file(path, **kwargs)
+    else: return SkyRegionList.from_file(path, **kwargs)
 
 # -----------------------------------------------------------------
 
-def load_as_pixel_region_list(path, wcs):
+def load_as_pixel_region_list(path, wcs, **kwargs):
 
     """
     This function ...
     :param path: 
     :param wcs:
+    :param kwargs:
     :return: 
     """
 
-    region_list = load_region_list(path)
+    region_list = load_region_list(path, **kwargs)
     if isinstance(region_list, PixelRegionList): return region_list
     elif isinstance(region_list, SkyRegionList): return region_list.to_pixel(wcs)
     else: raise RuntimeError("An error occured")
 
 # -----------------------------------------------------------------
 
-def load_as_sky_region_list(path, wcs):
+def load_as_sky_region_list(path, wcs, **kwargs):
 
     """
     This fucntion ...
     :param path: 
     :param wcs:
+    :param kwargs:
     :return: 
     """
 
-    region_list = load_region_list(path)
+    region_list = load_region_list(path, **kwargs)
     if isinstance(region_list, PixelRegionList): return region_list.to_sky(wcs)
     elif isinstance(region_list, SkyRegionList): return region_list
     else: raise RuntimeError("An error occured")
@@ -471,6 +475,7 @@ def line_parser(line, coordsys=None):
             sphcoords = UnitSphericalRepresentation(lon, lat)
             coords = frame(sphcoords)
 
+            # Return
             return region_type, [coords] + parsed[len(coords) * 2:], parsed_meta, composite, include
 
         else:
@@ -499,6 +504,7 @@ def line_parser(line, coordsys=None):
             # Reset iterator for ellipse annulus
             if region_type == 'ellipse': language_spec[region_type] = itertools.chain((parse_coordinate, parse_coordinate), itertools.cycle((parse_pixel_length_quantity,)))
 
+            # Return
             return region_type, parsed_return, parsed_meta, composite, include
 
 # -----------------------------------------------------------------
@@ -994,8 +1000,8 @@ def make_regular_region(specs):
 
             coord = coord_list[0]
 
-            coord_1 = SkyCoordinate(coord[0].ra, coord[0].dec)
-            coord_2 = SkyCoordinate(coord[1].ra, coord[1].dec)
+            coord_1 = SkyCoordinate.from_astropy(coord[0])
+            coord_2 = SkyCoordinate.from_astropy(coord[1])
 
             # Create the line
             reg = SkyLineRegion(coord_1, coord_2, meta=meta, appearance=appearance, include=include, label=label)
@@ -1024,7 +1030,7 @@ def make_regular_region(specs):
 
             # Get the start coordinate
             coord = coord_list[0]
-            start = SkyCoordinate(coord.ra, coord.dec)
+            start = SkyCoordinate.from_astropy(coord)
 
             # Get the length
             length = coord_list[1]
@@ -1060,11 +1066,8 @@ def make_regular_region(specs):
 
         if isinstance(coord_list[0], BaseCoordinateFrame):
 
-            ra = coord_list[0].ra
-            dec = coord_list[0].dec
-
             # Get the center coordinate
-            center = SkyCoordinate(ra, dec)
+            center = SkyCoordinate.from_astropy(coord_list[0])
 
             # Get the radius
             radius = coord_list[1]
@@ -1092,11 +1095,8 @@ def make_regular_region(specs):
         #if len(coord_list) > 4: continue
         if isinstance(coord_list[0], BaseCoordinateFrame):
 
-            ra = coord_list[0].ra
-            dec = coord_list[0].dec
-
             # Get the center coordinate
-            center = SkyCoordinate(ra, dec)
+            center = SkyCoordinate.from_astropy(coord_list[0])
 
             # Get the radius
             radius = SkyStretch(coord_list[1], coord_list[2])
@@ -1132,11 +1132,8 @@ def make_regular_region(specs):
 
         if isinstance(coord_list[0], BaseCoordinateFrame):
 
-            ra = coord_list[0].ra
-            dec = coord_list[0].dec
-
             # Get the center coordinate
-            center = SkyCoordinate(ra, dec)
+            center = SkyCoordinate.from_astropy(coord_list)
 
             # Get the radius
             radius = SkyStretch(0.5 * coord_list[1], 0.5 * coord_list[2])
@@ -1169,11 +1166,14 @@ def make_regular_region(specs):
 
         if isinstance(coord_list[0], BaseCoordinateFrame):
 
-            reg = SkyPolygonRegion(coord_list[0], meta=meta, appearance=appearance, include=include, label=label)
+            coordinates = [SkyCoordinate.from_astropy(coord) for coord in coord_list[0]]
+
+            #print(coord_list[0])
+            reg = SkyPolygonRegion(*coordinates, meta=meta, appearance=appearance, include=include, label=label)
 
         elif isinstance(coord_list[0], PixelCoordinate):
 
-            reg = PixelPolygonRegion(coord_list[0], meta=meta, appearance=appearance, include=include, label=label)
+            reg = PixelPolygonRegion(*coord_list[0], meta=meta, appearance=appearance, include=include, label=label)
 
         # No central coordinate given
         else: raise ValueError("No central coordinate")
@@ -1185,10 +1185,7 @@ def make_regular_region(specs):
 
         if isinstance(coord_list[0], BaseCoordinateFrame):
 
-            ra = coord_list[0].ra
-            dec = coord_list[0].dec
-
-            reg = SkyTextRegion(SkyCoordinate(ra, dec), text, meta=meta, appearance=appearance, include=include)
+            reg = SkyTextRegion(SkyCoordinate.from_astropy(coord_list[0]), text, meta=meta, appearance=appearance, include=include)
 
         elif isinstance(coord_list[0], PixelCoordinate):
 
