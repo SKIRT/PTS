@@ -23,6 +23,7 @@ from ..preparation.initialization import PreparationInitializer
 from ..preparation.preparer import DataPreparer
 from ..decomposition.decomposition import GalaxyDecomposer
 from ..truncation.truncator import Truncator
+from ..truncation.levels import SignificanceLevelsSetter
 from ..photometry.photometry import PhotoMeter
 from ..maps.old import OldStellarMapMaker
 from ..maps.young import YoungStellarMapMaker
@@ -199,18 +200,6 @@ class GalaxyModeler(ModelerBase):
     # -----------------------------------------------------------------
 
     @property
-    def needs_truncation(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        return self.check_needs_step("truncate")
-
-    # -----------------------------------------------------------------
-
-    @property
     def needs_photometry(self):
 
         """
@@ -243,7 +232,7 @@ class GalaxyModeler(ModelerBase):
         if self.needs_decomposition: self.decompose()
 
         # 5. Truncation
-        if self.needs_truncation: self.truncate()
+        self.truncate()
 
         # 6. Do the photometry
         if self.needs_photometry: self.photometry()
@@ -812,7 +801,49 @@ class GalaxyModeler(ModelerBase):
 
     # -----------------------------------------------------------------
 
+    @property
+    def needs_truncation(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.check_needs_step("truncate")
+
+    # -----------------------------------------------------------------
+
+    @property
+    def needs_significance_levels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.check_needs_step("set_significance_levels")
+
+    # -----------------------------------------------------------------
+
     def truncate(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Truncating ...")
+
+        # Truncate at boundary
+        if self.needs_truncation: self.truncate_boundary()
+
+        # Set significance levels
+        if self.needs_significance_levels: self.set_significance_levels()
+
+    # -----------------------------------------------------------------
+
+    def truncate_boundary(self):
 
         """
         This function ...
@@ -840,6 +871,36 @@ class GalaxyModeler(ModelerBase):
 
         # Set log path
         with self.write_log(truncator), self.register(truncator), self.write_config(truncator): truncator.run()
+
+    # -----------------------------------------------------------------
+
+    def set_significance_levels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Setting significance levels for the galaxy images ...")
+
+        # Create configuration
+        config = dict()
+
+        # Check
+        if self.config.significance_levels is None: raise RuntimeError("Significance levels have to be defined in order for the galaxy modeling to continue")
+
+        # Set the levels
+        config["levels"] = self.config.significance_levels
+
+        # Create the levels setter
+        setter = SignificanceLevelsSetter(config)
+
+        # Set the working directory
+        setter.config.path = self.modeling_path
+
+        # Run
+        with self.write_log(setter), self.register(setter), self.write_config(setter): setter.run()
 
     # -----------------------------------------------------------------
 

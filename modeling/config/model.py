@@ -99,4 +99,7 @@ definition.add_optional("recurrence_atol", "positive_real", "absolute tolerance 
 # TRUNCATION FACTOR
 definition.add_optional("truncation_factor", "positive_real", "truncation ellipse boundary factor")
 
+# SIGNIFICANCE LEVELS
+definition.add_optional("significance_levels", "string_real_dictionary", "significance levels")
+
 # -----------------------------------------------------------------

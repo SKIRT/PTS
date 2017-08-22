@@ -22,6 +22,7 @@ decomposition_residuals | -- | decomposition.residuals.DecompositionResidualsCal
 # TRUNCATION
 calculate_truncation_analytics | -- | truncation.analytics.TruncationAnalyticsCalculator | interactive | Calculate truncation analytics
 truncate | -- | truncation.truncator.Truncator | arguments | Set the truncation boundary
+set_significance_levels | -- | truncation.levels.SignificanceLevelsSetter | arguments | Set the significance levels
 
 # MAPS
 make_colours_maps | -- | maps.colour.ColoursMapMaker | arguments | Make colour maps

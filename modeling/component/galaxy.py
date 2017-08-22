@@ -582,6 +582,18 @@ class GalaxyModelingComponent(ModelingComponent):
     # -----------------------------------------------------------------
 
     @property
+    def significance_levels_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.significance_levels_path
+
+    # -----------------------------------------------------------------
+
+    @property
     def truncation_ellipse_path(self):
 
         """

@@ -39,6 +39,7 @@ single_commands["prepare_data"] = galaxy_modeling
 single_commands["inspect_preparation"] = galaxy_modeling
 single_commands["decompose"] = galaxy_modeling
 single_commands["truncate"] = galaxy_modeling
+single_commands["set_significance_levels"] = galaxy_modeling
 single_commands["photometry"] = galaxy_modeling
 single_commands["make_colours_maps"] = galaxy_modeling
 single_commands["make_ssfr_maps"] = galaxy_modeling
@@ -154,7 +155,10 @@ def output_paths_for_single_command(environment, command_name):
     elif command_name == "decompose": return []
 
     # Trunate
-    elif command_name == "truncate": return [environment.truncation_path]
+    elif command_name == "truncate": return [environment.truncation_ellipse_path]
+
+    # Significance levels
+    elif command_name == "set_significance_levels": return [environment.significance_levels_path]
 
     # Photometry
     elif command_name == "photometry": return [environment.phot_path]
@@ -264,6 +268,9 @@ def cached_directory_name_for_single_command(environment, command_name):
 
     # Trunate
     elif command_name == "truncate": return galaxy_name + "_truncation"
+
+    # Significance levels
+    elif command_name == "set_significance_levels": return None
 
     # Photometry
     elif command_name == "photometry": return None
