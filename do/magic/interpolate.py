@@ -25,7 +25,8 @@ from pts.magic.tools import plotting
 
 # -----------------------------------------------------------------
 
-default_method = "biharmonic"
+#default_method = "biharmonic"
+default_method = "pts"
 default_interpolation_method = "pts"
 
 # -----------------------------------------------------------------
