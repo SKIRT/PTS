@@ -292,7 +292,7 @@ class PointSourceFinder(Configurable):
         if not self.has_psf: self.fit_psf()
 
         # 5. Set the final sources
-        self.adjust_sources()
+        if self.has_sources: self.adjust_sources()
 
         # 6. Create the region list
         self.create_regions()
@@ -606,6 +606,30 @@ class PointSourceFinder(Configurable):
 
     # -----------------------------------------------------------------
 
+    @property
+    def nsources(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return len(self.sources)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def has_sources(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.nsources > 0
+
+    # -----------------------------------------------------------------
+
     def adjust_sources(self):
 
         """
@@ -618,6 +642,11 @@ class PointSourceFinder(Configurable):
 
         # Calculate the default FWHM, for the stars for which a model was not found
         default_fwhm = self.fwhm_pix
+
+        # Check whether default FWHM is defined
+        if default_fwhm is None:
+            log.warning("Could not determine the FWHM (no stars could be modeled to a PSF)")
+            return
 
         # Loop over all sources
         for source in self.sources:
@@ -670,10 +699,8 @@ class PointSourceFinder(Configurable):
             fwhm = default_fwhm if not source.has_model else source.fwhm
 
             # Calculate the radius in pixels
-            if fwhm is not None:
-                radius = fwhm * statistics.fwhm_to_sigma * self.config.source_psf_sigma_level
-            else:
-                radius = 0.
+            if fwhm is not None: radius = fwhm * statistics.fwhm_to_sigma * self.config.source_psf_sigma_level
+            else: radius = 0.
 
             # Convert the source index to a string
             text = str(source.index)
