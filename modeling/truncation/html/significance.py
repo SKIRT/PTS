@@ -297,6 +297,18 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def normalization_ellipse(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.truncation_ellipse * self.config.normalization_ellipse_factor
+
+    # -----------------------------------------------------------------
+
     def make_plots_for_level(self, name, frame, significance, plot_path, level):
 
         """
@@ -309,9 +321,6 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
         :return:
         """
 
-        # Debugging
-        log.debug("Making plots for the '" + name + "' image at a sigma level of '" + str(level) + "' ...")
-
         # Determine path
         path = fs.join(plot_path, str(level) + ".png")
 
@@ -319,7 +328,12 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
         mask_path = fs.join(plot_path, str(level) + "_mask.png")
 
         # Check
-        if fs.is_file(path) and fs.is_file(mask_path): return
+        if fs.is_file(path) and fs.is_file(mask_path):
+            log.success("The plots for the '" + name + "' image at a sigma level of '" + str(level) + "' are already present")
+            return
+
+        # Debugging
+        log.debug("Making plots for the '" + name + "' image at a sigma level of '" + str(level) + "' ...")
 
         # Create the mask
         if self.config.fuzzy_mask: mask = self.create_fuzzy_mask_for_level(significance, level)
@@ -331,7 +345,8 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
 
         # Save the frame
         frame.saveto_png(path, colours=self.config.colours, interval=self.config.interval, scale=self.config.scale,
-                         alpha=self.config.alpha_method, peak_alpha=self.config.peak_alpha)
+                         alpha=self.config.alpha_method, peak_alpha=self.config.peak_alpha,
+                         normalize_in=self.normalization_ellipse)
 
         # Save the mask
         mask.saveto_png(mask_path, colour=self.config.mask_colour, alpha=self.config.mask_alpha)
@@ -392,9 +407,10 @@ class SignificanceLevelsPageGenerator(TruncationComponent):
         # Loop over the images
         for name in self.names:
 
+            # Determine paths to the plots
             labels = self.config.sigma_levels
             paths = [fs.join(self.image_plot_paths[name], str(level) + ".png") for level in labels]
-            mask_paths = [fs.join(self.image_plot_paths[name], str(level) + ".png") for level in labels]
+            mask_paths = [fs.join(self.image_plot_paths[name], str(level) + "_mask.png") for level in labels]
 
             # Create image ID
             image_id = name.replace("_", "").replace(" ", "")

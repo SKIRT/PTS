@@ -10,7 +10,7 @@ from pts.core.basics.configuration import ConfigurationDefinition
 
 # -----------------------------------------------------------------
 
-sigma_levels = [0.5, 0.75, 1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 6., 7., 8.]
+sigma_levels = [0.5, 0.75, 1., 1.5, 2., 2.5, 3., 3.5, 4., 4.5, 5., 6., 7., 8., 9., 10.]
 default_sigma_level = 1.
 
 # -----------------------------------------------------------------
@@ -61,5 +61,7 @@ definition.add_optional("mask_colour", "string", "colour for the mask", default=
 definition.add_flag("mask_alpha", "use alpha for the mask", True)
 definition.add_flag("fuzzy_mask", "use fuzzy masks", True)
 definition.add_optional("fuzziness", "percentage", "relative fuzziness edge width", "50", convert_default=True)
+
+definition.add_optional("normalization_ellipse_factor", "real", "normalize the image within the truncation ellipse scaled with this factor", 0.7)
 
 # -----------------------------------------------------------------

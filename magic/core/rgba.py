@@ -77,7 +77,7 @@ class RGBAImage(RGBImage):
     # -----------------------------------------------------------------
 
     @classmethod
-    def from_frame(cls, frame, interval="pts", scale="log", alpha="absolute", peak_alpha=1., colours="red"):
+    def from_frame(cls, frame, interval="pts", scale="log", alpha="absolute", peak_alpha=1., colours="red", normalize_in=None):
 
         """
         This function ...
@@ -87,10 +87,12 @@ class RGBAImage(RGBImage):
         :param alpha:
         :param peak_alpha:
         :param colours:
+        :param normalize_in:
         :return:
         """
 
-        red, green, blue, alpha = frame_to_components(frame, interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha, colours=colours)
+        red, green, blue, alpha = frame_to_components(frame, interval=interval, scale=scale, alpha=alpha,
+                                                      peak_alpha=peak_alpha, colours=colours, normalize_in=normalize_in)
         return cls(red, green, blue, alpha)
 
     # -----------------------------------------------------------------
@@ -255,7 +257,7 @@ class RGBAImage(RGBImage):
 
 # -----------------------------------------------------------------
 
-def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", peak_alpha=1., colours="red"):
+def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", peak_alpha=1., colours="red", normalize_in=None):
 
     """
     This function ...
@@ -265,6 +267,7 @@ def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", pe
     :param alpha:
     :param peak_alpha:
     :param colours:
+    :param normalize_in:
     :return:
     """
 
@@ -288,22 +291,33 @@ def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", pe
     # FLIP UP-DOWN
     data = np.flipud(data)
 
-    # INTERVAL
-    if interval == "zscale":
-        vmin, vmax = ZScaleInterval().get_limits(data)
-    elif interval == "pts":
-        # Determine the maximum value in the box and the mimimum value for plotting
-        # print("here")
-        vmin = max(np.nanmin(data), 0.)
-        vmax = 0.5 * (np.nanmax(data) + vmin)
-    elif interval == "minmax":
-        vmin, vmax = MinMaxInterval().get_limits(data)
+    # DETERMINE NORMALIZE MIN AND MAX: ONLY FOR PTS INTERVAL METHOD FOR NOW
+    from ..region.region import SkyRegion, PixelRegion
+    if normalize_in is not None:
+        if isinstance(normalize_in, SkyRegion): normalize_in = normalize_in.to_pixel(frame.wcs)
+        if isinstance(normalize_in, PixelRegion): normalize_in = normalize_in.to_mask(frame.xsize, frame.ysize)
+        pixels = frame.data[normalize_in]
+        normalize_min = np.nanmin(pixels)
+        normalize_max = np.nanmax(pixels)
     else:
+        normalize_min = np.nanmin(data)
+        normalize_max = np.nanmax(data)
+
+    # INTERVAL
+    if interval == "zscale": vmin, vmax = ZScaleInterval().get_limits(data)
+    elif interval == "pts":
+
+        # Determine the maximum value in the box and the mimimum value for plotting
+        vmin = max(normalize_min, 0.)
+        vmax = 0.5 * (normalize_max + vmin)
+
+    elif interval == "minmax": vmin, vmax = MinMaxInterval().get_limits(data)
+    else:
+
         from ...core.tools import parsing
         try:
             vmin, xmax = parsing.real_tuple(interval)
-        except ValueError:
-            raise ValueError("Cannot interpret the interval")
+        except ValueError: raise ValueError("Cannot interpret the interval")
 
     # Normalization
     if scale == "log": norm = ImageNormalize(stretch=LogStretch(), vmin=vmin, vmax=vmax)
@@ -313,16 +327,12 @@ def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", pe
     # Normalize
     normalized = norm(data)
 
-    # OLD WAY
-    # Determine transparency
-    # if absolute_alpha:
-    #     transparency = np.ones_like(normalized, dtype=np.uint8)
-    #     transparency[np.isnan(data)] = 0
-    #     transparency[data == 0] = 0
-    # elif alpha:
-    #     transparency = peak_alpha * normalized / np.nanmax(normalized)
-    #     #transparency = np.log10(transparency)
-    # else: transparency = np.ones_like(normalized, dtype=np.uint8)
+    # ALSO TAKE INTO ACCOUNT 'NORMALIZE_IN' FOR ALPHA CHANNEL CALCULATION
+    if normalize_in is not None:
+        maskdata = np.flipud(normalize_in.data)
+        normalized_max = np.nanmax(normalized[maskdata])
+    else: normalized_max = np.nanmax(normalized)
+    #print("NORMALIZE MAX", normalized_max)
 
     # NEW
     if alpha is None: transparency = np.ones_like(normalized, dtype=np.uint8)
@@ -338,13 +348,13 @@ def frame_to_components(frame, interval="pts", scale="log", alpha="absolute", pe
     # Relative alpha
     elif alpha == "relative":
 
-        transparency = peak_alpha * normalized / np.nanmax(normalized)
+        transparency = peak_alpha * normalized / normalized_max
         transparency[transparency > 1] = 1
 
     # Combined alpha
     elif alpha == "combined":
 
-        transparency = peak_alpha * normalized / np.nanmax(normalized)
+        transparency = peak_alpha * normalized / normalized_max
         transparency[transparency > 1] = 1
         transparency[np.isnan(data)] = 0
         transparency[data < 0] = 0

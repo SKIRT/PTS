@@ -2326,7 +2326,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def to_rgba(self, interval="pts", scale="log", alpha="absolute", peak_alpha=1., colours="red"):
+    def to_rgba(self, interval="pts", scale="log", alpha="absolute", peak_alpha=1., colours="red", normalize_in=None):
 
         """
         This function ...
@@ -2335,11 +2335,13 @@ class Frame(NDDataArray):
         :param alpha:
         :param peak_alpha:
         :param colours:
+        :param normalize_in:
         :return:
         """
 
         from .rgba import RGBAImage
-        return RGBAImage.from_frame(self, interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha, colours=colours)
+        return RGBAImage.from_frame(self, interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha,
+                                    colours=colours, normalize_in=normalize_in)
 
     # -----------------------------------------------------------------
 
@@ -2509,7 +2511,7 @@ class Frame(NDDataArray):
 
     # -----------------------------------------------------------------
 
-    def saveto_png(self, path, interval="pts", scale="log", alpha="absolute", peak_alpha=1., colours="red"):
+    def saveto_png(self, path, interval="pts", scale="log", alpha="absolute", peak_alpha=1., colours="red", normalize_in=None):
 
         """
         This function ...
@@ -2519,11 +2521,12 @@ class Frame(NDDataArray):
         :param alpha:
         :param peak_alpha:
         :param colours:
+        :param normalize_in:
         :return:
         """
 
         # Get image values
-        image = self.to_rgba(interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha, colours=colours)
+        image = self.to_rgba(interval=interval, scale=scale, alpha=alpha, peak_alpha=peak_alpha, colours=colours, normalize_in=normalize_in)
 
         # Save
         image.saveto(path)
