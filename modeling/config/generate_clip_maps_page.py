@@ -13,9 +13,6 @@ from pts.core.remote.host import find_host_ids
 
 # -----------------------------------------------------------------
 
-#sigma_levels = [0.5, 0.75, 1., 1.5, 2., 2.5, 3., 3.5, 4.]
-#default_sigma_level = 1.0
-
 relative_sigma_levels = [0.5, 1., 1.5]
 default_relative_sigma_level = 1.0
 
@@ -98,7 +95,7 @@ definition.add_flag("all_dust", "select all dust maps")
 definition.add_flag("all", "select all maps")
 
 # Sigma levels
-definition.add_positional_optional("sigma_levels", "real_list", "different sigma levels for which to generate significance masks", relative_sigma_levels)
+definition.add_positional_optional("sigma_levels", "ascending_real_list", "different sigma levels for which to generate significance masks", relative_sigma_levels)
 definition.add_optional("default_sigma_level", "real", "default sigma level", default_relative_sigma_level)
 
 # Flags

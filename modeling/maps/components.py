@@ -15,7 +15,7 @@ from __future__ import absolute_import, division, print_function
 # Import the relevant PTS classes and modules
 from ...core.basics.log import log
 from .selectioncomponent import MapsSelectionComponent
-from ...core.basics.configuration import prompt_string_list, prompt_real
+from ...core.basics.configuration import prompt_real
 from ...core.tools.utils import lazyproperty
 from ...magic.core.frame import Frame
 from ...core.tools import filesystem as fs
@@ -227,93 +227,6 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
-    def prompt(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Prompting for user input ...")
-
-        # Old
-        if not self.has_old_selection: self.prompt_old()
-
-        # Young
-        if not self.has_young_selection: self.prompt_young()
-
-        # Ionizing
-        if not self.has_ionizing_selection: self.prompt_ionizing()
-
-        # Dust
-        if not self.has_dust_selection: self.prompt_dust()
-
-        # Levels
-        if not self.has_levels: self.prompt_levels()
-
-    # -----------------------------------------------------------------
-
-    def prompt_old(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Prompting for the old stellar maps ...")
-
-        # Ask for the old stellar maps
-        self.old_selection = prompt_string_list("old_maps", "selection of old stellar disk maps", choices=self.old_map_names, all_default=True)
-
-    # -----------------------------------------------------------------
-
-    def prompt_young(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Prompting for the young stellar maps ...")
-
-        # Ask for the young stellar maps
-        self.young_selection = prompt_string_list("young_maps", "selection of young stellar disk maps", choices=self.young_map_names, all_default=True)
-
-    # -----------------------------------------------------------------
-
-    def prompt_ionizing(self):
-
-        """
-        Thisn function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Prompting for the ionizing stellar maps ...")
-
-        # Ask for the ionizing stellar map
-        self.ionizing_selection = prompt_string_list("ionizing_maps", "selection of ionizing stellar disk maps", choices=self.ionizing_map_names, all_default=True)
-
-    # -----------------------------------------------------------------
-
-    def prompt_dust(self):
-
-        """
-        This function ...
-        :return:
-        """
-
-        # Inform the user
-        log.info("Prompting for the dust maps ...")
-
-        # Ask for the dust map to use
-        self.dust_selection = prompt_string_list("dust_maps", "selection of dust disk maps", choices=self.dust_map_names, all_default=True)
-
-    # -----------------------------------------------------------------
-
     @lazyproperty
     def old_selection_origins(self):
 
@@ -384,6 +297,33 @@ class ComponentMapsMaker(MapsSelectionComponent):
         origins.update(self.ionizing_selection_origins)
         origins.update(self.dust_selection_origins)
         return list(origins)
+
+    # -----------------------------------------------------------------
+
+    def prompt(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Prompting for user input ...")
+
+        # Old
+        if not self.has_old_selection: self.prompt_old()
+
+        # Young
+        if not self.has_young_selection: self.prompt_young()
+
+        # Ionizing
+        if not self.has_ionizing_selection: self.prompt_ionizing()
+
+        # Dust
+        if not self.has_dust_selection: self.prompt_dust()
+
+        # Levels
+        if not self.has_levels: self.prompt_levels()
 
     # -----------------------------------------------------------------
 

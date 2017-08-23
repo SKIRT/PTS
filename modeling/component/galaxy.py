@@ -653,6 +653,18 @@ class GalaxyModelingComponent(ModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def significance_levels(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.significance_levels
+
+    # -----------------------------------------------------------------
+
     def highest_resolution_wcs(self):
 
         """

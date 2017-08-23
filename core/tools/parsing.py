@@ -706,6 +706,36 @@ def quantity_list(argument):
 
 # -----------------------------------------------------------------
 
+def ascending_quantity_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from . import sequences
+    quantities = quantity_list(argument)
+    if not sequences.is_ascending(quantities): raise ValueError("List is not ascending")
+    return quantities
+
+# -----------------------------------------------------------------
+
+def descending_quantity_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from . import sequences
+    quantities = quantity_list(argument)
+    if not sequences.is_descending(quantities): raise ValueError("List is not descending")
+    return quantities
+
+# -----------------------------------------------------------------
+
 def photometric_quantity_tuple(argument):
 
     """
@@ -866,6 +896,36 @@ def integer_list(argument):
 
 # -----------------------------------------------------------------
 
+def ascending_integer_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from . import sequences
+    integers = integer_list(argument)
+    if not sequences.is_ascending(integers): raise ValueError("List is not ascending")
+    return integers
+
+# -----------------------------------------------------------------
+
+def descending_integer_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from . import sequences
+    integers = integer_list(argument)
+    if not sequences.is_descending(integers): raise ValueError("List is not descending")
+    return integers
+
+# -----------------------------------------------------------------
+
 def real_list(argument):
 
     """
@@ -875,6 +935,37 @@ def real_list(argument):
     """
 
     return [real(value) for value in string_list(argument)]
+
+# -----------------------------------------------------------------
+
+def ascending_real_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from . import sequences
+    reals = real_list(argument)
+    #print(reals)
+    if not sequences.is_ascending(reals): raise ValueError("List is not ascending")
+    return reals
+
+# -----------------------------------------------------------------
+
+def descending_real_list(argument):
+
+    """
+    This function ...
+    :param argument:
+    :return:
+    """
+
+    from . import sequences
+    reals = real_list(argument)
+    if not sequences.is_descending(reals): raise ValueError("List is not descending")
+    return reals
 
 # -----------------------------------------------------------------
 

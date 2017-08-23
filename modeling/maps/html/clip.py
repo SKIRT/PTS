@@ -132,6 +132,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         # Set the number of allowed open file handles
         fs.set_nallowed_open_files(self.config.nopen_files)
 
+        # Check
+        if self.config.default_sigma_level not in self.config.sigma_levels: raise ValueError("Default sigma level must be one of the chosen sigma levels")
+
         # Make directory to contain the plots
         self.clipped_plots_path = fs.join(self.maps_html_path, clipped_name)
         if fs.is_directory(self.clipped_plots_path):
@@ -156,8 +159,35 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         self.ionizing_selection = sequences.make_selection(self.ionizing_map_names, self.config.ionizing, self.config.not_ionizing, nrandom=self.config.random_ionizing, all=self.config.all_ionizing, none=not self.config.add_ionizing)
         self.dust_selection = sequences.make_selection(self.dust_map_names, self.config.dust, self.config.not_dust, nrandom=self.config.random_dust, all=self.config.all_dust, none=not self.config.add_dust)
 
+        # Prompt for user input (if selections not specified)
+        self.prompt()
+
         # Create plot directories for each image
         self.create_plot_directories()
+
+    # -----------------------------------------------------------------
+
+    def prompt(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Inform the user
+        log.info("Prompting for user input ...")
+
+        # Old
+        if not self.has_old_selection: self.prompt_old()
+
+        # Young
+        if not self.has_young_selection: self.prompt_young()
+
+        # Ionizing
+        if not self.has_ionizing_selection: self.prompt_ionizing()
+
+        # Dust
+        if not self.has_dust_selection: self.prompt_dust()
 
     # -----------------------------------------------------------------
 
@@ -1132,6 +1162,62 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def sigma_levels_for_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize dictionary
+        levels = dict()
+
+        # Loop over the images
+        for name in self.image_names:
+
+            # Get the level
+            level = self.significance_levels[name]
+
+            # Get the different sigma levels
+            sigma_levels = [level * factor for factor in self.config.sigma_levels]
+
+            # Set the levels
+            levels[name] = sigma_levels
+
+        # Return the levels
+        return levels
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def default_sigma_levels_for_images(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        # Initialize dictionary
+        levels = dict()
+
+        # Loop over the images
+        for name in self.image_names:
+
+            # Get the level
+            level = self.significance_levels[name]
+
+            # Set the default level
+            default_level = self.config.default_sigma_level * level
+
+            # Set the level
+            levels[name] = default_level
+
+        # Return the dictionary of default sigma levels
+        return levels
+
+    # -----------------------------------------------------------------
+
     def make_sliders(self):
 
         """
@@ -1157,7 +1243,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
         paths["dust"] = self.dust_plot_paths
 
         # Make the slider
-        self.sliders = html.make_multi_image_sliders(names, paths, self.image_names, self.config.sigma_levels, self.config.default_sigma_level, width=None, height=None, basic=True, img_class=None)
+        self.sliders = html.make_multi_image_sliders(names, paths, self.image_names, self.sigma_levels_for_images, self.default_sigma_levels_for_images, width=None, height=None, basic=True, img_class=None)
 
     # -----------------------------------------------------------------
 

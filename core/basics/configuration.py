@@ -43,7 +43,7 @@ subtypes["string"] = ["file_path"]
 subtypes["quantity"] = ["photometric_quantity", "photometric_density_quantity"]
 subtypes["unit"] = ["photometric_unit", "photometric_density_unit"]
 subtypes["filter"] = ["broad_band_filter", "narrow_band_filter"]
-subtypes["list"] = ["integer_list", "real_list", "quantity_list"]
+subtypes["list"] = ["integer_list", "real_list", "quantity_list", "ascending_real_list", "descending_real_list", "ascending_integer_list", "descending_integer_list", "ascending_quantity_list", "descending_quantity_list"]
 
 related_types = []
 related_types.append(["integer", "positive_integer", "negative_integer", "even_integer", "even_positive_integer", "even_negative_integer", "odd_integer", "odd_positive_integer", "odd_negative_integer"])
@@ -3890,6 +3890,16 @@ def check_default(default, user_type):
         if user_type.endswith("list"):
 
             base_type = user_type.split("_list")[0]
+
+            # Ascending and descending lists
+            if base_type.startswith("ascending"):
+                base_type = base_type.split("ascending_")[1]
+                direction = "ascending"
+            elif base_type.startswith("descending"):
+                base_type = base_type.split("descending_")[1]
+                direction = "descending"
+            else: direction = None
+
             new_default = []
             for value in default:
                 try:
@@ -3898,6 +3908,11 @@ def check_default(default, user_type):
                     new_default.append(value)
                 except ValueError: raise ValueError("Default value '" + str(default) + "' is not of the right type '" + user_type + "'")
             default = new_default
+
+            # Check if ascending or descending
+            if direction is not None:
+                if direction == "ascending" and not sequences.is_ascending(default): raise ValueError("Default list is not ascending")
+                if direction == "descending" and not sequences.is_descending(default): raise ValueError("Default list is not descending")
 
         # Single-value property
         else: default = try_to_convert_to_type(default, user_type)

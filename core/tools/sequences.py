@@ -1031,6 +1031,13 @@ def make_selection(sequence, selected, not_selected, nrandom=None, all=False, no
     :return:
     """
 
+    #print(sequence)
+    #print(selected)
+    #print(not_selected)
+    #print(nrandom)
+    #print(all)
+    #print(none)
+
     if selected is not None and none: raise ValueError("Selection is made but 'none' is enabled")
     if all and none: raise ValueError("Cannot enable 'all' and 'none' simultaneously")
 
@@ -1066,5 +1073,29 @@ def make_selection(sequence, selected, not_selected, nrandom=None, all=False, no
 
     # Return the selection
     return selection
+
+# -----------------------------------------------------------------
+
+def is_ascending(sequence):
+
+    """
+    This funciton ...
+    :param sequence:
+    :return:
+    """
+
+    return sorted(sequence) == sequence
+
+# -----------------------------------------------------------------
+
+def is_descending(sequence):
+
+    """
+    This function ...
+    :param sequence:
+    :return:
+    """
+
+    return sorted(sequence, reverse=True) == sequence
 
 # -----------------------------------------------------------------
