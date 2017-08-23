@@ -71,7 +71,7 @@ stellar_catalog_star_id_colname["PPMX"] = "PPMX"
 stellar_catalog_star_id_colname["SDSS9"] = "SDSS9"
 stellar_catalog_star_id_colname["UCAC4"] = "UCAC4"
 stellar_catalog_star_id_colname["URAT1"] = "URAT1"
-stellar_catalog_star_id_colname["2MASS"] = "2MASS"
+stellar_catalog_star_id_colname["2MASS"] = "_2MASS"
 
 # -----------------------------------------------------------------
 
