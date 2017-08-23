@@ -817,8 +817,11 @@ class PointSourceFinder(Configurable):
                 if not source.has_detection and not self.config.saturation.remove_if_undetected: continue
 
                 # Find a saturation source and remove it from the frame
-                source.find_saturation(self.frame, self.config.saturation, default_fwhm, star_mask)
-                success += source.has_saturation
+                if default_fwhm is None:
+                    log.warning("Could not determine the FWHM (no stars could be modeled to a PSF)")
+                else:
+                    source.find_saturation(self.frame, self.config.saturation, default_fwhm, star_mask)
+                    success += source.has_saturation
 
             # Inform the user
             log.debug("Found saturation in " + str(success) + " out of " + str(self.have_detection) + " sources with detection ({0:.2f}%)".format(success / self.have_detection * 100.0))
