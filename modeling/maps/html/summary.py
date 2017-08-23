@@ -1805,20 +1805,33 @@ class MapsSummaryPageGenerator(MapsComponent):
         self.page += html.line
         self.page += html.newline
 
+        # SINGLE TABLE
         if self.has_single_colour_table:
+
             self.page += self.single_colour_table
             self.page += html.newline
-            #self.page += html.newline
+
+        # MULTIPLE TABLES
         else:
+
+            method_labels = dict()
+            for method in self.colour_tables:
+                label = "colours_" + method
+                self.page += html.anchor_link(label, method) + html.newline
+                method_labels[method] = label
+
+            self.page += html.newline
+            self.page += html.line
+            self.page += html.newline
 
             # Loop over the methods
             for method in self.colour_tables:
-                self.page += method.upper()
+                label = method_labels[method]
+                self.page += html.anchor(label, method.upper())
                 self.page += html.newline
                 self.page += html.newline
                 self.page += self.colour_tables[method]
                 self.page += html.newline
-                #self.page += html.newline
 
         # Finish
         self.page += html.make_line("heavy")
@@ -1866,21 +1879,33 @@ class MapsSummaryPageGenerator(MapsComponent):
         self.page += html.line
         self.page += html.newline
 
-
+        # SINGLE TABLE
         if self.has_single_ssfr_table:
+
             self.page += self.single_ssfr_table
             self.page += html.newline
-            #self.page += html.newline
+
+        # MULTIPLE TABLES
         else:
+
+            method_labels = dict()
+            for method in self.ssfr_tables:
+                label = "ssfr_" + method
+                self.page += html.anchor_link(label, method) + html.newline
+                method_labels[method] = label
+
+            self.page += html.newline
+            self.page += html.line
+            self.page += html.newline
 
             # Loop over the methods
             for method in self.ssfr_tables:
-                self.page += method.upper()
+                label = method_labels[method]
+                self.page += html.anchor(label, method.upper())
                 self.page += html.newline
                 self.page += html.newline
                 self.page += self.ssfr_tables[method]
                 self.page += html.newline
-                #self.page += html.newline
 
         # Finish
         self.page += html.make_line("heavy")
@@ -1928,20 +1953,33 @@ class MapsSummaryPageGenerator(MapsComponent):
         self.page += html.line
         self.page += html.newline
 
+        # SINGLE TABLE
         if self.has_single_tir_table:
+
             self.page += self.single_tir_table
             self.page += html.newline
-            #self.page += html.newline
+
+        # MULTIPLE TABLES
         else:
+
+            method_labels = dict()
+            for method in self.tir_tables:
+                label = "tir_" + method
+                self.page += html.anchor_link(label, method) + html.newline
+                method_labels[method] = label
+
+            self.page += html.newline
+            self.page += html.line
+            self.page += html.newline
 
             # Loop over the methods
             for method in self.tir_tables:
-                self.page += method.upper()
+                label = method_labels[method]
+                self.page += html.anchor(label, method.upper())
                 self.page += html.newline
                 self.page += html.newline
                 self.page += self.tir_tables[method]
                 self.page += html.newline
-                #self.page += html.newline
 
         # Finish
         self.page += html.make_line("heavy")
@@ -1989,20 +2027,33 @@ class MapsSummaryPageGenerator(MapsComponent):
         self.page += html.line
         self.page += html.newline
 
+        # SINGLE TABLE
         if self.has_single_attenuation_table:
+
             self.page += self.single_attenuation_table
             self.page += html.newline
-            #self.page += html.newline
+
+        # MULTIPLE TABLES
         else:
+
+            method_labels = dict()
+            for method in self.attenuation_tables:
+                label = "attenuation_" + method
+                self.page += html.anchor_link(label, method) + html.newline
+                method_labels[method] = label
+
+            self.page += html.newline
+            self.page += html.line
+            self.page += html.newline
 
             # Loop over the methods
             for method in self.attenuation_tables:
-                self.page += method.upper()
+                label = method_labels[method]
+                self.page += html.anchor(label, method.upper())
                 self.page += html.newline
                 self.page += html.newline
                 self.page += self.attenuation_tables[method]
                 self.page += html.newline
-                #self.page += html.newline
 
         # Finish
         self.page += html.make_line("heavy")
@@ -2050,20 +2101,33 @@ class MapsSummaryPageGenerator(MapsComponent):
         self.page += html.line
         self.page += html.newline
 
+        # SINGLE TABLE
         if self.has_single_old_table:
+
             self.page += self.single_old_table
             self.page += html.newline
-            #self.page += html.newline
+
+        # MULTIPLE TABLES
         else:
+
+            method_labels = dict()
+            for method in self.old_tables:
+                label = "old_" + method
+                self.page += html.anchor_link(label, method) + html.newline
+                method_labels[method] = label
+
+            self.page += html.newline
+            self.page += html.line
+            self.page += html.newline
 
             # Loop over the methods
             for method in self.old_tables:
-                self.page += method.upper()
+                label = method_labels[method]
+                self.page += html.anchor(label, method.upper())
                 self.page += html.newline
                 self.page += html.newline
                 self.page += self.old_tables[method]
                 self.page += html.newline
-                #self.page += html.newline
 
         # Finish
         self.page += html.make_line("heavy")
@@ -2111,15 +2175,29 @@ class MapsSummaryPageGenerator(MapsComponent):
         self.page += html.line
         self.page += html.newline
 
+        # SINGLE TABLE
         if self.has_single_young_table:
+
             self.page += self.single_young_table
             self.page += html.newline
-            #self.page += html.newline
+
+        # MULTIPLE TABLES
         else:
+
+            method_labels = dict()
+            for method in self.young_tables:
+                label = "young_" + method
+                self.page += html.anchor_link(label, method) + html.newline
+                method_labels[method] = label
+
+            self.page += html.newline
+            self.page += html.line
+            self.page += html.newline
 
             # Loop over the methods
             for method in self.young_tables:
-                self.page += method.upper()
+                label = mehod_labels[method]
+                self.page += html.anchor(label, method.upper())
                 self.page += html.newline
                 self.page += html.newline
                 self.page += self.young_tables[method]
@@ -2172,20 +2250,33 @@ class MapsSummaryPageGenerator(MapsComponent):
         self.page += html.line
         self.page += html.newline
 
+        # SINGLE TABLE
         if self.has_single_ionizing_table:
+
             self.page += self.single_ionizing_table
             self.page += html.newline
-            #self.page += html.newline
+
+        # MULTIPLE TABLES
         else:
+
+            method_labels = dict()
+            for method in self.ionizing_tables:
+                label = "ionizing_" + method
+                self.page += html.anchor_link(label, method) + html.newline
+                method_labels[method] = label
+
+            self.page += html.newline
+            self.page += html.line
+            self.page += html.newline
 
             # Loop over the methods
             for method in self.ionizing_tables:
-                self.page += method.upper()
+                label = method_labels[method]
+                self.page += html.anchor(label, method.upper())
                 self.page += html.newline
                 self.page += html.newline
                 self.page += self.ionizing_tables[method]
                 self.page += html.newline
-                #self.page += html.newline
 
         # Finish
         self.page += html.make_line("heavy")
@@ -2233,20 +2324,33 @@ class MapsSummaryPageGenerator(MapsComponent):
         self.page += html.line
         self.page += html.newline
 
+        # SINGLE TABLE
         if self.has_single_dust_table:
+
             self.page += self.single_dust_table
             self.page += html.newline
-            #self.page += html.newline
+
+        # MULTIPLE TABLES
         else:
+
+            method_labels = dict()
+            for method in self.dust_tables:
+                label = "dust_" + method
+                self.page += html.anchor_link(label, method) + html.newline
+                method_labels[method] = label
+
+            self.page += html.newline
+            self.page += html.line
+            self.page += html.newline
 
             # Loop over the methods
             for method in self.dust_tables:
-                self.page += method.upper()
+                label = method_labels[method]
+                self.page += html.anchor(label, method.upper())
                 self.page += html.newline
                 self.page += html.newline
                 self.page += self.dust_tables[method]
                 self.page += html.newline
-                #self.page += html.newline
 
         # Finish
         self.page += html.make_line("heavy")
