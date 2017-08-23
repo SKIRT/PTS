@@ -48,8 +48,11 @@ definition.add_flag("steps", "save the results of intermediate steps", True)
 # Remote
 definition.add_optional("remote", "string", "remote host to use for creating the clip masks", choices=find_host_ids(schedulers=False))
 
-# Flags
+# CONVOLUTION
 definition.add_flag("convolve", "perform convolution during the creation of the clip masks", True)
+
+# REBINNING
+definition.add_optional("rebin_remote_threshold", "data_quantity", "data size threshold for remote rebinning", "0.5 GB", convert_default=True)
 
 # Selections
 definition.add_optional("old", "string_list", "selected old stellar maps", choices=old_map_names)

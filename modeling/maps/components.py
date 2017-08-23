@@ -23,6 +23,7 @@ from ...core.tools import numbers
 from ...core.basics.range import RealRange
 from ...core.tools import sequences
 from ..misc.deprojector import Deprojector
+from ...core.remote.remote import Remote
 
 # -----------------------------------------------------------------
 
@@ -224,6 +225,19 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
         # Levels
         if self.config.levels is not None: self.levels = self.config.levels
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def remote(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        if self.config.remote is None: return None
+        else: return Remote(host_id=self.config.remote)
 
     # -----------------------------------------------------------------
 
@@ -1460,8 +1474,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Clip the map (returns the mask)
             self.old_masks[name] = self.clip_map(self.old_maps[name], origins, convolve=self.config.convolve,
-                                                 remote=self.config.remote, npixels=self.config.min_npixels,
-                                                 connectivity=self.config.connectivity)
+                                                 remote=self.remote, npixels=self.config.min_npixels,
+                                                 connectivity=self.config.connectivity,
+                                                 rebin_remote_threshold=self.config.rebin_remote_threshold)
 
             # Set flag
             self.old_maps[name].metadata[clip_step] = True
@@ -1497,8 +1512,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Clip the map (returns the mask)
             self.young_masks[name] = self.clip_map(self.young_maps[name], origins, convolve=self.config.convolve,
-                                                   remote=self.config.remote, npixels=self.config.min_npixels,
-                                                   connectivity=self.config.connectivity)
+                                                   remote=self.remote, npixels=self.config.min_npixels,
+                                                   connectivity=self.config.connectivity,
+                                                   rebin_remote_threshold=self.config.rebin_remote_threshold)
 
             # Set flag
             self.young_maps[name].metadata[clip_step] = True
@@ -1534,8 +1550,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Clip the map (returns the mask)
             self.ionizing_masks[name] = self.clip_map(self.ionizing_maps[name], origins, convolve=self.config.convolve,
-                                                      remote=self.config.remote, npixels=self.config.min_npixels,
-                                                      connectivity=self.config.connectivity)
+                                                      remote=self.remote, npixels=self.config.min_npixels,
+                                                      connectivity=self.config.connectivity,
+                                                      rebin_remote_threshold=self.config.rebin_remote_threshold)
 
             # Set flag
             self.ionizing_maps[name].metadata[clip_step] = True
@@ -1571,8 +1588,9 @@ class ComponentMapsMaker(MapsSelectionComponent):
 
             # Clip the map (returns the mask)
             self.dust_masks[name] = self.clip_map(self.dust_maps[name], origins, convolve=self.config.convolve,
-                                                  remote=self.config.remote, npixels=self.config.min_npixels,
-                                                  connectivity=self.config.connectivity)
+                                                  remote=self.remote, npixels=self.config.min_npixels,
+                                                  connectivity=self.config.connectivity,
+                                                  rebin_remote_threshold=self.config.rebin_remote_threshold)
 
             # Set flag
             self.dust_maps[name].metadata[clip_step] = True

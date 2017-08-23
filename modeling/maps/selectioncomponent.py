@@ -404,7 +404,7 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def clip_map(self, the_map, origins, convolve=True, remote=None, npixels=1, connectivity=8):
+    def clip_map(self, the_map, origins, convolve=True, remote=None, npixels=1, connectivity=8, rebin_remote_threshold=None):
 
         """
         This function ...
@@ -414,11 +414,12 @@ class MapsSelectionComponent(MapsComponent):
         :param remote:
         :param npixels:
         :param connectivity:
+        :param rebin_remote_threshold:
         :return:
         """
 
         # Create the clip mask
-        mask = self.get_clip_mask(origins, wcs=the_map.wcs, convolve=convolve, remote=remote, npixels=npixels, connectivity=connectivity)
+        mask = self.get_clip_mask(origins, wcs=the_map.wcs, convolve=convolve, remote=remote, npixels=npixels, connectivity=connectivity, rebin_remote_threshold=rebin_remote_threshold)
 
         # Clip
         the_map[mask] = 0.0
@@ -469,7 +470,7 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def get_clip_mask(self, origins, wcs=None, convolve=True, remote=None, npixels=1, connectivity=8):
+    def get_clip_mask(self, origins, wcs=None, convolve=True, remote=None, npixels=1, connectivity=8, rebin_remote_threshold=None):
 
         """
         This function ...
@@ -479,6 +480,7 @@ class MapsSelectionComponent(MapsComponent):
         :param remote:
         :param npixels:
         :param connectivity:
+        :param rebin_remote_threshold:
         :return:
         """
 
@@ -487,7 +489,7 @@ class MapsSelectionComponent(MapsComponent):
         else:
 
             # Make the mask
-            mask = self.make_clip_mask(origins, self.levels, wcs=wcs, convolve=convolve, remote=remote, npixels=npixels, connectivity=connectivity)
+            mask = self.make_clip_mask(origins, self.levels, wcs=wcs, convolve=convolve, remote=remote, npixels=npixels, connectivity=connectivity, rebin_remote_threshold=rebin_remote_threshold)
 
             # Cache the mask
             if wcs is None: self.clip_masks[tuple(origins)] = mask
@@ -497,7 +499,7 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def make_clip_mask(self, origins, levels, wcs=None, convolve=True, remote=None, npixels=1, connectivity=8):
+    def make_clip_mask(self, origins, levels, wcs=None, convolve=True, remote=None, npixels=1, connectivity=8, rebin_remote_threshold=None):
 
         """
         This function ...
@@ -508,6 +510,7 @@ class MapsSelectionComponent(MapsComponent):
         :param remote:
         :param npixels:
         :param connectivity:
+        :param rebin_remote_threshold:
         :return:
         """
 
@@ -529,15 +532,15 @@ class MapsSelectionComponent(MapsComponent):
         # WCS is specified: rebin to this WCS
         if wcs is not None:
 
-            frames.rebin_to_wcs(wcs)
-            errors.rebin_to_wcs(wcs)
+            frames.rebin_to_wcs(wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold)
+            errors.rebin_to_wcs(wcs, remote=remote, rebin_remote_threshold=rebin_remote_threshold)
 
         # Otherwise, rebin to the highest pixelscale WCS
         else:
 
             # Rebin the frames to the same pixelgrid
-            frames.rebin_to_highest_pixelscale()
-            errors.rebin_to_highest_pixelscale()
+            frames.rebin_to_highest_pixelscale(remote=remote, rebin_remote_threshold=rebin_remote_threshold)
+            errors.rebin_to_highest_pixelscale(remote=remote, rebin_remote_threshold=rebin_remote_threshold)
 
         # NOT REALLY NECESSARY!!
         # Convert the frames to the same unit

@@ -2789,7 +2789,8 @@ def rebin_to_pixelscale(*frames, **kwargs):
         else: return rebin_to_pixelscale_remote(*frames, **kwargs) # all remote
     else:
         if "rebin_remote_threshold" in kwargs and kwargs["rebin_remote_threshold"] is not None:
-            raise ValueError("Cannot specify 'rebin_remote_threshold' if 'remote' is not defined")
+            #raise ValueError("Cannot specify 'rebin_remote_threshold' if 'remote' is not defined")
+            log.warning("'rebin_remote_threshold' is defined but 'remote' is not specified: rebinning locally ...")
         return rebin_to_pixelscale_local(*frames, **kwargs)
 
 # -----------------------------------------------------------------
