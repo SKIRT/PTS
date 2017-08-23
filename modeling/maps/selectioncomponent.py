@@ -214,6 +214,18 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def old_map_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.maps_collection.get_old_stellar_disk_methods()
+
+    # -----------------------------------------------------------------
+
     @property
     def old_map_names(self):
 
@@ -247,6 +259,18 @@ class MapsSelectionComponent(MapsComponent):
         """
 
         return self.maps_collection.get_young_origins(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def young_map_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.maps_collection.get_young_methods(flatten=True)
 
     # -----------------------------------------------------------------
 
@@ -287,6 +311,18 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
+    @lazyproperty
+    def ionizing_map_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.maps_collection.get_ionizing_methods(flatten=True)
+
+    # -----------------------------------------------------------------
+
     @property
     def ionizing_map_names(self):
 
@@ -322,6 +358,18 @@ class MapsSelectionComponent(MapsComponent):
         """
 
         return self.maps_collection.get_not_hot_dust_origins(flatten=True)
+
+    # -----------------------------------------------------------------
+
+    @lazyproperty
+    def dust_map_methods(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.maps_collection.get_not_hot_dust_methods(flatten=True)
 
     # -----------------------------------------------------------------
 

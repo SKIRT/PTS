@@ -799,6 +799,54 @@ class MapsComponent(GalaxyModelingComponent):
 
     # -----------------------------------------------------------------
 
+    @property
+    def old_maps_html_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.old_maps_html_page_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def young_maps_html_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.young_maps_html_page_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def ionizing_maps_html_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.ionizing_maps_html_page_path
+
+    # -----------------------------------------------------------------
+
+    @property
+    def dust_maps_html_page_path(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.environment.dust_maps_html_page_path
+
+    # -----------------------------------------------------------------
+
     def get_origins_sub_name(self, name, flatten=False, method=None):
 
         """

@@ -103,6 +103,10 @@ generate_truncation_ellipse_page | -- | truncation.html.ellipse.TruncationEllips
 generate_significance_levels_page | -- | truncation.html.significance.SignificanceLevelsPageGenerator | arguments | Generate the significance levels page
 generate_all_maps_page | -- | maps.html.all.AllMapsPageGenerator | arguments | Generate the all maps page
 generate_maps_summary_page | -- | maps.html.summary.MapsSummaryPageGenerator | arguments | Generate the maps summary page
+generate_old_maps_page | generate_component_maps_page | maps.html.old.OldMapsPageGenerator | arguments | Generate the old stellar maps page
+generate_young_maps_page | generate_component_maps_page | maps.html.young.YoungMapsPageGenerator | arguments | Generate the young stellar maps page
+generate_ionizing_maps_page | generate_component_maps_page | maps.html.ionizing.IonizingMapsPageGenerator | arguments | Generate the ionizing stellar maps page
+generate_dust_maps_page | generate_component_maps_page | maps.html.dust.DustMapsPageGenerator | arguments | Generate the dust maps page
 generate_clip_maps_page | -- | maps.html.clip.ClipMapsPageGenerator | arguments | Generate the clip maps page
 generate_maps_selection_page | -- | maps.html.selection.MapsSelectionPageGenerator | arguments | Generate the maps selection page
 

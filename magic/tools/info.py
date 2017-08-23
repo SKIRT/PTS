@@ -15,6 +15,9 @@ from __future__ import absolute_import, division, print_function
 # Import standard modules
 from collections import OrderedDict
 
+# Import astronomical modules
+from astropy.io.fits import getheader
+
 # Import the relevant PTS classes and modules
 from ...core.tools import filesystem as fs
 from ...core.tools.stringify import tostr
@@ -22,6 +25,22 @@ from . import headers
 from ..basics.coordinatesystem import CoordinateSystem
 from ...core.tools import types
 from ...core.basics.log import log
+
+# -----------------------------------------------------------------
+
+def get_image_info_file(image_name, frame_path, **kwargs):
+
+    """
+    This function ...
+    :param image_name:
+    :param frame_path:
+    :param kwargs:
+    :return:
+    """
+
+    from ..core.frame import Frame
+    frame = Frame.from_file(frame_path)
+    return get_image_info(image_name, frame, **kwargs)
 
 # -----------------------------------------------------------------
 
@@ -81,6 +100,21 @@ def get_image_info_strings(image_name, frame, **kwargs):
         string = name + ": " + tostr(info[name], round=True)
         strings.append(string)
     return strings
+
+# -----------------------------------------------------------------
+
+def get_image_info_from_header_file(image_name, frame_path, **kwargs):
+
+    """
+    This function ...
+    :param image_name:
+    :param path:
+    :param kwargs:
+    :return:
+    """
+
+    header = getheader(frame_path)
+    return get_image_info_from_header(image_name, header, **kwargs)
 
 # -----------------------------------------------------------------
 

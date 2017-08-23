@@ -427,17 +427,19 @@ class MapsCollection(object):
 
     # -----------------------------------------------------------------
 
-    def get_methods_sub_name(self, name, flatten=False, method=None):
+    def get_methods_sub_name(self, name, flatten=False, method=None, not_method=None, not_methods=None):
 
         """
         This function ...
         :param name:
         :param flatten:
         :param method:
+        :param not_method:
+        :param not_methods:
         :return:
         """
 
-        return get_methods_sub_name(self.environment, name, flatten=flatten, method=method)
+        return get_methods_sub_name(self.environment, name, flatten=flatten, method=method, not_method=not_method, not_methods=not_methods)
 
     # -----------------------------------------------------------------
 
@@ -1406,6 +1408,18 @@ class MapsCollection(object):
         """
 
         return self.get_origins_sub_name(dust_name, not_method="hot", flatten=flatten)
+
+    # -----------------------------------------------------------------
+
+    def get_not_hot_dust_methods(self, flatten=False):
+
+        """
+        This function ...
+        :param flatten:
+        :return:
+        """
+
+        return self.get_methods_sub_name(dust_name, not_method="hot", flatten=flatten)
 
     # -----------------------------------------------------------------
 
