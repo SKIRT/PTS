@@ -89,6 +89,18 @@ class Model(SimplePropertyComposite):
 
     # -----------------------------------------------------------------
 
+    @property
+    def x_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.xrange
+
+    # -----------------------------------------------------------------
+
     @abstractproperty
     def ymin(self):
 
@@ -122,6 +134,18 @@ class Model(SimplePropertyComposite):
         """
 
         pass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def y_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.yrange
 
 # -----------------------------------------------------------------
 
@@ -178,6 +202,18 @@ class Model3D(Model):
         """
 
         pass
+
+    # -----------------------------------------------------------------
+
+    @property
+    def z_range(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return self.zrange
 
 # -----------------------------------------------------------------
 #

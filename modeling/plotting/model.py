@@ -52,6 +52,44 @@ widget_view_template = """<script type="application/vnd.jupyter.widget-view+json
 
 # -----------------------------------------------------------------
 
+def xy(shape=128, limits=[-3, 3], polar=False, sparse=True, centers=False):
+
+    """
+    This function ...
+    :param shape:
+    :param limits:
+    :param polar:
+    :param sparse:
+    :param centers:
+    :return:
+    """
+
+    dim = 2
+
+    try: shape[0]
+    except: shape = [shape] * dim
+
+    try: limits[0][0]
+    except: limits = [limits] * dim
+
+    if centers: v = [slice(vmin+(vmax-vmin)/float(N)/2, vmax-(vmax-vmin)/float(N)/4, (vmax-vmin)/float(N)) for (vmin, vmax), N in zip(limits, shape)]
+    else: v = [slice(vmin, vmax+(vmax-vmin)/float(N)/2, (vmax-vmin)/float(N-1)) for (vmin, vmax), N in zip(limits, shape)]
+
+    if sparse: x, y = np.ogrid.__getitem__(v)
+    else: x,y = np.mgrid.__getitem__(v)
+
+    # Make polar coordinates
+    if polar:
+
+        rho = np.linalg.norm([x, y])
+        theta = np.arctan2(y, x)
+        return x, y, rho, theta
+
+    # Return x and y
+    return x, y
+
+# -----------------------------------------------------------------
+
 def xyz(shape=128, limits=[-3, 3], spherical=False, sparse=True, centers=False):
 
     """

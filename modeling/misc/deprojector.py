@@ -24,6 +24,7 @@ from ...core.units.parsing import parse_unit as u
 from ..component.galaxy import GalaxyModelingComponent
 from ..build.suite import create_deprojection_for_map
 from ...core.tools.stringify import tostr
+from ..plotting.model import xy
 
 # -----------------------------------------------------------------
 
@@ -474,29 +475,28 @@ class Deprojector(GalaxyModelingComponent):
 
         unit = "pc"
 
+        shape = 128
+
         # Loop over the components
         for name in self.deprojections:
 
             # Debugging
             log.debug("Computing the deprojected surface density of the '" + name + "' map ...")
 
-            # Determine the limits
-            x_min_scalar = component.xmin.to(unit).value
-            x_max_scalar = component.xmax.to(unit).value
-            y_min_scalar = component.ymin.to(unit).value
-            y_max_scalar = component.ymax.to(unit).value
-            z_min_scalar = component.zmin.to(unit).value
-            z_max_scalar = component.zmax.to(unit).value
+            # Set the model limits
+            x_range_scalar = self.deprojections[name].x_range.to(unit).value.as_tuple()
+            y_range_scalar = self.deprojections[name].y_range.to(unit).value.as_tuple()
+            #z_range_scalar = self.deprojections[name].z_range.to(unit).value.as_tuple()
+            limits = [x_range_scalar, y_range_scalar]
 
             # Create coordinate data
-            x, y, z, r, theta, phi = xyz(shape=shape, limits=limits, spherical=True)
-            # data = r * 0
+            x, y = xy(shape=shape, limits=limits)
 
             # Calculate the surface density
             density = self.deprojections[name].surface_density_function(normalize=True)(x, y)
 
             # Create deprojected map
-            deprojected = Frame(density, wcs=self.maps[name].wcs)
+            deprojected = Frame(density)
 
             # Set
             self.deprojected[name] = deprojected

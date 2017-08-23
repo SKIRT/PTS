@@ -223,6 +223,17 @@ class Range(object):
 
     # -----------------------------------------------------------------
 
+    def as_tuple(self):
+
+        """
+        This function ...
+        :return:
+        """
+
+        return (self.min, self.max)
+
+    # -----------------------------------------------------------------
+
     def linear(self, npoints, as_list=False, fancy=False):
 
         """
@@ -876,6 +887,18 @@ class QuantityRange(Range):
 
         # Rearrange is allowed because it is possible that the old min becomes the new max (eg. frequency -> wavelength)
         return QuantityRange(self.min.to(unit, equivalencies=equivalencies), self.max.to(unit, equivalencies=equivalencies), rearrange=True)
+
+    # -----------------------------------------------------------------
+
+    @property
+    def value(self):
+
+        """
+        Thisf unction ...
+        :return:
+        """
+
+        return RealRange(self.min.value, self.max.value)
 
     # -----------------------------------------------------------------
 

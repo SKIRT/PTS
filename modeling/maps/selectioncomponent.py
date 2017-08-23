@@ -429,11 +429,12 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def make_clipped_maps(self, the_map, origins, levels_dict, convolve=True, remote=None, rebin_remote_threshold=None,
+    def make_clipped_maps(self, name, the_map, origins, levels_dict, convolve=True, remote=None, rebin_remote_threshold=None,
                           npixels=1, connectivity=8, present=None):
 
         """
         This function ...
+        :param name:
         :param the_map:
         :param origins:
         :param levels_dict:
@@ -446,7 +447,7 @@ class MapsSelectionComponent(MapsComponent):
         """
 
         # Make the masks
-        masks = self.make_clip_masks(origins, levels_dict, wcs=the_map.wcs, convolve=convolve, remote=remote,
+        masks = self.make_clip_masks(name, origins, levels_dict, wcs=the_map.wcs, convolve=convolve, remote=remote,
                                      rebin_remote_threshold=rebin_remote_threshold, npixels=npixels, connectivity=connectivity, present=present)
 
         # The maps
@@ -600,7 +601,7 @@ class MapsSelectionComponent(MapsComponent):
 
     # -----------------------------------------------------------------
 
-    def make_clip_masks(self, origins, levels_dict, wcs=None, convolve=True, remote=None, rebin_remote_threshold=None,
+    def make_clip_masks(self, name, origins, levels_dict, wcs=None, convolve=True, remote=None, rebin_remote_threshold=None,
                         npixels=1, connectivity=8, present=None):
 
         """
@@ -680,7 +681,9 @@ class MapsSelectionComponent(MapsComponent):
             levels_dict = hashdict({name: level for name, level in zip(names, sigma_levels)})
 
             # Check
-            if present is not None and levels_dict in present: continue
+            if present is not None and levels_dict in present:
+                log.success("The clipped '" + name + "' map for sigma levels [" + tostr(levels_dict) + "] is already present")
+                continue
 
             # Debugging
             log.debug("Making clip mask for sigma levels [" + tostr(levels_dict) + "] ...")

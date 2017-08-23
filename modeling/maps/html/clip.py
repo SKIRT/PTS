@@ -922,7 +922,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             filepath = self.old_plot_paths[name][levels]
 
             # Check
-            if fs.is_file(filepath): combinations.append(levels)
+            if fs.is_file(filepath):
+                log.success("The plot of the '" + name + "' old stellar map for significance levels [" + self.levels_to_string(levels) + "'] is already present")
+                combinations.append(levels)
 
         # Return the level combinations
         return combinations
@@ -970,7 +972,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             filepath = self.young_plot_paths[name][levels]
 
             # Check
-            if fs.is_file(filepath): combinations.append(levels)
+            if fs.is_file(filepath):
+                log.success("The plot of the '" + name + "' young stellar map for significance levels [" + self.levels_to_string(levels) + "'] is already present")
+                combinations.append(levels)
 
         # Return the level combinations
         return combinations
@@ -1016,7 +1020,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             filepath = self.ionizing_plot_paths[name][levels]
 
             # Check
-            if fs.is_file(filepath): combinations.append(levels)
+            if fs.is_file(filepath):
+                log.success("The plot of the '" + name + "' ionizing stellar map for significance levels [" + self.levels_to_string(levels) + "'] is already present")
+                combinations.append(levels)
 
         # Return the level combinations
         return combinations
@@ -1062,7 +1068,9 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             filepath = self.dust_plot_paths[name][levels]
 
             # Check
-            if fs.is_file(filepath): combinations.append(levels)
+            if fs.is_file(filepath):
+                log.success("The plot of the '" + name + "' dust map for significance levels [" + self.levels_to_string(levels) + "'] is already present")
+                combinations.append(levels)
 
         # Return the level combinations
         return combinations
@@ -1122,7 +1130,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             log.debug("The relevant sigma levels are: " + tostr(sigma_levels))
 
             # Clip the map
-            maps = self.make_clipped_maps(self.old_maps[name], origins, sigma_levels,
+            maps = self.make_clipped_maps(name, self.old_maps[name], origins, sigma_levels,
                                           convolve=self.config.convolve, remote=self.remote,
                                           rebin_remote_threshold=self.config.rebin_remote_threshold,
                                           npixels=self.config.min_npixels, connectivity=self.config.connectivity,
@@ -1167,7 +1175,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             log.debug("The relevant sigma levels are: " + tostr(sigma_levels))
 
             # Clip the map
-            maps = self.make_clipped_maps(self.young_maps[name], origins, sigma_levels,
+            maps = self.make_clipped_maps(name, self.young_maps[name], origins, sigma_levels,
                                           convolve=self.config.convolve, remote=self.remote,
                                           rebin_remote_threshold=self.config.rebin_remote_threshold,
                                           npixels=self.config.min_npixels, connectivity=self.config.connectivity,
@@ -1212,7 +1220,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             log.debug("The relevant sigma levels are: " + tostr(sigma_levels))
 
             # Clip the map
-            maps = self.make_clipped_maps(self.ionizing_maps[name], origins, sigma_levels,
+            maps = self.make_clipped_maps(name, self.ionizing_maps[name], origins, sigma_levels,
                                           convolve=self.config.convolve, remote=self.remote,
                                           rebin_remote_threshold=self.config.rebin_remote_threshold,
                                           npixels=self.config.min_npixels, connectivity=self.config.connectivity,
@@ -1257,7 +1265,7 @@ class ClipMapsPageGenerator(MapsSelectionComponent):
             log.debug("The relevant sigma levels are: " + tostr(sigma_levels))
 
             # Clip the map
-            maps = self.make_clipped_maps(self.dust_maps[name], origins, sigma_levels,
+            maps = self.make_clipped_maps(name, self.dust_maps[name], origins, sigma_levels,
                                           convolve=self.config.convolve, remote=self.remote,
                                           rebin_remote_threshold=self.config.rebin_remote_threshold,
                                           npixels=self.config.min_npixels, connectivity=self.config.connectivity,
